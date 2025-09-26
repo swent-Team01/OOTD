@@ -1,0 +1,110 @@
+/.idea/
+.DS_Store
+.gradle
+/local.properties
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# .gitignore for Android Studio projects
+
+# Built application files
+
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+
+*.dex
+
+# Java class files
+
+*.class
+
+# Generated files
+
+bin/
+gen/
+out/
+build/
+captures/
+.idea/
+.gradle/
+*.iml
+
+# Keystore files
+
+*.jks
+*.keystore
+
+# Gradle files
+
+!gradle/wrapper/gradle-wrapper.jar
+
+# Log files
+
+*.log
+
+# Android Studio specific
+
+*.iws
+*.ipr
+
+# MacOS system files
+
+
+# Windows system files
+
+Thumbs.db
+
+# Crashlytics and Fabric
+
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Google Services (do not include your API keys in version control)
+
+google-services.json
+
+# Fastlane metadata
+
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# NDK
+
+obj/
+
+# Proguard
+
+proguard/
+
+# Lint
+
+lint/intermediates/
+lint/generated/
+
+# Miscellaneous
+
+*.orig
+*.rej
+
+# Kotlin specific
+
+*.kotlin_module
+
+# Jetpack Compose
+
+.compose-cache/
+
+# VS Code
+
+.vscode/
+
+app/google-services.json
