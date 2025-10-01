@@ -11,16 +11,16 @@ are also able to store their previous outfits and highlight ones that they like 
 ## Ressources :
 - [SonarCloud](https://sonarcloud.io/organizations/swent-team01/projects)
 - [GitHub](https://github.com/swent-Team01/OOTD)
-- [GitHub Wiki](..)
-- [Figma](TODO)
+- [GitHub Wiki](https://github.com/swent-Team01/OOTD/wiki)
+- [Figma](https://www.figma.com/design/EQfCuEx3jJpUSZ3NKc4DE5/stefan.taga-s-team-library?t=1rG02nxGubCxY31q-0)
 
 ## Our Team
-| Name                 | GitHub account                               |
-|----------------------|----------------------------------------------|
-| Kallergis Marc       | [@MarcK0909](https://github.com/MarcK0909)   |
-| Corentin Steinhauser | [@cocoStein](https://github.com/cocoStein)   |
-| Mobius  Clemens      | [@Clemensito](https://github.com/Clemensito) |
-| Taga    Stefan       | [@stefantaga24](https://github.com/stefantaga24)|
-| Meric  Julien        | [@j-meric](https://github.com/j-meric)       |
-| Pitu  Bianca         | [@]()                                        |
-| Unluer  Asli         | [@asunluer](https://github.com/asunluer)     |
+| Name                 | GitHub account                                   |
+|----------------------|--------------------------------------------------|
+| Kallergis Marc       | [@MarcK0909](https://github.com/MarcK0909)       |
+| Steinhauser Corentin | [@cocoStein](https://github.com/cocoStein)       |
+| Möbius  Clemens      | [@Clemensito](https://github.com/Clemensito)     |
+| Taga    Stefan       | [@stefantaga24](https://github.com/stefantaga24) |
+| Meric  Julien        | [@j-meric](https://github.com/j-meric)           |
+| Pitu  Bianca         | [@bbianca2004](https://github.com/bbianca2004)   |
+| Unluer  Aslì         | [@asunluer](https://github.com/asunluer)         |
