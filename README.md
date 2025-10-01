@@ -20,7 +20,7 @@ are also able to store their previous outfits and highlight ones that they like 
 | Kallergis Marc       | [@MarcK0909](https://github.com/MarcK0909)   |
 | Corentin Steinhauser | [@cocoStein](https://github.com/cocoStein)   |
 | Mobius  Clemens      | [@Clemensito](https://github.com/Clemensito) |
-| Taga    Stefan       | [@]()                                        |
+| Taga    Stefan       | [@stefantaga24](https://github.com/stefantaga24)|
 | Meric  Julien        | [@j-meric](https://github.com/j-meric)       |
 | Pitu  Bianca         | [@]()                                        |
 | Unluer  Asli         | [@asunluer](https://github.com/asunluer)     |
