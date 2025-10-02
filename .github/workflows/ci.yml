@@ -26,6 +26,13 @@ jobs:
           submodules: recursive
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of Sonar analysis (if we use Sonar Later)
 
+      - name: CI Banner
+        run: |
+          echo '   ___   ___ _____ ___     ___ ___ '
+          echo '  / _ \ / _ \_   _|   \   / __|_ _|'
+          echo ' | (_) | (_) || | | |) | | (__ | | '
+          echo '  \___/ \___/ |_| |___/   \___|___|'
+          echo '                                   '
 
       # Kernel-based Virtual Machine (KVM) is an open source virtualization technology built into Linux. Enabling it allows the Android emulator to run faster.
       - name: Enable KVM group perms
@@ -55,13 +62,13 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-34
+          key: avd-35
 
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 35
           target: google_apis
           arch: x86_64
           force-avd-creation: false
@@ -69,9 +76,41 @@ jobs:
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
+      # Load google-services.json from the secrets to initiate the FireBase
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
       - name: Grant execute permission for gradlew
         run: |
           chmod +x ./gradlew
+
+      # Install NodeJS
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Install Firebase CLI
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Start Firebase emulators for testing
+        run: |
+          if [ -e "firebase.json" ] && jq -e '.emulators' firebase.json >/dev/null; then
+            echo "Starting Firebase emulators for Firestore tests..."
+            firebase emulators:start --only auth,firestore --project demo-project &
+            sleep 10  # Give emulators time to start
+            echo "Firebase emulators started"
+          else
+            echo "Firebase emulators not configured, skipping emulator startup..."
+          fi
 
       # Check formatting
       - name: KTFmt Check
@@ -94,7 +133,7 @@ jobs:
       - name: run tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 35
           target: google_apis
           arch: x86_64
           force-avd-creation: false
