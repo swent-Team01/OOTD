@@ -10,6 +10,12 @@ plugins {
     id("jacoco")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("org.apache.commons:commons-compress:1.26.0")
+    }
+}
+
 android {
     namespace = "com.android.ootd"
     compileSdk = 35

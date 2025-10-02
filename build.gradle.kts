@@ -5,4 +5,14 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     // Add the dependency for the Google services Gradle plugin
     id("com.google.gms.google-services") version "4.4.3" apply false
+    id("org.sonarqube") version "5.1.0.4882" apply false
+}
+
+// Apply to all projects
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            force("org.apache.commons:commons-compress:1.26.0")
+        }
+    }
 }
