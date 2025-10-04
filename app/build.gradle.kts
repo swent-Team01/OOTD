@@ -8,6 +8,7 @@ plugins {
     // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
     id("jacoco")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 configurations.all {
@@ -82,6 +83,20 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            merges += "META-INF/LICENSE.md"
+            merges += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+        }
+    }
+
     // Robolectric needs to be run only in debug. But its tests are placed in the shared source set (test)
     // The next lines transfers the src/test/* from shared to the testDebug one
     //
@@ -124,12 +139,12 @@ fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
-    testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
 
@@ -184,6 +199,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.mockk)
+    testImplementation(libs.mockk)
 }
 
 tasks.withType<Test> {
