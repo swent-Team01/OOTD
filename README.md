@@ -53,14 +53,7 @@ cd OOTD
 ### Before Submitting a PR
 
 1. **Create a feature branch** from `main` following naming conventions:
-
-   - Feature branches: `feature/#issue_number-short_description`
-   - Bug fixes: `fix/#issue_number-short_description`
-   - Hotfixes: `hotfix/#issue_number-short_description`
-
-   ```bash
-   git checkout -b feature/#issue_number-short_description
-   ```
+   [Github Wiki](https://github.com/swent-Team01/OOTD/wiki/Branching-guidelines)
   
 2. **Ensure code quality**:
    - Run `./gradlew ktfmtCheck` to verify code formatting
@@ -69,43 +62,7 @@ cd OOTD
    - Maintain or improve code coverage (minimum 80%)
 
 ### PR Description Template
-
-```markdown
-## Summary
-Brief description of what this PR accomplishes
-
-## Changes Made
-- List of specific changes
-- Use bullet points for clarity
-
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-
-## Related Issues
-Closes #issue-number
-Unblocks #issue-number (if was blocking any other issue)
-
-## Breaking Changes
-List any breaking changes (if any and why)
-```
-
-### PR Review Process
-
-1. **Automated Checks**: All PRs must pass CI checks including:
-   - Code formatting (KTFmt)
-   - Unit and integration tests
-   - Code coverage requirements (>= 80%)
-   - SonarCloud quality gate
-
-2. **Code Review**: At least one team member must review and approve the PR
-
-3. **Merge Requirements**:
-   - All CI checks must pass
-   - No merge conflicts
-   - Up-to-date with main branch
-   - Approved by at least one reviewer
+- [Github Wiki for PR template](https://github.com/swent-Team01/OOTD/wiki/Process-Definition#commit-message-template-conventional-commits)
 
 ## Ressources :
 - [SonarCloud](https://sonarcloud.io/organizations/swent-team01/projects)
@@ -122,4 +79,4 @@ List any breaking changes (if any and why)
 | Taga    Stefan       | [@stefantaga24](https://github.com/stefantaga24) |
 | Meric  Julien        | [@j-meric](https://github.com/j-meric)           |
 | Pitu  Bianca         | [@bbianca2004](https://github.com/bbianca2004)   |
-| Unluer  Aslì         | [@asunluer](https://github.com/asunluer)         |
+| Ünlüer Aslı          | [@asunluer](https://github.com/asunluer)         |
