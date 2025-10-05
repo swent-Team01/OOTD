@@ -7,7 +7,7 @@ interface ItemsRepository {
   fun getNewItemId(): String
 
   /**
-   * Gets the all the items from the repository
+   * Gets all the items from the repository
    *
    * @return A list of all items.
    */
@@ -16,33 +16,33 @@ interface ItemsRepository {
   /**
    * Gets a specific item by its unique identifier.
    *
-   * @param id The unique identifier of the item to retrieve.
+   * @param uuid The unique identifier of the item to retrieve.
    * @return The item with the specified identifier, or null if not found.
+   * @throws Exception if the item is not found.
    */
-  suspend fun getItemById(id: Long): Item?
+  suspend fun getItemById(uuid: String): Item
 
   /**
    * Adds a new item to the repository.
    *
    * @param item The item to add.
-   * @return The unique identifier of the newly added item.
    */
-  suspend fun addItem(item: Item): Long
+  suspend fun addItem(item: Item)
 
   /**
    * Edits an existing item in the repository.
    *
-   * @param itemID The unique identifier of the item to edit.
+   * @param itemUUID The unique identifier of the item to edit.
    * @param newItem The item with updated information.
    * @throws Exception if the item is not found.
    */
-  suspend fun edit(itemID: String, newItem: Item)
+  suspend fun editItem(itemUUID: String, newItem: Item)
 
   /**
    * Deletes an item from the repository by its unique identifier.
    *
-   * @param id The unique identifier of the item to delete.
+   * @param uuid The unique identifier of the item to delete.
    * @throws Exception if the Clothing item is not found.
    */
-  suspend fun deleteItem(id: String)
+  suspend fun deleteItem(uuid: String)
 }
