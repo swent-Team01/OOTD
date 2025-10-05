@@ -17,7 +17,7 @@ open class FirestoreTest() : BaseTest() {
 
   private suspend fun clearTestCollection() {
     val user = FirebaseEmulator.auth.currentUser ?: return
-    val todos =
+    val users =
         FirebaseEmulator.firestore
             .collection(USER_COLLECTION_PATH)
             .whereEqualTo("ownerId", user.uid)
@@ -25,7 +25,7 @@ open class FirestoreTest() : BaseTest() {
             .await()
 
     val batch = FirebaseEmulator.firestore.batch()
-    todos.documents.forEach { batch.delete(it.reference) }
+    users.documents.forEach { batch.delete(it.reference) }
     batch.commit().await()
 
     assert(getUserCount() == 0) {
