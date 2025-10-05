@@ -7,12 +7,11 @@ import org.junit.Test
 
 class GreetingPreviewTest {
 
-    @get:Rule
-    val composeRule = createComposeRule()
+  @get:Rule val composeRule = createComposeRule()
 
-    @Test
-    fun showsPreviewText() {
-        composeRule.setContent { GreetingPreview() }
-        composeRule.onNodeWithText("Preview").assertExists()
-    }
+  @Test
+  fun showsPreviewText() {
+    composeRule.setContent { GreetingPreview() }
+    composeRule.onNodeWithText("Preview").assertExists()
+  }
 }
