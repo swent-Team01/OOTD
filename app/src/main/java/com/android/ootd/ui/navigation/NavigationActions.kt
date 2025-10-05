@@ -23,7 +23,7 @@ sealed class Screen(
     val isTopLevelDestination: Boolean = false
 ) {
   /** Sign in screen. Marked as a top\-level destination. */
-  object SignIn : Screen(route = "sign_in", name = "Sign In", isTopLevelDestination = true)
+  object Authentication : Screen(route = "authentication", name = "Authentication", isTopLevelDestination = true)
 
   /** Splash / launch screen. Marked as a top\-level destination. */
   object Splash : Screen(route = "splash", name = "Splash", isTopLevelDestination = false)
