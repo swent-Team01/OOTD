@@ -1,14 +1,16 @@
 package com.android.ootd.ui.search
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import com.android.ootd.model.user.User
 
 @Composable
@@ -22,29 +24,68 @@ fun UserSelectionField(
     testTagSuggestion: String,
     expanded: Boolean
 ) {
-  // Should update suggestions always when suggestions is not empty.
-  Box(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
-        value = usernameText,
-        onValueChange = {
-          onUsernameTextChanged(
-              it) // Here the expanded should change only when suggestions is not empty
-        },
-        label = { Text("Username") },
-        modifier = Modifier.fillMaxWidth().testTag(testTagInput))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = "Search",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(40.dp)
+        )
 
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onSuggestionsDismissed,
-        modifier = Modifier.fillMaxWidth(0.95f)) {
-          usernameSuggestions.forEach { user ->
-            DropdownMenuItem(
-                text = { Text(user.name) },
-                onClick = {
-                  onUsernameSuggestionSelected(user) // Here expanded should become false
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Box(modifier = Modifier.weight(1f)) {
+            OutlinedTextField(
+                value = usernameText,
+                onValueChange = {
+                    onUsernameTextChanged(it)
                 },
-                modifier = Modifier.testTag(testTagSuggestion))
-          }
+                placeholder = {
+                    Text(
+                        "Username",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                trailingIcon = {
+                    if (usernameText.isNotEmpty()) {
+                        IconButton(onClick = { onUsernameTextChanged("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.outline,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.fillMaxWidth().testTag(testTagInput),
+                singleLine = true
+            )
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = onSuggestionsDismissed,
+                modifier = Modifier.fillMaxWidth(0.95f)
+            ) {
+                usernameSuggestions.forEach { user ->
+                    DropdownMenuItem(
+                        text = { Text(user.name) },
+                        onClick = {
+                            onUsernameSuggestionSelected(user)
+                        },
+                        modifier = Modifier.testTag(testTagSuggestion)
+                    )
+                }
+            }
         }
-  }
+    }
 }
