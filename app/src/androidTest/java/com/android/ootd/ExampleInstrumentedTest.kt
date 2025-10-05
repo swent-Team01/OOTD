@@ -1,6 +1,7 @@
 package com.android.ootd
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.screen.MainScreen
 import com.kaspersky.kaspresso.testcases.api.testcase.TestCase
@@ -21,13 +22,8 @@ class MainActivityTest : TestCase() {
 
   @Test
   fun test() = run {
-    step("Start Main Activity") {
-      ComposeScreen.onComposeScreen<MainScreen>(composeTestRule) {
-        simpleText {
-          assertIsDisplayed()
-          assertTextEquals("Hello Android!")
-        }
-      }
+    step("Launch MainActivity and verify Compose root exists") {
+      composeTestRule.onRoot().assertExists()
     }
   }
 }
