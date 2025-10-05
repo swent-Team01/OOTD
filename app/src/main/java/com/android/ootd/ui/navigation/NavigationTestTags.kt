@@ -6,4 +6,5 @@ object NavigationTestTags {
    * "GoBackButton" const val TOP_BAR_TITLE = "TopBarTitle" const val OVERVIEW_TAB = "OverviewTab"
    * const val MAP_TAB = "MapTab"
    */
+  const val SPLASH = "Route_Splash"
 }
