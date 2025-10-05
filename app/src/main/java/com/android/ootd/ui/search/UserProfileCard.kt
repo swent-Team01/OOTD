@@ -28,7 +28,7 @@ import com.android.ootd.ui.theme.OOTDTheme
 fun UserProfileCardPreview() {
   OOTDTheme {
     UserProfileCard(
-        selectedUser = User(uid = "Bob", name = "Micheal", friendList = emptyList()),
+        selectedUser = User(uid = "Bob", name = "Michael", friendList = emptyList()),
         modifier = Modifier.padding(16.dp))
   }
 }
