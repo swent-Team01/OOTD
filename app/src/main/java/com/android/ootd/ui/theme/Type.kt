@@ -6,7 +6,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.android.sample.R
+import com.android.ootd.R
 
 val Bodoni = FontFamily(Font(R.font.bodoni_moda))
 // Set of Material typography styles to start with
