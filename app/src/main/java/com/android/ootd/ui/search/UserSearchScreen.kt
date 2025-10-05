@@ -59,10 +59,13 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    UserProfileCard(
-        modifier = Modifier.fillMaxWidth().weight(1f), selectedUser = uiState.selectedUser)
+    if (uiState.selectedUser != null) {
+            UserProfileCard(
+                modifier = Modifier.fillMaxWidth().weight(1f), selectedUser = uiState.selectedUser
+            )
+        }
+    }
   }
-}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
