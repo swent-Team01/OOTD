@@ -16,16 +16,18 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   /** Helper method to transform a Firestore document into a User object */
   private fun transformUserDocument(document: DocumentSnapshot): User? {
     return try {
-      val data = document.data
-      if (data == null) {
-        Log.e("UserRepositoryFirestore", "Document data is null for document: ${document.id}")
+      if (!document.exists()) {
+        Log.e("UserRepositoryFirestore", "Document does not exist: ${document.id}")
         return null
       }
       val user = document.toObject<User>()
+      if (user == null) {
+        Log.e("UserRepositoryFirestore", "Failed to deserialize document ${document.id} to User object. Data: ${document.data}")
+        return null
+      }
       user
     } catch (e: Exception) {
-      Log.e(
-          "UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
+      Log.e("UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
       null
     }
   }
