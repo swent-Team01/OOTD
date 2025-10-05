@@ -3,7 +3,7 @@ package com.android.ootd.model
 import android.net.Uri
 
 data class Item(
-    val itemId: String,
+    val itemUUID: String,
     val image: Uri,
     val category: String,
     val type: String,
