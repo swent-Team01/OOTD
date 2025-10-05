@@ -36,7 +36,6 @@ class NavigationTest {
 
   @Test
   fun basicNavigationTests() {
-    // Use NavigationActions
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Authentication)
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
@@ -45,7 +44,6 @@ class NavigationTest {
       assertEquals(Screen.Splash.route, navigation.currentRoute())
     }
 
-    // Or call the controller directly
     composeRule.runOnIdle {
       navController.navigate(Screen.Authentication.route)
       assertEquals(Screen.Authentication.route, navController.currentDestination?.route)
