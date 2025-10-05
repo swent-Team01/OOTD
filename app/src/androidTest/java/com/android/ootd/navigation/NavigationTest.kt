@@ -15,45 +15,40 @@ import org.junit.Test
 
 class NavigationTest {
 
-    @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    private lateinit var navController: NavHostController
-    private lateinit var navigation: NavigationActions
+  private lateinit var navController: NavHostController
+  private lateinit var navigation: NavigationActions
 
-    @Before
-    fun setUp() {
-        composeRule.setContent {
-            val controller = rememberNavController()
-            navController = controller
+  @Before
+  fun setUp() {
+    composeRule.setContent {
+      val controller = rememberNavController()
+      navController = controller
 
-            NavHost(
-                navController = controller,
-                startDestination = Screen.Splash.route
-            ) {
-                composable(Screen.Splash.route) { /* minimal screen */ }
-                composable(Screen.Authentication.route) { /* minimal screen */ }
-            }
-        }
-        composeRule.runOnIdle {
-            navigation = NavigationActions(navController)
-        }
+      NavHost(navController = controller, startDestination = Screen.Splash.route) {
+        composable(Screen.Splash.route) { /* minimal screen */}
+        composable(Screen.Authentication.route) { /* minimal screen */}
+      }
+    }
+    composeRule.runOnIdle { navigation = NavigationActions(navController) }
+  }
+
+  @Test
+  fun basicNavigationTests() {
+    // Use NavigationActions
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
     }
 
-    @Test
-    fun basicNavigationTests() {
-        // Use NavigationActions
-        composeRule.runOnIdle {
-            navigation.navigateTo(Screen.Authentication)
-            assertEquals(Screen.Authentication.route, navigation.currentRoute())
-
-            navigation.goBack()
-            assertEquals(Screen.Splash.route, navigation.currentRoute())
-        }
-
-        // Or call the controller directly
-        composeRule.runOnIdle {
-            navController.navigate(Screen.Authentication.route)
-            assertEquals(Screen.Authentication.route, navController.currentDestination?.route)
-        }
+    // Or call the controller directly
+    composeRule.runOnIdle {
+      navController.navigate(Screen.Authentication.route)
+      assertEquals(Screen.Authentication.route, navController.currentDestination?.route)
     }
+  }
 }
