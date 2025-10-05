@@ -10,6 +10,12 @@ plugins {
     id("jacoco")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("org.apache.commons:commons-compress:1.26.0")
+    }
+}
+
 android {
     namespace = "com.android.ootd"
     compileSdk = 35
@@ -29,7 +35,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -98,9 +104,10 @@ android {
 sonar {
     properties {
         property("sonar.projectKey", "swent-Team01_OOTD")
-        property("sonar.projectName", "OOTD")
         property("sonar.organization", "swent-team01")
+        property("sonar.projectName", "OOTD")
         property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.gradle.skipCompile", "true")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
         property("sonar.junit.reportPaths", "${project.layout.buildDirectory.get()}/test-results/testDebugunitTest/")
         // Paths to xml files with Android Lint issues. If the main flavor is changed, this file will have to be changed too.
