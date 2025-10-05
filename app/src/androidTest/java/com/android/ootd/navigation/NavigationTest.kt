@@ -42,6 +42,9 @@ class NavigationTest {
 
       navigation.goBack()
       assertEquals(Screen.Splash.route, navigation.currentRoute())
+      //If the user tries to go to the same dest, do nothing
+      navigation.navigateTo(Screen.Splash)
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
     }
 
     composeRule.runOnIdle {
