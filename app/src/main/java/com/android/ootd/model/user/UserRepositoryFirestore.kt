@@ -22,12 +22,15 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       }
       val user = document.toObject<User>()
       if (user == null) {
-        Log.e("UserRepositoryFirestore", "Failed to deserialize document ${document.id} to User object. Data: ${document.data}")
+        Log.e(
+            "UserRepositoryFirestore",
+            "Failed to deserialize document ${document.id} to User object. Data: ${document.data}")
         return null
       }
       user
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
+      Log.e(
+          "UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
       null
     }
   }
