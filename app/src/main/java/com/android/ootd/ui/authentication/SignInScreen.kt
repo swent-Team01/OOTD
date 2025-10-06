@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,12 +29,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.ui.theme.White
-
-// import com.github.se.bootcamp.ui.authentication.SignInViewModel
 
 object SignInScreenTestTags {
   const val APP_LOGO = "appLogo"
@@ -46,7 +45,7 @@ object SignInScreenTestTags {
 @Preview
 @Composable
 fun SignInScreen(
-    // authViewModel: SignInViewModel = viewModel(),
+    authViewModel: SignInViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onSignedIn: () -> Unit = {},
 ) {
@@ -63,7 +62,7 @@ fun SignInScreen(
 
           Text(
               text = "WELCOME",
-              style = MaterialTheme.typography.displayLarge,
+              style = Typography.displayLarge,
               color = Primary,
               modifier = Modifier.padding(top = 8.dp).testTag(SignInScreenTestTags.LOGIN_TITLE))
 
@@ -108,7 +107,7 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
       Spacer(modifier = Modifier.size(12.dp))
 
-      Text(text = "Sign in with Google", style = MaterialTheme.typography.titleLarge)
+      Text(text = "Sign in with Google", style = Typography.titleLarge, color = Tertiary)
     }
   }
 }
