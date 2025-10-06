@@ -187,6 +187,79 @@ class ItemsRepositoryFirestoreTest() {
     assertEquals(1, countItems())
   }
 
+  @Test(expected = Exception::class)
+  fun getItemByIdThrowsWhenItemNotFound() = runTest { repository.getItemById("nonExistingId") }
+
+  @Test
+  fun getAllItemsSkipsInvalidDocuments() = runTest {
+    val db = Firebase.firestore
+    val collection = db.collection(ITEMS_COLLECTION)
+
+    // Add an invalid Firestore document (missing required fields)
+    collection.document("invalid").set(mapOf("brand" to "Zara")).await()
+
+    // Add a valid one too
+    repository.addItem(item1)
+
+    val allItems = repository.getAllItems()
+
+    // Only valid items should be returned (invalid skipped)
+    assertEquals(1, allItems.size)
+    assertEquals(item1.uuid, allItems.first().uuid)
+  }
+
+  @Test
+  fun getAllItemsParsesPartiallyValidMaterialList() = runTest {
+    val db = Firebase.firestore
+    val collection = db.collection(ITEMS_COLLECTION)
+
+    val partialMaterialData =
+        mapOf(
+            "uuid" to "mixedMat",
+            "image" to "https://example.com/image.jpg",
+            "category" to "clothes",
+            "type" to "jacket",
+            "brand" to "Levi's",
+            "price" to 120.0,
+            "link" to "https://example.com/item",
+            "material" to
+                listOf(
+                    mapOf("name" to "Cotton", "percentage" to 60.0), mapOf("invalidKey" to "oops")))
+    collection.document("mixedMat").set(partialMaterialData).await()
+
+    val items = repository.getAllItems()
+    assertEquals(1, items.size)
+    val matList = items.first().material
+    assertEquals(2, matList.size)
+    assertEquals("Cotton", matList.first().name)
+    assertEquals(60.0, matList.first().percentage)
+  }
+
+  @Test
+  fun mapToItemCatchesExceptionForInvalidData() = runTest {
+    val db = Firebase.firestore
+    val collection = db.collection(ITEMS_COLLECTION)
+
+    // Insert invalid data (image should be a string, but we give it a number)
+    val invalidData =
+        mapOf(
+            "uuid" to "badItem",
+            "image" to 12345, // <-- will cause ClassCastException during toUri()
+            "category" to "clothes",
+            "type" to "jacket",
+            "brand" to "Levi's",
+            "price" to 120.0,
+            "link" to "https://example.com/item")
+
+    collection.document("badItem").set(invalidData).await()
+
+    // When repository tries to parse this, it should hit the catch block
+    val allItems = repository.getAllItems()
+
+    // It should skip the invalid item and not crash
+    assertEquals(true, allItems.isEmpty())
+  }
+
   @After
   fun tearDown() {
     FirebaseEmulator.clearFirestoreEmulator()
