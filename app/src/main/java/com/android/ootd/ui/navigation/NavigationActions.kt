@@ -11,6 +11,8 @@ import androidx.navigation.NavHostController
  * - whether it is a top\-level destination (`isTopLevelDestination`).
  *
  * Top\-level destinations are typically roots in the app's navigation graph
+ * * Portions adapted from Bootcamp Week 3 Solutions (source:
+ * * https://github.com/swent-epfl/bootcamp-25-B3-Solution.git)
  *
  * @property route Unique route string used by the navigation graph.
  * @property name Human\-readable screen name for accessibility and analytics.
@@ -28,6 +30,9 @@ sealed class Screen(
 
   /** Splash / launch screen. Marked as a top\-level destination. */
   object Splash : Screen(route = "splash", name = "Splash", isTopLevelDestination = false)
+
+  // ToDo: Replace overview with main when implemented
+  object Overview : Screen(route = "overview", name = "Overview", isTopLevelDestination = true)
 }
 
 /**
@@ -58,10 +63,16 @@ open class NavigationActions(
       // If the user is already on the top-level destination, do nothing
       return
     }
+
     navController.navigate(screen.route) {
       if (screen.isTopLevelDestination) {
         launchSingleTop = true
         popUpTo(screen.route) { inclusive = true }
+      }
+
+      if (screen !is Screen.Authentication) {
+        // Restore state when reselecting a previously selected item
+        restoreState = true
       }
     }
   }
