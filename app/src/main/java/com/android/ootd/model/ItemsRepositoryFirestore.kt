@@ -1,7 +1,7 @@
 package com.android.ootd.model
 
-import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -42,12 +42,12 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
     val uuid = doc.getString("uuid") ?: return null
     val image = doc.getString("image") ?: return null
-    val imageUri = Uri.parse(image)
+    val imageUri = image.toUri()
     val category = doc.getString("category") ?: return null
     val type = doc.getString("type") ?: return null
     val brand = doc.getString("brand") ?: return null
-    val price = doc.get("price") ?: return null
-    val link = doc.get("link") ?: return null
+    val price = doc.getDouble("price") ?: return null
+    val link = doc.getString("link") ?: return null
 
     val materialList = doc.get("material") as? List<*>
     val material =
@@ -65,9 +65,9 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
         category = category,
         type = type,
         brand = brand,
-        price = price as Double,
+        price = price,
         material = material,
-        link = link as String,
+        link = link,
     )
   } catch (e: Exception) {
     Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
