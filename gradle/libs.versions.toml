@@ -3,7 +3,6 @@ agp = "8.13.0"
 kotlin = "2.1.10"
 coreKtx = "1.12.0"
 ktfmt = "0.17.0"
-junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
@@ -14,7 +13,7 @@ composeViewModel = "2.7.0"
 lifecycleRuntimeKtx = "2.7.0"
 kaspresso = "1.5.5"
 robolectric = "4.11.1"
-sonar = "4.4.1.3373"
+sonar = "5.1.0.4882"
 gms = "4.4.2"
 navigationCompose = "2.7.7"
 
@@ -36,6 +35,12 @@ mapsComposeUtils = "4.3.0"
 
 # Networking
 okhttp = "4.12.0"
+
+# Testing Unit
+junit = "4.13.2"
+mockitoCore = "5.13.0"
+mockitoKotlin = "5.4.0"
+mockk = "1.13.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -61,6 +66,8 @@ kaspresso = { group = "com.kaspersky.android-components", name = "kaspresso", ve
 kaspresso-compose = { group = "com.kaspersky.android-components", name = "kaspresso-compose-support", version.ref = "kaspresso" }
 
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationCompose" }
