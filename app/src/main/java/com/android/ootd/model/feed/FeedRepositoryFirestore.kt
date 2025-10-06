@@ -13,8 +13,8 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
   /** Helper method to validate post data. */
   private fun checkPostData(post: OutfitPost): OutfitPost? {
-    if (post.postUUID.isBlank() || post.userID.isBlank() || post.outfitURL.isBlank()) {
-      Log.e("FeedRepositoryFirestore", "Invalid post data for postUUID=${post.postUUID}")
+    if (post.postUID.isBlank() || post.uid.isBlank() || post.outfitURL.isBlank()) {
+      Log.e("FeedRepositoryFirestore", "Invalid post data for postUUID=${post.postUID}")
       return null
     }
     return post
@@ -55,8 +55,8 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
   override suspend fun addPost(post: OutfitPost) {
     try {
-      db.collection(POSTS_COLLECTION_PATH).document(post.postUUID).set(post).await()
-      Log.d("FeedRepositoryFirestore", "Successfully added post ${post.postUUID}")
+      db.collection(POSTS_COLLECTION_PATH).document(post.postUID).set(post).await()
+      Log.d("FeedRepositoryFirestore", "Successfully added post ${post.postUID}")
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error adding post: ${e.message}", e)
       throw e
