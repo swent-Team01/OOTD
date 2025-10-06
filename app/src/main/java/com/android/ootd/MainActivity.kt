@@ -17,6 +17,7 @@ import androidx.credentials.CredentialManager
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.ootd.ui.login.SignInScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
@@ -62,6 +63,12 @@ fun OOTDApp(
     composable(Screen.Splash.route) {
       // Splash screen
       Box(Modifier.fillMaxSize().testTag(NavigationTestTags.SPLASH))
+    }
+
+    composable(Screen.CreateAccount.route){
+      SignInScreen(
+        onRegister = { navigationActions.navigateTo(Screen.Splash) }
+      )
     }
   }
 }

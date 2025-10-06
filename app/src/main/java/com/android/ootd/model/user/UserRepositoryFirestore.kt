@@ -11,6 +11,9 @@ import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
 
+@SinceKotlin("1.1") typealias TakenUsernameException = java.lang.IllegalArgumentException
+
+
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
   /** Helper method to check user data as firestore might add the default values */
@@ -49,7 +52,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
     if(usernameExists(username)){
       Log.e("UserRepositoryFirestore", "Username already in use")
-      throw IllegalArgumentException("Username already in use")
+      throw TakenUsernameException("Username already in use")
     }
 
     val userID = getNewUid()
