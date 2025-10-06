@@ -45,6 +45,23 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     return UUID.randomUUID().toString()
   }
 
+  override suspend fun createUser(username: String) {
+
+    if(usernameExists(username)){
+      Log.e("UserRepositoryFirestore", "Username already in use")
+      throw IllegalArgumentException("Username already in use")
+    }
+
+    val userID = getNewUid()
+    val newUser = User(userID, username)
+    try {
+      addUser(newUser)
+    }catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error while creating user : ${e.message}", e)
+    }
+
+  }
+
   override suspend fun getAllUsers(): List<User> {
 
     return try {
@@ -73,6 +90,18 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       throw e
     }
   }
+// Ill do that later
+//  override suspend fun editUsername(userID: String, username: String) {
+//    if(usernameExists(username)){
+//      Log.e("UserRepositoryFirestore", "Username already in use")
+//      throw IllegalArgumentException("Username already in use")
+//    }
+//
+//    try {
+//        val user = getUser(userID)
+//
+//    }
+//  }
 
   override suspend fun addUser(user: User) {
     try {
@@ -114,4 +143,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       throw e
     }
   }
+
+  private suspend fun usernameExists(username: String): Boolean{
+    val usernames: Set<String> = getAllUsers().mapNotNull { user ->
+      val uname = user.name
+      uname.ifBlank { null }
+    }.toSet()
+
+    return usernames.contains(username)
+  }
+
 }
