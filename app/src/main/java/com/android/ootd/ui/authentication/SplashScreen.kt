@@ -15,7 +15,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
-import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.White
 import kotlinx.coroutines.delay
@@ -59,9 +58,10 @@ fun SplashScreenContent(modifier: Modifier = Modifier) {
  * milliseconds before continuing navigation.
  *
  * @param modifier Optional [Modifier] applied to the content container.
- * @param navigationActions Optional [NavigationActions] used by the [SplashViewModel] to perform
- *   navigation after the splash finishes. May be null for cases where navigation is not needed (for
- *   example in tests).
+ * @param onSignedIn Callback invoked when the startup/auth check determines the user is signed in
+ *   and the app should navigate to the main flow.
+ * @param onNotSignedIn Callback invoked when no authenticated user is found and the app should
+ *   navigate to the authentication flow.
  * @param viewModel The [SplashViewModel] instance to notify about app start; provided by
  *   `viewModel()` by default.
  */
