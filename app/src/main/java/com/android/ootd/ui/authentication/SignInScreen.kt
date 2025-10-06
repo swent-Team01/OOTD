@@ -1,5 +1,6 @@
 package com.android.ootd.ui.authentication
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,10 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +54,25 @@ fun SignInScreen(
     onSignedIn: () -> Unit = {},
 ) {
   val context = LocalContext.current
+  val uiState by authViewModel.uiState.collectAsState()
+
   val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+
+  // Show error message if login fails
+  LaunchedEffect(uiState.errorMsg) {
+    uiState.errorMsg?.let {
+      Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+      authViewModel.clearErrorMsg()
+    }
+  }
+
+  // Navigate to overview screen on successful login
+  LaunchedEffect(uiState.user) {
+    uiState.user?.let {
+      Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+      onSignedIn()
+    }
+  }
 
   Scaffold { innerPadding ->
     Column(
@@ -79,9 +101,13 @@ fun SignInScreen(
 
           Spacer(modifier = Modifier.height(36.dp))
 
-          GoogleSignInButton(
-              onClick = { /* TODO: trigger sign-in flow using authViewModel / credentialManager */},
-              modifier = Modifier.testTag(SignInScreenTestTags.LOGIN_BUTTON))
+          if (uiState.isLoading) {
+            CircularProgressIndicator(color = Primary, modifier = Modifier.size(48.dp))
+          } else {
+            GoogleSignInButton(
+                onClick = { authViewModel.signIn(context, credentialManager) },
+                modifier = Modifier.testTag(SignInScreenTestTags.LOGIN_BUTTON))
+          }
 
           // Add a small bottom spacer to keep some breathing room on shorter screens
           Spacer(modifier = Modifier.height(24.dp))
