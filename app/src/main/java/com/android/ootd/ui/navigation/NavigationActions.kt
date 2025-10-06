@@ -30,6 +30,21 @@ sealed class Screen(
   object Splash : Screen(route = "splash", name = "Splash", isTopLevelDestination = false)
 }
 
+/**
+ * High-level navigation helper around [NavHostController].
+ *
+ * Encapsulates common navigation behavior and enforces consistent handling of top-level
+ * destinations:
+ * - Re-navigation to the current top-level route is ignored to avoid duplicates.
+ * - Navigating to a top-level [Screen] uses `launchSingleTop` and clears the back stack up to the
+ *   destination via `popUpTo(destination) { inclusive = true }`.
+ *
+ * Threading: calls must happen on the main thread as they delegate to [NavHostController]. Scope:
+ * keep one instance per `NavHostController` (e.g., hoisted to a ViewModel or a CompositionLocal in
+ * Compose).
+ *
+ * @param navController The [NavHostController] used to perform navigation actions.
+ */
 open class NavigationActions(
     private val navController: NavHostController,
 ) {
