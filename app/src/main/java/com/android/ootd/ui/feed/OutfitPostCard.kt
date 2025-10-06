@@ -18,7 +18,7 @@ fun OutfitPostCard(
 ) {
   Card(modifier = modifier.padding(8.dp).fillMaxWidth()) {
     Column(Modifier.padding(16.dp)) {
-      Text(text = post.userName, style = MaterialTheme.typography.titleMedium)
+      Text(text = post.name, style = MaterialTheme.typography.titleMedium)
       Spacer(modifier = Modifier.height(8.dp))
 
       // just a placeholder for now, will add the real photo later
