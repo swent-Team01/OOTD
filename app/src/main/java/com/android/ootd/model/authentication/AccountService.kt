@@ -1,5 +1,6 @@
 package com.android.ootd.model.authentication
 
+import androidx.credentials.Credential
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
 
@@ -20,8 +21,8 @@ interface AccountService {
   suspend fun hasUser(): Boolean
 
   /** Signs in the user using a Google ID token. */
-  suspend fun signInWithGoogle(idToken: String)
+  suspend fun signInWithGoogle(credential: Credential): Result<FirebaseUser>
 
   /** Signs out the current user. */
-  suspend fun signOut()
+  fun signOut(): Result<Unit>
 }
