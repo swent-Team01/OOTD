@@ -3,12 +3,14 @@ package com.android.ootd.model
 import android.net.Uri
 
 data class Item(
-    val itemUUID: String,
+    val uuid: String,
     val image: Uri,
     val category: String,
     val type: String,
     val brand: String,
     val price: Double,
-    val material: String,
+    val material: List<Material>,
     val link: String,
 )
+
+data class Material(val name: String = "", val percentage: Double = 0.0)
