@@ -13,20 +13,31 @@ const val USER_COLLECTION_PATH = "users"
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
+  /** Helper method to check user data as firestore might add the default values */
+  private fun checkUserData(user: User): User? {
+    if (user.uid.isBlank() || user.name.isBlank()) {
+      Log.e("UserRepositoryFirestore", "Invalid user data in user: uid is blank")
+      return null
+    }
+    return user
+  }
+
   /** Helper method to transform a Firestore document into a User object */
   private fun transformUserDocument(document: DocumentSnapshot): User? {
     return try {
-      val data = document.data
-      if (data == null) {
-        Log.e("UserRepositoryFirestore", "Document data is null for document: ${document.id}")
+      // The document for sure exists because we only call it after we verified document existence.
+      val user = document.toObject<User>()
+      if (user == null) {
+        Log.e(
+            "UserRepositoryFirestore",
+            "Failed to deserialize document ${document.id} to User object. Data: ${document.data}")
         return null
       }
-      val user = document.toObject<User>()
-      user
+      checkUserData(user)
     } catch (e: Exception) {
       Log.e(
           "UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
-      null
+      return null
     }
   }
 
@@ -83,6 +94,13 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
     try {
+      val friendDocumentList =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
+
+      if (friendDocumentList.documents.isEmpty()) {
+        throw NoSuchElementException("Friend with ID $friendID not found")
+      }
+
       val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
 
       // With arrayUnion there can be no duplicates
