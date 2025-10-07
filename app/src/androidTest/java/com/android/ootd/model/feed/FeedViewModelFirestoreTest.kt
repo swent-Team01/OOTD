@@ -18,8 +18,8 @@ import org.junit.Test
 /**
  * Firestore-emulator backed tests for FeedViewModel friends-only filtering.
  *
- * Pre-req: run the Firebase emulators (at least Firestore) locally before executing tests:
- *   firebase emulators:start --only firestore,auth
+ * Pre-req: run the Firebase emulators (at least Firestore) locally before executing tests: firebase
+ * emulators:start --only firestore,auth
  */
 class FeedViewModelFirestoreTest {
 
@@ -56,7 +56,11 @@ class FeedViewModelFirestoreTest {
     assertEquals(3, getPostsCount())
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    val currentUser = User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "Alice"), Friend("u2", "Bob")))
+    val currentUser =
+        User(
+            uid = "me",
+            name = "Me",
+            friendList = listOf(Friend("u1", "Alice"), Friend("u2", "Bob")))
     vm.setCurrentUser(currentUser)
 
     vm.onPostUploaded()
@@ -69,10 +73,7 @@ class FeedViewModelFirestoreTest {
 
   @Test
   fun emptyFriendsList_resultsInEmptyFeed_evenWhenPostsExist() = runBlocking {
-    seedPosts(
-        listOf(
-            post("p1", "Alice", "u1", ts = 1L),
-            post("p2", "Bob", "u2", ts = 2L)))
+    seedPosts(listOf(post("p1", "Alice", "u1", ts = 1L), post("p2", "Bob", "u2", ts = 2L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = emptyList()))
@@ -93,9 +94,10 @@ class FeedViewModelFirestoreTest {
 
     // Force hasPostedToday = true via provider wrapper
     originalProviderRepo = FeedRepositoryProvider.repository
-    FeedRepositoryProvider.repository = object : FeedRepository by repo {
-      override suspend fun hasPostedToday(): Boolean = true
-    }
+    FeedRepositoryProvider.repository =
+        object : FeedRepository by repo {
+          override suspend fun hasPostedToday(): Boolean = true
+        }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
 
@@ -134,7 +136,8 @@ class FeedViewModelFirestoreTest {
             post("p4", "D", "u1", ts = 4L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "A"), Friend("u3", "C"))))
+    vm.setCurrentUser(
+        User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "A"), Friend("u3", "C"))))
 
     vm.onPostUploaded()
 
@@ -144,10 +147,7 @@ class FeedViewModelFirestoreTest {
 
   @Test
   fun changingCurrentUser_recomputesFilter() = runBlocking {
-    seedPosts(
-        listOf(
-            post("p1", "Alice", "u1", ts = 1L),
-            post("p2", "Bob", "u2", ts = 2L)))
+    seedPosts(listOf(post("p1", "Alice", "u1", ts = 1L), post("p2", "Bob", "u2", ts = 2L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
 
@@ -166,9 +166,10 @@ class FeedViewModelFirestoreTest {
     clearPosts()
 
     originalProviderRepo = FeedRepositoryProvider.repository
-    FeedRepositoryProvider.repository = object : FeedRepository by repo {
-      override suspend fun hasPostedToday(): Boolean = true
-    }
+    FeedRepositoryProvider.repository =
+        object : FeedRepository by repo {
+          override suspend fun hasPostedToday(): Boolean = true
+        }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "A"))))
@@ -195,10 +196,7 @@ class FeedViewModelFirestoreTest {
 
   @Test
   fun hasPostedFalse_keepsFeedEmpty_untilOnPostUploadedCalled() = runBlocking {
-    seedPosts(
-        listOf(
-            post("p1", "Alice", "u1", ts = 1L),
-            post("p2", "Bob", "u2", ts = 2L)))
+    seedPosts(listOf(post("p1", "Alice", "u1", ts = 1L), post("p2", "Bob", "u2", ts = 2L)))
 
     // Default repo has hasPostedToday() = false
     val vm = com.android.ootd.ui.feed.FeedViewModel()
@@ -219,9 +217,10 @@ class FeedViewModelFirestoreTest {
 
     // Force hasPostedToday = true so VM loads posts on init
     originalProviderRepo = FeedRepositoryProvider.repository
-    FeedRepositoryProvider.repository = object : FeedRepository by repo {
-      override suspend fun hasPostedToday(): Boolean = true
-    }
+    FeedRepositoryProvider.repository =
+        object : FeedRepository by repo {
+          override suspend fun hasPostedToday(): Boolean = true
+        }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     // Do not set current user
@@ -232,10 +231,7 @@ class FeedViewModelFirestoreTest {
 
   @Test
   fun invalidFriendEntries_blankAndWhitespaceIgnored() = runBlocking {
-    seedPosts(
-        listOf(
-            post("p1", "Alice", "u1", ts = 1L),
-            post("p2", "Bob", "u2", ts = 2L)))
+    seedPosts(listOf(post("p1", "Alice", "u1", ts = 1L), post("p2", "Bob", "u2", ts = 2L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     vm.setCurrentUser(
@@ -253,13 +249,14 @@ class FeedViewModelFirestoreTest {
 
   @Test
   fun equalTimestamps_returnsAllFriendPosts_regardlessOfOrder() = runBlocking {
-    seedPosts(
-        listOf(
-            post("pA", "Alice", "u1", ts = 100L),
-            post("pB", "Bob", "u2", ts = 100L)))
+    seedPosts(listOf(post("pA", "Alice", "u1", ts = 100L), post("pB", "Bob", "u2", ts = 100L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "Alice"), Friend("u2", "Bob"))))
+    vm.setCurrentUser(
+        User(
+            uid = "me",
+            name = "Me",
+            friendList = listOf(Friend("u1", "Alice"), Friend("u2", "Bob"))))
 
     vm.onPostUploaded()
 
@@ -270,14 +267,29 @@ class FeedViewModelFirestoreTest {
 
   @Test
   fun addPost_failure_propagates_toCaller() = runBlocking {
-    val failingRepo = object : FeedRepository {
-      override suspend fun getFeed(): List<OutfitPost> = emptyList()
-      override suspend fun hasPostedToday(): Boolean = false
-      override suspend fun addPost(post: OutfitPost) { throw RuntimeException("boom") }
-      override fun getNewPostId(): String = "dummy"
-    }
+    val failingRepo =
+        object : FeedRepository {
+          override suspend fun getFeed(): List<OutfitPost> = emptyList()
 
-    val dummy = OutfitPost(postUID = "x", name = "Name", uid = "uid", userProfilePicURL = "", outfitURL = "url_x", description = "", itemsID = emptyList(), timestamp = 1L)
+          override suspend fun hasPostedToday(): Boolean = false
+
+          override suspend fun addPost(post: OutfitPost) {
+            throw RuntimeException("boom")
+          }
+
+          override fun getNewPostId(): String = "dummy"
+        }
+
+    val dummy =
+        OutfitPost(
+            postUID = "x",
+            name = "Name",
+            uid = "uid",
+            userProfilePicURL = "",
+            outfitURL = "url_x",
+            description = "",
+            itemsID = emptyList(),
+            timestamp = 1L)
 
     val ex = runCatching { failingRepo.addPost(dummy) }.exceptionOrNull()
     assertTrue(ex is RuntimeException)
@@ -311,13 +323,14 @@ class FeedViewModelFirestoreTest {
       profileUrl: String = "",
       outfitUrl: String = "url_$id",
       desc: String = "desc_$id"
-  ) = OutfitPost(
-      postUID = id,
-      name = userName,
-      uid = userId,
-      userProfilePicURL = profileUrl,
-      outfitURL = outfitUrl,
-      description = desc,
-      itemsID = emptyList(),
-      timestamp = ts)
+  ) =
+      OutfitPost(
+          postUID = id,
+          name = userName,
+          uid = userId,
+          userProfilePicURL = profileUrl,
+          outfitURL = outfitUrl,
+          description = desc,
+          itemsID = emptyList(),
+          timestamp = ts)
 }
