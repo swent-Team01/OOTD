@@ -16,7 +16,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import com.android.ootd.ui.OverviewPlaceholderScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.navigation.NavigationActions
@@ -80,7 +79,7 @@ fun OOTDApp(
     // 3. Overview route (top-level, for authenticated users)
     // Todo: Replace overview with main when implemented
     navigation(startDestination = Screen.Overview.route, route = Screen.Overview.name) {
-      composable(Screen.Overview.route) { OverviewPlaceholderScreen() }
+      composable(Screen.Overview.route) { Text("Overview Placeholder") }
     }
   }
 }
