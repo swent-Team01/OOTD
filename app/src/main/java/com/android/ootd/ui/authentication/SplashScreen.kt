@@ -15,8 +15,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.White
 import kotlinx.coroutines.delay
 
 private const val SPLASH_TIMEOUT = 1000L
@@ -37,7 +37,7 @@ fun SplashScreenContent(modifier: Modifier = Modifier) {
           modifier
               .fillMaxWidth()
               .fillMaxHeight()
-              .background(White)
+              .background(Background)
               .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally) {
