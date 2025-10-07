@@ -95,6 +95,12 @@ android {
             excludes += "META-INF/NOTICE"
             excludes += "META-INF/NOTICE.txt"
         }
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        dex {
+            useLegacyPackaging = false
+        }
     }
 
     // Robolectric needs to be run only in debug. But its tests are placed in the shared source set (test)
@@ -205,9 +211,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.5")
 
     testImplementation(libs.junit)
-    androidTestImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent.android)
     testImplementation(libs.mockk)
 }
 
