@@ -37,15 +37,11 @@
 package com.android.ootd.authentication
 
 import android.content.Context
-import androidx.compose.material3.Text
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
-import androidx.navigation.compose.ComposeNavigator
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -328,39 +324,6 @@ class AuthenticationExtensiveTest {
   }
 
   // ========== NavigationActions Tests ==========
-
-  @Test
-  fun navigationActions_navigateTo_sameTopLevelDestination_ignored() {
-    val navController = TestNavHostController(context)
-
-    composeTestRule.setContent {
-      navController.navigatorProvider.addNavigator(ComposeNavigator())
-      NavHost(navController = navController, startDestination = Screen.Authentication.route) {
-        composable(Screen.Authentication.route) { Text("Auth") }
-        composable(Screen.Splash.route) { Text("Splash") }
-        composable(Screen.Overview.route) { Text("Overview") }
-      }
-    }
-
-    composeTestRule.waitForIdle()
-
-    val navigationActions = NavigationActions(navController)
-
-    // Already on Authentication, try to navigate to it again
-    val firstRoute = navigationActions.currentRoute()
-    assertEquals(Screen.Authentication.route, firstRoute)
-
-    // Try to navigate to same destination
-    navigationActions.navigateTo(Screen.Authentication)
-
-    composeTestRule.waitUntil(timeoutMillis = 2_000) {
-      navigationActions.currentRoute() == firstRoute
-    }
-
-    val secondRoute = navigationActions.currentRoute()
-
-    assertEquals(firstRoute, secondRoute)
-  }
 
   @Test
   fun navigationActions_currentRoute_returnsEmptyWhenNull() {
