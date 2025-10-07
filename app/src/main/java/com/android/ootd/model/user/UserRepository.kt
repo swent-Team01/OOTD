@@ -6,7 +6,6 @@ interface UserRepository {
   /** Generates and returns a new unique identifier for a User. */
   fun getNewUid(): String
 
-
   /**
    * Creates a new user with the username he chose
    *
@@ -42,8 +41,7 @@ interface UserRepository {
     suspend fun getUsername(userID: String): String?
   * */
 
-
-  //suspend fun editUsername(userID: String, username: String)
+  // suspend fun editUsername(userID: String, username: String)
 
   /* To discuss if it is needed
   suspend fun deleteUser(userID: String)

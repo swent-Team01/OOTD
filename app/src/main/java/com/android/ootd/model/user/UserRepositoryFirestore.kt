@@ -11,8 +11,8 @@ import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
 
-@SinceKotlin("1.1") typealias TakenUsernameException = java.lang.IllegalArgumentException
-
+@SinceKotlin("1.1")
+typealias TakenUsernameException = java.lang.IllegalArgumentException
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
@@ -50,7 +50,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun createUser(username: String) {
 
-    if(usernameExists(username)){
+    if (usernameExists(username)) {
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
     }
@@ -59,10 +59,10 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     val newUser = User(userID, username)
     try {
       addUser(newUser)
-    }catch (e: Exception) {
+    } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error while creating user : ${e.message}", e)
+      throw e
     }
-
   }
 
   override suspend fun getAllUsers(): List<User> {
@@ -93,18 +93,18 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       throw e
     }
   }
-// Ill do that later
-//  override suspend fun editUsername(userID: String, username: String) {
-//    if(usernameExists(username)){
-//      Log.e("UserRepositoryFirestore", "Username already in use")
-//      throw IllegalArgumentException("Username already in use")
-//    }
-//
-//    try {
-//        val user = getUser(userID)
-//
-//    }
-//  }
+  // Ill do that later
+  //  override suspend fun editUsername(userID: String, username: String) {
+  //    if(usernameExists(username)){
+  //      Log.e("UserRepositoryFirestore", "Username already in use")
+  //      throw IllegalArgumentException("Username already in use")
+  //    }
+  //
+  //    try {
+  //        val user = getUser(userID)
+  //
+  //    }
+  //  }
 
   override suspend fun addUser(user: User) {
     try {
@@ -147,13 +147,15 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
-  private suspend fun usernameExists(username: String): Boolean{
-    val usernames: Set<String> = getAllUsers().mapNotNull { user ->
-      val uname = user.name
-      uname.ifBlank { null }
-    }.toSet()
+  private suspend fun usernameExists(username: String): Boolean {
+    val usernames: Set<String> =
+        getAllUsers()
+            .mapNotNull { user ->
+              val uname = user.name
+              uname.ifBlank { null }
+            }
+            .toSet()
 
     return usernames.contains(username)
   }
-
 }
