@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -20,6 +21,8 @@ import com.android.ootd.ui.theme.Primary
 import kotlinx.coroutines.delay
 
 private const val SPLASH_TIMEOUT = 1000L
+private val splashProgressTab = "splashProgress"
+private val splashLogoTag = "splashLogo"
 
 /**
  * UI content for the app splash screen.
@@ -44,9 +47,9 @@ fun SplashScreenContent(modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(id = R.drawable.hanger),
             contentDescription = null,
-            modifier = Modifier.size(128.dp).padding(bottom = 16.dp))
+            modifier = Modifier.size(128.dp).padding(bottom = 16.dp).testTag(splashLogoTag))
 
-        CircularProgressIndicator(color = Primary)
+        CircularProgressIndicator(color = Primary, modifier = Modifier.testTag(splashProgressTab))
       }
 }
 
