@@ -12,17 +12,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class User(
-    val uid: String = "",
-    val username: String = "",
-    val errorMsg: String? = "",
-    val isLoading: Boolean = false
-    //    val referral: String = "" TODO if we want to implement, just an idea
+  val uid: String = "",
+  val username: String = "",
+  val errorMsg: String? = null,
+  val isLoading: Boolean = false
 )
 
 class RegisterViewModel(
-    // private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val repository: UserRepository = UserRepositoryProvider.repository,
+  private val repository: UserRepository = UserRepositoryProvider.repository,
 ) : ViewModel() {
+
   private val _uiState = MutableStateFlow(User())
   val uiState: StateFlow<User> = _uiState.asStateFlow()
 
@@ -30,29 +29,31 @@ class RegisterViewModel(
     refresh()
   }
 
-  fun clearErrorMsg() = update { it.copy(errorMsg = null) }
-
-  fun showLoading(v: Boolean) = setLoading(v)
-
-  fun emitError(msg: String) = setErrorMsg(msg)
-
-  fun setUsername(uname: String) = update { it.copy(username = uname) }
-
-  fun refresh() {
-    //        val user = auth.currentUser
-    clearErrorMsg()
-    update { it.copy(isLoading = false) }
+  fun clearErrorMsg() {
+    _uiState.value = _uiState.value.copy(errorMsg = null)
   }
 
-  private fun setErrorMsg(msg: String) = update { it.copy(errorMsg = msg) }
+  fun showLoading(v: Boolean) {
+    _uiState.value = _uiState.value.copy(isLoading = v)
+  }
 
-  private fun setLoading(v: Boolean) = update { it.copy(isLoading = v) }
+  fun emitError(msg: String) {
+    _uiState.value = _uiState.value.copy(errorMsg = msg)
+  }
+
+  fun setUsername(uname: String) {
+    _uiState.value = _uiState.value.copy(username = uname)
+  }
+
+  fun refresh() {
+    clearErrorMsg()
+    _uiState.value = _uiState.value.copy(isLoading = false)
+  }
 
   fun registerUser() {
-    val uname = _uiState.value.username
-    // TODO handle case for age and location
-    loadUser(uname)
+    val uname = uiState.value.username.trim()
     clearErrorMsg()
+    loadUser(uname)
   }
 
   private fun loadUser(username: String) {
@@ -62,20 +63,20 @@ class RegisterViewModel(
       } catch (e: Exception) {
         when (e) {
           is TakenUsernameException -> {
-            Log.e("SignInViewModel", "Username taken", e)
-            setErrorMsg("This username has already been taken")
-            update { it.copy(username = "") }
+            Log.e("RegisterViewModel", "Username taken", e)
+            _uiState.value = _uiState.value.copy(
+              errorMsg = "This username has already been taken",
+              username = ""
+            )
           }
           else -> {
-            Log.e("SignInViewModel", "Error registering user", e)
-            setErrorMsg("Failed to register user: ${e.message}")
+            Log.e("RegisterViewModel", "Error registering user", e)
+            _uiState.value = _uiState.value.copy(
+              errorMsg = "Failed to register user: ${e.message}"
+            )
           }
         }
       }
     }
-  }
-
-  private inline fun update(block: (User) -> User) {
-    _uiState.value = block(_uiState.value)
   }
 }
