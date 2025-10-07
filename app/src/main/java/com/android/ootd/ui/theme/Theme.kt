@@ -20,16 +20,16 @@ private val DarkColorScheme =
         primary = Primary,
         secondary = Secondary,
         tertiary = Tertiary,
-        background = Black,
-        onBackground = White)
+        background = Background,
+        onBackground = Last)
 
 private val LightColorScheme =
     lightColorScheme(
         primary = Primary,
         secondary = Secondary,
         tertiary = Tertiary,
-        background = White,
-        onBackground = Black)
+        background = Background,
+        onBackground = Last)
 
 @Composable
 fun OOTDTheme(
