@@ -2,6 +2,8 @@ package com.android.sample.ui.theme
 
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.Typography
 import org.junit.Assert.*
 import org.junit.Test
 
