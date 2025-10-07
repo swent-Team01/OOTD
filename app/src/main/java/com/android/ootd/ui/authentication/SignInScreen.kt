@@ -35,10 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.ui.theme.White
 
 object SignInScreenTestTags {
   const val APP_LOGO = "appLogo"
@@ -122,7 +122,7 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
       Box(
           modifier =
               Modifier.size(28.dp)
-                  .background(White, shape = CircleShape)
+                  .background(Background, shape = CircleShape)
                   .border(1.dp, Tertiary, CircleShape),
           contentAlignment = Alignment.Center) {
             Image(
