@@ -98,7 +98,6 @@ class RegisterScreenTest {
     composeTestRule.enterUsername("validUser")
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
-    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertIsDisplayed()
   }
 
