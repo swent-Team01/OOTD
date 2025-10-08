@@ -151,6 +151,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    //implementation(libs.androidx.ui.text)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
 
@@ -164,7 +165,8 @@ dependencies {
     // Material Design 3
     implementation(libs.compose.material3)
 
-    implementation("io.coil-kt:coil-compose:2.6.0")    // Integration with activities
+    // Coil for image loading in Compose
+    implementation("io.coil-kt:coil-compose:2.6.0")
     implementation(libs.compose.activity)
     // Integration with ViewModels
     implementation(libs.compose.viewmodel)
