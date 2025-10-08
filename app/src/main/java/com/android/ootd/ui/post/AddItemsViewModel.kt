@@ -23,13 +23,14 @@ data class AddItemsUIState(
     val type: String = "",
     val brand: String = "",
     val price: String = "",
-    val material: List<Material> = emptyList(),
+    val material: List<Material> = emptyList(), // parsed user input for material field
     val link: String = "",
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val typeSuggestion: List<String> = emptyList(),
-    val categorySuggestion: List<String> = emptyList()
+    val categorySuggestion: List<String> = emptyList(),
+    val materialText: String = "", // raw user input for material field
 ) {
   val isAddingValid: Boolean
     get() =
@@ -136,8 +137,20 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(price = price)
   }
 
-  fun setMaterial(material: List<Material>) {
-    _uiState.value = _uiState.value.copy(material = material)
+  fun setMaterial(material: String) {
+    _uiState.value = _uiState.value.copy(materialText = material)
+
+    // Parse text like "Coton 80%, Laine 20%"
+    val materials =
+        material.split(",").mapNotNull { entry ->
+          val parts = entry.trim().split(" ")
+          if (parts.size == 2 && parts[1].endsWith("%")) {
+            val name = parts[0]
+            val percentage = parts[1].removeSuffix("%").toDoubleOrNull()
+            if (percentage != null) Material(name, percentage) else null
+          } else null
+        }
+    _uiState.value = _uiState.value.copy(material = materials)
   }
 
   fun setLink(link: String) {
