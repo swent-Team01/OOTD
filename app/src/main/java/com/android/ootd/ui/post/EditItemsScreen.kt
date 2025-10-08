@@ -109,7 +109,7 @@ fun EditItemsScreen(
         TopAppBar(
             title = { Text("Edit Item", style = MaterialTheme.typography.titleLarge) },
             navigationIcon = {
-              IconButton(onClick = {}) {
+              IconButton(onClick = goBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Go Back")
