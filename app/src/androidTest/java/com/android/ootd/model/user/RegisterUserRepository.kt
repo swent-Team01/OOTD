@@ -23,237 +23,237 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterViewModelTest {
 
-    private lateinit var repository: UserRepository
-    private lateinit var viewModel: RegisterViewModel
-    private val testDispatcher = StandardTestDispatcher()
+  private lateinit var repository: UserRepository
+  private lateinit var viewModel: RegisterViewModel
+  private val testDispatcher = StandardTestDispatcher()
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
-        viewModel = RegisterViewModel(repository)
-    }
+  @Before
+  fun setUp() {
+    Dispatchers.setMain(testDispatcher)
+    repository = mockk(relaxed = true)
+    viewModel = RegisterViewModel(repository)
+  }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
+  @After
+  fun tearDown() {
+    Dispatchers.resetMain()
+  }
 
-    @Test
-    fun registerUserWithValidUsername_callsRepositoryCreateUser() = runTest {
-        val username = "validUser123"
-        coEvery { repository.createUser(username) } returns Unit
+  @Test
+  fun registerUserWithValidUsername_callsRepositoryCreateUser() = runTest {
+    val username = "validUser123"
+    coEvery { repository.createUser(username) } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        coVerify(exactly = 1) { repository.createUser(username) }
-    }
+    coVerify(exactly = 1) { repository.createUser(username) }
+  }
 
-    @Test
-    fun registerUserWithValidUsername_setsRegisteredToTrueOnSuccess() = runTest {
-        val username = "validUser123"
-        coEvery { repository.createUser(username) } returns Unit
+  @Test
+  fun registerUserWithValidUsername_setsRegisteredToTrueOnSuccess() = runTest {
+    val username = "validUser123"
+    coEvery { repository.createUser(username) } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.registered)
-        assertFalse(viewModel.uiState.value.isLoading)
-    }
+    assertTrue(viewModel.uiState.value.registered)
+    assertFalse(viewModel.uiState.value.isLoading)
+  }
 
-    @Test
-    fun registerUserWithUsernameShorterThan3Characters_showsError() = runTest {
-        viewModel.setUsername("ab")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun registerUserWithUsernameShorterThan3Characters_showsError() = runTest {
+    viewModel.setUsername("ab")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
-        assertEquals("Username must be at least 3 characters.", viewModel.uiState.value.errorMsg)
-        coVerify(exactly = 0) { repository.createUser(any()) }
-    }
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals("Username must be at least 3 characters.", viewModel.uiState.value.errorMsg)
+    coVerify(exactly = 0) { repository.createUser(any()) }
+  }
 
-    @Test
-    fun registerUserWithUsernameLongerThan20Characters_showsError() = runTest {
-        viewModel.setUsername("thisUsernameIsWayTooLong123")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun registerUserWithUsernameLongerThan20Characters_showsError() = runTest {
+    viewModel.setUsername("thisUsernameIsWayTooLong123")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
-        assertEquals("Username must be at most 20 characters.", viewModel.uiState.value.errorMsg)
-        coVerify(exactly = 0) { repository.createUser(any()) }
-    }
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals("Username must be at most 20 characters.", viewModel.uiState.value.errorMsg)
+    coVerify(exactly = 0) { repository.createUser(any()) }
+  }
 
-    @Test
-    fun registerUserWithEmptyUsername_showsError() = runTest {
-        viewModel.setUsername("")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun registerUserWithEmptyUsername_showsError() = runTest {
+    viewModel.setUsername("")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
-        assertEquals("Username cannot be empty.", viewModel.uiState.value.errorMsg)
-        coVerify(exactly = 0) { repository.createUser(any()) }
-    }
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals("Username cannot be empty.", viewModel.uiState.value.errorMsg)
+    coVerify(exactly = 0) { repository.createUser(any()) }
+  }
 
-    @Test
-    fun registerUserWithBlankUsername_showsError() = runTest {
-        viewModel.setUsername("   ")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun registerUserWithBlankUsername_showsError() = runTest {
+    viewModel.setUsername("   ")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
-        assertEquals("Username cannot be empty.", viewModel.uiState.value.errorMsg)
-        coVerify(exactly = 0) { repository.createUser(any()) }
-    }
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals("Username cannot be empty.", viewModel.uiState.value.errorMsg)
+    coVerify(exactly = 0) { repository.createUser(any()) }
+  }
 
-    @Test
-    fun registerUserWithInvalidCharacters_showsError() = runTest {
-        viewModel.setUsername("user@name!")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun registerUserWithInvalidCharacters_showsError() = runTest {
+    viewModel.setUsername("user@name!")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
-        assertEquals("Username can only contain letters, numbers, and underscores.", viewModel.uiState.value.errorMsg)
-        coVerify(exactly = 0) { repository.createUser(any()) }
-    }
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals(
+        "Username can only contain letters, numbers, and underscores.",
+        viewModel.uiState.value.errorMsg)
+    coVerify(exactly = 0) { repository.createUser(any()) }
+  }
 
-    @Test
-    fun registerUserWithSpacesInUsername_showsError() = runTest {
-        viewModel.setUsername("user name")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun registerUserWithSpacesInUsername_showsError() = runTest {
+    viewModel.setUsername("user name")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
-        coVerify(exactly = 0) { repository.createUser(any()) }
-    }
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    coVerify(exactly = 0) { repository.createUser(any()) }
+  }
 
-    @Test
-    fun registerUser_trimsWhitespaceBeforeValidation() = runTest {
-        val username = "  validUser  "
-        coEvery { repository.createUser("validUser") } returns Unit
+  @Test
+  fun registerUser_trimsWhitespaceBeforeValidation() = runTest {
+    val username = "  validUser  "
+    coEvery { repository.createUser("validUser") } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        coVerify(exactly = 1) { repository.createUser("validUser") }
-    }
+    coVerify(exactly = 1) { repository.createUser("validUser") }
+  }
 
-    @Test
-    fun registerUser_setsIsLoadingToTrueDuringRegistration() = runTest {
-        val username = "validUser"
-        coEvery { repository.createUser(username) } coAnswers {
-            kotlinx.coroutines.delay(100)
-        }
+  @Test
+  fun registerUser_setsIsLoadingToTrueDuringRegistration() = runTest {
+    val username = "validUser"
+    coEvery { repository.createUser(username) } coAnswers { kotlinx.coroutines.delay(100) }
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
 
-        assertTrue(viewModel.uiState.value.isLoading)
+    assertTrue(viewModel.uiState.value.isLoading)
 
-        advanceUntilIdle()
+    advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.isLoading)
-    }
+    assertFalse(viewModel.uiState.value.isLoading)
+  }
 
-    @Test
-    fun clearErrorMsg_clearsErrorMessage() = runTest {
-        viewModel.setUsername("")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun clearErrorMsg_clearsErrorMessage() = runTest {
+    viewModel.setUsername("")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
+    assertNotNull(viewModel.uiState.value.errorMsg)
 
-        viewModel.clearErrorMsg()
+    viewModel.clearErrorMsg()
 
-        assertNull(viewModel.uiState.value.errorMsg)
-    }
+    assertNull(viewModel.uiState.value.errorMsg)
+  }
 
-    @Test
-    fun markRegisteredHandled_resetsRegisteredFlag() = runTest {
-        val username = "validUser"
-        coEvery { repository.createUser(username) } returns Unit
+  @Test
+  fun markRegisteredHandled_resetsRegisteredFlag() = runTest {
+    val username = "validUser"
+    coEvery { repository.createUser(username) } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.registered)
+    assertTrue(viewModel.uiState.value.registered)
 
-        viewModel.markRegisteredHandled()
+    viewModel.markRegisteredHandled()
 
-        assertFalse(viewModel.uiState.value.registered)
-    }
+    assertFalse(viewModel.uiState.value.registered)
+  }
 
-    @Test
-    fun refresh_clearsErrorAndResetsState() = runTest {
-        viewModel.setUsername("")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun refresh_clearsErrorAndResetsState() = runTest {
+    viewModel.setUsername("")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        viewModel.refresh()
+    viewModel.refresh()
 
-        assertNull(viewModel.uiState.value.errorMsg)
-        assertFalse(viewModel.uiState.value.isLoading)
-        assertFalse(viewModel.uiState.value.registered)
-    }
+    assertNull(viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.isLoading)
+    assertFalse(viewModel.uiState.value.registered)
+  }
 
-    @Test
-    fun registerUserWithValidUsernameContainingUnderscores_succeeds() = runTest {
-        val username = "valid_user_123"
-        coEvery { repository.createUser(username) } returns Unit
+  @Test
+  fun registerUserWithValidUsernameContainingUnderscores_succeeds() = runTest {
+    val username = "valid_user_123"
+    coEvery { repository.createUser(username) } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.registered)
-        coVerify(exactly = 1) { repository.createUser(username) }
-    }
+    assertTrue(viewModel.uiState.value.registered)
+    coVerify(exactly = 1) { repository.createUser(username) }
+  }
 
-    @Test
-    fun registerUserWithExactly3Characters_succeeds() = runTest {
-        val username = "abc"
-        coEvery { repository.createUser(username) } returns Unit
+  @Test
+  fun registerUserWithExactly3Characters_succeeds() = runTest {
+    val username = "abc"
+    coEvery { repository.createUser(username) } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.registered)
-        coVerify(exactly = 1) { repository.createUser(username) }
-    }
+    assertTrue(viewModel.uiState.value.registered)
+    coVerify(exactly = 1) { repository.createUser(username) }
+  }
 
-    @Test
-    fun registerUserWithExactly20Characters_succeeds() = runTest {
-        val username = "a".repeat(20)
-        coEvery { repository.createUser(username) } returns Unit
+  @Test
+  fun registerUserWithExactly20Characters_succeeds() = runTest {
+    val username = "a".repeat(20)
+    coEvery { repository.createUser(username) } returns Unit
 
-        viewModel.setUsername(username)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(username)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.registered)
-        coVerify(exactly = 1) { repository.createUser(username) }
-    }
+    assertTrue(viewModel.uiState.value.registered)
+    coVerify(exactly = 1) { repository.createUser(username) }
+  }
 
-    @Test
-    fun multipleRegisterUserCallsWithErrors_doNotInterfere() = runTest {
-        viewModel.setUsername("ab")
-        viewModel.registerUser()
-        advanceUntilIdle()
+  @Test
+  fun multipleRegisterUserCallsWithErrors_doNotInterfere() = runTest {
+    viewModel.setUsername("ab")
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.errorMsg)
+    assertNotNull(viewModel.uiState.value.errorMsg)
 
-        val validUsername = "validUser"
-        coEvery { repository.createUser(validUsername) } returns Unit
+    val validUsername = "validUser"
+    coEvery { repository.createUser(validUsername) } returns Unit
 
-        viewModel.setUsername(validUsername)
-        viewModel.registerUser()
-        advanceUntilIdle()
+    viewModel.setUsername(validUsername)
+    viewModel.registerUser()
+    advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.registered)
-    }
+    assertTrue(viewModel.uiState.value.registered)
+  }
 }

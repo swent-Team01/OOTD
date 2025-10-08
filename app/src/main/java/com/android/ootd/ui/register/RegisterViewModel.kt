@@ -105,8 +105,8 @@ class RegisterViewModel(
 
   /**
    * Initiates the user registration process. Validates the username, starts loading state, and
-   * attempts to create the user. If the users name is shorter than 3 characters,
-   * longer than 20 or has anything else than letters, numbers, and underscores it will not be accepted
+   * attempts to create the user. If the users name is shorter than 3 characters, longer than 20 or
+   * has anything else than letters, numbers, and underscores it will not be accepted
    */
   fun registerUser() {
     val uname = uiState.value.username.trim()
@@ -140,9 +140,8 @@ class RegisterViewModel(
           is TakenUsernameException -> {
             Log.e("RegisterViewModel", "Username taken", e)
             _uiState.value =
-              _uiState.value.copy(
-                errorMsg = "This username has already been taken",
-                username = "")
+                _uiState.value.copy(
+                    errorMsg = "This username has already been taken", username = "")
           }
           else -> {
             Log.e("RegisterViewModel", "Error registering user", e)
