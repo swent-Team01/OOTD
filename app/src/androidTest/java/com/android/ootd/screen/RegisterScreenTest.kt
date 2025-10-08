@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.android.ootd.ui.register.RegisterScreen
@@ -73,13 +72,6 @@ class RegisterScreenTest {
   fun buttonVisible_whenNoErrors() {
     composeTestRule.enterUsername("validUser")
 
-    composeTestRule.waitUntil(timeoutMillis = 3000) {
-      composeTestRule
-          .onAllNodesWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertDoesNotExist()
@@ -89,16 +81,6 @@ class RegisterScreenTest {
   @Test
   fun buttonVisible_whenNoErrors_isEnabled() {
     composeTestRule.enterUsername("validUser")
-
-    composeTestRule.waitUntil(timeoutMillis = 3000) {
-      val nodes =
-          composeTestRule
-              .onAllNodesWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-              .fetchSemanticsNodes()
-      nodes.isNotEmpty()
-    }
-
-    composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
