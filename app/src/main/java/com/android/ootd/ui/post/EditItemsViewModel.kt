@@ -115,8 +115,29 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         repository.editItem(item.uuid, item)
+        setErrorMsg("Item updated successfully!")
       } catch (e: Exception) {
-        setErrorMsg("Failed to upload new item in the Firebase: ${e.message}")
+        setErrorMsg("Failed to update item: ${e.message}")
+      }
+    }
+  }
+
+  /** Deletes the current item from the repository. */
+  fun deleteItem() {
+    val state = _uiState.value
+    if (state.itemId.isEmpty()) {
+      setErrorMsg("No item to delete.")
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        repository.deleteItem(state.itemId)
+        setErrorMsg("Item deleted successfully!")
+        // Clear the form after successful deletion
+        _uiState.value = EditItemsUIState()
+      } catch (e: Exception) {
+        setErrorMsg("Failed to delete item: ${e.message}")
       }
     }
   }

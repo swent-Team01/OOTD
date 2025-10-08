@@ -21,7 +21,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,13 +44,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import java.io.File
+
+object EditItemsScreenTestTags {
+  const val PLACEHOLDER_PICTURE = "placeholderPicture"
+  const val INPUT_ADD_PICTURE_GALLERY = "inputAddPictureGallery"
+  const val INPUT_ADD_PICTURE_CAMERA = "inputAddPictureCamera"
+  const val INPUT_ITEM_CATEGORY = "inputItemCategory"
+  const val INPUT_ITEM_TYPE = "inputItemType"
+  const val INPUT_ITEM_BRAND = "inputItemBrand"
+  const val INPUT_ITEM_PRICE = "inputItemPrice"
+  const val INPUT_ITEM_LINK = "inputItemLink"
+  const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
+  const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,7 +125,8 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                       Modifier.fillMaxWidth()
                           .height(220.dp)
                           .clip(RoundedCornerShape(16.dp))
-                          .background(MaterialTheme.colorScheme.background),
+                          .background(MaterialTheme.colorScheme.background)
+                          .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
                   contentAlignment = Alignment.Center) {
                     if (itemsUIState.image != Uri.EMPTY) {
                       AsyncImage(
@@ -136,7 +154,9 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                   horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { galleryLauncher.launch("image/*") },
-                        modifier = Modifier.weight(1f)) {
+                        modifier =
+                            Modifier.weight(1f)
+                                .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY)) {
                           Text("Gallery")
                         }
                     Button(
@@ -148,7 +168,9 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                           cameraUri = uri
                           cameraLauncher.launch(uri)
                         },
-                        modifier = Modifier.weight(1f)) {
+                        modifier =
+                            Modifier.weight(1f)
+                                .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA)) {
                           Text("Camera")
                         }
                   }
@@ -158,7 +180,8 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                   onValueChange = { editItemsViewModel.setCategory(it) },
                   label = { Text("Category") },
                   placeholder = { Text("e.g., Clothes") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY))
 
               Box {
                 OutlinedTextField(
@@ -169,7 +192,15 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                       expanded = true
                     },
                     label = { Text("Type") },
-                    modifier = Modifier.fillMaxWidth())
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .testTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
+                            .onFocusChanged { focusState ->
+                              if (focusState.isFocused) {
+                                editItemsViewModel.updateTypeSuggestions(itemsUIState.type)
+                                expanded = true
+                              }
+                            })
                 DropdownMenu(
                     expanded = expanded && itemsUIState.suggestions.isNotEmpty(),
                     onDismissRequest = { expanded = false },
@@ -189,7 +220,8 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                   value = itemsUIState.brand,
                   onValueChange = { editItemsViewModel.setBrand(it) },
                   label = { Text("Brand") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND))
 
               OutlinedTextField(
                   value = if (itemsUIState.price == 0.0) "" else itemsUIState.price.toString(),
@@ -199,20 +231,47 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                   },
                   label = { Text("Price") },
                   placeholder = { Text("e.g., 49.99") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
 
               OutlinedTextField(
                   value = itemsUIState.link,
                   onValueChange = { editItemsViewModel.setLink(it) },
                   label = { Text("Link") },
                   placeholder = { Text("e.g., https://zara.com") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_LINK))
 
               Button(
                   onClick = { editItemsViewModel.canEditItems() },
                   enabled = itemsUIState.image != Uri.EMPTY && itemsUIState.category.isNotEmpty(),
-                  modifier = Modifier.fillMaxWidth()) {
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)) {
                     Text("Save Changes")
+                  }
+
+              Spacer(modifier = Modifier.height(8.dp))
+
+              Button(
+                  onClick = { editItemsViewModel.deleteItem() },
+                  enabled = itemsUIState.itemId.isNotEmpty(),
+                  colors =
+                      ButtonDefaults.buttonColors(
+                          containerColor = MaterialTheme.colorScheme.error,
+                          contentColor = MaterialTheme.colorScheme.onError),
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically) {
+                          Icon(
+                              imageVector = Icons.Default.Delete,
+                              contentDescription = "Delete",
+                              modifier = Modifier.size(20.dp))
+                          Spacer(modifier = Modifier.size(8.dp))
+                          Text("Delete Item")
+                        }
                   }
             }
       })
