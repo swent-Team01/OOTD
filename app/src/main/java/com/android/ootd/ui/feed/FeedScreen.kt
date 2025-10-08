@@ -57,8 +57,9 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
                 items(posts) { post ->
                   OutfitPostCard(
                       post = post,
-                      isBlurred = false, // no blur for now
+                      isBlurred = false,
                       onSeeFitClick = { /* TODO: navigation to feeditems */})
+                  // no blur for now
                 }
               }
         }
