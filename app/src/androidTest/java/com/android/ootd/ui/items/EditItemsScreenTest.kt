@@ -295,6 +295,12 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Wait for async operation to complete by checking the repository state
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      val updatedItem = repository.getItemById(testItem.uuid)
+      updatedItem.brand == "Adidas"
+    }
+
     // Verify item was updated in repository
     val updatedItem = repository.getItemById(testItem.uuid)
     assertEquals("Adidas", updatedItem.brand)
@@ -319,6 +325,9 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
 
     composeTestRule.waitForIdle()
+
+    // Wait for async operation to complete by checking the repository state
+    composeTestRule.waitUntil(timeoutMillis = 5000) { repository.getItemCount() == 0 }
 
     // Verify item was deleted from repository
     assertEquals(0, repository.getItemCount())
@@ -432,6 +441,11 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
 
     composeTestRule.waitForIdle()
+
+    // Wait for async operation to complete by checking the UI state
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      viewModel.uiState.value.itemId.isEmpty()
+    }
 
     // Verify form is cleared (checking brand field as example)
     composeTestRule.runOnIdle {
