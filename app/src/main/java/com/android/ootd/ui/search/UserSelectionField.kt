@@ -24,68 +24,51 @@ fun UserSelectionField(
     testTagSuggestion: String,
     expanded: Boolean
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = "Search",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(40.dp)
-        )
+  Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Icon(
+        imageVector = Icons.Default.Search,
+        contentDescription = "Search",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.size(40.dp))
 
-        Spacer(modifier = Modifier.width(8.dp))
+    Spacer(modifier = Modifier.width(8.dp))
 
-        Box(modifier = Modifier.weight(1f)) {
-            OutlinedTextField(
-                value = usernameText,
-                onValueChange = {
-                    onUsernameTextChanged(it)
-                },
-                placeholder = {
-                    Text(
-                        "Username",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                trailingIcon = {
-                    if (usernameText.isNotEmpty()) {
-                        IconButton(onClick = { onUsernameTextChanged("") }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.outline,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.fillMaxWidth().testTag(testTagInput),
-                singleLine = true
-            )
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = onSuggestionsDismissed,
-                modifier = Modifier.fillMaxWidth(0.95f)
-            ) {
-                usernameSuggestions.forEach { user ->
-                    DropdownMenuItem(
-                        text = { Text(user.name) },
-                        onClick = {
-                            onUsernameSuggestionSelected(user)
-                        },
-                        modifier = Modifier.testTag(testTagSuggestion)
-                    )
-                }
+    Box(modifier = Modifier.weight(1f)) {
+      OutlinedTextField(
+          value = usernameText,
+          onValueChange = { onUsernameTextChanged(it) },
+          placeholder = { Text("Username", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+          trailingIcon = {
+            if (usernameText.isNotEmpty()) {
+              IconButton(onClick = { onUsernameTextChanged("") }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Clear",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+              }
             }
-        }
+          },
+          colors =
+              OutlinedTextFieldDefaults.colors(
+                  focusedBorderColor = MaterialTheme.colorScheme.outline,
+                  unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                  focusedContainerColor = MaterialTheme.colorScheme.surface,
+                  unfocusedContainerColor = MaterialTheme.colorScheme.surface),
+          shape = RoundedCornerShape(24.dp),
+          modifier = Modifier.fillMaxWidth().testTag(testTagInput),
+          singleLine = true)
+
+      DropdownMenu(
+          expanded = expanded,
+          onDismissRequest = onSuggestionsDismissed,
+          modifier = Modifier.fillMaxWidth(0.95f)) {
+            usernameSuggestions.forEach { user ->
+              DropdownMenuItem(
+                  text = { Text(user.name) },
+                  onClick = { onUsernameSuggestionSelected(user) },
+                  modifier = Modifier.testTag(testTagSuggestion))
+            }
+          }
     }
+  }
 }
