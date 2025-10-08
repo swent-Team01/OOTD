@@ -36,17 +36,6 @@ interface UserRepository {
    */
   suspend fun getUser(userID: String): User
 
-  /*
-  maybe not necessary since we can handle the exception from getUser
-    suspend fun getUsername(userID: String): String?
-  * */
-
-  // suspend fun editUsername(userID: String, username: String)
-
-  /* To discuss if it is needed
-  suspend fun deleteUser(userID: String)
-   */
-
   /**
    * Adds the user with friendID in the friend list of userID.
    *

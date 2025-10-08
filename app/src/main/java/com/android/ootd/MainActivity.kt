@@ -17,13 +17,13 @@ import androidx.credentials.CredentialManager
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.android.ootd.ui.login.SignInScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.theme.OOTDTheme
 
-private val startDestination = Screen.Splash.route
+private val startDestination = Screen.CreateAccount.route
 
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
@@ -65,10 +65,8 @@ fun OOTDApp(
       Box(Modifier.fillMaxSize().testTag(NavigationTestTags.SPLASH))
     }
 
-    composable(Screen.CreateAccount.route){
-      SignInScreen(
-        onRegister = { navigationActions.navigateTo(Screen.Splash) }
-      )
+    composable(Screen.CreateAccount.route) {
+      RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Splash) })
     }
   }
 }

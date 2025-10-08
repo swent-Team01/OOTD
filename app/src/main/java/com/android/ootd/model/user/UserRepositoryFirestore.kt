@@ -93,18 +93,6 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       throw e
     }
   }
-  // Ill do that later
-  //  override suspend fun editUsername(userID: String, username: String) {
-  //    if(usernameExists(username)){
-  //      Log.e("UserRepositoryFirestore", "Username already in use")
-  //      throw IllegalArgumentException("Username already in use")
-  //    }
-  //
-  //    try {
-  //        val user = getUser(userID)
-  //
-  //    }
-  //  }
 
   override suspend fun addUser(user: User) {
     try {

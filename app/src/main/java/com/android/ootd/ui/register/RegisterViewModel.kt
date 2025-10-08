@@ -15,7 +15,8 @@ data class User(
   val uid: String = "",
   val username: String = "",
   val errorMsg: String? = null,
-  val isLoading: Boolean = false
+  val isLoading: Boolean = false,
+  val registered: Boolean = false
 )
 
 class RegisterViewModel(
@@ -47,12 +48,22 @@ class RegisterViewModel(
 
   fun refresh() {
     clearErrorMsg()
-    _uiState.value = _uiState.value.copy(isLoading = false)
+    _uiState.value = _uiState.value.copy(
+      isLoading = false,
+      registered = false
+    )
+  }
+
+  fun markRegisteredHandled() {
+    _uiState.value = _uiState.value.copy(registered = false)
   }
 
   fun registerUser() {
     val uname = uiState.value.username.trim()
     clearErrorMsg()
+    _uiState.value = _uiState.value.copy(registered = false)
+    // Start loading when registration kicks off
+    showLoading(true)
     loadUser(uname)
   }
 
@@ -60,6 +71,7 @@ class RegisterViewModel(
     viewModelScope.launch {
       try {
         repository.createUser(username)
+        _uiState.value = _uiState.value.copy(registered = true)
       } catch (e: Exception) {
         when (e) {
           is TakenUsernameException -> {
@@ -76,6 +88,8 @@ class RegisterViewModel(
             )
           }
         }
+      } finally {
+        showLoading(false)
       }
     }
   }
