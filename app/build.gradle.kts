@@ -95,6 +95,12 @@ android {
             excludes += "META-INF/NOTICE"
             excludes += "META-INF/NOTICE.txt"
         }
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        dex {
+            useLegacyPackaging = false
+        }
     }
 
     // Robolectric needs to be run only in debug. But its tests are placed in the shared source set (test)
@@ -182,10 +188,16 @@ dependencies {
     implementation(libs.play.services.auth)
 
     // Firebase
+    // Hardcoded Firebase BOM coordinate because the version-catalog accessor
+      // (e.g. `libs.firebase.bom`) fails to resolve in this project/IDE sync
+    // and produced "Unresolved reference 'bom'".
+    val firebaseBom = platform("com.google.firebase:firebase-bom:34.3.0")
+    implementation(firebaseBom)
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.auth)
+
 
     // Credential Manager (for Google Sign-In)
     implementation(libs.credentials)
@@ -199,9 +211,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    androidTestImplementation("androidx.navigation:navigation-testing:2.8.5")
 
     testImplementation(libs.junit)
-    androidTestImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent.android)
     testImplementation(libs.mockk)
 }
 

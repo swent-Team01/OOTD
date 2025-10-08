@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
  *
  * Provides access to the current user, user ID, and methods for checking authentication status,
  * signing in with Google, and signing out.
+ *
+ * Portions adapted from Bootcamp Week 3 Solutions (source:
+ * https://github.com/swent-epfl/bootcamp-25-B3-Solution.git)
  */
 interface AccountService {
   /** Emits the current Firebase user or null if not signed in. */
