@@ -33,8 +33,7 @@ class FeedRepositoryFirestoreTest {
     clearPosts()
   }
 
-  @After
-  fun tearDown() = runBlocking { clearPosts() }
+  @After fun tearDown() = runBlocking { clearPosts() }
 
   @Test
   fun getFeed_emptyCollection_returnsEmptyList() = runBlocking {
@@ -105,12 +104,11 @@ class FeedRepositoryFirestoreTest {
 
     // Same instance: may or may not show local write depending on timing/timeout
     val sameInstance = badRepo.getFeed()
-    assertTrue(
-        sameInstance.isEmpty() || sameInstance.any { it.postUID == "will-fail" }
-    )
+    assertTrue(sameInstance.isEmpty() || sameInstance.any { it.postUID == "will-fail" })
 
     // Fresh misconfigured instance has no local cache, so read is empty
-    val badDbReader = firestoreForApp(appName = "feed-repo-bad2-reader", host = "10.0.2.2", port = 6553)
+    val badDbReader =
+        firestoreForApp(appName = "feed-repo-bad2-reader", host = "10.0.2.2", port = 6553)
     val badRepoReader = FeedRepositoryFirestore(badDbReader)
     val freshRead = badRepoReader.getFeed()
     assertTrue(freshRead.isEmpty())
@@ -134,8 +132,9 @@ class FeedRepositoryFirestoreTest {
     val valid = post("ok", ts = 1L)
 
     val method =
-        FeedRepositoryFirestore::class.java.getDeclaredMethod(
-            "checkPostData", OutfitPost::class.java)
+        FeedRepositoryFirestore::class
+            .java
+            .getDeclaredMethod("checkPostData", OutfitPost::class.java)
     method.isAccessible = true
 
     val invalidRes = method.invoke(repo, invalid) as OutfitPost?
@@ -159,8 +158,9 @@ class FeedRepositoryFirestoreTest {
         db.collection(POSTS_COLLECTION_PATH).document("tpd-bad").get().await()
 
     val method =
-        FeedRepositoryFirestore::class.java.getDeclaredMethod(
-            "transformPostDocument", DocumentSnapshot::class.java)
+        FeedRepositoryFirestore::class
+            .java
+            .getDeclaredMethod("transformPostDocument", DocumentSnapshot::class.java)
     method.isAccessible = true
 
     val ok = method.invoke(repo, goodSnap) as OutfitPost?
@@ -191,9 +191,12 @@ class FeedRepositoryFirestoreTest {
   private fun firestoreForApp(appName: String, host: String, port: Int): FirebaseFirestore {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val default = FirebaseApp.getApps(context).firstOrNull() ?: FirebaseApp.initializeApp(context)!!
-    val app = try { FirebaseApp.getInstance(appName) } catch (_: IllegalStateException) {
-      FirebaseApp.initializeApp(context, default.options, appName)!!
-    }
+    val app =
+        try {
+          FirebaseApp.getInstance(appName)
+        } catch (_: IllegalStateException) {
+          FirebaseApp.initializeApp(context, default.options, appName)!!
+        }
     return FirebaseFirestore.getInstance(app).apply {
       useEmulator(host, port)
       firestoreSettings = firestoreSettings { isPersistenceEnabled = false }
