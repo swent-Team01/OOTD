@@ -53,4 +53,26 @@ class UserSearchScreenTest {
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
   }
+
+  @Test
+  fun testSearchWithNoResults() {
+    composeTestRule.setContent { UserSearchScreenPreview() }
+
+    // Input text to trigger dropdown
+    composeTestRule
+        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
+        .assertIsDisplayed()
+        .performTextInput("xvhardcoded")
+
+    // Wait for dropdown to appear
+    composeTestRule.waitForIdle()
+
+    // Verify dropdown contains exactly one item
+    composeTestRule
+        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
+        .assertCountEquals(0)
+    composeTestRule
+        .onAllNodesWithTag(UserSelectionFieldTestTags.NO_RESULTS_MESSAGE)
+        .assertCountEquals(1)
+  }
 }
