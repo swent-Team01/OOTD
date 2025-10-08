@@ -2,6 +2,7 @@ package com.android.ootd.ui.searchscreen
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -12,23 +13,23 @@ import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSearchScreenPreview
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
+import com.android.ootd.utils.FirestoreTest
 import org.junit.Rule
 import org.junit.Test
 
-class UserSearchScreenTest {
+class UserSearchScreenTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
 
   @Test
   fun testGeneralSearch() {
-    val firstUsername = UserRepositoryInMemory().nameList[0]
-
     composeTestRule.setContent { UserSearchScreenPreview() }
+    val secondUsername = UserRepositoryInMemory().nameList[1]
 
     // Input text to trigger dropdown
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
         .assertIsDisplayed()
-        .performTextInput(firstUsername)
+        .performTextInput(secondUsername)
 
     // Wait for dropdown to appear
     composeTestRule.waitForIdle()
@@ -41,7 +42,7 @@ class UserSearchScreenTest {
     // Verify the text of the first (and only) suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertTextEquals(firstUsername)
+        .assertTextEquals(secondUsername)
 
     // Click on the first suggestion
     composeTestRule
@@ -52,5 +53,11 @@ class UserSearchScreenTest {
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
+
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+        .assertTextContains("Follow", substring = true)
   }
 }
