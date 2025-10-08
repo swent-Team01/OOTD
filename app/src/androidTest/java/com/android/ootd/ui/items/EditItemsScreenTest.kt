@@ -297,8 +297,10 @@ class EditItemsScreenTest {
 
     // Wait for async operation to complete by checking the repository state
     composeTestRule.waitUntil(timeoutMillis = 5000) {
-      val updatedItem = repository.getItemById(testItem.uuid)
-      updatedItem.brand == "Adidas"
+      runBlocking {
+        val updatedItem = repository.getItemById(testItem.uuid)
+        updatedItem.brand == "Adidas"
+      }
     }
 
     // Verify item was updated in repository
