@@ -74,7 +74,7 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
           Text(
-              text = "Welcome ! \n Please register your account",
+              text = "Welcome!\n Please register your account",
               fontFamily = Bodoni,
               color = Primary,
               style = Typography.displayMedium,

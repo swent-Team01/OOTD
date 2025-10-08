@@ -11,8 +11,8 @@ import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
 
-@SinceKotlin("1.1")
-typealias TakenUsernameException = java.lang.IllegalArgumentException
+// Custom exception for taken username scenario
+class TakenUsernameException(message: String) : Exception(message)
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
@@ -136,14 +136,10 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   }
 
   private suspend fun usernameExists(username: String): Boolean {
-    val usernames: Set<String> =
-        getAllUsers()
-            .mapNotNull { user ->
-              val uname = user.name
-              uname.ifBlank { null }
-            }
-            .toSet()
-
-    return usernames.contains(username)
+    val querySnapshot = db.collection(USER_COLLECTION_PATH)
+        .whereEqualTo("name", username)
+        .get()
+        .await()
+    return querySnapshot.documents.isNotEmpty()
   }
 }
