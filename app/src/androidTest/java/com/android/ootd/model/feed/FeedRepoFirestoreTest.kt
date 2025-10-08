@@ -123,6 +123,28 @@ class FeedRepoFirestoreTest {
   }
 
   @Test
+  fun getFeed_throwsException_caughtAndReturnsEmptyList() = runBlocking {
+    val invalidDb = firestoreForApp("feedrepo-throws", "localhost", 65533) // unreachable
+    val repo = FeedRepositoryFirestore(invalidDb)
+    val result = repo.getFeed()
+    assertTrue(result.isEmpty())
+  }
+
+  fun addPost_whenFirestoreThrows_logsErrorAndThrows() = runBlocking {
+    val invalidDb = firestoreForApp("feedrepo-addpost-fail", "localhost", 65532)
+    val repo = FeedRepositoryFirestore(invalidDb)
+    val post = samplePost("failing-post", ts = 10L)
+
+    var threw = false
+    try {
+      repo.addPost(post)
+    } catch (e: Exception) {
+      threw = true
+    }
+    assertTrue(threw) // ensures exception path was executed
+  }
+
+  @Test
   fun transformPostDocument_handlesValidAndInvalid() = runBlocking {
     val goodPost = samplePost("transform-ok", ts = 5L)
     repo.addPost(goodPost)
