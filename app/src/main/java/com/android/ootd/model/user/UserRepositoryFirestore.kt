@@ -136,10 +136,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   }
 
   private suspend fun usernameExists(username: String): Boolean {
-    val querySnapshot = db.collection(USER_COLLECTION_PATH)
-        .whereEqualTo("name", username)
-        .get()
-        .await()
+    val querySnapshot =
+        db.collection(USER_COLLECTION_PATH).whereEqualTo("name", username).get().await()
     return querySnapshot.documents.isNotEmpty()
   }
 }
