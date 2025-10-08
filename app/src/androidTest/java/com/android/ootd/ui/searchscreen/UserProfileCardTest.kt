@@ -17,7 +17,10 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-class UserProfileCardTest(private val uid: String, private val name: String) {
+class UserProfileCardTest(
+  private val uid: String,
+  private val name: String
+) {
   @get:Rule val composeTestRule = createComposeRule()
 
   companion object {
@@ -25,8 +28,9 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
     @Parameterized.Parameters(name = "uid={0}, name={1}")
     fun data(): Collection<Array<Any>> {
       return listOf(
-          arrayOf("Bob", "Michael"),
-          arrayOf("RandUID", "TheMostSuperNameofTheWorldTheThirdKingOfPeople"))
+        arrayOf("Bob", "Michael"),
+        arrayOf("RandUID", "TheMostSuperNameofTheWorldTheThirdKingOfPeople")
+      )
     }
   }
 
@@ -34,9 +38,18 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   fun followButtonAlwaysAppears() {
     composeTestRule.setContent {
       UserProfileCard(
-          selectedUser = User(uid = uid, name = name, friendList = emptyList()),
-          modifier = Modifier.padding(16.dp),
-          onFollowClick = {})
+        selectedUser = User(uid = uid, name = name, friendList = emptyList()),
+        modifier = Modifier.padding(16.dp),
+        onFollowClick = {})
+    }
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
+  }
+  @Test
+  fun seeCardPreview() {
+    composeTestRule.setContent {
+      UserProfileCardPreview()
     }
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
@@ -44,36 +57,28 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   }
 
   @Test
-  fun seeCardPreview() {
-    composeTestRule.setContent { UserProfileCardPreview() }
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
-  }
-
-  @Test
-  fun onClickIsCalled() {
+  fun onClickIsCalled(){
     var clickCount = 0
     composeTestRule.setContent {
       UserProfileCard(
-          selectedUser = User(uid = uid, name = name, friendList = emptyList()),
-          modifier = Modifier.padding(16.dp),
-          onFollowClick = { clickCount = clickCount + 1 })
+        selectedUser = User(uid = uid, name = name, friendList = emptyList()),
+        modifier = Modifier.padding(16.dp),
+        onFollowClick = { clickCount = clickCount+1})
     }
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
-    assert(clickCount == 1)
+    assert (clickCount == 1)
   }
-
   @Test
   fun onClickIsNotCalledWhenUserIsNull() {
     var clickCount = 0
     composeTestRule.setContent {
       UserProfileCard(
-          selectedUser = null, // Pass null here
-          modifier = Modifier.padding(16.dp),
-          onFollowClick = { clickCount++ })
+        selectedUser = null,  // Pass null here
+        modifier = Modifier.padding(16.dp),
+        onFollowClick = { clickCount++ }
+      )
     }
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
-    assert(clickCount == 0) // Should not be called when user is null
+    assert(clickCount == 0)  // Should not be called when user is null
   }
 }
