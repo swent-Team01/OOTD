@@ -188,10 +188,8 @@ dependencies {
     implementation(libs.play.services.auth)
 
     // Firebase
-    // Hardcoded Firebase BOM coordinate because the version-catalog accessor
-      // (e.g. `libs.firebase.bom`) fails to resolve in this project/IDE sync
-    // and produced "Unresolved reference 'bom'".
-    val firebaseBom = platform("com.google.firebase:firebase-bom:34.3.0")
+    // Use Firebase BOM from version catalog for maintainability
+    val firebaseBom = libs.firebase.bom
     implementation(firebaseBom)
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore)
