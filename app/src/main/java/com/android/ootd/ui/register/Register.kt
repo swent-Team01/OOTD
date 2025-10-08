@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.fontResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
@@ -26,6 +28,7 @@ import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
 
 object RegisterScreenTestTags {
   const val APP_LOGO = "appLogo"
@@ -34,6 +37,8 @@ object RegisterScreenTestTags {
   const val INPUT_REGISTER_LOCATION = "inputRegisterLocation"
   const val REGISTER_SAVE = "registerSave"
   const val ERROR_MESSAGE = "errorMessage"
+    const val WELCOME_TITLE = "welcomeTitle"
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,7 +75,22 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
         modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp).fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
-          Image(
+
+        Text(
+            text = "Welcome ! \n Please register your account",
+            fontFamily = Bodoni,
+            color = Primary,
+            style = Typography.displayMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .testTag(RegisterScreenTestTags.WELCOME_TITLE)
+        )
+
+        Spacer(modifier = Modifier.height(60.dp))
+
+        Image(
               painter = painterResource(id = R.drawable.app_logo),
               contentDescription = "Logo",
               contentScale = ContentScale.FillBounds,
@@ -106,16 +126,6 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
                 fontFamily = Bodoni,
                 modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
           }
-
-          OutlinedTextField(
-              value = registerUiState.username,
-              onValueChange = {},
-              label = { Text(text = "Username") },
-              placeholder = { Text(text = "Enter your username") },
-              singleLine = true,
-              modifier =
-                  Modifier.fillMaxWidth().testTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME),
-              enabled = !registerUiState.isLoading)
 
           Spacer(modifier = Modifier.height(30.dp))
 
