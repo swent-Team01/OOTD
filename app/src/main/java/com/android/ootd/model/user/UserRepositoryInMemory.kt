@@ -48,11 +48,15 @@ class UserRepositoryInMemory : UserRepository {
   }
 
   override suspend fun getUser(userID: String): User {
-    return users[userID] ?: throw NoSuchElementException("User with ID $userID not found")
+    if (users.containsKey(userID)) {
+      return users[userID] ?: throw NoSuchElementException("User with ID $userID not found")
+    } else {
+      throw NoSuchElementException("User with ID $userID not found")
+    }
   }
 
   override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
-    val user = users[userID] ?: throw NoSuchElementException("User with ID $userID not found")
+    val user = getUser(userID)
 
     if (!users.containsKey(friendID)) {
       throw NoSuchElementException("Friend with ID $friendID not found")
