@@ -443,9 +443,7 @@ class EditItemsScreenTest {
     composeTestRule.waitForIdle()
 
     // Wait for async operation to complete by checking the UI state
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      viewModel.uiState.value.itemId.isEmpty()
-    }
+    composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.itemId.isEmpty() }
 
     // Verify form is cleared (checking brand field as example)
     composeTestRule.runOnIdle {
