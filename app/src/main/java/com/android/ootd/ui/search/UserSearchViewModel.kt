@@ -34,7 +34,7 @@ class UserSearchViewModel(
         )
     searchUsernames(username)
     _uiState.value =
-        _uiState.value.copy(suggestionsExpanded = !_uiState.value.userSuggestions.isEmpty())
+        _uiState.value.copy(suggestionsExpanded = _uiState.value.userSuggestions.isNotEmpty())
   }
 
   private fun searchUsernames(query: String) {
@@ -42,7 +42,10 @@ class UserSearchViewModel(
     viewModelScope.launch {
       try {
         val allUsers = userRepository.getAllUsers()
-        val suggestions = allUsers.filter { it.name.startsWith(query) }.take(MAX_NUMBER_SUGGESTIONS)
+        val suggestions =
+            allUsers
+                .filter { it.name.startsWith(query, ignoreCase = true) }
+                .take(MAX_NUMBER_SUGGESTIONS)
         _uiState.value = _uiState.value.copy(userSuggestions = suggestions)
       } catch (e: Exception) {
         Log.e("UserSearchViewModel", "Username search failed: ${e.message}")
