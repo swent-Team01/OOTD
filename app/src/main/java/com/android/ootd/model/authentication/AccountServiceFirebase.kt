@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 /**
- * A Firebase implementation of [AuthRepository].
+ * A Firebase implementation of [AccountService].
  *
  * Retrieves a Google ID token via Credential Manager and authenticates the user with Firebase. Also
  * handles sign-out and credential state clearing.
@@ -70,15 +70,12 @@ class AccountServiceFirebase(
     }
   }
 
-  override fun signOut(): Result<Unit> {
-    return try {
-      // Firebase sign out
-      auth.signOut()
-
-      Result.success(Unit)
-    } catch (e: Exception) {
-      Result.failure(
-          IllegalStateException("Logout failed: ${e.localizedMessage ?: "Unexpected error."}"))
-    }
-  }
+  /**
+   * override fun signOut(): Result<Unit> { return try { // Firebase sign out auth.signOut()
+   *
+   * Result.success(Unit) } catch (e: Exception) { Result.failure( IllegalStateException("Logout
+   * failed: ${e.localizedMessage ?: "Unexpected error."}")) }
+   *
+   * }
+   */
 }

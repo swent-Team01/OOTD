@@ -57,8 +57,8 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.2"
+    composeCompiler {
+        enableStrongSkippingMode = true
     }
 
     compileOptions {
@@ -188,10 +188,8 @@ dependencies {
     implementation(libs.play.services.auth)
 
     // Firebase
-    // Hardcoded Firebase BOM coordinate because the version-catalog accessor
-      // (e.g. `libs.firebase.bom`) fails to resolve in this project/IDE sync
-    // and produced "Unresolved reference 'bom'".
-    val firebaseBom = platform("com.google.firebase:firebase-bom:34.3.0")
+    // Use Firebase BOM from version catalog for maintainability
+    val firebaseBom = libs.firebase.bom
     implementation(firebaseBom)
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore)
@@ -211,7 +209,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-    androidTestImplementation("androidx.navigation:navigation-testing:2.8.5")
+    androidTestImplementation(libs.androidx.navigation.testing)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.mockk.android)
