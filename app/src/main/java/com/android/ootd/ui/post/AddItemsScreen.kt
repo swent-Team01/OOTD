@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -59,9 +60,21 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
-import com.android.ootd.model.Material
 import com.android.ootd.ui.theme.*
 import java.io.File
+
+object AddItemScreenTestTags {
+  const val INPUT_TYPE = "inputItemType"
+  const val INPUT_BRAND = "inputItemBrand"
+  const val INPUT_PRICE = "inputItemPrice"
+  const val INPUT_LINK = "inputItemLink"
+  const val INPUT_MATERIAL = "inputItemMaterial"
+  const val INPUT_CATEGORY = "inputItemCategory"
+  const val ADD_ITEM_BUTTON = "addItemButton"
+  const val ERROR_MESSAGE = "errorMessage"
+  const val IMAGE_PICKER = "itemImagePicker"
+  const val IMAGE_PREVIEW = "itemImagePreview"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,7 +144,8 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                           .clip(RoundedCornerShape(16.dp))
                           .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
                           .background(Color.White)
-                          .align(Alignment.CenterHorizontally),
+                          .align(Alignment.CenterHorizontally)
+                          .testTag(AddItemScreenTestTags.IMAGE_PREVIEW), // Added test tag
                   contentAlignment = Alignment.Center,
               ) {
                 if (itemsUIState.image == Uri.EMPTY) {
@@ -155,15 +169,17 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     onClick = { showDialog = true },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                     shape = RoundedCornerShape(24.dp),
-                ) {
-                  Icon(
-                      painter = painterResource(R.drawable.ic_photo_placeholder),
-                      contentDescription = "Upload",
-                      tint = White,
-                      modifier = Modifier.size(16.dp))
-                  Spacer(Modifier.width(8.dp))
-                  Text(text = "Upload a picture of the Item", color = White)
-                }
+                    modifier =
+                        Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER) // Added test tag
+                    ) {
+                      Icon(
+                          painter = painterResource(R.drawable.ic_photo_placeholder),
+                          contentDescription = "Upload",
+                          tint = White,
+                          modifier = Modifier.size(16.dp))
+                      Spacer(Modifier.width(8.dp))
+                      Text(text = "Upload a picture of the Item", color = White)
+                    }
 
                 if (showDialog) {
                   AlertDialog(
@@ -218,11 +234,13 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                       }
                     },
                     modifier =
-                        Modifier.fillMaxWidth().onFocusChanged { focusState ->
-                          if (!focusState.isFocused && itemsUIState.category.isNotBlank()) {
-                            addItemsViewModel.validateCategory()
-                          }
-                        },
+                        Modifier.fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                              if (!focusState.isFocused && itemsUIState.category.isNotBlank()) {
+                                addItemsViewModel.validateCategory()
+                              }
+                            }
+                            .testTag(AddItemScreenTestTags.INPUT_CATEGORY), // Added test tag
                     singleLine = true,
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                     keyboardActions =
@@ -260,7 +278,9 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     },
                     label = { Text("Type") },
                     placeholder = { Text("Enter a type") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .testTag(AddItemScreenTestTags.INPUT_TYPE), // Added test tag
                     singleLine = true)
 
                 DropdownMenu(
@@ -284,7 +304,10 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                   onValueChange = { addItemsViewModel.setBrand(it) },
                   label = { Text("Brand") },
                   placeholder = { Text("Enter a brand") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(AddItemScreenTestTags.INPUT_BRAND) // Added test tag
+                  )
 
               OutlinedTextField(
                   value = itemsUIState.price,
@@ -295,34 +318,30 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                   },
                   label = { Text("Price") },
                   placeholder = { Text("Enter a price") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(AddItemScreenTestTags.INPUT_PRICE) // Added test tag
+                  )
 
               OutlinedTextField(
                   value = itemsUIState.link,
                   onValueChange = { addItemsViewModel.setLink(it) },
                   label = { Text("Link") },
                   placeholder = { Text("Enter a link") },
-                  modifier = Modifier.fillMaxWidth())
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(AddItemScreenTestTags.INPUT_LINK) // Added test tag
+                  )
 
               OutlinedTextField(
-                  value =
-                      itemsUIState.material.joinToString(", ") { "${it.name} ${it.percentage}%" },
-                  onValueChange = {
-                    addItemsViewModel.setMaterial(
-                        it.split(", ").map { materialStr ->
-                          val parts = materialStr.trim().split(" ")
-                          if (parts.size == 2 && parts[1].endsWith("%")) {
-                            val name = parts[0]
-                            val percentage = parts[1].removeSuffix("%").toDoubleOrNull() ?: 0.0
-                            Material(name, percentage)
-                          } else {
-                            Material(parts[0], 0.0)
-                          }
-                        })
-                  },
+                  value = itemsUIState.materialText,
+                  onValueChange = { addItemsViewModel.setMaterial(it) },
                   label = { Text("Material") },
-                  placeholder = { Text("Enter a material") },
-                  modifier = Modifier.fillMaxWidth())
+                  placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(AddItemScreenTestTags.INPUT_MATERIAL), // Added test tag
+              )
 
               Spacer(Modifier.height(16.dp))
 
@@ -334,7 +353,10 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                   },
                   enabled = isButtonEnabled,
                   modifier =
-                      Modifier.height(47.dp).width(140.dp).align(Alignment.CenterHorizontally),
+                      Modifier.height(47.dp)
+                          .width(140.dp)
+                          .align(Alignment.CenterHorizontally)
+                          .testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON), // Added test tag
                   colors = ButtonDefaults.buttonColors(containerColor = Primary),
               ) {
                 Row(
