@@ -12,15 +12,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class User(
-  val uid: String = "",
-  val username: String = "",
-  val errorMsg: String? = null,
-  val isLoading: Boolean = false,
-  val registered: Boolean = false
+    val uid: String = "",
+    val username: String = "",
+    val errorMsg: String? = null,
+    val isLoading: Boolean = false,
+    val registered: Boolean = false
 )
 
 class RegisterViewModel(
-  private val repository: UserRepository = UserRepositoryProvider.repository,
+    private val repository: UserRepository = UserRepositoryProvider.repository,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(User())
@@ -48,10 +48,7 @@ class RegisterViewModel(
 
   fun refresh() {
     clearErrorMsg()
-    _uiState.value = _uiState.value.copy(
-      isLoading = false,
-      registered = false
-    )
+    _uiState.value = _uiState.value.copy(isLoading = false, registered = false)
   }
 
   fun markRegisteredHandled() {
@@ -76,16 +73,13 @@ class RegisterViewModel(
         when (e) {
           is TakenUsernameException -> {
             Log.e("RegisterViewModel", "Username taken", e)
-            _uiState.value = _uiState.value.copy(
-              errorMsg = "This username has already been taken",
-              username = ""
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMsg = "This username has already been taken", username = "")
           }
           else -> {
             Log.e("RegisterViewModel", "Error registering user", e)
-            _uiState.value = _uiState.value.copy(
-              errorMsg = "Failed to register user: ${e.message}"
-            )
+            _uiState.value = _uiState.value.copy(errorMsg = "Failed to register user: ${e.message}")
           }
         }
       } finally {
