@@ -69,7 +69,11 @@ object EditItemsScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
+fun EditItemsScreen(
+    editItemsViewModel: EditItemsViewModel = viewModel(),
+    onSave: () -> Unit = {},
+    goBack: () -> Unit = {}
+) {
 
   val itemsUIState by editItemsViewModel.uiState.collectAsState()
   val errorMsg = itemsUIState.errorMessage
@@ -243,7 +247,11 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
                       Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_LINK))
 
               Button(
-                  onClick = { editItemsViewModel.canEditItems() },
+                  onClick = {
+                    if (editItemsViewModel.canEditItems()) {
+                      onSave()
+                    }
+                  },
                   enabled = itemsUIState.image != Uri.EMPTY && itemsUIState.category.isNotEmpty(),
                   modifier =
                       Modifier.fillMaxWidth()
@@ -254,7 +262,10 @@ fun EditItemsScreen(editItemsViewModel: EditItemsViewModel = viewModel()) {
               Spacer(modifier = Modifier.height(8.dp))
 
               Button(
-                  onClick = { editItemsViewModel.deleteItem() },
+                  onClick = {
+                    editItemsViewModel.deleteItem()
+                    goBack()
+                  },
                   enabled = itemsUIState.itemId.isNotEmpty(),
                   colors =
                       ButtonDefaults.buttonColors(
