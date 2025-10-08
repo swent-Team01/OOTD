@@ -5,9 +5,9 @@ import com.android.ootd.model.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
-import kotlinx.coroutines.TimeoutCancellationException
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeout
 
 const val POSTS_COLLECTION_PATH = "posts"
 
@@ -77,9 +77,21 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     }
   }
 
-  override suspend fun hasPostedToday(): Boolean {
-    // TODO: Will need to connect to authentication to retrieve the user state
-    return false
+  override suspend fun hasPostedToday(userId: String): Boolean {
+    return try {
+      val todayStart =
+          LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+      val snapshot =
+          db.collection(POSTS_COLLECTION_PATH)
+              .whereEqualTo("uid", userId)
+              .whereGreaterThanOrEqualTo("timestamp", todayStart)
+              .get()
+              .await()
+      snapshot.documents.isNotEmpty()
+    } catch (e: Exception) {
+      Log.e("FeedRepositoryFirestore", "Error checking hasPostedToday", e)
+      false
+    }
   }
 
   override fun getNewPostId(): String {

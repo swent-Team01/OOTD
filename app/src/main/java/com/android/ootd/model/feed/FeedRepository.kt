@@ -17,7 +17,7 @@ interface FeedRepository {
    *
    * @return false if hasn't posted, true if he has posted
    */
-  suspend fun hasPostedToday(): Boolean
+  suspend fun hasPostedToday(userId: String): Boolean
   // This should be in the user data, but I leave it here for the moment for testing the screen
 
   /**

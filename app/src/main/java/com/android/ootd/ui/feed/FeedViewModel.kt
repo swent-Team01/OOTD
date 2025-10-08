@@ -48,15 +48,6 @@ class FeedViewModel : ViewModel() {
     }
   }
 
-  // Call this once the authenticated user is available so we can access their friends
-  fun setCurrentUser(user: User) {
-    _currentUser.value = user
-    // If posts are already loaded, filter now
-    if (_hasPostedToday.value && _allPosts.value.isNotEmpty()) {
-      recomputeFilteredFeed()
-    }
-  }
-
   fun recomputeFilteredFeed() {
     val user = _currentUser.value
     if (user == null) {
@@ -72,5 +63,22 @@ class FeedViewModel : ViewModel() {
     // If we want to include user's own posts, uncomment the next line
     // friendsUID.add(user.uid)
     return posts.filter { it.uid in friendsUID }
+  }
+    // We’ll only load once currentUser is set
+    // So init stays lightweight and safe
+  }
+
+  /** Called after the authenticated user is available. */
+  fun setCurrentUser(user: User) {
+    _currentUser.value = user
+    viewModelScope.launch {
+      // Check if this user has posted today
+      _hasPostedToday.value = repository.hasPostedToday(user.uid)
+      if (_hasPostedToday.value) {
+        _feedPosts.value = repository.getFeed()
+        // for future merging purposes
+        // recomputeFilteredFeed()
+      }
+    }
   }
 }

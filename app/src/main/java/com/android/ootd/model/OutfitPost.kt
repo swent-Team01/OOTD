@@ -16,11 +16,12 @@ data class OutfitPost(
     val postUID: String = "",
     val name: String = "",
     val uid: String = "",
-    val userProfilePicURL: String = "", // firebase url of the user's profile picture
+    val userProfilePicURL: String = "",
     val outfitURL: String = "",
     val description: String = "",
     val itemsID: List<String> = emptyList(),
     val timestamp: Long = 0L
+
     // val reactionList - for when we implement reactions/commentaries to posts
     // val location - for when we implement location
 )
