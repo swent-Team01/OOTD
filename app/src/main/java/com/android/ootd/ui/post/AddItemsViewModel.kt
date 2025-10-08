@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+// import com.google.firebase.storage.FirebaseStorage
+
 /**
  * UI state for the AddItems screen. This state holds the data needed to create a new Clothing item.
  */
@@ -27,7 +29,8 @@ data class AddItemsUIState(
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
-    val suggestions: List<String> = emptyList(),
+    val typeSuggestion: List<String> = emptyList(),
+    val categorySuggestion: List<String> = emptyList()
 ) {
   val isAddingValid: Boolean
     get() =
@@ -84,6 +87,13 @@ open class AddItemsViewModel(
   }
 
   fun addItemsToRepository(item: Item) {
+    val state = _uiState.value
+
+    if (!state.isAddingValid) {
+      setErrorMsg("At least one field is not valid")
+      return
+    }
+
     viewModelScope.launch {
       try {
         repository.addItem(item)
@@ -100,10 +110,14 @@ open class AddItemsViewModel(
   }
 
   fun setCategory(category: String) {
+    val categories = typeSuggestions.keys.toList()
+    val isValid = categories.any { it.equals(category.trim(), ignoreCase = true) }
+
     _uiState.value =
         _uiState.value.copy(
             category = category,
-            invalidCategory = if (category.isEmpty()) "Please select a category." else null)
+            invalidCategory =
+                if (isValid || category.isBlank()) null else _uiState.value.invalidCategory)
   }
 
   fun setType(type: String) {
@@ -126,9 +140,9 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(link = link)
   }
 
-  private val typeSuggestions =
+  val typeSuggestions =
       mapOf(
-          "Clothing" to
+          "Clothes" to
               listOf(
                   "T-shirt",
                   "Shirt",
@@ -197,7 +211,7 @@ open class AddItemsViewModel(
     val normalizeCategory =
         when (state.category.trim().lowercase()) {
           "clothes",
-          "clothing" -> "Clothing"
+          "clothing" -> "Clothes"
           "shoe",
           "shoes" -> "Shoes"
           "bag",
@@ -215,6 +229,37 @@ open class AddItemsViewModel(
           allSuggestions.filter { it.startsWith(input, ignoreCase = true) }
         }
 
-    _uiState.value = state.copy(suggestions = filtered)
+    _uiState.value = state.copy(typeSuggestion = filtered)
+  }
+
+  fun updateCategorySuggestions(input: String) {
+    val categories = typeSuggestions.keys.toList()
+    val filtered =
+        if (input.isBlank()) {
+          categories
+        } else {
+          categories.filter { it.startsWith(input, ignoreCase = true) }
+        }
+
+    _uiState.value =
+        _uiState.value.copy(
+            categorySuggestion = filtered,
+        )
+  }
+
+  fun validateCategory() {
+    val state = _uiState.value
+    val categories = typeSuggestions.keys.toList()
+    val category = state.category.trim()
+
+    val error =
+        when {
+          category.isEmpty() -> "Please select a category."
+          !categories.any { it.equals(category, ignoreCase = true) } ->
+              "Please select a valid category : $categories"
+          else -> null
+        }
+
+    _uiState.value = state.copy(invalidCategory = error)
   }
 }
