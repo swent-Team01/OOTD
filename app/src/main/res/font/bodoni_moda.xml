@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <font-family xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:fontProviderAuthority="com.google.android.gms.fonts"
         android:fontProviderPackage="com.google.android.gms"
         android:fontProviderQuery="Bodoni Moda"
-        android:fontProviderCerts="@array/com_google_android_gms_fonts_certs">
+        android:fontProviderCerts="@array/com_google_android_gms_fonts_certs"
+        app:fontProviderFetchStrategy="async"
+        app:fontProviderFetchTimeout="1000">
 </font-family>
