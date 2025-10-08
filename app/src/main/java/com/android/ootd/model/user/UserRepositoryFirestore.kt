@@ -1,6 +1,7 @@
 package com.android.ootd.model.user
 
 import android.util.Log
+import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore

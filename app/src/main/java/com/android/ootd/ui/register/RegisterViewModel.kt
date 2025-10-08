@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.android.ootd.utils.UsernameValidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -104,13 +105,21 @@ class RegisterViewModel(
 
   /**
    * Initiates the user registration process. Validates the username, starts loading state, and
-   * attempts to create the user.
+   * attempts to create the user. If the users name is shorter than 3 characters,
+   * longer than 20 or has anything else than letters, numbers, and underscores it will not be accepted
    */
   fun registerUser() {
     val uname = uiState.value.username.trim()
     clearErrorMsg()
     _uiState.value = _uiState.value.copy(registered = false)
-    // Start loading when registration kicks off
+
+    val validationError = UsernameValidator.errorMessage(uname)
+
+    if (validationError != null) {
+      _uiState.value = _uiState.value.copy(errorMsg = validationError)
+      return
+    }
+
     showLoading(true)
     loadUser(uname)
   }
@@ -125,14 +134,15 @@ class RegisterViewModel(
     viewModelScope.launch {
       try {
         repository.createUser(username)
-        _uiState.value = _uiState.value.copy(registered = true)
+        _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {
           is TakenUsernameException -> {
             Log.e("RegisterViewModel", "Username taken", e)
             _uiState.value =
-                _uiState.value.copy(
-                    errorMsg = "This username has already been taken", username = "")
+              _uiState.value.copy(
+                errorMsg = "This username has already been taken",
+                username = "")
           }
           else -> {
             Log.e("RegisterViewModel", "Error registering user", e)
