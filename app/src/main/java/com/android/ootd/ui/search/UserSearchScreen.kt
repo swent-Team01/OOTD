@@ -1,5 +1,6 @@
 package com.android.ootd.ui.search
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -57,13 +58,17 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (uiState.selectedUser != null) {
-          UserProfileCard(
-              modifier = Modifier.fillMaxWidth().weight(1f),
-              selectedUser = uiState.selectedUser,
-              {})
-        }
-      }
+    if (uiState.selectedUser != null) {
+      UserProfileCard(
+          modifier = Modifier.fillMaxWidth().weight(1f),
+          selectedUser = uiState.selectedUser,
+          isSelectedUserFollowed = uiState.isSelectedUserFollowed,
+          onFollowClick = {
+            Log.d("User Search Screen", "Clicked the follow button")
+            viewModel.pressFollowButton()
+          })
+    }
+  }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
