@@ -16,6 +16,7 @@ import com.android.ootd.model.user.User
 object UserSelectionFieldTestTags {
   const val INPUT_USERNAME = "inputUsername"
   const val USERNAME_SUGGESTION = "usernameSuggestion"
+  const val NO_RESULTS_MESSAGE = "noResultsMessage"
 }
 
 @Composable
@@ -62,14 +63,27 @@ fun UserSelectionField(
           singleLine = true)
 
       DropdownMenu(
-          expanded = expanded,
+          expanded = expanded || usernameText.isNotEmpty(),
           onDismissRequest = onSuggestionsDismissed,
           modifier = Modifier.fillMaxWidth(0.95f)) {
-            usernameSuggestions.forEach { user ->
+            if (usernameSuggestions.isEmpty()) {
               DropdownMenuItem(
-                  text = { Text(user.name) },
-                  onClick = { onUsernameSuggestionSelected(user) },
-                  modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
+                  text = {
+                    Text(
+                        "No users found",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium)
+                  },
+                  onClick = {},
+                  enabled = false,
+                  modifier = Modifier.testTag(UserSelectionFieldTestTags.NO_RESULTS_MESSAGE))
+            } else {
+              usernameSuggestions.forEach { user ->
+                DropdownMenuItem(
+                    text = { Text(user.name) },
+                    onClick = { onUsernameSuggestionSelected(user) },
+                    modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
+              }
             }
           }
     }
