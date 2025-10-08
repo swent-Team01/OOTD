@@ -41,12 +41,18 @@ fun UserProfileCardPreview() {
                 name = "TheMostSuperNameofTheWorldTheThirdKingOfPeople",
                 friendList = emptyList()),
         modifier = Modifier.padding(16.dp),
+        isSelectedUserFollowed = true,
         onFollowClick = {})
   }
 }
 
 @Composable
-fun UserProfileCard(modifier: Modifier, selectedUser: User?, onFollowClick: (User) -> Unit) {
+fun UserProfileCard(
+    modifier: Modifier,
+    selectedUser: User?,
+    isSelectedUserFollowed: Boolean,
+    onFollowClick: (User) -> Unit
+) {
   Card(
       modifier = modifier.testTag(UserProfileCardTestTags.PROFILE_CARD),
       shape = RoundedCornerShape(16.dp),
@@ -73,7 +79,10 @@ fun UserProfileCard(modifier: Modifier, selectedUser: User?, onFollowClick: (Use
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary)) {
-                  Text(text = "Follow", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                  Text(
+                      text = if (!isSelectedUserFollowed) "Follow" else "Unfollow",
+                      fontSize = 16.sp,
+                      fontWeight = FontWeight.Medium)
                 }
           }
         }
