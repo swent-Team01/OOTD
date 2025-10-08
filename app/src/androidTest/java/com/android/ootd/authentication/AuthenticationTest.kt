@@ -218,7 +218,6 @@ class AuthenticationExtensiveTest {
     val finalState = viewModel.uiState.value
     assertFalse(finalState.isLoading)
     assertNotNull(finalState.errorMsg)
-    assertNotNull(finalState.errorMsg)
     assertTrue(finalState.signedOut)
   }
 
