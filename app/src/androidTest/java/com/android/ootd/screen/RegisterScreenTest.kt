@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import org.junit.Before
@@ -27,7 +28,6 @@ class RegisterScreenTest {
         .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
         .assertTextContains("Save", substring = true, ignoreCase = true)
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsDisplayed()
-    // composeTestRule.onNodeWithTag(SignInScreenTestTags.INPUT_SIGNIN_DATE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
     composeTestRule
@@ -47,43 +47,27 @@ class RegisterScreenTest {
         .assertDoesNotExist()
   }
 
-  //    @Test
-  //    fun canEnterDate() {
-  //        val text = "01/01/2000"
-  //        composeTestRule.enterDate(text)
-  //        composeTestRule
-  //            .onNodeWithTag(SignInScreenTestTags.INPUT_SIGNIN_DATE)
-  //            .assertTextContains(text)
-  //        composeTestRule
-  //            .onNodeWithTag(SignInScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-  //            .assertDoesNotExist()
-  //    }
 
-  @Test
-  fun usernameError_whenEmpty_showsError_andDisablesButton() {
-    composeTestRule.enterUsername("")
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .assertIsDisplayed()
-        .assertIsNotEnabled()
-  }
+    @Test
+    fun noError_whenFieldNotTouched() {
+        composeTestRule
+            .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+            .assertDoesNotExist()
+    }
 
-  @Test
-  fun usernameError_whenBlankSpaces_showsError_andDisablesButton() {
-    composeTestRule.enterUsername("   ")
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .assertIsDisplayed()
-        .assertIsNotEnabled()
-  }
 
-  @Test
+    @Test
+    fun noError_whenTyping_beforeLeavingField() {
+        // Click on the field and type - error should not show while typing
+        composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+        composeTestRule.enterUsername("validUser")
+
+        composeTestRule
+            .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+            .assertDoesNotExist()
+    }
+
+    @Test
   fun buttonVisible_whenNoErrors() {
     composeTestRule.enterUsername("validUser")
     composeTestRule
