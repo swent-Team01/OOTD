@@ -16,7 +16,7 @@ kaspresso = "1.5.5"
 robolectric = "4.11.1"
 sonar = "5.1.0.4882"
 gms = "4.4.2"
-navigationCompose = "2.7.7"
+navigationCompose = "2.8.5"
 
 # Firebase
 firebaseAuth = "23.0.0"
@@ -77,6 +77,7 @@ mockk-agent-android = { module = "io.mockk:mockk-agent-android", version.ref = "
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationCompose" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationCompose" }
+androidx-navigation-testing = { module = "androidx.navigation:navigation-testing", version.ref = "navigationCompose" }
 
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
