@@ -117,6 +117,27 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
+  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+    try {
+      val friendDocumentList =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
+
+      if (friendDocumentList.documents.isEmpty()) {
+        throw NoSuchElementException("Friend with ID $friendID not found")
+      }
+
+      val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
+
+      // Use arrayRemove to remove the friend from the array
+      userRef.update(
+          "friendList", FieldValue.arrayRemove(Friend(uid = friendID, name = friendUsername)))
+    } catch (e: Exception) {
+      Log.e(
+          "UserRepositoryFirestore", "Error removing friend $friendID from $userID ${e.message}", e)
+      throw e
+    }
+  }
+
   override suspend fun isMyFriend(friendID: String): Boolean {
     val myUID = Firebase.auth.currentUser?.uid
     val documentList = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", myUID).get().await()
