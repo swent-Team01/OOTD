@@ -38,4 +38,12 @@ interface UserRepository {
    * @throws Exception if userID or friendID is not found.
    */
   suspend fun addFriend(userID: String, friendID: String, friendUsername: String)
+
+  /**
+   * Checks if the given user is the friend of the authenticated user.
+   *
+   * @param friendID The unique identifier of the user we want to check.
+   * @throws Exception if friendID is not found or user is not authenticated
+   */
+  suspend fun isMyFriend(friendID: String): Boolean
 }

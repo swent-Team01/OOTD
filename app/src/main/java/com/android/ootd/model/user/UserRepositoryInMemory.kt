@@ -3,6 +3,7 @@ package com.android.ootd.model.user
 import java.util.UUID
 
 class UserRepositoryInMemory : UserRepository {
+  val currentUser = "alice_wonder"
   val nameList =
       listOf<String>(
           "alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
@@ -67,5 +68,10 @@ class UserRepositoryInMemory : UserRepository {
 
     val updatedFriendList = user.friendList + Friend(uid = friendID, name = friendUsername)
     users[userID] = user.copy(friendList = updatedFriendList)
+  }
+
+  override suspend fun isMyFriend(friendID: String): Boolean {
+    val user = getUser(currentUser)
+    return user.friendList.any { it.uid == friendID }
   }
 }
