@@ -75,8 +75,8 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
 
     // Check buttons text
-    composeTestRule.onNodeWithText("Gallery").assertExists()
-    composeTestRule.onNodeWithText("Camera").assertExists()
+    composeTestRule.onNodeWithText("Select from Gallery").assertExists()
+    composeTestRule.onNodeWithText("Take a new picture").assertExists()
     composeTestRule.onNodeWithText("Save Changes").assertExists()
     composeTestRule.onNodeWithText("Delete Item").assertExists()
   }
