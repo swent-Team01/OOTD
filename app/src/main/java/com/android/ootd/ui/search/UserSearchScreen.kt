@@ -58,17 +58,17 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-    if (uiState.selectedUser != null) {
-      UserProfileCard(
-          modifier = Modifier.fillMaxWidth().weight(1f),
-          selectedUser = uiState.selectedUser,
-          isSelectedUserFollowed = uiState.isSelectedUserFollowed,
-          onFollowClick = {
-            Log.d("User Search Screen", "Clicked the follow button")
-            viewModel.pressFollowButton()
-          })
-    }
-  }
+        if (uiState.selectedUser != null) {
+          UserProfileCard(
+              modifier = Modifier.fillMaxWidth().weight(1f),
+              selectedUser = uiState.selectedUser,
+              isSelectedUserFollowed = uiState.isSelectedUserFollowed,
+              onFollowClick = {
+                Log.d("User Search Screen", "Clicked the follow button")
+                viewModel.pressFollowButton()
+              })
+        }
+      }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
