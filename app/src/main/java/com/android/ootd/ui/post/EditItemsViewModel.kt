@@ -92,7 +92,7 @@ open class EditItemsViewModel(
       return false
     }
 
-    if (!isValidUrl(state.link)) {
+    if (state.link.isNotEmpty() && !isValidUrl(state.link)) {
       setErrorMsg("Please enter a valid URL.")
       return false
     }
