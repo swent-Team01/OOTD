@@ -56,12 +56,12 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.RegisterUsername.route
+  val startDestination = Screen.Splash.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
     navigation(
-        startDestination = Screen.RegisterUsername.route, route = Screen.RegisterUsername.name) {
+        startDestination = Screen.Splash.route, route = Screen.Splash.name) {
           composable(Screen.Splash.route) {
             SplashScreen(
                 onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
