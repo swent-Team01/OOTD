@@ -63,7 +63,6 @@ fun SplashScreenContent(modifier: Modifier = Modifier) {
  * @param modifier Optional [Modifier] applied to the content container.
  * @param onSignedIn: Navigation callback invoked if the user is signed in.
  * @param onNotSignedIn: Navigation callback invoked if the user is not signed in.
- * @param onNotSignedIn: Navigation callback invoked if the user is not signed in.
  * @param viewModel The [SplashViewModel] instance to notify about app start; provided by
  *   `viewModel()` by default.
  */
