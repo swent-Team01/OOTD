@@ -57,8 +57,8 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.2"
+    composeCompiler {
+        enableStrongSkippingMode = true
     }
 
     compileOptions {
@@ -94,6 +94,12 @@ android {
             excludes += "META-INF/LICENSE.txt"
             excludes += "META-INF/NOTICE"
             excludes += "META-INF/NOTICE.txt"
+        }
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        dex {
+            useLegacyPackaging = false
         }
     }
 
@@ -182,10 +188,14 @@ dependencies {
     implementation(libs.play.services.auth)
 
     // Firebase
+    // Use Firebase BOM from version catalog for maintainability
+    val firebaseBom = libs.firebase.bom
+    implementation(firebaseBom)
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.auth)
+
 
     // Credential Manager (for Google Sign-In)
     implementation(libs.credentials)
@@ -199,9 +209,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    androidTestImplementation(libs.androidx.navigation.testing)
 
     testImplementation(libs.junit)
-    androidTestImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent.android)
     testImplementation(libs.mockk)
 }
 
