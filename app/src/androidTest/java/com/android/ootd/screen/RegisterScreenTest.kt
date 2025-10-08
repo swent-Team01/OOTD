@@ -28,7 +28,8 @@ class RegisterScreenTest {
         .assertTextContains("Save", substring = true, ignoreCase = true)
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsDisplayed()
     // composeTestRule.onNodeWithTag(SignInScreenTestTags.INPUT_SIGNIN_DATE).assertIsDisplayed()
-    // composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()

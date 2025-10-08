@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.fontResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,8 +36,7 @@ object RegisterScreenTestTags {
   const val INPUT_REGISTER_LOCATION = "inputRegisterLocation"
   const val REGISTER_SAVE = "registerSave"
   const val ERROR_MESSAGE = "errorMessage"
-    const val WELCOME_TITLE = "welcomeTitle"
-
+  const val WELCOME_TITLE = "welcomeTitle"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,22 +73,20 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
         modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp).fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
+          Text(
+              text = "Welcome ! \n Please register your account",
+              fontFamily = Bodoni,
+              color = Primary,
+              style = Typography.displayMedium,
+              textAlign = TextAlign.Center,
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .padding(bottom = 16.dp)
+                      .testTag(RegisterScreenTestTags.WELCOME_TITLE))
 
-        Text(
-            text = "Welcome ! \n Please register your account",
-            fontFamily = Bodoni,
-            color = Primary,
-            style = Typography.displayMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-                .testTag(RegisterScreenTestTags.WELCOME_TITLE)
-        )
+          Spacer(modifier = Modifier.height(60.dp))
 
-        Spacer(modifier = Modifier.height(60.dp))
-
-        Image(
+          Image(
               painter = painterResource(id = R.drawable.app_logo),
               contentDescription = "Logo",
               contentScale = ContentScale.FillBounds,
