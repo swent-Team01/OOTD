@@ -29,16 +29,43 @@ import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 
+/**
+ * Test tags for the Register screen components.
+ * Used to identify UI elements in automated tests.
+ */
 object RegisterScreenTestTags {
-  const val APP_LOGO = "appLogo"
-  const val INPUT_REGISTER_UNAME = "inputRegisterUname"
-  const val INPUT_REGISTER_DATE = "inputRegisterDate"
-  const val INPUT_REGISTER_LOCATION = "inputRegisterLocation"
-  const val REGISTER_SAVE = "registerSave"
-  const val ERROR_MESSAGE = "errorMessage"
-  const val WELCOME_TITLE = "welcomeTitle"
+    /** Test tag for the app logo image */
+    const val APP_LOGO = "appLogo"
+
+    /** Test tag for the username input field */
+    const val INPUT_REGISTER_UNAME = "inputRegisterUname"
+
+    /** Test tag for the date input field */
+    const val INPUT_REGISTER_DATE = "inputRegisterDate"
+
+    /** Test tag for the location input field */
+    const val INPUT_REGISTER_LOCATION = "inputRegisterLocation"
+
+    /** Test tag for the save/register button */
+    const val REGISTER_SAVE = "registerSave"
+
+    /** Test tag for error message text */
+    const val ERROR_MESSAGE = "errorMessage"
+
+    /** Test tag for the welcome title text */
+    const val WELCOME_TITLE = "welcomeTitle"
 }
 
+/**
+ * Register screen composable that allows users to create a new account.
+ *
+ * This screen displays a username input field and a save button. It validates the username
+ * by checking if it's blank only after the user has interacted with the field and left it.
+ * The screen shows loading state during registration and navigates to the next screen upon success.
+ *
+ * @param modelView The ViewModel that manages the registration state and logic. Defaults to a new instance.
+ * @param onRegister Callback invoked when registration is successful. Defaults to an empty lambda.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
