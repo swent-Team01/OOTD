@@ -68,4 +68,15 @@ class UserRepositoryInMemory : UserRepository {
     val updatedFriendList = user.friendList + Friend(uid = friendID, name = friendUsername)
     users[userID] = user.copy(friendList = updatedFriendList)
   }
+
+  override suspend fun createUser(username: String) {
+    // Check if username already exists
+    if (users.values.any { it.name == username }) {
+      throw TakenUsernameException("Username already in use")
+    }
+
+    val userID = getNewUid()
+    val newUser = User(userID, username)
+    addUser(newUser)
+  }
 }
