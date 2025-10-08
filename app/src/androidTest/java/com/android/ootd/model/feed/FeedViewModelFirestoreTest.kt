@@ -96,7 +96,7 @@ class FeedViewModelFirestoreTest {
     originalProviderRepo = FeedRepositoryProvider.repository
     FeedRepositoryProvider.repository =
         object : FeedRepository by repo {
-          override suspend fun hasPostedToday(): Boolean = true
+          override suspend fun hasPostedToday(userId: String): Boolean = true
         }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
@@ -168,7 +168,7 @@ class FeedViewModelFirestoreTest {
     originalProviderRepo = FeedRepositoryProvider.repository
     FeedRepositoryProvider.repository =
         object : FeedRepository by repo {
-          override suspend fun hasPostedToday(): Boolean = true
+          override suspend fun hasPostedToday(userId: String): Boolean = true
         }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
@@ -198,7 +198,7 @@ class FeedViewModelFirestoreTest {
   fun hasPostedFalse_keepsFeedEmpty_untilOnPostUploadedCalled() = runBlocking {
     seedPosts(listOf(post("p1", "Alice", "u1", ts = 1L), post("p2", "Bob", "u2", ts = 2L)))
 
-    // Default repo has hasPostedToday() = false
+    // Default repo will report false for users without posts today
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "Alice"))))
 
@@ -219,7 +219,7 @@ class FeedViewModelFirestoreTest {
     originalProviderRepo = FeedRepositoryProvider.repository
     FeedRepositoryProvider.repository =
         object : FeedRepository by repo {
-          override suspend fun hasPostedToday(): Boolean = true
+          override suspend fun hasPostedToday(userId: String): Boolean = true
         }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
@@ -271,7 +271,7 @@ class FeedViewModelFirestoreTest {
         object : FeedRepository {
           override suspend fun getFeed(): List<OutfitPost> = emptyList()
 
-          override suspend fun hasPostedToday(): Boolean = false
+          override suspend fun hasPostedToday(userId: String): Boolean = false
 
           override suspend fun addPost(post: OutfitPost) {
             throw RuntimeException("boom")

@@ -115,7 +115,9 @@ class FeedRepositoryFirestoreTest {
   }
 
   @Test
-  fun hasPostedToday_defaultFalse() = runBlocking { assertEquals(false, repo.hasPostedToday()) }
+  fun hasPostedToday_defaultFalse() = runBlocking {
+    assertEquals(false, repo.hasPostedToday("non-existent-user"))
+  }
 
   @Test
   fun getNewPostId_isUniqueAndNonEmpty() {

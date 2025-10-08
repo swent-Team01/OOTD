@@ -26,25 +26,17 @@ class FeedViewModel : ViewModel() {
   private val _hasPostedToday = MutableStateFlow(false)
   val hasPostedToday: StateFlow<Boolean> = _hasPostedToday
 
-  init {
-    viewModelScope.launch {
-      // Always check if user has posted first
-      _hasPostedToday.value = repository.hasPostedToday()
-
-      // Only load posts if user has posted
-      if (_hasPostedToday.value) {
-        _allPosts.value = repository.getFeed()
-        recomputeFilteredFeed()
-      }
-    }
-  }
-
   fun onPostUploaded() {
     viewModelScope.launch {
       _hasPostedToday.value = true
-      // Refresh all posts from repository, then filter
-      _allPosts.value = repository.getFeed()
-      recomputeFilteredFeed()
+      // Refresh posts only if we have a current user (so we can filter)
+      val user = _currentUser.value
+      if (user != null) {
+        _allPosts.value = repository.getFeed()
+        recomputeFilteredFeed()
+      } else {
+        _feedPosts.value = emptyList()
+      }
     }
   }
 
@@ -59,25 +51,33 @@ class FeedViewModel : ViewModel() {
 
   // Filters to include only posts from friends
   fun filterPostsByFriends(posts: List<OutfitPost>, user: User): List<OutfitPost> {
-    val friendsUID = user.friendList.asSequence().map(Friend::uid).toHashSet()
+    val friendsUID =
+        user.friendList
+            .asSequence()
+            .map(Friend::uid)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toHashSet()
     // If we want to include user's own posts, uncomment the next line
     // friendsUID.add(user.uid)
     return posts.filter { it.uid in friendsUID }
-  }
-    // We’ll only load once currentUser is set
-    // So init stays lightweight and safe
   }
 
   /** Called after the authenticated user is available. */
   fun setCurrentUser(user: User) {
     _currentUser.value = user
     viewModelScope.launch {
-      // Check if this user has posted today
-      _hasPostedToday.value = repository.hasPostedToday(user.uid)
-      if (_hasPostedToday.value) {
-        _feedPosts.value = repository.getFeed()
-        // for future merging purposes
-        // recomputeFilteredFeed()
+      val repoHasPosted = repository.hasPostedToday(user.uid)
+      val effectiveHasPosted = _hasPostedToday.value || repoHasPosted
+      _hasPostedToday.value = effectiveHasPosted
+
+      if (effectiveHasPosted) {
+        if (_allPosts.value.isEmpty()) {
+          _allPosts.value = repository.getFeed()
+        }
+        recomputeFilteredFeed()
+      } else {
+        _feedPosts.value = emptyList()
       }
     }
   }
