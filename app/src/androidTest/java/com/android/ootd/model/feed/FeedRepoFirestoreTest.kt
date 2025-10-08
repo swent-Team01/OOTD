@@ -95,7 +95,14 @@ class FeedRepoFirestoreTest {
   }
 
   @Test
-  fun hasPostedToday_defaultFalse() = runBlocking { assertEquals(false, repo.hasPostedToday()) }
+  fun hasPostedToday_returnsTrueWhenUserHasPostedToday() = runBlocking {
+    val userId = "user-today"
+    val post = samplePost("today-post", ts = System.currentTimeMillis()).copy(uid = userId)
+    repo.addPost(post)
+
+    val result = repo.hasPostedToday(userId)
+    assertTrue(result)
+  }
 
   @Test
   fun getNewPostId_isUniqueAndNonEmpty() {

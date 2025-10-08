@@ -2,6 +2,10 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.feed.FeedRepositoryProvider
+import com.android.ootd.model.user.User
 import org.junit.Rule
 import org.junit.Test
 
@@ -12,6 +16,61 @@ import org.junit.Test
 class FeedScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
+
+  @Test
+  fun feedScreen_showsLockedMessage_whenUserHasNotPostedToday() {
+    val fakeRepo =
+        object : FeedRepository {
+          override suspend fun hasPostedToday(userId: String) = false
+
+          override suspend fun getFeed() = emptyList<OutfitPost>()
+
+          override suspend fun addPost(post: OutfitPost) {}
+
+          override fun getNewPostId(): String = "fake-id"
+        }
+
+    FeedRepositoryProvider.repository = fakeRepo
+    val viewModel =
+        FeedViewModel().apply {
+          setCurrentUser(User(uid = "user1", name = "Tester", friendList = emptyList()))
+        }
+
+    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    composeTestRule
+        .onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE)
+        .assertExists()
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun feedScreen_showsFeedList_whenUserHasPostedToday() {
+    val fakePosts =
+        listOf(
+            OutfitPost(postUID = "1", uid = "user1", outfitURL = "https://example.com/outfit.jpg"))
+
+    val fakeRepo =
+        object : FeedRepository {
+          override suspend fun hasPostedToday(userId: String) = true
+
+          override suspend fun getFeed() = fakePosts
+
+          override suspend fun addPost(post: OutfitPost) {}
+
+          override fun getNewPostId(): String = "fake-id"
+        }
+
+    FeedRepositoryProvider.repository = fakeRepo
+    val viewModel =
+        FeedViewModel().apply {
+          setCurrentUser(User(uid = "user1", name = "Tester", friendList = emptyList()))
+        }
+
+    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists().assertIsDisplayed()
+  }
 
   @Test
   fun feedScreen_hasScreenTag() {
