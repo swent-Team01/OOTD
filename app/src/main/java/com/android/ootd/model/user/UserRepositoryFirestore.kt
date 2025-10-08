@@ -1,10 +1,12 @@
 package com.android.ootd.model.user
 
 import android.util.Log
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
+import com.google.firebase.ktx.Firebase
 import java.util.UUID
 import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
@@ -113,5 +115,19 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
     }
+  }
+
+  override suspend fun isMyFriend(friendID: String): Boolean {
+    val myUID = Firebase.auth.currentUser?.uid
+    val documentList = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", myUID).get().await()
+    if (documentList.documents.isEmpty()) {
+      throw NoSuchElementException("The authenticated user has not been added to the database")
+    }
+    if (documentList.documents.size != 1) {
+      throw IllegalStateException("There are multiple users with the same uid")
+    }
+    val myUser = transformUserDocument(documentList.documents[0])
+
+    return (myUser?.friendList?.any { it.uid == friendID } == true)
   }
 }
