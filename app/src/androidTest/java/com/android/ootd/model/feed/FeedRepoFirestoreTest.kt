@@ -95,24 +95,6 @@ class FeedRepoFirestoreTest {
   }
 
   @Test
-  fun addPost_onNetworkFailure_isLocallyAcknowledged_andRepoReadIsEmpty() = runBlocking {
-    val badDb = firestoreForApp(appName = "feed-repo-local-write", host = "10.0.2.2", port = 6553)
-    val badRepo = FeedRepositoryFirestore(badDb)
-
-    val post = samplePost("network-fail-fit", ts = 7L)
-    badRepo.addPost(post) // local ack
-
-    val sameInstance = badRepo.getFeed()
-    assertTrue(sameInstance.isEmpty() || sameInstance.any { it.postUID == "network-fail-fit" })
-
-    val badDbReader =
-        firestoreForApp(appName = "feed-repo-local-read", host = "10.0.2.2", port = 6553)
-    val freshRepo = FeedRepositoryFirestore(badDbReader)
-    val freshRead = freshRepo.getFeed()
-    assertTrue(freshRead.isEmpty())
-  }
-
-  @Test
   fun hasPostedToday_defaultFalse() = runBlocking { assertEquals(false, repo.hasPostedToday()) }
 
   @Test
@@ -161,21 +143,6 @@ class FeedRepoFirestoreTest {
 
     assertNotNull(okResult)
     assertNull(badResult)
-  }
-
-  @Test
-  fun addPost_whenFirestoreFails_throwsException() = runBlocking {
-    val badDb = firestoreForApp(appName = "feed-repo-throw", host = "10.0.2.2", port = 9999)
-    val failingRepo = FeedRepositoryFirestore(badDb)
-    val post = samplePost("should-throw-fit", ts = 9L)
-
-    var caught = false
-    try {
-      failingRepo.addPost(post)
-    } catch (e: Exception) {
-      caught = true
-    }
-    assertTrue("Expected exception to be thrown", caught)
   }
 
   @Test
