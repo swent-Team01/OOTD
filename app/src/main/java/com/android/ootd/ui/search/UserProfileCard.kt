@@ -53,7 +53,7 @@ fun UserProfileCard(modifier: Modifier, selectedUser: User?, onFollowClick: (Use
       colors =
           CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-          Column {
+          Column() {
             Text(
                 modifier =
                     Modifier.testTag(UserProfileCardTestTags.USERNAME_TEXT)
