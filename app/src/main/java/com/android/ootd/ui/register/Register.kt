@@ -53,6 +53,9 @@ object RegisterScreenTestTags {
 
   /** Test tag for the welcome title text */
   const val WELCOME_TITLE = "welcomeTitle"
+
+  /** Test tag for the circular progression when loading */
+  const val REGISTER_LOADING = "registerLoading"
 }
 
 /**
@@ -169,7 +172,11 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
                       verticalAlignment = Alignment.CenterVertically,
                       horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Primary)
+                            modifier =
+                                Modifier.size(18.dp)
+                                    .testTag(RegisterScreenTestTags.REGISTER_LOADING),
+                            strokeWidth = 2.dp,
+                            color = Primary)
                         Text(text = "Saving…", color = textColor)
                       }
                 } else {

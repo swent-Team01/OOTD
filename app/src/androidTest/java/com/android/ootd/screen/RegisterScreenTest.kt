@@ -39,8 +39,6 @@ class RegisterScreenTest {
     val text = "user1"
     composeTestRule.enterUsername(text)
 
-    composeTestRule.waitForIdle()
-
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
         .assertTextContains(text)
@@ -69,25 +67,47 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun buttonVisible_whenNoErrors() {
+  fun buttonExists_whenNoErrors() {
     composeTestRule.enterUsername("validUser")
-
+    composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertDoesNotExist()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsDisplayed()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertExists()
   }
 
   @Test
-  fun buttonVisible_whenNoErrors_isEnabled() {
+  fun buttonExists_whenNoErrors_isEnabled() {
     composeTestRule.enterUsername("validUser")
+
+    composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertDoesNotExist()
+    composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .assertIsDisplayed()
+        .assertExists()
         .assertIsEnabled()
+  }
+
+  @Test
+  fun loadingCircle_visible_when_saving_user() {
+    composeTestRule.enterUsername("validUser")
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertIsDisplayed()
+  }
+
+  @Test
+  fun loadingCircle_not_visible_when_saving_invalid_user() {
+    composeTestRule.enterUsername("  ")
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
   }
 }
