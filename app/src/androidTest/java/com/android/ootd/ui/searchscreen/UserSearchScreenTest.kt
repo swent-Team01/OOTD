@@ -11,7 +11,7 @@ import androidx.compose.ui.test.performTextInput
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSearchScreenPreview
-import com.android.ootd.ui.search.UserSearchScreenTestTags
+import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import org.junit.Rule
 import org.junit.Test
 
@@ -26,7 +26,7 @@ class UserSearchScreenTest {
 
     // Input text to trigger dropdown
     composeTestRule
-        .onNodeWithTag(UserSearchScreenTestTags.INPUT_USERNAME)
+        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
         .assertIsDisplayed()
         .performTextInput(firstUsername)
 
@@ -35,17 +35,17 @@ class UserSearchScreenTest {
 
     // Verify dropdown contains exactly one item
     composeTestRule
-        .onAllNodesWithTag(UserSearchScreenTestTags.USERNAME_SUGGESTION)
+        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
         .assertCountEquals(1)
 
     // Verify the text of the first (and only) suggestion
     composeTestRule
-        .onAllNodesWithTag(UserSearchScreenTestTags.USERNAME_SUGGESTION)[0]
+        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .assertTextEquals(firstUsername)
 
     // Click on the first suggestion
     composeTestRule
-        .onAllNodesWithTag(UserSearchScreenTestTags.USERNAME_SUGGESTION)[0]
+        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .performClick()
 
     // Verify the profile card elements are displayed after selection

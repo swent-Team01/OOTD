@@ -41,15 +41,13 @@ class UserRepositoryInMemory : UserRepository {
   }
 
   override suspend fun addUser(user: User) {
-    if (users.containsKey(user.uid)) {
-      throw IllegalArgumentException("User with UID ${user.uid} already exists")
-    }
+    require(!(users.containsKey(user.uid))) { "User with UID ${user.uid} already exists" }
     users[user.uid] = user
   }
 
   override suspend fun getUser(userID: String): User {
     if (users.containsKey(userID)) {
-      return users[userID]!!
+      return users[userID] ?: throw NoSuchElementException("User with ID $userID not found")
     } else {
       throw NoSuchElementException("User with ID $userID not found")
     }
