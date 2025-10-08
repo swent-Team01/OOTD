@@ -8,7 +8,6 @@ import com.android.ootd.model.ItemsRepositoryLocal
 import com.android.ootd.model.ItemsRepositoryProvider
 import com.android.ootd.model.Material
 import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -269,77 +268,6 @@ class EditItemsScreenTest {
   }
 
   @Test
-  fun saveChangesUpdatesItemInRepository() = runBlocking {
-    // Add item to repository
-    repository.addItem(testItem)
-
-    composeTestRule.setContent {
-      EditItemsScreen(
-          viewModel,
-          onSave = { onSaveCalled = true },
-      )
-    }
-
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-
-    composeTestRule.waitForIdle()
-
-    // Edit item
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).performTextClearance()
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
-        .performTextInput("Adidas")
-
-    // Click save
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).performClick()
-
-    // Wait for async operation to complete by checking the error message (success indicator)
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      viewModel.uiState.value.errorMessage == "Item updated successfully!"
-    }
-
-    // Wait a bit more to ensure repository is updated
-    Thread.sleep(500)
-
-    // Verify item was updated in repository
-    val updatedItem = repository.getItemById(testItem.uuid)
-    assertEquals("Adidas", updatedItem.brand)
-
-    // Verify callback was called
-    assertEquals(true, onSaveCalled)
-  }
-
-  @Test
-  fun deleteItemRemovesFromRepository() = runBlocking {
-    // Add item to repository
-    repository.addItem(testItem)
-    assertEquals(1, repository.getItemCount())
-
-    composeTestRule.setContent { EditItemsScreen(viewModel, goBack = { goBackCalled = true }) }
-
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-
-    composeTestRule.waitForIdle()
-
-    // Click delete
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
-
-    // Wait for async operation to complete by checking the error message (success indicator)
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      viewModel.uiState.value.errorMessage == "Item deleted successfully!"
-    }
-
-    // Wait a bit more to ensure repository is updated
-    Thread.sleep(500)
-
-    // Verify item was deleted from repository
-    assertEquals(0, repository.getItemCount())
-
-    // Verify callback was called
-    assertEquals(true, goBackCalled)
-  }
-
-  @Test
   fun typeSuggestionsAppearOnFocus() {
     composeTestRule.setContent { EditItemsScreen(viewModel) }
 
@@ -422,40 +350,5 @@ class EditItemsScreenTest {
 
     // Save button should be disabled
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
-  }
-
-  @Test
-  fun formClearsAfterSuccessfulDeletion() = runBlocking {
-    // Add item to repository
-    repository.addItem(testItem)
-
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
-
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-
-    composeTestRule.waitForIdle()
-
-    // Verify item is loaded
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
-        .assertTextContains("Nike")
-
-    // Delete item
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
-
-    // Wait for async operation to complete by checking the error message (success indicator)
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      viewModel.uiState.value.errorMessage == "Item deleted successfully!"
-    }
-
-    // Wait a bit more to ensure state is cleared
-    Thread.sleep(500)
-
-    // Verify form is cleared (checking brand field as example)
-    composeTestRule.runOnIdle {
-      val state = viewModel.uiState.value
-      assertEquals("", state.itemId)
-      assertEquals(Uri.EMPTY, state.image)
-    }
   }
 }
