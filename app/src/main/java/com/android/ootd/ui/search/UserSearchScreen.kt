@@ -60,17 +60,17 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
     Spacer(modifier = Modifier.height(24.dp))
 
     if (uiState.selectedUser != null) {
-            UserProfileCard(
-                modifier = Modifier.fillMaxWidth().weight(1f), selectedUser = uiState.selectedUser
-            )
-        }
+      UserProfileCard(
+          modifier = Modifier.fillMaxWidth().weight(1f), selectedUser = uiState.selectedUser, {})
     }
   }
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun UserSearchScreenPreview() {
-    // Create a mock ViewModel or pass mock state directly
-    val mockViewModel = UserSearchViewModel(userRepository = UserRepositoryInMemory()) // or however you initialize it
-    UserSearchScreen(viewModel = mockViewModel)
+  // Create a mock ViewModel or pass mock state directly
+  val mockViewModel =
+      UserSearchViewModel(userRepository = UserRepositoryInMemory()) // or however you initialize it
+  UserSearchScreen(viewModel = mockViewModel)
 }
