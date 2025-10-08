@@ -16,13 +16,7 @@ open class FirestoreTest() : BaseTest() {
   }
 
   private suspend fun clearTestCollection() {
-    val user = FirebaseEmulator.auth.currentUser ?: return
-    val users =
-        FirebaseEmulator.firestore
-            .collection(USER_COLLECTION_PATH)
-            .whereEqualTo("ownerId", user.uid)
-            .get()
-            .await()
+    val users = FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).get().await()
 
     val batch = FirebaseEmulator.firestore.batch()
     users.documents.forEach { batch.delete(it.reference) }
