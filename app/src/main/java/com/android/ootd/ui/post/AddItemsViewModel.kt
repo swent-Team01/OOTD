@@ -1,7 +1,6 @@
 package com.android.ootd.ui.post
 
 import android.net.Uri
-import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.Item
@@ -23,7 +22,7 @@ data class AddItemsUIState(
     val category: String = "",
     val type: String = "",
     val brand: String = "",
-    val price: Double = 0.0,
+    val price: String = "",
     val material: List<Material> = emptyList(),
     val link: String = "",
     val errorMessage: String? = null,
@@ -61,14 +60,18 @@ open class AddItemsViewModel(
   }
 
   fun canAddItems(): Boolean {
+    // Log.e("AddItemsViewModel", "Add button clicked") //
     val state = _uiState.value
     if (!state.isAddingValid) {
-      setErrorMsg("Please fill in all required fields.")
-      return false
-    }
+      val error =
+          when {
+            state.image == Uri.EMPTY -> "Please upload a photo before adding the item."
+            state.category.isBlank() -> "Please enter a category before adding the item."
+            state.invalidCategory != null -> "Please select a valid category."
+            else -> "Some required fields are missing."
+          }
 
-    if (!isValidUrl(state.link)) {
-      setErrorMsg("Please enter a valid URL.")
+      setErrorMsg(error)
       return false
     }
 
@@ -79,7 +82,7 @@ open class AddItemsViewModel(
             category = state.category,
             type = state.type,
             brand = state.brand,
-            price = state.price,
+            price = state.price.toDoubleOrNull() ?: 0.0,
             material = state.material,
             link = state.link))
     clearErrorMsg()
@@ -96,6 +99,7 @@ open class AddItemsViewModel(
 
     viewModelScope.launch {
       try {
+        // Log.e("AddItemsViewModel", "Adding item: ${item.uuid} (${item.category})")
         repository.addItem(item)
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")
@@ -128,7 +132,7 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(brand = brand)
   }
 
-  fun setPrice(price: Double) {
+  fun setPrice(price: String) {
     _uiState.value = _uiState.value.copy(price = price)
   }
 
@@ -206,7 +210,6 @@ open class AddItemsViewModel(
 
   fun updateTypeSuggestions(input: String) {
     val state = _uiState.value
-    // val currentCategory = state.category
 
     val normalizeCategory =
         when (state.category.trim().lowercase()) {

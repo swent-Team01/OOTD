@@ -59,6 +59,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
+import com.android.ootd.model.Material
 import com.android.ootd.ui.theme.*
 import java.io.File
 
@@ -280,21 +281,25 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
 
               OutlinedTextField(
                   value = itemsUIState.brand,
-                  onValueChange = {},
+                  onValueChange = { addItemsViewModel.setBrand(it) },
                   label = { Text("Brand") },
                   placeholder = { Text("Enter a brand") },
                   modifier = Modifier.fillMaxWidth())
 
               OutlinedTextField(
-                  value = itemsUIState.price.toString(),
-                  onValueChange = {},
+                  value = itemsUIState.price,
+                  onValueChange = {
+                    if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                      addItemsViewModel.setPrice(it)
+                    }
+                  },
                   label = { Text("Price") },
                   placeholder = { Text("Enter a price") },
                   modifier = Modifier.fillMaxWidth())
 
               OutlinedTextField(
                   value = itemsUIState.link,
-                  onValueChange = {},
+                  onValueChange = { addItemsViewModel.setLink(it) },
                   label = { Text("Link") },
                   placeholder = { Text("Enter a link") },
                   modifier = Modifier.fillMaxWidth())
@@ -302,15 +307,32 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
               OutlinedTextField(
                   value =
                       itemsUIState.material.joinToString(", ") { "${it.name} ${it.percentage}%" },
-                  onValueChange = {},
+                  onValueChange = {
+                    addItemsViewModel.setMaterial(
+                        it.split(", ").map { materialStr ->
+                          val parts = materialStr.trim().split(" ")
+                          if (parts.size == 2 && parts[1].endsWith("%")) {
+                            val name = parts[0]
+                            val percentage = parts[1].removeSuffix("%").toDoubleOrNull() ?: 0.0
+                            Material(name, percentage)
+                          } else {
+                            Material(parts[0], 0.0)
+                          }
+                        })
+                  },
                   label = { Text("Material") },
                   placeholder = { Text("Enter a material") },
                   modifier = Modifier.fillMaxWidth())
 
               Spacer(Modifier.height(16.dp))
 
+              val isButtonEnabled = itemsUIState.isAddingValid
               Button(
-                  onClick = {},
+                  onClick = {
+                    addItemsViewModel.canAddItems()
+                    // Log.e("AddItemsScreen", "Can add items: $ret")
+                  },
+                  enabled = isButtonEnabled,
                   modifier =
                       Modifier.height(47.dp).width(140.dp).align(Alignment.CenterHorizontally),
                   colors = ButtonDefaults.buttonColors(containerColor = Primary),
