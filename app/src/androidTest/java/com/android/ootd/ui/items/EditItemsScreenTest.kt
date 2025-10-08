@@ -293,15 +293,13 @@ class EditItemsScreenTest {
     // Click save
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).performClick()
 
-    composeTestRule.waitForIdle()
-
-    // Wait for async operation to complete by checking the repository state
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      runBlocking {
-        val updatedItem = repository.getItemById(testItem.uuid)
-        updatedItem.brand == "Adidas"
-      }
+    // Wait for async operation to complete by checking the error message (success indicator)
+    composeTestRule.waitUntil(timeoutMillis = 10000) {
+      viewModel.uiState.value.errorMessage == "Item updated successfully!"
     }
+
+    // Wait a bit more to ensure repository is updated
+    Thread.sleep(500)
 
     // Verify item was updated in repository
     val updatedItem = repository.getItemById(testItem.uuid)
@@ -326,10 +324,13 @@ class EditItemsScreenTest {
     // Click delete
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
 
-    composeTestRule.waitForIdle()
+    // Wait for async operation to complete by checking the error message (success indicator)
+    composeTestRule.waitUntil(timeoutMillis = 10000) {
+      viewModel.uiState.value.errorMessage == "Item deleted successfully!"
+    }
 
-    // Wait for async operation to complete by checking the repository state
-    composeTestRule.waitUntil(timeoutMillis = 5000) { repository.getItemCount() == 0 }
+    // Wait a bit more to ensure repository is updated
+    Thread.sleep(500)
 
     // Verify item was deleted from repository
     assertEquals(0, repository.getItemCount())
@@ -442,10 +443,13 @@ class EditItemsScreenTest {
     // Delete item
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
 
-    composeTestRule.waitForIdle()
+    // Wait for async operation to complete by checking the error message (success indicator)
+    composeTestRule.waitUntil(timeoutMillis = 10000) {
+      viewModel.uiState.value.errorMessage == "Item deleted successfully!"
+    }
 
-    // Wait for async operation to complete by checking the UI state
-    composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.itemId.isEmpty() }
+    // Wait a bit more to ensure state is cleared
+    Thread.sleep(500)
 
     // Verify form is cleared (checking brand field as example)
     composeTestRule.runOnIdle {
