@@ -3,7 +3,7 @@ package com.android.ootd.model.user
 import java.util.UUID
 
 class UserRepositoryInMemory : UserRepository {
-  val currentUser = "alice_wonder"
+  val currentUser = "user1"
   val nameList =
       listOf<String>(
           "alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
