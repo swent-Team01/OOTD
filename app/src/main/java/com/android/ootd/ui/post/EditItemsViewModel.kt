@@ -107,7 +107,6 @@ open class EditItemsViewModel(
             price = state.price,
             material = state.material,
             link = state.link))
-    clearErrorMsg()
     return true
   }
 
@@ -133,9 +132,7 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         repository.deleteItem(state.itemId)
-        setErrorMsg("Item deleted successfully!")
-        // Clear the form after successful deletion
-        _uiState.value = EditItemsUIState()
+        _uiState.value = EditItemsUIState(errorMessage = "Item deleted successfully!")
       } catch (e: Exception) {
         setErrorMsg("Failed to delete item: ${e.message}")
       }
