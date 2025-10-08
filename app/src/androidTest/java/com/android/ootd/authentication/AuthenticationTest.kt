@@ -47,6 +47,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.ui.authentication.*
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -324,6 +325,7 @@ class AuthenticationExtensiveTest {
 
   // ========== NavigationActions Tests ==========
 
+  // This is in addition to the seperate navigation tests in navigation/NavigationTest.kt
   @Test
   fun navigationActions_currentRoute_returnsEmptyWhenNull() {
     val navController = mockk<androidx.navigation.NavHostController>(relaxed = true)
@@ -333,6 +335,67 @@ class AuthenticationExtensiveTest {
 
     assertEquals("", navigationActions.currentRoute())
   }
+
+  // ========== AccountServiceFirebase Tests ==========
+
+  @Test
+  fun accountServiceFirebase_currentUserId_returnsEmptyWhenNoUser() {
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    every { mockAuth.currentUser } returns null
+
+    val service = AccountServiceFirebase(auth = mockAuth)
+
+    assertEquals("", service.currentUserId)
+  }
+
+  @Test
+  fun accountServiceFirebase_currentUserId_returnsUidWhenUserExists() {
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    val mockUser = mockk<FirebaseUser>(relaxed = true)
+    every { mockAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "test-uid-123"
+
+    val service = AccountServiceFirebase(auth = mockAuth)
+
+    assertEquals("test-uid-123", service.currentUserId)
+  }
+
+  @Test
+  fun accountServiceFirebase_hasUser_returnsTrueWhenUserExists() = runTest {
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    every { mockAuth.currentUser } returns mockFirebaseUser
+
+    val service = AccountServiceFirebase(auth = mockAuth)
+
+    assertTrue(service.hasUser())
+  }
+
+  @Test
+  fun accountServiceFirebase_hasUser_returnsFalseWhenNoUser() = runTest {
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    every { mockAuth.currentUser } returns null
+
+    val service = AccountServiceFirebase(auth = mockAuth)
+
+    assertFalse(service.hasUser())
+  }
+
+  /**
+   * @Test fun accountServiceFirebase_signOut_success() { val mockAuth = mockk<FirebaseAuth>(relaxed
+   *   = true) every { mockAuth.signOut() } just Runs
+   *
+   * val service = AccountServiceFirebase(auth = mockAuth) val result = service.signOut()
+   *
+   * assertTrue(result.isSuccess) verify { mockAuth.signOut() } }
+   *
+   * @Test fun accountServiceFirebase_signOut_failure() { val mockAuth = mockk<FirebaseAuth>(relaxed
+   *   = true) every { mockAuth.signOut() } throws Exception("Sign out failed")
+   *
+   * val service = AccountServiceFirebase(auth = mockAuth) val result = service.signOut()
+   *
+   * assertTrue(result.isFailure) assertTrue(result.exceptionOrNull()?.message?.contains("Logout
+   * failed") == true) }
+   */
 
   // ========== Screen Tests ==========
 
