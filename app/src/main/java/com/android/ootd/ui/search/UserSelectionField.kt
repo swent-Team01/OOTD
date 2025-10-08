@@ -13,6 +13,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.user.User
 
+object UserSelectionFieldTestTags {
+  const val INPUT_USERNAME = "inputUsername"
+  const val USERNAME_SUGGESTION = "usernameSuggestion"
+}
+
 @Composable
 fun UserSelectionField(
     usernameText: String,
@@ -20,8 +25,6 @@ fun UserSelectionField(
     usernameSuggestions: List<User>,
     onUsernameSuggestionSelected: (User) -> Unit,
     onSuggestionsDismissed: () -> Unit,
-    testTagInput: String,
-    testTagSuggestion: String,
     expanded: Boolean
 ) {
   Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -55,7 +58,7 @@ fun UserSelectionField(
                   focusedContainerColor = MaterialTheme.colorScheme.surface,
                   unfocusedContainerColor = MaterialTheme.colorScheme.surface),
           shape = RoundedCornerShape(24.dp),
-          modifier = Modifier.fillMaxWidth().testTag(testTagInput),
+          modifier = Modifier.fillMaxWidth().testTag(UserSelectionFieldTestTags.INPUT_USERNAME),
           singleLine = true)
 
       DropdownMenu(
@@ -66,7 +69,7 @@ fun UserSelectionField(
               DropdownMenuItem(
                   text = { Text(user.name) },
                   onClick = { onUsernameSuggestionSelected(user) },
-                  modifier = Modifier.testTag(testTagSuggestion))
+                  modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
             }
           }
     }

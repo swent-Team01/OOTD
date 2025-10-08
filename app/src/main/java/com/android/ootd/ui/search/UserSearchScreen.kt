@@ -16,11 +16,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.user.UserRepositoryInMemory
 
-object UserSearchScreenTestTags {
-  const val INPUT_USERNAME = "inputUsername"
-  const val USERNAME_SUGGESTION = "usernameSuggestion"
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
@@ -53,9 +48,7 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
         usernameSuggestions = uiState.userSuggestions,
         onUsernameSuggestionSelected = viewModel::selectUsername,
         onSuggestionsDismissed = viewModel::suggestionsDismissed,
-        expanded = uiState.suggestionsExpanded,
-        testTagInput = UserSearchScreenTestTags.INPUT_USERNAME,
-        testTagSuggestion = UserSearchScreenTestTags.USERNAME_SUGGESTION)
+        expanded = uiState.suggestionsExpanded)
 
     Spacer(modifier = Modifier.height(24.dp))
 
