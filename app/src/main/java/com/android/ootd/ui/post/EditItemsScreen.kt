@@ -54,6 +54,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import java.io.File
 
@@ -136,7 +137,7 @@ fun EditItemsScreen(
                       Modifier.size(180.dp)
                           .clip(RoundedCornerShape(16.dp))
                           .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
-                          .background(Primary)
+                          .background(Secondary)
                           .align(Alignment.CenterHorizontally)
                           .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
                   contentAlignment = Alignment.Center) {
@@ -151,11 +152,11 @@ fun EditItemsScreen(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add photo",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Tertiary,
                             modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Tap to add photo",
+                            "No picture yet",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                       }
@@ -168,8 +169,9 @@ fun EditItemsScreen(
                         onClick = { galleryLauncher.launch("image/*") },
                         modifier =
                             Modifier.weight(1f)
-                                .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY)) {
-                          Text("Gallery")
+                                .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                          Text("Select from Gallery")
                         }
                     Button(
                         onClick = {
@@ -182,8 +184,9 @@ fun EditItemsScreen(
                         },
                         modifier =
                             Modifier.weight(1f)
-                                .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA)) {
-                          Text("Camera")
+                                .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                          Text("Take a new picture")
                         }
                   }
 
@@ -262,8 +265,8 @@ fun EditItemsScreen(
                   },
                   enabled = itemsUIState.image != Uri.EMPTY && itemsUIState.category.isNotEmpty(),
                   modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)) {
+                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES),
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
                     Text("Save Changes")
                   }
 

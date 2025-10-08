@@ -271,7 +271,7 @@ class EditItemsScreenTest {
   fun `placeholder is shown when no image is selected`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Tap to add photo").assertIsDisplayed()
+    composeTestRule.onNodeWithText("No picture yet").assertIsDisplayed()
   }
 
   @Test
@@ -289,8 +289,8 @@ class EditItemsScreenTest {
   fun `buttons have proper text labels`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Gallery").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Camera").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Select from Gallery").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Take a new picture").assertIsDisplayed()
     composeTestRule.onNodeWithText("Save Changes").assertIsDisplayed()
   }
 

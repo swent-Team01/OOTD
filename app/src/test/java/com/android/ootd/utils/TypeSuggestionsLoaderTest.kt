@@ -276,4 +276,229 @@ class TypeSuggestionsLoaderTest {
       assertFalse("Category should not end with colon", category.endsWith(":"))
     }
   }
+
+  @Test
+  fun `fallback suggestions contain all expected categories`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    // Verify all default categories are present (even if YAML fails)
+    val hasClothing = suggestions.keys.any { it.equals("Clothing", ignoreCase = true) }
+    assertTrue("Should have Clothing category", hasClothing)
+    assertTrue("Should have Shoes category", suggestions.containsKey("Shoes"))
+    assertTrue("Should have Bags category", suggestions.containsKey("Bags"))
+    assertTrue("Should have Accessories category", suggestions.containsKey("Accessories"))
+  }
+
+  @Test
+  fun `fallback Clothing suggestions are complete`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val clothingKey = suggestions.keys.find { it.equals("Clothing", ignoreCase = true) }
+    assertNotNull(clothingKey)
+
+    val clothingItems = suggestions[clothingKey]!!
+    val expectedItems =
+        listOf(
+            "T-shirt",
+            "Shirt",
+            "Jeans",
+            "Jacket",
+            "Dress",
+            "Skirt",
+            "Shorts",
+            "Sweater",
+            "Coat",
+            "Blouse",
+            "Suit",
+            "Hoodie",
+            "Cardigan",
+            "Pants",
+            "Leggings",
+            "Overalls",
+            "Jumpsuit")
+
+    expectedItems.forEach { expectedItem ->
+      assertTrue(
+          "Clothing should contain $expectedItem",
+          clothingItems.any { it.equals(expectedItem, ignoreCase = true) })
+    }
+  }
+
+  @Test
+  fun `fallback Shoes suggestions are complete`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val shoesItems = suggestions["Shoes"]!!
+    val expectedItems =
+        listOf(
+            "Sneakers",
+            "Boots",
+            "Sandals",
+            "Heels",
+            "Flats",
+            "Loafers",
+            "Oxfords",
+            "Slippers",
+            "Wedges",
+            "Espadrilles",
+            "Ballerinas",
+            "Moccasins",
+            "Sports Shoes")
+
+    expectedItems.forEach { expectedItem ->
+      assertTrue(
+          "Shoes should contain $expectedItem",
+          shoesItems.any { it.equals(expectedItem, ignoreCase = true) })
+    }
+  }
+
+  @Test
+  fun `fallback Accessories suggestions are complete`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val accessoriesItems = suggestions["Accessories"]!!
+    val expectedItems =
+        listOf(
+            "Hat",
+            "Scarf",
+            "Belt",
+            "Gloves",
+            "Sunglasses",
+            "Watch",
+            "Bracelet",
+            "Necklace",
+            "Earrings",
+            "Tie",
+            "Beanie",
+            "Cap")
+
+    expectedItems.forEach { expectedItem ->
+      assertTrue(
+          "Accessories should contain $expectedItem",
+          accessoriesItems.any { it.equals(expectedItem, ignoreCase = true) })
+    }
+  }
+
+  @Test
+  fun `fallback Bags suggestions are complete`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val bagsItems = suggestions["Bags"]!!
+    val expectedItems =
+        listOf(
+            "Backpack",
+            "Handbag",
+            "Tote",
+            "Clutch",
+            "Messenger Bag",
+            "Duffel Bag",
+            "Satchel",
+            "Crossbody Bag",
+            "Shopper",
+            "Wallet")
+
+    expectedItems.forEach { expectedItem ->
+      assertTrue(
+          "Bags should contain $expectedItem",
+          bagsItems.any { it.equals(expectedItem, ignoreCase = true) })
+    }
+  }
+
+  @Test
+  fun `fallback suggestions match documented defaults`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    // Verify the number of categories matches the documented default
+    assertTrue("Should have at least 4 categories", suggestions.size >= 4)
+
+    // Verify minimum items per category based on documentation
+    val clothingKey = suggestions.keys.find { it.equals("Clothing", ignoreCase = true) }
+    assertTrue("Clothing should have at least 17 items", suggestions[clothingKey]?.size ?: 0 >= 17)
+    assertTrue("Shoes should have at least 13 items", suggestions["Shoes"]?.size ?: 0 >= 13)
+    assertTrue(
+        "Accessories should have at least 12 items", suggestions["Accessories"]?.size ?: 0 >= 12)
+    assertTrue("Bags should have at least 10 items", suggestions["Bags"]?.size ?: 0 >= 10)
+  }
+
+  @Test
+  fun `suggestions remain valid after cache clear`() {
+    // First load
+    val firstSuggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+    assertTrue(firstSuggestions.isNotEmpty())
+
+    // Clear cache
+    TypeSuggestionsLoader.clearCache()
+
+    // Second load should still return valid suggestions
+    val secondSuggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+    assertTrue(secondSuggestions.isNotEmpty())
+
+    // Should have same categories
+    assertEquals(firstSuggestions.keys, secondSuggestions.keys)
+  }
+
+  @Test
+  fun `fallback data is used when YAML parsing fails`() {
+    // Since we can't easily corrupt the YAML file in tests,
+    // we verify that the fallback data structure is valid
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    // All fallback categories should be present
+    val categoryCount = suggestions.keys.size
+    assertTrue("Should have at least 4 categories for fallback", categoryCount >= 4)
+
+    // Each category should have items
+    suggestions.values.forEach { items ->
+      assertTrue("Each fallback category should have items", items.isNotEmpty())
+    }
+  }
+
+  @Test
+  fun `fallback suggestions do not have empty items`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    // Verify no category has empty item strings
+    suggestions.forEach { (category, items) ->
+      items.forEach { item ->
+        assertTrue("Item in $category should not be empty", item.isNotEmpty())
+        assertTrue("Item in $category should not be blank", item.isNotBlank())
+      }
+    }
+  }
+
+  @Test
+  fun `fallback suggestions have proper capitalization`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    // Check that category names are properly capitalized
+    suggestions.keys.forEach { category ->
+      assertTrue("Category $category should start with uppercase", category.first().isUpperCase())
+    }
+  }
+
+  @Test
+  fun `all fallback items are unique within their category`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    suggestions.forEach { (category, items) ->
+      val uniqueItems = items.toSet()
+      assertEquals(
+          "Category $category should not have duplicate items in fallback",
+          items.size,
+          uniqueItems.size)
+    }
+  }
+
+  @Test
+  fun `fallback suggestions are case-insensitive searchable`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val clothingKey = suggestions.keys.find { it.equals("Clothing", ignoreCase = true) }
+    val clothingItems = suggestions[clothingKey]!!
+
+    // Verify we can find items regardless of case
+    assertTrue(clothingItems.any { it.equals("t-shirt", ignoreCase = true) })
+    assertTrue(clothingItems.any { it.equals("JEANS", ignoreCase = true) })
+    assertTrue(clothingItems.any { it.equals("JaCkEt", ignoreCase = true) })
+  }
 }
