@@ -3,7 +3,6 @@ package com.android.ootd.screen
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -47,27 +46,25 @@ class RegisterScreenTest {
         .assertDoesNotExist()
   }
 
+  @Test
+  fun noError_whenFieldNotTouched() {
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertDoesNotExist()
+  }
 
-    @Test
-    fun noError_whenFieldNotTouched() {
-        composeTestRule
-            .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-            .assertDoesNotExist()
-    }
+  @Test
+  fun noError_whenTyping_beforeLeavingField() {
+    // Click on the field and type - error should not show while typing
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.enterUsername("validUser")
 
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertDoesNotExist()
+  }
 
-    @Test
-    fun noError_whenTyping_beforeLeavingField() {
-        // Click on the field and type - error should not show while typing
-        composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
-        composeTestRule.enterUsername("validUser")
-
-        composeTestRule
-            .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-            .assertDoesNotExist()
-    }
-
-    @Test
+  @Test
   fun buttonVisible_whenNoErrors() {
     composeTestRule.enterUsername("validUser")
     composeTestRule

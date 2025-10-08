@@ -70,10 +70,7 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
 
   Scaffold { innerPadding ->
     Column(
-        modifier = Modifier
-            .padding(innerPadding)
-            .padding(horizontal = 16.dp)
-            .fillMaxSize(),
+        modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp).fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
           Text(
@@ -83,8 +80,7 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
               style = Typography.displayMedium,
               textAlign = TextAlign.Center,
               modifier =
-                  Modifier
-                      .fillMaxWidth()
+                  Modifier.fillMaxWidth()
                       .padding(bottom = 16.dp)
                       .testTag(RegisterScreenTestTags.WELCOME_TITLE))
 
@@ -95,10 +91,7 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
               contentDescription = "Logo",
               contentScale = ContentScale.FillBounds,
               modifier =
-                  Modifier
-                      .width(250.dp)
-                      .height(250.dp)
-                      .testTag(RegisterScreenTestTags.APP_LOGO))
+                  Modifier.width(250.dp).height(250.dp).testTag(RegisterScreenTestTags.APP_LOGO))
           Spacer(modifier = Modifier.height(30.dp))
 
           OutlinedTextField(
@@ -110,16 +103,15 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
               },
               singleLine = true,
               modifier =
-                  Modifier
-                      .fillMaxWidth()
+                  Modifier.fillMaxWidth()
                       .testTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
                       .onFocusChanged { focusState ->
-                          if (focusState.isFocused) {
-                              touchedUserName = true
-                              textColor = Primary
-                          } else {
-                              if (touchedUserName) leftUsername = true
-                          }
+                        if (focusState.isFocused) {
+                          touchedUserName = true
+                          textColor = Primary
+                        } else {
+                          if (touchedUserName) leftUsername = true
+                        }
                       },
               isError = usernameError,
               enabled = !registerUiState.isLoading)
@@ -130,18 +122,14 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
                 text = "Please enter a valid username",
                 color = Color.Red,
                 fontFamily = Bodoni,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .testTag(RegisterScreenTestTags.ERROR_MESSAGE))
+                modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
           }
 
           Spacer(modifier = Modifier.height(30.dp))
 
           Button(
               onClick = { modelView.registerUser() },
-              modifier = Modifier
-                  .fillMaxWidth()
-                  .testTag(RegisterScreenTestTags.REGISTER_SAVE),
+              modifier = Modifier.fillMaxWidth().testTag(RegisterScreenTestTags.REGISTER_SAVE),
               enabled =
                   !registerUiState.isLoading &&
                       touchedUserName &&
