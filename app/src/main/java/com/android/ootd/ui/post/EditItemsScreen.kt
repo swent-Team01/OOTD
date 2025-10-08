@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
 import java.io.File
 
 object EditItemsScreenTestTags {
@@ -88,13 +91,17 @@ fun EditItemsScreen(
   val galleryLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?
         ->
-        uri?.let { editItemsViewModel.setPhoto(it) }
+        if (uri != null) {
+          editItemsViewModel.setPhoto(uri)
+        }
       }
 
   val cameraLauncher =
-      rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) { success
-        ->
-        if (success && cameraUri != null) editItemsViewModel.setPhoto(cameraUri!!)
+      rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) {
+          success: Boolean ->
+        if (success && cameraUri != null) {
+          editItemsViewModel.setPhoto(cameraUri!!)
+        }
       }
 
   LaunchedEffect(errorMsg) {
@@ -123,13 +130,14 @@ fun EditItemsScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
               Box(
                   modifier =
-                      Modifier.fillMaxWidth()
-                          .height(220.dp)
+                      Modifier.size(180.dp)
                           .clip(RoundedCornerShape(16.dp))
-                          .background(MaterialTheme.colorScheme.background)
+                          .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
+                          .background(Primary)
+                          .align(Alignment.CenterHorizontally)
                           .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
                   contentAlignment = Alignment.Center) {
                     if (itemsUIState.image != Uri.EMPTY) {
@@ -165,10 +173,10 @@ fun EditItemsScreen(
                         }
                     Button(
                         onClick = {
-                          val tempFile = File.createTempFile("camera_", ".jpg", context.cacheDir)
+                          val file = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
                           val uri =
                               FileProvider.getUriForFile(
-                                  context, "${context.packageName}.fileprovider", tempFile)
+                                  context, "${context.packageName}.provider", file)
                           cameraUri = uri
                           cameraLauncher.launch(uri)
                         },

@@ -10,6 +10,7 @@ import com.android.ootd.model.ItemsRepository
 import com.android.ootd.model.ItemsRepositoryProvider
 import com.android.ootd.model.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
+import kotlin.text.category
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,14 +76,14 @@ open class EditItemsViewModel(
   fun loadItem(item: Item) {
     _uiState.value =
         EditItemsUIState(
-            itemId = item.uuid,
-            image = item.image,
-            category = item.category,
-            type = item.type,
-            brand = item.brand,
-            price = item.price,
-            material = item.material,
-            link = item.link)
+            itemId = item.uuid ?: "",
+            image = item.image ?: Uri.EMPTY,
+            category = item.category ?: "",
+            type = item.type ?: "",
+            brand = item.brand ?: "",
+            price = item.price ?: 0.0,
+            material = (item.material ?: emptyList()) as List<Material>,
+            link = item.link ?: "")
   }
 
   fun canEditItems(): Boolean {
