@@ -54,7 +54,7 @@ fun UserSelectionField(
           colors =
               OutlinedTextFieldDefaults.colors(
                   focusedBorderColor = MaterialTheme.colorScheme.outline,
-                  unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                  unfocusedBorderColor = MaterialTheme.colorScheme.primary,
                   focusedContainerColor = MaterialTheme.colorScheme.surface,
                   unfocusedContainerColor = MaterialTheme.colorScheme.surface),
           shape = RoundedCornerShape(24.dp),
