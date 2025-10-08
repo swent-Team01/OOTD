@@ -1,0 +1,369 @@
+package com.android.ootd.model.items
+
+import android.net.Uri
+import com.android.ootd.model.Item
+import com.android.ootd.model.ItemsRepositoryLocal
+import com.android.ootd.model.Material
+import junit.framework.TestCase.assertEquals
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+
+class ItemsRepositoryLocalTest {
+
+  private lateinit var repository: ItemsRepositoryLocal
+
+  @Before
+  fun setup() {
+    repository = ItemsRepositoryLocal()
+    repository.clearAll()
+  }
+
+  val item1 =
+      Item(
+          uuid = "0",
+          image = Uri.parse("https://example.com/image1.jpg"),
+          category = "clothes",
+          type = "t-shirt",
+          brand = "Mango",
+          price = 0.0,
+          material = listOf(),
+          link = "https://example.com/item1")
+
+  val item2 =
+      Item(
+          uuid = "1",
+          image = Uri.parse("https://example.com/image1.jpg"),
+          category = "shoes",
+          type = "high heels",
+          brand = "Zara",
+          price = 30.0,
+          material = listOf(),
+          link = "https://example.com/item2")
+
+  val item3 =
+      Item(
+          uuid = "2",
+          image = Uri.parse("https://example.com/image1.jpg"),
+          category = "bags",
+          type = "handbag",
+          brand = "Vakko",
+          price = 0.0,
+          material = listOf(),
+          link = "https://example.com/item3")
+
+  val item4 =
+      Item(
+          uuid = "3",
+          image = Uri.parse("https://example.com/image1.jpg"),
+          category = "accessories",
+          type = "sunglasses",
+          brand = "Ray-Ban",
+          price = 100.0,
+          material =
+              listOf(
+                  Material(name = "Plastic", percentage = 80.0),
+                  Material(name = "Metal", percentage = 20.0)),
+          link = "https://example.com/item4")
+
+  @Test
+  fun getNewItemIdReturnsUniqueIDs() = runTest {
+    val numberIDs = 100
+    val uids = (0 until numberIDs).toSet().map { repository.getNewItemId() }.toSet()
+    assertEquals(uids.size, numberIDs)
+  }
+
+  @Test
+  fun addItemWithTheCorrectID() = runTest {
+    repository.addItem(item1)
+
+    assertEquals(1, repository.getItemCount())
+    val storedItem = repository.getItemById(item1.uuid)
+    assertEquals(storedItem, item1)
+  }
+
+  @Test
+  fun canAddItemToRepository() = runTest {
+    repository.addItem(item1)
+    assertEquals(1, repository.getItemCount())
+    val items = repository.getAllItems()
+
+    assertEquals(1, items.size)
+    val expectedItem = item1.copy(uuid = "None", link = "None")
+    val storedItem = items.first().copy(uuid = expectedItem.uuid, link = expectedItem.link)
+
+    assertEquals(expectedItem, storedItem)
+  }
+
+  @Test
+  fun retrieveItemById() = runTest {
+    repository.addItem(item1)
+    repository.addItem(item2)
+    repository.addItem(item3)
+    assertEquals(3, repository.getItemCount())
+
+    val storedItem = repository.getItemById(item3.uuid)
+    assertEquals(storedItem, item3)
+
+    val storedItem2 = repository.getItemById(item2.uuid)
+    assertEquals(storedItem2, item2)
+  }
+
+  @Test
+  fun checkUidsAreUniqueInTheCollection() = runTest {
+    val uid = "duplicate"
+    val item1Modified = item1.copy(uuid = uid)
+    val itemDuplicatedUID = item2.copy(uuid = uid)
+
+    // Adding an item with an existing UID will overwrite the previous one
+    repository.addItem(item1Modified)
+    repository.addItem(itemDuplicatedUID)
+
+    assertEquals(1, repository.getItemCount())
+
+    val items = repository.getAllItems()
+    assertEquals(items.size, 1)
+    val storedItem = items.first()
+    assertEquals(storedItem.uuid, uid)
+    // Should be the last added item (item2)
+    assertEquals(storedItem.brand, item2.brand)
+  }
+
+  @Test
+  fun deleteItemById() = runTest {
+    repository.addItem(item1)
+    repository.addItem(item2)
+    repository.addItem(item3)
+    assertEquals(3, repository.getItemCount())
+
+    repository.deleteItem(item2.uuid)
+    assertEquals(2, repository.getItemCount())
+    val items = repository.getAllItems()
+    assertEquals(items.size, 2)
+    assert(!items.contains(item2))
+    assert(items.contains(item1))
+    assert(items.contains(item3))
+  }
+
+  @Test
+  fun deleteNonExistingItemThrows() = runTest {
+    repository.addItem(item1)
+    repository.addItem(item3)
+    assertEquals(2, repository.getItemCount())
+
+    // Deleting an item that does not exist should throw
+    var didThrow = false
+    try {
+      repository.deleteItem(item2.uuid)
+    } catch (e: Exception) {
+      didThrow = true
+      assert(e.message?.contains("Item not found") == true)
+    }
+    assert(didThrow)
+    assertEquals(2, repository.getItemCount())
+  }
+
+  @Test
+  fun editItemById() = runTest {
+    repository.addItem(item1)
+    assertEquals(1, repository.getItemCount())
+
+    val newItem =
+        item1.copy(
+            type = "shirt",
+            brand = "H&M",
+            price = 20.0,
+            material = listOf(Material(name = "Cotton", percentage = 100.0)))
+    repository.editItem(item1.uuid, newItem)
+    assertEquals(1, repository.getItemCount())
+    val items = repository.getAllItems()
+    assertEquals(items.size, 1)
+    val storedItem = items.first()
+    assertEquals(storedItem, newItem)
+  }
+
+  @Test
+  fun editNonExistingItemThrows() = runTest {
+    repository.addItem(item1)
+    assertEquals(1, repository.getItemCount())
+
+    // Editing an item that does not exist should throw
+    val nonExistingItem = item2.copy(uuid = "nonExisting")
+    var didThrow = false
+    try {
+      repository.editItem(nonExistingItem.uuid, nonExistingItem)
+    } catch (e: Exception) {
+      didThrow = true
+      assert(e.message?.contains("Item not found") == true)
+    }
+    assert(didThrow)
+    assertEquals(1, repository.getItemCount())
+  }
+
+  @Test(expected = Exception::class)
+  fun getItemByIdThrowsWhenItemNotFound() = runTest { repository.getItemById("nonExistingId") }
+
+  @Test
+  fun getAllItemsReturnsEmptyListWhenNoItems() = runTest {
+    val items = repository.getAllItems()
+    assertEquals(0, items.size)
+    assertEquals(true, items.isEmpty())
+  }
+
+  @Test
+  fun getAllItemsReturnsAllAddedItems() = runTest {
+    repository.addItem(item1)
+    repository.addItem(item2)
+    repository.addItem(item3)
+    repository.addItem(item4)
+
+    val items = repository.getAllItems()
+    assertEquals(4, items.size)
+    assert(items.contains(item1))
+    assert(items.contains(item2))
+    assert(items.contains(item3))
+    assert(items.contains(item4))
+  }
+
+  @Test
+  fun hasItemReturnsTrueForExistingItem() = runTest {
+    repository.addItem(item1)
+
+    assert(repository.hasItem(item1.uuid))
+    assert(!repository.hasItem(item2.uuid))
+  }
+
+  @Test
+  fun hasItemReturnsFalseForNonExistingItem() = runTest {
+    assert(!repository.hasItem("nonExisting"))
+
+    repository.addItem(item1)
+    assert(!repository.hasItem("stillNonExisting"))
+  }
+
+  @Test
+  fun clearAllRemovesAllItems() = runTest {
+    repository.addItem(item1)
+    repository.addItem(item2)
+    repository.addItem(item3)
+    assertEquals(3, repository.getItemCount())
+
+    repository.clearAll()
+
+    assertEquals(0, repository.getItemCount())
+    val items = repository.getAllItems()
+    assert(items.isEmpty())
+    assert(!repository.hasItem(item1.uuid))
+    assert(!repository.hasItem(item2.uuid))
+    assert(!repository.hasItem(item3.uuid))
+  }
+
+  @Test
+  fun getItemCountReturnsCorrectCount() = runTest {
+    assertEquals(0, repository.getItemCount())
+
+    repository.addItem(item1)
+    assertEquals(1, repository.getItemCount())
+
+    repository.addItem(item2)
+    assertEquals(2, repository.getItemCount())
+
+    repository.addItem(item3)
+    assertEquals(3, repository.getItemCount())
+
+    repository.deleteItem(item2.uuid)
+    assertEquals(2, repository.getItemCount())
+
+    repository.clearAll()
+    assertEquals(0, repository.getItemCount())
+  }
+
+  @Test
+  fun itemsWithComplexMaterialListAreStoredCorrectly() = runTest {
+    repository.addItem(item4)
+
+    val retrieved = repository.getItemById(item4.uuid)
+    assertEquals(item4, retrieved)
+    assertEquals(2, retrieved.material.size)
+    assertEquals("Plastic", retrieved.material[0].name)
+    assertEquals(80.0, retrieved.material[0].percentage)
+    assertEquals("Metal", retrieved.material[1].name)
+    assertEquals(20.0, retrieved.material[1].percentage)
+  }
+
+  @Test
+  fun multipleOperationsInSequence() = runTest {
+    // Add
+    repository.addItem(item1)
+    repository.addItem(item2)
+    assertEquals(2, repository.getItemCount())
+
+    // Edit
+    val modifiedItem1 = item1.copy(price = 50.0)
+    repository.editItem(item1.uuid, modifiedItem1)
+    assertEquals(2, repository.getItemCount())
+
+    // Retrieve
+    val retrieved = repository.getItemById(item1.uuid)
+    assertEquals(50.0, retrieved.price)
+
+    // Add more
+    repository.addItem(item3)
+    repository.addItem(item4)
+    assertEquals(4, repository.getItemCount())
+
+    // Delete
+    repository.deleteItem(item2.uuid)
+    assertEquals(3, repository.getItemCount())
+
+    // Verify remaining items
+    val allItems = repository.getAllItems()
+    assertEquals(3, allItems.size)
+    assert(allItems.contains(modifiedItem1))
+    assert(!allItems.contains(item2))
+    assert(allItems.contains(item3))
+    assert(allItems.contains(item4))
+  }
+
+  @Test
+  fun itemsAreIndependent() = runTest {
+    repository.addItem(item1)
+    val retrieved1 = repository.getItemById(item1.uuid)
+
+    // Modify the retrieved item
+    val modified = retrieved1.copy(price = 999.0)
+
+    // Original should still be unchanged in repository
+    val retrieved2 = repository.getItemById(item1.uuid)
+    assertEquals(item1.price, retrieved2.price)
+    assertEquals(0.0, retrieved2.price)
+  }
+
+  @Test
+  fun emptyMaterialListIsHandledCorrectly() = runTest {
+    repository.addItem(item1) // item1 has empty material list
+
+    val retrieved = repository.getItemById(item1.uuid)
+    assertEquals(item1, retrieved)
+    assertEquals(0, retrieved.material.size)
+    assert(retrieved.material.isEmpty())
+  }
+
+  @Test
+  fun uriIsPreservedCorrectly() = runTest {
+    val customUri = Uri.parse("content://media/external/images/123")
+    val itemWithCustomUri = item1.copy(image = customUri)
+
+    repository.addItem(itemWithCustomUri)
+
+    val retrieved = repository.getItemById(itemWithCustomUri.uuid)
+    assertEquals(customUri, retrieved.image)
+    assertEquals(customUri.toString(), retrieved.image.toString())
+  }
+
+  @After
+  fun tearDown() {
+    repository.clearAll()
+  }
+}
