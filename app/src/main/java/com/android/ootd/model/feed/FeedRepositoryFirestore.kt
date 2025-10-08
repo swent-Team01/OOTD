@@ -6,6 +6,8 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 
 const val POSTS_COLLECTION_PATH = "posts"
 
@@ -41,12 +43,17 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
   override suspend fun getFeed(): List<OutfitPost> {
     return try {
       val snapshot =
-          db.collection(POSTS_COLLECTION_PATH)
-              .orderBy("timestamp") // I sorted by newest firs, can be changed
-              .get()
-              .await()
+          withTimeout(5_000) {
+            db.collection(POSTS_COLLECTION_PATH)
+                .orderBy("timestamp") // Sorted by newest first, can be changed
+                .get()
+                .await()
+          }
 
       snapshot.documents.mapNotNull { it.toObject<OutfitPost>() }
+    } catch (e: TimeoutCancellationException) {
+      Log.w("FeedRepositoryFirestore", "Timed out fetching feed; returning empty list", e)
+      emptyList()
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error fetching feed", e)
       emptyList()
@@ -55,8 +62,15 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
   override suspend fun addPost(post: OutfitPost) {
     try {
-      db.collection(POSTS_COLLECTION_PATH).document(post.postUID).set(post).await()
+      withTimeout(5_000) {
+        db.collection(POSTS_COLLECTION_PATH).document(post.postUID).set(post).await()
+      }
       Log.d("FeedRepositoryFirestore", "Successfully added post ${post.postUID}")
+    } catch (e: TimeoutCancellationException) {
+      Log.w(
+          "FeedRepositoryFirestore",
+          "Timed out adding post ${post.postUID}; assuming offline-ack and continuing",
+          e)
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error adding post: ${e.message}", e)
       throw e
