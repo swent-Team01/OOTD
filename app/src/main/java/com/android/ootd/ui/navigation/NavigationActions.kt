@@ -67,7 +67,8 @@ open class NavigationActions(
     navController.navigate(screen.route) {
       if (screen.isTopLevelDestination) {
         launchSingleTop = true
-        popUpTo(screen.route) { inclusive = true }
+        // Clear back stack to start destination when navigating to top-level screens
+        popUpTo(navController.graph.startDestinationId) { saveState = true }
       }
 
       if (screen !is Screen.Authentication) {
