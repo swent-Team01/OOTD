@@ -57,8 +57,8 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.2"
+    composeCompiler {
+        enableStrongSkippingMode = true
     }
 
     compileOptions {
@@ -211,7 +211,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-    androidTestImplementation("androidx.navigation:navigation-testing:2.8.5")
+    androidTestImplementation(libs.androidx.navigation.testing)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.mockk.android)
