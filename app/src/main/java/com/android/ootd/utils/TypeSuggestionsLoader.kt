@@ -77,7 +77,7 @@ object TypeSuggestionsLoader {
 
   /**
    * Fallback method providing default suggestions if .yml loading fails. Same lists as the .yml as
-   * of the 07 october 2025
+   * of the 2025-10-07
    */
   private fun getDefaultSuggestions(): Map<String, List<String>> {
     return mapOf(
