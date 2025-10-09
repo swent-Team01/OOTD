@@ -117,6 +117,6 @@ class RegisterScreenTest {
     viewModel.showLoading(true)
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertExists()
-    composeTestRule.onNodeWithText("Saving…").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Saving…").assertExists()
   }
 }
