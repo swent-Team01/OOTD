@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +19,7 @@ data class SearchUserUIState(
     val username: String = "",
     val userSuggestions: List<User> = emptyList(),
     val selectedUser: User? = null,
+    val isSelectedUserFollowed: Boolean = false,
     val suggestionsExpanded: Boolean = false
 )
 
@@ -34,7 +37,8 @@ class UserSearchViewModel(
         )
     searchUsernames(username)
     _uiState.value =
-        _uiState.value.copy(suggestionsExpanded = _uiState.value.userSuggestions.isNotEmpty())
+        // Whenever they are searching we should show suggestions
+        _uiState.value.copy(suggestionsExpanded = true)
   }
 
   private fun searchUsernames(query: String) {
@@ -55,12 +59,52 @@ class UserSearchViewModel(
   }
 
   fun selectUsername(user: User) {
-    _uiState.value =
-        _uiState.value.copy(
-            username = user.name,
-            selectedUser = user,
-            userSuggestions = emptyList(),
-            suggestionsExpanded = false)
+    viewModelScope.launch {
+      _uiState.value =
+          _uiState.value.copy(
+              username = user.name,
+              selectedUser = user,
+              userSuggestions = emptyList(),
+              isSelectedUserFollowed = userRepository.isMyFriend(user.uid),
+              suggestionsExpanded = false)
+    }
+  }
+
+  /**
+   * Enacts what happens when the follow button is clicked depending on whether the user is already
+   * followed or not by the authenticated user.
+   */
+  fun pressFollowButton() {
+    viewModelScope.launch {
+      var myUID =
+          try {
+            Firebase.auth.currentUser?.uid ?: ""
+          } catch (e: Exception) {
+            Log.e(
+                "UserSearchViewModel",
+                "An error happened when trying to get authentication id, ${e.toString()}")
+            "user1"
+          }
+
+      if (myUID == "") {
+        myUID = "user1" // Probably in testing mode
+      }
+      if (_uiState.value.selectedUser == null) {
+        // This will not happen, there is already a check when building the UserProfileCard
+        // However, it is required by SonarCloud.
+        throw IllegalStateException("There is no selected user")
+      }
+      val friendID = _uiState.value.selectedUser?.uid ?: ""
+      val friendUsername = _uiState.value.selectedUser?.name ?: ""
+
+      if (!_uiState.value.isSelectedUserFollowed) {
+        userRepository.addFriend(myUID, friendID, friendUsername)
+      } else {
+        userRepository.removeFriend(myUID, friendID, friendUsername)
+      }
+      _uiState.value =
+          _uiState.value.copy(isSelectedUserFollowed = !_uiState.value.isSelectedUserFollowed)
+    }
   }
 
   fun suggestionsDismissed() {
