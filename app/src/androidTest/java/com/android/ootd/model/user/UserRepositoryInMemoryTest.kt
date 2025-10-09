@@ -192,7 +192,7 @@ class UserRepositoryInMemoryTest {
     assertEquals(3, user.friendList.size)
   }
 
-  @Test(expected = IllegalArgumentException::class)
+  @Test(expected = TakenUsernameException::class)
   fun createUser_throwsExceptionForDuplicateUsername() = runTest {
     val username = "duplicateUser"
     val uid1 = repository.getNewUid()
