@@ -2,6 +2,7 @@ package com.android.ootd.screen
 
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -58,12 +59,12 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun canEnterCategory() {
-    val text = "Category"
+    val text = "clothes"
     composeTestRule.enterAddItemCategory(text)
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).assertTextContains(text)
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed()
+        .assertIsNotDisplayed()
   }
 
   @Test
@@ -91,7 +92,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun canEnterMaterial() {
-    val text = "Cotton"
+    val text = "Cotton 80%, Polyester 20%"
     composeTestRule.enterAddItemMaterial(text)
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL).assertTextContains(text)
   }
@@ -153,9 +154,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun imageIsDisplayedAfterUpload() {
     val uri = Uri.parse("content://dummy/photo.jpg")
-
-    // Make sure AddItemsScreen is composed
-    // Run the actual image-upload verification
     composeTestRule.verifyImageUploadFlow(viewModel, uri)
   }
 }
