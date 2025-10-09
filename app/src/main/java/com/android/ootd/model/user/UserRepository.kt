@@ -11,7 +11,7 @@ interface UserRepository {
    *
    * @param username The chosen username
    */
-  suspend fun createUser(username: String)
+  suspend fun createUser(username: String, uid: String)
 
   /**
    * Retrieves all Users from the repository.

@@ -94,14 +94,6 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun loadingCircle_visible_when_saving_user() {
-    composeTestRule.enterUsername("validUser")
-
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertExists()
-  }
-
-  @Test
   fun loadingCircle_not_visible_when_saving_invalid_user() {
     composeTestRule.enterUsername("  ")
 

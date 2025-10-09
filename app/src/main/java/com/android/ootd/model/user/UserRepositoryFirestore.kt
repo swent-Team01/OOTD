@@ -48,15 +48,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     return UUID.randomUUID().toString()
   }
 
-  override suspend fun createUser(username: String) {
+  override suspend fun createUser(username: String, uid: String) {
 
     if (usernameExists(username)) {
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
     }
 
-    val userID = getNewUid()
-    val newUser = User(userID, username)
+    val newUser = User(uid, username)
     try {
       addUser(newUser)
     } catch (e: Exception) {

@@ -7,6 +7,7 @@ import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.utils.UsernameValidator
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +41,7 @@ data class User(
  */
 class RegisterViewModel(
     private val repository: UserRepository = UserRepositoryProvider.repository,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(User())
@@ -133,7 +135,7 @@ class RegisterViewModel(
   private fun loadUser(username: String) {
     viewModelScope.launch {
       try {
-        repository.createUser(username)
+        repository.createUser(username, auth.currentUser!!.uid)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {

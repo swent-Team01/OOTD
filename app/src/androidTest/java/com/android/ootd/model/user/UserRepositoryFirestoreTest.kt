@@ -255,8 +255,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
 
   @Test
   fun creatingNewUserWorks() = runTest {
-    repository.createUser(user1.name)
-    repository.createUser(user2.name)
+    val uid1 = repository.getNewUid()
+    val uid2 = repository.getNewUid()
+
+    repository.createUser(user1.name, uid1)
+    repository.createUser(user2.name, uid2)
 
     val users = repository.getAllUsers()
 
@@ -268,8 +271,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
 
   @Test
   fun cannotHaveSameUsername() = runTest {
-    repository.createUser(user1.name)
-    val exception = runCatching { repository.createUser(user1.name) }.exceptionOrNull()
+    val uid1 = repository.getNewUid()
+    val uid2 = repository.getNewUid()
+
+    repository.createUser(user1.name, uid1)
+    val exception = runCatching { repository.createUser(user1.name, uid2) }.exceptionOrNull()
 
     assert(exception != null)
   }
