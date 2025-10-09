@@ -21,8 +21,9 @@ object FeedScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () -> Unit) {
-  val hasPostedToday by feedViewModel.hasPostedToday.collectAsState()
-  val posts by feedViewModel.feedPosts.collectAsState()
+  val uiState by feedViewModel.uiState.collectAsState()
+  val hasPostedToday = uiState.hasPostedToday
+  val posts = uiState.feedPosts
 
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
@@ -39,29 +40,28 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
               }
         }
       }) { paddingValues ->
-        if (!hasPostedToday) {
-          Box(
-              modifier =
-                  Modifier.fillMaxSize()
-                      .padding(paddingValues)
-                      .testTag(FeedScreenTestTags.LOCKED_MESSAGE),
-              contentAlignment = Alignment.Center) {
-                Text(
-                    "Do a fit check to unlock today’s feed",
-                    style = MaterialTheme.typography.titleMedium)
-              }
-        } else {
-          // Show feed posts after user has posted today
-          LazyColumn(
-              modifier = Modifier.padding(paddingValues).testTag(FeedScreenTestTags.FEED_LIST)) {
-                items(posts) { post ->
-                  OutfitPostCard(
-                      post = post,
-                      isBlurred = false,
-                      onSeeFitClick = { /* TODO: navigation to feeditems */})
-                  // no blur for now
+        // Use a single Box and overlay the locked message when needed.
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+          // Feed list is always part of the layout; it will show items when available.
+          LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
+            items(posts) { post ->
+              OutfitPostCard(
+                  post = post,
+                  isBlurred = false,
+                  onSeeFitClick = { /* TODO: navigation to feeditems */})
+              // no blur for now
+            }
+          }
+
+          if (!hasPostedToday) {
+            Box(
+                modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
+                contentAlignment = Alignment.Center) {
+                  Text(
+                      "Do a fit check to unlock today’s feed",
+                      style = MaterialTheme.typography.titleMedium)
                 }
-              }
+          }
         }
       }
 }
