@@ -229,8 +229,8 @@ class ItemsRepositoryFirestoreTest() {
     assertEquals(1, items.size)
     val matList = items.first().material
     assertEquals(2, matList.size)
-    assertEquals("Cotton", matList.first()?.name)
-    assertEquals(60.0, matList.first()?.percentage)
+    assertEquals("Cotton", matList.first().name)
+    assertEquals(60.0, matList.first().percentage)
   }
 
   @Test
