@@ -230,7 +230,13 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     isError = itemsUIState.invalidCategory != null,
                     supportingText = {
                       itemsUIState.invalidCategory?.let { error ->
-                        Text(text = error, color = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier =
+                                Modifier.testTag(
+                                    AddItemScreenTestTags.ERROR_MESSAGE) // Added test tag
+                            )
                       }
                     },
                     modifier =
@@ -347,10 +353,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
 
               val isButtonEnabled = itemsUIState.isAddingValid
               Button(
-                  onClick = {
-                    addItemsViewModel.canAddItems()
-                    // Log.e("AddItemsScreen", "Can add items: $ret")
-                  },
+                  onClick = { addItemsViewModel.canAddItems() },
                   enabled = isButtonEnabled,
                   modifier =
                       Modifier.height(47.dp)

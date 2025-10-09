@@ -1,13 +1,21 @@
 package com.android.ootd.screen
 
-import androidx.compose.ui.test.assertIsNotDisplayed
+import android.net.Uri
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
+import androidx.core.net.toUri
+import com.android.ootd.model.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.AddItemsScreen
+import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
+import junit.framework.TestCase.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -16,10 +24,15 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @get:Rule val composeTestRule = createComposeRule()
 
+  // Initialize ViewModel here to access its state in tests
+  private lateinit var viewModel: AddItemsViewModel
+  override val repository = ItemsRepositoryProvider.repository
+
   @Before
   override fun setUp() {
     super.setUp()
-    composeTestRule.setContent { AddItemsScreen() }
+    viewModel = AddItemsViewModel(repository)
+    composeTestRule.setContent { AddItemsScreen(viewModel) }
   }
 
   @Test
@@ -50,7 +63,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).assertTextContains(text)
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsNotDisplayed()
+        .assertIsDisplayed()
   }
 
   @Test
@@ -84,8 +97,65 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun canEnterPhoto() {
+    val uri = "content://dummy/photo.jpg".toUri()
+    composeTestRule.enterAddItemPhoto(uri)
+    composeTestRule.checkPhotoPreviewDisplayed()
+  }
+
+  @Test
   fun imageUploadButtonIsVisibleAndClickable() {
     composeTestRule.checkImageUploadButtonIsDisplayed()
     composeTestRule.checkImageUploadButtonClickable()
+  }
+
+  @Test
+  fun enteringInvalidCategoryShowsErrorMessage() {
+    val invalidCategory = "InvalidCategory"
+    composeTestRule.enterAddItemCategory(invalidCategory)
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertIsDisplayed() // Adjust this assertion based on actual error handling
+  }
+
+  @Test
+  fun addButtonDisabledWhenRequiredFieldsMissing() {
+    // Only set one required field
+    composeTestRule.enterAddItemType("T-shirt")
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
+  }
+
+  @Test
+  fun addButtonDisabledWhenRequiredCategoryFieldMissing() {
+    // Only set one required field
+    composeTestRule.enterAddItemPhoto("content://dummy/photo.jpg".toUri())
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
+  }
+
+  @Test
+  fun enteringInvalidCategoryShowsErrorMessageThenTheCorrectCategory() {
+    // viewModel = AddItemsViewModel(repository)
+    // Type invalid category
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
+
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.invalidCategory != null)
+      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothes") == true)
+    }
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+        .performTextReplacement("Clothes")
+
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
+  }
+
+  @Test
+  fun imageIsDisplayedAfterUpload() {
+    val uri = Uri.parse("content://dummy/photo.jpg")
+
+    // Make sure AddItemsScreen is composed
+    // Run the actual image-upload verification
+    composeTestRule.verifyImageUploadFlow(viewModel, uri)
   }
 }

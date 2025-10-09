@@ -1,5 +1,6 @@
 package com.android.ootd.utils
 
+import com.android.ootd.model.Item
 import com.android.ootd.model.ItemsRepository
 
 object InMemoryItem : ItemsTest {
@@ -7,8 +8,8 @@ object InMemoryItem : ItemsTest {
     return InMemoryItemsRepository()
   }
 
-  class InMemoryItemsRepository : ItemsRepository {
-    private val itemList = mutableListOf<com.android.ootd.model.Item>()
+  class InMemoryItemsRepository(val itemList: MutableList<Item> = mutableListOf<Item>()) :
+      ItemsRepository {
 
     override suspend fun addItem(item: com.android.ootd.model.Item) {
       itemList.add(item)

@@ -61,7 +61,6 @@ open class AddItemsViewModel(
   }
 
   fun canAddItems(): Boolean {
-    // Log.e("AddItemsViewModel", "Add button clicked") //
     val state = _uiState.value
     if (!state.isAddingValid) {
       val error =
@@ -100,7 +99,6 @@ open class AddItemsViewModel(
 
     viewModelScope.launch {
       try {
-        // Log.e("AddItemsViewModel", "Adding item: ${item.uuid} (${item.category})")
         repository.addItem(item)
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")
@@ -116,13 +114,20 @@ open class AddItemsViewModel(
 
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()
-    val isValid = categories.any { it.equals(category.trim(), ignoreCase = true) }
+    val lowerInput = category.trim().lowercase()
+
+    val isPotentialMatch = categories.any { it.lowercase().startsWith(lowerInput) }
+    val isExactMatch = categories.any { it.equals(category.trim(), ignoreCase = true) }
 
     _uiState.value =
         _uiState.value.copy(
             category = category,
             invalidCategory =
-                if (isValid || category.isBlank()) null else _uiState.value.invalidCategory)
+                when {
+                  category.isBlank() -> null
+                  isPotentialMatch || isExactMatch -> null
+                  else -> "Please enter one of: Clothes, Accessories, Shoes, or Bags."
+                })
   }
 
   fun setType(type: String) {
