@@ -2,11 +2,13 @@ package com.android.ootd.screen
 
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
@@ -155,5 +157,26 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun imageIsDisplayedAfterUpload() {
     val uri = Uri.parse("content://dummy/photo.jpg")
     composeTestRule.verifyImageUploadFlow(viewModel, uri)
+  }
+
+  @Test
+  fun clickingAddItemReturns() {
+    val item = ItemsTest.item4
+    composeTestRule.enterAddItemDetails(item)
+    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
+
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).performClick()
+  }
+
+  @Test
+  fun addButtonEnabledWhenAllRequiredFieldsValid() {
+    val item = ItemsTest.item4
+    composeTestRule.enterAddItemDetails(item)
+    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+        .assertExists()
+        .assertIsEnabled()
   }
 }
