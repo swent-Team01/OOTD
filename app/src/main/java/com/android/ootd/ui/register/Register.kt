@@ -71,8 +71,8 @@ object RegisterScreenTestTags {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
-  val registerUiState by modelView.uiState.collectAsState()
+fun RegisterScreen(viewModel: RegisterViewModel, onRegister: () -> Unit = {}) {
+  val registerUiState by viewModel.uiState.collectAsState()
   val errorMsg = registerUiState.errorMsg
 
   val context = LocalContext.current
@@ -86,14 +86,14 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
   LaunchedEffect(errorMsg) {
     if (errorMsg != null) {
       Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-      modelView.clearErrorMsg()
+      viewModel.clearErrorMsg()
     }
   }
 
   // Navigate only when a successful registration is signaled
   LaunchedEffect(registerUiState.registered) {
     if (registerUiState.registered) {
-      modelView.markRegisteredHandled()
+      viewModel.markRegisteredHandled()
       onRegister()
     }
   }
@@ -126,7 +126,7 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
 
           OutlinedTextField(
               value = registerUiState.username,
-              onValueChange = { modelView.setUsername(it) },
+              onValueChange = { viewModel.setUsername(it) },
               label = { Text(text = "Username", color = textColor, fontFamily = Bodoni) },
               placeholder = {
                 Text(text = "Enter your username", color = textColor, fontFamily = Bodoni)
@@ -158,7 +158,7 @@ fun RegisterScreen(modelView: RegisterViewModel = viewModel(), onRegister: () ->
           Spacer(modifier = Modifier.height(30.dp))
 
           Button(
-              onClick = { modelView.registerUser() },
+              onClick = { viewModel.registerUser() },
               modifier = Modifier.fillMaxWidth().testTag(RegisterScreenTestTags.REGISTER_SAVE),
               enabled =
                   !registerUiState.isLoading &&

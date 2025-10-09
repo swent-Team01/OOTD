@@ -6,9 +6,13 @@ import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
+import com.android.ootd.ui.register.RegisterViewModel
+import io.mockk.mockk
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -16,9 +20,14 @@ import org.junit.Test
 class RegisterScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
+  private lateinit var viewModel: RegisterViewModel
+  private lateinit var repository: UserRepository
+
   @Before
   fun setUp() {
-    composeTestRule.setContent { RegisterScreen() }
+    repository = mockk(relaxed = true)
+    viewModel = RegisterViewModel(repository)
+    composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
 
   @Test
@@ -100,5 +109,13 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
+  }
+
+  @Test
+  fun registerScreen_showsLoadingIndicator_whenIsLoadingIsTrue() {
+    viewModel.showLoading(true)
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Saving…").assertIsDisplayed()
   }
 }
