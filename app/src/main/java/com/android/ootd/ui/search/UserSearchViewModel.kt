@@ -37,12 +37,12 @@ class UserSearchViewModel(
         )
     searchUsernames(username)
     _uiState.value =
-        _uiState.value.copy(suggestionsExpanded = _uiState.value.userSuggestions.isNotEmpty())
+        // Whenever they are searching we should show suggestions
+        _uiState.value.copy(suggestionsExpanded = true)
   }
 
   private fun searchUsernames(query: String) {
     _uiState.value = _uiState.value.copy(userSuggestions = emptyList())
-    Log.d("UserSearchViewModel", "The query is $query ")
     viewModelScope.launch {
       try {
         val allUsers = userRepository.getAllUsers()
@@ -67,7 +67,6 @@ class UserSearchViewModel(
               userSuggestions = emptyList(),
               isSelectedUserFollowed = userRepository.isMyFriend(user.uid),
               suggestionsExpanded = false)
-      Log.d("UserSearchViewModel", "Finished selecting user")
     }
   }
 
@@ -97,6 +96,7 @@ class UserSearchViewModel(
       }
       val friendID = _uiState.value.selectedUser?.uid ?: ""
       val friendUsername = _uiState.value.selectedUser?.name ?: ""
+
       if (!_uiState.value.isSelectedUserFollowed) {
         userRepository.addFriend(myUID, friendID, friendUsername)
       } else {
