@@ -8,7 +8,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.ktx.Firebase
 import java.util.UUID
-import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
@@ -109,8 +108,10 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
       // array section
 
-      userRef.update(
-          "friendList", FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)))
+      userRef
+          .update(
+              "friendList", FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)))
+          .await()
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
@@ -129,8 +130,10 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
 
       // Use arrayRemove to remove the friend from the array
-      userRef.update(
-          "friendList", FieldValue.arrayRemove(Friend(uid = friendID, name = friendUsername)))
+      userRef
+          .update(
+              "friendList", FieldValue.arrayRemove(Friend(uid = friendID, name = friendUsername)))
+          .await()
     } catch (e: Exception) {
       Log.e(
           "UserRepositoryFirestore", "Error removing friend $friendID from $userID ${e.message}", e)
