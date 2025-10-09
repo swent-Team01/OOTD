@@ -16,11 +16,11 @@ data class FeedUiState(
     val allPosts: List<OutfitPost> = emptyList(),
     val feedPosts: List<OutfitPost> = emptyList(),
     val currentUser: User? = null,
-    val hasPostedToday: Boolean = false)
+    val hasPostedToday: Boolean = false
+)
 
-class FeedViewModel(
-    private val repository: FeedRepository = FeedRepositoryProvider.repository
-) : ViewModel() {
+class FeedViewModel(private val repository: FeedRepository = FeedRepositoryProvider.repository) :
+    ViewModel() {
 
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()

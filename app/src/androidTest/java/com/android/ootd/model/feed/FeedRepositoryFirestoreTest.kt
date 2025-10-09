@@ -6,12 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.google.firebase.FirebaseApp
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestoreSettings
 import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNotNull
-import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
@@ -157,7 +154,6 @@ class FeedRepositoryFirestoreTest {
       assertTrue(freshRead.isEmpty())
     }
   }
-
 
   @Test
   fun postsCollectionConstant_isCorrect() {

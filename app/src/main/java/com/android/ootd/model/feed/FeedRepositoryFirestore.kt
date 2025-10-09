@@ -14,32 +14,34 @@ const val POSTS_COLLECTION_PATH = "posts"
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
 
-//  /** Helper method to validate post data. */
-//  private fun checkPostData(post: OutfitPost): OutfitPost? {
-//    if (post.postUID.isBlank() || post.uid.isBlank() || post.outfitURL.isBlank()) {
-//      Log.e("FeedRepositoryFirestore", "Invalid post data for postUUID=${post.postUID}")
-//      return null
-//    }
-//    return post
-//  }
-//
-//  /** Helper method to safely transform a Firestore document into a post. */
-//  private fun transformPostDocument(document: DocumentSnapshot): OutfitPost? {
-//    return try {
-//      val post = document.toObject<OutfitPost>()
-//      if (post == null) {
-//        Log.e(
-//            "FeedRepositoryFirestore",
-//            "Failed to deserialize document ${document.id} to OutfitPost. Data: ${document.data}")
-//        return null
-//      }
-//      checkPostData(post)
-//    } catch (e: Exception) {
-//      Log.e(
-//          "FeedRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
-//      null
-//    }
-//  }
+  //  /** Helper method to validate post data. */
+  //  private fun checkPostData(post: OutfitPost): OutfitPost? {
+  //    if (post.postUID.isBlank() || post.uid.isBlank() || post.outfitURL.isBlank()) {
+  //      Log.e("FeedRepositoryFirestore", "Invalid post data for postUUID=${post.postUID}")
+  //      return null
+  //    }
+  //    return post
+  //  }
+  //
+  //  /** Helper method to safely transform a Firestore document into a post. */
+  //  private fun transformPostDocument(document: DocumentSnapshot): OutfitPost? {
+  //    return try {
+  //      val post = document.toObject<OutfitPost>()
+  //      if (post == null) {
+  //        Log.e(
+  //            "FeedRepositoryFirestore",
+  //            "Failed to deserialize document ${document.id} to OutfitPost. Data:
+  // ${document.data}")
+  //        return null
+  //      }
+  //      checkPostData(post)
+  //    } catch (e: Exception) {
+  //      Log.e(
+  //          "FeedRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}",
+  // e)
+  //      null
+  //    }
+  //  }
 
   override suspend fun getFeed(): List<OutfitPost> {
     return try {
