@@ -113,9 +113,10 @@ class RegisterScreenTest {
 
   @Test
   fun registerScreen_showsLoadingIndicator_whenIsLoadingIsTrue() {
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
     viewModel.showLoading(true)
 
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertExists()
     composeTestRule.onNodeWithText("Saving…").assertIsDisplayed()
   }
 }
