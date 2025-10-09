@@ -3,54 +3,55 @@ package com.android.ootd.ui.feed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class FeedViewModel : ViewModel() {
+data class FeedUiState(
+    val allPosts: List<OutfitPost> = emptyList(),
+    val feedPosts: List<OutfitPost> = emptyList(),
+    val currentUser: User? = null,
+    val hasPostedToday: Boolean = false)
 
-  private val repository = FeedRepositoryProvider.repository
+class FeedViewModel(
+    private val repository: FeedRepository = FeedRepositoryProvider.repository
+) : ViewModel() {
 
-  // Holds all posts from all users
-  private val _allPosts = MutableStateFlow<List<OutfitPost>>(emptyList())
-
-  // Exposed filtered posts (friends-only)
-  private val _feedPosts = MutableStateFlow<List<OutfitPost>>(emptyList())
-  val feedPosts: StateFlow<List<OutfitPost>> = _feedPosts
-
-  private val _currentUser = MutableStateFlow<User?>(null)
-  val currentUser: StateFlow<User?> = _currentUser
-  private val _hasPostedToday = MutableStateFlow(false)
-  val hasPostedToday: StateFlow<Boolean> = _hasPostedToday
+  private val _uiState = MutableStateFlow(FeedUiState())
+  val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
   fun onPostUploaded() {
     viewModelScope.launch {
-      _hasPostedToday.value = true
-      // Refresh posts only if we have a current user (so we can filter)
-      val user = _currentUser.value
+      _uiState.value = _uiState.value.copy(hasPostedToday = true)
+
+      val user = _uiState.value.currentUser
       if (user != null) {
-        _allPosts.value = repository.getFeed()
-        recomputeFilteredFeed()
+        val all = repository.getFeed()
+        _uiState.value =
+            _uiState.value.copy(allPosts = all, feedPosts = filterPostsByFriends(all, user))
       } else {
-        _feedPosts.value = emptyList()
+        _uiState.value = _uiState.value.copy(feedPosts = emptyList())
       }
     }
   }
 
-  fun recomputeFilteredFeed() {
-    val user = _currentUser.value
+  private fun recomputeFilteredFeed() {
+    val user = _uiState.value.currentUser
     if (user == null) {
-      _feedPosts.value = emptyList()
+      _uiState.value = _uiState.value.copy(feedPosts = emptyList())
       return
     }
-    _feedPosts.value = filterPostsByFriends(_allPosts.value, user)
+    _uiState.value =
+        _uiState.value.copy(feedPosts = filterPostsByFriends(_uiState.value.allPosts, user))
   }
 
   // Filters to include only posts from friends
-  fun filterPostsByFriends(posts: List<OutfitPost>, user: User): List<OutfitPost> {
+  internal fun filterPostsByFriends(posts: List<OutfitPost>, user: User): List<OutfitPost> {
     val friendsUID =
         user.friendList
             .asSequence()
@@ -58,26 +59,24 @@ class FeedViewModel : ViewModel() {
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .toHashSet()
-    // If we want to include user's own posts, uncomment the next line
-    // friendsUID.add(user.uid)
     return posts.filter { it.uid in friendsUID }
   }
 
   /** Called after the authenticated user is available. */
   fun setCurrentUser(user: User) {
-    _currentUser.value = user
+    _uiState.value = _uiState.value.copy(currentUser = user)
     viewModelScope.launch {
+      // Combine repository state with local session state to avoid races
       val repoHasPosted = repository.hasPostedToday(user.uid)
-      val effectiveHasPosted = _hasPostedToday.value || repoHasPosted
-      _hasPostedToday.value = effectiveHasPosted
+      val effectiveHasPosted = _uiState.value.hasPostedToday || repoHasPosted
+      _uiState.value = _uiState.value.copy(hasPostedToday = effectiveHasPosted)
 
       if (effectiveHasPosted) {
-        if (_allPosts.value.isEmpty()) {
-          _allPosts.value = repository.getFeed()
-        }
+        val all = _uiState.value.allPosts.ifEmpty { repository.getFeed() }
+        _uiState.value = _uiState.value.copy(allPosts = all)
         recomputeFilteredFeed()
       } else {
-        _feedPosts.value = emptyList()
+        _uiState.value = _uiState.value.copy(feedPosts = emptyList())
       }
     }
   }

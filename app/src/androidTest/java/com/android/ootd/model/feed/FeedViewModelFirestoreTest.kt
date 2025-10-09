@@ -65,10 +65,13 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered =
+        withTimeout(5_000) {
+          vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts
+        }
 
     assertEquals(listOf("p1", "p2"), filtered.map { it.postUID })
-    assertTrue(vm.hasPostedToday.value)
+    assertTrue(vm.uiState.value.hasPostedToday)
   }
 
   @Test
@@ -80,7 +83,7 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val maybe = withTimeout(5_000) { vm.feedPosts.first() }
+    val maybe = withTimeout(5_000) { vm.uiState.first().feedPosts }
     assertEquals(0, maybe.size)
   }
 
@@ -101,14 +104,14 @@ class FeedViewModelFirestoreTest {
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
 
-    assertEquals(0, vm.feedPosts.first().size)
+    assertEquals(0, vm.uiState.first().feedPosts.size)
 
     val currentUser = User(uid = "me", name = "Me", friendList = listOf(Friend("u2", "Bob")))
     vm.setCurrentUser(currentUser)
 
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     assertEquals(listOf("p2"), filtered.map { it.postUID })
-    assertTrue(vm.hasPostedToday.value)
+    assertTrue(vm.uiState.value.hasPostedToday)
   }
 
   @Test
@@ -121,7 +124,7 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val list = withTimeout(5_000) { vm.feedPosts.first() }
+    val list = withTimeout(5_000) { vm.uiState.first().feedPosts }
     assertEquals(0, list.size)
   }
 
@@ -141,7 +144,7 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     assertEquals(listOf("p1", "p3", "p4"), filtered.map { it.postUID })
   }
 
@@ -153,10 +156,10 @@ class FeedViewModelFirestoreTest {
 
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = emptyList()))
     vm.onPostUploaded()
-    assertEquals(0, withTimeout(5_000) { vm.feedPosts.first() }.size)
+    assertEquals(0, withTimeout(5_000) { vm.uiState.first().feedPosts }.size)
 
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u2", "Bob"))))
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     assertEquals(listOf("p2"), filtered.map { it.postUID })
   }
 
@@ -174,7 +177,7 @@ class FeedViewModelFirestoreTest {
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "A"))))
 
-    assertEquals(0, withTimeout(5_000) { vm.feedPosts.first() }.size)
+    assertEquals(0, withTimeout(5_000) { vm.uiState.first().feedPosts }.size)
   }
 
   @Test
@@ -190,7 +193,7 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     assertEquals(listOf("p1"), filtered.map { it.postUID })
   }
 
@@ -203,11 +206,11 @@ class FeedViewModelFirestoreTest {
     vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "Alice"))))
 
     // Before posting, feed should remain empty
-    assertEquals(0, vm.feedPosts.first().size)
+    assertEquals(0, vm.uiState.first().feedPosts.size)
 
     // After posting, feed should load and filter
     vm.onPostUploaded()
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     assertEquals(listOf("p1"), filtered.map { it.postUID })
   }
 
@@ -226,7 +229,7 @@ class FeedViewModelFirestoreTest {
     // Do not set current user
 
     // Feed should remain empty since user is null
-    assertEquals(0, withTimeout(5_000) { vm.feedPosts.first() }.size)
+    assertEquals(0, withTimeout(5_000) { vm.uiState.first().feedPosts }.size)
   }
 
   @Test
@@ -242,7 +245,7 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.isNotEmpty() }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     // Only the valid friend uid should match
     assertEquals(listOf("p2"), filtered.map { it.postUID })
   }
@@ -260,7 +263,7 @@ class FeedViewModelFirestoreTest {
 
     vm.onPostUploaded()
 
-    val filtered = withTimeout(5_000) { vm.feedPosts.filter { it.size == 2 }.first() }
+    val filtered = withTimeout(5_000) { vm.uiState.filter { it.feedPosts.size == 2 }.first().feedPosts }
     // Order is not guaranteed when timestamps are equal; assert set equality
     assertEquals(setOf("pA", "pB"), filtered.map { it.postUID }.toSet())
   }

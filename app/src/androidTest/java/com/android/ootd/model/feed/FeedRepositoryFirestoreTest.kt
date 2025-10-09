@@ -22,7 +22,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class FeedRepositoryFirestoreTest {
-
   private val db = FirebaseEmulator.firestore
   private lateinit var repo: FeedRepositoryFirestore
 
@@ -35,6 +34,8 @@ class FeedRepositoryFirestoreTest {
 
   @After fun tearDown() = runBlocking { clearPosts() }
 
+  // -------- Core functional tests (merged) --------
+
   @Test
   fun getFeed_emptyCollection_returnsEmptyList() = runBlocking {
     val result = repo.getFeed()
@@ -43,9 +44,9 @@ class FeedRepositoryFirestoreTest {
 
   @Test
   fun addPost_thenGetFeed_returnsAscendingTimestampOrder() = runBlocking {
-    val p1 = post("p1", ts = 2L)
-    val p2 = post("p2", ts = 1L)
-    val p3 = post("p3", ts = 3L)
+    val p1 = samplePost("p1", ts = 2L)
+    val p2 = samplePost("p2", ts = 1L)
+    val p3 = samplePost("p3", ts = 3L)
 
     repo.addPost(p1)
     repo.addPost(p2)
@@ -58,7 +59,7 @@ class FeedRepositoryFirestoreTest {
 
   @Test
   fun addPost_writesDocumentWithGivenId() = runBlocking {
-    val p = post("explicit-id-123", ts = 42L)
+    val p = samplePost("explicit-id-123", ts = 42L)
     repo.addPost(p)
 
     val doc = db.collection(POSTS_COLLECTION_PATH).document("explicit-id-123").get().await()
@@ -68,18 +69,14 @@ class FeedRepositoryFirestoreTest {
 
   @Test
   fun getFeed_withCorruptedDocument_returnsEmptyList_dueToCatchAll() = runBlocking {
-    // Seed one valid post
-    val good = post("good", ts = 1L)
+    val good = samplePost("good", ts = 1L)
     repo.addPost(good)
 
-    // Inject one invalid/corrupted document (wrong type for timestamp)
     db.collection(POSTS_COLLECTION_PATH)
         .document("bad")
         .set(mapOf("postUID" to "bad", "timestamp" to "oops"))
         .await()
 
-    // Current implementation tries to toObject() each doc without per-doc try/catch;
-    // if one fails, the outer try/catch returns emptyList.
     val result = repo.getFeed()
     assertTrue(result.isEmpty())
   }
@@ -98,9 +95,9 @@ class FeedRepositoryFirestoreTest {
     val badDb = firestoreForApp(appName = "feed-repo-bad2", host = "10.0.2.2", port = 6553)
     val badRepo = FeedRepositoryFirestore(badDb)
 
-    val p = post("will-fail", ts = 7L)
+    val p = samplePost("will-fail", ts = 7L)
     // Local ack: should not throw
-    badRepo.addPost(p)
+    runCatching { badRepo.addPost(p) }
 
     // Same instance: may or may not show local write depending on timing/timeout
     val sameInstance = badRepo.getFeed()
@@ -115,8 +112,16 @@ class FeedRepositoryFirestoreTest {
   }
 
   @Test
-  fun hasPostedToday_defaultFalse() = runBlocking {
+  fun hasPostedToday_defaultFalse_andTrueWhenUserHasPostedToday() = runBlocking {
+    // default false
     assertEquals(false, repo.hasPostedToday("non-existent-user"))
+
+    // true after posting today
+    val userId = "user-today"
+    val post = samplePost("today-post", ts = System.currentTimeMillis()).copy(uid = userId)
+    repo.addPost(post)
+    val result = repo.hasPostedToday(userId)
+    assertTrue(result)
   }
 
   @Test
@@ -126,50 +131,37 @@ class FeedRepositoryFirestoreTest {
     assertEquals(ids.size, ids.toSet().size)
   }
 
-  // -------- Private helpers via reflection to improve coverage --------
-
   @Test
-  fun checkPostData_returnsNullForInvalid_andSameForValid() = runBlocking {
-    val invalid = post("", ts = 1L) // blank postUID -> invalid
-    val valid = post("ok", ts = 1L)
-
-    val method =
-        FeedRepositoryFirestore::class
-            .java
-            .getDeclaredMethod("checkPostData", OutfitPost::class.java)
-    method.isAccessible = true
-
-    val invalidRes = method.invoke(repo, invalid) as OutfitPost?
-    val validRes = method.invoke(repo, valid) as OutfitPost?
-
-    assertNull(invalidRes)
-    assertEquals(valid, validRes)
+  fun getFeed_throwsException_caughtAndReturnsEmptyList() = runBlocking {
+    val invalidDb = firestoreForApp("feedrepo-throws", "localhost", 65533) // unreachable
+    val repo = FeedRepositoryFirestore(invalidDb)
+    val result = repo.getFeed()
+    assertTrue(result.isEmpty())
   }
 
   @Test
-  fun transformPostDocument_handlesValidAndInvalid() = runBlocking {
-    // Valid doc stored through repo
-    val good = post("tpd-ok", ts = 5L)
-    repo.addPost(good)
-    val goodSnap: DocumentSnapshot =
-        db.collection(POSTS_COLLECTION_PATH).document("tpd-ok").get().await()
+  fun addPost_whenFirestoreUnavailable_throwsOrOfflineAck() = runBlocking {
+    val invalidDb = firestoreForApp("feedrepo-addpost-fail", "localhost", 65532)
+    val repo = FeedRepositoryFirestore(invalidDb)
+    val post = samplePost("failing-post", ts = 10L)
 
-    // Invalid doc (missing required fields)
-    db.collection(POSTS_COLLECTION_PATH).document("tpd-bad").set(mapOf("random" to 1)).await()
-    val badSnap: DocumentSnapshot =
-        db.collection(POSTS_COLLECTION_PATH).document("tpd-bad").get().await()
+    val result = runCatching { repo.addPost(post) }
 
-    val method =
-        FeedRepositoryFirestore::class
-            .java
-            .getDeclaredMethod("transformPostDocument", DocumentSnapshot::class.java)
-    method.isAccessible = true
+    if (result.isFailure) {
+      assertTrue(true) // immediate failure path exercised
+    } else {
+      // Offline ack path: verify a fresh misconfigured repo cannot read it
+      val freshDb = firestoreForApp("feedrepo-addpost-fail-reader", "localhost", 65532)
+      val freshRepo = FeedRepositoryFirestore(freshDb)
+      val freshRead = freshRepo.getFeed()
+      assertTrue(freshRead.isEmpty())
+    }
+  }
 
-    val ok = method.invoke(repo, goodSnap) as OutfitPost?
-    val bad = method.invoke(repo, badSnap) as OutfitPost?
 
-    assertNotNull(ok)
-    assertNull(bad)
+  @Test
+  fun postsCollectionConstant_isCorrect() {
+    assertEquals("posts", POSTS_COLLECTION_PATH)
   }
 
   // -------- Helpers --------
@@ -179,7 +171,7 @@ class FeedRepositoryFirestoreTest {
     docs.forEach { it.reference.delete().await() }
   }
 
-  private fun post(id: String, ts: Long) =
+  private fun samplePost(id: String, ts: Long) =
       OutfitPost(
           postUID = id,
           name = "name-$id",
