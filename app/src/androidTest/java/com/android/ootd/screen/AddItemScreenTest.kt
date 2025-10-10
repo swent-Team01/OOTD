@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -96,6 +97,13 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterMaterial() {
     val text = "Cotton 80%, Polyester 20%"
     composeTestRule.enterAddItemMaterial(text)
+    composeTestRule.waitForIdle()
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(AddItemScreenTestTags.INPUT_MATERIAL)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL).assertTextContains(text)
   }
 
@@ -164,8 +172,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     val item = ItemsTest.item4
     composeTestRule.enterAddItemDetails(item)
     composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
-
+    composeTestRule.waitUntil(timeoutMillis = 5_000) { viewModel.uiState.value.isAddingValid }
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).performClick()
+
+    composeTestRule.waitForIdle()
   }
 
   @Test
@@ -173,6 +183,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     val item = ItemsTest.item4
     composeTestRule.enterAddItemDetails(item)
     composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
+
+    composeTestRule.waitUntil(timeoutMillis = 5_000) { viewModel.uiState.value.isAddingValid }
 
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
