@@ -74,6 +74,11 @@ object AddItemScreenTestTags {
   const val ERROR_MESSAGE = "errorMessage"
   const val IMAGE_PICKER = "itemImagePicker"
   const val IMAGE_PREVIEW = "itemImagePreview"
+
+  const val TYPE_SUGGESTIONS = "typeSuggestion"
+  const val CATEGORY_SUGGESTION = "categorySuggestion"
+
+  const val ALL_FIELDS = "allFields"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,7 +141,8 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                 Modifier.fillMaxWidth()
                     .padding(18.dp)
                     .padding(innerPadding)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .testTag(AddItemScreenTestTags.ALL_FIELDS),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
               Box(
                   modifier =
@@ -292,7 +298,8 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                 DropdownMenu(
                     expanded = typeExpanded && itemsUIState.typeSuggestion.isNotEmpty(),
                     onDismissRequest = { typeExpanded = false },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.TYPE_SUGGESTIONS),
                     properties = PopupProperties(focusable = false)) {
                       itemsUIState.typeSuggestion.forEach { suggestion ->
                         DropdownMenuItem(
