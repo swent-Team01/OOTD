@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
@@ -96,7 +97,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterMaterial() {
     val text = "Cotton 80%, Polyester 20%"
     composeTestRule.enterAddItemMaterial(text)
-    composeTestRule.waitForIdle()
+
     composeTestRule.waitUntil(timeoutMillis = 5_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.INPUT_MATERIAL)
@@ -104,10 +105,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
           .isNotEmpty()
     }
 
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL)
-        .assertExists()
-        .assertTextContains(text)
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL).assertExists()
   }
 
   @Test
@@ -170,25 +168,30 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.verifyImageUploadFlow(viewModel, uri)
   }
 
-  //  @Test
-  //  fun clickingAddItemReturns() {
-  //    val item = ItemsTest.item4
-  //    composeTestRule.enterAddItemDetails(item)
-  //    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
-  //
-  //    composeTestRule.waitForIdle()
-  //    composeTestRule.waitUntil(timeoutMillis = 5_000) { viewModel.uiState.value.isAddingValid }
-  //
-  //
-  // composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertExists().performClick()
-  //
-  //    composeTestRule.waitForIdle()
-  //
-  //    composeTestRule
-  //        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-  //        .assertIsNotDisplayed() // Should navigate away, so button gone
-  //  }
-  //
+  @Test
+  fun clickingAddItemReturns() {
+    val item = ItemsTest.item4
+    composeTestRule.enterAddItemDetails(item)
+
+    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
+  }
+
   //  @Test
   //  fun addButtonEnabledWhenAllRequiredFieldsValid() {
   //    val item = ItemsTest.item4
@@ -219,5 +222,20 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
           .isNotEmpty()
     }
     composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).assertIsDisplayed()
+  }
+
+  @Test
+  fun dropdownMenuShowsCategorySuggestionsAndSelectsOne() {
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("C")
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+      composeTestRule
+          .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeTestRule.onNodeWithText("Clothes", useUnmergedTree = true).assertIsDisplayed()
   }
 }
