@@ -377,7 +377,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                 Spacer(modifier = Modifier.height(24.dp))
                 val isButtonEnabled = itemsUIState.isAddingValid
                 Button(
-                    onClick = { if (addItemsViewModel.canAddItems()) {} },
+                    onClick = { addItemsViewModel.canAddItems() },
                     enabled = isButtonEnabled,
                     modifier =
                         Modifier.height(47.dp)
