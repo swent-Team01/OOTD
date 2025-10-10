@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -76,6 +75,7 @@ object AddItemScreenTestTags {
   const val IMAGE_PREVIEW = "itemImagePreview"
 
   const val TYPE_SUGGESTIONS = "typeSuggestion"
+
   const val CATEGORY_SUGGESTION = "categorySuggestion"
 
   const val ALL_FIELDS = "allFields"
@@ -136,251 +136,270 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
             })
       },
       content = { innerPadding ->
-        Column(
+        LazyColumn(
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(18.dp)
                     .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
                     .testTag(AddItemScreenTestTags.ALL_FIELDS),
-            verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              Box(
-                  modifier =
-                      Modifier.size(180.dp)
-                          .clip(RoundedCornerShape(16.dp))
-                          .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
-                          .background(Color.White)
-                          .align(Alignment.CenterHorizontally)
-                          .testTag(AddItemScreenTestTags.IMAGE_PREVIEW), // Added test tag
-                  contentAlignment = Alignment.Center,
-              ) {
-                if (itemsUIState.image == Uri.EMPTY) {
-                  Icon(
-                      painter = painterResource(R.drawable.ic_photo_placeholder),
-                      contentDescription = "Placeholder icon",
-                      modifier = Modifier.size(80.dp))
-                } else {
-                  AsyncImage(
-                      model = itemsUIState.image,
-                      contentDescription = "Selected photo",
-                      modifier = Modifier.matchParentSize(),
-                      contentScale = ContentScale.Crop)
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              item {
+                Box(
+                    modifier =
+                        Modifier.size(180.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
+                            .background(Color.White)
+                            .testTag(AddItemScreenTestTags.IMAGE_PREVIEW), // Added test tag
+                    contentAlignment = Alignment.Center,
+                ) {
+                  if (itemsUIState.image == Uri.EMPTY) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_photo_placeholder),
+                        contentDescription = "Placeholder icon",
+                        modifier = Modifier.size(80.dp))
+                  } else {
+                    AsyncImage(
+                        model = itemsUIState.image,
+                        contentDescription = "Selected photo",
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop)
+                  }
                 }
               }
 
-              Spacer(Modifier.height(8.dp))
+              item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center) {
+                      Button(
+                          onClick = { showDialog = true },
+                          colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                          shape = RoundedCornerShape(24.dp),
+                          modifier =
+                              Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER) // Added test tag
+                          ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_photo_placeholder),
+                                contentDescription = "Upload",
+                                tint = White,
+                                modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(text = "Upload a picture of the Item", color = White)
+                          }
 
-              Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(
-                    onClick = { showDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                    shape = RoundedCornerShape(24.dp),
-                    modifier =
-                        Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER) // Added test tag
-                    ) {
-                      Icon(
-                          painter = painterResource(R.drawable.ic_photo_placeholder),
-                          contentDescription = "Upload",
-                          tint = White,
-                          modifier = Modifier.size(16.dp))
-                      Spacer(Modifier.width(8.dp))
-                      Text(text = "Upload a picture of the Item", color = White)
+                      if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDialog = false },
+                            title = { Text("Select Image") },
+                            text = {
+                              Column {
+                                TextButton(
+                                    onClick = {
+                                      // Take a photo
+                                      val file =
+                                          File(
+                                              context.cacheDir, "${System.currentTimeMillis()}.jpg")
+                                      val uri =
+                                          FileProvider.getUriForFile(
+                                              context, "${context.packageName}.provider", file)
+                                      cameraUri = uri
+                                      cameraLauncher.launch(uri)
+                                      showDialog = false
+                                    }) {
+                                      Text("📸 Take a Photo")
+                                    }
+
+                                TextButton(
+                                    onClick = {
+                                      // Pick from gallery
+                                      galleryLauncher.launch("image/*")
+                                      showDialog = false
+                                    }) {
+                                      Text("🖼️ Choose from Gallery")
+                                    }
+                              }
+                            },
+                            confirmButton = {},
+                            dismissButton = {})
+                      }
                     }
+              }
 
-                if (showDialog) {
-                  AlertDialog(
-                      onDismissRequest = { showDialog = false },
-                      title = { Text("Select Image") },
-                      text = {
-                        Column {
-                          TextButton(
-                              onClick = {
-                                // Take a photo
-                                val file =
-                                    File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-                                val uri =
-                                    FileProvider.getUriForFile(
-                                        context, "${context.packageName}.provider", file)
-                                cameraUri = uri
-                                cameraLauncher.launch(uri)
-                                showDialog = false
-                              }) {
-                                Text("📸 Take a Photo")
-                              }
-
-                          TextButton(
-                              onClick = {
-                                // Pick from gallery
-                                galleryLauncher.launch("image/*")
-                                showDialog = false
-                              }) {
-                                Text("🖼️ Choose from Gallery")
-                              }
+              item {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                  OutlinedTextField(
+                      value = itemsUIState.category,
+                      onValueChange = {
+                        addItemsViewModel.setCategory(it)
+                        addItemsViewModel.updateCategorySuggestions(it)
+                        categoryExpanded = it.isNotBlank()
+                      },
+                      label = { Text("Category") },
+                      placeholder = { Text("Enter a category") },
+                      isError = itemsUIState.invalidCategory != null,
+                      supportingText = {
+                        itemsUIState.invalidCategory?.let { error ->
+                          Text(
+                              text = error,
+                              color = MaterialTheme.colorScheme.error,
+                              modifier =
+                                  Modifier.testTag(
+                                      AddItemScreenTestTags.ERROR_MESSAGE) // Added test tag
+                              )
                         }
                       },
-                      confirmButton = {},
-                      dismissButton = {})
+                      modifier =
+                          Modifier.fillMaxWidth()
+                              .onFocusChanged { focusState ->
+                                if (!focusState.isFocused && itemsUIState.category.isNotBlank()) {
+                                  addItemsViewModel.validateCategory()
+                                }
+                              }
+                              .testTag(AddItemScreenTestTags.INPUT_CATEGORY), // Added test tag
+                      singleLine = true,
+                      keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                      keyboardActions =
+                          KeyboardActions(
+                              onDone = {
+                                if (itemsUIState.category.isNotBlank()) {
+                                  addItemsViewModel.validateCategory()
+                                }
+                                categoryExpanded = false
+                              }))
+
+                  DropdownMenu(
+                      expanded = categoryExpanded && itemsUIState.categorySuggestion.isNotEmpty(),
+                      onDismissRequest = { categoryExpanded = false },
+                      modifier =
+                          Modifier.fillMaxWidth()
+                              .testTag(AddItemScreenTestTags.CATEGORY_SUGGESTION),
+                      properties = PopupProperties(focusable = false)) {
+                        itemsUIState.categorySuggestion.forEach { suggestion ->
+                          DropdownMenuItem(
+                              text = { Text(suggestion) },
+                              onClick = {
+                                addItemsViewModel.setCategory(suggestion)
+                                categoryExpanded = false
+                              })
+                        }
+                      }
                 }
               }
 
-              Box(modifier = Modifier.fillMaxWidth()) {
+              item {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                  OutlinedTextField(
+                      value = itemsUIState.type,
+                      onValueChange = {
+                        addItemsViewModel.setType(it)
+                        addItemsViewModel.updateTypeSuggestions(it)
+                        typeExpanded = it.isNotBlank()
+                      },
+                      label = { Text("Type") },
+                      placeholder = { Text("Enter a type") },
+                      modifier =
+                          Modifier.fillMaxWidth()
+                              .testTag(AddItemScreenTestTags.INPUT_TYPE), // Added test tag
+                      singleLine = true)
+
+                  DropdownMenu(
+                      expanded = typeExpanded && itemsUIState.typeSuggestion.isNotEmpty(),
+                      onDismissRequest = { typeExpanded = false },
+                      modifier =
+                          Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.TYPE_SUGGESTIONS),
+                      properties = PopupProperties(focusable = false)) {
+                        itemsUIState.typeSuggestion.forEach { suggestion ->
+                          DropdownMenuItem(
+                              text = { Text(suggestion) },
+                              onClick = {
+                                addItemsViewModel.setType(suggestion)
+                                typeExpanded = false
+                              })
+                        }
+                      }
+                }
+              }
+
+              item {
                 OutlinedTextField(
-                    value = itemsUIState.category,
+                    value = itemsUIState.brand,
+                    onValueChange = { addItemsViewModel.setBrand(it) },
+                    label = { Text("Brand") },
+                    placeholder = { Text("Enter a brand") },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .testTag(AddItemScreenTestTags.INPUT_BRAND) // Added test tag
+                    )
+              }
+
+              item {
+                OutlinedTextField(
+                    value = itemsUIState.price,
                     onValueChange = {
-                      addItemsViewModel.setCategory(it)
-                      addItemsViewModel.updateCategorySuggestions(it)
-                      categoryExpanded = it.isNotBlank()
+                      if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                        addItemsViewModel.setPrice(it)
+                      }
                     },
-                    label = { Text("Category") },
-                    placeholder = { Text("Enter a category") },
-                    isError = itemsUIState.invalidCategory != null,
-                    supportingText = {
-                      itemsUIState.invalidCategory?.let { error ->
+                    label = { Text("Price") },
+                    placeholder = { Text("Enter a price") },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .testTag(AddItemScreenTestTags.INPUT_PRICE) // Added test tag
+                    )
+              }
+
+              item {
+                OutlinedTextField(
+                    value = itemsUIState.link,
+                    onValueChange = { addItemsViewModel.setLink(it) },
+                    label = { Text("Link") },
+                    placeholder = { Text("Enter a link") },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .testTag(AddItemScreenTestTags.INPUT_LINK) // Added test tag
+                    )
+              }
+
+              item {
+                OutlinedTextField(
+                    value = itemsUIState.materialText,
+                    onValueChange = { addItemsViewModel.setMaterial(it) },
+                    label = { Text("Material") },
+                    placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .testTag(AddItemScreenTestTags.INPUT_MATERIAL), // Added test tag
+                )
+              }
+
+              item {
+                Spacer(modifier = Modifier.height(24.dp))
+                val isButtonEnabled = itemsUIState.isAddingValid
+                Button(
+                    onClick = { if (addItemsViewModel.canAddItems()) {} },
+                    enabled = isButtonEnabled,
+                    modifier =
+                        Modifier.height(47.dp)
+                            .width(140.dp)
+                            .testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON), // Added test tag
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                ) {
+                  Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = White,
+                            modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+
                         Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier =
-                                Modifier.testTag(
-                                    AddItemScreenTestTags.ERROR_MESSAGE) // Added test tag
-                            )
+                            text = "Add Item",
+                            modifier = Modifier.align(Alignment.CenterVertically))
                       }
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                              if (!focusState.isFocused && itemsUIState.category.isNotBlank()) {
-                                addItemsViewModel.validateCategory()
-                              }
-                            }
-                            .testTag(AddItemScreenTestTags.INPUT_CATEGORY), // Added test tag
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = {
-                              if (itemsUIState.category.isNotBlank()) {
-                                addItemsViewModel.validateCategory()
-                              }
-                              categoryExpanded = false
-                            }))
-
-                DropdownMenu(
-                    expanded = categoryExpanded && itemsUIState.categorySuggestion.isNotEmpty(),
-                    onDismissRequest = { categoryExpanded = false },
-                    modifier = Modifier.fillMaxWidth(),
-                    properties = PopupProperties(focusable = false)) {
-                      itemsUIState.categorySuggestion.forEach { suggestion ->
-                        DropdownMenuItem(
-                            text = { Text(suggestion) },
-                            onClick = {
-                              addItemsViewModel.setCategory(suggestion)
-                              categoryExpanded = false
-                            })
-                      }
-                    }
-              }
-
-              Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = itemsUIState.type,
-                    onValueChange = {
-                      addItemsViewModel.setType(it)
-                      addItemsViewModel.updateTypeSuggestions(it)
-                      typeExpanded = it.isNotBlank()
-                    },
-                    label = { Text("Type") },
-                    placeholder = { Text("Enter a type") },
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .testTag(AddItemScreenTestTags.INPUT_TYPE), // Added test tag
-                    singleLine = true)
-
-                DropdownMenu(
-                    expanded = typeExpanded && itemsUIState.typeSuggestion.isNotEmpty(),
-                    onDismissRequest = { typeExpanded = false },
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.TYPE_SUGGESTIONS),
-                    properties = PopupProperties(focusable = false)) {
-                      itemsUIState.typeSuggestion.forEach { suggestion ->
-                        DropdownMenuItem(
-                            text = { Text(suggestion) },
-                            onClick = {
-                              addItemsViewModel.setType(suggestion)
-                              typeExpanded = false
-                            })
-                      }
-                    }
-              }
-
-              OutlinedTextField(
-                  value = itemsUIState.brand,
-                  onValueChange = { addItemsViewModel.setBrand(it) },
-                  label = { Text("Brand") },
-                  placeholder = { Text("Enter a brand") },
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(AddItemScreenTestTags.INPUT_BRAND) // Added test tag
-                  )
-
-              OutlinedTextField(
-                  value = itemsUIState.price,
-                  onValueChange = {
-                    if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*\$"))) {
-                      addItemsViewModel.setPrice(it)
-                    }
-                  },
-                  label = { Text("Price") },
-                  placeholder = { Text("Enter a price") },
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(AddItemScreenTestTags.INPUT_PRICE) // Added test tag
-                  )
-
-              OutlinedTextField(
-                  value = itemsUIState.link,
-                  onValueChange = { addItemsViewModel.setLink(it) },
-                  label = { Text("Link") },
-                  placeholder = { Text("Enter a link") },
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(AddItemScreenTestTags.INPUT_LINK) // Added test tag
-                  )
-
-              OutlinedTextField(
-                  value = itemsUIState.materialText,
-                  onValueChange = { addItemsViewModel.setMaterial(it) },
-                  label = { Text("Material") },
-                  placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(AddItemScreenTestTags.INPUT_MATERIAL), // Added test tag
-              )
-
-              Spacer(Modifier.height(16.dp))
-
-              val isButtonEnabled = itemsUIState.isAddingValid
-              Button(
-                  onClick = { addItemsViewModel.canAddItems() },
-                  enabled = isButtonEnabled,
-                  modifier =
-                      Modifier.height(47.dp)
-                          .width(140.dp)
-                          .align(Alignment.CenterHorizontally)
-                          .testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON), // Added test tag
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary),
-              ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center) {
-                      Icon(
-                          imageVector = Icons.Default.Add,
-                          contentDescription = "Add",
-                          tint = White,
-                          modifier = Modifier.size(20.dp))
-                      Spacer(Modifier.width(8.dp))
-
-                      Text(text = "Add Item", modifier = Modifier.align(Alignment.CenterVertically))
-                    }
+                }
               }
             }
       })
