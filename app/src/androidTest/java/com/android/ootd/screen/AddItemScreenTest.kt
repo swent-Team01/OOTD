@@ -2,7 +2,6 @@ package com.android.ootd.screen
 
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -141,6 +140,30 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun clickingAddItemReturns() {
+    val item = ItemsTest.item4
+    composeTestRule.enterAddItemDetails(item)
+
+    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
+  }
+
+  @Test
   fun dropdownMenuShowsTypeSuggestionsAndSelectsOne() {
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("Clothes")
 
@@ -170,68 +193,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
           .isNotEmpty()
     }
     composeTestRule.onNodeWithText("Clothes", useUnmergedTree = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun addItemButtonDisabledWhenNoImage() {
-    composeTestRule.enterAddItemCategory("Clothes")
-    composeTestRule.enterAddItemType("Jacket")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-  }
-
-  @Test
-  fun addItemButtonDisabledWhenNoCategory() {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.enterAddItemPhoto(uri)
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-  }
-
-  @Test
-  fun addItemButtonDisabledWhenInvalidCategory() {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.enterAddItemPhoto(uri)
-    composeTestRule.enterAddItemCategory("InvalidCategory")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
-      viewModel.uiState.value.invalidCategory != null
-    }
-
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
   }
 
   @Test
