@@ -37,7 +37,13 @@ data class AddItemsUIState(
         invalidPhotoMsg == null &&
             invalidCategory == null &&
             image != Uri.EMPTY &&
-            category.isNotEmpty()
+            category.isNotEmpty() &&
+            isCategoryValid()
+
+  private fun isCategoryValid(): Boolean {
+    val categories = listOf("Clothes", "Accessories", "Shoes", "Bags")
+    return categories.any { it.equals(category.trim(), ignoreCase = true) }
+  }
 }
 
 /**
@@ -114,10 +120,10 @@ open class AddItemsViewModel(
 
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()
-    val lowerInput = category.trim().lowercase()
+    val trimmedCategory = category.trim()
 
-    val isPotentialMatch = categories.any { it.lowercase().startsWith(lowerInput) }
-    val isExactMatch = categories.any { it.equals(category.trim(), ignoreCase = true) }
+    val isExactMatch = categories.any { it.equals(trimmedCategory, ignoreCase = true) }
+    val isPotentialMatch = categories.any { it.lowercase().startsWith(trimmedCategory.lowercase()) }
 
     _uiState.value =
         _uiState.value.copy(
@@ -125,7 +131,8 @@ open class AddItemsViewModel(
             invalidCategory =
                 when {
                   category.isBlank() -> null
-                  isPotentialMatch || isExactMatch -> null
+                  isExactMatch -> null
+                  isPotentialMatch -> null
                   else -> "Please enter one of: Clothes, Accessories, Shoes, or Bags."
                 })
   }
@@ -275,9 +282,9 @@ open class AddItemsViewModel(
 
     val error =
         when {
-          category.isEmpty() -> "Please select a category."
+          category.isEmpty() -> null
           !categories.any { it.equals(category, ignoreCase = true) } ->
-              "Please select a valid category : $categories"
+              "Please enter one of: Clothes, Accessories, Shoes, or Bags."
           else -> null
         }
 
