@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
@@ -86,6 +87,7 @@ object AddItemScreenTestTags {
 fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
 
   val context = LocalContext.current
+  val focusManager = LocalFocusManager.current
   var typeExpanded by remember { mutableStateOf(false) }
   var categoryExpanded by remember { mutableStateOf(false) }
   val itemsUIState by addItemsViewModel.uiState.collectAsState()
@@ -150,7 +152,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                             .clip(RoundedCornerShape(16.dp))
                             .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
                             .background(Color.White)
-                            .testTag(AddItemScreenTestTags.IMAGE_PREVIEW), // Added test tag
+                            .testTag(AddItemScreenTestTags.IMAGE_PREVIEW),
                     contentAlignment = Alignment.Center,
                 ) {
                   if (itemsUIState.image == Uri.EMPTY) {
@@ -176,9 +178,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                           onClick = { showDialog = true },
                           colors = ButtonDefaults.buttonColors(containerColor = Primary),
                           shape = RoundedCornerShape(24.dp),
-                          modifier =
-                              Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER) // Added test tag
-                          ) {
+                          modifier = Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER)) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_photo_placeholder),
                                 contentDescription = "Upload",
@@ -243,10 +243,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                           Text(
                               text = error,
                               color = MaterialTheme.colorScheme.error,
-                              modifier =
-                                  Modifier.testTag(
-                                      AddItemScreenTestTags.ERROR_MESSAGE) // Added test tag
-                              )
+                              modifier = Modifier.testTag(AddItemScreenTestTags.ERROR_MESSAGE))
                         }
                       },
                       modifier =
@@ -254,9 +251,10 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                               .onFocusChanged { focusState ->
                                 if (!focusState.isFocused && itemsUIState.category.isNotBlank()) {
                                   addItemsViewModel.validateCategory()
+                                  categoryExpanded = false
                                 }
                               }
-                              .testTag(AddItemScreenTestTags.INPUT_CATEGORY), // Added test tag
+                              .testTag(AddItemScreenTestTags.INPUT_CATEGORY),
                       singleLine = true,
                       keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                       keyboardActions =
@@ -266,11 +264,17 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                                   addItemsViewModel.validateCategory()
                                 }
                                 categoryExpanded = false
+                                focusManager.clearFocus()
                               }))
 
                   DropdownMenu(
                       expanded = categoryExpanded && itemsUIState.categorySuggestion.isNotEmpty(),
-                      onDismissRequest = { categoryExpanded = false },
+                      onDismissRequest = {
+                        categoryExpanded = false
+                        if (itemsUIState.category.isNotBlank()) {
+                          addItemsViewModel.validateCategory()
+                        }
+                      },
                       modifier =
                           Modifier.fillMaxWidth()
                               .testTag(AddItemScreenTestTags.CATEGORY_SUGGESTION),
@@ -280,6 +284,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                               text = { Text(suggestion) },
                               onClick = {
                                 addItemsViewModel.setCategory(suggestion)
+                                addItemsViewModel.validateCategory()
                                 categoryExpanded = false
                               })
                         }
@@ -298,9 +303,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                       },
                       label = { Text("Type") },
                       placeholder = { Text("Enter a type") },
-                      modifier =
-                          Modifier.fillMaxWidth()
-                              .testTag(AddItemScreenTestTags.INPUT_TYPE), // Added test tag
+                      modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_TYPE),
                       singleLine = true)
 
                   DropdownMenu(
@@ -327,10 +330,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     onValueChange = { addItemsViewModel.setBrand(it) },
                     label = { Text("Brand") },
                     placeholder = { Text("Enter a brand") },
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .testTag(AddItemScreenTestTags.INPUT_BRAND) // Added test tag
-                    )
+                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_BRAND))
               }
 
               item {
@@ -343,10 +343,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     },
                     label = { Text("Price") },
                     placeholder = { Text("Enter a price") },
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .testTag(AddItemScreenTestTags.INPUT_PRICE) // Added test tag
-                    )
+                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_PRICE))
               }
 
               item {
@@ -355,10 +352,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     onValueChange = { addItemsViewModel.setLink(it) },
                     label = { Text("Link") },
                     placeholder = { Text("Enter a link") },
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .testTag(AddItemScreenTestTags.INPUT_LINK) // Added test tag
-                    )
+                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_LINK))
               }
 
               item {
@@ -368,8 +362,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                     label = { Text("Material") },
                     placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
                     modifier =
-                        Modifier.fillMaxWidth()
-                            .testTag(AddItemScreenTestTags.INPUT_MATERIAL), // Added test tag
+                        Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_MATERIAL),
                 )
               }
 
@@ -377,12 +370,12 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                 Spacer(modifier = Modifier.height(24.dp))
                 val isButtonEnabled = itemsUIState.isAddingValid
                 Button(
-                    onClick = { addItemsViewModel.canAddItems() },
+                    onClick = { if (addItemsViewModel.canAddItems()) {} },
                     enabled = isButtonEnabled,
                     modifier =
                         Modifier.height(47.dp)
                             .width(140.dp)
-                            .testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON), // Added test tag
+                            .testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                 ) {
                   Row(
