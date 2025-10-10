@@ -7,13 +7,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
@@ -47,25 +45,13 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun displayAllComponents() {
 
-    val allFieldsTag = AddItemScreenTestTags.ALL_FIELDS
-
-    listOf(
-            AddItemScreenTestTags.ADD_ITEM_BUTTON,
-            AddItemScreenTestTags.INPUT_TYPE,
-            AddItemScreenTestTags.INPUT_CATEGORY,
-            AddItemScreenTestTags.INPUT_BRAND,
-            AddItemScreenTestTags.INPUT_PRICE,
-            AddItemScreenTestTags.INPUT_LINK,
-            AddItemScreenTestTags.INPUT_MATERIAL,
-            AddItemScreenTestTags.IMAGE_PICKER,
-            AddItemScreenTestTags.IMAGE_PREVIEW,
-        )
-        .forEach { tag ->
-          composeTestRule.onNodeWithTag(allFieldsTag).performScrollToNode(hasTestTag(tag))
-
-          composeTestRule.onNodeWithTag(tag).assertExists()
-        }
-
+    composeTestRule.enterAddItemPhoto("content://dummy/photo.jpg".toUri())
+    composeTestRule.enterAddItemCategory("Clothes")
+    composeTestRule.enterAddItemType("Jacket")
+    composeTestRule.enterAddItemBrand("Brand")
+    composeTestRule.enterAddItemPrice(99.99)
+    composeTestRule.enterAddItemLink("www.ootd.com")
+    composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertDoesNotExist()
@@ -141,9 +127,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     // Only set one required field
     composeTestRule.enterAddItemType("T-shirt")
 
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS)
-        .performScrollToNode(hasTestTag(AddItemScreenTestTags.ADD_ITEM_BUTTON))
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
 
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
   }
@@ -152,16 +136,13 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun addButtonDisabledWhenRequiredCategoryFieldMissing() {
     // Only set one required field
     composeTestRule.enterAddItemPhoto("content://dummy/photo.jpg".toUri())
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS)
-        .performScrollToNode(hasTestTag(AddItemScreenTestTags.ADD_ITEM_BUTTON))
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
 
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
   }
 
   @Test
   fun enteringInvalidCategoryShowsErrorMessageThenTheCorrectCategory() {
-    // viewModel = AddItemsViewModel(repository)
     // Type invalid category
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
 
@@ -220,21 +201,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
         "DEVICE_INFO",
         "screenLayout=${config.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK}")
   }
-
-  //  @Test
-  //  fun addButtonEnabledWhenAllRequiredFieldsValid() {
-  //    val item = ItemsTest.item4
-  //    composeTestRule.enterAddItemDetails(item)
-  //    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
-  //
-  //    composeTestRule.waitUntil(timeoutMillis = 5_000) { viewModel.uiState.value.isAddingValid }
-  //
-  //    composeTestRule.waitForIdle()
-  //
-  //    composeTestRule
-  //        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-  //        .assertIsEnabled()
-  //  }
 
   @Test
   fun dropdownMenuShowsTypeSuggestionsAndSelectsOne() {
