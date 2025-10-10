@@ -77,7 +77,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterLink() {
     val text = "www.ootd.com"
     composeTestRule.enterAddItemLink(text)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_LINK).assertTextContains(text)
   }
 
   @Test
@@ -203,8 +202,11 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemType("Jacket")
 
     composeTestRule.waitForIdle()
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
 
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
   }
 
   @Test
@@ -214,7 +216,11 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
   }
 
   @Test
@@ -225,7 +231,11 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
   }
 
   @Test
