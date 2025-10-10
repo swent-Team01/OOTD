@@ -96,7 +96,7 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.enterAddItemCategory(category: String) {
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
+    ensureVisible(AddItemScreenTestTags.INPUT_CATEGORY)
     onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY, useUnmergedTree = true)
         .performTextInput(category)
   }
@@ -113,7 +113,7 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.enterAddItemLink(link: String) {
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
+    ensureVisible(AddItemScreenTestTags.INPUT_LINK)
 
     onNodeWithTag(AddItemScreenTestTags.INPUT_LINK, useUnmergedTree = true).performTextInput(link)
   }
