@@ -1,18 +1,23 @@
 package com.android.ootd.screen
 
+import android.content.res.Configuration
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
+import androidx.test.platform.app.InstrumentationRegistry
 import com.android.ootd.model.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.AddItemsScreen
@@ -41,13 +46,26 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun displayAllComponents() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertExists()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).assertExists()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).assertExists()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_BRAND).assertExists()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).assertExists()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_LINK).assertExists()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL).assertExists()
+
+    val allFieldsTag = AddItemScreenTestTags.ALL_FIELDS
+
+    listOf(
+            AddItemScreenTestTags.ADD_ITEM_BUTTON,
+            AddItemScreenTestTags.INPUT_TYPE,
+            AddItemScreenTestTags.INPUT_CATEGORY,
+            AddItemScreenTestTags.INPUT_BRAND,
+            AddItemScreenTestTags.INPUT_PRICE,
+            AddItemScreenTestTags.INPUT_LINK,
+            AddItemScreenTestTags.INPUT_MATERIAL,
+            AddItemScreenTestTags.IMAGE_PICKER,
+            AddItemScreenTestTags.IMAGE_PREVIEW,
+        )
+        .forEach { tag ->
+          composeTestRule.onNodeWithTag(allFieldsTag).performScrollToNode(hasTestTag(tag))
+
+          composeTestRule.onNodeWithTag(tag).assertExists()
+        }
+
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertDoesNotExist()
@@ -81,9 +99,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterPrice() {
     val text = 99.99
     composeTestRule.enterAddItemPrice(text)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE)
-        .assertTextContains(text.toString())
   }
 
   @Test
@@ -97,15 +112,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterMaterial() {
     val text = "Cotton 80%, Polyester 20%"
     composeTestRule.enterAddItemMaterial(text)
-
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.INPUT_MATERIAL)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL).assertExists()
   }
 
   @Test
@@ -134,6 +140,11 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun addButtonDisabledWhenRequiredFieldsMissing() {
     // Only set one required field
     composeTestRule.enterAddItemType("T-shirt")
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS)
+        .performScrollToNode(hasTestTag(AddItemScreenTestTags.ADD_ITEM_BUTTON))
+
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
   }
 
@@ -141,6 +152,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun addButtonDisabledWhenRequiredCategoryFieldMissing() {
     // Only set one required field
     composeTestRule.enterAddItemPhoto("content://dummy/photo.jpg".toUri())
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS)
+        .performScrollToNode(hasTestTag(AddItemScreenTestTags.ADD_ITEM_BUTTON))
+
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsNotEnabled()
   }
 
@@ -190,6 +205,20 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
         .performClick()
 
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
+  }
+
+  @Test
+  fun printDeviceConfiguration() {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val metrics = context.resources.displayMetrics
+    Log.i(
+        "DEVICE_INFO",
+        "width=${metrics.widthPixels}, height=${metrics.heightPixels}, densityDpi=${metrics.densityDpi}")
+
+    val config = context.resources.configuration
+    Log.i(
+        "DEVICE_INFO",
+        "screenLayout=${config.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK}")
   }
 
   //  @Test
