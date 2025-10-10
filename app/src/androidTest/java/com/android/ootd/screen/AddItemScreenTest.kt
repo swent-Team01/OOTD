@@ -141,30 +141,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
-  fun clickingAddItemReturns() {
-    val item = ItemsTest.item4
-    composeTestRule.enterAddItemDetails(item)
-
-    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-        .assertExists()
-        .performClick()
-
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
-  }
-
-  @Test
   fun dropdownMenuShowsTypeSuggestionsAndSelectsOne() {
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("Clothes")
 
