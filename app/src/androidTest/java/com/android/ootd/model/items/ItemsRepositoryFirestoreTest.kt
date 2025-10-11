@@ -2,10 +2,7 @@ package com.android.ootd.model.items
 
 import android.net.Uri
 import android.util.Log
-import com.android.ootd.model.ITEMS_COLLECTION
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepositoryProvider.repository
-import com.android.ootd.model.Material
+import com.android.ootd.model.items.ItemsRepositoryProvider.repository
 import com.android.ootd.utils.FirebaseEmulator
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.tasks.await
@@ -229,8 +226,8 @@ class ItemsRepositoryFirestoreTest() {
     assertEquals(1, items.size)
     val matList = items.first().material
     assertEquals(2, matList.size)
-    assertEquals("Cotton", matList.first().name)
-    assertEquals(60.0, matList.first().percentage)
+    assertEquals("Cotton", matList.first()?.name)
+    assertEquals(60.0, matList.first()?.percentage)
   }
 
   @Test
