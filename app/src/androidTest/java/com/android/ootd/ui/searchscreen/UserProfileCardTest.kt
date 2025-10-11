@@ -36,6 +36,7 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
       UserProfileCard(
           selectedUser = User(uid = uid, name = name, friendList = emptyList()),
           modifier = Modifier.padding(16.dp),
+          isSelectedUserFollowed = false,
           onFollowClick = {})
     }
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
@@ -58,6 +59,7 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
       UserProfileCard(
           selectedUser = User(uid = uid, name = name, friendList = emptyList()),
           modifier = Modifier.padding(16.dp),
+          isSelectedUserFollowed = false,
           onFollowClick = { clickCount = clickCount + 1 })
     }
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
@@ -71,6 +73,7 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
       UserProfileCard(
           selectedUser = null, // Pass null here
           modifier = Modifier.padding(16.dp),
+          isSelectedUserFollowed = false,
           onFollowClick = { clickCount++ })
     }
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()

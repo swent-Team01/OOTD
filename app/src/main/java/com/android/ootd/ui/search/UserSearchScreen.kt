@@ -61,7 +61,8 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
           UserProfileCard(
               modifier = Modifier.fillMaxWidth().weight(1f),
               selectedUser = uiState.selectedUser,
-              {})
+              isSelectedUserFollowed = uiState.isSelectedUserFollowed,
+              onFollowClick = { viewModel.pressFollowButton() })
         }
       }
 }
