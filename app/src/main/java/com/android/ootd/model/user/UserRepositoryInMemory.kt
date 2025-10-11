@@ -90,4 +90,14 @@ class UserRepositoryInMemory : UserRepository {
     val user = getUser(currentUser)
     return user.friendList.any { it.uid == friendID }
   }
+
+  override suspend fun createUser(username: String, uid: String) {
+    // Check if username already exists
+    if (users.values.any { it.name == username }) {
+      throw TakenUsernameException("Username already in use")
+    }
+
+    val newUser = User(uid, username)
+    addUser(newUser)
+  }
 }

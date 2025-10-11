@@ -191,4 +191,14 @@ class UserRepositoryInMemoryTest {
     val user = repository.getUser("user5")
     assertEquals(3, user.friendList.size)
   }
+
+  @Test(expected = TakenUsernameException::class)
+  fun createUser_throwsExceptionForDuplicateUsername() = runTest {
+    val username = "duplicateUser"
+    val uid1 = repository.getNewUid()
+    val uid2 = repository.getNewUid()
+
+    repository.createUser(username, uid1)
+    repository.createUser(username, uid2) // Should throw
+  }
 }

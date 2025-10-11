@@ -30,6 +30,7 @@ class NavigationTest {
       // Match MainActivity structure with navigation() instead of composable()
       navigation(startDestination = Screen.Splash.route, route = Screen.Splash.name) {
         composable(Screen.Splash.route) { /* minimal screen */}
+        composable(Screen.RegisterUsername.route) { /* minimal screen */}
       }
 
       navigation(
@@ -128,6 +129,44 @@ class NavigationTest {
       assertEquals(Screen.Overview.route, navigation.currentRoute())
 
       // Try to navigate to Overview again - should be ignored
+      navigation.navigateTo(Screen.Overview)
+      assertEquals(Screen.Overview.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_splashToRegisterUsernameFlow_shouldWork() {
+    composeRule.runOnIdle {
+      // Start on Splash
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
+
+      // Navigate to RegisterUsername
+      navigation.navigateTo(Screen.RegisterUsername)
+      assertEquals(Screen.RegisterUsername.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_authenticationToRegisterUsernameFlow_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to Authentication first
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+
+      // Navigate to RegisterUsername (after sign in with no username)
+      navigation.navigateTo(Screen.RegisterUsername)
+      assertEquals(Screen.RegisterUsername.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_registerUsernameToOverviewFlow_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to RegisterUsername
+      navigation.navigateTo(Screen.RegisterUsername)
+      assertEquals(Screen.RegisterUsername.route, navigation.currentRoute())
+
+      // Navigate to Overview (after registration)
       navigation.navigateTo(Screen.Overview)
       assertEquals(Screen.Overview.route, navigation.currentRoute())
     }

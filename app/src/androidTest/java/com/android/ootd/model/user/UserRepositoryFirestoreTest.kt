@@ -252,4 +252,31 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assert(users.any { it.uid == user1.uid })
     assert(users.any { it.uid == user2.uid })
   }
+
+  @Test
+  fun creatingNewUserWorks() = runTest {
+    val uid1 = repository.getNewUid()
+    val uid2 = repository.getNewUid()
+
+    repository.createUser(user1.name, uid1)
+    repository.createUser(user2.name, uid2)
+
+    val users = repository.getAllUsers()
+
+    assertEquals(2, users.size)
+    assert(users.any { user -> user.name == user1.name })
+    assert(users.any { user -> user.name == user2.name })
+    assert(users.none { user -> user.uid == user1.uid || user.uid == user2.uid })
+  }
+
+  @Test
+  fun cannotHaveSameUsername() = runTest {
+    val uid1 = repository.getNewUid()
+    val uid2 = repository.getNewUid()
+
+    repository.createUser(user1.name, uid1)
+    val exception = runCatching { repository.createUser(user1.name, uid2) }.exceptionOrNull()
+
+    assert(exception != null)
+  }
 }

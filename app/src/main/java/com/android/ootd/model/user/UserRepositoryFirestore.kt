@@ -1,16 +1,20 @@
 package com.android.ootd.model.user
 
 import android.util.Log
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
-import com.google.firebase.ktx.Firebase
 import java.util.UUID
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
+
+// Custom exception for taken username scenario
+class TakenUsernameException(message: String) : Exception(message)
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
@@ -44,6 +48,22 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
+  }
+
+  override suspend fun createUser(username: String, uid: String) {
+
+    if (usernameExists(username)) {
+      Log.e("UserRepositoryFirestore", "Username already in use")
+      throw TakenUsernameException("Username already in use")
+    }
+
+    val newUser = User(uid, username)
+    try {
+      addUser(newUser)
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error while creating user : ${e.message}", e)
+      throw e
+    }
   }
 
   override suspend fun getAllUsers(): List<User> {
@@ -153,5 +173,11 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     val myUser = transformUserDocument(documentList.documents[0])
 
     return (myUser?.friendList?.any { it.uid == friendID } == true)
+  }
+
+  private suspend fun usernameExists(username: String): Boolean {
+    val querySnapshot =
+        db.collection(USER_COLLECTION_PATH).whereEqualTo("name", username).get().await()
+    return querySnapshot.documents.isNotEmpty()
   }
 }
