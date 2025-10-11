@@ -1,13 +1,13 @@
 package com.android.ootd.model.user
 
 import android.util.Log
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
-import java.util.UUID
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import java.util.UUID
 import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
