@@ -63,7 +63,7 @@ fun UserSelectionField(
           singleLine = true)
 
       DropdownMenu(
-          expanded = expanded || usernameText.isNotEmpty(),
+          expanded = expanded,
           onDismissRequest = onSuggestionsDismissed,
           modifier = Modifier.fillMaxWidth(0.95f)) {
             if (usernameSuggestions.isEmpty()) {
