@@ -13,7 +13,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
-import androidx.test.espresso.action.ViewActions.swipeUp
+import androidx.compose.ui.test.swipeUp
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
@@ -61,7 +61,10 @@ interface ItemsTest {
     // 3) Fallback: manual swipes a few times (helps when semantics are quirky but visual scroll
     // still works).
     repeat(5) {
-      onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput { swipeUp() }
+      onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput {
+        swipeUp(startY = bottom, endY = top)
+      }
+      waitForIdle()
       if (runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess)
           return
     }

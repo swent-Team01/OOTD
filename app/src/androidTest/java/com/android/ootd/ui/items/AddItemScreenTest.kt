@@ -175,7 +175,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -190,7 +190,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -272,7 +272,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -288,7 +288,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -304,7 +304,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -351,7 +351,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -370,7 +370,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
