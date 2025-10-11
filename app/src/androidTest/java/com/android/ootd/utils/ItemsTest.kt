@@ -3,14 +3,11 @@ package com.android.ootd.utils
 import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -39,24 +36,6 @@ interface ItemsTest {
     val alreadyVisible =
         runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess
     if (alreadyVisible) return
-
-    // 1) Try to scroll the node itself (uses bring-into-view chain).
-    val scrolledChild =
-        runCatching {
-              onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
-              waitForIdle()
-            }
-            .isSuccess
-    if (scrolledChild) return
-
-    // 2) Try to scroll the parent LazyColumn to the node.
-    val scrolledParent =
-        runCatching {
-              onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performScrollToNode(hasTestTag(tag))
-              waitForIdle()
-            }
-            .isSuccess
-    if (scrolledParent) return
 
     // 3) Fallback: manual swipes a few times (helps when semantics are quirky but visual scroll
     // still works).
