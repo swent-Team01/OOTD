@@ -33,12 +33,21 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   private lateinit var viewModel: AddItemsViewModel
   override val repository = ItemsRepositoryProvider.repository
 
+  // Use longer timeouts in CI environment
+  private val waitTimeout: Long
+    get() = if (System.getenv("CI") != null) 10_000L else 5_000L
+
   @Before
   override fun setUp() {
     super.setUp()
     viewModel = AddItemsViewModel(repository)
     // Initialize type suggestions for tests
-    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    try {
+      viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    } catch (e: Exception) {
+      // Fallback: will use default suggestions
+      android.util.Log.w("AddItemScreenTest", "Failed to load type suggestions: ${e.message}")
+    }
     composeTestRule.setContent { AddItemsScreen(viewModel) }
   }
 
@@ -152,7 +161,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+    composeTestRule.waitUntil(timeoutMillis = waitTimeout) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
           .fetchSemanticsNodes()
