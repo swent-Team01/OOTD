@@ -3,10 +3,10 @@ package com.android.ootd.ui.post
 import android.net.Uri
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepositoryLocal
-import com.android.ootd.model.ItemsRepositoryProvider
-import com.android.ootd.model.Material
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepositoryLocal
+import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.model.items.Material
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before

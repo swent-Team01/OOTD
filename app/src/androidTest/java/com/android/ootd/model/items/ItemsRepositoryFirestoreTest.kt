@@ -2,10 +2,7 @@ package com.android.ootd.model.items
 
 import android.net.Uri
 import android.util.Log
-import com.android.ootd.model.ITEMS_COLLECTION
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepositoryProvider.repository
-import com.android.ootd.model.Material
+import com.android.ootd.model.items.ItemsRepositoryProvider.repository
 import com.android.ootd.utils.FirebaseEmulator
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.tasks.await

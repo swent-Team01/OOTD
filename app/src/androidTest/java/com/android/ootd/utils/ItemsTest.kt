@@ -14,9 +14,9 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.espresso.action.ViewActions.swipeUp
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepository
-import com.android.ootd.model.ItemsRepositoryProvider
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.AddItemsViewModel
 import org.junit.Before

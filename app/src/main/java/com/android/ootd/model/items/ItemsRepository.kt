@@ -1,4 +1,4 @@
-package com.android.ootd.model
+package com.android.ootd.model.items
 
 /** Repository class that handles data operations for items. */
 interface ItemsRepository {

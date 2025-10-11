@@ -1,9 +1,6 @@
 package com.android.ootd.model.items
 
 import android.net.Uri
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepositoryLocal
-import com.android.ootd.model.Material
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.test.runTest
 import org.junit.After

@@ -3,9 +3,9 @@ package com.android.ootd.ui.post
 import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepository
-import com.android.ootd.model.Material
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.Material
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

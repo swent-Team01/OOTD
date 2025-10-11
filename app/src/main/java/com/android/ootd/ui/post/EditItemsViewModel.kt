@@ -5,12 +5,11 @@ import android.net.Uri
 import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepository
-import com.android.ootd.model.ItemsRepositoryProvider
-import com.android.ootd.model.Material
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
-import kotlin.text.category
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -2,7 +2,7 @@ package com.android.ootd.model.post
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
-import com.android.ootd.model.ItemsRepository
+import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.FirebaseEmulator

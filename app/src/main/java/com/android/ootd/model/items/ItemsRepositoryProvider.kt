@@ -1,4 +1,4 @@
-package com.android.ootd.model
+package com.android.ootd.model.items
 
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore

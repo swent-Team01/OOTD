@@ -1,4 +1,4 @@
-package com.android.ootd.screen
+package com.android.ootd.ui.items
 
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
@@ -20,7 +20,7 @@ import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -127,7 +127,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.runOnIdle {
       assert(viewModel.uiState.value.invalidCategory != null)
-      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
+      TestCase.assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
     }
 
     composeTestRule
@@ -145,7 +145,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun clickingAddItemReturns() {
-    val item = ItemsTest.item4
+    val item = ItemsTest.Companion.item4
     composeTestRule.enterAddItemDetails(item)
 
     composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
