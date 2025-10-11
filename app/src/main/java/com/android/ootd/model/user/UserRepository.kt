@@ -7,6 +7,13 @@ interface UserRepository {
   fun getNewUid(): String
 
   /**
+   * Creates a new user with the username he chose
+   *
+   * @param username The chosen username
+   */
+  suspend fun createUser(username: String, uid: String)
+
+  /**
    * Retrieves all Users from the repository.
    *
    * @return A list of all Users.

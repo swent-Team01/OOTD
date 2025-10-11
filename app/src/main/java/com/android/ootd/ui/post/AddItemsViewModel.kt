@@ -1,7 +1,6 @@
 package com.android.ootd.ui.post
 
 import android.net.Uri
-import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.Item
@@ -23,21 +22,28 @@ data class AddItemsUIState(
     val category: String = "",
     val type: String = "",
     val brand: String = "",
-    val price: Double = 0.0,
-    val material: List<Material> = emptyList(),
+    val price: String = "",
+    val material: List<Material> = emptyList(), // parsed user input for material field
     val link: String = "",
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val typeSuggestion: List<String> = emptyList(),
-    val categorySuggestion: List<String> = emptyList()
+    val categorySuggestion: List<String> = emptyList(),
+    val materialText: String = "", // raw user input for material field
 ) {
   val isAddingValid: Boolean
     get() =
         invalidPhotoMsg == null &&
             invalidCategory == null &&
             image != Uri.EMPTY &&
-            category.isNotEmpty()
+            category.isNotEmpty() &&
+            isCategoryValid()
+
+  private fun isCategoryValid(): Boolean {
+    val categories = listOf("Clothes", "Accessories", "Shoes", "Bags")
+    return categories.any { it.equals(category.trim(), ignoreCase = true) }
+  }
 }
 
 /**
@@ -63,12 +69,15 @@ open class AddItemsViewModel(
   fun canAddItems(): Boolean {
     val state = _uiState.value
     if (!state.isAddingValid) {
-      setErrorMsg("Please fill in all required fields.")
-      return false
-    }
+      val error =
+          when {
+            state.image == Uri.EMPTY -> "Please upload a photo before adding the item."
+            state.category.isBlank() -> "Please enter a category before adding the item."
+            state.invalidCategory != null -> "Please select a valid category."
+            else -> "Some required fields are missing."
+          }
 
-    if (!isValidUrl(state.link)) {
-      setErrorMsg("Please enter a valid URL.")
+      setErrorMsg(error)
       return false
     }
 
@@ -79,7 +88,7 @@ open class AddItemsViewModel(
             category = state.category,
             type = state.type,
             brand = state.brand,
-            price = state.price,
+            price = state.price.toDoubleOrNull() ?: 0.0,
             material = state.material,
             link = state.link))
     clearErrorMsg()
@@ -111,13 +120,21 @@ open class AddItemsViewModel(
 
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()
-    val isValid = categories.any { it.equals(category.trim(), ignoreCase = true) }
+    val trimmedCategory = category.trim()
+
+    val isExactMatch = categories.any { it.equals(trimmedCategory, ignoreCase = true) }
+    val isPotentialMatch = categories.any { it.lowercase().startsWith(trimmedCategory.lowercase()) }
 
     _uiState.value =
         _uiState.value.copy(
             category = category,
             invalidCategory =
-                if (isValid || category.isBlank()) null else _uiState.value.invalidCategory)
+                when {
+                  category.isBlank() -> null
+                  isExactMatch -> null
+                  isPotentialMatch -> null
+                  else -> "Please enter one of: Clothes, Accessories, Shoes, or Bags."
+                })
   }
 
   fun setType(type: String) {
@@ -128,12 +145,24 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(brand = brand)
   }
 
-  fun setPrice(price: Double) {
+  fun setPrice(price: String) {
     _uiState.value = _uiState.value.copy(price = price)
   }
 
-  fun setMaterial(material: List<Material>) {
-    _uiState.value = _uiState.value.copy(material = material)
+  fun setMaterial(material: String) {
+    _uiState.value = _uiState.value.copy(materialText = material)
+
+    // Parse text like "Coton 80%, Laine 20%"
+    val materials =
+        material.split(",").mapNotNull { entry ->
+          val parts = entry.trim().split(" ")
+          if (parts.size == 2 && parts[1].endsWith("%")) {
+            val name = parts[0]
+            val percentage = parts[1].removeSuffix("%").toDoubleOrNull()
+            if (percentage != null) Material(name, percentage) else null
+          } else null
+        }
+    _uiState.value = _uiState.value.copy(material = materials)
   }
 
   fun setLink(link: String) {
@@ -206,7 +235,6 @@ open class AddItemsViewModel(
 
   fun updateTypeSuggestions(input: String) {
     val state = _uiState.value
-    // val currentCategory = state.category
 
     val normalizeCategory =
         when (state.category.trim().lowercase()) {
@@ -254,9 +282,9 @@ open class AddItemsViewModel(
 
     val error =
         when {
-          category.isEmpty() -> "Please select a category."
+          category.isEmpty() -> null
           !categories.any { it.equals(category, ignoreCase = true) } ->
-              "Please select a valid category : $categories"
+              "Please enter one of: Clothes, Accessories, Shoes, or Bags."
           else -> null
         }
 

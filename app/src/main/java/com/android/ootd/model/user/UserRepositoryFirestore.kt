@@ -11,6 +11,9 @@ import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
 
+// Custom exception for taken username scenario
+class TakenUsernameException(message: String) : Exception(message)
+
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
   /** Helper method to check user data as firestore might add the default values */
@@ -43,6 +46,22 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
+  }
+
+  override suspend fun createUser(username: String, uid: String) {
+
+    if (usernameExists(username)) {
+      Log.e("UserRepositoryFirestore", "Username already in use")
+      throw TakenUsernameException("Username already in use")
+    }
+
+    val newUser = User(uid, username)
+    try {
+      addUser(newUser)
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error while creating user : ${e.message}", e)
+      throw e
+    }
   }
 
   override suspend fun getAllUsers(): List<User> {
@@ -113,5 +132,11 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
     }
+  }
+
+  private suspend fun usernameExists(username: String): Boolean {
+    val querySnapshot =
+        db.collection(USER_COLLECTION_PATH).whereEqualTo("name", username).get().await()
+    return querySnapshot.documents.isNotEmpty()
   }
 }
