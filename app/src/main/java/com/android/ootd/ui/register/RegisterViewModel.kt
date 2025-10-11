@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 data class User(
     val uid: String = "",
     val username: String = "",
+    val dateOfBirth: String = "",
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false
@@ -86,6 +87,10 @@ class RegisterViewModel(
    */
   fun setUsername(uname: String) {
     _uiState.value = _uiState.value.copy(username = uname)
+  }
+
+  fun setDateOfBirth(date: String) {
+    _uiState.value = _uiState.value.copy(dateOfBirth = date)
   }
 
   /**
