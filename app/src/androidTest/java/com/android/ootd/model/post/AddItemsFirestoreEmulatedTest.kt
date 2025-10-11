@@ -1,6 +1,7 @@
 package com.android.ootd.model.post
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.ItemsRepository
 import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
@@ -26,6 +27,8 @@ class AddItemsFirestoreEmulatedTest : FirestoreItemTest() {
     FirebaseEmulator
     repo = createInitializedRepository()
     viewModel = AddItemsViewModel(repo)
+    // Initialize type suggestions for tests
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     composeTestRule.setContent { AddItemsScreen(viewModel) }
   }
 

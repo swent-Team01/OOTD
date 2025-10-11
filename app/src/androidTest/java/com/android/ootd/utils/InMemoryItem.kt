@@ -2,8 +2,12 @@ package com.android.ootd.utils
 
 import com.android.ootd.model.Item
 import com.android.ootd.model.ItemsRepository
+import com.android.ootd.model.ItemsRepositoryProvider
 
 object InMemoryItem : ItemsTest {
+  override val repository: ItemsRepository
+    get() = ItemsRepositoryProvider.repository
+
   override fun createInitializedRepository(): ItemsRepository {
     return InMemoryItemsRepository()
   }

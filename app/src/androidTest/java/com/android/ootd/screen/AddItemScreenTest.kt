@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
+import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.Item
 import com.android.ootd.model.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
@@ -35,6 +36,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   override fun setUp() {
     super.setUp()
     viewModel = AddItemsViewModel(repository)
+    // Initialize type suggestions for tests
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     composeTestRule.setContent { AddItemsScreen(viewModel) }
   }
 
@@ -123,12 +126,12 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.runOnIdle {
       assert(viewModel.uiState.value.invalidCategory != null)
-      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothes") == true)
+      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
     }
 
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-        .performTextReplacement("Clothes")
+        .performTextReplacement("Clothing")
 
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
   }
@@ -165,7 +168,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun dropdownMenuShowsTypeSuggestionsAndSelectsOne() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("Clothes")
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("Clothing")
 
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
 
@@ -192,7 +195,49 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
-    composeTestRule.onNodeWithText("Clothes", useUnmergedTree = true).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).assertIsDisplayed()
+  }
+
+  @Test
+  fun addItemButtonDisabledWhenNoImage() {
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("Jacket")
+
+    composeTestRule.waitForIdle()
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
+  }
+
+  @Test
+  fun addItemButtonDisabledWhenNoCategory() {
+    val uri = "content://dummy/photo.jpg".toUri()
+    composeTestRule.enterAddItemPhoto(uri)
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
+  }
+
+  @Test
+  fun addItemButtonDisabledWhenInvalidCategory() {
+    val uri = "content://dummy/photo.jpg".toUri()
+    composeTestRule.enterAddItemPhoto(uri)
+    composeTestRule.enterAddItemCategory("InvalidCategory")
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
   }
 
   @Test
@@ -312,14 +357,14 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
           .isNotEmpty()
     }
 
-    composeTestRule.onNodeWithText("Clothes", useUnmergedTree = true).performClick()
+    composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).performClick()
 
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
   }
 
   @Test
   fun selectingTypeSuggestionSetsValue() {
-    composeTestRule.enterAddItemCategory("Clothes")
+    composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
 
     composeTestRule.waitForIdle()
@@ -359,7 +404,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun canAddItemsReturnsFalseWhenImageMissing() {
-    composeTestRule.enterAddItemCategory("Clothes")
+    composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("Jacket")
 
     composeTestRule.runOnIdle {
@@ -406,7 +451,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     val uri = "content://dummy/photo.jpg".toUri()
     composeTestRule.runOnIdle {
       viewModel.setPhoto(uri)
-      viewModel.setCategory("Clothes")
+      viewModel.setCategory("Clothing")
       viewModel.validateCategory()
     }
 
@@ -450,7 +495,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun categoryValidationWithExactMatch() {
     composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothes")
+      viewModel.setCategory("Clothing")
       viewModel.validateCategory()
       assert(viewModel.uiState.value.invalidCategory == null)
     }
@@ -477,7 +522,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun updateTypeSuggestionsShowsAllWhenInputEmpty() {
     composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothes")
+      viewModel.setCategory("Clothing")
       viewModel.updateTypeSuggestions("")
 
       val suggestions = viewModel.uiState.value.typeSuggestion
@@ -490,7 +535,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun updateTypeSuggestionsFiltersCorrectly() {
     composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothes")
+      viewModel.setCategory("Clothing")
       viewModel.updateTypeSuggestions("Ja")
 
       val suggestions = viewModel.uiState.value.typeSuggestion
@@ -588,7 +633,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
           Item(
               uuid = "test",
               image = "content://dummy/photo.jpg".toUri(),
-              category = "Clothes",
+              category = "Clothing",
               type = "Jacket",
               brand = "TestBrand",
               price = viewModel.uiState.value.price.toDoubleOrNull() ?: 0.0,

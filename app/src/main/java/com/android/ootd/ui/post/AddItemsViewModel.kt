@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.android.ootd.model.Item
 import com.android.ootd.model.ItemsRepository
 import com.android.ootd.model.ItemsRepositoryProvider
 import com.android.ootd.model.Material
+import com.android.ootd.utils.TypeSuggestionsLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,8 +43,20 @@ data class AddItemsUIState(
             isCategoryValid()
 
   private fun isCategoryValid(): Boolean {
-    val categories = listOf("Clothes", "Accessories", "Shoes", "Bags")
-    return categories.any { it.equals(category.trim(), ignoreCase = true) }
+    val normalized =
+        when (category.trim().lowercase()) {
+          "clothes",
+          "clothing" -> "Clothing"
+          "shoes",
+          "shoe" -> "Shoes"
+          "bags",
+          "bag" -> "Bags"
+          "accessories",
+          "accessory" -> "Accessories"
+          else -> category.trim()
+        }
+    val categories = listOf("Clothing", "Accessories", "Shoes", "Bags")
+    return categories.any { it.equals(normalized, ignoreCase = true) }
   }
 }
 
@@ -56,6 +70,19 @@ open class AddItemsViewModel(
 
   private val _uiState = MutableStateFlow(AddItemsUIState())
   open val uiState: StateFlow<AddItemsUIState> = _uiState.asStateFlow()
+
+  private var typeSuggestions: Map<String, List<String>> = emptyMap()
+
+  /**
+   * Initializes the type suggestions from a YAML file.
+   *
+   * Should be called from the composable with the context.
+   *
+   * @param context The Android context used to load suggestions.
+   */
+  fun initTypeSuggestions(context: Context) {
+    typeSuggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+  }
 
   /** Clears the error message in the UI state. */
   fun clearErrorMsg() {
@@ -122,7 +149,21 @@ open class AddItemsViewModel(
     val categories = typeSuggestions.keys.toList()
     val trimmedCategory = category.trim()
 
-    val isExactMatch = categories.any { it.equals(trimmedCategory, ignoreCase = true) }
+    // Normalize category for validation
+    val normalized =
+        when (trimmedCategory.lowercase()) {
+          "clothes",
+          "clothing" -> "Clothing"
+          "shoes",
+          "shoe" -> "Shoes"
+          "bags",
+          "bag" -> "Bags"
+          "accessories",
+          "accessory" -> "Accessories"
+          else -> trimmedCategory
+        }
+
+    val isExactMatch = categories.any { it.equals(normalized, ignoreCase = true) }
     val isPotentialMatch = categories.any { it.lowercase().startsWith(trimmedCategory.lowercase()) }
 
     _uiState.value =
@@ -133,7 +174,7 @@ open class AddItemsViewModel(
                   category.isBlank() -> null
                   isExactMatch -> null
                   isPotentialMatch -> null
-                  else -> "Please enter one of: Clothes, Accessories, Shoes, or Bags."
+                  else -> "Please enter one of: Clothing, Accessories, Shoes, or Bags."
                 })
   }
 
@@ -169,77 +210,13 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(link = link)
   }
 
-  val typeSuggestions =
-      mapOf(
-          "Clothes" to
-              listOf(
-                  "T-shirt",
-                  "Shirt",
-                  "Jeans",
-                  "Jacket",
-                  "Dress",
-                  "Skirt",
-                  "Shorts",
-                  "Sweater",
-                  "Coat",
-                  "Blouse",
-                  "Suit",
-                  "Hoodie",
-                  "Cardigan",
-                  "Pants",
-                  "Leggings",
-                  "Overalls",
-                  "Jumpsuit"),
-          "Shoes" to
-              listOf(
-                  "Sneakers",
-                  "Boots",
-                  "Sandals",
-                  "Heels",
-                  "Flats",
-                  "Loafers",
-                  "Oxfords",
-                  "Slippers",
-                  "Wedges",
-                  "Espadrilles",
-                  "Ballerinas",
-                  "Moccasins",
-                  "Sports Shoes"),
-          "Accessories" to
-              listOf(
-                  "Hat",
-                  "Scarf",
-                  "Belt",
-                  "Gloves",
-                  "Sunglasses",
-                  "Watch",
-                  "Bracelet",
-                  "Necklace",
-                  "Earrings",
-                  "Tie",
-                  "Beanie",
-                  "Cap "),
-          "Bags" to
-              listOf(
-                  "Backpack",
-                  "Handbag",
-                  "Tote",
-                  "Clutch",
-                  "Messenger Bag",
-                  "Duffel Bag",
-                  "Satchel",
-                  "Crossbody Bag",
-                  "Shopper",
-                  "Wallet"),
-      )
-
   fun updateTypeSuggestions(input: String) {
     val state = _uiState.value
 
     val normalizeCategory =
         when (state.category.trim().lowercase()) {
           "clothes",
-          "clothing" -> "Clothes"
+          "clothing" -> "Clothing"
           "shoe",
           "shoes" -> "Shoes"
           "bag",
@@ -278,13 +255,27 @@ open class AddItemsViewModel(
   fun validateCategory() {
     val state = _uiState.value
     val categories = typeSuggestions.keys.toList()
-    val category = state.category.trim()
+    val trimmedCategory = state.category.trim()
+
+    // Normalize category for validation
+    val normalized =
+        when (trimmedCategory.lowercase()) {
+          "clothes",
+          "clothing" -> "Clothing"
+          "shoes",
+          "shoe" -> "Shoes"
+          "bags",
+          "bag" -> "Bags"
+          "accessories",
+          "accessory" -> "Accessories"
+          else -> trimmedCategory
+        }
 
     val error =
         when {
-          category.isEmpty() -> null
-          !categories.any { it.equals(category, ignoreCase = true) } ->
-              "Please enter one of: Clothes, Accessories, Shoes, or Bags."
+          trimmedCategory.isEmpty() -> null
+          !categories.any { it.equals(normalized, ignoreCase = true) } ->
+              "Please enter one of: Clothing, Accessories, Shoes, or Bags."
           else -> null
         }
 
