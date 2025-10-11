@@ -281,6 +281,11 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Wait for suggestions to appear
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule.onAllNodesWithText("T-shirt").fetchSemanticsNodes().isNotEmpty()
+    }
+
     // Verify suggestions appear (checking for common clothing types)
     composeTestRule.onNodeWithText("T-shirt").assertExists()
     composeTestRule.onNodeWithText("Jacket").assertExists()
@@ -299,6 +304,11 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performClick()
 
     composeTestRule.waitForIdle()
+
+    // Wait for suggestions to appear before clicking
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule.onAllNodesWithText("Sneakers").fetchSemanticsNodes().isNotEmpty()
+    }
 
     // Click a suggestion
     composeTestRule.onNodeWithText("Sneakers").performClick()
