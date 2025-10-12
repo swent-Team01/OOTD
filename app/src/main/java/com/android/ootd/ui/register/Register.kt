@@ -115,8 +115,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   var focusDate by remember { mutableStateOf(false) }
   val disabledLabelColor = if (registerUiState.isLoading) Secondary else Tertiary
 
-  val usernameError = leftUsername && registerUiState.username.isBlank() && !focusUname
-  val dateError = leftDate && registerUiState.dateOfBirth.isBlank() && !focusDate
+  val usernameError = leftUsername && registerUiState.username.isBlank()
+  val dateError = leftDate && registerUiState.dateOfBirth.isBlank()
   val anyError = usernameError || dateError
 
   LaunchedEffect(errorMsg) {
@@ -135,7 +135,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   LaunchedEffect(focusUname) {
     textColorUname =
         when {
-          usernameError -> Color.Red
+          usernameError && !focusUname -> Color.Red
           touchedUserName -> Primary
           else -> Tertiary
         }
@@ -144,7 +144,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   LaunchedEffect(focusDate) {
     textColorDate =
         when {
-          dateError -> Color.Red
+          dateError && !focusDate -> Color.Red
           touchedDate -> Primary
           else -> Tertiary
         }
@@ -194,10 +194,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                           if (touchedUserName) leftUsername = true
                         }
                       },
-              isError = usernameError,
+              isError = usernameError && !focusUname,
               enabled = !registerUiState.isLoading)
 
-          if (usernameError) {
+          if (usernameError && !focusUname) {
             Text(
                 text = "Please enter a valid username",
                 color = Color.Red,
@@ -227,7 +227,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                           if (touchedDate) leftDate = true
                         }
                       },
-              isError = dateError,
+              isError = dateError && !focusDate,
               enabled = !registerUiState.isLoading,
               trailingIcon = {
                 IconButton(
@@ -277,7 +277,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           Button(
               onClick = { viewModel.registerUser() },
               modifier = Modifier.fillMaxWidth().testTag(RegisterScreenTestTags.REGISTER_SAVE),
-              enabled = !registerUiState.isLoading && !anyError,
+              enabled =
+                  !registerUiState.isLoading &&
+                      registerUiState.dateOfBirth.isNotBlank() &&
+                      registerUiState.username.isNotBlank(),
               colors =
                   ButtonDefaults.buttonColors(
                       containerColor = Primary, disabledContentColor = disabledLabelColor)) {

@@ -56,20 +56,21 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Splash.route
+  val startDestination = Screen.RegisterUsername.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
-    navigation(startDestination = Screen.Splash.route, route = Screen.Splash.name) {
-      composable(Screen.Splash.route) {
-        SplashScreen(
-            onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
-            onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
-      }
-      composable(Screen.RegisterUsername.route) {
-        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Overview) })
-      }
-    }
+    navigation(
+        startDestination = Screen.RegisterUsername.route, route = Screen.RegisterUsername.name) {
+          composable(Screen.Splash.route) {
+            SplashScreen(
+                onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
+                onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
+          }
+          composable(Screen.RegisterUsername.route) {
+            RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Overview) })
+          }
+        }
 
     // 2. SignIn route (top-level, for unauthenticated users)
     navigation(startDestination = Screen.Authentication.route, route = Screen.Authentication.name) {
