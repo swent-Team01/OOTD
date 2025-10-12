@@ -92,9 +92,7 @@ fun OOTDApp(
             val itemUid = navBackStackEntry.arguments?.getString("itemUid")
 
             if (itemUid != null) {
-              EditItemsScreen(
-                  itemUuid = itemUid,
-                  goBack = { navigationActions.goBack() })
+              EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
             } else {
               Toast.makeText(context, "This item id does not exist", Toast.LENGTH_SHORT).show()
               navigationActions.goBack()
