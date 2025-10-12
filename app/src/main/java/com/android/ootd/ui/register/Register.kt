@@ -41,8 +41,9 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -149,6 +150,9 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           else -> Tertiary
         }
   }
+  LaunchedEffect(registerUiState.isLoading) {
+    if (registerUiState.isLoading) showDatePicker = false
+  }
 
   Scaffold { innerPadding ->
     Column(
@@ -163,7 +167,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                   Modifier.width(237.dp).height(237.dp).testTag(RegisterScreenTestTags.APP_LOGO))
 
           Text(
-              text = "Register your account",
+              text = "Welcome\nTime to drop a fit.",
               fontFamily = Bodoni,
               color = Primary,
               style = Typography.displayMedium,
@@ -232,8 +236,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               trailingIcon = {
                 IconButton(
                     onClick = {
-                      showDatePicker = true
-                      touchedDate = true
+                      if (!registerUiState.isLoading) {
+                        showDatePicker = true
+                        touchedDate = true
+                      }
                     }) {
                       Icon(
                           Icons.Default.DateRange,
@@ -245,10 +251,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           if (showDatePicker) {
             DatePickerModalInput(
                 onDateSelected = { millis ->
-                  millis?.let {
-                    val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(it))
-                    viewModel.setDateOfBirth(date)
-                  }
+                  millis?.let { viewModel.setDateOfBirth(formatSelectedDate(it)) }
                 },
                 onDismiss = { showDatePicker = false },
                 disabledLabelColor = disabledLabelColor)
@@ -280,7 +283,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               enabled =
                   !registerUiState.isLoading &&
                       registerUiState.dateOfBirth.isNotBlank() &&
-                      registerUiState.username.isNotBlank(),
+                      registerUiState.username.isNotBlank() &&
+                      !anyError,
               colors =
                   ButtonDefaults.buttonColors(
                       containerColor = Primary, disabledContentColor = disabledLabelColor)) {
@@ -336,6 +340,12 @@ fun DatePickerModalInput(
             state = datePickerState,
             modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
       }
+}
+
+private fun formatSelectedDate(millis: Long): String {
+  val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+  val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withLocale(Locale.getDefault())
+  return localDate.format(formatter)
 }
 
 @Preview(showBackground = true)
