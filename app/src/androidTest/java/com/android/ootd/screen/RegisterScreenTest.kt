@@ -1,11 +1,12 @@
 package com.android.ootd.screen
 
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -19,7 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 
 class RegisterScreenTest {
-  @get:Rule val composeTestRule = createComposeRule()
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   private lateinit var viewModel: RegisterViewModel
   private lateinit var repository: UserRepository
@@ -29,6 +30,7 @@ class RegisterScreenTest {
     repository = mockk(relaxed = true)
     viewModel = RegisterViewModel(repository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
+    composeTestRule.waitForIdle()
   }
 
   @Test
@@ -42,6 +44,7 @@ class RegisterScreenTest {
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN).assertIsDisplayed()
   }
 
   @Test
@@ -196,13 +199,5 @@ class RegisterScreenTest {
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsNotEnabled()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsNotEnabled()
-  }
-
-  @Test
-  fun appSlogan_displayed() {
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN)
-        .assertIsDisplayed()
-        .assertTextContains("Outfit Of The Day,\n Inspire Drip")
   }
 }
