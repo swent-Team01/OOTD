@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
  *
  * @property uid The unique identifier of the user. Empty string by default.
  * @property username The username entered by the user. Empty string by default.
+ * @property dateOfBirth The users
  * @property errorMsg An optional error message to display to the user. Null by default.
  * @property isLoading Indicates whether a registration operation is in progress. False by default.
  * @property registered Indicates whether the user has been successfully registered. False by
@@ -89,6 +90,11 @@ class RegisterViewModel(
     _uiState.value = _uiState.value.copy(username = uname)
   }
 
+  /**
+   * Updates the dateOfBirth in the UI state
+   *
+   * @param date The users date of birth
+   */
   fun setDateOfBirth(date: String) {
     _uiState.value = _uiState.value.copy(dateOfBirth = date)
   }
