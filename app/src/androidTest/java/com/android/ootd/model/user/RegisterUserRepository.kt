@@ -269,4 +269,12 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
   }
+
+  @Test
+  fun enterDateWorksCorrectly() = runTest {
+    val date = "12/12/2012"
+    viewModel.setDateOfBirth(date)
+    assertNotNull(viewModel.uiState.value.dateOfBirth)
+    assertEquals(viewModel.uiState.value.dateOfBirth, date)
+  }
 }
