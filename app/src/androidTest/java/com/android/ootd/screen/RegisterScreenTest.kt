@@ -3,6 +3,7 @@ package com.android.ootd.screen
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -118,5 +119,117 @@ class RegisterScreenTest {
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertExists()
     composeTestRule.onNodeWithText("Saving…").assertExists()
+    viewModel.showLoading(false)
+  }
+
+  @Test
+  fun showsErrorMessage_whenUsernameBlank_afterLeavingField() {
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE)
+        .performClick() // Leave field
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertIsDisplayed()
+        .assertTextContains("Please enter a valid username")
+  }
+
+  @Test
+  fun showsErrorMessage_whenDateBlank_afterLeavingField() {
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+        .performClick() // Leave field
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertIsDisplayed()
+        .assertTextContains("Please enter a valid date")
+  }
+
+  @Test
+  fun datePickerIcon_opensDatePicker() {
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
+  }
+
+  @Test
+  fun datePickerDismiss_closesDatePicker() {
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.onNodeWithText("Dismiss").performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
+  }
+
+  @Test
+  fun registerButton_disabled_whenUsernameError() {
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsNotEnabled()
+  }
+
+  @Test
+  fun registerButton_disabled_whenDateError() {
+    composeTestRule.enterUsername("validUser")
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsNotEnabled()
+  }
+
+  @Test
+  fun registerButton_enabled_whenBothFieldsValid() {
+    composeTestRule.enterUsername("validUser")
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+
+    composeTestRule.waitForIdle()
+    composeTestRule.enterDate()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
+  }
+
+  @Test
+  fun inputFields_disabled_whenLoading() {
+    viewModel.showLoading(true)
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsNotEnabled()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsNotEnabled()
+  }
+
+  @Test
+  fun appSlogan_displayed() {
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN)
+        .assertIsDisplayed()
+        .assertTextContains("Outfit Of The Day,\n Inspire Drip")
   }
 }

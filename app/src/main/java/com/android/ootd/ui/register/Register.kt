@@ -2,7 +2,6 @@ package com.android.ootd.ui.register
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -29,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
@@ -100,15 +101,23 @@ private val SPACER = 38.dp
 fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
   val registerUiState by viewModel.uiState.collectAsState()
   val errorMsg = registerUiState.errorMsg
-
   val context = LocalContext.current
+
   var touchedUserName by remember { mutableStateOf(false) }
   var leftUsername by remember { mutableStateOf(false) }
+  var textColorUname by remember { mutableStateOf(Tertiary) }
+  var focusUname by remember { mutableStateOf(false) }
+
+  var touchedDate by remember { mutableStateOf(false) }
+  var leftDate by remember { mutableStateOf(false) }
   var showDatePicker by remember { mutableStateOf(false) }
-  var textColor by remember { mutableStateOf(Tertiary) }
+  var textColorDate by remember { mutableStateOf(Tertiary) }
+  var focusDate by remember { mutableStateOf(false) }
   val disabledLabelColor = if (registerUiState.isLoading) Secondary else Tertiary
 
-  val usernameError = leftUsername && registerUiState.username.isBlank()
+  val usernameError = leftUsername && registerUiState.username.isBlank() && !focusUname
+  val dateError = leftDate && registerUiState.dateOfBirth.isBlank() && !focusDate
+  val anyError = usernameError || dateError
 
   LaunchedEffect(errorMsg) {
     if (errorMsg != null) {
@@ -117,12 +126,28 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
     }
   }
 
-  // Navigate only when a successful registration is signaled
   LaunchedEffect(registerUiState.registered) {
     if (registerUiState.registered) {
       viewModel.markRegisteredHandled()
       onRegister()
     }
+  }
+  LaunchedEffect(focusUname) {
+    textColorUname =
+        when {
+          usernameError -> Color.Red
+          touchedUserName -> Primary
+          else -> Tertiary
+        }
+  }
+
+  LaunchedEffect(focusDate) {
+    textColorDate =
+        when {
+          dateError -> Color.Red
+          touchedDate -> Primary
+          else -> Tertiary
+        }
   }
 
   Scaffold { innerPadding ->
@@ -153,18 +178,18 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           OutlinedTextField(
               value = registerUiState.username,
               onValueChange = { viewModel.setUsername(it) },
-              label = { Text(text = "Username", color = textColor, fontFamily = Bodoni) },
+              label = { Text(text = "Username", color = textColorUname, fontFamily = Bodoni) },
               placeholder = {
-                Text(text = "Enter your username", color = textColor, fontFamily = Bodoni)
+                Text(text = "Enter your username", color = textColorUname, fontFamily = Bodoni)
               },
               singleLine = true,
               modifier =
                   Modifier.fillMaxWidth()
                       .testTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
                       .onFocusChanged { focusState ->
-                        if (focusState.isFocused) {
+                        focusUname = focusState.isFocused
+                        if (focusUname) {
                           touchedUserName = true
-                          textColor = Primary
                         } else {
                           if (touchedUserName) leftUsername = true
                         }
@@ -173,7 +198,6 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               enabled = !registerUiState.isLoading)
 
           if (usernameError) {
-            textColor = Color.Red
             Text(
                 text = "Please enter a valid username",
                 color = Color.Red,
@@ -186,22 +210,36 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           OutlinedTextField(
               value = registerUiState.dateOfBirth,
               onValueChange = {},
-              label = { Text(text = "Date of Birth", color = textColor, fontFamily = Bodoni) },
-              placeholder = { Text(text = "DD/MM/YYYY", color = textColor, fontFamily = Bodoni) },
+              label = { Text(text = "Date of Birth", color = textColorDate, fontFamily = Bodoni) },
+              placeholder = {
+                Text(text = "DD/MM/YYYY", color = textColorDate, fontFamily = Bodoni)
+              },
               readOnly = true,
               singleLine = true,
               modifier =
                   Modifier.fillMaxWidth()
                       .testTag(RegisterScreenTestTags.INPUT_REGISTER_DATE)
-                      .clickable { showDatePicker = true },
+                      .onFocusChanged { focusState ->
+                        focusDate = focusState.isFocused
+                        if (focusDate) {
+                          touchedDate = true
+                        } else {
+                          if (touchedDate) leftDate = true
+                        }
+                      },
+              isError = dateError,
               enabled = !registerUiState.isLoading,
               trailingIcon = {
-                IconButton(onClick = { showDatePicker = true }) {
-                  Icon(
-                      Icons.Default.DateRange,
-                      contentDescription = "Select date",
-                      modifier = Modifier.testTag(RegisterScreenTestTags.DATE_PICKER_ICON))
-                }
+                IconButton(
+                    onClick = {
+                      showDatePicker = true
+                      touchedDate = true
+                    }) {
+                      Icon(
+                          Icons.Default.DateRange,
+                          contentDescription = "Select date",
+                          modifier = Modifier.testTag(RegisterScreenTestTags.DATE_PICKER_ICON))
+                    }
               })
 
           if (showDatePicker) {
@@ -215,6 +253,13 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                 onDismiss = { showDatePicker = false },
                 disabledLabelColor = disabledLabelColor)
           }
+          if (dateError && !focusDate) {
+            Text(
+                text = "Please enter a valid date",
+                color = Color.Red,
+                fontFamily = Bodoni,
+                modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
+          }
 
           Spacer(modifier = Modifier.height(SPACER))
 
@@ -222,6 +267,9 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               text = "Outfit Of The Day,\n Inspire Drip",
               fontFamily = Bodoni,
               fontSize = 24.sp,
+              color = Primary,
+              fontWeight = FontWeight(400),
+              textAlign = TextAlign.Center,
               modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN))
 
           Spacer(modifier = Modifier.height(SPACER))
@@ -229,10 +277,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           Button(
               onClick = { viewModel.registerUser() },
               modifier = Modifier.fillMaxWidth().testTag(RegisterScreenTestTags.REGISTER_SAVE),
-              enabled =
-                  !registerUiState.isLoading &&
-                      touchedUserName &&
-                      registerUiState.username.isNotBlank(),
+              enabled = !registerUiState.isLoading && !anyError,
               colors =
                   ButtonDefaults.buttonColors(
                       containerColor = Primary, disabledContentColor = disabledLabelColor)) {
@@ -246,7 +291,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                                     .testTag(RegisterScreenTestTags.REGISTER_LOADING),
                             strokeWidth = 2.dp,
                             color = Primary)
-                        Text(text = "Saving…", color = textColor)
+                        Text(text = "Saving…", color = Primary)
                       }
                 } else {
                   Text("Save")
@@ -256,6 +301,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   }
 }
 
+/**
+ * This datePicker has been taken from the official Android Developers site
+ * https://developer.android.com/develop/ui/compose/components/datepickers
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerModalInput(
@@ -272,26 +321,22 @@ fun DatePickerModalInput(
             onClick = {
               onDateSelected(datePickerState.selectedDateMillis)
               onDismiss()
-            }) {
-              Text("OK")
-            }
-      },
-      dismissButton = {
-        TextButton(
-            onClick = onDismiss,
+            },
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = Primary, disabledContentColor = disabledLabelColor)) {
-              Text("Cancel")
+              Text("Confirm")
             }
       },
-      modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER)) {
-        DatePicker(state = datePickerState)
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Dismiss") } }) {
+        DatePicker(
+            state = datePickerState,
+            modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
       }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun RegisterScreenPreview() {
-  RegisterScreen(viewModel())
+  OOTDTheme { RegisterScreen() }
 }
