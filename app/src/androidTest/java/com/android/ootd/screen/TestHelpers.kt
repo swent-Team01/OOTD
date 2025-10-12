@@ -2,7 +2,6 @@ package com.android.ootd.screen
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -19,11 +18,9 @@ fun ComposeTestRule.enterUsername(text: String) {
 fun ComposeTestRule.enterDate() {
   onNodeWithText("Date").performClick()
   waitForIdle()
-  onNodeWithContentDescription("Date, MM/DD/YYYY")
-      .assertIsDisplayed()
-      .performClick()
-      .performTextInput("10/12/2025")
+  onNodeWithText("Date").assertIsDisplayed().performTextInput("10102020")
   waitForIdle()
 
   onNodeWithText("Confirm").performClick()
+  waitForIdle()
 }
