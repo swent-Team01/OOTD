@@ -15,7 +15,11 @@ fun ComposeTestRule.enterUsername(text: String) {
   onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performTextInput(text)
 }
 
-fun ComposeTestRule.enterDate() {
+fun ComposeTestRule.enterDate(date: String) {
+  if (date.isBlank()) {
+    onNodeWithText("Dismiss").performClick()
+    return
+  }
   onNodeWithText("Date").performClick()
   waitForIdle()
   onNodeWithText("Date").assertIsDisplayed().performTextInput("10102020")
