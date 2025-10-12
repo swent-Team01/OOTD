@@ -30,7 +30,6 @@ class RegisterScreenTest {
     repository = mockk(relaxed = true)
     viewModel = RegisterViewModel(repository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
-    composeTestRule.waitForIdle()
   }
 
   @Test
