@@ -1,3 +1,6 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=swent-Team01_OOTD&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=swent-Team01_OOTD)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=swent-Team01_OOTD&metric=coverage)](https://sonarcloud.io/summary/new_code?id=swent-Team01_OOTD)
+
 # OOTD 
 
 ## Description

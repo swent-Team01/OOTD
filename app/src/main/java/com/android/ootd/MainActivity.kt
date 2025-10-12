@@ -2,6 +2,7 @@ package com.android.ootd
 
 import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,14 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.credentials.CredentialManager
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.theme.OOTDTheme
 
 /** Activity that hosts the app's Compose UI. */
@@ -80,6 +84,22 @@ fun OOTDApp(
     // Todo: Replace overview with main when implemented
     navigation(startDestination = Screen.Overview.route, route = Screen.Overview.name) {
       composable(Screen.Overview.route) { Text("Overview Placeholder") }
+
+      composable(
+          route = Screen.EditItem.route,
+          arguments = listOf(navArgument("itemUid") { type = NavType.StringType })) {
+              navBackStackEntry ->
+            val itemUid = navBackStackEntry.arguments?.getString("itemUid")
+
+            if (itemUid != null) {
+              EditItemsScreen(
+                  itemUuid = itemUid,
+                  goBack = { navigationActions.goBack() })
+            } else {
+              Toast.makeText(context, "This item id does not exist", Toast.LENGTH_SHORT).show()
+              navigationActions.goBack()
+            }
+          }
     }
   }
 }

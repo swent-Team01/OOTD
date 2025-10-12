@@ -101,6 +101,18 @@ open class EditItemsViewModel(
             link = item.link ?: "")
   }
 
+  /** Loads an item by its UUID directly from the repository. */
+  fun loadItemById(itemUuid: String) {
+    viewModelScope.launch {
+      try {
+        val item = repository.getItemById(itemUuid)
+        loadItem(item)
+      } catch (e: Exception) {
+        setErrorMsg("Failed to load item: ${e.message}")
+      }
+    }
+  }
+
   /**
    * Checks if all requirements are met to edit the item. If valid, automatically edits the item in
    * the repository.

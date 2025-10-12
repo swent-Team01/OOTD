@@ -74,8 +74,8 @@ object EditItemsScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditItemsScreen(
+    itemUuid: String = "",
     editItemsViewModel: EditItemsViewModel = viewModel(),
-    onSave: () -> Unit = {},
     goBack: () -> Unit = {}
 ) {
 
@@ -85,6 +85,12 @@ fun EditItemsScreen(
 
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { editItemsViewModel.initTypeSuggestions(context) }
+
+  LaunchedEffect(itemUuid) {
+    if (itemUuid.isNotEmpty()) {
+      editItemsViewModel.loadItemById(itemUuid)
+    }
+  }
 
   var expanded by remember { mutableStateOf(false) }
   var cameraUri by remember { mutableStateOf<Uri?>(null) }
@@ -260,7 +266,7 @@ fun EditItemsScreen(
               Button(
                   onClick = {
                     if (editItemsViewModel.canEditItems()) {
-                      onSave()
+                      goBack()
                     }
                   },
                   enabled = itemsUIState.image != Uri.EMPTY && itemsUIState.category.isNotEmpty(),
