@@ -93,6 +93,18 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
+  override suspend fun userExists(userID: String): Boolean {
+    return try {
+      val user = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+      if(user.documents.isEmpty()){
+        return true
+      }else false
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)
+      throw e
+    }
+  }
+
   override suspend fun addUser(user: User) {
     try {
       val existingDoc =

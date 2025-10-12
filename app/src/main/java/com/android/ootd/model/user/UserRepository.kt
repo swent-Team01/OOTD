@@ -37,6 +37,13 @@ interface UserRepository {
   suspend fun getUser(userID: String): User
 
   /**
+   * Returns true if a user document exists for the given uid
+   *
+   * @param userID The wanted user's ID
+   */
+  suspend fun userExists(userID: String): Boolean
+
+  /**
    * Adds the user with friendID in the friend list of userID.
    *
    * @param userID The unique identifier of the User which friend's list is updated.

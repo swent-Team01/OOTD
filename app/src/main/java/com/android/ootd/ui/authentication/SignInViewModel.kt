@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.R
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.user.UserRepository
+import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,12 +29,14 @@ import kotlinx.coroutines.launch
  * @property user The currently signed-in [FirebaseUser], or null if not signed in.
  * @property errorMsg An error message to display, or null if there is no error.
  * @property signedOut True if a sign-out operation has completed.
+ * @property newUser True if the user is not registered in the firebase
  */
 data class AuthUIState(
     val isLoading: Boolean = false,
     val user: FirebaseUser? = null,
     val errorMsg: String? = null,
-    val signedOut: Boolean = false
+    val signedOut: Boolean = false,
+    val newUser: Boolean = false
 )
 
 /**
@@ -40,7 +44,9 @@ data class AuthUIState(
  *
  * @property repository The repository used to perform authentication operations.
  */
-class SignInViewModel(private val repository: AccountService = AccountServiceFirebase()) :
+class SignInViewModel(private val repository: AccountService = AccountServiceFirebase(),
+    private val userRepository: UserRepository = UserRepositoryProvider.repository
+) :
     ViewModel() {
 
   private val _uiState = MutableStateFlow(AuthUIState())
@@ -81,8 +87,9 @@ class SignInViewModel(private val repository: AccountService = AccountServiceFir
 
         // Pass the credential to your repository
         repository.signInWithGoogle(credential).fold({ user ->
+            val exists = userRepository.userExists(user.uid)
           _uiState.update {
-            it.copy(isLoading = false, user = user, errorMsg = null, signedOut = false)
+            it.copy(isLoading = false, user = user, errorMsg = null, signedOut = false, newUser = !exists)
           }
         }) { failure ->
           _uiState.update {

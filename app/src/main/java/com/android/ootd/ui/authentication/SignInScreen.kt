@@ -52,6 +52,7 @@ fun SignInScreen(
     authViewModel: SignInViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onSignedIn: () -> Unit = {},
+    onRegister: () -> Unit = {}
 ) {
   val context = LocalContext.current
   val uiState by authViewModel.uiState.collectAsState()
@@ -70,13 +71,18 @@ fun SignInScreen(
   LaunchedEffect(uiState.user) {
     uiState.user?.let {
       Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-      onSignedIn()
+        if(!uiState.newUser) {
+            onSignedIn()
+        } else onRegister()
     }
   }
 
   Scaffold { innerPadding ->
     Column(
-        modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top) {
           // Use a fraction of the screen height so the content group shifts lower on taller screens
@@ -86,7 +92,9 @@ fun SignInScreen(
               text = "WELCOME",
               style = Typography.displayLarge,
               color = Primary,
-              modifier = Modifier.padding(top = 8.dp).testTag(SignInScreenTestTags.LOGIN_TITLE))
+              modifier = Modifier
+                  .padding(top = 8.dp)
+                  .testTag(SignInScreenTestTags.LOGIN_TITLE))
 
           Spacer(modifier = Modifier.height(24.dp))
 
@@ -94,7 +102,9 @@ fun SignInScreen(
             Image(
                 painter = painterResource(id = R.drawable.app_logo),
                 contentDescription = "OOTD Logo",
-                modifier = Modifier.size(360.dp).testTag(SignInScreenTestTags.APP_LOGO),
+                modifier = Modifier
+                    .size(360.dp)
+                    .testTag(SignInScreenTestTags.APP_LOGO),
                 contentScale = ContentScale.Fit,
             )
           }
@@ -121,7 +131,8 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Box(
           modifier =
-              Modifier.size(28.dp)
+              Modifier
+                  .size(28.dp)
                   .background(Background, shape = CircleShape)
                   .border(1.dp, Tertiary, CircleShape),
           contentAlignment = Alignment.Center) {
