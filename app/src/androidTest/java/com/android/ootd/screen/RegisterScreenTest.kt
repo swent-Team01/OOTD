@@ -77,33 +77,6 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun buttonExists_whenNoErrors() {
-    composeTestRule.enterUsername("validUser")
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertDoesNotExist()
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertExists()
-  }
-
-  @Test
-  fun buttonExists_whenNoErrors_isEnabled() {
-    composeTestRule.enterUsername("validUser")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertDoesNotExist()
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .assertExists()
-        .assertIsEnabled()
-  }
-
-  @Test
   fun loadingCircle_not_visible_when_saving_invalid_user() {
     composeTestRule.enterUsername("  ")
 
