@@ -38,12 +38,15 @@ class RegisterScreenTest {
         .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
         .assertTextContains("Save", substring = true, ignoreCase = true)
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN)
+        .assertTextContains("Outfit Of The Day,\n Inspire Drip")
   }
 
   @Test
@@ -115,7 +118,10 @@ class RegisterScreenTest {
 
   @Test
   fun showsErrorMessage_whenDateBlank_afterLeavingField() {
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.enterDate(" ")
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
@@ -185,7 +191,7 @@ class RegisterScreenTest {
         .performClick()
 
     composeTestRule.waitForIdle()
-    composeTestRule.enterDate()
+    composeTestRule.enterDate("10102020")
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
   }

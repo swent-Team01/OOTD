@@ -240,12 +240,13 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                         showDatePicker = true
                         touchedDate = true
                       }
-                    }) {
-                      Icon(
-                          Icons.Default.DateRange,
-                          contentDescription = "Select date",
-                          modifier = Modifier.testTag(RegisterScreenTestTags.DATE_PICKER_ICON))
-                    }
+                    },
+                ) {
+                  Icon(
+                      Icons.Default.DateRange,
+                      contentDescription = "Select date",
+                      modifier = Modifier.testTag(RegisterScreenTestTags.DATE_PICKER_ICON))
+                }
               })
 
           if (showDatePicker) {
@@ -254,6 +255,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                   millis?.let { viewModel.setDateOfBirth(formatSelectedDate(it)) }
                 },
                 onDismiss = { showDatePicker = false },
+                onLeaveDate = {
+                  showDatePicker = false
+                  leftDate = true
+                },
                 disabledLabelColor = disabledLabelColor)
           }
           if (dateError && !focusDate) {
@@ -317,6 +322,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
 fun DatePickerModalInput(
     onDateSelected: (Long?) -> Unit,
     onDismiss: () -> Unit,
+    onLeaveDate: () -> Unit,
     disabledLabelColor: Color
 ) {
   val datePickerState = rememberDatePickerState(initialDisplayMode = DisplayMode.Input)
@@ -335,7 +341,7 @@ fun DatePickerModalInput(
               Text("Confirm")
             }
       },
-      dismissButton = { TextButton(onClick = onDismiss) { Text("Dismiss") } }) {
+      dismissButton = { TextButton(onClick = onLeaveDate) { Text("Dismiss") } }) {
         DatePicker(
             state = datePickerState,
             modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
