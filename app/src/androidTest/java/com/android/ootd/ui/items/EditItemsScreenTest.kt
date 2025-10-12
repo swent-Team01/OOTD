@@ -20,7 +20,6 @@ class EditItemsScreenTest {
 
   private lateinit var viewModel: EditItemsViewModel
   private lateinit var repository: ItemsRepositoryLocal
-  private var onSaveCalled = false
   private var goBackCalled = false
 
   private val testItem =
@@ -48,7 +47,6 @@ class EditItemsScreenTest {
     viewModel = EditItemsViewModel(repository)
 
     // Reset callbacks
-    onSaveCalled = false
     goBackCalled = false
   }
 
