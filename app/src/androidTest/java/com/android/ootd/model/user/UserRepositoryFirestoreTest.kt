@@ -111,23 +111,23 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     repository.addUser(user1)
     repository.addUser(user2)
 
-    repository.addFriend(user1.uid, user2.uid, user2.name)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
 
     val updatedUser = repository.getUser(user1.uid)
     assertEquals(1, updatedUser.friendList.size)
     assertEquals(user2.uid, updatedUser.friendList.first().uid)
-    assertEquals(user2.name, updatedUser.friendList.first().name)
+    assertEquals(user2.username, updatedUser.friendList.first().username)
   }
 
   @Test
   fun canAddMultipleFriendsToUser() = runTest {
     repository.addUser(user1)
     repository.addUser(user2)
-    val user3 = user1.copy(uid = "user3", name = "user3name")
+    val user3 = user1.copy(uid = "user3", username = "user3name")
     repository.addUser(user3)
 
-    repository.addFriend(user1.uid, user2.uid, user2.name)
-    repository.addFriend(user1.uid, user3.uid, user3.name)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user3.uid, user3.username)
 
     val updatedUser = repository.getUser(user1.uid)
     assertEquals(2, updatedUser.friendList.size)
@@ -138,8 +138,8 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     repository.addUser(user1)
     repository.addUser(user2)
 
-    repository.addFriend(user1.uid, user2.uid, user2.name)
-    repository.addFriend(user1.uid, user2.uid, user2.name)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
 
     val updatedUser = repository.getUser(user1.uid)
     assertEquals(1, updatedUser.friendList.size)
@@ -150,7 +150,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val nonExistentUserId = "nonExistentUser123"
 
     val exception =
-        runCatching { repository.addFriend(nonExistentUserId, user1.uid, user1.name) }
+        runCatching { repository.addFriend(nonExistentUserId, user1.uid, user1.username) }
             .exceptionOrNull()
 
     assert(exception != null)
@@ -168,8 +168,8 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
 
   @Test
   fun getUserReturnsCorrectUserFromMultipleUsers() = runTest {
-    val user3 = user1.copy(uid = "user3", name = "user3name")
-    val user4 = user1.copy(uid = "user4", name = "user4name")
+    val user3 = user1.copy(uid = "user3", username = "user3name")
+    val user4 = user1.copy(uid = "user4", username = "user4name")
 
     repository.addUser(user1)
     repository.addUser(user2)
@@ -178,7 +178,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
 
     val retrievedUser = repository.getUser(user3.uid)
     assertEquals(user3, retrievedUser)
-    assertEquals("user3name", retrievedUser.name)
+    assertEquals("user3name", retrievedUser.username)
   }
 
   @Test
@@ -258,14 +258,14 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val uid1 = repository.getNewUid()
     val uid2 = repository.getNewUid()
 
-    repository.createUser(user1.name, uid1)
-    repository.createUser(user2.name, uid2)
+    repository.createUser(user1.username, uid1)
+    repository.createUser(user2.username, uid2)
 
     val users = repository.getAllUsers()
 
     assertEquals(2, users.size)
-    assert(users.any { user -> user.name == user1.name })
-    assert(users.any { user -> user.name == user2.name })
+    assert(users.any { user -> user.username == user1.username })
+    assert(users.any { user -> user.username == user2.username })
     assert(users.none { user -> user.uid == user1.uid || user.uid == user2.uid })
   }
 
@@ -274,8 +274,8 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val uid1 = repository.getNewUid()
     val uid2 = repository.getNewUid()
 
-    repository.createUser(user1.name, uid1)
-    val exception = runCatching { repository.createUser(user1.name, uid2) }.exceptionOrNull()
+    repository.createUser(user1.username, uid1)
+    val exception = runCatching { repository.createUser(user1.username, uid2) }.exceptionOrNull()
 
     assert(exception != null)
   }

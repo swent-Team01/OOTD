@@ -33,7 +33,7 @@ class FeedScreenTest {
     FeedRepositoryProvider.repository = fakeRepo
     val viewModel =
         FeedViewModel().apply {
-          setCurrentUser(User(uid = "user1", name = "Tester", friendList = emptyList()))
+          setCurrentUser(User(uid = "user1", username = "Tester", friendList = emptyList()))
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
@@ -64,7 +64,7 @@ class FeedScreenTest {
     FeedRepositoryProvider.repository = fakeRepo
     val viewModel =
         FeedViewModel().apply {
-          setCurrentUser(User(uid = "user1", name = "Tester", friendList = emptyList()))
+          setCurrentUser(User(uid = "user1", username = "Tester", friendList = emptyList()))
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }

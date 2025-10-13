@@ -23,7 +23,11 @@ import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
+import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storage
 
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
@@ -55,6 +59,7 @@ class MainActivity : ComponentActivity() {
 fun OOTDApp(
     context: Context = LocalContext.current,
     credentialManager: CredentialManager = CredentialManager.create(context),
+    storage: FirebaseStorage = Firebase.storage
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
@@ -67,6 +72,9 @@ fun OOTDApp(
         SplashScreen(
             onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
             onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
+      }
+      composable(Screen.RegisterUsername.route) {
+        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Overview) })
       }
     }
 
