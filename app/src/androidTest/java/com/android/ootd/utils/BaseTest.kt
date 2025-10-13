@@ -34,10 +34,10 @@ abstract class BaseTest() {
   open val user1 =
       User(
           uid = "0",
-          name = "Hank",
-          friendList = arrayListOf<Friend>(Friend(uid = "1", name = "John")))
+          username = "Hank",
+          friendList = arrayListOf<Friend>(Friend(uid = "1", username = "John")))
 
-  open val user2 = User(uid = "1", name = "John", friendList = arrayListOf<Friend>())
+  open val user2 = User(uid = "1", username = "John", friendList = arrayListOf<Friend>())
 
   @Before
   open fun setUp() {
