@@ -1,4 +1,6 @@
-package com.android.ootd.model
+package com.android.ootd.model.post
+
+import android.net.Uri
 
 /**
  * Represents a single post in the feed
@@ -16,8 +18,8 @@ data class OutfitPost(
     val postUID: String = "",
     val name: String = "",
     val uid: String = "",
-    val userProfilePicURL: String = "",
-    val outfitURL: String = "",
+    val userProfilePicURL: Uri,
+    val outfitURL: Uri,
     val description: String = "",
     val itemsID: List<String> = emptyList(),
     val timestamp: Long = 0L
