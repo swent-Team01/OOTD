@@ -126,6 +126,7 @@ class SignInViewModel(
     }
   }
 
+  /** Redirects the user if he has already been registered (has username) or not */
   fun routeAfterGoogleSignIn(
       onSignedIn: () -> Unit,
       onRegister: () -> Unit,
