@@ -24,7 +24,8 @@ data class SearchUserUIState(
 )
 
 class UserSearchViewModel(
-    private val userRepository: UserRepository = UserRepositoryProvider.repository
+    private val userRepository: UserRepository = UserRepositoryProvider.repository,
+    private val overrideUser: Boolean = false
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(SearchUserUIState())
   val uiState: StateFlow<SearchUserUIState> = _uiState.asStateFlow()
@@ -76,24 +77,20 @@ class UserSearchViewModel(
    */
   fun pressFollowButton() {
     viewModelScope.launch {
-      var myUID =
-          try {
-            Firebase.auth.currentUser?.uid ?: ""
-          } catch (e: Exception) {
-            Log.e(
-                "UserSearchViewModel",
-                "An error happened when trying to get authentication id, ${e.toString()}")
-            "user1"
-          }
+
+      // OverrideUser is only used for the preview screen for easier testing
+      val myUID = if (overrideUser) "user1" else (Firebase.auth.currentUser?.uid ?: "")
 
       if (myUID == "") {
-        myUID = "user1" // Probably in testing mode
+        throw IllegalStateException("The user is not authenticated")
       }
+
       if (_uiState.value.selectedUser == null) {
         // This will not happen, there is already a check when building the UserProfileCard
         // However, it is required by SonarCloud.
         throw IllegalStateException("There is no selected user")
       }
+
       val friendID = _uiState.value.selectedUser?.uid ?: ""
       val friendUsername = _uiState.value.selectedUser?.username ?: ""
 
@@ -102,6 +99,7 @@ class UserSearchViewModel(
       } else {
         userRepository.removeFriend(myUID, friendID, friendUsername)
       }
+
       _uiState.value =
           _uiState.value.copy(isSelectedUserFollowed = !_uiState.value.isSelectedUserFollowed)
     }

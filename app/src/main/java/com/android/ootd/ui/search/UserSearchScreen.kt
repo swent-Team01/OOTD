@@ -17,7 +17,7 @@ import com.android.ootd.model.user.UserRepositoryInMemory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
+fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), overrideUser: Boolean = false) {
   val uiState by viewModel.uiState.collectAsState()
 
   Column(
@@ -72,6 +72,8 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
 fun UserSearchScreenPreview() {
   // Create a mock ViewModel or pass mock state directly
   val mockViewModel =
-      UserSearchViewModel(userRepository = UserRepositoryInMemory()) // or however you initialize it
+      UserSearchViewModel(
+          userRepository = UserRepositoryInMemory(),
+          overrideUser = true) // or however you initialize it
   UserSearchScreen(viewModel = mockViewModel)
 }
