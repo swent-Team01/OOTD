@@ -22,6 +22,9 @@ import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storage
 
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
@@ -53,6 +56,7 @@ class MainActivity : ComponentActivity() {
 fun OOTDApp(
     context: Context = LocalContext.current,
     credentialManager: CredentialManager = CredentialManager.create(context),
+    storage: FirebaseStorage = Firebase.storage
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
