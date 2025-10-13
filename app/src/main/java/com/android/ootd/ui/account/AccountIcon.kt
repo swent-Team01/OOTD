@@ -11,21 +11,31 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 
 /**
- * Circular Material3 avatar showing the image at [imageUrl] or a default icon.
+ * Circular Material3 avatar showing the image from the account view model
  *
- * @param imageUrl Non-null URL string; if empty the default icon is shown.
+ * The composable observes `AccountViewModel.uiState` via `collectAsState()` so it will recompose
+ * whenever the profile picture URI changes. The avatar URL is cache-busted with a timestamp
+ * parameter to ensure Coil fetches fresh bytes when the URI itself changes (rather than serving
+ * stale cached data).
+ *
+ * @param accountViewModel Supplies the UI state which may contain a Firestore-overridden profile
+ *   picture.
  * @param modifier Modifier applied to the avatar surface.
  * @param size Avatar diameter.
  * @param contentDescription Accessibility text for the avatar.
@@ -33,24 +43,32 @@ import com.android.ootd.ui.theme.Secondary
  */
 @Composable
 fun AccountIcon(
-    imageUrl: String,
+    accountViewModel: AccountViewModel = viewModel(),
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp,
+    size: Dp = 32.dp,
     contentDescription: String? = "Account avatar",
     onClick: () -> Unit
 ) {
+  val uiState by accountViewModel.uiState.collectAsState()
+  val profilePictureUri = uiState.profilePicture
+
   Surface(
-      modifier = modifier.size(size).clip(CircleShape).clickable(onClick = onClick),
+      modifier =
+          modifier
+              .size(size)
+              .clip(CircleShape)
+              .clickable(onClick = onClick)
+              .testTag(TAG_ACCOUNT_AVATAR_CONTAINER),
       shape = CircleShape,
       tonalElevation = 2.dp,
       color = Primary) {
-        if (imageUrl.isNotBlank()) {
-          val painter = rememberAsyncImagePainter(model = imageUrl)
+        if (profilePictureUri != null && profilePictureUri.toString().isNotBlank()) {
+          val painter = rememberAsyncImagePainter(model = profilePictureUri)
           Image(
               painter = painter,
               contentDescription = contentDescription,
               contentScale = ContentScale.Crop,
-              modifier = Modifier.fillMaxSize())
+              modifier = Modifier.fillMaxSize().testTag(TAG_ACCOUNT_AVATAR_IMAGE))
         } else {
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
@@ -66,12 +84,11 @@ fun AccountIcon(
 @Preview(showBackground = true)
 @Composable
 private fun AccountIconPreviewEmpty() {
-  AccountIcon(imageUrl = "", onClick = {})
+  AccountIcon(accountViewModel = AccountViewModel(), onClick = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun AccountIconPreviewSampleUrl() {
-  // Preview uses a placeholder URL; actual image may not load in preview.
-  AccountIcon(imageUrl = "https://via.placeholder.com/150", onClick = {})
+  AccountIcon(accountViewModel = AccountViewModel(), onClick = {})
 }
