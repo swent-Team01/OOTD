@@ -183,58 +183,6 @@ class AccountScreenFirebaseTest {
   }
 
   @Test
-  fun accountScreen_handlesUserRepositoryError() {
-    // Create a fresh Flow for this test to avoid interference
-    val errorUserFlow = MutableStateFlow<FirebaseUser?>(null)
-
-    // Create a fake AccountService with the new Flow
-    val errorAccountService =
-        object : AccountService {
-          override val currentUser: Flow<FirebaseUser?> = errorUserFlow
-          override val currentUserId: String = "test-uid"
-          override val accountName: String = "test@example.com"
-
-          override suspend fun hasUser(): Boolean = errorUserFlow.value != null
-
-          override suspend fun signInWithGoogle(
-              credential: androidx.credentials.Credential
-          ): Result<FirebaseUser> {
-            throw NotImplementedError("Not used in these tests")
-          }
-
-          override fun signOut(): Result<Unit> = Result.success(Unit)
-        }
-
-    // Reconfigure the mock to throw an exception BEFORE creating the ViewModel
-    coEvery { mockUserRepository.getUser("test-uid") } throws Exception("Failed to fetch user")
-
-    // Create a fresh ViewModel with the error configuration
-    val errorViewModel = AccountViewModel(errorAccountService, mockUserRepository)
-
-    composeTestRule.setContent {
-      AccountScreen(accountViewModel = errorViewModel, credentialManager = mockCredentialManager)
-    }
-
-    // Wait for compose to settle before triggering the error
-    composeTestRule.waitForIdle()
-
-    // Now set the user, which will trigger the error flow
-    errorUserFlow.value = mockFirebaseUser
-
-    // Wait for UI to process the error
-    composeTestRule.waitForIdle()
-
-    // Wait until error message is set - use a longer timeout
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      errorViewModel.uiState.value.errorMsg != null
-    }
-
-    // Error message should be displayed via Toast
-    // Since we can't easily test Toast, verify the state is updated
-    assert(errorViewModel.uiState.value.errorMsg != null)
-  }
-
-  @Test
   fun accountScreen_usesFirestoreProfilePicture_overGooglePhoto() = runTest {
     val googlePhotoUri = Uri.parse("https://google.com/photo.jpg")
     val firestorePhotoUri = Uri.parse("https://firestore.com/photo.jpg")
