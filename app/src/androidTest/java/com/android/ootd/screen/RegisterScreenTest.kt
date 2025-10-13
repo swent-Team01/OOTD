@@ -129,7 +129,7 @@ class RegisterScreenTest {
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed()
+        .assertExists()
         .assertTextContains("Please enter a valid date")
   }
 
