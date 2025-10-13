@@ -123,9 +123,7 @@ class RegisterScreenTest {
         .performClick()
     composeTestRule.enterDate(" ")
     composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
-        .performClick() // Leave field
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
 
     composeTestRule.waitForIdle()
 
