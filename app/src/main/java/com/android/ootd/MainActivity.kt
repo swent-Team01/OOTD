@@ -2,7 +2,6 @@ package com.android.ootd
 
 import android.content.Context
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +45,7 @@ class MainActivity : ComponentActivity() {
  * Root composable that hosts the app navigation graph.
  *
  * This composable:
- * - creates a [NavHostController] and [NavigationActions],
+ * - creates a [NavigationActions],
  * - accepts a [CredentialManager] for future auth usage.
  *
  * @param context Compose-provided [Context], defaults to [LocalContext].
@@ -93,9 +92,6 @@ fun OOTDApp(
 
             if (itemUid != null) {
               EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
-            } else {
-              Toast.makeText(context, "This item id does not exist", Toast.LENGTH_SHORT).show()
-              navigationActions.goBack()
             }
           }
     }

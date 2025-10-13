@@ -115,6 +115,9 @@ fun EditItemsScreen(
     if (errorMsg != null) {
       Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
       editItemsViewModel.clearErrorMsg()
+    } else if (itemsUIState.itemId.isNotEmpty()) {
+      // This is used when we want to delete an item, as the call is asynchronous
+      goBack()
     }
   }
 
@@ -267,10 +270,7 @@ fun EditItemsScreen(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        onClick = {
-                          editItemsViewModel.deleteItem()
-                          goBack()
-                        },
+                        onClick = { editItemsViewModel.deleteItem() },
                         enabled = itemsUIState.itemId.isNotEmpty(),
                         colors =
                             ButtonDefaults.buttonColors(
