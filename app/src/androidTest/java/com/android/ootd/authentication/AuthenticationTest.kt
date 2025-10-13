@@ -48,6 +48,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.ui.authentication.*
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -58,6 +59,7 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.*
+import kotlin.text.get
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -654,6 +656,182 @@ class AuthenticationExtensiveTest {
     }
 
     // Clean up mocks
+    unmockkStatic(FirebaseAuth::class)
+  }
+
+  // Tests done with AI, verified by human
+
+  // Kotlin
+  @Test
+  fun signIn_navigatesToRegister_whenUserHasNoName() = runTest {
+    val fakeGoogleIdToken =
+        FakeJwtGenerator.createFakeGoogleIdToken("No Name", email = "no.name@example.com")
+    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
+
+    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
+    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
+    val mockAuthResult = mockk<AuthResult>(relaxed = true)
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    every { mockFirebaseUser.uid } returns "uid-no-name"
+    every { mockAuthResult.user } returns mockFirebaseUser
+
+    mockkStatic(FirebaseAuth::class)
+    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
+    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
+    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
+
+    // No username set => userExists returns false
+    coEvery { mockUserRepository.userExists("uid-no-name") } returns false
+
+    val viewModel =
+        SignInViewModel(
+            repository = AccountServiceFirebase(auth = mockFirebaseAuth),
+            userRepository = mockUserRepository,
+        )
+
+    var wentToRegister = false
+    var wentToOverview = false
+
+    composeTestRule.setContent {
+      SignInScreen(
+          authViewModel = viewModel,
+          credentialManager = fakeCredentialManager,
+          onRegister = { wentToRegister = true },
+          onSignedIn = { wentToOverview = true },
+      )
+    }
+
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+
+    // Wait for sign-in to complete and routing to happen
+    composeTestRule.waitUntil(timeoutMillis = 10000) { wentToRegister || wentToOverview }
+
+    // Give a bit more time to ensure state is stable
+    composeTestRule.waitForIdle()
+
+    assertTrue("Expected to navigate to Register screen when user has no name", wentToRegister)
+    assertFalse("Should not navigate to Overview when user has no name", wentToOverview)
+
+    coVerify(atLeast = 1) { mockUserRepository.userExists("uid-no-name") }
+
+    unmockkStatic(FirebaseAuth::class)
+  }
+
+  @Test
+  fun signIn_navigatesToOverview_whenUserHasName() = runTest {
+    val fakeGoogleIdToken =
+        FakeJwtGenerator.createFakeGoogleIdToken("Has Name", email = "has.name@example.com")
+    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
+
+    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
+    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
+    val mockAuthResult = mockk<AuthResult>(relaxed = true)
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    every { mockFirebaseUser.uid } returns "uid-has-name"
+    every { mockAuthResult.user } returns mockFirebaseUser
+
+    mockkStatic(FirebaseAuth::class)
+    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
+    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
+    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
+
+    // Username present => userExists returns true
+    coEvery { mockUserRepository.userExists("uid-has-name") } returns true
+
+    val viewModel =
+        SignInViewModel(
+            repository = AccountServiceFirebase(auth = mockFirebaseAuth),
+            userRepository = mockUserRepository,
+        )
+
+    var wentToRegister = false
+    var wentToOverview = false
+
+    composeTestRule.setContent {
+      SignInScreen(
+          authViewModel = viewModel,
+          credentialManager = fakeCredentialManager,
+          onRegister = { wentToRegister = true },
+          onSignedIn = { wentToOverview = true },
+      )
+    }
+
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+
+    // Wait for sign-in to complete and routing to happen
+    composeTestRule.waitUntil(timeoutMillis = 10000) { wentToRegister || wentToOverview }
+
+    // Give a bit more time to ensure state is stable
+    composeTestRule.waitForIdle()
+
+    assertFalse("Should not navigate to Register when user has name", wentToRegister)
+    assertTrue("Expected to navigate to Overview when user has name", wentToOverview)
+
+    coVerify(atLeast = 1) { mockUserRepository.userExists("uid-has-name") }
+
+    unmockkStatic(FirebaseAuth::class)
+  }
+
+  @Test
+  fun signIn_invokesUserExists_withCurrentUid() = runTest {
+    val fakeGoogleIdToken =
+        FakeJwtGenerator.createFakeGoogleIdToken("Check UID", email = "check.uid@example.com")
+    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
+
+    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
+    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
+    val mockAuthResult = mockk<AuthResult>(relaxed = true)
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    every { mockFirebaseUser.uid } returns "uid-to-check"
+    every { mockAuthResult.user } returns mockFirebaseUser
+
+    mockkStatic(FirebaseAuth::class)
+    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
+    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
+    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
+
+    // Path does not matter here; we only verify the call with correct UID
+    coEvery { mockUserRepository.userExists("uid-to-check") } returns false
+
+    val viewModel =
+        SignInViewModel(
+            repository = AccountServiceFirebase(auth = mockFirebaseAuth),
+            userRepository = mockUserRepository,
+        )
+
+    var navigationCalled = false
+
+    composeTestRule.setContent {
+      SignInScreen(
+          authViewModel = viewModel,
+          credentialManager = fakeCredentialManager,
+          onRegister = { navigationCalled = true },
+          onSignedIn = { navigationCalled = true },
+      )
+    }
+
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+
+    // Wait for the sign-in flow to complete and userExists to be called
+    composeTestRule.waitUntil(timeoutMillis = 10000) { navigationCalled }
+
+    composeTestRule.waitForIdle()
+
+    // Verify that userExists was called with the correct UID (may be called multiple times)
+    coVerify(atLeast = 1) { mockUserRepository.userExists("uid-to-check") }
+
     unmockkStatic(FirebaseAuth::class)
   }
 }

@@ -44,10 +44,10 @@ data class AuthUIState(
  *
  * @property repository The repository used to perform authentication operations.
  */
-class SignInViewModel(private val repository: AccountService = AccountServiceFirebase(),
+class SignInViewModel(
+    private val repository: AccountService = AccountServiceFirebase(),
     private val userRepository: UserRepository = UserRepositoryProvider.repository
-) :
-    ViewModel() {
+) : ViewModel() {
 
   private val _uiState = MutableStateFlow(AuthUIState())
   val uiState: StateFlow<AuthUIState> = _uiState
@@ -87,9 +87,8 @@ class SignInViewModel(private val repository: AccountService = AccountServiceFir
 
         // Pass the credential to your repository
         repository.signInWithGoogle(credential).fold({ user ->
-            val exists = userRepository.userExists(user.uid)
           _uiState.update {
-            it.copy(isLoading = false, user = user, errorMsg = null, signedOut = false, newUser = !exists)
+            it.copy(isLoading = false, user = user, errorMsg = null, signedOut = false)
           }
         }) { failure ->
           _uiState.update {
@@ -123,6 +122,22 @@ class SignInViewModel(private val repository: AccountService = AccountServiceFir
               signedOut = true,
               user = null)
         }
+      }
+    }
+  }
+
+  fun routeAfterGoogleSignIn(
+      onSignedIn: () -> Unit,
+      onRegister: () -> Unit,
+      onFailure: (Throwable) -> Unit = {}
+  ) {
+    viewModelScope.launch {
+      try {
+        val uid = repository.currentUserId
+        val exists = userRepository.userExists(uid)
+        if (exists) onSignedIn() else onRegister()
+      } catch (t: Throwable) {
+        onFailure(t)
       }
     }
   }

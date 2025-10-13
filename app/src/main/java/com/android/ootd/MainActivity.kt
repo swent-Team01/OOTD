@@ -77,7 +77,7 @@ fun OOTDApp(
         SignInScreen(
             credentialManager = credentialManager,
             onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
-          onRegister = { navigationActions.navigateTo(Screen.RegisterUsername) })
+            onRegister = { navigationActions.navigateTo(Screen.RegisterUsername) })
       }
     }
 

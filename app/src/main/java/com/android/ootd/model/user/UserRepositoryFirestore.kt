@@ -6,7 +6,6 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import java.util.UUID
-import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
@@ -95,10 +94,15 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun userExists(userID: String): Boolean {
     return try {
-      val user = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
-      if(user.documents.isEmpty()){
-        return true
-      }else false
+      val querySnapshot =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+
+      if (querySnapshot.documents.isEmpty()) {
+        false
+      } else {
+        val name = querySnapshot.documents[0].getString("name")
+        !name.isNullOrBlank()
+      }
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)
       throw e

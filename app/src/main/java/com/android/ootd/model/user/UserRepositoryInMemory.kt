@@ -53,7 +53,7 @@ class UserRepositoryInMemory : UserRepository {
     }
   }
 
-    override suspend fun userExists(userID: String): Boolean = users.containsKey(userID)
+  override suspend fun userExists(userID: String): Boolean = users.containsKey(userID)
 
   override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
     val user = getUser(userID)
