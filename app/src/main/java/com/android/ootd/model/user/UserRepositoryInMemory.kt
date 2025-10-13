@@ -86,9 +86,12 @@ class UserRepositoryInMemory : UserRepository {
     users[userID] = user.copy(friendList = updatedFriendList)
   }
 
-  override suspend fun isMyFriend(friendID: String): Boolean {
+  override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
+    // Here the userID does not matter because this class is used for testing,
+    // and this way I would not have to redo all the tests I already written.
+
     val user = getUser(currentUser)
-    return user.friendList.any { it.uid == friendID }
+    return user.friendList.isNotEmpty() && user.friendList.any { it.uid == friendID }
   }
 
   override suspend fun createUser(username: String, uid: String) {

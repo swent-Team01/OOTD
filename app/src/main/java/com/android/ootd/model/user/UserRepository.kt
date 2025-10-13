@@ -56,10 +56,11 @@ interface UserRepository {
    */
   suspend fun removeFriend(userID: String, friendID: String, friendUsername: String)
   /**
-   * Checks if the given user is the friend of the authenticated user.
+   * Checks if for userID, the user with id friendID is his friend.
    *
-   * @param friendID The unique identifier of the user we want to check.
+   * @param userID The unique identifier of the user which friend list is checked.
+   * @param friendID The unique identifier of the user looked for in the friend list.
    * @throws Exception if friendID is not found or user is not authenticated
    */
-  suspend fun isMyFriend(friendID: String): Boolean
+  suspend fun isMyFriend(userID: String, friendID: String): Boolean
 }

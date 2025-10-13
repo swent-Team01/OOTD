@@ -61,13 +61,18 @@ class UserSearchViewModel(
   }
 
   fun selectUsername(user: User) {
+    val myUID = if (overrideUser) testingUsername else (Firebase.auth.currentUser?.uid ?: "")
+    if (myUID == "") {
+      throw IllegalStateException("The user is not authenticated")
+    }
     viewModelScope.launch {
       _uiState.value =
           _uiState.value.copy(
               username = user.username,
               selectedUser = user,
               userSuggestions = emptyList(),
-              isSelectedUserFollowed = userRepository.isMyFriend(user.uid),
+              isSelectedUserFollowed =
+                  userRepository.isMyFriend(userID = myUID, friendID = user.uid),
               suggestionsExpanded = false)
     }
   }

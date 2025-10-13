@@ -3,12 +3,10 @@ package com.android.ootd.model.user
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
-import com.google.firebase.ktx.Firebase
 import java.util.UUID
 import kotlinx.coroutines.tasks.await
 
@@ -192,13 +190,9 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       }
 
       val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
-
+      val friendDto = Friend(uid = friendID, username = friendUsername).toDto()
       // Use arrayRemove to remove the friend from the array
-      userRef
-          .update(
-              "friendList",
-              FieldValue.arrayRemove(Friend(uid = friendID, username = friendUsername)))
-          .await()
+      userRef.update("friendList", FieldValue.arrayRemove(friendDto)).await()
     } catch (e: Exception) {
       Log.e(
           "UserRepositoryFirestore", "Error removing friend $friendID from $userID ${e.message}", e)
@@ -206,9 +200,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
-  override suspend fun isMyFriend(friendID: String): Boolean {
-    val myUID = Firebase.auth.currentUser?.uid
-    val documentList = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", myUID).get().await()
+  override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
+    val documentList = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
     if (documentList.documents.isEmpty()) {
       throw NoSuchElementException("The authenticated user has not been added to the database")
     }
@@ -217,7 +210,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
     val myUser = transformUserDocument(documentList.documents[0])
 
-    return (myUser?.friendList?.any { it.uid == friendID } == true)
+    return (myUser?.friendList?.isNotEmpty() == true &&
+        myUser.friendList.any { it.uid == friendID })
   }
 
   private suspend fun usernameExists(username: String): Boolean {
