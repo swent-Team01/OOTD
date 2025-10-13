@@ -48,7 +48,7 @@ class UserSearchViewModel(
         val allUsers = userRepository.getAllUsers()
         val suggestions =
             allUsers
-                .filter { it.name.startsWith(query, ignoreCase = true) }
+                .filter { it.username.startsWith(query, ignoreCase = true) }
                 .take(MAX_NUMBER_SUGGESTIONS)
         _uiState.value = _uiState.value.copy(userSuggestions = suggestions)
       } catch (e: Exception) {
@@ -62,7 +62,7 @@ class UserSearchViewModel(
     viewModelScope.launch {
       _uiState.value =
           _uiState.value.copy(
-              username = user.name,
+              username = user.username,
               selectedUser = user,
               userSuggestions = emptyList(),
               isSelectedUserFollowed = userRepository.isMyFriend(user.uid),
@@ -95,7 +95,7 @@ class UserSearchViewModel(
         throw IllegalStateException("There is no selected user")
       }
       val friendID = _uiState.value.selectedUser?.uid ?: ""
-      val friendUsername = _uiState.value.selectedUser?.name ?: ""
+      val friendUsername = _uiState.value.selectedUser?.username ?: ""
 
       if (!_uiState.value.isSelectedUserFollowed) {
         userRepository.addFriend(myUID, friendID, friendUsername)

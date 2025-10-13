@@ -18,14 +18,16 @@ import kotlinx.coroutines.launch
  *
  * @property uid The unique identifier of the user. Empty string by default.
  * @property username The username entered by the user. Empty string by default.
+ * @property dateOfBirth The users date of birth. Empty string by default
  * @property errorMsg An optional error message to display to the user. Null by default.
  * @property isLoading Indicates whether a registration operation is in progress. False by default.
  * @property registered Indicates whether the user has been successfully registered. False by
  *   default.
  */
-data class User(
+data class RegisterUserViewModel(
     val uid: String = "",
     val username: String = "",
+    val dateOfBirth: String = "",
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false
@@ -44,13 +46,13 @@ class RegisterViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(User())
+  private val _uiState = MutableStateFlow(RegisterUserViewModel())
 
   /**
    * A [StateFlow] representing the current registration UI state. Observers can collect this flow
    * to react to state changes.
    */
-  val uiState: StateFlow<User> = _uiState.asStateFlow()
+  val uiState: StateFlow<RegisterUserViewModel> = _uiState.asStateFlow()
 
   init {
     refresh()
@@ -86,6 +88,15 @@ class RegisterViewModel(
    */
   fun setUsername(uname: String) {
     _uiState.value = _uiState.value.copy(username = uname)
+  }
+
+  /**
+   * Updates the dateOfBirth in the UI state
+   *
+   * @param date The users date of birth
+   */
+  fun setDateOfBirth(date: String) {
+    _uiState.value = _uiState.value.copy(dateOfBirth = date)
   }
 
   /**

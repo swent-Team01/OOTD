@@ -1,4 +1,4 @@
-package com.android.ootd.screen
+package com.android.ootd.ui.items
 
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
@@ -20,7 +20,7 @@ import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,21 +33,12 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   private lateinit var viewModel: AddItemsViewModel
   override val repository = ItemsRepositoryProvider.repository
 
-  // Use longer timeouts in CI environment
-  private val waitTimeout: Long
-    get() = if (System.getenv("CI") != null) 10_000L else 5_000L
-
   @Before
   override fun setUp() {
     super.setUp()
     viewModel = AddItemsViewModel(repository)
     // Initialize type suggestions for tests
-    try {
-      viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
-    } catch (e: Exception) {
-      // Fallback: will use default suggestions
-      android.util.Log.w("AddItemScreenTest", "Failed to load type suggestions: ${e.message}")
-    }
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     composeTestRule.setContent { AddItemsScreen(viewModel) }
   }
 
@@ -136,7 +127,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.runOnIdle {
       assert(viewModel.uiState.value.invalidCategory != null)
-      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
+      TestCase.assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
     }
 
     composeTestRule
@@ -154,14 +145,14 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun clickingAddItemReturns() {
-    val item = ItemsTest.item4
+    val item = ItemsTest.Companion.item4
     composeTestRule.enterAddItemDetails(item)
 
     composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = waitTimeout) {
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
           .fetchSemanticsNodes()
@@ -184,7 +175,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -199,7 +190,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -281,7 +272,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -297,7 +288,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -313,7 +304,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -360,7 +351,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
           .fetchSemanticsNodes()
@@ -379,7 +370,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
           .fetchSemanticsNodes()

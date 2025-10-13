@@ -1,9 +1,10 @@
-package com.android.ootd.model
+package com.android.ootd.model.items
 
 import android.util.Log
 import androidx.core.net.toUri
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"

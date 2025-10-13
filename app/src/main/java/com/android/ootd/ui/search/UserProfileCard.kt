@@ -38,7 +38,7 @@ fun UserProfileCardPreview() {
         selectedUser =
             User(
                 uid = "Bob",
-                name = "TheMostSuperNameofTheWorldTheThirdKingOfPeople",
+                username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople",
                 friendList = emptyList()),
         modifier = Modifier.padding(16.dp),
         isSelectedUserFollowed = true,
@@ -63,7 +63,7 @@ fun UserProfileCard(
               modifier =
                   Modifier.testTag(UserProfileCardTestTags.USERNAME_TEXT)
                       .horizontalScroll(rememberScrollState()),
-              text = selectedUser?.name ?: "",
+              text = selectedUser?.username ?: "",
               fontSize = 32.sp,
               fontWeight = FontWeight.Bold,
               color = MaterialTheme.colorScheme.onBackground,

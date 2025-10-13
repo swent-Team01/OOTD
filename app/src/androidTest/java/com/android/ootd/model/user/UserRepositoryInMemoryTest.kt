@@ -50,10 +50,10 @@ class UserRepositoryInMemoryTest {
     val users = repository.getAllUsers()
 
     val user1 = users.find { it.uid == "user1" }
-    assertEquals("alice_wonder", user1?.name)
+    assertEquals("alice_wonder", user1?.username)
 
     val user2 = users.find { it.uid == "user2" }
-    assertEquals("bob_builder", user2?.name)
+    assertEquals("bob_builder", user2?.username)
   }
 
   @Test
@@ -61,7 +61,7 @@ class UserRepositoryInMemoryTest {
     val user = repository.getUser("user1")
 
     assertEquals("user1", user.uid)
-    assertEquals("alice_wonder", user.name)
+    assertEquals("alice_wonder", user.username)
     assertEquals(2, user.friendList.size)
   }
 
@@ -77,19 +77,19 @@ class UserRepositoryInMemoryTest {
 
   @Test
   fun addUser_successfullyAddsNewUser() = runTest {
-    val newUser = User(uid = "user6", name = "frank_sinatra", friendList = emptyList())
+    val newUser = User(uid = "user6", username = "frank_sinatra", friendList = emptyList())
 
     repository.addUser(newUser)
     val retrievedUser = repository.getUser("user6")
 
     assertEquals("user6", retrievedUser.uid)
-    assertEquals("frank_sinatra", retrievedUser.name)
+    assertEquals("frank_sinatra", retrievedUser.username)
     assertTrue(retrievedUser.friendList.isEmpty())
   }
 
   @Test
   fun addUser_throwsExceptionWhenUserAlreadyExists() {
-    val duplicateUser = User(uid = "user1", name = "duplicate_user", friendList = emptyList())
+    val duplicateUser = User(uid = "user1", username = "duplicate_user", friendList = emptyList())
 
     val exception =
         assertThrows(IllegalArgumentException::class.java) {
@@ -103,7 +103,7 @@ class UserRepositoryInMemoryTest {
   fun addUser_increasesUserCount() = runTest {
     val initialCount = repository.getAllUsers().size
 
-    val newUser = User(uid = "user6", name = "new_user", friendList = emptyList())
+    val newUser = User(uid = "user6", username = "new_user", friendList = emptyList())
     repository.addUser(newUser)
 
     assertEquals(initialCount + 1, repository.getAllUsers().size)
@@ -116,7 +116,7 @@ class UserRepositoryInMemoryTest {
     val user = repository.getUser("user3")
     assertEquals(1, user.friendList.size)
     assertEquals("user1", user.friendList[0].uid)
-    assertEquals("alice_wonder", user.friendList[0].name)
+    assertEquals("alice_wonder", user.friendList[0].username)
   }
 
   @Test

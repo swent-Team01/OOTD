@@ -61,9 +61,10 @@ class FilterFeedTest {
     val currentUser =
         User(
             uid = "me",
-            name = "Me",
+            username = "Me",
             friendList =
-                listOf(Friend(uid = "u1", name = "Alice"), Friend(uid = "u2", name = "Bob")))
+                listOf(
+                    Friend(uid = "u1", username = "Alice"), Friend(uid = "u2", username = "Bob")))
 
     val filtered = filterPostsByFriendsForTest(posts, currentUser)
 
@@ -94,7 +95,7 @@ class FilterFeedTest {
                 timestamp = 1L),
         )
 
-    val currentUser = User(uid = "me", name = "Me", friendList = emptyList())
+    val currentUser = User(uid = "me", username = "Me", friendList = emptyList())
 
     val filtered = filterPostsByFriendsForTest(posts, currentUser)
 
