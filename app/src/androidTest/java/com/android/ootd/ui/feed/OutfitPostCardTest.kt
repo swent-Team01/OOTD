@@ -87,7 +87,7 @@ class OutfitPostCardTest {
     composeTestRule
         .onNodeWithTag(OutfitPostCardTestTags.POST_DESCRIPTION)
         .assertIsDisplayed()
-        .assertTextEquals("Summer vibes with denim jacket")
+        .assertTextEquals("Jane Smith: Summer vibes with denim jacket")
   }
 
   @Test
@@ -273,7 +273,7 @@ class OutfitPostCardTest {
     composeTestRule
         .onNodeWithTag(OutfitPostCardTestTags.POST_DESCRIPTION)
         .assertIsDisplayed()
-        .assertTextEquals(longDescription)
+        .assertTextEquals("Verbose User: $longDescription")
     composeTestRule.onNodeWithTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).assertIsDisplayed()
   }
 
@@ -303,7 +303,7 @@ class OutfitPostCardTest {
     composeTestRule
         .onNodeWithTag(OutfitPostCardTestTags.POST_DESCRIPTION)
         .assertIsDisplayed()
-        .assertTextEquals("Complete outfit description")
+        .assertTextEquals("Complete User: Complete outfit description")
     composeTestRule.onNodeWithTag(OutfitPostCardTestTags.POST_IMAGE_PLACEHOLDER).assertIsDisplayed()
     composeTestRule.onNodeWithTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).assertIsDisplayed()
   }
@@ -332,6 +332,6 @@ class OutfitPostCardTest {
         .assertTextEquals("Fashionista")
     composeTestRule
         .onNodeWithTag(OutfitPostCardTestTags.POST_DESCRIPTION)
-        .assertTextEquals("Outfit with tracked items")
+        .assertTextEquals("Fashionista: Outfit with tracked items")
   }
 }
