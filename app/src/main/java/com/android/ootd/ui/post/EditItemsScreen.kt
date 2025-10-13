@@ -74,8 +74,8 @@ object EditItemsScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditItemsScreen(
+    itemUuid: String = "",
     editItemsViewModel: EditItemsViewModel = viewModel(),
-    onSave: () -> Unit = {},
     goBack: () -> Unit = {}
 ) {
 
@@ -85,6 +85,12 @@ fun EditItemsScreen(
 
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { editItemsViewModel.initTypeSuggestions(context) }
+
+  LaunchedEffect(itemUuid) {
+    if (itemUuid.isNotEmpty()) {
+      editItemsViewModel.loadItemById(itemUuid)
+    }
+  }
 
   var expanded by remember { mutableStateOf(false) }
   var cameraUri by remember { mutableStateOf<Uri?>(null) }
@@ -109,6 +115,9 @@ fun EditItemsScreen(
     if (errorMsg != null) {
       Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
       editItemsViewModel.clearErrorMsg()
+    } else if (itemsUIState.itemId.isNotEmpty()) {
+      // This is used when we want to delete an item, as the call is asynchronous
+      goBack()
     }
   }
 
@@ -257,42 +266,44 @@ fun EditItemsScreen(
                   modifier =
                       Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_LINK))
 
-              Button(
-                  onClick = {
-                    if (editItemsViewModel.canEditItems()) {
-                      onSave()
-                    }
-                  },
-                  enabled = itemsUIState.image != Uri.EMPTY && itemsUIState.category.isNotEmpty(),
-                  modifier =
-                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES),
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Text("Save Changes")
-                  }
+              Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { editItemsViewModel.deleteItem() },
+                        enabled = itemsUIState.itemId.isNotEmpty(),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError),
+                        modifier =
+                            Modifier.weight(1f)
+                                .testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)) {
+                          Row(
+                              horizontalArrangement = Arrangement.Center,
+                              verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.size(8.dp))
+                                Text("Delete Item")
+                              }
+                        }
 
-              Spacer(modifier = Modifier.height(8.dp))
-
-              Button(
-                  onClick = {
-                    editItemsViewModel.deleteItem()
-                    goBack()
-                  },
-                  enabled = itemsUIState.itemId.isNotEmpty(),
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = MaterialTheme.colorScheme.error,
-                          contentColor = MaterialTheme.colorScheme.onError),
-                  modifier =
-                      Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically) {
-                          Icon(
-                              imageVector = Icons.Default.Delete,
-                              contentDescription = "Delete",
-                              modifier = Modifier.size(20.dp))
-                          Spacer(modifier = Modifier.size(8.dp))
-                          Text("Delete Item")
+                    Button(
+                        onClick = {
+                          if (editItemsViewModel.canEditItems()) {
+                            goBack()
+                          }
+                        },
+                        enabled =
+                            itemsUIState.image != Uri.EMPTY && itemsUIState.category.isNotEmpty(),
+                        modifier =
+                            Modifier.weight(1f)
+                                .testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                          Text("Save Changes")
                         }
                   }
             }
