@@ -2,13 +2,8 @@ package com.android.ootd.model.items
 
 import android.net.Uri
 import android.util.Log
-import com.android.ootd.model.ITEMS_COLLECTION
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepositoryProvider.repository
-import com.android.ootd.model.Material
+import com.android.ootd.model.items.ItemsRepositoryProvider.repository
 import com.android.ootd.utils.FirebaseEmulator
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
@@ -71,7 +66,7 @@ class ItemsRepositoryFirestoreTest() {
           link = "https://example.com/item4")
 
   suspend fun countItems(): Int {
-    return Firebase.firestore.collection(ITEMS_COLLECTION).get().await().size()
+    return FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).get().await().size()
   }
 
   @Test
@@ -85,7 +80,7 @@ class ItemsRepositoryFirestoreTest() {
   fun addItemWithTheCorrectID() = runTest {
     repository.addItem(item1)
     val snapshot =
-        Firebase.firestore.collection(ITEMS_COLLECTION).document(item1.uuid).get().await()
+        FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).document(item1.uuid).get().await()
 
     Log.d("FirestoreTest", "Firestore stored document: ${snapshot.data}")
     assertEquals(1, countItems())
@@ -192,7 +187,7 @@ class ItemsRepositoryFirestoreTest() {
 
   @Test
   fun getAllItemsSkipsInvalidDocuments() = runTest {
-    val db = Firebase.firestore
+    val db = FirebaseEmulator.firestore
     val collection = db.collection(ITEMS_COLLECTION)
 
     // Add an invalid Firestore document (missing required fields)
@@ -210,7 +205,7 @@ class ItemsRepositoryFirestoreTest() {
 
   @Test
   fun getAllItemsParsesPartiallyValidMaterialList() = runTest {
-    val db = Firebase.firestore
+    val db = FirebaseEmulator.firestore
     val collection = db.collection(ITEMS_COLLECTION)
 
     val partialMaterialData =
@@ -231,13 +226,13 @@ class ItemsRepositoryFirestoreTest() {
     assertEquals(1, items.size)
     val matList = items.first().material
     assertEquals(2, matList.size)
-    assertEquals("Cotton", matList.first().name)
-    assertEquals(60.0, matList.first().percentage)
+    assertEquals("Cotton", matList.first()?.name)
+    assertEquals(60.0, matList.first()?.percentage)
   }
 
   @Test
   fun mapToItemCatchesExceptionForInvalidData() = runTest {
-    val db = Firebase.firestore
+    val db = FirebaseEmulator.firestore
     val collection = db.collection(ITEMS_COLLECTION)
 
     // Insert invalid data (image should be a string, but we give it a number)

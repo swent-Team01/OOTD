@@ -20,6 +20,7 @@ import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.theme.OOTDTheme
 
 /** Activity that hosts the app's Compose UI. */
@@ -64,6 +65,9 @@ fun OOTDApp(
         SplashScreen(
             onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
             onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
+      }
+      composable(Screen.RegisterUsername.route) {
+        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Overview) })
       }
     }
 
