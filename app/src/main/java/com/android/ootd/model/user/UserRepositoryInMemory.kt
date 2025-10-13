@@ -82,7 +82,7 @@ class UserRepositoryInMemory : UserRepository {
       return
     }
 
-    val updatedFriendList = user.friendList - Friend(uid = friendID, name = friendUsername)
+    val updatedFriendList = user.friendList - Friend(uid = friendID, username = friendUsername)
     users[userID] = user.copy(friendList = updatedFriendList)
   }
 
