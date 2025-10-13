@@ -3,11 +3,16 @@ package com.android.ootd.ui.feed
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 object FeedScreenTestTags {
@@ -28,8 +33,37 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
       topBar = {
-        TopAppBar(
-            title = { Text("OOTD Feed") }, modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR))
+        CenterAlignedTopAppBar(
+            modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
+            title = {
+              Text(
+                  text = "OOTD",
+                  style =
+                      MaterialTheme.typography.displayLarge.copy(
+                          fontWeight = FontWeight.Bold,
+                          color = MaterialTheme.colorScheme.primary,
+                          textAlign = TextAlign.Center))
+            },
+            navigationIcon = {
+              IconButton(onClick = { /* TODO: search navigation */}) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.tertiary)
+              }
+            },
+            actions = {
+              // TODO: replace this icon with user profile avatar once implemented
+              IconButton(onClick = { /* TODO: profile navigation */}) {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Profile",
+                    tint = MaterialTheme.colorScheme.primary)
+              }
+            },
+            colors =
+                TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background))
       },
       floatingActionButton = {
         if (!hasPostedToday) {
