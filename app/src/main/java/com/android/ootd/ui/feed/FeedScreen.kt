@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 object FeedScreenTestTags {
@@ -40,9 +39,7 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
                   text = "OOTD",
                   style =
                       MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold,
-                          color = MaterialTheme.colorScheme.primary,
-                          textAlign = TextAlign.Center))
+                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
             },
             navigationIcon = {
               IconButton(onClick = { /* TODO: search navigation */}) {
