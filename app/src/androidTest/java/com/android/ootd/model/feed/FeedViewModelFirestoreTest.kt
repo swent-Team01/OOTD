@@ -59,7 +59,7 @@ class FeedViewModelFirestoreTest {
     val currentUser =
         User(
             uid = "me",
-            name = "Me",
+            username = "Me",
             friendList = listOf(Friend("u1", "Alice"), Friend("u2", "Bob")))
     vm.setCurrentUser(currentUser)
 
@@ -77,7 +77,7 @@ class FeedViewModelFirestoreTest {
     seedPosts(listOf(post("p1", "Alice", "u1", ts = 1L), post("p2", "Bob", "u2", ts = 2L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = emptyList()))
+    vm.setCurrentUser(User(uid = "me", username = "Me", friendList = emptyList()))
 
     vm.onPostUploaded()
 
@@ -104,7 +104,7 @@ class FeedViewModelFirestoreTest {
 
     assertEquals(0, vm.uiState.first().feedPosts.size)
 
-    val currentUser = User(uid = "me", name = "Me", friendList = listOf(Friend("u2", "Bob")))
+    val currentUser = User(uid = "me", username = "Me", friendList = listOf(Friend("u2", "Bob")))
     vm.setCurrentUser(currentUser)
 
     val filtered =
@@ -119,7 +119,7 @@ class FeedViewModelFirestoreTest {
     seedPosts(listOf(post("pSelf", "Me", "me", ts = 1L)))
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = emptyList()))
+    vm.setCurrentUser(User(uid = "me", username = "Me", friendList = emptyList()))
 
     vm.onPostUploaded()
 
@@ -139,7 +139,8 @@ class FeedViewModelFirestoreTest {
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
     vm.setCurrentUser(
-        User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "A"), Friend("u3", "C"))))
+        User(
+            uid = "me", username = "Me", friendList = listOf(Friend("u1", "A"), Friend("u3", "C"))))
 
     vm.onPostUploaded()
 
@@ -154,11 +155,11 @@ class FeedViewModelFirestoreTest {
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
 
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = emptyList()))
+    vm.setCurrentUser(User(uid = "me", username = "Me", friendList = emptyList()))
     vm.onPostUploaded()
     assertEquals(0, withTimeout(5_000) { vm.uiState.first().feedPosts }.size)
 
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u2", "Bob"))))
+    vm.setCurrentUser(User(uid = "me", username = "Me", friendList = listOf(Friend("u2", "Bob"))))
     val filtered =
         withTimeout(5_000) { vm.uiState.filter { it.feedPosts.isNotEmpty() }.first().feedPosts }
     assertEquals(listOf("p2"), filtered.map { it.postUID })
@@ -176,7 +177,7 @@ class FeedViewModelFirestoreTest {
         }
 
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "A"))))
+    vm.setCurrentUser(User(uid = "me", username = "Me", friendList = listOf(Friend("u1", "A"))))
 
     assertEquals(0, withTimeout(5_000) { vm.uiState.first().feedPosts }.size)
   }
@@ -189,7 +190,7 @@ class FeedViewModelFirestoreTest {
     vm.setCurrentUser(
         User(
             uid = "me",
-            name = "Me",
+            username = "Me",
             friendList = listOf(Friend("u1", "Alice"), Friend("u1", "Alice"))))
 
     vm.onPostUploaded()
@@ -205,7 +206,7 @@ class FeedViewModelFirestoreTest {
 
     // Default repo will report false for users without posts today
     val vm = com.android.ootd.ui.feed.FeedViewModel()
-    vm.setCurrentUser(User(uid = "me", name = "Me", friendList = listOf(Friend("u1", "Alice"))))
+    vm.setCurrentUser(User(uid = "me", username = "Me", friendList = listOf(Friend("u1", "Alice"))))
 
     // Before posting, feed should remain empty
     assertEquals(0, vm.uiState.first().feedPosts.size)
@@ -243,7 +244,7 @@ class FeedViewModelFirestoreTest {
     vm.setCurrentUser(
         User(
             uid = "me",
-            name = "Me",
+            username = "Me",
             friendList = listOf(Friend(" ", "Ghost"), Friend("", "Nobody"), Friend("u2", "Bob"))))
 
     vm.onPostUploaded()
@@ -262,7 +263,7 @@ class FeedViewModelFirestoreTest {
     vm.setCurrentUser(
         User(
             uid = "me",
-            name = "Me",
+            username = "Me",
             friendList = listOf(Friend("u1", "Alice"), Friend("u2", "Bob"))))
 
     vm.onPostUploaded()

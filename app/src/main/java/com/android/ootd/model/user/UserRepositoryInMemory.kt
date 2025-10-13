@@ -11,26 +11,26 @@ class UserRepositoryInMemory : UserRepository {
           "user1" to
               User(
                   uid = "user1",
-                  name = nameList[0],
+                  username = nameList[0],
                   friendList =
                       listOf(
-                          Friend(uid = "user2", name = "bob_builder"),
-                          Friend(uid = "user3", name = "charlie_brown"))),
+                          Friend(uid = "user2", username = "bob_builder"),
+                          Friend(uid = "user3", username = "charlie_brown"))),
           "user2" to
               User(
                   uid = "user2",
-                  name = nameList[1],
-                  friendList = listOf(Friend(uid = "user1", name = "alice_wonder"))),
-          "user3" to User(uid = "user3", name = nameList[2], friendList = emptyList()),
+                  username = nameList[1],
+                  friendList = listOf(Friend(uid = "user1", username = "alice_wonder"))),
+          "user3" to User(uid = "user3", username = nameList[2], friendList = emptyList()),
           "user4" to
               User(
                   uid = "user4",
-                  name = nameList[3],
+                  username = nameList[3],
                   friendList =
                       listOf(
-                          Friend(uid = "user1", name = "alice_wonder"),
-                          Friend(uid = "user2", name = "bob_builder"))),
-          "user5" to User(uid = "user5", name = nameList[4], friendList = emptyList()))
+                          Friend(uid = "user1", username = "alice_wonder"),
+                          Friend(uid = "user2", username = "bob_builder"))),
+          "user5" to User(uid = "user5", username = nameList[4], friendList = emptyList()))
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
@@ -67,13 +67,13 @@ class UserRepositoryInMemory : UserRepository {
       return // Already friends, do nothing (mimics arrayUnion behavior)
     }
 
-    val updatedFriendList = user.friendList + Friend(uid = friendID, name = friendUsername)
+    val updatedFriendList = user.friendList + Friend(uid = friendID, username = friendUsername)
     users[userID] = user.copy(friendList = updatedFriendList)
   }
 
   override suspend fun createUser(username: String, uid: String) {
     // Check if username already exists
-    if (users.values.any { it.name == username }) {
+    if (users.values.any { it.username == username }) {
       throw TakenUsernameException("Username already in use")
     }
 

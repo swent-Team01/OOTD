@@ -20,7 +20,6 @@ class EditItemsScreenTest {
 
   private lateinit var viewModel: EditItemsViewModel
   private lateinit var repository: ItemsRepositoryLocal
-  private var onSaveCalled = false
   private var goBackCalled = false
 
   private val testItem =
@@ -48,7 +47,6 @@ class EditItemsScreenTest {
     viewModel = EditItemsViewModel(repository)
 
     // Reset callbacks
-    onSaveCalled = false
     goBackCalled = false
   }
 
@@ -60,7 +58,7 @@ class EditItemsScreenTest {
 
   @Test
   fun allUIElementsAreDisplayed() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Check all UI elements are present
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE).assertExists()
@@ -83,7 +81,7 @@ class EditItemsScreenTest {
 
   @Test
   fun topAppBarIsDisplayedCorrectly() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.onNodeWithText("Edit Item").assertExists()
     composeTestRule.onNodeWithContentDescription("Go Back").assertExists()
@@ -91,7 +89,7 @@ class EditItemsScreenTest {
 
   @Test
   fun loadItemPopulatesAllFields() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Load item into ViewModel
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
@@ -123,7 +121,7 @@ class EditItemsScreenTest {
 
   @Test
   fun saveButtonIsDisabledWhenRequiredFieldsAreEmpty() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Initially, save button should be disabled (no image, no category)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
@@ -131,7 +129,7 @@ class EditItemsScreenTest {
 
   @Test
   fun saveButtonIsEnabledWhenRequiredFieldsAreFilled() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Set image and category
     composeTestRule.runOnIdle {
@@ -147,7 +145,7 @@ class EditItemsScreenTest {
 
   @Test
   fun deleteButtonIsDisabledWhenNoItemLoaded() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Delete button should be disabled when no item is loaded
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsNotEnabled()
@@ -155,7 +153,7 @@ class EditItemsScreenTest {
 
   @Test
   fun deleteButtonIsEnabledWhenItemIsLoaded() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
@@ -167,7 +165,7 @@ class EditItemsScreenTest {
 
   @Test
   fun userCanEditCategoryField() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
@@ -189,7 +187,7 @@ class EditItemsScreenTest {
 
   @Test
   fun userCanEditTypeField() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
@@ -209,7 +207,7 @@ class EditItemsScreenTest {
 
   @Test
   fun userCanEditBrandField() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
@@ -229,7 +227,7 @@ class EditItemsScreenTest {
 
   @Test
   fun userCanEditPriceField() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
@@ -249,7 +247,7 @@ class EditItemsScreenTest {
 
   @Test
   fun userCanEditLinkField() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
@@ -269,7 +267,7 @@ class EditItemsScreenTest {
 
   @Test
   fun typeSuggestionsAppearOnFocus() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Set category to enable suggestions
     composeTestRule.runOnIdle { viewModel.setCategory("Clothing") }
@@ -293,7 +291,7 @@ class EditItemsScreenTest {
 
   @Test
   fun selectingSuggestionFillsTypeField() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Set category
     composeTestRule.runOnIdle { viewModel.setCategory("Shoes") }
@@ -321,7 +319,7 @@ class EditItemsScreenTest {
 
   @Test
   fun invalidPriceInputHandledGracefully() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     // Try to input invalid price
     composeTestRule
@@ -339,7 +337,7 @@ class EditItemsScreenTest {
 
   @Test
   fun clearingCategoryDisablesSaveButton() {
-    composeTestRule.setContent { EditItemsScreen(viewModel) }
+    composeTestRule.setContent { EditItemsScreen(testItem.uuid, viewModel) }
 
     composeTestRule.runOnIdle {
       viewModel.setPhoto(Uri.parse("https://example.com/test.jpg"))

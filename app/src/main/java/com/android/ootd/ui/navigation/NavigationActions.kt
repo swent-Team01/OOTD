@@ -36,6 +36,13 @@ sealed class Screen(
 
   // ToDo: Replace overview with main when implemented
   object Overview : Screen(route = "overview", name = "Overview", isTopLevelDestination = true)
+
+  data class EditItem(val itemUid: String) :
+      Screen(route = "editItem/${itemUid}", name = "Edit Item") {
+    companion object {
+      const val route = "editItem/{itemUid}"
+    }
+  }
 }
 
 /**

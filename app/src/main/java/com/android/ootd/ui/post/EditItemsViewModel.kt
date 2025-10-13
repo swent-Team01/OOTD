@@ -91,14 +91,26 @@ open class EditItemsViewModel(
   fun loadItem(item: Item) {
     _uiState.value =
         EditItemsUIState(
-            itemId = item.uuid ?: "",
-            image = item.image ?: Uri.EMPTY,
-            category = item.category ?: "",
+            itemId = item.uuid,
+            image = item.image,
+            category = item.category,
             type = item.type ?: "",
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
-            material = (item.material ?: emptyList()) as List<Material>,
+            material = item.material.filterNotNull(),
             link = item.link ?: "")
+  }
+
+  /** Loads an item by its UUID directly from the repository. */
+  fun loadItemById(itemUuid: String) {
+    viewModelScope.launch {
+      try {
+        val item = repository.getItemById(itemUuid)
+        loadItem(item)
+      } catch (e: Exception) {
+        setErrorMsg("Failed to load item: ${e.message}")
+      }
+    }
   }
 
   /**

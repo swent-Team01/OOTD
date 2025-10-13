@@ -12,16 +12,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.credentials.CredentialManager
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storage
 
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
@@ -43,7 +49,7 @@ class MainActivity : ComponentActivity() {
  * Root composable that hosts the app navigation graph.
  *
  * This composable:
- * - creates a [NavHostController] and [NavigationActions],
+ * - creates a [NavigationActions],
  * - accepts a [CredentialManager] for future auth usage.
  *
  * @param context Compose-provided [Context], defaults to [LocalContext].
@@ -53,6 +59,7 @@ class MainActivity : ComponentActivity() {
 fun OOTDApp(
     context: Context = LocalContext.current,
     credentialManager: CredentialManager = CredentialManager.create(context),
+    storage: FirebaseStorage = Firebase.storage
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
@@ -85,6 +92,17 @@ fun OOTDApp(
     // Todo: Replace overview with main when implemented
     navigation(startDestination = Screen.Overview.route, route = Screen.Overview.name) {
       composable(Screen.Overview.route) { Text("Overview Placeholder") }
+
+      composable(
+          route = Screen.EditItem.route,
+          arguments = listOf(navArgument("itemUid") { type = NavType.StringType })) {
+              navBackStackEntry ->
+            val itemUid = navBackStackEntry.arguments?.getString("itemUid")
+
+            if (itemUid != null) {
+              EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
+            }
+          }
     }
   }
 }

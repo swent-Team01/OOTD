@@ -1,6 +1,8 @@
 package com.android.ootd.model.user
 
+import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,11 +15,56 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
+// Firestore DTOs (Data Transfer Objects) - use String for Uri fields
+private data class FriendDto(
+    val uid: String = "",
+    val username: String = "",
+    val profilePicture: String = "" // Store as String for Firestore
+)
+
+private data class UserDto(
+    val uid: String = "",
+    val username: String = "",
+    val profilePicture: String = "", // Store as String for Firestore
+    val friendList: List<FriendDto> = emptyList()
+)
+
+// Extension functions to convert between domain models and DTOs
+private fun Friend.toDto(): FriendDto {
+  return FriendDto(
+      uid = this.uid, username = this.username, profilePicture = this.profilePicture.toString())
+}
+
+private fun FriendDto.toDomain(): Friend {
+  return Friend(
+      uid = this.uid,
+      username = this.username,
+      profilePicture =
+          if (this.profilePicture.isBlank()) Uri.EMPTY else this.profilePicture.toUri())
+}
+
+private fun User.toDto(): UserDto {
+  return UserDto(
+      uid = this.uid,
+      username = this.username,
+      profilePicture = this.profilePicture.toString(),
+      friendList = this.friendList.map { it.toDto() })
+}
+
+private fun UserDto.toDomain(): User {
+  return User(
+      uid = this.uid,
+      username = this.username,
+      profilePicture =
+          if (this.profilePicture.isBlank()) Uri.EMPTY else this.profilePicture.toUri(),
+      friendList = this.friendList.map { it.toDomain() })
+}
+
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
 
   /** Helper method to check user data as firestore might add the default values */
   private fun checkUserData(user: User): User? {
-    if (user.uid.isBlank() || user.name.isBlank()) {
+    if (user.uid.isBlank() || user.username.isBlank()) {
       Log.e("UserRepositoryFirestore", "Invalid user data in user: uid is blank")
       return null
     }
@@ -28,14 +75,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   private fun transformUserDocument(document: DocumentSnapshot): User? {
     return try {
       // The document for sure exists because we only call it after we verified document existence.
-      val user = document.toObject<User>()
-      if (user == null) {
+      val userDto = document.toObject<UserDto>()
+      if (userDto == null) {
         Log.e(
             "UserRepositoryFirestore",
             "Failed to deserialize document ${document.id} to User object. Data: ${document.data}")
         return null
       }
-      checkUserData(user)
+      checkUserData(userDto.toDomain())
     } catch (e: Exception) {
       Log.e(
           "UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
@@ -118,7 +165,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
         throw IllegalArgumentException("User with UID ${user.uid} already exists")
       }
 
-      db.collection(USER_COLLECTION_PATH).document(user.uid).set(user).await()
+      db.collection(USER_COLLECTION_PATH).document(user.uid).set(user.toDto()).await()
 
       Log.d("UserRepositoryFirestore", "Successfully added user with UID: ${user.uid}")
     } catch (e: Exception) {
@@ -142,8 +189,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
       // array section
 
-      userRef.update(
-          "friendList", FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)))
+      val friendDto = Friend(uid = friendID, username = friendUsername).toDto()
+      userRef.update("friendList", FieldValue.arrayUnion(friendDto))
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
@@ -152,7 +199,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   private suspend fun usernameExists(username: String): Boolean {
     val querySnapshot =
-        db.collection(USER_COLLECTION_PATH).whereEqualTo("name", username).get().await()
+        db.collection(USER_COLLECTION_PATH).whereEqualTo("username", username).get().await()
     return querySnapshot.documents.isNotEmpty()
   }
 }

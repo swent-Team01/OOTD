@@ -80,7 +80,7 @@ fun UserSelectionField(
             } else {
               usernameSuggestions.forEach { user ->
                 DropdownMenuItem(
-                    text = { Text(user.name) },
+                    text = { Text(user.username) },
                     onClick = { onUsernameSuggestionSelected(user) },
                     modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
               }

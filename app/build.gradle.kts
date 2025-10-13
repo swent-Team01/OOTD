@@ -151,9 +151,37 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
-    //implementation(libs.androidx.ui.text)
-    globalTestImplementation(libs.androidx.junit)
-    globalTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.datastore.core)
+
+    // Firebase
+    // Use Firebase BOM from version catalog for maintainability
+    val firebaseBom = libs.firebase.bom
+    implementation(firebaseBom)
+    // Firebase Storage KTX (provides Firebase.storage extension).
+    implementation(libs.firebase.storage.ktx)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.auth)
+
+    // Credential Manager (for Google Sign-In)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    // Networking with OkHttp
+    implementation(libs.okhttp)
+
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+    androidTestImplementation(libs.androidx.navigation.testing)
+
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent.android)
+    testImplementation(libs.mockk)
 
     // ------------- Jetpack Compose ------------------
     val composeBom = platform(libs.compose.bom)
@@ -189,35 +217,6 @@ dependencies {
     implementation(libs.maps.compose)
     implementation(libs.maps.compose.utils)
     implementation(libs.play.services.auth)
-
-    // Firebase
-    // Use Firebase BOM from version catalog for maintainability
-    val firebaseBom = libs.firebase.bom
-    implementation(firebaseBom)
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.auth)
-
-
-    // Credential Manager (for Google Sign-In)
-    implementation(libs.credentials)
-    implementation(libs.credentials.play.services.auth)
-    implementation(libs.googleid)
-
-    // Networking with OkHttp
-    implementation(libs.okhttp)
-
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
-    androidTestImplementation(libs.androidx.navigation.testing)
-
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.mockk.android)
-    androidTestImplementation(libs.mockk.agent.android)
-    testImplementation(libs.mockk)
 }
 
 tasks.withType<Test> {
