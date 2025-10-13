@@ -44,7 +44,7 @@ class UserSearchViewModel(
         val allUsers = userRepository.getAllUsers()
         val suggestions =
             allUsers
-                .filter { it.name.startsWith(query, ignoreCase = true) }
+                .filter { it.username.startsWith(query, ignoreCase = true) }
                 .take(MAX_NUMBER_SUGGESTIONS)
         _uiState.value = _uiState.value.copy(userSuggestions = suggestions)
       } catch (e: Exception) {
@@ -57,7 +57,7 @@ class UserSearchViewModel(
   fun selectUsername(user: User) {
     _uiState.value =
         _uiState.value.copy(
-            username = user.name,
+            username = user.username,
             selectedUser = user,
             userSuggestions = emptyList(),
             suggestionsExpanded = false)

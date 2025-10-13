@@ -6,7 +6,6 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import java.util.UUID
-import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
@@ -18,7 +17,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   /** Helper method to check user data as firestore might add the default values */
   private fun checkUserData(user: User): User? {
-    if (user.uid.isBlank() || user.name.isBlank()) {
+    if (user.uid.isBlank() || user.username.isBlank()) {
       Log.e("UserRepositoryFirestore", "Invalid user data in user: uid is blank")
       return null
     }
@@ -127,7 +126,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       // array section
 
       userRef.update(
-          "friendList", FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)))
+          "friendList", FieldValue.arrayUnion(Friend(uid = friendID, username = friendUsername)))
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
