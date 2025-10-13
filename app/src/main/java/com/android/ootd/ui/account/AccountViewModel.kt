@@ -21,8 +21,12 @@ import kotlinx.coroutines.launch
 /**
  * UI state for the Account screen.
  *
- * Contains the minimal fields required by the UI: display name, Google account email, profile
- * picture URI (if any), a transient error message, sign-out flag and loading flag.
+ * @param username display name shown in the UI.
+ * @param googleAccountName Google email associated with the signed-in account.
+ * @param profilePicture optional URI for the profile picture.
+ * @param errorMsg transient error message to show to the user.
+ * @param signedOut set to true when sign-out completed.
+ * @param isLoading true while loading remote data.
  */
 data class AccountViewState(
     val username: String = "",
@@ -51,63 +55,51 @@ class AccountViewModel(
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
   init {
-    refreshUIState()
+    observeAuthState()
   }
 
-  /**
-   * Refreshes the UI state by observing the authenticated user and loading profile data.
-   *
-   * This will set a loading flag, update the Google account fields, then try to fetch the Firestore
-   * user to complete the UI state. Errors are captured in [AccountViewState.errorMsg].
-   */
-  fun refreshUIState() {
+  /** Start observing auth state and update the UI when the current user changes. */
+  private fun observeAuthState() {
     viewModelScope.launch {
-      _uiState.update { it.copy(isLoading = true) }
       accountService.currentUser.collect { user ->
         if (user != null) {
-          _uiState.update {
-            it.copy(
-                googleAccountName = user.email.orEmpty(),
-                // Initial profile picture from Google account
-                profilePicture = user.photoUrl,
-                isLoading = true)
-          }
-
-          try {
-            val currentUser = userRepository.getUser(user.uid)
-            _uiState.update { state ->
-              state.copy(
-                  username = currentUser.username,
-                  // Use Firestore profile picture if available, otherwise keep Google's
-                  profilePicture =
-                      currentUser.profilePicture.takeIf { it != Uri.EMPTY } ?: state.profilePicture,
-                  errorMsg = null,
-                  isLoading = false)
-            }
-          } catch (e: Exception) {
-            _uiState.update { state ->
-              state.copy(
-                  errorMsg = e.localizedMessage ?: "Failed to load user data", isLoading = false)
-            }
-          }
+          loadUserData(user.uid, user.email.orEmpty(), user.photoUrl)
         } else {
-          // No signed-in user: clear state and stop loading
-          _uiState.update {
-            it.copy(username = "", googleAccountName = "", profilePicture = null, isLoading = false)
-          }
+          _uiState.update { AccountViewState() }
         }
       }
     }
   }
 
   /**
-   * Signs out the current user via [AccountService] and clears credential state.
+   * Load user profile from the repository and update [uiState].
    *
-   * On success updates [AccountViewState.signedOut]; on failure stores the error message in
-   * [AccountViewState.errorMsg]. The credential manager is always asked to clear the credential
-   * state after attempting sign-out.
+   * Runs inside a coroutine scope.
+   */
+  private suspend fun loadUserData(uid: String, email: String, googlePhotoUri: Uri?) {
+    _uiState.update { it.copy(googleAccountName = email, isLoading = true) }
+
+    try {
+      val currentUser = userRepository.getUser(uid)
+      _uiState.update {
+        it.copy(
+            username = currentUser.username,
+            profilePicture =
+                currentUser.profilePicture.takeIf { it != Uri.EMPTY } ?: googlePhotoUri,
+            errorMsg = null,
+            isLoading = false)
+      }
+    } catch (e: Exception) {
+      _uiState.update {
+        it.copy(errorMsg = e.localizedMessage ?: "Failed to load user data", isLoading = false)
+      }
+    }
+  }
+
+  /**
+   * Sign out the current user and clear platform credentials.
    *
-   * @param credentialManager used to clear platform credential state after sign-out.
+   * @param credentialManager used to clear stored credentials after sign-out.
    */
   fun signOut(credentialManager: CredentialManager) {
     viewModelScope.launch {
@@ -122,8 +114,8 @@ class AccountViewModel(
     }
   }
 
-  /** Clears any transient error message stored in the UI state. */
+  /** Clear any transient error message shown in the UI. */
   fun clearErrorMsg() {
-    _uiState.value = _uiState.value.copy(errorMsg = null)
+    _uiState.update { it.copy(errorMsg = null) }
   }
 }
