@@ -1,5 +1,8 @@
 package com.android.ootd.ui.account
-
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -49,6 +52,18 @@ const val TAG_GOOGLE_FIELD = "account_google_field"
 const val TAG_SIGNOUT_BUTTON = "account_signout_button"
 const val TAG_ACCOUNT_LOADING = "account_loading"
 
+/**
+ * Account screen UI.
+ *
+ * Shows the current account information (username, Google email, profile picture) and provides
+ * actions to edit the avatar, go back, and sign out.
+ *
+ * @param accountViewModel supplies [AccountViewState] and handles business logic.
+ * @param credentialManager used when signing out to clear platform credentials.
+ * @param onBack callback invoked when the back button is pressed.
+ * @param onEditAvatar callback invoked when the Edit button under the avatar is pressed.
+ * @param onSignOut callback invoked when the view model signals a successful sign-out.
+ */
 @Composable
 fun AccountScreen(
     accountViewModel: AccountViewModel = AccountViewModel(),
