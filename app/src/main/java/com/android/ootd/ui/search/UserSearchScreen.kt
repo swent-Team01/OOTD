@@ -17,7 +17,7 @@ import com.android.ootd.model.user.UserRepositoryInMemory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), overrideUser: Boolean = false) {
+fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
   val uiState by viewModel.uiState.collectAsState()
 
   Column(

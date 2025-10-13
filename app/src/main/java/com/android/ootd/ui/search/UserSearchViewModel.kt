@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-val MAX_NUMBER_SUGGESTIONS = 5
+private const val MAX_NUMBER_SUGGESTIONS = 5
+private const val testingUsername = "user1"
 
 data class SearchUserUIState(
     val username: String = "",
@@ -79,7 +80,7 @@ class UserSearchViewModel(
     viewModelScope.launch {
 
       // OverrideUser is only used for the preview screen for easier testing
-      val myUID = if (overrideUser) "user1" else (Firebase.auth.currentUser?.uid ?: "")
+      val myUID = if (overrideUser) testingUsername else (Firebase.auth.currentUser?.uid ?: "")
 
       if (myUID == "") {
         throw IllegalStateException("The user is not authenticated")
