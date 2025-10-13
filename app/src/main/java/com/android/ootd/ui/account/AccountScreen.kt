@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -46,6 +47,7 @@ const val TAG_USERNAME_FIELD = "account_username_field"
 const val TAG_USERNAME_CLEAR = "account_username_clear"
 const val TAG_GOOGLE_FIELD = "account_google_field"
 const val TAG_SIGNOUT_BUTTON = "account_signout_button"
+const val TAG_ACCOUNT_LOADING = "account_loading"
 
 @Composable
 fun AccountScreen(
@@ -64,6 +66,8 @@ fun AccountScreen(
   val email = uiState.googleAccountName
   val avatarUri = uiState.profilePicture
 
+  LaunchedEffect(Unit) { accountViewModel.refreshUIState() }
+
   LaunchedEffect(uiState.signedOut) {
     if (uiState.signedOut) {
       onSignOut()
@@ -71,7 +75,12 @@ fun AccountScreen(
     }
   }
 
-  LaunchedEffect(Unit) { accountViewModel.refreshUIState() }
+  LaunchedEffect(uiState.errorMsg) {
+    uiState.errorMsg?.let { message ->
+      Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+      accountViewModel.clearErrorMsg()
+    }
+  }
 
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
 
@@ -216,10 +225,14 @@ fun AccountScreen(
                   }
             }
       }
-}
 
-/**
- * @Preview(showBackground = true)
- * @Composable private fun AccountScreenPreview() { OOTDTheme { Surface { AccountScreen( username =
- *   "user1", email = "user1@google.com", avatarUri = null // preview with default avatar ) } } }
- */
+  // Loading indicator (circular progress) in the center of the screen
+  if (uiState.isLoading) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center) {
+          CircularProgressIndicator(
+              modifier = Modifier.testTag(TAG_ACCOUNT_LOADING), color = colors.primary)
+        }
+  }
+}
