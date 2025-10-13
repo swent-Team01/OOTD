@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.post.OutfitPost
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
