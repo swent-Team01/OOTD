@@ -16,12 +16,19 @@ val Bodoni =
 // Set of Material typography styles to start with
 val Typography =
     Typography(
-        // header 1
+        // header 1 - make header bold
         displayLarge =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 36.sp),
+            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Bold, fontSize = 36.sp),
         // header 2
         titleLarge =
             TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 20.sp),
-        // body
+        // body - input & large body text 16/24
+        bodyLarge =
+            TextStyle(
+                fontFamily = Bodoni,
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp,
+                lineHeight = 24.sp),
+        // small body
         bodySmall =
             TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 13.sp))
