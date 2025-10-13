@@ -140,9 +140,17 @@ class AccountIconTest {
             username = "testuser",
             profilePicture = testUri2,
             friendList = emptyList())
-    viewModel.refreshUIState()
 
-    // Wait for the refresh to complete
+    // Re-emit a new FirebaseUser instance to trigger observeAuthState()
+    val mockFirebaseUser2 =
+        mockk<com.google.firebase.auth.FirebaseUser> {
+          every { uid } returns "test-uid"
+          every { email } returns "test@example.com"
+          every { photoUrl } returns testUri2
+        }
+    userFlow.value = mockFirebaseUser2
+
+    // Wait for the emission and reload to complete
     composeTestRule.waitForIdle()
 
     // Then: should have updated to the new profile picture

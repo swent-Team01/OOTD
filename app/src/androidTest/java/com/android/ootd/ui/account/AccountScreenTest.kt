@@ -241,7 +241,7 @@ class AccountViewModelTest {
   }
 
   @Test
-  fun refreshUIState_updates_uiState_when_user_is_signed_in() = runTest {
+  fun observeAuthState_updates_uiState_when_user_is_signed_in() = runTest {
     viewModel = AccountViewModel(accountService, userRepository)
 
     userFlow.value = mockFirebaseUser
@@ -284,7 +284,7 @@ class AccountViewModelTest {
   }
 
   @Test
-  fun refreshUIState_handles_repository_error_gracefully() = runTest {
+  fun observeAuthState_handles_repository_error_gracefully() = runTest {
     coEvery { userRepository.getUser("test-uid") } throws Exception("Network error")
 
     viewModel = AccountViewModel(accountService, userRepository)
@@ -298,7 +298,7 @@ class AccountViewModelTest {
   }
 
   @Test
-  fun refreshUIState_handles_null_user() = runTest {
+  fun observeAuthState_handles_null_user() = runTest {
     viewModel = AccountViewModel(accountService, userRepository)
 
     userFlow.value = null
@@ -364,7 +364,7 @@ class AccountViewModelTest {
   }
 
   @Test
-  fun refreshUIState_sets_loading_state_correctly() = runTest {
+  fun observeAuthState_sets_loading_state_correctly() = runTest {
     viewModel = AccountViewModel(accountService, userRepository)
 
     userFlow.value = mockFirebaseUser
@@ -373,5 +373,33 @@ class AccountViewModelTest {
     advanceUntilIdle()
 
     assertFalse(viewModel.uiState.value.isLoading)
+  }
+
+  @Test
+  fun observeAuthState_reactively_updates_when_user_data_changes() = runTest {
+    viewModel = AccountViewModel(accountService, userRepository)
+
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    // Verify initial state
+    assertEquals("testuser", viewModel.uiState.value.username)
+
+    // Change the mock to return different data
+    coEvery { userRepository.getUser("test-uid") } returns
+        User(uid = "test-uid", username = "updateduser", profilePicture = Uri.EMPTY)
+
+    // Re-emit the FirebaseUser to trigger observeAuthState() again
+    val updatedMockUser =
+        mockk<FirebaseUser> {
+          every { uid } returns "test-uid"
+          every { email } returns "test@example.com"
+          every { photoUrl } returns null
+        }
+    userFlow.value = updatedMockUser
+    advanceUntilIdle()
+
+    val state = viewModel.uiState.value
+    assertEquals("updateduser", state.username)
   }
 }
