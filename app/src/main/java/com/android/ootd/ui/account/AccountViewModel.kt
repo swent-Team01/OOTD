@@ -1,5 +1,8 @@
 package com.android.ootd.ui.account
-
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
 import android.net.Uri
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -15,6 +18,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * UI state for the Account screen.
+ *
+ * Contains the minimal fields required by the UI: display name, Google account email, profile
+ * picture URI (if any), a transient error message, sign-out flag and loading flag.
+ */
 data class AccountViewState(
     val username: String = "",
     val googleAccountName: String = "",
@@ -24,6 +33,15 @@ data class AccountViewState(
     val isLoading: Boolean = false
 )
 
+/**
+ * ViewModel that exposes [AccountViewState] and handles account-related actions.
+ *
+ * It observes the current authenticated user from [AccountService], loads additional user data from
+ * [UserRepository], and provides methods to refresh the state, sign out and clear transient errors.
+ *
+ * @param accountService source of authentication state (defaults to Firebase).
+ * @param userRepository source of user profile data.
+ */
 class AccountViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val userRepository: UserRepository = UserRepositoryProvider.repository
@@ -36,6 +54,12 @@ class AccountViewModel(
     refreshUIState()
   }
 
+  /**
+   * Refreshes the UI state by observing the authenticated user and loading profile data.
+   *
+   * This will set a loading flag, update the Google account fields, then try to fetch the Firestore
+   * user to complete the UI state. Errors are captured in [AccountViewState.errorMsg].
+   */
   fun refreshUIState() {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoading = true) }
@@ -76,6 +100,15 @@ class AccountViewModel(
     }
   }
 
+  /**
+   * Signs out the current user via [AccountService] and clears credential state.
+   *
+   * On success updates [AccountViewState.signedOut]; on failure stores the error message in
+   * [AccountViewState.errorMsg]. The credential manager is always asked to clear the credential
+   * state after attempting sign-out.
+   *
+   * @param credentialManager used to clear platform credential state after sign-out.
+   */
   fun signOut(credentialManager: CredentialManager) {
     viewModelScope.launch {
       accountService
@@ -89,6 +122,7 @@ class AccountViewModel(
     }
   }
 
+  /** Clears any transient error message stored in the UI state. */
   fun clearErrorMsg() {
     _uiState.value = _uiState.value.copy(errorMsg = null)
   }
