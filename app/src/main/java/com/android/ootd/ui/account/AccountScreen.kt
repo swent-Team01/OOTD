@@ -1,5 +1,6 @@
 package com.android.ootd.ui.account
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,21 +17,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CredentialManager
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.LightColorScheme
-import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 
 // Test tag constants for UI tests
@@ -46,9 +49,8 @@ const val TAG_SIGNOUT_BUTTON = "account_signout_button"
 
 @Composable
 fun AccountScreen(
-    username: String,
-    email: String,
-    avatarUri: String? = null,
+    accountViewModel: AccountViewModel = AccountViewModel(),
+    credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onBack: () -> Unit = {},
     onEditAvatar: () -> Unit = {},
     onSignOut: () -> Unit = {}
@@ -56,6 +58,20 @@ fun AccountScreen(
   val scrollState = rememberScrollState()
   val colors = LightColorScheme
   val typography = Typography
+  val context = LocalContext.current
+  val uiState by accountViewModel.uiState.collectAsState()
+  val username = uiState.username
+  val email = uiState.googleAccountName
+  val avatarUri = uiState.profilePicture
+
+  LaunchedEffect(uiState.signedOut) {
+    if (uiState.signedOut) {
+      onSignOut()
+      Toast.makeText(context, "Logout successful", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  LaunchedEffect(Unit) { accountViewModel.refreshUIState() }
 
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
 
@@ -192,7 +208,7 @@ fun AccountScreen(
             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
             contentAlignment = Alignment.Center) {
               Button(
-                  onClick = onSignOut,
+                  onClick = { accountViewModel.signOut(credentialManager) },
                   shape = CircleShape,
                   colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
                   modifier = Modifier.testTag(TAG_SIGNOUT_BUTTON)) {
@@ -202,16 +218,8 @@ fun AccountScreen(
       }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun AccountScreenPreview() {
-  OOTDTheme {
-    Surface {
-      AccountScreen(
-          username = "user1",
-          email = "user1@google.com",
-          avatarUri = null // preview with default avatar
-          )
-    }
-  }
-}
+/**
+ * @Preview(showBackground = true)
+ * @Composable private fun AccountScreenPreview() { OOTDTheme { Surface { AccountScreen( username =
+ *   "user1", email = "user1@google.com", avatarUri = null // preview with default avatar ) } } }
+ */

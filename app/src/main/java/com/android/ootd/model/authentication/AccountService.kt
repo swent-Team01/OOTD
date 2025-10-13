@@ -27,5 +27,5 @@ interface AccountService {
   suspend fun signInWithGoogle(credential: Credential): Result<FirebaseUser>
 
   /** Signs out the current user. */
-  // fun signOut(): Result<Unit>
+  fun signOut(): Result<Unit>
 }

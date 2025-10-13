@@ -70,12 +70,13 @@ class AccountServiceFirebase(
     }
   }
 
-  /**
-   * override fun signOut(): Result<Unit> { return try { // Firebase sign out auth.signOut()
-   *
-   * Result.success(Unit) } catch (e: Exception) { Result.failure( IllegalStateException("Logout
-   * failed: ${e.localizedMessage ?: "Unexpected error."}")) }
-   *
-   * }
-   */
+  override fun signOut(): Result<Unit> {
+    return try {
+      auth.signOut()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Result.failure(
+          IllegalStateException("Logout failed: ${e.localizedMessage ?: "Unexpected error."}"))
+    }
+  }
 }
