@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
  * @property registered Indicates whether the user has been successfully registered. False by
  *   default.
  */
-data class User(
+data class RegisterUserViewModel(
     val uid: String = "",
     val username: String = "",
     val dateOfBirth: String = "",
@@ -46,13 +46,13 @@ class RegisterViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(User())
+  private val _uiState = MutableStateFlow(RegisterUserViewModel())
 
   /**
    * A [StateFlow] representing the current registration UI state. Observers can collect this flow
    * to react to state changes.
    */
-  val uiState: StateFlow<User> = _uiState.asStateFlow()
+  val uiState: StateFlow<RegisterUserViewModel> = _uiState.asStateFlow()
 
   init {
     refresh()
