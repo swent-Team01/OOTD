@@ -115,7 +115,7 @@ jobs:
       - name: Firestore Security Rules tests
         run: |
           if [ ! -e "firebase.json" ]; then # Check if firebase.json exists
-            echo "Warning: 'firebase.json' file is missing. Check with the team to properly set up the Firebase
+            echo "Warning: 'firebase.json' file is missing. Check with the team to properly set up the Firebase"
             exit 0
           fi
           jq -e '.emulators' firebase.json >/dev/null || { # Check if emulators are configured
