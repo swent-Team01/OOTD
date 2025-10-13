@@ -81,8 +81,6 @@ fun AccountScreen(
   val email = uiState.googleAccountName
   val avatarUri = uiState.profilePicture
 
-  LaunchedEffect(Unit) { accountViewModel.refreshUIState() }
-
   LaunchedEffect(uiState.signedOut) {
     if (uiState.signedOut) {
       onSignOut()
