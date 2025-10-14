@@ -25,7 +25,6 @@ import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.register.RegisterScreen
-import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -94,14 +93,14 @@ fun OOTDApp(
       composable(Screen.Feed.route) {
         FeedScreen(
             onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
-            onSearchClick = { navigationActions.navigateTo(Screen.Search) },
+            onSearchClick = { /* TODO: show search profile page */},
             onProfileClick = { /* TODO: show user profile page */})
       }
 
-      // Navigation to Search screen
-      composable(Screen.Search.route) {
-        UserSearchScreen() // backward navigation action to be added here
-      }
+      /* TODO: add navigation to ProfileScreen and SearchScreen */
+      // Navigation to Search screen is not yet implemented
+
+      // Navigation to User Profile screen is not yet implemented
 
       composable(
           route = Screen.EditItem.route,
