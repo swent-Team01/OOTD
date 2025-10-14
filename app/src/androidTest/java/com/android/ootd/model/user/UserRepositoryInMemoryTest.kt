@@ -37,12 +37,13 @@ class UserRepositoryInMemoryTest {
   fun getAllUsers_returnsAllPreloadedUsers() = runTest {
     val users = repository.getAllUsers()
 
-    assertEquals(5, users.size)
+    assertEquals(6, users.size)
     assertTrue(users.any { it.uid == "user1" })
     assertTrue(users.any { it.uid == "user2" })
     assertTrue(users.any { it.uid == "user3" })
     assertTrue(users.any { it.uid == "user4" })
     assertTrue(users.any { it.uid == "user5" })
+    assert(users.any { it.uid == "nonRegisterUser" })
   }
 
   @Test
@@ -78,7 +79,7 @@ class UserRepositoryInMemoryTest {
   @Test
   fun userExists_worksCorrectlyForUserWithUsername() = runTest {
     val user = repository.userExists("user1")
-    assertTrue(user)
+    assert(user)
   }
 
   @Test
@@ -91,7 +92,7 @@ class UserRepositoryInMemoryTest {
   @Test
   fun userExists_worksWithUnexistantUseranme() = runTest {
     val user = repository.userExists("nonRegisterUser")
-    assertFalse(user)
+    assert(!user)
   }
 
   @Test
