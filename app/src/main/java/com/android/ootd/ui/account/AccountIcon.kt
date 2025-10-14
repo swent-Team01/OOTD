@@ -58,7 +58,7 @@ fun AccountIcon(
               .size(size)
               .clip(CircleShape)
               .clickable(onClick = onClick)
-              .testTag(TAG_ACCOUNT_AVATAR_CONTAINER),
+              .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER),
       shape = CircleShape,
       tonalElevation = 2.dp,
       color = Primary) {
@@ -68,7 +68,7 @@ fun AccountIcon(
               painter = painter,
               contentDescription = contentDescription,
               contentScale = ContentScale.Crop,
-              modifier = Modifier.fillMaxSize().testTag(TAG_ACCOUNT_AVATAR_IMAGE))
+              modifier = Modifier.fillMaxSize().testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
         } else {
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(

@@ -39,8 +39,8 @@ class AccountIconTest {
     composeTestRule.setContent { AccountIcon(accountViewModel = viewModel, onClick = {}) }
 
     // Then: should show default Person icon
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
   }
 
   @Test
@@ -78,7 +78,7 @@ class AccountIconTest {
 
     // The image composable should be present (even if Coil can't load the fake URL)
     // We verify by checking that the container exists and no fallback icon is shown
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -93,7 +93,7 @@ class AccountIconTest {
     composeTestRule.setContent {
       AccountIcon(accountViewModel = viewModel, onClick = { clicked = true })
     }
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
 
     // Then
     assert(clicked) { "onClick callback was not invoked" }
@@ -159,7 +159,7 @@ class AccountIconTest {
     }
 
     // Container should still exist
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -186,7 +186,7 @@ class AccountIconTest {
 
     // Then: fallback icon shown
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
   }
 
   @Test
@@ -214,7 +214,7 @@ class AccountIconTest {
 
     // Then: fallback shown (blank strings filtered by isNotBlank check)
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
   }
 
   @Test
@@ -230,7 +230,7 @@ class AccountIconTest {
     }
 
     // Then: container exists (size is applied via modifier, not easily testable in semantics)
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -247,6 +247,6 @@ class AccountIconTest {
     }
 
     // Then: container exists (content description applied to Image/Icon inside)
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 }

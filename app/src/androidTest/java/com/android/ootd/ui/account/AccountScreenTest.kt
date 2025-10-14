@@ -76,15 +76,15 @@ class AccountScreenTest {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_BACK).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_EDIT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_USERNAME_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_USERNAME_CLEAR).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_GOOGLE_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_SIGNOUT_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CLEAR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertIsDisplayed()
   }
 
   @Test
@@ -104,7 +104,7 @@ class AccountScreenTest {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
   }
 
   @Test
@@ -119,8 +119,10 @@ class AccountScreenTest {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(TAG_USERNAME_FIELD).assertTextContains("user1")
-    composeTestRule.onNodeWithTag(TAG_GOOGLE_FIELD).assertTextContains("user1@google.com")
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+    composeTestRule
+        .onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD)
+        .assertTextContains("user1@google.com")
   }
 
   @Test
@@ -137,7 +139,7 @@ class AccountScreenTest {
       }
     }
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_BACK).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
     verify { onBack() }
   }
 
@@ -155,7 +157,7 @@ class AccountScreenTest {
       }
     }
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
     verify { onEditAvatar() }
   }
 
@@ -170,6 +172,6 @@ class AccountScreenTest {
     }
 
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_LOADING).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_LOADING).assertDoesNotExist()
   }
 }

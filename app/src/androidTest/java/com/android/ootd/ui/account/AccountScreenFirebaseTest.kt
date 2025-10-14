@@ -86,9 +86,11 @@ class AccountScreenFirebaseTest {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(TAG_USERNAME_FIELD).assertTextContains("testuser")
-    composeTestRule.onNodeWithTag(TAG_GOOGLE_FIELD).assertTextContains("test@example.com")
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("testuser")
+    composeTestRule
+        .onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD)
+        .assertTextContains("test@example.com")
   }
 
   @Test
@@ -110,7 +112,7 @@ class AccountScreenFirebaseTest {
     }
 
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertExists()
   }
 
   @Test
@@ -122,8 +124,8 @@ class AccountScreenFirebaseTest {
     }
 
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -136,7 +138,7 @@ class AccountScreenFirebaseTest {
           accountViewModel = viewModel, credentialManager = mockCredentialManager, onBack = onBack)
     }
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_BACK).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
     verify { onBack() }
   }
 
@@ -152,7 +154,7 @@ class AccountScreenFirebaseTest {
           onEditAvatar = onEditAvatar)
     }
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
     verify { onEditAvatar() }
   }
 
@@ -170,7 +172,7 @@ class AccountScreenFirebaseTest {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(TAG_SIGNOUT_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performClick()
 
     // Wait for all pending coroutines and UI updates to complete
     composeTestRule.waitForIdle()

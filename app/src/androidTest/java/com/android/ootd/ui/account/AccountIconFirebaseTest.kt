@@ -108,7 +108,7 @@ class AccountIconFirebaseTest {
     }
 
     // Then: should show fallback icon (no Google photo URL in test)
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -141,7 +141,7 @@ class AccountIconFirebaseTest {
     assert(viewModel.uiState.value.profilePicture == firestoreImageUri) {
       "Expected profile picture to be $firestoreImageUri but was ${viewModel.uiState.value.profilePicture}"
     }
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -196,7 +196,7 @@ class AccountIconFirebaseTest {
     assert(viewModel.uiState.value.profilePicture == newUri) {
       "Expected updated profile picture to be $newUri but was ${viewModel.uiState.value.profilePicture}"
     }
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -230,7 +230,7 @@ class AccountIconFirebaseTest {
 
     // Then: should show fallback icon
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
   }
 
   @Test
@@ -251,7 +251,7 @@ class AccountIconFirebaseTest {
     }
 
     // Then: should show fallback (no Google photo in test auth, no Firestore doc)
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
@@ -280,7 +280,7 @@ class AccountIconFirebaseTest {
       viewModel.uiState.value.username == testUsername
     }
 
-    composeTestRule.onNodeWithTag(TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
 
     // Then
     assert(clicked) { "onClick callback was not invoked" }
