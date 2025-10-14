@@ -76,6 +76,25 @@ class UserRepositoryInMemoryTest {
   }
 
   @Test
+  fun userExists_worksCorrectlyForUserWithUsername() = runTest {
+    val user = repository.userExists("user1")
+    assertTrue(user)
+  }
+
+  @Test
+  fun userExists_throwsIfUidDoesNotExist() {
+    assertThrows(NoSuchElementException::class.java) {
+      runTest { repository.userExists("I do not exist") }
+    }
+  }
+
+  @Test
+  fun userExists_worksWithUnexistantUseranme() = runTest {
+    val user = repository.userExists("nonRegisterUser")
+    assertFalse(user)
+  }
+
+  @Test
   fun addUser_successfullyAddsNewUser() = runTest {
     val newUser = User(uid = "user6", username = "frank_sinatra", friendList = emptyList())
 

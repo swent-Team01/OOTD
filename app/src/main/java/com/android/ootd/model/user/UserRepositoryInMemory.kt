@@ -30,7 +30,8 @@ class UserRepositoryInMemory : UserRepository {
                       listOf(
                           Friend(uid = "user1", username = "alice_wonder"),
                           Friend(uid = "user2", username = "bob_builder"))),
-          "user5" to User(uid = "user5", username = nameList[4], friendList = emptyList()))
+          "user5" to User(uid = "user5", username = nameList[4], friendList = emptyList()),
+          "nonRegisterUser" to User(uid = "nonRegisterUser", username = "", friendList = listOf()))
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
@@ -53,7 +54,10 @@ class UserRepositoryInMemory : UserRepository {
     }
   }
 
-  override suspend fun userExists(userID: String): Boolean = users.containsKey(userID)
+  override suspend fun userExists(userID: String): Boolean {
+    val username = getUser(userID).username
+    return username.isNotBlank()
+  }
 
   override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
     val user = getUser(userID)

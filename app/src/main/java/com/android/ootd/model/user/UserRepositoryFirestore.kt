@@ -147,8 +147,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       if (querySnapshot.documents.isEmpty()) {
         false
       } else {
-        val name = querySnapshot.documents[0].getString("name")
-        !name.isNullOrBlank()
+        val username = querySnapshot.documents[0].getString("username")
+        !username.isNullOrBlank()
       }
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)

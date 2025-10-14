@@ -3,6 +3,7 @@ package com.android.ootd.model.user
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
+import kotlin.text.set
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -164,6 +165,62 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
 
     assert(exception is IllegalArgumentException)
     assertEquals(1, getUserCount())
+  }
+
+  @Test
+  fun userExistsReturnsTrueWhenUserHasName() = runTest {
+    repository.addUser(user1)
+
+    val exists = repository.userExists(user1.uid)
+
+    assert(exists)
+  }
+
+  @Test
+  fun userExistsReturnsFalseWhenUserNotFound() = runTest {
+    val nonExistentUserId = "nonExistentUser123"
+
+    val exists = repository.userExists(nonExistentUserId)
+
+    assert(!exists)
+  }
+
+  @Test
+  fun userExistsReturnsFalseWhenUserHasBlankName() = runTest {
+    // Add user document with blank username field
+    FirebaseEmulator.firestore
+        .collection(USER_COLLECTION_PATH)
+        .document("userWithBlankName")
+        .set(mapOf("uid" to "userWithBlankName", "username" to ""))
+        .await()
+
+    val exists = repository.userExists("userWithBlankName")
+
+    assert(!exists)
+  }
+
+  @Test
+  fun userExistsReturnsFalseWhenUserHasNullName() = runTest {
+    // Add user document with null name field
+    FirebaseEmulator.firestore
+        .collection(USER_COLLECTION_PATH)
+        .document("userWithNullName")
+        .set(mapOf("uid" to "userWithNullName"))
+        .await()
+
+    val exists = repository.userExists("userWithNullName")
+
+    assert(!exists)
+  }
+
+  @Test
+  fun userExistsHandlesMultipleUsersCorrectly() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+
+    assert(repository.userExists(user1.uid))
+    assert(repository.userExists(user2.uid))
+    assert(!repository.userExists("nonExistentUser"))
   }
 
   @Test
