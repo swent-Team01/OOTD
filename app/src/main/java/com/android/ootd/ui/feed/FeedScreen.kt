@@ -27,8 +27,8 @@ object FeedScreenTestTags {
 fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onAddPostClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onSearchClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
