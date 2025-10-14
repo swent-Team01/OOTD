@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.user.User
 
 object UserSelectionFieldTestTags {
@@ -65,6 +66,7 @@ fun UserSelectionField(
       DropdownMenu(
           expanded = expanded,
           onDismissRequest = onSuggestionsDismissed,
+          properties = PopupProperties(focusable = false),
           modifier = Modifier.fillMaxWidth(0.95f)) {
             if (usernameSuggestions.isEmpty()) {
               DropdownMenuItem(
