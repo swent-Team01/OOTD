@@ -22,8 +22,16 @@ class FeedScreenTest {
   fun feedList_rendersAllPosts() {
     val fakePosts =
         listOf(
-            OutfitPost("1", "user1", "https://example.com/1.jpg"),
-            OutfitPost("2", "user2", "https://example.com/2.jpg"))
+            OutfitPost(
+                postUID = "1",
+                name = "user1",
+                uid = "uid1",
+                outfitURL = "https://example.com/1.jpg".toUri()),
+            OutfitPost(
+                postUID = "2",
+                name = "user2",
+                uid = "uid2",
+                outfitURL = "https://example.com/2.jpg".toUri()))
 
     composeTestRule.setContent { FeedList(posts = fakePosts, onSeeFitClick = {}) }
 
