@@ -61,7 +61,8 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
           UserProfileCard(
               modifier = Modifier.fillMaxWidth().weight(1f),
               selectedUser = uiState.selectedUser,
-              {})
+              isSelectedUserFollowed = uiState.isSelectedUserFollowed,
+              onFollowClick = { viewModel.pressFollowButton() })
         }
       }
 }
@@ -71,6 +72,8 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
 fun UserSearchScreenPreview() {
   // Create a mock ViewModel or pass mock state directly
   val mockViewModel =
-      UserSearchViewModel(userRepository = UserRepositoryInMemory()) // or however you initialize it
+      UserSearchViewModel(
+          userRepository = UserRepositoryInMemory(),
+          overrideUser = true) // or however you initialize it
   UserSearchScreen(viewModel = mockViewModel)
 }

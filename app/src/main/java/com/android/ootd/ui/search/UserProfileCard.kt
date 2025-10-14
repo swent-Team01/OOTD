@@ -41,41 +41,47 @@ fun UserProfileCardPreview() {
                 username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople",
                 friendList = emptyList()),
         modifier = Modifier.padding(16.dp),
+        isSelectedUserFollowed = true,
         onFollowClick = {})
   }
 }
 
 @Composable
-fun UserProfileCard(modifier: Modifier, selectedUser: User?, onFollowClick: (User) -> Unit) {
+fun UserProfileCard(
+    modifier: Modifier,
+    selectedUser: User?,
+    isSelectedUserFollowed: Boolean,
+    onFollowClick: (User) -> Unit
+) {
   Card(
       modifier = modifier.testTag(UserProfileCardTestTags.PROFILE_CARD),
       shape = RoundedCornerShape(16.dp),
       colors =
           CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-          Column() {
-            Text(
-                modifier =
-                    Modifier.testTag(UserProfileCardTestTags.USERNAME_TEXT)
-                        .horizontalScroll(rememberScrollState()),
-                text = selectedUser?.username ?: "",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1)
+          Text(
+              modifier =
+                  Modifier.testTag(UserProfileCardTestTags.USERNAME_TEXT)
+                      .horizontalScroll(rememberScrollState()),
+              text = selectedUser?.username ?: "",
+              fontSize = 32.sp,
+              fontWeight = FontWeight.Bold,
+              color = MaterialTheme.colorScheme.onBackground,
+              maxLines = 1)
 
-            Spacer(modifier = Modifier.width(16.dp))
+          Spacer(modifier = Modifier.width(16.dp))
 
-            Button(
-                modifier = Modifier.testTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON),
-                onClick = { selectedUser?.let { onFollowClick(it) } },
-                shape = RoundedCornerShape(12.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary)) {
-                  Text(text = "Follow", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                }
-          }
+          Button(
+              modifier = Modifier.testTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON),
+              onClick = { selectedUser?.let { onFollowClick(it) } },
+              shape = RoundedCornerShape(12.dp),
+              colors =
+                  ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                Text(
+                    text = if (!isSelectedUserFollowed) "Follow" else "Unfollow",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium)
+              }
         }
       }
 }

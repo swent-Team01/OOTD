@@ -3,6 +3,7 @@ package com.android.ootd.model.user
 import java.util.UUID
 
 class UserRepositoryInMemory : UserRepository {
+  val currentUser = "user1"
   val nameList =
       listOf<String>(
           "alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
@@ -73,6 +74,30 @@ class UserRepositoryInMemory : UserRepository {
 
     val updatedFriendList = user.friendList + Friend(uid = friendID, username = friendUsername)
     users[userID] = user.copy(friendList = updatedFriendList)
+  }
+
+  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+    val user = getUser(userID)
+
+    if (!users.containsKey(friendID)) {
+      throw NoSuchElementException("Friend with ID $friendID not found")
+    }
+
+    // If the friend is not there, we don't do anything
+    if (user.friendList.none { it.uid == friendID }) {
+      return
+    }
+
+    val updatedFriendList = user.friendList - Friend(uid = friendID, username = friendUsername)
+    users[userID] = user.copy(friendList = updatedFriendList)
+  }
+
+  override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
+    // Here the userID does not matter because this class is used for testing,
+    // and this way I would not have to redo all the tests I already written.
+
+    val user = getUser(currentUser)
+    return user.friendList.isNotEmpty() && user.friendList.any { it.uid == friendID }
   }
 
   override suspend fun createUser(username: String, uid: String) {

@@ -31,11 +31,7 @@ abstract class BaseTest() {
     assert(FirebaseEmulator.isRunning) { "FirebaseEmulator must be running" }
   }
 
-  open val user1 =
-      User(
-          uid = "0",
-          username = "Hank",
-          friendList = arrayListOf<Friend>(Friend(uid = "1", username = "John")))
+  open val user1 = User(uid = "0", username = "Hank", friendList = arrayListOf<Friend>())
 
   open val user2 = User(uid = "1", username = "John", friendList = arrayListOf<Friend>())
 
