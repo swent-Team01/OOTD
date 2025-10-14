@@ -18,7 +18,7 @@ data class OutfitPost(
     val postUID: String = "",
     val name: String = "",
     val uid: String = "",
-    val userProfilePicURL: Uri,
+    val userProfilePicURL: Uri = Uri.EMPTY,
     val outfitURL: Uri,
     val description: String = "",
     val itemsID: List<String> = emptyList(),
