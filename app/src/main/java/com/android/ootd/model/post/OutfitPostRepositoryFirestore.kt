@@ -43,10 +43,6 @@ class OutfitPostRepositoryFirestore(
     return if (doc.exists()) mapToOutfitPost(doc) else null
   }
 
-  override suspend fun updatePostItems(postId: String, newItemIds: List<String>) {
-    db.collection(POSTS_COLLECTION).document(postId).update("itemsID", newItemIds).await()
-  }
-
   override suspend fun deletePost(postId: String) {
     db.collection(POSTS_COLLECTION).document(postId).delete().await()
     try {
