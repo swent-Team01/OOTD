@@ -8,12 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.user.UserRepositoryInMemory
+import com.android.ootd.ui.theme.OOTDTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,21 +21,24 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
 
   Column(
       modifier =
-          Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
+          Modifier.fillMaxSize()
+              .background(MaterialTheme.colorScheme.background)
+              .padding(vertical = 32.dp, horizontal = 20.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-          IconButton(onClick = { /* Handle back */}) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.primary)
-          }
+          IconButton(
+              modifier = Modifier.width(48.dp).height(48.dp), onClick = { /* Handle back */}) {
+                Icon(
+                    modifier = Modifier.width(48.dp).height(48.dp),
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.primary)
+              }
 
           Spacer(modifier = Modifier.weight(1f))
 
           Text(
               text = "OOTD",
-              fontSize = 24.sp,
-              fontWeight = FontWeight.Bold,
+              style = MaterialTheme.typography.headlineLarge,
               color = MaterialTheme.colorScheme.primary)
 
           Spacer(modifier = Modifier.weight(1f))
@@ -67,13 +69,12 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
       }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 fun UserSearchScreenPreview() {
-  // Create a mock ViewModel or pass mock state directly
-  val mockViewModel =
-      UserSearchViewModel(
-          userRepository = UserRepositoryInMemory(),
-          overrideUser = true) // or however you initialize it
-  UserSearchScreen(viewModel = mockViewModel)
+  OOTDTheme {
+    val mockViewModel =
+        UserSearchViewModel(userRepository = UserRepositoryInMemory(), overrideUser = true)
+    UserSearchScreen(viewModel = mockViewModel)
+  }
 }
