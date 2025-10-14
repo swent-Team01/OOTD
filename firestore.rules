@@ -1,9 +1,61 @@
+/**
+ * Firestore security rules for a social media app with users and posts.
+ *
+ * Users can only read and write their own user document.
+ * Posts can be read only if the viewer and the author are mutual friends.
+ * Posts can be created, updated, and deleted only by the original author.
+ *
+ * Friend membership checks use a compile-safe shape:
+ *  - friendUids: list of strings
+ * If your app stores objects in friendList, mirror the uids in friendUids.
+ */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow all reads and writes for testing/development
+
+    // Users: only the user themself can read or write their document.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Posts: read only if the viewer and the author are mutual friends (or same user).
+    match /posts/{postId} {
+      // Reads: authenticated AND (viewer is author OR mutual friendship)
+      allow read: if request.auth != null && (
+        resource.data.uid == request.auth.uid || (
+          // require both user docs to exist and have friendUids
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          exists(/databases/$(database)/documents/users/$(resource.data.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['friendUids']) &&
+          get(/databases/$(database)/documents/users/$(resource.data.uid)).data.keys().hasAny(['friendUids']) &&
+          // mutual: viewer lists author AND author lists viewer
+          (resource.data.uid in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.friendUids) &&
+          (request.auth.uid in get(/databases/$(database)/documents/users/$(resource.data.uid)).data.friendUids)
+        )
+      );
+
+      // Creates: only the authenticated user can create a post with their own uid
+      // Enforce that the postUID matches the document id for extra safety
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.postUID == postId
+        && request.resource.data.keys().hasAll(['postUID', 'uid', 'name', 'outfitURL', 'timestamp'])
+        && (request.resource.data.timestamp is int || request.resource.data.timestamp is timestamp);
+
+      // Updates: only the original author can update (uid/postUID cannot be changed)
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.postUID == resource.data.postUID;
+
+      // Deletes: only the original author can delete
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // Deny everything else
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

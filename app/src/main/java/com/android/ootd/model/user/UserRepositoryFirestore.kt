@@ -4,9 +4,9 @@ import android.util.Log
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.toObject
 import java.util.UUID
-import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
@@ -103,6 +103,10 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       }
 
       db.collection(USER_COLLECTION_PATH).document(user.uid).set(user).await()
+      db.collection(USER_COLLECTION_PATH)
+          .document(user.uid)
+          .set(mapOf("friendUidSet" to mapOf<String, Boolean>()), SetOptions.merge())
+          .await()
 
       Log.d("UserRepositoryFirestore", "Successfully added user with UID: ${user.uid}")
     } catch (e: Exception) {
@@ -122,12 +126,12 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
 
-      // With arrayUnion there can be no duplicates
-      // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
-      // array section
-
-      userRef.update(
-          "friendList", FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)))
+      // append Friend object and set friendUidSet.<id> = true
+      val updates =
+          mapOf(
+              "friendList" to FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)),
+              "friendUidSet.$friendID" to true)
+      userRef.update(updates).await()
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
