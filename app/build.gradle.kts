@@ -36,11 +36,18 @@ android {
 
     signingConfigs {
         create("release") {
-            // CI/CD signing configuration
-            storeFile = System.getenv("ANDROID_KEYSTORE_PATH")?.let { file(it) }
-            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            // CI signing config
+            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            val keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            val keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            
+            if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
         }
     }
 
@@ -51,7 +58,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+
+            // Only use release signing config for the CI env
+            if (System.getenv("ANDROID_KEYSTORE_PATH") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
 
         debug {
