@@ -9,10 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.OutfitPost
-import com.android.ootd.ui.theme.OOTDTheme
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
@@ -84,17 +82,17 @@ fun OutfitPostCard(
       }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFFEFFFE)
-@Composable
-fun OutfitPostCardPreview() {
-  OOTDTheme {
-    OutfitPostCard(
-        post =
-            OutfitPost(
-                postUID = "1",
-                name = "Pit",
-                uid = "user123",
-                description = "Casual monochrome fit for fall 🍂"),
-        isBlurred = false)
-  }
-}
+// @Preview(showBackground = true, backgroundColor = 0xFFFEFFFE)
+// @Composable
+// fun OutfitPostCardPreview() {
+//  OOTDTheme {
+//    OutfitPostCard(
+//        post =
+//            OutfitPost(
+//                postUID = "1",
+//                name = "Pit",
+//                uid = "user123",
+//                description = "Casual monochrome fit for fall 🍂"),
+//        isBlurred = false)
+//  }
+// }
