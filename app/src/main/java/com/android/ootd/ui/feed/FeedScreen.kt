@@ -24,7 +24,12 @@ object FeedScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () -> Unit) {
+fun FeedScreen(
+    feedViewModel: FeedViewModel = viewModel(),
+    onAddPostClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
@@ -42,7 +47,7 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
                           fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
             },
             navigationIcon = {
-              IconButton(onClick = { /* TODO: search navigation */}) {
+              IconButton(onClick = onSearchClick) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
@@ -51,7 +56,7 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
             },
             actions = {
               // TODO: replace this icon with user profile avatar once implemented
-              IconButton(onClick = { /* TODO: profile navigation */}) {
+              IconButton(onClick = onProfileClick) {
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Profile",

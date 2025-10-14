@@ -20,10 +20,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
+import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.register.RegisterScreen
+import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -63,18 +65,18 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Splash.route
+  val startDestination = Screen.Feed.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
     navigation(startDestination = Screen.Splash.route, route = Screen.Splash.name) {
       composable(Screen.Splash.route) {
         SplashScreen(
-            onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
+            onSignedIn = { navigationActions.navigateTo(Screen.Feed) },
             onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
       }
       composable(Screen.RegisterUsername.route) {
-        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Overview) })
+        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
       }
     }
 
@@ -83,14 +85,23 @@ fun OOTDApp(
       composable(Screen.Authentication.route) {
         SignInScreen(
             credentialManager = credentialManager,
-            onSignedIn = { navigationActions.navigateTo(Screen.Overview) })
+            onSignedIn = { navigationActions.navigateTo(Screen.Feed) })
       }
     }
 
-    // 3. Overview route (top-level, for authenticated users)
-    // Todo: Replace overview with main when implemented
-    navigation(startDestination = Screen.Overview.route, route = Screen.Overview.name) {
-      composable(Screen.Overview.route) { Text("Overview Placeholder") }
+    // 3. FeedScreen route (top-level, for authenticated users)
+    navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
+      composable(Screen.Feed.route) {
+        FeedScreen(
+            onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+            onSearchClick = { navigationActions.navigateTo(Screen.Search) },
+            onProfileClick = { /* TODO: show user profile page */})
+      }
+
+      // Navigation to Search screen
+      composable(Screen.Search.route) {
+        UserSearchScreen() // backward navigation action to be added here
+      }
 
       composable(
           route = Screen.EditItem.route,
