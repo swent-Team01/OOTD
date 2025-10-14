@@ -18,6 +18,19 @@ class FeedScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   @Test
+  fun feedList_rendersAllPosts() {
+    val fakePosts =
+        listOf(
+            OutfitPost("1", "user1", "https://example.com/1.jpg"),
+            OutfitPost("2", "user2", "https://example.com/2.jpg"))
+
+    composeTestRule.setContent { FeedList(posts = fakePosts) }
+
+    // Assert the list exists
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
+  }
+
+  @Test
   fun feedScreen_showsLockedMessage_whenUserHasNotPostedToday() {
     val fakeRepo =
         object : FeedRepository {

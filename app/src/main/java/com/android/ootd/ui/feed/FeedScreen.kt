@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.model.OutfitPost
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -78,16 +79,8 @@ fun FeedScreen(
       }) { paddingValues ->
         // Use a single Box and overlay the locked message when needed.
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-          // Feed list is always part of the layout; it will show items when available.
-          LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
-            items(posts) { post ->
-              OutfitPostCard(
-                  post = post,
-                  isBlurred = false,
-                  onSeeFitClick = { /* TODO: navigation to feeditems */})
-              // no blur for now
-            }
-          }
+          // Renders the list of posts when user has posted.
+          FeedList(posts = posts)
 
           if (!hasPostedToday) {
             Box(
@@ -100,4 +93,13 @@ fun FeedScreen(
           }
         }
       }
+}
+
+@Composable
+fun FeedList(posts: List<OutfitPost>, onSeeFitClick: (OutfitPost) -> Unit = {}) {
+  LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
+    items(posts) { post ->
+      OutfitPostCard(post = post, isBlurred = false, onSeeFitClick = { onSeeFitClick(post) })
+    }
+  }
 }
