@@ -50,7 +50,6 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.ui.authentication.*
-import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.utils.FakeCredentialManager
