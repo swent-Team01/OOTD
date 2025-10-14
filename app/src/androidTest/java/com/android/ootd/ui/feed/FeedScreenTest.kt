@@ -24,7 +24,7 @@ class FeedScreenTest {
             OutfitPost("1", "user1", "https://example.com/1.jpg"),
             OutfitPost("2", "user2", "https://example.com/2.jpg"))
 
-    composeTestRule.setContent { FeedList(posts = fakePosts) }
+    composeTestRule.setContent { FeedList(posts = fakePosts, onSeeFitClick = {}) }
 
     // Assert the list exists
     composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
