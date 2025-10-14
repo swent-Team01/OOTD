@@ -3,7 +3,7 @@ name: Build Android APK on Release
 
 on:
   release:
-    types: [published]
+    types: [published, prereleased]
   workflow_dispatch:
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
       - name: Decode signing and optional files
         shell: bash
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.GOOGLE_SERVICES }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           bash .github/scripts/setup-android-signing.sh
           echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/.ci-secrets/release.keystore" >> $GITHUB_ENV
