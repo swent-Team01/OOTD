@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.model.OutfitPost
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -24,7 +25,12 @@ object FeedScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () -> Unit) {
+fun FeedScreen(
+    feedViewModel: FeedViewModel = viewModel(),
+    onAddPostClick: () -> Unit,
+    onSearchClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
+) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
@@ -42,7 +48,7 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
                           fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
             },
             navigationIcon = {
-              IconButton(onClick = { /* TODO: search navigation */}) {
+              IconButton(onClick = onSearchClick) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
@@ -51,7 +57,7 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
             },
             actions = {
               // TODO: replace this icon with user profile avatar once implemented
-              IconButton(onClick = { /* TODO: profile navigation */}) {
+              IconButton(onClick = onProfileClick) {
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Profile",
@@ -73,16 +79,8 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
       }) { paddingValues ->
         // Use a single Box and overlay the locked message when needed.
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-          // Feed list is always part of the layout; it will show items when available.
-          LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
-            items(posts) { post ->
-              OutfitPostCard(
-                  post = post,
-                  isBlurred = false,
-                  onSeeFitClick = { /* TODO: navigation to feeditems */})
-              // no blur for now
-            }
-          }
+          // Renders the list of posts when user has posted.
+          FeedList(posts = posts)
 
           if (!hasPostedToday) {
             Box(
@@ -95,4 +93,13 @@ fun FeedScreen(feedViewModel: FeedViewModel = viewModel(), onAddPostClick: () ->
           }
         }
       }
+}
+
+@Composable
+fun FeedList(posts: List<OutfitPost>, onSeeFitClick: (OutfitPost) -> Unit = {}) {
+  LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
+    items(posts) { post ->
+      OutfitPostCard(post = post, isBlurred = false, onSeeFitClick = { onSeeFitClick(post) })
+    }
+  }
 }

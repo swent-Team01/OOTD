@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
+import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
@@ -70,11 +71,11 @@ fun OOTDApp(
     navigation(startDestination = Screen.Splash.route, route = Screen.Splash.name) {
       composable(Screen.Splash.route) {
         SplashScreen(
-            onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
+            onSignedIn = { navigationActions.navigateTo(Screen.Feed) },
             onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
       }
       composable(Screen.RegisterUsername.route) {
-        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Overview) })
+        RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
       }
     }
 
@@ -83,14 +84,23 @@ fun OOTDApp(
       composable(Screen.Authentication.route) {
         SignInScreen(
             credentialManager = credentialManager,
-            onSignedIn = { navigationActions.navigateTo(Screen.Overview) })
+            onSignedIn = { navigationActions.navigateTo(Screen.Feed) })
       }
     }
 
-    // 3. Overview route (top-level, for authenticated users)
-    // Todo: Replace overview with main when implemented
-    navigation(startDestination = Screen.Overview.route, route = Screen.Overview.name) {
-      composable(Screen.Overview.route) { Text("Overview Placeholder") }
+    // 3. FeedScreen route (top-level, for authenticated users)
+    navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
+      composable(Screen.Feed.route) {
+        FeedScreen(
+            onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+            onSearchClick = { /* TODO: show search profile page */},
+            onProfileClick = { /* TODO: show user profile page */})
+      }
+
+      /* TODO: add navigation to ProfileScreen and SearchScreen */
+      // Navigation to Search screen is not yet implemented
+
+      // Navigation to User Profile screen is not yet implemented
 
       composable(
           route = Screen.EditItem.route,

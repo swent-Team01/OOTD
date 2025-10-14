@@ -38,8 +38,8 @@ class NavigationTest {
             composable(Screen.Authentication.route) { /* minimal screen */}
           }
 
-      navigation(startDestination = Screen.Overview.route, route = Screen.Overview.name) {
-        composable(Screen.Overview.route) { /* minimal screen */}
+      navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
+        composable(Screen.Feed.route) { /* minimal screen */}
       }
     }
   }
@@ -61,8 +61,8 @@ class NavigationTest {
   @Test
   fun navigationActions_navigateToOverview_shouldUpdateRoute() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 
@@ -86,8 +86,8 @@ class NavigationTest {
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
 
       // Navigate to Overview (after sign in)
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 
@@ -98,8 +98,8 @@ class NavigationTest {
       assertEquals(Screen.Splash.route, navigation.currentRoute())
 
       // Navigate directly to Overview (when already signed in)
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 
@@ -111,8 +111,8 @@ class NavigationTest {
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
 
       // Navigate to Overview (top-level) - should clear back stack
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Try to go back - should return to start destination (Splash)
       navigation.goBack()
@@ -125,12 +125,12 @@ class NavigationTest {
   @Test
   fun navigationActions_navigateToSameTopLevelDestination_shouldBeIgnored() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Try to navigate to Overview again - should be ignored
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 
@@ -167,8 +167,8 @@ class NavigationTest {
       assertEquals(Screen.RegisterUsername.route, navigation.currentRoute())
 
       // Navigate to Overview (after registration)
-      navigation.navigateTo(Screen.Overview)
-      assertEquals(Screen.Overview.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 }

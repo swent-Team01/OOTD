@@ -49,6 +49,7 @@ import com.android.ootd.OOTDApp
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.ui.authentication.*
+import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.utils.FakeCredentialManager
@@ -544,11 +545,14 @@ class AuthenticationExtensiveTest {
 
     // Wait for the login to complete and navigate to overview
     composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onAllNodesWithText("Overview Placeholder").fetchSemanticsNodes().isNotEmpty()
+      composeTestRule
+          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
     }
 
     // Verify we've navigated to the overview screen
-    composeTestRule.onNodeWithText("Overview Placeholder").assertIsDisplayed()
+    composeTestRule.onNodeWithText("OOTD").assertIsDisplayed()
 
     // Verify the sign-in button is no longer visible
     composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).assertDoesNotExist()
@@ -596,10 +600,13 @@ class AuthenticationExtensiveTest {
 
     // Verify navigation to overview
     composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onAllNodesWithText("Overview Placeholder").fetchSemanticsNodes().isNotEmpty()
+      composeTestRule
+          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
     }
 
-    composeTestRule.onNodeWithText("Overview Placeholder").assertIsDisplayed()
+    composeTestRule.onNodeWithText("OOTD").assertIsDisplayed()
 
     // Clean up mocks
     unmockkStatic(FirebaseAuth::class)
@@ -650,7 +657,10 @@ class AuthenticationExtensiveTest {
 
     // Eventually navigate to overview
     composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onAllNodesWithText("Overview Placeholder").fetchSemanticsNodes().isNotEmpty()
+      composeTestRule
+          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
     }
 
     // Clean up mocks
