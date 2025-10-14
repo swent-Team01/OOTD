@@ -37,9 +37,11 @@ interface UserRepository {
   suspend fun getUser(userID: String): User
 
   /**
-   * Returns true if a user document exists for the given uid
+   * Asserts if a user has a username or not in the database
    *
    * @param userID The wanted user's ID
+   * @return True if the user has a non empty/blank username
+   * @throws Exception If the user is not found
    */
   suspend fun userExists(userID: String): Boolean
 

@@ -29,14 +29,12 @@ import kotlinx.coroutines.launch
  * @property user The currently signed-in [FirebaseUser], or null if not signed in.
  * @property errorMsg An error message to display, or null if there is no error.
  * @property signedOut True if a sign-out operation has completed.
- * @property newUser True if the user is not registered in the firebase
  */
 data class AuthUIState(
     val isLoading: Boolean = false,
     val user: FirebaseUser? = null,
     val errorMsg: String? = null,
-    val signedOut: Boolean = false,
-    val newUser: Boolean = false
+    val signedOut: Boolean = false
 )
 
 /**
@@ -133,12 +131,16 @@ class SignInViewModel(
       onFailure: (Throwable) -> Unit = {}
   ) {
     viewModelScope.launch {
+      _uiState.update { it.copy(isLoading = true) }
+      clearErrorMsg()
       try {
         val uid = repository.currentUserId
         val exists = userRepository.userExists(uid)
         if (exists) onSignedIn() else onRegister()
       } catch (t: Throwable) {
         onFailure(t)
+      } finally {
+        _uiState.update { it.copy(isLoading = false) }
       }
     }
   }
