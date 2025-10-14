@@ -1,4 +1,4 @@
-package com.android.ootd.model.post
+package com.android.ootd.model
 
 import android.net.Uri
 

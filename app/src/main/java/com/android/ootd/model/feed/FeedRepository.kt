@@ -1,6 +1,6 @@
 package com.android.ootd.model.feed
 
-import com.android.ootd.model.post.OutfitPost
+import com.android.ootd.model.OutfitPost
 
 /** Repository that manages the posts on the feed */
 interface FeedRepository {

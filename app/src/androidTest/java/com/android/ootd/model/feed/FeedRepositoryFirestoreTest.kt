@@ -3,7 +3,7 @@ package com.android.ootd.model.feed
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.ootd.model.post.OutfitPost
+import com.android.ootd.model.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore

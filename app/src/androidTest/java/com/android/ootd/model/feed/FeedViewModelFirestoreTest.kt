@@ -1,6 +1,6 @@
 package com.android.ootd.model.feed
 
-import com.android.ootd.model.post.OutfitPost
+import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.FirebaseEmulator
