@@ -1,7 +1,11 @@
 package com.android.ootd.model.user
 
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -79,7 +83,7 @@ class UserRepositoryInMemoryTest {
   @Test
   fun userExists_worksCorrectlyForUserWithUsername() = runTest {
     val user = repository.userExists("user1")
-    assert(user)
+    assertTrue(user)
   }
 
   @Test
@@ -92,7 +96,7 @@ class UserRepositoryInMemoryTest {
   @Test
   fun userExists_worksWithUnexistantUseranme() = runTest {
     val user = repository.userExists("nonRegisterUser")
-    assert(!user)
+    assertTrue(!user)
   }
 
   @Test
