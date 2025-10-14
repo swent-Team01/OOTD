@@ -1,6 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.content.Context
+import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.OutfitPost
@@ -172,8 +173,8 @@ class FeedRepositoryFirestoreTest {
           postUID = id,
           name = "name-$id",
           uid = "user-$id",
-          userProfilePicURL = "https://example.com/$id.png",
-          outfitURL = "https://example.com/outfits/$id.jpg",
+          userProfilePicURL = "https://example.com/$id.png".toUri(),
+          outfitURL = "https://example.com/outfits/$id.jpg".toUri(),
           description = "desc-$id",
           itemsID = listOf("i1-$id", "i2-$id"),
           timestamp = ts)

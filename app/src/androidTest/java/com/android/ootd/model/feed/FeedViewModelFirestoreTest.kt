@@ -1,5 +1,6 @@
 package com.android.ootd.model.feed
 
+import androidx.core.net.toUri
 import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
@@ -294,8 +295,8 @@ class FeedViewModelFirestoreTest {
             postUID = "x",
             name = "Name",
             uid = "uid",
-            userProfilePicURL = "",
-            outfitURL = "url_x",
+            userProfilePicURL = "".toUri(),
+            outfitURL = "url_x".toUri(),
             description = "",
             itemsID = emptyList(),
             timestamp = 1L)
@@ -337,8 +338,8 @@ class FeedViewModelFirestoreTest {
           postUID = id,
           name = userName,
           uid = userId,
-          userProfilePicURL = profileUrl,
-          outfitURL = outfitUrl,
+          userProfilePicURL = profileUrl.toUri(),
+          outfitURL = outfitUrl.toUri(),
           description = desc,
           itemsID = emptyList(),
           timestamp = ts)

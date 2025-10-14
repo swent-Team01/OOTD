@@ -2,6 +2,7 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.core.net.toUri
 import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
@@ -48,7 +49,11 @@ class FeedScreenTest {
   fun feedScreen_showsFeedList_whenUserHasPostedToday() {
     val fakePosts =
         listOf(
-            OutfitPost(postUID = "1", uid = "user1", outfitURL = "https://example.com/outfit.jpg"))
+            OutfitPost(
+                postUID = "1",
+                uid = "user1",
+                userProfilePicURL = "https://example.com/outfit.jpg".toUri(),
+                outfitURL = "https://example.com/outfit.jpg".toUri()))
 
     val fakeRepo =
         object : FeedRepository {

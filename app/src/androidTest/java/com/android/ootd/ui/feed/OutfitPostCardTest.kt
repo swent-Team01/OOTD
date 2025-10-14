@@ -2,6 +2,7 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.core.net.toUri
 import com.android.ootd.model.OutfitPost
 import org.junit.Rule
 import org.junit.Test
@@ -31,8 +32,8 @@ class OutfitPostCardTest {
             name = "John Doe",
             description = "Casual Friday outfit",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -52,8 +53,8 @@ class OutfitPostCardTest {
             name = "John Doe",
             description = "Casual Friday outfit",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -76,8 +77,8 @@ class OutfitPostCardTest {
             name = "Jane Smith",
             description = "Summer vibes with denim jacket",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -100,8 +101,8 @@ class OutfitPostCardTest {
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -121,8 +122,8 @@ class OutfitPostCardTest {
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -146,8 +147,8 @@ class OutfitPostCardTest {
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed with a callback
@@ -173,8 +174,8 @@ class OutfitPostCardTest {
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -201,8 +202,8 @@ class OutfitPostCardTest {
             name = "Minimalist User",
             description = "",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -229,8 +230,8 @@ class OutfitPostCardTest {
             name = "Blurred User",
             description = "This should be blurred",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed with blur
@@ -258,8 +259,8 @@ class OutfitPostCardTest {
             name = "Verbose User",
             description = longDescription,
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -287,8 +288,8 @@ class OutfitPostCardTest {
             name = "Complete User",
             description = "Complete outfit description",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "",
-            userProfilePicURL = "",
+            outfitURL = "".toUri(),
+            userProfilePicURL = "".toUri(),
             itemsID = emptyList())
 
     // When the card is displayed
@@ -318,8 +319,8 @@ class OutfitPostCardTest {
             name = "Fashionista",
             description = "Outfit with tracked items",
             timestamp = System.currentTimeMillis(),
-            outfitURL = "https://example.com/outfit.jpg",
-            userProfilePicURL = "https://example.com/profile.jpg",
+            outfitURL = "https://example.com/outfit.jpg".toUri(),
+            userProfilePicURL = "https://example.com/profile.jpg".toUri(),
             itemsID = listOf("item1", "item2", "item3"))
 
     // When the card is displayed
