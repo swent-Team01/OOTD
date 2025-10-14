@@ -41,19 +41,21 @@ class UserSearchViewModel(
   }
 
   private fun searchUsernames(query: String) {
-    var suggestions = emptyList<User>()
     viewModelScope.launch {
       try {
         val allUsers = userRepository.getAllUsers()
-        suggestions =
+        val suggestions =
             allUsers
                 .filter { it.username.startsWith(query, ignoreCase = true) }
                 .take(MAX_NUMBER_SUGGESTIONS)
+        _uiState.value =
+            _uiState.value.copy(userSuggestions = suggestions, suggestionsExpanded = true)
       } catch (e: Exception) {
         Log.e("UserSearchViewModel", "Username search failed: ${e.message}")
+        _uiState.value =
+            _uiState.value.copy(userSuggestions = emptyList(), suggestionsExpanded = true)
       }
     }
-    _uiState.value = _uiState.value.copy(userSuggestions = suggestions, suggestionsExpanded = true)
   }
 
   fun selectUsername(user: User) {
