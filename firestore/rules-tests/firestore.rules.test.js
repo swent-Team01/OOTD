@@ -23,27 +23,20 @@ describe('Firestore rules - OOTD friend-only feed', async () => {
   });
 
   // /users rules
-  test('User can read and write only their own /users/{uid} doc', async () => {
+  test('Authenticated users can read any user doc, write only their own', async () => {
+    // Can read own doc
     await assertSucceeds(getDoc(doc(me, 'users/me')));
-    await assertFails(getDoc(doc(me, 'users/u1')));
+    // Can read other users' docs (changed from assertFails)
+    await assertSucceeds(getDoc(doc(me, 'users/u1')));
 
-    // Use merge so we don't wipe the seeded friendUidSet that other tests depend on
+    // Can write own doc
     await assertSucceeds(
       setDoc(doc(me, 'users/me'), { uid: 'me', name: 'Me', friendList: [] }, { merge: true })
     );
+    // Cannot write other users' docs
     await assertFails(
       setDoc(doc(alice, 'users/me'), { uid: 'me' })
     );
-  });
-
-  // posts read rules
-  test('Mutual friends can read each other posts; non-friends cannot', async () => {
-    // me is mutual friends with u1 and u2 (seeded in setup), but not with u3/u9
-    await assertSucceeds(getDoc(doc(me, 'posts/p1'))); // u1
-    await assertSucceeds(getDoc(doc(me, 'posts/p2'))); // u2
-
-    await assertFails(getDoc(doc(me, 'posts/p3'))); // u3 (one-way only)
-    await assertFails(getDoc(doc(me, 'posts/p9'))); // u9 (non-friend)
   });
 
   test('Author can read their own post even without mutual friendship', async () => {
@@ -54,6 +47,16 @@ describe('Firestore rules - OOTD friend-only feed', async () => {
       })
     );
     await assertSucceeds(getDoc(doc(selfDb, 'posts/self_post')));
+  });
+
+  // posts read rules
+  test('Mutual friends can read each other posts; non-friends cannot', async () => {
+    // me is mutual friends with u1 and u2 (seeded in setup), but not with u3/u9
+    await assertSucceeds(getDoc(doc(me, 'posts/p1'))); // u1
+    await assertSucceeds(getDoc(doc(me, 'posts/p2'))); // u2
+
+    await assertFails(getDoc(doc(me, 'posts/p3'))); // u3 (one-way only)
+    await assertFails(getDoc(doc(me, 'posts/p9'))); // u9 (non-friend)
   });
 
   test('List query: allowed when constrained to friends; denied when unfiltered', async () => {

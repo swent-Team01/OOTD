@@ -105,7 +105,10 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       db.collection(USER_COLLECTION_PATH).document(user.uid).set(user).await()
       db.collection(USER_COLLECTION_PATH)
           .document(user.uid)
-          .set(mapOf("friendUidSet" to mapOf<String, Boolean>()), SetOptions.merge())
+          // Ensure both friendUidSet (map) and friendUids (array) exist for rules and updates
+          .set(
+              mapOf("friendUidSet" to mapOf<String, Boolean>(), "friendUids" to listOf<String>()),
+              SetOptions.merge())
           .await()
 
       Log.d("UserRepositoryFirestore", "Successfully added user with UID: ${user.uid}")
@@ -126,11 +129,12 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
 
-      // append Friend object and set friendUidSet.<id> = true
+      // Append Friend object, set friendUidSet.<id> = true, and add to friendUids array
       val updates =
           mapOf(
               "friendList" to FieldValue.arrayUnion(Friend(uid = friendID, name = friendUsername)),
-              "friendUidSet.$friendID" to true)
+              "friendUidSet.$friendID" to true,
+              "friendUids" to FieldValue.arrayUnion(friendID))
       userRef.update(updates).await()
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
