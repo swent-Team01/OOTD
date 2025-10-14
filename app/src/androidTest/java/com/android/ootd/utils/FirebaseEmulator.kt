@@ -5,6 +5,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import com.google.firebase.storage.FirebaseStorage
 import io.mockk.InternalPlatformDsl.toArray
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -24,10 +25,14 @@ object FirebaseEmulator {
   val firestore
     get() = Firebase.firestore
 
+  val storage
+    get() = FirebaseStorage.getInstance().apply { useEmulator(HOST, STORAGE_PORT) }
+
   const val HOST = "10.0.2.2"
   const val EMULATORS_PORT = 4400
   const val FIRESTORE_PORT = 8080
   const val AUTH_PORT = 9099
+  const val STORAGE_PORT = 9199
 
   val projectID by lazy { FirebaseApp.getInstance().options.projectId }
 
