@@ -84,7 +84,7 @@ fun OOTDApp(
       composable(Screen.Authentication.route) {
         SignInScreen(
             credentialManager = credentialManager,
-            onSignedIn = { navigationActions.navigateTo(Screen.Overview) },
+            onSignedIn = { navigationActions.navigateTo(Screen.Feed) },
             onRegister = { navigationActions.navigateTo(Screen.RegisterUsername) })
       }
     }
