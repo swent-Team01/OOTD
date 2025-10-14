@@ -25,6 +25,8 @@ class FeedScreenTest {
 
           override suspend fun getFeed() = emptyList<OutfitPost>()
 
+          override suspend fun getFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
+
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId(): String = "fake-id"
@@ -55,6 +57,9 @@ class FeedScreenTest {
           override suspend fun hasPostedToday(userId: String) = true
 
           override suspend fun getFeed() = fakePosts
+
+          override suspend fun getFeedForUids(uids: List<String>) =
+              fakePosts.filter { it.uid in uids }
 
           override suspend fun addPost(post: OutfitPost) {}
 
@@ -91,8 +96,7 @@ class FeedScreenTest {
     composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
 
     // Either locked message OR feed list should exist (depending on hasPostedToday)
-    val lockedMessageExists =
-        composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertExists()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertExists()
   }
 
   @Test
@@ -129,14 +133,12 @@ class FeedScreenTest {
 
   @Test
   fun feedScreen_callbackDoesNotCrash() {
-    var clicked = false
-
-    composeTestRule.setContent { FeedScreen(onAddPostClick = { clicked = true }) }
+    composeTestRule.setContent { FeedScreen(onAddPostClick = { /* click handled */}) }
 
     // Try to find and click FAB if it exists
     try {
       composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       // FAB might not be there if user has posted - that's okay
     }
   }
