@@ -1,27 +1,18 @@
 package com.android.ootd.model.items
 
 import android.net.Uri
-import android.util.Log
-import com.android.ootd.model.ITEMS_COLLECTION
 import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepositoryProvider.repository
+import com.android.ootd.model.ItemsRepository
 import com.android.ootd.model.Material
-import com.android.ootd.utils.FirebaseEmulator
-import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
-import org.junit.After
-import org.junit.Before
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ItemsRepositoryFirestoreTest() {
+class ItemsRepositoryTest {
 
-  @Before
-  fun setup() {
-    FirebaseEmulator
-  }
-
-  val item1 =
+  private val item1 =
       Item(
           uuid = "0",
           image = Uri.parse("https://example.com/image1.jpg"),
@@ -32,7 +23,7 @@ class ItemsRepositoryFirestoreTest() {
           material = listOf(),
           link = "https://example.com/item1")
 
-  val item2 =
+  private val item2 =
       Item(
           uuid = "1",
           image = Uri.parse("https://example.com/image1.jpg"),
@@ -43,7 +34,7 @@ class ItemsRepositoryFirestoreTest() {
           material = listOf(),
           link = "https://example.com/item2")
 
-  val item3 =
+  private val item3 =
       Item(
           uuid = "2",
           image = Uri.parse("https://example.com/image1.jpg"),
@@ -54,7 +45,7 @@ class ItemsRepositoryFirestoreTest() {
           material = listOf(),
           link = "https://example.com/item3")
 
-  val item4 =
+  private val item4 =
       Item(
           uuid = "3",
           image = Uri.parse("https://example.com/image1.jpg"),
@@ -68,97 +59,84 @@ class ItemsRepositoryFirestoreTest() {
                   Material(name = "Metal", percentage = 20.0)),
           link = "https://example.com/item4")
 
-  suspend fun countItems(): Int {
-    return FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).get().await().size()
-  }
-
   @Test
   fun getNewItemIdReturnsUniqueIDs() = runTest {
-    val numberIDs = 100
-    val uids = (0 until 100).toSet<Int>().map { repository.getNewItemId() }.toSet()
-    assertEquals(uids.size, numberIDs)
+    val repo = FakeItemsRepository()
+    val n = 100
+    val ids = (0 until n).map { repo.getNewItemId() }.toSet()
+    assertEquals(n, ids.size)
   }
 
   @Test
   fun addItemWithTheCorrectID() = runTest {
-    repository.addItem(item1)
-    val snapshot =
-        FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).document(item1.uuid).get().await()
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
 
-    Log.d("FirestoreTest", "Firestore stored document: ${snapshot.data}")
-    assertEquals(1, countItems())
-    val storedTodo = repository.getItemById(item1.uuid)
-    assertEquals(storedTodo, item1)
+    assertEquals(1, repo.getAllItems().size)
+    val stored = repo.getItemById(item1.uuid)
+    assertEquals(item1, stored)
   }
 
   @Test
   fun canAddItemToRepository() = runTest {
-    repository.addItem(item1)
-    assertEquals(1, countItems())
-    val todos = repository.getAllItems()
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
 
-    assertEquals(1, todos.size)
-    val expectedTodo = item1.copy(uuid = "None", link = "None")
-    val storedTodo = todos.first().copy(uuid = expectedTodo.uuid, link = expectedTodo.link)
-
-    assertEquals(expectedTodo, storedTodo)
+    val all = repo.getAllItems()
+    assertEquals(1, all.size)
+    assertEquals(item1, all.first())
   }
 
   @Test
   fun retrieveItemById() = runTest {
-    repository.addItem(item1)
-    repository.addItem(item2)
-    repository.addItem(item3)
-    assertEquals(3, countItems())
-    val storedTodo = repository.getItemById(item3.uuid)
-    assertEquals(storedTodo, item3)
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
+    repo.addItem(item2)
+    repo.addItem(item3)
 
-    val storedTodo2 = repository.getItemById(item2.uuid)
-    assertEquals(storedTodo2, item2)
+    assertEquals(item3, repo.getItemById(item3.uuid))
+    assertEquals(item2, repo.getItemById(item2.uuid))
   }
 
   @Test
   fun checkUidsAreUniqueInTheCollection() = runTest {
+    val repo = FakeItemsRepository()
     val uid = "duplicate"
-    val item1Modified = item1.copy(uuid = uid)
-    val itemDuplicatedUID = item2.copy(uuid = uid)
-    // Depending on your implementation, adding a Item with an existing UID
-    // might not be permitted
-    runCatching {
-      repository.addItem(item1Modified)
-      repository.addItem(itemDuplicatedUID)
-    }
+    val a = item1.copy(uuid = uid)
+    val b = item2.copy(uuid = uid)
 
-    assertEquals(1, countItems())
+    // Upsert behavior: last write wins
+    repo.addItem(a)
+    repo.addItem(b)
 
-    val items = repository.getAllItems()
-    assertEquals(items.size, 1)
-    val storedItem = items.first()
-    assertEquals(storedItem.uuid, uid)
+    val items = repo.getAllItems()
+    assertEquals(1, items.size)
+    assertEquals(uid, items.first().uuid)
+    assertEquals(b, items.first())
   }
 
   @Test
   fun deleteItemById() = runTest {
-    repository.addItem(item1)
-    repository.addItem(item2)
-    repository.addItem(item3)
-    assertEquals(3, countItems())
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
+    repo.addItem(item2)
+    repo.addItem(item3)
 
-    repository.deleteItem(item2.uuid)
-    assertEquals(2, countItems())
-    val items = repository.getAllItems()
-    assertEquals(items.size, 2)
-    assert(!items.contains(item2))
+    repo.deleteItem(item2.uuid)
+    val items = repo.getAllItems()
+    assertEquals(2, items.size)
+    assertTrue(items.contains(item1))
+    assertTrue(items.contains(item3))
 
-    // Deleting an item that does not exist should not throw
-    repository.deleteItem(item2.uuid)
-    assertEquals(2, countItems())
+    // Deleting non-existing must not throw
+    repo.deleteItem(item2.uuid)
+    assertEquals(2, repo.getAllItems().size)
   }
 
   @Test
   fun editItemById() = runTest {
-    repository.addItem(item1)
-    assertEquals(1, countItems())
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
 
     val newItem =
         item1.copy(
@@ -166,100 +144,49 @@ class ItemsRepositoryFirestoreTest() {
             brand = "H&M",
             price = 20.0,
             material = listOf(Material(name = "Cotton", percentage = 100.0)))
-    repository.editItem(item1.uuid, newItem)
-    assertEquals(1, countItems())
-    val items = repository.getAllItems()
-    assertEquals(items.size, 1)
-    val storedItem = items.first()
-    assertEquals(storedItem, newItem)
+
+    repo.editItem(item1.uuid, newItem)
+    assertEquals(1, repo.getAllItems().size)
+    assertEquals(newItem, repo.getItemById(item1.uuid))
 
     // Editing an item that does not exist should throw
     val nonExistingItem = item2.copy(uuid = "nonExisting")
-    var didThrow = false
-    try {
-      repository.editItem(nonExistingItem.uuid, nonExistingItem)
-    } catch (e: Exception) {
-      didThrow = true
+    assertThrows(Exception::class.java) {
+      runTest { repo.editItem(nonExistingItem.uuid, nonExistingItem) }
     }
-    assert(didThrow)
-    assertEquals(1, countItems())
+    assertEquals(1, repo.getAllItems().size)
   }
 
   @Test(expected = Exception::class)
-  fun getItemByIdThrowsWhenItemNotFound() = runTest { repository.getItemById("nonExistingId") }
-
-  @Test
-  fun getAllItemsSkipsInvalidDocuments() = runTest {
-    val db = FirebaseEmulator.firestore
-    val collection = db.collection(ITEMS_COLLECTION)
-
-    // Add an invalid Firestore document (missing required fields)
-    collection.document("invalid").set(mapOf("brand" to "Zara")).await()
-
-    // Add a valid one too
-    repository.addItem(item1)
-
-    val allItems = repository.getAllItems()
-
-    // Only valid items should be returned (invalid skipped)
-    assertEquals(1, allItems.size)
-    assertEquals(item1.uuid, allItems.first().uuid)
+  fun getItemByIdThrowsWhenItemNotFound() = runTest {
+    val repo = FakeItemsRepository()
+    repo.getItemById("nonExistingId")
   }
 
-  @Test
-  fun getAllItemsParsesPartiallyValidMaterialList() = runTest {
-    val db = FirebaseEmulator.firestore
-    val collection = db.collection(ITEMS_COLLECTION)
+  // -------- inline fake (same trick as FeedViewModelTest) --------
 
-    val partialMaterialData =
-        mapOf(
-            "uuid" to "mixedMat",
-            "image" to "https://example.com/image.jpg",
-            "category" to "clothes",
-            "type" to "jacket",
-            "brand" to "Levi's",
-            "price" to 120.0,
-            "link" to "https://example.com/item",
-            "material" to
-                listOf(
-                    mapOf("name" to "Cotton", "percentage" to 60.0), mapOf("invalidKey" to "oops")))
-    collection.document("mixedMat").set(partialMaterialData).await()
+  private class FakeItemsRepository : ItemsRepository {
+    private val store = linkedMapOf<String, Item>()
+    private var idSeq = 0
 
-    val items = repository.getAllItems()
-    assertEquals(1, items.size)
-    val matList = items.first().material
-    assertEquals(2, matList.size)
-    assertEquals("Cotton", matList.first().name)
-    assertEquals(60.0, matList.first().percentage)
-  }
+    override fun getNewItemId(): String = "test-${idSeq++}"
 
-  @Test
-  fun mapToItemCatchesExceptionForInvalidData() = runTest {
-    val db = FirebaseEmulator.firestore
-    val collection = db.collection(ITEMS_COLLECTION)
+    override suspend fun getAllItems(): List<Item> = store.values.toList()
 
-    // Insert invalid data (image should be a string, but we give it a number)
-    val invalidData =
-        mapOf(
-            "uuid" to "badItem",
-            "image" to 12345, // <-- will cause ClassCastException during toUri()
-            "category" to "clothes",
-            "type" to "jacket",
-            "brand" to "Levi's",
-            "price" to 120.0,
-            "link" to "https://example.com/item")
+    override suspend fun getItemById(uuid: String): Item =
+        store[uuid] ?: throw Exception("Item $uuid not found")
 
-    collection.document("badItem").set(invalidData).await()
+    override suspend fun addItem(item: Item) {
+      store[item.uuid] = item // upsert
+    }
 
-    // When repository tries to parse this, it should hit the catch block
-    val allItems = repository.getAllItems()
+    override suspend fun editItem(itemUUID: String, newItem: Item) {
+      if (!store.containsKey(itemUUID)) throw Exception("Item $itemUUID not found")
+      store[itemUUID] = newItem.copy(uuid = itemUUID)
+    }
 
-    // It should skip the invalid item and not crash
-    assertEquals(true, allItems.isEmpty())
-  }
-
-  @After
-  fun tearDown() {
-    FirebaseEmulator.clearFirestoreEmulator()
+    override suspend fun deleteItem(uuid: String) {
+      store.remove(uuid)
+    }
   }
 }

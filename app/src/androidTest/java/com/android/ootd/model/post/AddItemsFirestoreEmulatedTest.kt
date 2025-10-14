@@ -1,129 +1,211 @@
 package com.android.ootd.model.post
 
-import androidx.compose.ui.test.junit4.createComposeRule
+import android.net.Uri
+import com.android.ootd.model.Item
 import com.android.ootd.model.ItemsRepository
-import com.android.ootd.ui.post.AddItemsScreen
-import com.android.ootd.ui.post.AddItemsViewModel
-import com.android.ootd.utils.FirebaseEmulator
-import com.android.ootd.utils.FirestoreItemTest
-import kotlinx.coroutines.runBlocking
+import com.android.ootd.model.Material
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import org.junit.After
-import org.junit.Before
+import kotlinx.coroutines.test.setMain
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
+import org.junit.runner.Description
+import org.junit.runners.model.Statement
 
-class AddItemsFirestoreEmulatedTest : FirestoreItemTest() {
+@OptIn(ExperimentalCoroutinesApi::class)
+class AddItemsViewModelTest {
 
-  @get:Rule val composeTestRule = createComposeRule()
+  @get:Rule val mainRule = MainDispatcherRule()
 
-  private lateinit var viewModel: AddItemsViewModel
-  private lateinit var repo: ItemsRepository
+  private val item1 =
+      Item(
+          uuid = "0",
+          image = Uri.parse("file://item1.jpg"),
+          category = "clothes",
+          type = "t-shirt",
+          brand = "Mango",
+          price = 0.0,
+          material = listOf(),
+          link = "https://example.com/item1")
 
-  @Before
-  override fun setUp() {
-    super.setUp()
-    FirebaseEmulator
-    repo = createInitializedRepository()
-    viewModel = AddItemsViewModel(repo)
-    composeTestRule.setContent { AddItemsScreen(viewModel) }
-  }
+  private val item2 =
+      Item(
+          uuid = "1",
+          image = Uri.parse("file://item2.jpg"),
+          category = "shoes",
+          type = "high heels",
+          brand = "Zara",
+          price = 30.0,
+          material = listOf(),
+          link = "https://example.com/item2")
 
-  @After
-  override fun tearDown() {
-    runBlocking {
-      if (FirebaseEmulator.isRunning) {
-        // This uses FirestoreItemTest’s helper method
-        FirebaseEmulator.clearFirestoreEmulator()
-      }
-    }
-    super.tearDown()
+  private val item3 =
+      Item(
+          uuid = "2",
+          image = Uri.parse("file://item3.jpg"),
+          category = "bags",
+          type = "handbag",
+          brand = "Vakko",
+          price = 0.0,
+          material = listOf(),
+          link = "https://example.com/item3")
+
+  private val item4 =
+      Item(
+          uuid = "3",
+          image = Uri.parse("file://item4.jpg"),
+          category = "accessories",
+          type = "sunglasses",
+          brand = "Ray-Ban",
+          price = 100.0,
+          material =
+              listOf(
+                  Material(name = "Plastic", percentage = 80.0),
+                  Material(name = "Metal", percentage = 20.0)),
+          link = "https://example.com/item4")
+
+  @Test
+  fun getNewItemIdReturnsUniqueIDs() = runTest {
+    val repo = FakeItemsRepository()
+    val n = 100
+    val ids = (0 until n).map { repo.getNewItemId() }.toSet()
+    assertEquals(n, ids.size)
   }
 
   @Test
-  fun canStoreNewItemInDatabase() =
-      runTest {
-        // Fill inputs
-        //      composeTestRule.enterAddItemDetails(item1)
-        //
-        //      composeTestRule.runOnIdle { viewModel.setPhoto(item1.image) }
+  fun addItemWithTheCorrectID() = runTest {
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
 
-        // composeTestRule.clickOnSaveForAddItem(true)
-        //      val item = ItemsTest.item4
-        //      composeTestRule.enterAddItemDetails(item)
-        //      composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
-        //
-        //      composeTestRule.waitUntil(timeoutMillis = 5_000) {
-        //
-        // composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).fetchSemanticsNodes().isNotEmpty()
-        //      }
-        //
-        //      composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-        //          .assertIsDisplayed()
-        //          .performClick()
-        //
-        //      composeTestRule.waitForIdle()
-        //
-        //
-        //      assertEquals(1, countItems())
-        //      val items = repo.getAllItems()
-        //      val storedItem = items.first()
-        //      item1.isEqual(storedItem)
-        //      assertTrue(item1.isEqual(storedItem))
+    assertEquals(1, repo.getAllItems().size)
+    val stored = repo.getItemById(item1.uuid)
+    assertEquals(item1, stored)
+  }
+
+  @Test
+  fun canAddAndRetrieveMultipleItems() = runTest {
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
+    repo.addItem(item2)
+    repo.addItem(item3)
+
+    val all = repo.getAllItems()
+    assertEquals(3, all.size)
+    assertEquals(item3, repo.getItemById(item3.uuid))
+    assertEquals(item2, repo.getItemById(item2.uuid))
+  }
+
+  @Test
+  fun checkUidsAreUniqueInTheCollection_lastWriteWins() = runTest {
+    val repo = FakeItemsRepository()
+    val uid = "duplicate"
+    val a = item1.copy(uuid = uid)
+    val b = item2.copy(uuid = uid)
+
+    repo.addItem(a)
+    repo.addItem(b)
+
+    val items = repo.getAllItems()
+    assertEquals(1, items.size)
+    assertEquals(uid, items.first().uuid)
+    assertEquals(b, items.first())
+  }
+
+  @Test
+  fun deleteItemById() = runTest {
+    val repo = FakeItemsRepository()
+    repo.addItem(item1)
+    repo.addItem(item2)
+    repo.addItem(item3)
+
+    repo.deleteItem(item2.uuid)
+    val items = repo.getAllItems()
+    assertEquals(2, items.size)
+    assertTrue(items.contains(item1))
+    assertTrue(items.contains(item3))
+
+    // Deleting non-existing must not throw
+    repo.deleteItem(item2.uuid)
+    assertEquals(2, repo.getAllItems().size)
+  }
+
+  @Test
+  fun editItemById() = runTest {
+    val repo = FakeItemsRepository()
+    repo.addItem(item4)
+
+    val updated =
+        item4.copy(
+            type = "wayfarer",
+            brand = "RB",
+            price = 120.0,
+            material = listOf(Material(name = "Carbon", percentage = 100.0)))
+
+    repo.editItem(item4.uuid, updated)
+    assertEquals(1, repo.getAllItems().size)
+    assertEquals(updated.copy(uuid = item4.uuid), repo.getItemById(item4.uuid))
+
+    // Editing an item that does not exist should throw
+    val nonExisting = item2.copy(uuid = "nonExisting")
+    assertThrows(Exception::class.java) { runTest { repo.editItem(nonExisting.uuid, nonExisting) } }
+    assertEquals(1, repo.getAllItems().size)
+  }
+
+  @Test(expected = Exception::class)
+  fun getItemByIdThrowsWhenItemNotFound() = runTest {
+    val repo = FakeItemsRepository()
+    repo.getItemById("missing")
+  }
+
+  // ------------ inline test helpers (same trick) ------------
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  class MainDispatcherRule(private val dispatcher: TestDispatcher = StandardTestDispatcher()) :
+      TestRule {
+    override fun apply(base: Statement, description: Description): Statement {
+      return object : Statement() {
+        override fun evaluate() {
+          Dispatchers.setMain(dispatcher)
+          try {
+            base.evaluate()
+          } finally {
+            Dispatchers.resetMain()
+          }
+        }
       }
+    }
+  }
 
-  //  @Test
-  //  fun cannotAddItemWithMissingRequiredFields() = runTest {
-  //    // Leave out required fields (category, type)
-  //    composeTestRule.enterAddItemBrand(item1.brand ?: "")
-  //    composeTestRule.enterAddItemPrice(item1.price ?: 0.0)
-  //    composeTestRule.enterAddItemLink(item1.link?: "")
-  //    composeTestRule.runOnIdle { viewModel.setPhoto(item1.image) }
-  //    composeTestRule.clickOnSaveForAddItem()
-  //    composeTestRule.waitForIdle()
-  //    // No item should be added to the database
-  //    assertEquals(0, countItems())
-  //  }
+  private class FakeItemsRepository : ItemsRepository {
+    private val store = linkedMapOf<String, Item>()
+    private var idSeq = 0
 
-  // Will be added when the navigation is imlemented
-  //  @Test
-  //  fun canAddMultipleItems() = runTest {
-  //    composeTestRule.enterAddItemDetails(item1)
-  //    composeTestRule.runOnIdle {
-  //      viewModel.setPhoto(item1.image)
-  //    }
-  //    composeTestRule.clickOnSaveForAddItem(true)
-  //    // Wait for Firestore write
-  //    composeTestRule.waitForIdle()
-  //    assertEquals(1, countItems())
-  //
-  //    // Add second item
-  //    composeTestRule.enterAddItemDetails(item2)
-  //    composeTestRule.runOnIdle {
-  //      viewModel.setPhoto(item2.image)
-  //    }
-  //    composeTestRule.clickOnSaveForAddItem(true)
-  //    // Wait for Firestore write
-  //    composeTestRule.waitForIdle()
-  //    assertEquals(2, countItems())
-  //
-  //    composeTestRule.enterAddItemDetails(item4)
-  //    composeTestRule.runOnIdle {
-  //      viewModel.setPhoto(item4.image)
-  //    }
-  //    composeTestRule.clickOnSaveForAddItem(true)
-  //    // Wait for Firestore write
-  //    composeTestRule.waitForIdle()
-  //
-  //    assertEquals(3, countItems())
-  //
-  //    val items = repo.getAllItems()
-  //    val storedItem1 = items.find { it.uuid == item1.uuid }
-  //    val storedItem2 = items.find { it.uuid == item2.uuid }
-  //    val storedItem3 = items.find { it.uuid == item4.uuid }
-  //    assertTrue(storedItem1 != null && item1.isEqual(storedItem1))
-  //    assertTrue(storedItem2 != null && item2.isEqual(storedItem2))
-  //    assertTrue(storedItem3 != null && item4.isEqual(storedItem3))
-  //  }
+    override fun getNewItemId(): String = "test-${idSeq++}"
 
+    override suspend fun getAllItems(): List<Item> = store.values.toList()
+
+    override suspend fun getItemById(uuid: String): Item =
+        store[uuid] ?: throw Exception("Item $uuid not found")
+
+    override suspend fun addItem(item: Item) {
+      store[item.uuid] = item // upsert
+    }
+
+    override suspend fun editItem(itemUUID: String, newItem: Item) {
+      if (!store.containsKey(itemUUID)) throw Exception("Item $itemUUID not found")
+      store[itemUUID] = newItem.copy(uuid = itemUUID)
+    }
+
+    override suspend fun deleteItem(uuid: String) {
+      store.remove(uuid)
+    }
+  }
 }

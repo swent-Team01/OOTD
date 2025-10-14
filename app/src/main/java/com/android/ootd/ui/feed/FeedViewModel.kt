@@ -61,6 +61,7 @@ class FeedViewModel(private val repository: FeedRepository = FeedRepositoryProvi
                   .map(Friend::uid)
                   .map(String::trim)
                   .filter { it.isNotEmpty() }
+                  .distinct()
                   .toList()
           if (friendUids.isEmpty()) {
             _uiState.value = _uiState.value.copy(feedPosts = emptyList())
