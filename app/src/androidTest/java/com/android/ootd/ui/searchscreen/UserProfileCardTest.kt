@@ -34,7 +34,7 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   fun followButtonAlwaysAppears() {
     composeTestRule.setContent {
       UserProfileCard(
-          selectedUser = User(uid = uid, name = name, friendList = emptyList()),
+          selectedUser = User(uid = uid, username = name, friendList = emptyList()),
           modifier = Modifier.padding(16.dp),
           onFollowClick = {})
     }
@@ -56,7 +56,7 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
     var clickCount = 0
     composeTestRule.setContent {
       UserProfileCard(
-          selectedUser = User(uid = uid, name = name, friendList = emptyList()),
+          selectedUser = User(uid = uid, username = name, friendList = emptyList()),
           modifier = Modifier.padding(16.dp),
           onFollowClick = { clickCount = clickCount + 1 })
     }

@@ -257,14 +257,14 @@ class EditItemsScreenTest {
             material = emptyList(),
             link = "https://example.com"))
 
-    var saveCalled = false
+    var backCalled = false
     composeTestRule.setContent {
-      EditItemsScreen(editItemsViewModel = mockViewModel, onSave = { saveCalled = true })
+      EditItemsScreen(editItemsViewModel = mockViewModel, goBack = { backCalled = true })
     }
 
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).performClick()
 
-    assert(saveCalled)
+    assert(backCalled)
   }
 
   @Test
@@ -293,9 +293,4 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithText("Take a new picture").assertIsDisplayed()
     composeTestRule.onNodeWithText("Save Changes").assertIsDisplayed()
   }
-
-  private fun onNodeWithContentDescription(contentDescription: String) =
-      composeTestRule.onNode(
-          androidx.compose.ui.test.hasContentDescription(contentDescription),
-          useUnmergedTree = true)
 }
