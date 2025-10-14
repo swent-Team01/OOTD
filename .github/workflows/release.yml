@@ -46,6 +46,16 @@ jobs:
           bash .github/scripts/setup-android-signing.sh
           echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/.ci-secrets/release.keystore" >> $GITHUB_ENV
 
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
