@@ -34,7 +34,7 @@ fun UserSelectionField(
         imageVector = Icons.Default.Search,
         contentDescription = "Search",
         tint = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.size(40.dp))
+        modifier = Modifier.size(56.dp))
 
     Spacer(modifier = Modifier.width(8.dp))
 
@@ -42,7 +42,12 @@ fun UserSelectionField(
       OutlinedTextField(
           value = usernameText,
           onValueChange = { onUsernameTextChanged(it) },
-          placeholder = { Text("Username", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+          placeholder = {
+            Text(
+                "Username",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium)
+          },
           trailingIcon = {
             if (usernameText.isNotEmpty()) {
               IconButton(onClick = { onUsernameTextChanged("") }) {
@@ -55,12 +60,15 @@ fun UserSelectionField(
           },
           colors =
               OutlinedTextFieldDefaults.colors(
-                  focusedBorderColor = MaterialTheme.colorScheme.outline,
-                  unfocusedBorderColor = MaterialTheme.colorScheme.primary,
-                  focusedContainerColor = MaterialTheme.colorScheme.surface,
-                  unfocusedContainerColor = MaterialTheme.colorScheme.surface),
+                  focusedBorderColor = MaterialTheme.colorScheme.primary,
+                  unfocusedBorderColor = MaterialTheme.colorScheme.secondary,
+                  focusedContainerColor = MaterialTheme.colorScheme.background,
+                  unfocusedContainerColor = MaterialTheme.colorScheme.background),
           shape = RoundedCornerShape(24.dp),
-          modifier = Modifier.fillMaxWidth().testTag(UserSelectionFieldTestTags.INPUT_USERNAME),
+          modifier =
+              Modifier.fillMaxWidth()
+                  .height(56.dp)
+                  .testTag(UserSelectionFieldTestTags.INPUT_USERNAME),
           singleLine = true)
 
       DropdownMenu(
