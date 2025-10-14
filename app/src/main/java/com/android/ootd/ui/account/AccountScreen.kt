@@ -41,17 +41,18 @@ import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Typography
 
 // Test tag constants for UI tests
-const val TAG_ACCOUNT_BACK = "account_back"
-const val TAG_ACCOUNT_TITLE = "account_title"
-const val TAG_ACCOUNT_AVATAR_CONTAINER = "account_avatar_container"
-const val TAG_ACCOUNT_AVATAR_IMAGE = "account_avatar_image"
-const val TAG_ACCOUNT_EDIT = "account_edit_button"
-const val TAG_USERNAME_FIELD = "account_username_field"
-const val TAG_USERNAME_CLEAR = "account_username_clear"
-const val TAG_GOOGLE_FIELD = "account_google_field"
-const val TAG_SIGNOUT_BUTTON = "account_signout_button"
-const val TAG_ACCOUNT_LOADING = "account_loading"
-
+object UiTestTags {
+  const val TAG_ACCOUNT_BACK = "account_back"
+  const val TAG_ACCOUNT_TITLE = "account_title"
+  const val TAG_ACCOUNT_AVATAR_CONTAINER = "account_avatar_container"
+  const val TAG_ACCOUNT_AVATAR_IMAGE = "account_avatar_image"
+  const val TAG_ACCOUNT_EDIT = "account_edit_button"
+  const val TAG_USERNAME_FIELD = "account_username_field"
+  const val TAG_USERNAME_CLEAR = "account_username_clear"
+  const val TAG_GOOGLE_FIELD = "account_google_field"
+  const val TAG_SIGNOUT_BUTTON = "account_signout_button"
+  const val TAG_ACCOUNT_LOADING = "account_loading"
+}
 /**
  * Account screen UI.
  *
@@ -103,7 +104,7 @@ fun AccountScreen(
               .verticalScroll(scrollState)
               .padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-          IconButton(onClick = onBack, modifier = Modifier.testTag(TAG_ACCOUNT_BACK)) {
+          IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
@@ -120,11 +121,11 @@ fun AccountScreen(
             modifier =
                 Modifier.fillMaxWidth()
                     .padding(top = 4.dp, bottom = 20.dp)
-                    .testTag(TAG_ACCOUNT_TITLE))
+                    .testTag(UiTestTags.TAG_ACCOUNT_TITLE))
 
         // Avatar area
         Box(
-            modifier = Modifier.fillMaxWidth().testTag(TAG_ACCOUNT_AVATAR_CONTAINER),
+            modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER),
             contentAlignment = Alignment.Center) {
               if (avatarUri != null) {
                 AsyncImage(
@@ -134,7 +135,9 @@ fun AccountScreen(
                     error = defaultAvatarPainter,
                     contentScale = ContentScale.Crop,
                     modifier =
-                        Modifier.size(180.dp).clip(CircleShape).testTag(TAG_ACCOUNT_AVATAR_IMAGE))
+                        Modifier.size(180.dp)
+                            .clip(CircleShape)
+                            .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
               } else {
                 Box(
                     modifier =
@@ -159,7 +162,7 @@ fun AccountScreen(
               onClick = onEditAvatar,
               shape = CircleShape,
               colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-              modifier = Modifier.testTag(TAG_ACCOUNT_EDIT)) {
+              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
                 Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
               }
         }
@@ -183,7 +186,7 @@ fun AccountScreen(
             trailingIcon = {
               IconButton(
                   onClick = { /* noop, UI only */},
-                  modifier = Modifier.testTag(TAG_USERNAME_CLEAR)) {
+                  modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CLEAR)) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
@@ -195,7 +198,7 @@ fun AccountScreen(
                     focusedTextColor = colors.primary,
                     unfocusedTextColor = colors.primary,
                 ),
-            modifier = Modifier.fillMaxWidth().testTag(TAG_USERNAME_FIELD))
+            modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_USERNAME_FIELD))
 
         Spacer(modifier = Modifier.height(18.dp))
 
@@ -221,7 +224,7 @@ fun AccountScreen(
                     focusedTextColor = colors.primary,
                     unfocusedTextColor = colors.primary,
                 ),
-            modifier = Modifier.fillMaxWidth().testTag(TAG_GOOGLE_FIELD))
+            modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_GOOGLE_FIELD))
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -233,7 +236,7 @@ fun AccountScreen(
                   onClick = { accountViewModel.signOut(credentialManager) },
                   shape = CircleShape,
                   colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-                  modifier = Modifier.testTag(TAG_SIGNOUT_BUTTON)) {
+                  modifier = Modifier.testTag(UiTestTags.TAG_SIGNOUT_BUTTON)) {
                     Text(text = "Sign Out", color = colors.onPrimary, style = typography.titleLarge)
                   }
             }
@@ -245,7 +248,7 @@ fun AccountScreen(
         modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
         contentAlignment = Alignment.Center) {
           CircularProgressIndicator(
-              modifier = Modifier.testTag(TAG_ACCOUNT_LOADING), color = colors.primary)
+              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
         }
   }
 }
