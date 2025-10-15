@@ -1,5 +1,7 @@
 package com.android.ootd.ui.searchscreen
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
@@ -10,7 +12,19 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
+import androidx.navigation.compose.rememberNavController
 import com.android.ootd.model.user.UserRepositoryInMemory
+import com.android.ootd.ui.feed.FeedScreen
+import com.android.ootd.ui.feed.FeedScreenTestTags
+import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
+import com.android.ootd.ui.navigation.NavigationActions
+import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.search.SearchScreenTestTags
+import com.android.ootd.ui.search.SearchScreenTestTags.SEARCH_SCREEN
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.search.UserSearchScreenPreview
@@ -27,6 +41,28 @@ import org.junit.Test
 
 class UserSearchScreenTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
+  private lateinit var navController: NavHostController
+  private lateinit var navigationActions: NavigationActions
+
+  @Composable
+  private fun SetupTestNavigationHost() {
+    navController = rememberNavController()
+    navigationActions = NavigationActions(navController)
+
+    NavHost(navController = navController, startDestination = Screen.Feed.route) {
+      navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
+        composable(Screen.Feed.route) {
+          FeedScreen(
+              onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+              onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
+              onProfileClick = { /* TODO: show user profile page */})
+        }
+        composable(Screen.SearchScreen.route) {
+          UserSearchScreen(onBack = { navigationActions.goBack() })
+        }
+      }
+    }
+  }
 
   @Test
   fun testGeneralSearch() {
@@ -89,6 +125,20 @@ class UserSearchScreenTest : FirestoreTest() {
   }
 
   @Test
+  fun searchScreenNavigation() {
+    composeTestRule.setContent { SetupTestNavigationHost() }
+    composeTestRule.onNodeWithTag(NAVIGATE_TO_SEARCH_SCREEN).performClick()
+
+    composeTestRule.onNodeWithTag(SEARCH_SCREEN).assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+  }
+
+  @Test
   fun testSearchWithNoResults() {
     composeTestRule.setContent { UserSearchScreenPreview() }
 
@@ -120,7 +170,7 @@ class UserSearchScreenTest : FirestoreTest() {
     val mockViewModel =
         UserSearchViewModel(userRepository = UserRepositoryInMemory(), overrideUser = false)
 
-    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel) }
+    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
     val secondUsername = UserRepositoryInMemory().nameList[1]
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
@@ -158,7 +208,7 @@ class UserSearchScreenTest : FirestoreTest() {
     val mockViewModel =
         UserSearchViewModel(userRepository = UserRepositoryInMemory(), overrideUser = false)
 
-    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel) }
+    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
     val secondUsername = UserRepositoryInMemory().nameList[1]
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
