@@ -2,9 +2,11 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.android.ootd.model.OutfitPost
+import com.android.ootd.ui.account.UiTestTags
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -31,7 +33,7 @@ class FeedScreenExtraCoverageTest {
 
     // Simulate clicks on both icons
     composeTestRule.onNodeWithContentDescription("Search").performClick()
-    composeTestRule.onNodeWithContentDescription("Profile").performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
 
     assertTrue(searchClicked)
     assertTrue(profileClicked)
