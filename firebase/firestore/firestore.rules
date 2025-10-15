@@ -1,0 +1,65 @@
+/**
+ * FIRESTORE SECURITY RULES
+ *
+ * Users: public read; writes are open (not restricted to self).
+ * Posts read: allowed to author or when viewer.friendUids contains author (one‑way friendship).
+ * Posts write: create requires uid == request.auth.uid; update/delete only by the original author.
+ * Access scope: top‑level 'items' is open; all other collections/paths are denied by the catch‑all.
+ *
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isAuthed() && request.auth.uid == uid;
+    }
+
+    // Mutual friendship check using friendUids lists on both users
+    function isFriend(viewerUid, authorUid) {
+      // Paths
+      let viewerPath = /databases/$(database)/documents/users/$(viewerUid);
+      let authorPath = /databases/$(database)/documents/users/$(authorUid);
+
+      return exists(viewerPath) && exists(authorPath)
+        && get(viewerPath).data.keys().hasAny(['friendUids'])
+        && (authorUid in get(viewerPath).data.friendUids)
+    }
+
+    // Users: read any, write own
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Posts: readable by author or mutual friends
+    match /posts/{postId} {
+      allow read: if isAuthed() &&
+                  (resource.data.uid == request.auth.uid ||
+                   isFriend(request.auth.uid, resource.data.uid));
+
+      allow create: if isAuthed()
+        && request.resource.data.uid == request.auth.uid
+        // && request.resource.data.postUID == postId
+
+      allow update: if isAuthed()
+        && resource.data.uid == request.auth.uid
+
+      allow delete: if isSelf(resource.data.uid);
+    }
+
+    // Default deny for documents except items
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    match /items/{itemId} {
+          allow read, write: if true;
+    }
+  }
+}

@@ -26,6 +26,7 @@ import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.register.RegisterScreen
+import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -65,7 +66,7 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Feed.route
+  val startDestination = Screen.Splash.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
@@ -77,6 +78,9 @@ fun OOTDApp(
       }
       composable(Screen.RegisterUsername.route) {
         RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
+      }
+      composable(Screen.SearchScreen.route) {
+        UserSearchScreen(onBack = { navigationActions.goBack() })
       }
     }
 
@@ -94,16 +98,12 @@ fun OOTDApp(
     navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
       composable(Screen.Feed.route) {
         FeedScreen(
-            onAddPostClick = {
-              navigationActions.navigateTo(Screen.FitCheck)
-            }, // this will go to AddItemScreen
-            onSearchClick = { /* TODO: show search profile page */},
+            onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+            onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
             onProfileClick = { /* TODO: show user profile page */})
       }
 
-      /* TODO: add navigation to ProfileScreen and SearchScreen */
-      // Navigation to Search screen is not yet implemented
-
+      /* TODO: add navigation to ProfileScreen*/
       // Navigation to User Profile screen is not yet implemented
 
       composable(

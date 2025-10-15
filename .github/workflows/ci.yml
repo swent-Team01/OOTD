@@ -134,7 +134,7 @@ jobs:
               echo "'firebase.json' is missing 'firestore.rules'."
               exit 1
             }
-            (cd firebase/firestore/test 2>/dev/null && npm install && npm test) || exit $?
+            (cd firebase/firestore/tests 2>/dev/null && npm install && npm test) || exit $?
           else
             echo "Warning: Firestore rules file not found in firebase/firestore"
           fi

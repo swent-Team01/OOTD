@@ -278,14 +278,20 @@ class AuthenticationExtensiveTest {
 
   @Test
   fun splashViewModel_onAppStart_userSignedIn() = runTest {
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
     coEvery { mockAccountService.hasUser() } returns true
+    coEvery { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockUserRepository.userExists("test-uid") } returns true
 
     var signedInCalled = false
     var notSignedInCalled = false
 
     val viewModel = SplashViewModel(mockAccountService)
     viewModel.onAppStart(
-        onSignedIn = { signedInCalled = true }, onNotSignedIn = { notSignedInCalled = true })
+        userRepository = mockUserRepository,
+        onSignedIn = { signedInCalled = true },
+        onNotSignedIn = { notSignedInCalled = true })
 
     composeTestRule.waitForIdle()
 
@@ -322,6 +328,92 @@ class AuthenticationExtensiveTest {
     composeTestRule.waitForIdle()
 
     assertTrue(notSignedInCalled)
+  }
+
+  @Test
+  fun splashViewModel_onAppStart_userSignedInAndExistsInDatabase() = runTest {
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    coEvery { mockAccountService.hasUser() } returns true
+    coEvery { mockAccountService.currentUserId } returns "test-uid-123"
+    coEvery { mockUserRepository.userExists("test-uid-123") } returns true
+
+    var signedInCalled = false
+    var notSignedInCalled = false
+
+    val viewModel = SplashViewModel(mockAccountService)
+    viewModel.onAppStart(
+        userRepository = mockUserRepository,
+        onSignedIn = { signedInCalled = true },
+        onNotSignedIn = { notSignedInCalled = true })
+
+    composeTestRule.waitForIdle()
+
+    assertTrue("Should navigate to signed in when user exists in database", signedInCalled)
+    assertFalse("Should not navigate to not signed in when user exists", notSignedInCalled)
+    coVerify { mockUserRepository.userExists("test-uid-123") }
+  }
+
+  @Test
+  fun splashViewModel_onAppStart_userSignedInButNotInDatabase() = runTest {
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    coEvery { mockAccountService.hasUser() } returns true
+    coEvery { mockAccountService.currentUserId } returns "test-uid-456"
+    coEvery { mockUserRepository.userExists("test-uid-456") } returns false
+
+    var signedInCalled = false
+    var notSignedInCalled = false
+
+    val viewModel = SplashViewModel(mockAccountService)
+    viewModel.onAppStart(
+        userRepository = mockUserRepository,
+        onSignedIn = { signedInCalled = true },
+        onNotSignedIn = { notSignedInCalled = true })
+
+    composeTestRule.waitForIdle()
+
+    assertFalse("Should not navigate to signed in when user not in database", signedInCalled)
+    assertTrue("Should navigate to registration when user not in database", notSignedInCalled)
+    coVerify { mockUserRepository.userExists("test-uid-456") }
+  }
+
+  @Test
+  fun splashViewModel_onAppStart_userRepositoryExceptionNavigatesToNotSignedIn() = runTest {
+    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    coEvery { mockAccountService.hasUser() } returns true
+    coEvery { mockAccountService.currentUserId } returns "test-uid-789"
+    coEvery { mockUserRepository.userExists("test-uid-789") } throws Exception("Database error")
+
+    var signedInCalled = false
+    var notSignedInCalled = false
+
+    val viewModel = SplashViewModel(mockAccountService)
+    viewModel.onAppStart(
+        userRepository = mockUserRepository,
+        onSignedIn = { signedInCalled = true },
+        onNotSignedIn = { notSignedInCalled = true })
+
+    composeTestRule.waitForIdle()
+
+    assertFalse("Should not navigate to signed in on database error", signedInCalled)
+    assertTrue("Should navigate to not signed in on database error", notSignedInCalled)
+  }
+
+  @Test
+  fun splashViewModel_onAppStart_ensuresCallbacksAreInvoked() = runTest {
+    // This test specifically validates the fix for the missing parentheses bug
+    var callbackInvoked = false
+
+    coEvery { mockAccountService.hasUser() } returns false
+
+    val viewModel = SplashViewModel(mockAccountService)
+    viewModel.onAppStart(onNotSignedIn = { callbackInvoked = true })
+
+    composeTestRule.waitForIdle()
+
+    assertTrue("Callback must be invoked (not just referenced)", callbackInvoked)
   }
 
   // ========== NavigationActions Tests ==========
@@ -466,14 +558,14 @@ class AuthenticationExtensiveTest {
   @Test
   fun splashScreen_callsOnAppStart() = runTest {
     val mockViewModel = mockk<SplashViewModel>(relaxed = true)
-    every { mockViewModel.onAppStart(any(), any()) } just Runs
+    every { mockViewModel.onAppStart(any(), any(), any()) } just Runs
 
     composeTestRule.setContent { SplashScreen(viewModel = mockViewModel) }
 
     composeTestRule.waitForIdle()
     composeTestRule.mainClock.advanceTimeBy(1500)
 
-    verify(timeout = 3000) { mockViewModel.onAppStart(any(), any()) }
+    verify(timeout = 3000) { mockViewModel.onAppStart(any(), any(), any()) }
   }
 
   // ========== Integration Tests ==========

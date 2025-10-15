@@ -39,6 +39,7 @@ sealed class Screen(
   object FitCheck : Screen(route = "fitCheck", name = "FitCheck", isTopLevelDestination = false)
 
   // TODO: add routes for Search Screen and Profile Screen
+  object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {
