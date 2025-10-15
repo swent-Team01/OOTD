@@ -14,6 +14,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
+
 class NavigationTest {
 
   @get:Rule val composeRule = createComposeRule()
@@ -40,6 +45,7 @@ class NavigationTest {
 
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */}
+        composable(Screen.Account.route) { /* minimal screen */}
       }
     }
   }
@@ -117,8 +123,8 @@ class NavigationTest {
       // Try to go back - should return to start destination (Splash)
       navigation.goBack()
 
-      // Should be back at Splash (the start destination)
-      assertEquals(Screen.Splash.route, navigation.currentRoute())
+      // Should be back at Authentication (the start destination)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
     }
   }
 
@@ -169,6 +175,53 @@ class NavigationTest {
       // Navigate to Overview (after registration)
       navigation.navigateTo(Screen.Feed)
       assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_feedToAccountFlow_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to Feed first
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to Account screen
+      navigation.navigateTo(Screen.Account)
+      assertEquals(Screen.Account.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_accountBackToFeedFlow_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to Account
+      navigation.navigateTo(Screen.Account)
+      assertEquals(Screen.Account.route, navigation.currentRoute())
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_accountSignOutToAuthenticationFlow_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to Account
+      navigation.navigateTo(Screen.Account)
+      assertEquals(Screen.Account.route, navigation.currentRoute())
+
+      // Sign out navigates to Authentication
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
     }
   }
 }
