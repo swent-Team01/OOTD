@@ -77,7 +77,7 @@ fun SplashScreen(
 
   LaunchedEffect(Unit) {
     delay(SPLASH_TIMEOUT)
-    viewModel.onAppStart(onSignedIn, onNotSignedIn)
+    viewModel.onAppStart(onSignedIn = onSignedIn, onNotSignedIn = onNotSignedIn)
   }
 }
 

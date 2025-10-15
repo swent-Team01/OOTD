@@ -3,6 +3,8 @@ package com.android.ootd.ui.register
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
@@ -156,7 +158,11 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
 
   Scaffold { innerPadding ->
     Column(
-        modifier = Modifier.padding(innerPadding).padding(horizontal = 16.dp).fillMaxSize(),
+        modifier =
+            Modifier.padding(innerPadding)
+                .padding(horizontal = 16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
           Image(
@@ -226,6 +232,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                       .onFocusChanged { focusState ->
                         focusDate = focusState.isFocused
                         if (focusDate) {
+                          showDatePicker = true
                           touchedDate = true
                         } else {
                           if (touchedDate) leftDate = true
@@ -338,19 +345,36 @@ fun DatePickerModalInput(
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = Primary, disabledContentColor = disabledLabelColor)) {
-              Text("Confirm")
+              Text(text = "Confirm", fontFamily = Bodoni)
             }
       },
-      dismissButton = { TextButton(onClick = onLeaveDate) { Text("Dismiss") } }) {
+      dismissButton = {
+        TextButton(onClick = onLeaveDate) { Text(text = "Dismiss", fontFamily = Bodoni) }
+      }) {
         DatePicker(
             state = datePickerState,
+            title = {
+              Text(
+                  text = "Enter your date of birth",
+                  modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
+                  color = Primary,
+                  fontFamily = Bodoni)
+            },
+            headline = {
+              Text(
+                  text = "Entered birth date",
+                  modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
+                  style = Typography.bodyLarge,
+                  color = Primary,
+                  fontFamily = Bodoni)
+            },
             modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
       }
 }
 
 private fun formatSelectedDate(millis: Long): String {
   val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-  val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withLocale(Locale.getDefault())
+  val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.UK)
   return localDate.format(formatter)
 }
 

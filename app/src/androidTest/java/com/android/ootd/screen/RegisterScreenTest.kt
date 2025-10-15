@@ -19,6 +19,13 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * UI tests for the RegisterScreen.
+ *
+ * Note: The main registration logic (checking if user exists in backend) is tested in
+ * AuthenticationTest. These tests focus on UI component rendering, validation, and user
+ * interactions with the registration form.
+ */
 class RegisterScreenTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
@@ -31,6 +38,8 @@ class RegisterScreenTest {
     viewModel = RegisterViewModel(repository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
+
+  // ========== Component Display Tests ==========
 
   @Test
   fun displayAllComponents() {
@@ -62,6 +71,39 @@ class RegisterScreenTest {
         .assertDoesNotExist()
   }
 
+  // ========== Loading State Tests ==========
+
+  @Test
+  fun registerScreen_showsLoadingIndicator_whenIsLoadingIsTrue() {
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
+    viewModel.showLoading(true)
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertExists()
+    composeTestRule.onNodeWithText("Saving…").assertExists()
+    viewModel.showLoading(false)
+  }
+
+  @Test
+  fun loadingCircle_not_visible_when_saving_invalid_user() {
+    composeTestRule.enterUsername("  ")
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
+  }
+
+  @Test
+  fun inputFields_disabled_whenLoading() {
+    viewModel.showLoading(true)
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsNotEnabled()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsNotEnabled()
+  }
+
+  // ========== Validation Tests ==========
+
   @Test
   fun noError_whenFieldNotTouched() {
     composeTestRule
@@ -79,25 +121,6 @@ class RegisterScreenTest {
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertDoesNotExist()
-  }
-
-  @Test
-  fun loadingCircle_not_visible_when_saving_invalid_user() {
-    composeTestRule.enterUsername("  ")
-
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
-  }
-
-  @Test
-  fun registerScreen_showsLoadingIndicator_whenIsLoadingIsTrue() {
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertDoesNotExist()
-    viewModel.showLoading(true)
-
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_LOADING).assertExists()
-    composeTestRule.onNodeWithText("Saving…").assertExists()
-    viewModel.showLoading(false)
   }
 
   @Test
@@ -131,29 +154,6 @@ class RegisterScreenTest {
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertExists()
         .assertTextContains("Please enter a valid date")
-  }
-
-  @Test
-  fun datePickerIcon_opensDatePicker() {
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
-        .performClick()
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
-  }
-
-  @Test
-  fun datePickerDismiss_closesDatePicker() {
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
-        .performClick()
-    composeTestRule.onNodeWithText("Dismiss").performClick()
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
   }
 
   @Test
@@ -194,13 +194,35 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
   }
 
+  // ========== Date Picker Tests ==========
+
   @Test
-  fun inputFields_disabled_whenLoading() {
-    viewModel.showLoading(true)
+  fun datePickerIcon_opensDatePicker() {
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsNotEnabled()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsNotEnabled()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
+  }
+
+  @Test
+  fun datePickerDismiss_closesDatePicker() {
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.onNodeWithText("Dismiss").performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
+    composeTestRule.onNodeWithText("Dismiss").performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
   }
 }

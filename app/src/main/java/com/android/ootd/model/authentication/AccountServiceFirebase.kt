@@ -47,6 +47,9 @@ class AccountServiceFirebase(
     return auth.currentUser != null
   }
 
+  override val accountName: String
+    get() = auth.currentUser?.email.orEmpty()
+
   override suspend fun signInWithGoogle(credential: Credential): Result<FirebaseUser> {
     return try {
       if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
@@ -70,12 +73,13 @@ class AccountServiceFirebase(
     }
   }
 
-  /**
-   * override fun signOut(): Result<Unit> { return try { // Firebase sign out auth.signOut()
-   *
-   * Result.success(Unit) } catch (e: Exception) { Result.failure( IllegalStateException("Logout
-   * failed: ${e.localizedMessage ?: "Unexpected error."}")) }
-   *
-   * }
-   */
+  override fun signOut(): Result<Unit> {
+    return try {
+      auth.signOut()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Result.failure(
+          IllegalStateException("Logout failed: ${e.localizedMessage ?: "Unexpected error."}"))
+    }
+  }
 }
