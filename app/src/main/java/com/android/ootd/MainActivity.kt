@@ -26,6 +26,7 @@ import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.register.RegisterScreen
+import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
@@ -78,6 +79,9 @@ fun OOTDApp(
       composable(Screen.RegisterUsername.route) {
         RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
       }
+      composable(Screen.SearchScreen.route) {
+        UserSearchScreen(onBack = { navigationActions.goBack() })
+      }
     }
 
     // 2. SignIn route (top-level, for unauthenticated users)
@@ -95,7 +99,7 @@ fun OOTDApp(
       composable(Screen.Feed.route) {
         FeedScreen(
             onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
-            onSearchClick = { /* TODO: show search profile page */},
+            onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
             onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
       }
       composable(Screen.Account.route) {
@@ -105,9 +109,7 @@ fun OOTDApp(
             onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
       }
 
-      /* TODO: add navigation to ProfileScreen and SearchScreen */
-      // Navigation to Search screen is not yet implemented
-
+      /* TODO: add navigation to ProfileScreen*/
       // Navigation to User Profile screen is not yet implemented
 
       composable(
