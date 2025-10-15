@@ -1,7 +1,6 @@
 package com.android.ootd.model.feed
 
 import com.android.ootd.model.OutfitPost
-import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.FeedViewModel
 import kotlinx.coroutines.Dispatchers
@@ -26,8 +25,8 @@ class FeedViewModelTest {
 
   @get:Rule val mainRule = MainDispatcherRule()
 
-  private fun user(uid: String, friends: List<String>) =
-      User(uid = uid, name = "U-$uid", friendList = friends.map { Friend(it, "F-$it") })
+  private fun user(uid: String, friendUids: List<String>) =
+      User(uid = uid, username = "U-$uid", friendUids = friendUids)
 
   private fun post(id: String, uid: String, ts: Long) =
       OutfitPost(
@@ -82,7 +81,7 @@ class FeedViewModelTest {
         }
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentUser(user("me", listOf("me", "  me  ", "", "me")))
+    vm.setCurrentUser(user("me", listOf("me", "  me  ", "")))
     advanceUntilIdle()
 
     assertEquals(listOf("p1", "p2"), vm.uiState.value.feedPosts.map { it.postUID })

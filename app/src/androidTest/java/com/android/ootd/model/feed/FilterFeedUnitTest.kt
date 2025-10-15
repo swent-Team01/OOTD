@@ -2,7 +2,6 @@ package com.android.ootd.model.feed
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.OutfitPost
-import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
 import kotlin.collections.listOf
 import org.junit.Assert.assertEquals
@@ -58,13 +57,7 @@ class FilterFeedTest {
                 timestamp = 3L),
         )
 
-    val currentUser =
-        User(
-            uid = "me",
-            username = "Me",
-            friendList =
-                listOf(
-                    Friend(uid = "u1", username = "Alice"), Friend(uid = "u2", username = "Bob")))
+    val currentUser = User(uid = "me", username = "Me", friendUids = listOf("u1", "u2"))
 
     val filtered = filterPostsByFriendsForTest(posts, currentUser)
 
@@ -72,7 +65,7 @@ class FilterFeedTest {
   }
 
   @Test
-  fun EmptyFriendsListReturnsEmpty() {
+  fun emptyFriendsListReturnsEmpty() {
     val posts =
         listOf(
             OutfitPost(
@@ -95,7 +88,7 @@ class FilterFeedTest {
                 timestamp = 1L),
         )
 
-    val currentUser = User(uid = "me", username = "Me", friendList = emptyList())
+    val currentUser = User(uid = "me", username = "Me", friendUids = emptyList())
 
     val filtered = filterPostsByFriendsForTest(posts, currentUser)
 
@@ -106,7 +99,7 @@ class FilterFeedTest {
       posts: List<OutfitPost>,
       currentUser: User
   ): List<OutfitPost> {
-    val allowed = currentUser.friendList.map { it.uid }.toMutableSet()
+    val allowed = currentUser.friendUids.toMutableSet()
     return posts.filter { it.uid in allowed }
   }
 }

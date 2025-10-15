@@ -15,7 +15,13 @@ class ItemsRepositoryFirestoreTest() {
 
   @Before
   fun setup() {
-    FirebaseEmulator
+    runTest {
+      assert(FirebaseEmulator.isRunning) { "FirebaseEmulator must be running" }
+      // Ensure a clean database state for each run
+      FirebaseEmulator.clearFirestoreEmulator()
+      // Sign in to the Auth emulator so Firestore rules see request.auth
+      FirebaseEmulator.auth.signInAnonymously().await()
+    }
   }
 
   val item1 =

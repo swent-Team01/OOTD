@@ -1,6 +1,5 @@
 package com.android.ootd.utils
 
-import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -31,9 +30,9 @@ abstract class BaseTest() {
     assert(FirebaseEmulator.isRunning) { "FirebaseEmulator must be running" }
   }
 
-  open val user1 = User(uid = "0", username = "Hank", friendList = arrayListOf<Friend>())
+  open val user1 = User(uid = "0", username = "Hank", friendUids = arrayListOf())
 
-  open val user2 = User(uid = "1", username = "John", friendList = arrayListOf<Friend>())
+  open val user2 = User(uid = "1", username = "John", friendUids = arrayListOf())
 
   @Before
   open fun setUp() {
