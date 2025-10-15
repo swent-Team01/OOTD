@@ -55,6 +55,7 @@ class AccountViewModel(
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
   private var lastLoadedUserId: String? = null
+  private var isSigningOut: Boolean = false
 
   init {
     observeAuthState()
@@ -72,7 +73,10 @@ class AccountViewModel(
           }
         } else {
           lastLoadedUserId = null
-          _uiState.update { AccountViewState() }
+          // Don't reset state if we're in the process of signing out
+          if (!isSigningOut) {
+            _uiState.update { AccountViewState() }
+          }
         }
       }
     }
@@ -114,11 +118,13 @@ class AccountViewModel(
    */
   fun signOut(credentialManager: CredentialManager) {
     viewModelScope.launch {
+      isSigningOut = true
       accountService
           .signOut()
           .fold(
               onSuccess = { _uiState.update { it.copy(signedOut = true) } },
               onFailure = { throwable ->
+                isSigningOut = false
                 _uiState.update { it.copy(errorMsg = throwable.localizedMessage) }
               })
       credentialManager.clearCredentialState(ClearCredentialStateRequest())
