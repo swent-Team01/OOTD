@@ -190,6 +190,45 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW).assertIsDisplayed()
   }
 
+  @Test
+  fun postButtonIsDisplayedWhenItemListIsNotEmpty() {
+    setContent(withInitialItems = listOf(fakeItem))
+    composeTestRule.onNodeWithText("Post").assertIsDisplayed()
+  }
+
+  @Test
+  fun postButtonIsNotDisplayedWhenListIsEmpty() {
+    setContent()
+    composeTestRule.onNodeWithText("Post").assertDoesNotExist()
+  }
+
+  /**
+   * Test to verify that clicking the Post button works when the item list is not empty. Currently,
+   * this test only checks that the button is clickable. In a full implementation, you would verify
+   * navigation or a toast message.
+   */
+  @Test
+  fun postButtonIsClickable() {
+    setContent(withInitialItems = listOf(fakeItem))
+    composeTestRule
+        .onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+  }
+
+  @Test
+  fun addItemAndPostButtonsAreDisplayedTogetherWhenListIsNotEmpty() {
+    setContent(withInitialItems = listOf(fakeItem))
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
+  }
+
+  @Test
+  fun addItemButtonStillVisibleWhenListEmpty() {
+    setContent()
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+  }
+
   // Tests for viewModel
 
   @OptIn(ExperimentalCoroutinesApi::class)
