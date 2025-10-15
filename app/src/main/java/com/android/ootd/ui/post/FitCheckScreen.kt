@@ -40,6 +40,7 @@ object FitCheckScreenTestTags {
   const val CHOOSE_GALLERY_BUTTON = "fitCheckGalleryButton"
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
+  const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,7 +96,14 @@ fun FitCheckScreen(
       },
       bottomBar = {
         Button(
-            onClick = { onNextClick() },
+            onClick = {
+              if (uiState.isPhotoValid) {
+                fitCheckViewModel.clearError()
+                onNextClick()
+              } else {
+                fitCheckViewModel.setErrorMsg("Please select a photo before continuing.")
+              }
+            },
             modifier =
                 Modifier.fillMaxWidth()
                     .height(80.dp)
@@ -145,6 +153,26 @@ fun FitCheckScreen(
                     }
                   }
 
+              uiState.errorMessage?.let { msg ->
+                Text(
+                    text = msg,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier =
+                        Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+              }
+
+              OutlinedTextField(
+                  value = uiState.description,
+                  onValueChange = { fitCheckViewModel.setDescription(it) },
+                  label = { Text("Description") },
+                  placeholder = { Text("Add a short caption for your FitCheck") },
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
+                  singleLine = false,
+                  maxLines = 2,
+                  shape = RoundedCornerShape(12.dp))
+
               Button(
                   onClick = { showDialog = true },
                   shape = RoundedCornerShape(24.dp),
@@ -189,13 +217,6 @@ fun FitCheckScreen(
                     },
                     confirmButton = {},
                     dismissButton = {})
-              }
-
-              uiState.errorMessage?.let { msg ->
-                Text(
-                    msg,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
             }
       }

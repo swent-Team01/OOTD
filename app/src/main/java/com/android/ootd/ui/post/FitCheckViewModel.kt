@@ -24,7 +24,14 @@ class FitCheckViewModel : ViewModel() {
   fun setPhoto(uri: Uri) {
     _uiState.value =
         _uiState.value.copy(
-            image = uri, invalidPhotoMsg = if (uri == Uri.EMPTY) "Please select a photo." else null)
+            image = uri,
+            // 👇 Clear error if user now added a valid photo
+            errorMessage =
+                if (uri == Uri.EMPTY) {
+                  "Please select a photo before continuing."
+                } else {
+                  null
+                })
   }
 
   fun setDescription(description: String) {
@@ -39,7 +46,7 @@ class FitCheckViewModel : ViewModel() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
   }
 
-  fun clearDraft() {
-    _uiState.value = FitCheckUIState()
-  }
+  //  fun clearDraft() {
+  //    _uiState.value = FitCheckUIState()
+  //  }
 }
