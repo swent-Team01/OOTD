@@ -49,7 +49,7 @@ jobs:
       - name: Decode secrets for FireBase
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
-        run: |
+        run: |  
           if [ -z "$GOOGLE_SERVICES" ]; then
             echo "::error::GOOGLE_SERVICES secret is not set! Cannot build release without Firebase configuration."
             echo "Please set the GOOGLE_SERVICES secret in your repository settings."
