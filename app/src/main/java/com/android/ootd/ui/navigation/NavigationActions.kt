@@ -36,6 +36,8 @@ sealed class Screen(
 
   object Feed : Screen(route = "feed", name = "Feed", isTopLevelDestination = true)
 
+  object FitCheck : Screen(route = "fitCheck", name = "FitCheck", isTopLevelDestination = false)
+
   // TODO: add routes for Search Screen and Profile Screen
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
