@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 export async function setup() {
   const projectId = process.env.FIREBASE_PROJECT_ID || 'ootd-rules-test';
   // Resolve the firestore.rules at the repo root from firestore/rules-tests
-  const rulesPath = path.resolve(__dirname, '../../firestore.rules');
+  const rulesPath = path.resolve(__dirname, '../firestore.rules');
   const rules = fs.readFileSync(rulesPath, 'utf8');
 
   // Read emulator host/port from env or default to localhost:8080

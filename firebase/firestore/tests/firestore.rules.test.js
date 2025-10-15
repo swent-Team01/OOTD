@@ -14,19 +14,24 @@ import { setup, setupFirestore } from './setup.js';
 
 
 //Tests for rules made by AI and verified by human
-describe('Firestore rules - OOTD friend-only feed (intended rules)', async () => {
-  const env = await setup();
-
-  const meCtx = env.authenticatedContext('me');
-  const me = meCtx.firestore();
-
-  const aliceCtx = env.authenticatedContext('u1');
-  const alice = aliceCtx.firestore();
-
-  const bobCtx = env.authenticatedContext('u3');
-  const bob = bobCtx.firestore();
+describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
+  let env;
+  let meCtx, me;
+  let aliceCtx, alice;
+  let bobCtx, bob;
 
   beforeAll(async () => {
+    env = await setup();
+
+    meCtx = env.authenticatedContext('me');
+    me = meCtx.firestore();
+
+    aliceCtx = env.authenticatedContext('u1');
+    alice = aliceCtx.firestore();
+
+    bobCtx = env.authenticatedContext('u3');
+    bob = bobCtx.firestore();
+
     await setupFirestore(env);
   });
 
