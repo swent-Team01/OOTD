@@ -41,7 +41,7 @@ fun UserProfileCardPreview() {
             User(
                 uid = "Bob",
                 username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople",
-                friendList = emptyList()),
+                friendUids = emptyList()),
         modifier = Modifier.padding(16.dp),
         isSelectedUserFollowed = true,
         onFollowClick = {})

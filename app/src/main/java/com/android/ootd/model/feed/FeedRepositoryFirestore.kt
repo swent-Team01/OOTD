@@ -3,7 +3,7 @@ package com.android.ootd.model.feed
 import android.util.Log
 import com.android.ootd.model.OutfitPost
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.toObject
+import com.google.firebase.firestore.ktx.toObjects
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
@@ -14,51 +14,53 @@ const val POSTS_COLLECTION_PATH = "posts"
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
 
-  //  /** Helper method to validate post data. */
-  //  private fun checkPostData(post: OutfitPost): OutfitPost? {
-  //    if (post.postUID.isBlank() || post.uid.isBlank() || post.outfitURL.isBlank()) {
-  //      Log.e("FeedRepositoryFirestore", "Invalid post data for postUUID=${post.postUID}")
-  //      return null
-  //    }
-  //    return post
-  //  }
-  //
-  //  /** Helper method to safely transform a Firestore document into a post. */
-  //  private fun transformPostDocument(document: DocumentSnapshot): OutfitPost? {
-  //    return try {
-  //      val post = document.toObject<OutfitPost>()
-  //      if (post == null) {
-  //        Log.e(
-  //            "FeedRepositoryFirestore",
-  //            "Failed to deserialize document ${document.id} to OutfitPost. Data:
-  // ${document.data}")
-  //        return null
-  //      }
-  //      checkPostData(post)
-  //    } catch (e: Exception) {
-  //      Log.e(
-  //          "FeedRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}",
-  // e)
-  //      null
-  //    }
-  //  }
-
   override suspend fun getFeed(): List<OutfitPost> {
     return try {
       val snapshot =
           withTimeout(5_000) {
-            db.collection(POSTS_COLLECTION_PATH)
-                .orderBy("timestamp") // Sorted by newest first, can be changed
-                .get()
-                .await()
+            db.collection(POSTS_COLLECTION_PATH).orderBy("timestamp").get().await()
           }
 
-      snapshot.documents.mapNotNull { it.toObject<OutfitPost>() }
+      snapshot.toObjects<OutfitPost>()
     } catch (e: TimeoutCancellationException) {
       Log.w("FeedRepositoryFirestore", "Timed out fetching feed; returning empty list", e)
       emptyList()
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error fetching feed", e)
+      emptyList()
+    }
+  }
+
+  override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
+    if (uids.isEmpty()) return emptyList()
+
+    val cleaned = uids.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    if (cleaned.isEmpty()) return emptyList()
+
+    return try {
+      val chunks = cleaned.chunked(10) // whereIn supports up to 10 values
+      val results = mutableListOf<OutfitPost>()
+      for (chunk in chunks) {
+        val snap =
+            withTimeout(5_000) {
+              db.collection(POSTS_COLLECTION_PATH)
+                  .whereIn("uid", chunk)
+                  .orderBy("timestamp")
+                  .get()
+                  .await()
+            }
+        results += snap.toObjects<OutfitPost>()
+      }
+      // Merge and sort by timestamp ascending
+      results.sortedBy { it.timestamp }
+    } catch (e: TimeoutCancellationException) {
+      Log.w(
+          "FeedRepositoryFirestore",
+          "Timed out fetching friend-filtered feed; returning empty list",
+          e)
+      emptyList()
+    } catch (e: Exception) {
+      Log.e("FeedRepositoryFirestore", "Error fetching friend-filtered feed", e)
       emptyList()
     }
   }

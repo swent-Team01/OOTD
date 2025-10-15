@@ -65,7 +65,7 @@ class AccountIconTest {
             uid = "test-uid",
             username = "testuser",
             profilePicture = testUri,
-            friendList = emptyList())
+            friendUids = emptyList())
 
     // Create ViewModel AFTER setting up the user - observeAuthState() will immediately see the user
     viewModel = AccountViewModel(mockAccountService, mockUserRepository)
@@ -123,7 +123,7 @@ class AccountIconTest {
             uid = "test-uid",
             username = "testuser",
             profilePicture = testUri1,
-            friendList = emptyList())
+            friendUids = emptyList())
 
     // Create ViewModel AFTER setting up the user
     viewModel = AccountViewModel(mockAccountService, mockUserRepository)
@@ -144,7 +144,7 @@ class AccountIconTest {
             uid = "test-uid",
             username = "testuser",
             profilePicture = testUri2,
-            friendList = emptyList())
+            friendUids = emptyList())
 
     // Re-emit a new FirebaseUser instance to trigger observeAuthState()
     val mockFirebaseUser2 =
@@ -183,7 +183,7 @@ class AccountIconTest {
             uid = "test-uid",
             username = "testuser",
             profilePicture = Uri.EMPTY,
-            friendList = emptyList())
+            friendUids = emptyList())
     viewModel = AccountViewModel(mockAccountService, mockUserRepository)
 
     // When
@@ -211,7 +211,7 @@ class AccountIconTest {
             uid = "test-uid",
             username = "testuser",
             profilePicture = blankUri,
-            friendList = emptyList())
+            friendUids = emptyList())
     viewModel = AccountViewModel(mockAccountService, mockUserRepository)
 
     // When
