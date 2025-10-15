@@ -14,6 +14,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
+
 class AccountIconTest {
 
   @get:Rule val composeTestRule = createComposeRule()

@@ -27,6 +27,11 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountViewModelTest {
 

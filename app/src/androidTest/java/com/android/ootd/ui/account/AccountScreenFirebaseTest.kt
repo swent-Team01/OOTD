@@ -9,144 +9,180 @@ import android.net.Uri
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.credentials.CredentialManager
-import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.user.User
-import com.android.ootd.model.user.UserRepository
-import com.google.firebase.auth.FirebaseUser
+import com.android.ootd.utils.FirebaseEmulator
+import com.android.ootd.utils.FirestoreTest
 import io.mockk.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class AccountScreenFirebaseTest {
+class AccountScreenFirebaseTest : FirestoreTest() {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  private lateinit var mockUserRepository: UserRepository
   private lateinit var mockCredentialManager: CredentialManager
-  private lateinit var mockFirebaseUser: FirebaseUser
+  private lateinit var accountService: AccountServiceFirebase
   private lateinit var viewModel: AccountViewModel
 
-  private val userFlow = MutableStateFlow<FirebaseUser?>(null)
-
-  // Create a fake AccountService instead of mocking
-  private val fakeAccountService =
-      object : AccountService {
-        override val currentUser: Flow<FirebaseUser?> = userFlow
-        override val currentUserId: String = "test-uid"
-        override val accountName: String = "test@example.com"
-
-        override suspend fun hasUser(): Boolean = userFlow.value != null
-
-        override suspend fun signInWithGoogle(
-            credential: androidx.credentials.Credential
-        ): Result<FirebaseUser> {
-          throw NotImplementedError("Not used in these tests")
-        }
-
-        override fun signOut(): Result<Unit> = Result.success(Unit)
-      }
+  private val testEmail = "test-user-${System.currentTimeMillis()}@example.com"
+  private val testPassword = "TestPassword123!"
+  private val testUsername = "TestUser"
 
   @Before
-  fun setup() {
-    mockUserRepository = mockk(relaxed = true)
+  override fun setUp() {
+    super.setUp()
     mockCredentialManager = mockk(relaxed = true)
-    mockFirebaseUser = mockk(relaxed = true)
-
-    every { mockFirebaseUser.uid } returns "test-uid"
-    every { mockFirebaseUser.email } returns "test@example.com"
-    every { mockFirebaseUser.photoUrl } returns null
-
-    coEvery { mockUserRepository.getUser("test-uid") } returns
-        User(
-            uid = "test-uid",
-            username = "testuser",
-            profilePicture = Uri.EMPTY,
-            friendList = emptyList())
-
-    viewModel = AccountViewModel(fakeAccountService, mockUserRepository)
+    accountService = AccountServiceFirebase()
   }
 
   @After
-  fun tearDown() {
+  override fun tearDown() {
+    runTest {
+      // Clean up test user
+      FirebaseEmulator.auth.currentUser?.delete()?.await()
+    }
     clearAllMocks()
+    super.tearDown()
   }
 
   @Test
   fun accountScreen_displaysUserInformation_whenUserIsSignedIn() = runTest {
-    userFlow.value = mockFirebaseUser
+    // Given: create and sign in test user
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
+    repository.addUser(
+        User(
+            uid = userId,
+            username = testUsername,
+            profilePicture = Uri.EMPTY,
+            friendList = emptyList()))
+
+    viewModel = AccountViewModel(accountService, repository)
+
+    // When
     composeTestRule.setContent {
       AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
     }
 
     composeTestRule.waitForIdle()
 
+    // Then
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("testuser")
-    composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD)
-        .assertTextContains("test@example.com")
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains(testUsername)
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD).assertTextContains(testEmail)
   }
 
   @Test
   fun accountScreen_displaysProfilePicture_whenAvailable() = runTest {
+    // Given: create test user with profile picture
     val profileUri = Uri.parse("https://example.com/profile.jpg")
-    every { mockFirebaseUser.photoUrl } returns profileUri
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
-    coEvery { mockUserRepository.getUser("test-uid") } returns
+    repository.addUser(
         User(
-            uid = "test-uid",
-            username = "testuser",
+            uid = userId,
+            username = testUsername,
             profilePicture = profileUri,
-            friendList = emptyList())
+            friendList = emptyList()))
 
-    userFlow.value = mockFirebaseUser
+    viewModel = AccountViewModel(accountService, repository)
 
+    // When
     composeTestRule.setContent {
       AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
     }
 
     composeTestRule.waitForIdle()
+
+    // Then
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertExists()
   }
 
   @Test
   fun accountScreen_displaysDefaultAvatar_whenNoProfilePicture() = runTest {
-    userFlow.value = mockFirebaseUser
+    // Given: create test user without profile picture
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
+    repository.addUser(
+        User(
+            uid = userId,
+            username = testUsername,
+            profilePicture = Uri.EMPTY,
+            friendList = emptyList()))
+
+    viewModel = AccountViewModel(accountService, repository)
+
+    // When
     composeTestRule.setContent {
       AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
     }
 
     composeTestRule.waitForIdle()
+
+    // Then
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertExists()
   }
 
   @Test
-  fun accountScreen_callsOnBack_whenBackButtonClicked() {
+  fun accountScreen_callsOnBack_whenBackButtonClicked() = runTest {
+    // Given: create and sign in test user
     val onBack = mockk<() -> Unit>(relaxed = true)
-    userFlow.value = mockFirebaseUser
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
+    repository.addUser(
+        User(
+            uid = userId,
+            username = testUsername,
+            profilePicture = Uri.EMPTY,
+            friendList = emptyList()))
+
+    viewModel = AccountViewModel(accountService, repository)
+
+    // When
     composeTestRule.setContent {
       AccountScreen(
           accountViewModel = viewModel, credentialManager = mockCredentialManager, onBack = onBack)
     }
 
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
+
+    // Then
     verify { onBack() }
   }
 
   @Test
-  fun accountScreen_callsOnEditAvatar_whenEditButtonClicked() {
+  fun accountScreen_callsOnEditAvatar_whenEditButtonClicked() = runTest {
+    // Given: create and sign in test user
     val onEditAvatar = mockk<() -> Unit>(relaxed = true)
-    userFlow.value = mockFirebaseUser
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
+    repository.addUser(
+        User(
+            uid = userId,
+            username = testUsername,
+            profilePicture = Uri.EMPTY,
+            friendList = emptyList()))
+
+    viewModel = AccountViewModel(accountService, repository)
+
+    // When
     composeTestRule.setContent {
       AccountScreen(
           accountViewModel = viewModel,
@@ -154,15 +190,31 @@ class AccountScreenFirebaseTest {
           onEditAvatar = onEditAvatar)
     }
 
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+
+    // Then
     verify { onEditAvatar() }
   }
 
   @Test
-  fun accountScreen_signOut_triggersSignOutFlow() {
+  fun accountScreen_signOut_triggersSignOutFlow() = runTest {
+    // Given: create and sign in test user
     val onSignOut = mockk<() -> Unit>(relaxed = true)
-    userFlow.value = mockFirebaseUser
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
+    repository.addUser(
+        User(
+            uid = userId,
+            username = testUsername,
+            profilePicture = Uri.EMPTY,
+            friendList = emptyList()))
+
+    viewModel = AccountViewModel(accountService, repository)
+
+    // When
     composeTestRule.setContent {
       AccountScreen(
           accountViewModel = viewModel,
@@ -180,32 +232,36 @@ class AccountScreenFirebaseTest {
     // Wait until the signedOut state is updated
     composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.signedOut }
 
+    // Then
     coVerify(timeout = 5000) { mockCredentialManager.clearCredentialState(any()) }
     verify(timeout = 5000) { onSignOut() }
   }
 
   @Test
   fun accountScreen_usesFirestoreProfilePicture_overGooglePhoto() = runTest {
-    val googlePhotoUri = Uri.parse("https://google.com/photo.jpg")
+    // Given: create test user with Firestore profile picture
     val firestorePhotoUri = Uri.parse("https://firestore.com/photo.jpg")
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val userId = authResult.user!!.uid
 
-    every { mockFirebaseUser.photoUrl } returns googlePhotoUri
-
-    coEvery { mockUserRepository.getUser("test-uid") } returns
+    repository.addUser(
         User(
-            uid = "test-uid",
-            username = "testuser",
+            uid = userId,
+            username = testUsername,
             profilePicture = firestorePhotoUri,
-            friendList = emptyList())
+            friendList = emptyList()))
 
-    userFlow.value = mockFirebaseUser
+    viewModel = AccountViewModel(accountService, repository)
 
+    // When
     composeTestRule.setContent {
       AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
     }
 
     composeTestRule.waitForIdle()
 
+    // Then
     assert(viewModel.uiState.value.profilePicture == firestorePhotoUri)
   }
 }
