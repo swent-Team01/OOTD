@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Typography
@@ -67,7 +68,7 @@ object UiTestTags {
  */
 @Composable
 fun AccountScreen(
-    accountViewModel: AccountViewModel = AccountViewModel(),
+    accountViewModel: AccountViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onBack: () -> Unit = {},
     onEditAvatar: () -> Unit = {},

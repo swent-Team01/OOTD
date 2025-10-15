@@ -54,6 +54,8 @@ class AccountViewModel(
   private val _uiState = MutableStateFlow(AccountViewState())
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
+  private var lastLoadedUserId: String? = null
+
   init {
     observeAuthState()
   }
@@ -63,8 +65,13 @@ class AccountViewModel(
     viewModelScope.launch {
       accountService.currentUser.collect { user ->
         if (user != null) {
-          loadUserData(user.uid, user.email.orEmpty(), user.photoUrl)
+          // Only load user data if we haven't loaded this user yet or it's a different user
+          if (lastLoadedUserId != user.uid) {
+            lastLoadedUserId = user.uid
+            loadUserData(user.uid, user.email.orEmpty(), user.photoUrl)
+          }
         } else {
+          lastLoadedUserId = null
           _uiState.update { AccountViewState() }
         }
       }
@@ -91,7 +98,11 @@ class AccountViewModel(
       }
     } catch (e: Exception) {
       _uiState.update {
-        it.copy(errorMsg = e.localizedMessage ?: "Failed to load user data", isLoading = false)
+        it.copy(
+            errorMsg = e.localizedMessage ?: "Failed to load user data",
+            isLoading = false,
+            googleAccountName = email,
+            profilePicture = googlePhotoUri)
       }
     }
   }
