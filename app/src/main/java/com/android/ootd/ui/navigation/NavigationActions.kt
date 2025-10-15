@@ -41,6 +41,12 @@ sealed class Screen(
   // TODO: add routes for Search Screen and Profile Screen
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
+  object AddItemScreen :
+      Screen(route = "addItem", name = "Add Item", isTopLevelDestination = false)
+
+  object PreviewItemScreen :
+      Screen(route = "previewItem", name = "Preview Item", isTopLevelDestination = false)
+
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {
     companion object {
@@ -95,6 +101,15 @@ open class NavigationActions(
   /** Navigate back to the previous screen. */
   open fun goBack() {
     navController.popBackStack()
+  }
+
+  /**
+   * Pop up to a specific route in the back stack.
+   *
+   * @param route The route to pop up to
+   */
+  fun popUpTo(route: String) {
+    navController.popBackStack(route, inclusive = false)
   }
 
   /**

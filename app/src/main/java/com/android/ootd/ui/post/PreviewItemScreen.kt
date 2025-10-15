@@ -77,7 +77,13 @@ object PreviewItemScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel()) {
+fun PreviewItemScreen(
+    outfitPreviewViewModel: OutfitPreviewViewModel = viewModel(),
+    onEditItem: (String) -> Unit = {},
+    onAddItem: () -> Unit = {},
+    onPostOutfit: () -> Unit = {},
+    onGoBack: () -> Unit = {},
+) {
   val context = LocalContext.current
   val uiState by outfitPreviewViewModel.uiState.collectAsState()
   val itemsList = uiState.items
@@ -100,7 +106,7 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
               )
             },
             navigationIcon = {
-              IconButton(onClick = { /* Handle navigation icon press */}) {
+              IconButton(onClick = { onGoBack() }) {
                 Icon(
                     Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "go back",
@@ -123,7 +129,7 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
             verticalAlignment = Alignment.CenterVertically) {
               if (itemsList.isNotEmpty()) {
                 Button(
-                    onClick = { /* Handle Post outfit */},
+                    onClick = { onPostOutfit() },
                     modifier =
                         Modifier.height(47.dp)
                             .width(140.dp)
@@ -136,7 +142,7 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
               }
 
               Button(
-                  onClick = { /* Navigate to Add Item screen */},
+                  onClick = { onAddItem() },
                   modifier =
                       Modifier.height(47.dp)
                           .width(140.dp)
@@ -159,7 +165,8 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
                       .padding(innerPadding)
                       .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
                 items(itemsList.size) { index ->
-                  OutfitItem(item = itemsList[index], onClick = { /* Handle item click */})
+                  OutfitItem(
+                      item = itemsList[index], onClick = { onEditItem(itemsList[index].uuid) })
                 }
               }
         } else {
@@ -187,7 +194,7 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun OutfitItem(item: Item, onClick: () -> Unit) {
+fun OutfitItem(item: Item, onClick: (String) -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
 
   Card(
@@ -266,7 +273,7 @@ fun OutfitItem(item: Item, onClick: () -> Unit) {
               modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(
-                    onClick = onClick,
+                    onClick = { onClick(item.uuid) },
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)) {
                       Icon(

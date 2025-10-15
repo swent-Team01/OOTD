@@ -23,8 +23,10 @@ import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
+import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
@@ -98,13 +100,36 @@ fun OOTDApp(
     navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
       composable(Screen.Feed.route) {
         FeedScreen(
-            onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+            onAddPostClick = {
+              navigationActions.navigateTo(Screen.FitCheck)
+            }, // this will go to AddItemScreen
             onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
             onProfileClick = { /* TODO: show user profile page */})
       }
 
       /* TODO: add navigation to ProfileScreen*/
       // Navigation to User Profile screen is not yet implemented
+
+      composable(Screen.FitCheck.route) {
+        FitCheckScreen(
+            onNextClick = { navigationActions.navigateTo(Screen.PreviewItemScreen) },
+            onBackClick = { navigationActions.goBack() })
+      }
+
+      composable(Screen.PreviewItemScreen.route) {
+        PreviewItemScreen(
+            onEditItem = { itemUuid -> navigationActions.navigateTo(Screen.EditItem(itemUuid)) },
+            onAddItem = { navigationActions.navigateTo(Screen.AddItemScreen) },
+            onPostOutfit = { navigationActions.popUpTo(Screen.Feed.route) },
+            onGoBack = { navigationActions.goBack() },
+        )
+      }
+
+      composable(Screen.AddItemScreen.route) {
+        AddItemsScreen(
+            onNextScreen = { navigationActions.navigateTo(Screen.PreviewItemScreen) },
+        )
+      }
 
       composable(
           route = Screen.EditItem.route,
@@ -116,14 +141,6 @@ fun OOTDApp(
               EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
             }
           }
-    }
-
-    navigation(startDestination = Screen.FitCheck.route, route = Screen.FitCheck.name) {
-      composable(Screen.FitCheck.route) {
-        FitCheckScreen(
-            onNextClick = { /* TODO: navigate to item selection screen */},
-            onBackClick = { navigationActions.goBack() })
-      }
     }
   }
 }

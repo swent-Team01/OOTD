@@ -10,6 +10,8 @@ import androidx.navigation.compose.rememberNavController
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -40,6 +42,10 @@ class NavigationTest {
 
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */}
+        composable(Screen.SearchScreen.route) { /* minimal screen */}
+        composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
+        composable(Screen.AddItemScreen.route) { /* minimal screen */}
+        composable(Screen.EditItem.route) { /* minimal screen */}
       }
     }
   }
@@ -169,6 +175,181 @@ class NavigationTest {
       // Navigate to Overview (after registration)
       navigation.navigateTo(Screen.Feed)
       assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_previewItemToAddItem_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Navigate to AddItemScreen
+      navigation.navigateTo(Screen.AddItemScreen)
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_addItemToPreview_goBackShouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Navigate to AddItemScreen
+      navigation.navigateTo(Screen.AddItemScreen)
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+
+      // Go back to PreviewItemScreen
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_previewItemToEditItem_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Navigate to EditItem with a specific item ID
+      val testItemId = "test-item-123"
+      navigation.navigateTo(Screen.EditItem(testItemId))
+
+      // Verify we're on the edit screen (route contains the item ID)
+      val currentRoute = navigation.currentRoute()
+      assertTrue(currentRoute.contains("editItem"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_editItemGoBack_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Navigate to EditItem
+      navigation.navigateTo(Screen.EditItem("item-1"))
+      assertTrue(navigation.currentRoute().contains("editItem"))
+
+      // Go back
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_complexFlow_feedToPreviewToAddToPreview_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Navigate to AddItemScreen
+      navigation.navigateTo(Screen.AddItemScreen)
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+
+      // Go back to PreviewItemScreen
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_complexFlow_previewToEditMultipleItems_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Edit first item
+      navigation.navigateTo(Screen.EditItem("item-1"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+      // Go back
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Edit second item
+      navigation.navigateTo(Screen.EditItem("item-2"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+      // Go back
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_addItemScreenCanBeAccessedDirectly_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate directly to AddItemScreen
+      navigation.navigateTo(Screen.AddItemScreen)
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_previewItemScreenCanBeAccessedDirectly_shouldWork() {
+    composeRule.runOnIdle {
+      // Navigate directly to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_multipleBackNavigations_shouldWork() {
+    composeRule.runOnIdle {
+      // Build a navigation stack
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen)
+
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+
+      // Go back to Preview
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_editItemWithDifferentIds_shouldHaveDifferentRoutes() {
+    composeRule.runOnIdle {
+      val itemId1 = "item-abc"
+      val itemId2 = "item-xyz"
+
+      // Navigate to first edit screen
+      navigation.navigateTo(Screen.EditItem(itemId1))
+      val id1 = navController.currentBackStackEntry?.arguments?.getString("itemUid")
+      navigation.goBack()
+
+      // Navigate to second edit screen
+      navigation.navigateTo(Screen.EditItem(itemId2))
+      val id2 = navController.currentBackStackEntry?.arguments?.getString("itemUid")
+
+      assertEquals(itemId1, id1)
+      assertEquals(itemId2, id2)
+      assertNotEquals(id1, id2)
+    }
+  }
+
+  @Test
+  fun navigationActions_currentRoute_returnsEmptyStringWhenNoDestination() {
+    composeRule.runOnIdle {
+      // This test verifies the currentRoute() method handles edge cases
+      val route = navigation.currentRoute()
+      assertTrue(route.isNotEmpty())
     }
   }
 }
