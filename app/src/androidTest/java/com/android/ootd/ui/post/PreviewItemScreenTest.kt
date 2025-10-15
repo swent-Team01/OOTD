@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -227,6 +228,72 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   fun addItemButtonStillVisibleWhenListEmpty() {
     setContent()
     composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+  }
+
+  /** Navigation tests from preview screen to add item screen and edit item screen */
+  @Test
+  fun clickingAddItemButton_callsOnAddItemCallback() {
+    var addItemClicked = false
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          onAddItem = { addItemClicked = true })
+    }
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+    assert(addItemClicked)
+  }
+
+  @Test
+  fun clickingEditItemButton_callsOnEditItemCallback() {
+    var editedItemId: String? = null
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          onEditItem = { itemId -> editedItemId = itemId })
+    }
+    // Click the edit button
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
+    assert(editedItemId == fakeItem.uuid)
+  }
+
+  @Test
+  fun clickingPostButton_callsOnPostOutfitCallback() {
+    var postClicked = false
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          onPostOutfit = { postClicked = true })
+    }
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
+    assert(postClicked)
+  }
+
+  @Test
+  fun clickingGoBackButton_callsOnGoBackCallback() {
+    var goBackClicked = false
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          onGoBack = { goBackClicked = true })
+    }
+
+    composeTestRule.onNodeWithContentDescription("go back").performClick()
+    assert(goBackClicked)
+  }
+
+  @Test
+  fun clickingGoBackButton_callsOnGoBackWithEmptyList() {
+    var goBackClicked = false
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(emptyList())),
+          onGoBack = { goBackClicked = true })
+    }
+
+    composeTestRule.onNodeWithContentDescription("go back").performClick()
+    assert(goBackClicked)
   }
 
   // Tests for viewModel
