@@ -69,7 +69,7 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Splash.route
+  val startDestination = Screen.Feed.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
@@ -144,14 +144,6 @@ fun OOTDApp(
               EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
             }
           }
-    }
-
-    navigation(startDestination = Screen.FitCheck.route, route = Screen.FitCheck.name) {
-      composable(Screen.FitCheck.route) {
-        FitCheckScreen(
-            onNextClick = { /* TODO: navigate to item selection screen */},
-            onBackClick = { navigationActions.goBack() })
-      }
     }
   }
 }
