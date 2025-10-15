@@ -112,12 +112,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     repository.addUser(user1)
     repository.addUser(user2)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(1, updatedUser.friendList.size)
-    assertEquals(user2.uid, updatedUser.friendList.first().uid)
-    assertEquals(user2.username, updatedUser.friendList.first().username)
+    assertEquals(1, updatedUser.friendUids.size)
+    assertEquals(user2.uid, updatedUser.friendUids.first())
   }
 
   @Test
@@ -127,11 +126,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val user3 = user1.copy(uid = "user3", username = "user3name")
     repository.addUser(user3)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
-    repository.addFriend(user1.uid, user3.uid, user3.username)
+    repository.addFriend(user1.uid, user2.uid)
+    repository.addFriend(user1.uid, user3.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(2, updatedUser.friendList.size)
+    assertEquals(2, updatedUser.friendUids.size)
   }
 
   @Test
@@ -139,11 +138,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     repository.addUser(user1)
     repository.addUser(user2)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
+    repository.addFriend(user1.uid, user2.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(1, updatedUser.friendList.size)
+    assertEquals(1, updatedUser.friendUids.size)
   }
 
   @Test
@@ -151,8 +150,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val nonExistentUserId = "nonExistentUser123"
 
     val exception =
-        runCatching { repository.addFriend(nonExistentUserId, user1.uid, user1.username) }
-            .exceptionOrNull()
+        runCatching { repository.addFriend(nonExistentUserId, user1.uid) }.exceptionOrNull()
 
     assert(exception != null)
   }
@@ -341,12 +339,12 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   fun canRemoveFriendFromUser() = runTest {
     repository.addUser(user1)
     repository.addUser(user2)
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
 
-    repository.removeFriend(user1.uid, user2.uid, user2.username)
+    repository.removeFriend(user1.uid, user2.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(0, updatedUser.friendList.size)
+    assertEquals(0, updatedUser.friendUids.size)
   }
 
   @Test
@@ -354,8 +352,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val nonExistentUserId = "nonExistentUser123"
 
     val exception =
-        runCatching { repository.removeFriend(nonExistentUserId, user1.uid, user1.username) }
-            .exceptionOrNull()
+        runCatching { repository.removeFriend(nonExistentUserId, user1.uid) }.exceptionOrNull()
 
     assert(exception is NoSuchElementException)
   }
@@ -366,8 +363,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val nonExistentFriendId = "nonExistentFriend123"
 
     val exception =
-        runCatching { repository.removeFriend(user1.uid, nonExistentFriendId, "fakeName") }
-            .exceptionOrNull()
+        runCatching { repository.removeFriend(user1.uid, nonExistentFriendId) }.exceptionOrNull()
 
     assert(exception is NoSuchElementException)
     assert(exception?.message?.contains(nonExistentFriendId) == true)
@@ -380,13 +376,13 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val user3 = user1.copy(uid = "user3", username = "user3name")
     repository.addUser(user3)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
 
-    repository.removeFriend(user1.uid, user3.uid, user3.username)
+    repository.removeFriend(user1.uid, user3.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(1, updatedUser.friendList.size)
-    assertEquals(user2.uid, updatedUser.friendList.first().uid)
+    assertEquals(1, updatedUser.friendUids.size)
+    assertEquals(user2.uid, updatedUser.friendUids.first())
   }
 
   @Test
@@ -396,14 +392,14 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val user3 = user1.copy(uid = "user3", username = "user3name")
     repository.addUser(user3)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
-    repository.addFriend(user1.uid, user3.uid, user3.username)
+    repository.addFriend(user1.uid, user2.uid)
+    repository.addFriend(user1.uid, user3.uid)
 
-    repository.removeFriend(user1.uid, user2.uid, user2.username)
+    repository.removeFriend(user1.uid, user2.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(1, updatedUser.friendList.size)
-    assertEquals(user3.uid, updatedUser.friendList.first().uid)
+    assertEquals(1, updatedUser.friendUids.size)
+    assertEquals(user3.uid, updatedUser.friendUids.first())
   }
 
   @Test
@@ -413,21 +409,21 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val user3 = user1.copy(uid = "user3", username = "user3name")
     repository.addUser(user3)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
-    repository.addFriend(user1.uid, user3.uid, user3.username)
+    repository.addFriend(user1.uid, user2.uid)
+    repository.addFriend(user1.uid, user3.uid)
 
-    repository.removeFriend(user1.uid, user2.uid, user2.username)
-    repository.removeFriend(user1.uid, user3.uid, user3.username)
+    repository.removeFriend(user1.uid, user2.uid)
+    repository.removeFriend(user1.uid, user3.uid)
 
     val updatedUser = repository.getUser(user1.uid)
-    assertEquals(0, updatedUser.friendList.size)
+    assertEquals(0, updatedUser.friendUids.size)
   }
 
   @Test
   fun isMyFriendReturnsTrueForExistingFriend() = runTest {
     repository.addUser(user1)
     repository.addUser(user2)
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
 
     val isFriend = repository.isMyFriend(user1.uid, user2.uid)
 
@@ -441,7 +437,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val user3 = user1.copy(uid = "user3", username = "user3name")
     repository.addUser(user3)
 
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
 
     val isFriend = repository.isMyFriend(user1.uid, user3.uid)
 
@@ -452,9 +448,9 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   fun isMyFriendReturnsFalseAfterRemovingFriend() = runTest {
     repository.addUser(user1)
     repository.addUser(user2)
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
 
-    repository.removeFriend(user1.uid, user2.uid, user2.username)
+    repository.removeFriend(user1.uid, user2.uid)
 
     val isFriend = repository.isMyFriend(user1.uid, user2.uid)
 
@@ -467,7 +463,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     repository.addUser(user2)
 
     val wasNotFriend = repository.isMyFriend(user1.uid, user2.uid)
-    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user2.uid)
     val isFriend = repository.isMyFriend(user1.uid, user2.uid)
 
     assert(!wasNotFriend)

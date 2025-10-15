@@ -21,10 +21,19 @@ import org.junit.runner.RunWith
 class FeedRepositoryFirestoreTest {
   private val db = FirebaseEmulator.firestore
   private lateinit var repo: FeedRepositoryFirestore
+  private lateinit var currentUid: String
 
   @Before
   fun setUp() = runBlocking {
     assert(FirebaseEmulator.isRunning) { "FirebaseEmulator must be running" }
+
+    // Ensure a clean database state for each run
+    FirebaseEmulator.clearFirestoreEmulator()
+
+    // Sign in to the Auth emulator so Firestore rules see request.auth
+    FirebaseEmulator.auth.signInAnonymously().await()
+    currentUid = requireNotNull(FirebaseEmulator.auth.currentUser?.uid)
+
     repo = FeedRepositoryFirestore(db)
     clearPosts()
   }
@@ -35,7 +44,7 @@ class FeedRepositoryFirestoreTest {
 
   @Test
   fun getFeed_emptyCollection_returnsEmptyList() = runBlocking {
-    val result = repo.getFeed()
+    val result = repo.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
@@ -49,7 +58,7 @@ class FeedRepositoryFirestoreTest {
     repo.addPost(p2)
     repo.addPost(p3)
 
-    val result = repo.getFeed()
+    val result = repo.getFeedForUids(listOf(currentUid))
     assertEquals(listOf("p2", "p1", "p3"), result.map { it.postUID })
     assertEquals(listOf(1L, 2L, 3L), result.map { it.timestamp })
   }
@@ -69,12 +78,18 @@ class FeedRepositoryFirestoreTest {
     val good = samplePost("good", ts = 1L)
     repo.addPost(good)
 
+    // First create a valid doc under the signed-in user's uid so create rules pass
+    val badValid = samplePost("bad", ts = 2L)
+    repo.addPost(badValid)
+
+    // Now corrupt the document by updating timestamp to a String while keeping uid/postUID
+    // unchanged
     db.collection(POSTS_COLLECTION_PATH)
         .document("bad")
-        .set(mapOf("postUID" to "bad", "timestamp" to "oops"))
+        .update(mapOf("timestamp" to "oops"))
         .await()
 
-    val result = repo.getFeed()
+    val result = repo.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
@@ -83,7 +98,7 @@ class FeedRepositoryFirestoreTest {
     val badDb = firestoreForApp(appName = "feed-repo-bad", host = "10.0.2.2", port = 6553)
     val badRepo = FeedRepositoryFirestore(badDb)
 
-    val result = badRepo.getFeed()
+    val result = badRepo.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
@@ -97,27 +112,26 @@ class FeedRepositoryFirestoreTest {
     runCatching { badRepo.addPost(p) }
 
     // Same instance: may or may not show local write depending on timing/timeout
-    val sameInstance = badRepo.getFeed()
+    val sameInstance = badRepo.getFeedForUids(listOf(currentUid))
     assertTrue(sameInstance.isEmpty() || sameInstance.any { it.postUID == "will-fail" })
 
     // Fresh misconfigured instance has no local cache, so read is empty
     val badDbReader =
         firestoreForApp(appName = "feed-repo-bad2-reader", host = "10.0.2.2", port = 6553)
     val badRepoReader = FeedRepositoryFirestore(badDbReader)
-    val freshRead = badRepoReader.getFeed()
+    val freshRead = badRepoReader.getFeedForUids(listOf(currentUid))
     assertTrue(freshRead.isEmpty())
   }
 
   @Test
   fun hasPostedToday_defaultFalse_andTrueWhenUserHasPostedToday() = runBlocking {
-    // default false
+    // default false (user id doesn't exist)
     assertEquals(false, repo.hasPostedToday("non-existent-user"))
 
-    // true after posting today
-    val userId = "user-today"
-    val post = samplePost("today-post", ts = System.currentTimeMillis()).copy(uid = userId)
+    // true after posting today by the signed-in user
+    val post = samplePost("today-post", ts = System.currentTimeMillis())
     repo.addPost(post)
-    val result = repo.hasPostedToday(userId)
+    val result = repo.hasPostedToday(currentUid)
     assertTrue(result)
   }
 
@@ -132,7 +146,7 @@ class FeedRepositoryFirestoreTest {
   fun getFeed_throwsException_caughtAndReturnsEmptyList() = runBlocking {
     val invalidDb = firestoreForApp("feedrepo-throws", "localhost", 65533) // unreachable
     val repo = FeedRepositoryFirestore(invalidDb)
-    val result = repo.getFeed()
+    val result = repo.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
@@ -150,7 +164,7 @@ class FeedRepositoryFirestoreTest {
       // Offline ack path: verify a fresh misconfigured repo cannot read it
       val freshDb = firestoreForApp("feedrepo-addpost-fail-reader", "localhost", 65532)
       val freshRepo = FeedRepositoryFirestore(freshDb)
-      val freshRead = freshRepo.getFeed()
+      val freshRead = freshRepo.getFeedForUids(listOf(currentUid))
       assertTrue(freshRead.isEmpty())
     }
   }
@@ -163,7 +177,9 @@ class FeedRepositoryFirestoreTest {
   // -------- Helpers --------
 
   private suspend fun clearPosts() {
-    val docs = db.collection(POSTS_COLLECTION_PATH).get().await().documents
+    // Only delete posts authored by the signed-in user to satisfy rules
+    val docs =
+        db.collection(POSTS_COLLECTION_PATH).whereEqualTo("uid", currentUid).get().await().documents
     docs.forEach { it.reference.delete().await() }
   }
 
@@ -171,7 +187,7 @@ class FeedRepositoryFirestoreTest {
       OutfitPost(
           postUID = id,
           name = "name-$id",
-          uid = "user-$id",
+          uid = currentUid, // author is the signed-in user so rules allow writes/reads
           userProfilePicURL = "https://example.com/$id.png",
           outfitURL = "https://example.com/outfits/$id.jpg",
           description = "desc-$id",

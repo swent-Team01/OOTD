@@ -15,40 +15,19 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
-// Firestore DTOs (Data Transfer Objects) - use String for Uri fields
-private data class FriendDto(
-    val uid: String = "",
-    val username: String = "",
-    val profilePicture: String = "" // Store as String for Firestore
-)
-
 private data class UserDto(
     val uid: String = "",
     val username: String = "",
     val profilePicture: String = "", // Store as String for Firestore
-    val friendList: List<FriendDto> = emptyList()
+    val friendUids: List<String> = emptyList()
 )
-
-// Extension functions to convert between domain models and DTOs
-private fun Friend.toDto(): FriendDto {
-  return FriendDto(
-      uid = this.uid, username = this.username, profilePicture = this.profilePicture.toString())
-}
-
-private fun FriendDto.toDomain(): Friend {
-  return Friend(
-      uid = this.uid,
-      username = this.username,
-      profilePicture =
-          if (this.profilePicture.isBlank()) Uri.EMPTY else this.profilePicture.toUri())
-}
 
 private fun User.toDto(): UserDto {
   return UserDto(
       uid = this.uid,
       username = this.username,
       profilePicture = this.profilePicture.toString(),
-      friendList = this.friendList.map { it.toDto() })
+      friendUids = this.friendUids)
 }
 
 private fun UserDto.toDomain(): User {
@@ -57,7 +36,7 @@ private fun UserDto.toDomain(): User {
       username = this.username,
       profilePicture =
           if (this.profilePicture.isBlank()) Uri.EMPTY else this.profilePicture.toUri(),
-      friendList = this.friendList.map { it.toDomain() })
+      friendUids = this.friendUids)
 }
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
@@ -174,7 +153,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
-  override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun addFriend(userID: String, friendID: String) {
     try {
       val friendDocumentList =
           db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
@@ -189,15 +168,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
       // array section
 
-      val friendDto = Friend(uid = friendID, username = friendUsername).toDto()
-      userRef.update("friendList", FieldValue.arrayUnion(friendDto)).await()
+      userRef.update("friendUids", FieldValue.arrayUnion(friendID)).await()
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
     }
   }
 
-  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun removeFriend(userID: String, friendID: String) {
     try {
       val friendDocumentList =
           db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
@@ -207,9 +185,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       }
 
       val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
-      val friendDto = Friend(uid = friendID, username = friendUsername).toDto()
-      // Use arrayRemove to remove the friend from the array
-      userRef.update("friendList", FieldValue.arrayRemove(friendDto)).await()
+      userRef.update("friendUids", FieldValue.arrayRemove(friendID)).await()
     } catch (e: Exception) {
       Log.e(
           "UserRepositoryFirestore", "Error removing friend $friendID from $userID ${e.message}", e)
@@ -227,8 +203,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
     val myUser = transformUserDocument(documentList.documents[0])
 
-    return (myUser?.friendList?.isNotEmpty() == true &&
-        myUser.friendList.any { it.uid == friendID })
+    return (myUser?.friendUids?.isNotEmpty() == true && myUser.friendUids.any { it == friendID })
   }
 
   private suspend fun usernameExists(username: String): Boolean {

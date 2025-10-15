@@ -3,36 +3,20 @@ package com.android.ootd.model.user
 import java.util.UUID
 
 class UserRepositoryInMemory : UserRepository {
-  val currentUser = "user1"
+  var currentUser = "user1"
   val nameList =
       listOf<String>(
           "alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
   private val users =
       mutableMapOf(
           "user1" to
-              User(
-                  uid = "user1",
-                  username = nameList[0],
-                  friendList =
-                      listOf(
-                          Friend(uid = "user2", username = "bob_builder"),
-                          Friend(uid = "user3", username = "charlie_brown"))),
-          "user2" to
-              User(
-                  uid = "user2",
-                  username = nameList[1],
-                  friendList = listOf(Friend(uid = "user1", username = "alice_wonder"))),
-          "user3" to User(uid = "user3", username = nameList[2], friendList = emptyList()),
+              User(uid = "user1", username = nameList[0], friendUids = listOf("user2", "user3")),
+          "user2" to User(uid = "user2", username = nameList[1], friendUids = listOf("user1")),
+          "user3" to User(uid = "user3", username = nameList[2], friendUids = emptyList()),
           "user4" to
-              User(
-                  uid = "user4",
-                  username = nameList[3],
-                  friendList =
-                      listOf(
-                          Friend(uid = "user1", username = "alice_wonder"),
-                          Friend(uid = "user2", username = "bob_builder"))),
-          "user5" to User(uid = "user5", username = nameList[4], friendList = emptyList()),
-          "nonRegisterUser" to User(uid = "nonRegisterUser", username = "", friendList = listOf()))
+              User(uid = "user4", username = nameList[3], friendUids = listOf("user1", "user2")),
+          "user5" to User(uid = "user5", username = nameList[4], friendUids = emptyList()),
+          "nonRegisterUser" to User(uid = "nonRegisterUser", username = "", friendUids = listOf()))
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
@@ -60,7 +44,7 @@ class UserRepositoryInMemory : UserRepository {
     return username.isNotBlank()
   }
 
-  override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun addFriend(userID: String, friendID: String) {
     val user = getUser(userID)
 
     if (!users.containsKey(friendID)) {
@@ -68,15 +52,15 @@ class UserRepositoryInMemory : UserRepository {
     }
 
     // Check if friend already exists in the list
-    if (user.friendList.any { it.uid == friendID }) {
+    if (user.friendUids.any { it == friendID }) {
       return // Already friends, do nothing (mimics arrayUnion behavior)
     }
 
-    val updatedFriendList = user.friendList + Friend(uid = friendID, username = friendUsername)
-    users[userID] = user.copy(friendList = updatedFriendList)
+    val updatedFriendUids = user.friendUids + friendID
+    users[userID] = user.copy(friendUids = updatedFriendUids)
   }
 
-  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun removeFriend(userID: String, friendID: String) {
     val user = getUser(userID)
 
     if (!users.containsKey(friendID)) {
@@ -84,12 +68,12 @@ class UserRepositoryInMemory : UserRepository {
     }
 
     // If the friend is not there, we don't do anything
-    if (user.friendList.none { it.uid == friendID }) {
+    if (user.friendUids.none { it == friendID }) {
       return
     }
 
-    val updatedFriendList = user.friendList - Friend(uid = friendID, username = friendUsername)
-    users[userID] = user.copy(friendList = updatedFriendList)
+    val updatedFriendUids = user.friendUids - friendID
+    users[userID] = user.copy(friendUids = updatedFriendUids)
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
@@ -97,7 +81,7 @@ class UserRepositoryInMemory : UserRepository {
     // and this way I would not have to redo all the tests I already written.
 
     val user = getUser(currentUser)
-    return user.friendList.isNotEmpty() && user.friendList.any { it.uid == friendID }
+    return user.friendUids.isNotEmpty() && user.friendUids.any { it == friendID }
   }
 
   override suspend fun createUser(username: String, uid: String) {
@@ -108,5 +92,10 @@ class UserRepositoryInMemory : UserRepository {
 
     val newUser = User(uid, username)
     addUser(newUser)
+  }
+
+  // Useful for testing
+  fun removeUser(uid: String) {
+    users.remove(uid)
   }
 }

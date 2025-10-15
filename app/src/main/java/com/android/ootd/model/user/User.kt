@@ -21,11 +21,11 @@ data class Friend(
  * @property uid Firebase user id.
  * @property username Display name of the user.
  * @property profilePicture Firebase Storage download URI for the user's profile picture.
- * @property friendList List of the user's friends.
+ * @property friendUids List of the user's friends uids.
  */
 data class User(
     val uid: String = "",
     val username: String = "",
     val profilePicture: Uri = Uri.EMPTY, // Firebase Storage download URL
-    val friendList: List<Friend> = emptyList()
+    val friendUids: List<String> = emptyList()
 )
