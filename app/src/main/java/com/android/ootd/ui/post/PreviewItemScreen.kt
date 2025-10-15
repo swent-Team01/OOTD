@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -176,6 +177,7 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
       }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun OutfitItem(item: Item, onClick: () -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }

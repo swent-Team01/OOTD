@@ -55,18 +55,6 @@ class OutfitPreviewViewModel(
   }
 
   private fun loadOutfitPost() {
-    //        // Load the outfit post data from a temporary source or repository
-    //        // For demonstration, we will use hardcoded values
-    //        val tempImageUri = "content://media/external/images/media/12345" // Replace with
-    // actual URI
-    //        val tempDescription = "My stylish outfit!"
-    //        val tempItems = listOf<Item>() // Replace with actual items
-    //
-    //        _uiState.value = _uiState.value.copy(
-    //            imageUri = tempImageUri,
-    //            description = tempDescription,
-    //            items = tempItems
-    //        )
 
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
