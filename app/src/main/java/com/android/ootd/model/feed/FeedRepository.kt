@@ -13,6 +13,12 @@ interface FeedRepository {
   suspend fun getFeed(): List<OutfitPost>
 
   /**
+   * Retrieves posts authored by any of the provided user IDs. Implementations should query using
+   * whereIn in chunks of 10 and sort by timestamp ascending.
+   */
+  suspend fun getFeedForUids(uids: List<String>): List<OutfitPost>
+
+  /**
    * Indicates whether the user has posted or not in the current day
    *
    * @return false if hasn't posted, true if he has posted
