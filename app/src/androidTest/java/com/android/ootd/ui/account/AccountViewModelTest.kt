@@ -164,15 +164,14 @@ class AccountViewModelTest {
     // Verify initial state
     assertEquals("testuser", viewModel.uiState.value.username)
 
-    // Change the mock to return different data
-    coEvery { userRepository.getUser("test-uid") } returns
-        User(uid = "test-uid", username = "updateduser", profilePicture = Uri.EMPTY)
+    // Change to a different user to trigger observeAuthState() to reload
+    coEvery { userRepository.getUser("test-uid-2") } returns
+        User(uid = "test-uid-2", username = "updateduser", profilePicture = Uri.EMPTY)
 
-    // Re-emit the FirebaseUser to trigger observeAuthState() again
     val updatedMockUser =
         mockk<FirebaseUser> {
-          every { uid } returns "test-uid"
-          every { email } returns "test@example.com"
+          every { uid } returns "test-uid-2"
+          every { email } returns "updated@example.com"
           every { photoUrl } returns null
         }
     userFlow.value = updatedMockUser
@@ -180,5 +179,6 @@ class AccountViewModelTest {
 
     val state = viewModel.uiState.value
     assertEquals("updateduser", state.username)
+    assertEquals("updated@example.com", state.googleAccountName)
   }
 }

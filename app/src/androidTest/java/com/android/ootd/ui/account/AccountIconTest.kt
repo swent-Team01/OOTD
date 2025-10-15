@@ -8,8 +8,9 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import io.mockk.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -19,6 +20,7 @@ import org.junit.Test
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AccountIconTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -31,6 +33,11 @@ class AccountIconTest {
   fun setup() {
     mockAccountService = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
+  }
+
+  @After
+  fun tearDown() {
+    // No need to reset main dispatcher in instrumentation tests
   }
 
   @Test
@@ -49,7 +56,7 @@ class AccountIconTest {
   }
 
   @Test
-  fun accountIcon_whenProfilePictureExists_displaysImage() = runTest {
+  fun accountIcon_whenProfilePictureExists_displaysImage() {
     // Given: user with profile picture - SET USER BEFORE CREATING VIEWMODEL
     val testUri = Uri.parse("https://example.com/avatar.jpg")
     val mockFirebaseUser =
@@ -105,22 +112,22 @@ class AccountIconTest {
   }
 
   @Test
-  fun accountIcon_whenProfilePictureUpdates_recomposesWithNewImage() = runTest {
+  fun accountIcon_whenProfilePictureUpdates_recomposesWithNewImage() {
     // Given: initial state with picture - SET USER BEFORE CREATING VIEWMODEL
     val testUri1 = Uri.parse("https://example.com/avatar1.jpg")
     val testUri2 = Uri.parse("https://example.com/avatar2.jpg")
     val mockFirebaseUser =
         mockk<com.google.firebase.auth.FirebaseUser> {
-          every { uid } returns "test-uid"
+          every { uid } returns "test-uid-1"
           every { email } returns "test@example.com"
           every { photoUrl } returns testUri1
         }
     val userFlow = MutableStateFlow<com.google.firebase.auth.FirebaseUser?>(mockFirebaseUser)
     every { mockAccountService.currentUser } returns userFlow
 
-    coEvery { mockUserRepository.getUser("test-uid") } returns
+    coEvery { mockUserRepository.getUser("test-uid-1") } returns
         User(
-            uid = "test-uid",
+            uid = "test-uid-1",
             username = "testuser",
             profilePicture = testUri1,
             friendUids = emptyList())
@@ -138,19 +145,19 @@ class AccountIconTest {
       "Expected initial profile picture to be $testUri1"
     }
 
-    // When: profile picture changes (simulate repository returning new URI)
-    coEvery { mockUserRepository.getUser("test-uid") } returns
+    // When: user switches to a different account with a different profile picture
+    coEvery { mockUserRepository.getUser("test-uid-2") } returns
         User(
-            uid = "test-uid",
-            username = "testuser",
+            uid = "test-uid-2",
+            username = "testuser2",
             profilePicture = testUri2,
             friendUids = emptyList())
 
-    // Re-emit a new FirebaseUser instance to trigger observeAuthState()
+    // Emit a different user (different uid) to trigger observeAuthState() reload
     val mockFirebaseUser2 =
         mockk<com.google.firebase.auth.FirebaseUser> {
-          every { uid } returns "test-uid"
-          every { email } returns "test@example.com"
+          every { uid } returns "test-uid-2"
+          every { email } returns "test2@example.com"
           every { photoUrl } returns testUri2
         }
     userFlow.value = mockFirebaseUser2
@@ -168,7 +175,7 @@ class AccountIconTest {
   }
 
   @Test
-  fun accountIcon_withEmptyUri_showsFallbackIcon() = runTest {
+  fun accountIcon_withEmptyUri_showsFallbackIcon() {
     // Given: user with Uri.EMPTY
     val mockFirebaseUser =
         mockk<com.google.firebase.auth.FirebaseUser> {
@@ -195,7 +202,7 @@ class AccountIconTest {
   }
 
   @Test
-  fun accountIcon_withBlankUriString_showsFallbackIcon() = runTest {
+  fun accountIcon_withBlankUriString_showsFallbackIcon() {
     // Given: user with blank string URI
     val blankUri = Uri.parse("   ")
     val mockFirebaseUser =

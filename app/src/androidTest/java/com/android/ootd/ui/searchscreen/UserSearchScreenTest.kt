@@ -53,7 +53,7 @@ class UserSearchScreenTest : FirestoreTest() {
           FeedScreen(
               onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
               onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
-              onProfileClick = { /* TODO: show user profile page */})
+              onAccountIconClick = { /* TODO: show user profile page */})
         }
         composable(Screen.SearchScreen.route) {
           UserSearchScreen(onBack = { navigationActions.goBack() })

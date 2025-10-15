@@ -16,6 +16,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
+
 class NavigationTest {
 
   @get:Rule val composeRule = createComposeRule()
@@ -46,6 +51,7 @@ class NavigationTest {
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
         composable(Screen.AddItemScreen.route) { /* minimal screen */}
         composable(Screen.EditItem.route) { /* minimal screen */}
+        composable(Screen.Account.route) { /* minimal screen */}
       }
     }
   }

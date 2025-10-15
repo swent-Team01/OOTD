@@ -54,6 +54,9 @@ class AccountViewModel(
   private val _uiState = MutableStateFlow(AccountViewState())
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
+  private var lastLoadedUserId: String? = null
+  private var isSigningOut: Boolean = false
+
   init {
     observeAuthState()
   }
@@ -63,9 +66,17 @@ class AccountViewModel(
     viewModelScope.launch {
       accountService.currentUser.collect { user ->
         if (user != null) {
-          loadUserData(user.uid, user.email.orEmpty(), user.photoUrl)
+          // Only load user data if we haven't loaded this user yet or it's a different user
+          if (lastLoadedUserId != user.uid) {
+            lastLoadedUserId = user.uid
+            loadUserData(user.uid, user.email.orEmpty(), user.photoUrl)
+          }
         } else {
-          _uiState.update { AccountViewState() }
+          lastLoadedUserId = null
+          // Don't reset state if we're in the process of signing out
+          if (!isSigningOut) {
+            _uiState.update { AccountViewState() }
+          }
         }
       }
     }
@@ -91,7 +102,11 @@ class AccountViewModel(
       }
     } catch (e: Exception) {
       _uiState.update {
-        it.copy(errorMsg = e.localizedMessage ?: "Failed to load user data", isLoading = false)
+        it.copy(
+            errorMsg = e.localizedMessage ?: "Failed to load user data",
+            isLoading = false,
+            googleAccountName = email,
+            profilePicture = googlePhotoUri)
       }
     }
   }
@@ -103,11 +118,13 @@ class AccountViewModel(
    */
   fun signOut(credentialManager: CredentialManager) {
     viewModelScope.launch {
+      isSigningOut = true
       accountService
           .signOut()
           .fold(
               onSuccess = { _uiState.update { it.copy(signedOut = true) } },
               onFailure = { throwable ->
+                isSigningOut = false
                 _uiState.update { it.copy(errorMsg = throwable.localizedMessage) }
               })
       credentialManager.clearCredentialState(ClearCredentialStateRequest())
