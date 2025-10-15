@@ -217,5 +217,12 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
+    composeTestRule.onNodeWithText("Dismiss").performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
   }
 }
