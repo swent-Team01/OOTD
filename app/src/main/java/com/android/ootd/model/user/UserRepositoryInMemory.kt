@@ -15,7 +15,8 @@ class UserRepositoryInMemory : UserRepository {
           "user3" to User(uid = "user3", username = nameList[2], friendUids = emptyList()),
           "user4" to
               User(uid = "user4", username = nameList[3], friendUids = listOf("user1", "user2")),
-          "user5" to User(uid = "user5", username = nameList[4], friendUids = emptyList()))
+          "user5" to User(uid = "user5", username = nameList[4], friendUids = emptyList()),
+          "nonRegisterUser" to User(uid = "nonRegisterUser", username = "", friendUids = listOf()))
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
@@ -36,6 +37,11 @@ class UserRepositoryInMemory : UserRepository {
     } else {
       throw NoSuchElementException("User with ID $userID not found")
     }
+  }
+
+  override suspend fun userExists(userID: String): Boolean {
+    val username = getUser(userID).username
+    return username.isNotBlank()
   }
 
   override suspend fun addFriend(userID: String, friendID: String) {
