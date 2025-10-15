@@ -1,5 +1,8 @@
-// Kotlin
 package com.android.ootd.ui.account
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developer.
+ */
 
 import android.net.Uri
 import androidx.compose.ui.test.*
@@ -7,10 +10,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.user.User
-import com.android.ootd.model.user.UserRepositoryFirestore
-import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.android.ootd.utils.FirebaseEmulator
+import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
@@ -18,78 +19,47 @@ import org.junit.*
 import org.junit.runner.RunWith
 
 /**
- * Integration tests for AccountIcon with real Firebase backend.
+ * Integration tests for AccountIcon with Firebase Emulator.
  *
  * Prerequisites:
  * - Firebase Emulator Suite running (Auth + Firestore)
- * - Or real Firebase project with test user credentials
  */
 @RunWith(AndroidJUnit4::class)
-class AccountIconFirebaseTest {
+class AccountIconFirebaseTest : FirestoreTest() {
 
   @get:Rule val composeTestRule = createComposeRule()
 
   private lateinit var accountService: AccountServiceFirebase
-  private lateinit var userRepository: UserRepositoryFirestore
   private lateinit var viewModel: AccountViewModel
 
   private val testEmail = "test-user-${System.currentTimeMillis()}@example.com"
   private val testPassword = "TestPassword123!"
   private val testUsername = "TestUser"
 
-  companion object {
-    private lateinit var auth: FirebaseAuth
-    private lateinit var firestore: FirebaseFirestore
-
-    @BeforeClass
-    @JvmStatic
-    fun setupFirebase() {
-      // Configure Firebase emulator before any instances are created
-      try {
-        auth =
-            FirebaseAuth.getInstance().apply {
-              useEmulator("10.0.2.2", 9099) // Android emulator localhost
-            }
-        firestore = FirebaseFirestore.getInstance().apply { useEmulator("10.0.2.2", 8080) }
-      } catch (e: IllegalStateException) {
-        // If already initialized, just get the instances
-        auth = FirebaseAuth.getInstance()
-        firestore = FirebaseFirestore.getInstance()
-      }
-    }
-
-    @AfterClass
-    @JvmStatic
-    fun teardownFirebase() {
-      // Clean up Firebase app
-      try {
-        FirebaseApp.getInstance().delete()
-      } catch (e: Exception) {
-        // Ignore if already deleted
-      }
-    }
-  }
-
   @Before
-  fun setup() {
+  override fun setUp() {
+    super.setUp()
     accountService = AccountServiceFirebase()
-    userRepository = UserRepositoryFirestore(firestore)
   }
 
   @After
-  fun teardown() = runTest {
-    // Clean up test user
-    auth.currentUser?.delete()?.await()
+  override fun tearDown() {
+    runTest {
+      // Clean up test user
+      FirebaseEmulator.auth.currentUser?.delete()?.await()
+    }
+    super.tearDown()
   }
 
   @Test
   fun accountIcon_withFirebaseUser_displaysGooglePhotoUrl() = runTest {
     // Given: create test user with Google photo URL
-    val authResult = auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
     val userId = authResult.user!!.uid
 
     // Create Firestore user document
-    userRepository.addUser(
+    repository.addUser(
         User(
             uid = userId,
             username = testUsername,
@@ -97,7 +67,7 @@ class AccountIconFirebaseTest {
             friendList = emptyList()))
 
     // Create ViewModel AFTER user is signed in - observeAuthState will pick up the current user
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, repository)
 
     // When
     composeTestRule.setContent { AccountIcon(accountViewModel = viewModel, onClick = {}) }
@@ -114,11 +84,12 @@ class AccountIconFirebaseTest {
   @Test
   fun accountIcon_withFirestoreProfilePicture_displaysFirestoreImage() = runTest {
     // Given: create test user with Firestore profile picture
-    val authResult = auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
     val userId = authResult.user!!.uid
     val firestoreImageUri = Uri.parse("https://example.com/firestore-avatar.jpg")
 
-    userRepository.addUser(
+    repository.addUser(
         User(
             uid = userId,
             username = testUsername,
@@ -126,7 +97,7 @@ class AccountIconFirebaseTest {
             friendList = emptyList()))
 
     // Create ViewModel AFTER user is signed in
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, repository)
 
     // When
     composeTestRule.setContent { AccountIcon(accountViewModel = viewModel, onClick = {}) }
@@ -147,18 +118,19 @@ class AccountIconFirebaseTest {
   @Test
   fun accountIcon_whenProfilePictureUpdatedInFirestore_recomposesWithNewImage() = runTest {
     // Given: create test user
-    val authResult = auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
     val userId = authResult.user!!.uid
     val initialUri = Uri.parse("https://example.com/avatar1.jpg")
 
-    userRepository.addUser(
+    repository.addUser(
         User(
             uid = userId,
             username = testUsername,
             profilePicture = initialUri,
             friendList = emptyList()))
 
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, repository)
 
     composeTestRule.setContent { AccountIcon(accountViewModel = viewModel, onClick = {}) }
 
@@ -174,7 +146,7 @@ class AccountIconFirebaseTest {
 
     // When: update profile picture in Firestore directly
     val newUri = Uri.parse("https://example.com/avatar2.jpg")
-    firestore
+    FirebaseEmulator.firestore
         .collection("users")
         .document(userId)
         .update("profilePicture", newUri.toString())
@@ -183,9 +155,9 @@ class AccountIconFirebaseTest {
     // The reactive ViewModel won't automatically see Firestore changes (only auth changes)
     // So we need to force a reload by triggering auth state re-observation
     // We do this by signing out and back in
-    auth.signOut()
+    FirebaseEmulator.auth.signOut()
     delay(100) // Let auth state propagate
-    auth.signInWithEmailAndPassword(testEmail, testPassword).await()
+    FirebaseEmulator.auth.signInWithEmailAndPassword(testEmail, testPassword).await()
 
     // Wait for the ViewModel to observe the auth state change and reload with new data
     composeTestRule.waitUntil(timeoutMillis = 5000) {
@@ -202,18 +174,19 @@ class AccountIconFirebaseTest {
   @Test
   fun accountIcon_whenUserSignsOut_showsFallbackIcon() = runTest {
     // Given: signed-in user with profile picture
-    val authResult = auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
     val userId = authResult.user!!.uid
     val imageUri = Uri.parse("https://example.com/avatar.jpg")
 
-    userRepository.addUser(
+    repository.addUser(
         User(
             uid = userId,
             username = testUsername,
             profilePicture = imageUri,
             friendList = emptyList()))
 
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, repository)
 
     composeTestRule.setContent { AccountIcon(accountViewModel = viewModel, onClick = {}) }
 
@@ -223,7 +196,7 @@ class AccountIconFirebaseTest {
     }
 
     // When: user signs out (this triggers observeAuthState to clear the state)
-    auth.signOut()
+    FirebaseEmulator.auth.signOut()
 
     // Wait for ViewModel to observe sign-out and clear state
     composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.username.isEmpty() }
@@ -236,10 +209,10 @@ class AccountIconFirebaseTest {
   @Test
   fun accountIcon_withNoFirestoreDocument_usesGooglePhotoUrl() = runTest {
     // Given: signed-in user without Firestore document
-    auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
 
     // Don't create Firestore document - should fall back to Google photo
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, repository)
 
     // When
     composeTestRule.setContent { AccountIcon(accountViewModel = viewModel, onClick = {}) }
@@ -257,17 +230,18 @@ class AccountIconFirebaseTest {
   @Test
   fun accountIcon_onClick_triggersCallback() = runTest {
     // Given: signed-in user
-    val authResult = auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
+    val authResult =
+        FirebaseEmulator.auth.createUserWithEmailAndPassword(testEmail, testPassword).await()
     val userId = authResult.user!!.uid
 
-    userRepository.addUser(
+    repository.addUser(
         User(
             uid = userId,
             username = testUsername,
             profilePicture = Uri.EMPTY,
             friendList = emptyList()))
 
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, repository)
     var clicked = false
 
     // When
