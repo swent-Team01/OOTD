@@ -33,4 +33,28 @@ class FitCheckScreenTest {
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).assertIsDisplayed()
   }
+
+  @Test
+  fun descriptionField_isVisibleOnScreen() {
+    composeTestRule.setContent { FitCheckScreen() }
+
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT).assertIsDisplayed()
+  }
+
+  @Test
+  fun clickingNextButtonWithoutPhoto_showsErrorMessage() {
+    composeTestRule.setContent { FitCheckScreen() }
+
+    // Initially, there should be no error message displayed
+    composeTestRule.onAllNodesWithTag(FitCheckScreenTestTags.ERROR_MESSAGE).assertCountEquals(0)
+
+    // Click the "Next" button without selecting a photo
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
+
+    // Verify that the error message appears with the correct text
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ERROR_MESSAGE)
+        .assertIsDisplayed()
+        .assertTextEquals("Please select a photo before continuing.")
+  }
 }
