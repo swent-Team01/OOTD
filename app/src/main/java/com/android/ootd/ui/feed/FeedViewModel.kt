@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
-import com.android.ootd.model.user.Friend
 import com.android.ootd.model.user.User
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,14 +54,7 @@ class FeedViewModel(private val repository: FeedRepository = FeedRepositoryProvi
     loadJob?.cancel()
     loadJob =
         viewModelScope.launch {
-          val friendUids =
-              user.friendList
-                  .asSequence()
-                  .map(Friend::uid)
-                  .map(String::trim)
-                  .filter { it.isNotEmpty() }
-                  .distinct()
-                  .toList()
+          val friendUids = user.friendUids
           if (friendUids.isEmpty()) {
             _uiState.value = _uiState.value.copy(feedPosts = emptyList())
             return@launch

@@ -96,12 +96,11 @@ class UserSearchViewModel(
       }
 
       val friendID = _uiState.value.selectedUser?.uid ?: ""
-      val friendUsername = _uiState.value.selectedUser?.username ?: ""
 
       if (!_uiState.value.isSelectedUserFollowed) {
-        userRepository.addFriend(myUID, friendID, friendUsername)
+        userRepository.addFriend(myUID, friendID)
       } else {
-        userRepository.removeFriend(myUID, friendID, friendUsername)
+        userRepository.removeFriend(myUID, friendID)
       }
 
       _uiState.value =

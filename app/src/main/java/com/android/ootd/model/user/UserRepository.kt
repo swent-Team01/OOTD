@@ -41,20 +41,18 @@ interface UserRepository {
    *
    * @param userID The unique identifier of the User which friend's list is updated.
    * @param friendID The unique identifier of the User which will be added to the friend list.
-   * @param friendUsername The username associated to the User with friendID.
    * @throws Exception if userID or friendID is not found.
    */
-  suspend fun addFriend(userID: String, friendID: String, friendUsername: String)
+  suspend fun addFriend(userID: String, friendID: String)
 
   /**
    * Removes the user with friendID from the friend list of userID.
    *
    * @param userID The unique identifier of the User which friend's list is updated.
    * @param friendID The unique identifier of the User which will be removed to the friend list.
-   * @param friendUsername The username associated to the User with friendID.
    * @throws Exception if userID or friendID is not found
    */
-  suspend fun removeFriend(userID: String, friendID: String, friendUsername: String)
+  suspend fun removeFriend(userID: String, friendID: String)
   /**
    * Checks if for userID, the user with id friendID is his friend.
    *

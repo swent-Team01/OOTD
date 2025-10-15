@@ -38,7 +38,7 @@ class UserRepositoryInMemory : UserRepository {
     }
   }
 
-  override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun addFriend(userID: String, friendID: String) {
     val user = getUser(userID)
 
     if (!users.containsKey(friendID)) {
@@ -54,7 +54,7 @@ class UserRepositoryInMemory : UserRepository {
     users[userID] = user.copy(friendUids = updatedFriendUids)
   }
 
-  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun removeFriend(userID: String, friendID: String) {
     val user = getUser(userID)
 
     if (!users.containsKey(friendID)) {

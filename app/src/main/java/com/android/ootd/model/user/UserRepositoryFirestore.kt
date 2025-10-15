@@ -136,7 +136,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
-  override suspend fun addFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun addFriend(userID: String, friendID: String) {
     try {
       val friendDocumentList =
           db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
@@ -158,7 +158,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
-  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+  override suspend fun removeFriend(userID: String, friendID: String) {
     try {
       val friendDocumentList =
           db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
