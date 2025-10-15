@@ -111,6 +111,34 @@ jobs:
           # To run the CI with debug information, add --info
           ./gradlew assemble check lint --parallel --build-cache
 
+      # FireStore Security rules Test
+      - name: Firestore Security Rules tests
+        run: |
+          if [ ! -e "firebase.json" ]; then # Check if firebase.json exists
+            echo "Warning: 'firebase.json' file is missing. Check with the team to properly set up the Firebase"
+            exit 0
+          fi
+          jq -e '.emulators' firebase.json >/dev/null || { # Check if emulators are configured
+            echo "'firebase.json' is missing 'emulators'. Run 'firebase emulators:init'."
+            exit 1
+          }
+          for e in auth firestore; do # Check if auth and firestore emulators are configured
+            jq -e ".emulators.$e" firebase.json >/dev/null || {
+              echo "'firebase.json' is missing 'emulators.$e'. Run 'firebase emulators:init'."
+              exit 1
+            }
+          done
+          if [ -e "firebase/firestore/firestore.rules" ]; then # Check if firestore.rules exists
+            # Check if firestore.rules is referenced in firebase.json
+            jq -e '.firestore.rules' firebase.json >/dev/null || {
+              echo "'firebase.json' is missing 'firestore.rules'."
+              exit 1
+            }
+            (cd firebase/firestore/test 2>/dev/null && npm install && npm test) || exit $?
+          else
+            echo "Warning: Firestore rules file not found in firebase/firestore"
+          fi
+         
       # Cache the Emulator AFTER we know build succeeds, if the cache does not hit, create the emulator
       - name: AVD cache
         uses: actions/cache@v4

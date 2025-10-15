@@ -1,15 +1,19 @@
 package com.android.ootd.utils
 
 import android.util.Log
-import com.android.ootd.model.ITEMS_COLLECTION
-import com.android.ootd.model.ItemsRepository
-import com.android.ootd.model.ItemsRepositoryFirestore
+import com.android.ootd.model.items.ITEMS_COLLECTION
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 
 open class FirestoreItemTest : ItemsTest {
+
+  override val repository: ItemsRepository
+    get() = ItemsRepositoryProvider.repository
 
   suspend fun countItems(): Int {
     // FirebaseEmulator put

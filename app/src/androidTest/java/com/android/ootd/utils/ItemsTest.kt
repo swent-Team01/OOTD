@@ -3,21 +3,17 @@ package com.android.ootd.utils
 import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
-import androidx.test.espresso.action.ViewActions.swipeUp
-import com.android.ootd.model.Item
-import com.android.ootd.model.ItemsRepository
-import com.android.ootd.model.ItemsRepositoryProvider
-import com.android.ootd.model.Material
+import androidx.compose.ui.test.swipeUp
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.AddItemsViewModel
 import org.junit.Before
@@ -27,11 +23,10 @@ interface ItemsTest {
   fun createInitializedRepository(): ItemsRepository
 
   val repository: ItemsRepository
-    get() = ItemsRepositoryProvider.repository
 
   @Before
   fun setUp() {
-    ItemsRepositoryProvider.repository = createInitializedRepository()
+    ItemsRepositoryProvider.setRepository(createInitializedRepository())
   }
 
   // Robustly bring a tagged node into view across devices where the list may or may not be
@@ -42,28 +37,13 @@ interface ItemsTest {
         runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess
     if (alreadyVisible) return
 
-    // 1) Try to scroll the node itself (uses bring-into-view chain).
-    val scrolledChild =
-        runCatching {
-              onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
-              waitForIdle()
-            }
-            .isSuccess
-    if (scrolledChild) return
-
-    // 2) Try to scroll the parent LazyColumn to the node.
-    val scrolledParent =
-        runCatching {
-              onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performScrollToNode(hasTestTag(tag))
-              waitForIdle()
-            }
-            .isSuccess
-    if (scrolledParent) return
-
     // 3) Fallback: manual swipes a few times (helps when semantics are quirky but visual scroll
     // still works).
     repeat(5) {
-      onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput { swipeUp() }
+      onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput {
+        swipeUp(startY = bottom, endY = top)
+      }
+      waitForIdle()
       if (runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess)
           return
     }
@@ -127,13 +107,13 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.enterAddItemDetails(item: Item) {
-    enterAddItemType(item.type)
+    item.type?.let { enterAddItemType(it) }
     enterAddItemCategory(item.category)
-    enterAddItemBrand(item.brand)
-    enterAddItemPrice(item.price)
-    enterAddItemLink(item.link)
+    item.brand?.let { enterAddItemBrand(it) }
+    item.price?.let { enterAddItemPrice(it) }
+    item.link?.let { enterAddItemLink(it) }
     enterAddItemPhoto(item.image)
-    item.material.forEach { enterAddItemMaterial(it.name) }
+    item.material.forEach { it?.let { material -> enterAddItemMaterial(material.name) } }
   }
 
   fun ComposeTestRule.verifyImageUploadFlow(viewModel: AddItemsViewModel, uri: Uri) {
@@ -161,7 +141,7 @@ interface ItemsTest {
         this.link == other.link &&
         this.material.size == other.material.size &&
         this.material.zip(other.material).all { (m1, m2) ->
-          m1.name == m2.name && m1.percentage == m2.percentage
+          m1?.name == m2?.name && m1?.percentage == m2?.percentage
         }
   }
 
@@ -170,7 +150,7 @@ interface ItemsTest {
         Item(
             uuid = "0",
             image = Uri.parse("https://example.com/image1.jpg"),
-            category = "Clothes",
+            category = "Clothing",
             type = "t-shirt",
             brand = "Mango",
             price = 0.0,
@@ -201,16 +181,13 @@ interface ItemsTest {
 
     val item4 =
         Item(
-            uuid = "3",
-            image = Uri.parse("https://example.com/image1.jpg"),
-            category = "accessories",
-            type = "sunglasses",
-            brand = "Ray-Ban",
-            price = 100.0,
-            material =
-                listOf(
-                    Material(name = "Plastic", percentage = 80.0),
-                    Material(name = "Metal", percentage = 20.0)),
+            uuid = "4",
+            image = Uri.parse("https://example.com/image4.jpg"),
+            category = "Clothing",
+            type = "jacket",
+            brand = "Mango",
+            price = 0.0,
+            material = listOf(),
             link = "https://example.com/item4")
   }
 }
