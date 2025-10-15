@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.OutfitPost
+import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -21,6 +22,7 @@ object FeedScreenTestTags {
   const val LOCKED_MESSAGE = "feedLockedMessage"
   const val ADD_POST_FAB = "addPostFab"
   const val FEED_LIST = "feedList"
+  const val NAVIGATE_TO_SEARCH_SCREEN = "navigateToSearchScreen"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,12 +50,13 @@ fun FeedScreen(
                           fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
             },
             navigationIcon = {
-              IconButton(onClick = onSearchClick) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.tertiary)
-              }
+              IconButton(
+                  onClick = onSearchClick, modifier = Modifier.testTag(NAVIGATE_TO_SEARCH_SCREEN)) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.tertiary)
+                  }
             },
             actions = {
               // TODO: replace this icon with user profile avatar once implemented

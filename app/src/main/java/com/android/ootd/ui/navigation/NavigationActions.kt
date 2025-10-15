@@ -37,6 +37,7 @@ sealed class Screen(
   object Feed : Screen(route = "feed", name = "Feed", isTopLevelDestination = true)
 
   // TODO: add routes for Search Screen and Profile Screen
+  object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {
