@@ -31,9 +31,22 @@ class FeedScreenExtraCoverageTest {
           onAccountIconClick = { profileClicked = true })
     }
 
+    // Wait for the UI to fully compose, especially for AccountIcon which uses a ViewModel
+    // The AccountIcon initializes a ViewModel that launches coroutines, so we need to give it time
+    composeTestRule.waitForIdle()
+
+    // Additional wait to ensure AccountIcon's ViewModel has initialized
+    Thread.sleep(100)
+    composeTestRule.waitForIdle()
+
     // Simulate clicks on both icons
     composeTestRule.onNodeWithContentDescription("Search").performClick()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
+
+    // Use onNodeWithTag with assertion to ensure it exists before clicking
+    composeTestRule
+        .onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER)
+        .assertExists()
+        .performClick()
 
     assertTrue(searchClicked)
     assertTrue(profileClicked)

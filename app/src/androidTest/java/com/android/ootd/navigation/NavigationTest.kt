@@ -123,8 +123,8 @@ class NavigationTest {
       // Try to go back - should return to start destination (Splash)
       navigation.goBack()
 
-      // Should be back at Authentication (the start destination)
-      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+      // Should be back at Splash (the start destination)
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
     }
   }
 
