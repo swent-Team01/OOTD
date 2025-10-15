@@ -34,8 +34,9 @@ sealed class Screen(
   /** Splash / launch screen. Marked as a top\-level destination. */
   object Splash : Screen(route = "splash", name = "Splash", isTopLevelDestination = false)
 
-  // ToDo: Replace overview with main when implemented
-  object Overview : Screen(route = "overview", name = "Overview", isTopLevelDestination = true)
+  object Feed : Screen(route = "feed", name = "Feed", isTopLevelDestination = true)
+
+  // TODO: add routes for Search Screen and Profile Screen
 
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {

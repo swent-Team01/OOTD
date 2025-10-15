@@ -31,4 +31,6 @@ val Typography =
                 lineHeight = 24.sp),
         // small body
         bodySmall =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 13.sp))
+            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 13.sp),
+        headlineLarge =
+            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 64.sp))

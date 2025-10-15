@@ -3,6 +3,7 @@ package com.android.ootd.model.user
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
+import kotlin.text.set
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -167,6 +168,62 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
+  fun userExistsReturnsTrueWhenUserHasName() = runTest {
+    repository.addUser(user1)
+
+    val exists = repository.userExists(user1.uid)
+
+    assert(exists)
+  }
+
+  @Test
+  fun userExistsReturnsFalseWhenUserNotFound() = runTest {
+    val nonExistentUserId = "nonExistentUser123"
+
+    val exists = repository.userExists(nonExistentUserId)
+
+    assert(!exists)
+  }
+
+  @Test
+  fun userExistsReturnsFalseWhenUserHasBlankName() = runTest {
+    // Add user document with blank username field
+    FirebaseEmulator.firestore
+        .collection(USER_COLLECTION_PATH)
+        .document("userWithBlankName")
+        .set(mapOf("uid" to "userWithBlankName", "username" to ""))
+        .await()
+
+    val exists = repository.userExists("userWithBlankName")
+
+    assert(!exists)
+  }
+
+  @Test
+  fun userExistsReturnsFalseWhenUserHasNullName() = runTest {
+    // Add user document with null name field
+    FirebaseEmulator.firestore
+        .collection(USER_COLLECTION_PATH)
+        .document("userWithNullName")
+        .set(mapOf("uid" to "userWithNullName"))
+        .await()
+
+    val exists = repository.userExists("userWithNullName")
+
+    assert(!exists)
+  }
+
+  @Test
+  fun userExistsHandlesMultipleUsersCorrectly() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+
+    assert(repository.userExists(user1.uid))
+    assert(repository.userExists(user2.uid))
+    assert(!repository.userExists("nonExistentUser"))
+  }
+
+  @Test
   fun getUserReturnsCorrectUserFromMultipleUsers() = runTest {
     val user3 = user1.copy(uid = "user3", username = "user3name")
     val user4 = user1.copy(uid = "user4", username = "user4name")
@@ -278,5 +335,173 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val exception = runCatching { repository.createUser(user1.username, uid2) }.exceptionOrNull()
 
     assert(exception != null)
+  }
+
+  @Test
+  fun canRemoveFriendFromUser() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+
+    repository.removeFriend(user1.uid, user2.uid, user2.username)
+
+    val updatedUser = repository.getUser(user1.uid)
+    assertEquals(0, updatedUser.friendList.size)
+  }
+
+  @Test
+  fun removeFriendThrowsExceptionWhenUserNotFound() = runTest {
+    val nonExistentUserId = "nonExistentUser123"
+
+    val exception =
+        runCatching { repository.removeFriend(nonExistentUserId, user1.uid, user1.username) }
+            .exceptionOrNull()
+
+    assert(exception is NoSuchElementException)
+  }
+
+  @Test
+  fun removeFriendThrowsExceptionWhenFriendNotFound() = runTest {
+    repository.addUser(user1)
+    val nonExistentFriendId = "nonExistentFriend123"
+
+    val exception =
+        runCatching { repository.removeFriend(user1.uid, nonExistentFriendId, "fakeName") }
+            .exceptionOrNull()
+
+    assert(exception is NoSuchElementException)
+    assert(exception?.message?.contains(nonExistentFriendId) == true)
+  }
+
+  @Test
+  fun removeFriendDoesNothingWhenFriendNotInList() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    val user3 = user1.copy(uid = "user3", username = "user3name")
+    repository.addUser(user3)
+
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+
+    repository.removeFriend(user1.uid, user3.uid, user3.username)
+
+    val updatedUser = repository.getUser(user1.uid)
+    assertEquals(1, updatedUser.friendList.size)
+    assertEquals(user2.uid, updatedUser.friendList.first().uid)
+  }
+
+  @Test
+  fun removeFriendPreservesOtherFriends() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    val user3 = user1.copy(uid = "user3", username = "user3name")
+    repository.addUser(user3)
+
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user3.uid, user3.username)
+
+    repository.removeFriend(user1.uid, user2.uid, user2.username)
+
+    val updatedUser = repository.getUser(user1.uid)
+    assertEquals(1, updatedUser.friendList.size)
+    assertEquals(user3.uid, updatedUser.friendList.first().uid)
+  }
+
+  @Test
+  fun canRemoveMultipleFriendsFromUser() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    val user3 = user1.copy(uid = "user3", username = "user3name")
+    repository.addUser(user3)
+
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+    repository.addFriend(user1.uid, user3.uid, user3.username)
+
+    repository.removeFriend(user1.uid, user2.uid, user2.username)
+    repository.removeFriend(user1.uid, user3.uid, user3.username)
+
+    val updatedUser = repository.getUser(user1.uid)
+    assertEquals(0, updatedUser.friendList.size)
+  }
+
+  @Test
+  fun isMyFriendReturnsTrueForExistingFriend() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+
+    val isFriend = repository.isMyFriend(user1.uid, user2.uid)
+
+    assert(isFriend)
+  }
+
+  @Test
+  fun isMyFriendReturnsFalseForNonFriend() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    val user3 = user1.copy(uid = "user3", username = "user3name")
+    repository.addUser(user3)
+
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+
+    val isFriend = repository.isMyFriend(user1.uid, user3.uid)
+
+    assert(!isFriend)
+  }
+
+  @Test
+  fun isMyFriendReturnsFalseAfterRemovingFriend() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+
+    repository.removeFriend(user1.uid, user2.uid, user2.username)
+
+    val isFriend = repository.isMyFriend(user1.uid, user2.uid)
+
+    assert(!isFriend)
+  }
+
+  @Test
+  fun isMyFriendReturnsTrueAfterAddingFriend() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+
+    val wasNotFriend = repository.isMyFriend(user1.uid, user2.uid)
+    repository.addFriend(user1.uid, user2.uid, user2.username)
+    val isFriend = repository.isMyFriend(user1.uid, user2.uid)
+
+    assert(!wasNotFriend)
+    assert(isFriend)
+  }
+
+  @Test
+  fun isMyFriendThrowsExceptionWhenUserNotFound() = runTest {
+    val nonExistentUserId = "nonExistentUser123"
+
+    val exception =
+        runCatching { repository.isMyFriend(nonExistentUserId, user1.uid) }.exceptionOrNull()
+
+    assert(exception is NoSuchElementException)
+    assert(exception?.message?.contains("authenticated user has not been added") == true)
+  }
+
+  @Test
+  fun isMyFriendReturnsFalseWhenFriendUserDoesNotExist() = runTest {
+    repository.addUser(user1)
+    val nonExistentFriendId = "nonExistentFriend123"
+
+    val isFriend = repository.isMyFriend(user1.uid, nonExistentFriendId)
+
+    assert(!isFriend)
+  }
+
+  @Test
+  fun isMyFriendWorksWithEmptyFriendList() = runTest {
+    repository.addUser(user1)
+    repository.addUser(user2)
+
+    val isFriend = repository.isMyFriend(user1.uid, user2.uid)
+
+    assert(!isFriend)
   }
 }

@@ -37,6 +37,15 @@ interface UserRepository {
   suspend fun getUser(userID: String): User
 
   /**
+   * Asserts if a user has a username or not in the database
+   *
+   * @param userID The wanted user's ID
+   * @return True if the user has a non empty/blank username
+   * @throws Exception If the user is not found
+   */
+  suspend fun userExists(userID: String): Boolean
+
+  /**
    * Adds the user with friendID in the friend list of userID.
    *
    * @param userID The unique identifier of the User which friend's list is updated.
@@ -45,4 +54,22 @@ interface UserRepository {
    * @throws Exception if userID or friendID is not found.
    */
   suspend fun addFriend(userID: String, friendID: String, friendUsername: String)
+
+  /**
+   * Removes the user with friendID from the friend list of userID.
+   *
+   * @param userID The unique identifier of the User which friend's list is updated.
+   * @param friendID The unique identifier of the User which will be removed to the friend list.
+   * @param friendUsername The username associated to the User with friendID.
+   * @throws Exception if userID or friendID is not found
+   */
+  suspend fun removeFriend(userID: String, friendID: String, friendUsername: String)
+  /**
+   * Checks if for userID, the user with id friendID is his friend.
+   *
+   * @param userID The unique identifier of the user which friend list is checked.
+   * @param friendID The unique identifier of the user looked for in the friend list.
+   * @throws Exception if friendID is not found or user is not authenticated
+   */
+  suspend fun isMyFriend(userID: String, friendID: String): Boolean
 }

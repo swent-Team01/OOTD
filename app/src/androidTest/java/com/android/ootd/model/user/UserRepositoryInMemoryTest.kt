@@ -1,7 +1,11 @@
 package com.android.ootd.model.user
 
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -37,12 +41,13 @@ class UserRepositoryInMemoryTest {
   fun getAllUsers_returnsAllPreloadedUsers() = runTest {
     val users = repository.getAllUsers()
 
-    assertEquals(5, users.size)
+    assertEquals(6, users.size)
     assertTrue(users.any { it.uid == "user1" })
     assertTrue(users.any { it.uid == "user2" })
     assertTrue(users.any { it.uid == "user3" })
     assertTrue(users.any { it.uid == "user4" })
     assertTrue(users.any { it.uid == "user5" })
+    assert(users.any { it.uid == "nonRegisterUser" })
   }
 
   @Test
@@ -73,6 +78,25 @@ class UserRepositoryInMemoryTest {
         }
 
     assertEquals("User with ID nonexistent not found", exception.message)
+  }
+
+  @Test
+  fun userExists_worksCorrectlyForUserWithUsername() = runTest {
+    val user = repository.userExists("user1")
+    assertTrue(user)
+  }
+
+  @Test
+  fun userExists_throwsIfUidDoesNotExist() {
+    assertThrows(NoSuchElementException::class.java) {
+      runTest { repository.userExists("I do not exist") }
+    }
+  }
+
+  @Test
+  fun userExists_worksWithUnexistantUseranme() = runTest {
+    val user = repository.userExists("nonRegisterUser")
+    assertTrue(!user)
   }
 
   @Test

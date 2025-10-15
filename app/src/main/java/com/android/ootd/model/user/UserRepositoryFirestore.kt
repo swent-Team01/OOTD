@@ -139,6 +139,23 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
+  override suspend fun userExists(userID: String): Boolean {
+    return try {
+      val querySnapshot =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+
+      if (querySnapshot.documents.isEmpty()) {
+        false
+      } else {
+        val username = querySnapshot.documents[0].getString("username")
+        !username.isNullOrBlank()
+      }
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)
+      throw e
+    }
+  }
+
   override suspend fun addUser(user: User) {
     try {
       val existingDoc =
@@ -173,11 +190,45 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       // array section
 
       val friendDto = Friend(uid = friendID, username = friendUsername).toDto()
-      userRef.update("friendList", FieldValue.arrayUnion(friendDto))
+      userRef.update("friendList", FieldValue.arrayUnion(friendDto)).await()
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
       throw e
     }
+  }
+
+  override suspend fun removeFriend(userID: String, friendID: String, friendUsername: String) {
+    try {
+      val friendDocumentList =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
+
+      if (friendDocumentList.documents.isEmpty()) {
+        throw NoSuchElementException("Friend with ID $friendID not found")
+      }
+
+      val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
+      val friendDto = Friend(uid = friendID, username = friendUsername).toDto()
+      // Use arrayRemove to remove the friend from the array
+      userRef.update("friendList", FieldValue.arrayRemove(friendDto)).await()
+    } catch (e: Exception) {
+      Log.e(
+          "UserRepositoryFirestore", "Error removing friend $friendID from $userID ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
+    val documentList = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+    if (documentList.documents.isEmpty()) {
+      throw NoSuchElementException("The authenticated user has not been added to the database")
+    }
+    if (documentList.documents.size != 1) {
+      throw IllegalStateException("There are multiple users with the same uid")
+    }
+    val myUser = transformUserDocument(documentList.documents[0])
+
+    return (myUser?.friendList?.isNotEmpty() == true &&
+        myUser.friendList.any { it.uid == friendID })
   }
 
   private suspend fun usernameExists(username: String): Boolean {
