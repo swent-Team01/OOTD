@@ -42,14 +42,7 @@ class AccountIconFirebaseTest : FirestoreTest() {
     accountService = AccountServiceFirebase()
   }
 
-  @After
-  override fun tearDown() {
-    runTest {
-      // Clean up test user
-      FirebaseEmulator.auth.currentUser?.delete()?.await()
-    }
-    super.tearDown()
-  }
+  // Let the parent FirestoreTest handle cleanup - no need to override tearDown
 
   @Test
   fun accountIcon_withFirebaseUser_displaysGooglePhotoUrl() = runTest {
