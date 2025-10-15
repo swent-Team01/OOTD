@@ -24,6 +24,7 @@ import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
+import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.ktx.Firebase
@@ -64,7 +65,7 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Splash.route
+  val startDestination = Screen.Feed.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
@@ -93,7 +94,9 @@ fun OOTDApp(
     navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
       composable(Screen.Feed.route) {
         FeedScreen(
-            onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+            onAddPostClick = {
+              navigationActions.navigateTo(Screen.FitCheck)
+            }, // this will go to AddItemScreen
             onSearchClick = { /* TODO: show search profile page */},
             onProfileClick = { /* TODO: show user profile page */})
       }
@@ -113,6 +116,14 @@ fun OOTDApp(
               EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
             }
           }
+    }
+
+    navigation(startDestination = Screen.FitCheck.route, route = Screen.FitCheck.name) {
+      composable(Screen.FitCheck.route) {
+        FitCheckScreen(
+            onNextClick = { /* TODO: navigate to item selection screen */},
+            onBackClick = { navigationActions.goBack() })
+      }
     }
   }
 }
