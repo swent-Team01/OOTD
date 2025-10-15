@@ -11,7 +11,6 @@ data class FitCheckUIState(
     val description: String = "",
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
-    // val addedItemIds: List<String> = emptyList(), // optional for later steps
 ) {
   val isPhotoValid: Boolean
     get() = invalidPhotoMsg == null && image != Uri.EMPTY
@@ -25,7 +24,6 @@ class FitCheckViewModel : ViewModel() {
     _uiState.value =
         _uiState.value.copy(
             image = uri,
-            // 👇 Clear error if user now added a valid photo
             errorMessage =
                 if (uri == Uri.EMPTY) {
                   "Please select a photo before continuing."
@@ -45,8 +43,4 @@ class FitCheckViewModel : ViewModel() {
   fun clearError() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
   }
-
-  //  fun clearDraft() {
-  //    _uiState.value = FitCheckUIState()
-  //  }
 }

@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,7 +46,8 @@ fun FeedScreen(
                   text = "OOTD",
                   style =
                       MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
+                          fontWeight = FontWeight.ExtraBold,
+                          color = MaterialTheme.colorScheme.primary))
             },
             navigationIcon = {
               IconButton(onClick = onSearchClick) {
@@ -70,10 +72,12 @@ fun FeedScreen(
       },
       floatingActionButton = {
         if (!hasPostedToday) {
-          FloatingActionButton(
+          Button(
               onClick = onAddPostClick,
+              colors =
+                  ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
               modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB)) {
-                Text("Do a Fit Check")
+                Text("Do a Fit Check", color = Color.White)
               }
         }
       }) { paddingValues ->
