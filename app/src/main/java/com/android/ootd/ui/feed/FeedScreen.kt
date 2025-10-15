@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.OutfitPost
+import com.android.ootd.ui.account.AccountIcon
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -29,7 +29,7 @@ fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onAddPostClick: () -> Unit,
     onSearchClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onAccountIconClick: () -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -55,15 +55,7 @@ fun FeedScreen(
                     tint = MaterialTheme.colorScheme.tertiary)
               }
             },
-            actions = {
-              // TODO: replace this icon with user profile avatar once implemented
-              IconButton(onClick = onProfileClick) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile",
-                    tint = MaterialTheme.colorScheme.primary)
-              }
-            },
+            actions = { AccountIcon(onClick = onAccountIconClick) },
             colors =
                 TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background))

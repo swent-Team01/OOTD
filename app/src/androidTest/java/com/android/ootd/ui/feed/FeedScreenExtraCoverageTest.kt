@@ -26,7 +26,7 @@ class FeedScreenExtraCoverageTest {
       FeedScreen(
           onAddPostClick = {},
           onSearchClick = { searchClicked = true },
-          onProfileClick = { profileClicked = true })
+          onAccountIconClick = { profileClicked = true })
     }
 
     // Simulate clicks on both icons

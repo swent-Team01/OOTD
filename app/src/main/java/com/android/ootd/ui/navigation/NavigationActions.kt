@@ -36,6 +36,8 @@ sealed class Screen(
 
   object Feed : Screen(route = "feed", name = "Feed", isTopLevelDestination = true)
 
+  object Account : Screen(route = "account", name = "Account", isTopLevelDestination = false)
+
   // TODO: add routes for Search Screen and Profile Screen
 
   data class EditItem(val itemUid: String) :
@@ -79,7 +81,11 @@ open class NavigationActions(
       if (screen.isTopLevelDestination) {
         launchSingleTop = true
         // Clear back stack to start destination when navigating to top-level screens
-        popUpTo(navController.graph.startDestinationId) { saveState = true }
+        popUpTo(navController.graph.startDestinationId) {
+          inclusive = true
+          // Don't save state when navigating to Authentication (e.g., after sign-out)
+          saveState = screen !is Screen.Authentication
+        }
       }
 
       if (screen !is Screen.Authentication) {
