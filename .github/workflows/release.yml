@@ -50,11 +50,23 @@ jobs:
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
         run: |
-          if [ -n "$GOOGLE_SERVICES" ]; then
-            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
-          else
-            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          if [ -z "$GOOGLE_SERVICES" ]; then
+            echo "::error::GOOGLE_SERVICES secret is not set! Cannot build release without Firebase configuration."
+            echo "Please set the GOOGLE_SERVICES secret in your repository settings."
+            echo "To create it, run: base64 -i app/google-services.json | pbcopy"
+            exit 1
           fi
+          echo "Decoding google-services.json..."
+          echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          
+          # Verify the file was created successfully
+          if [ ! -f ./app/google-services.json ]; then
+            echo "::error::Failed to create google-services.json file"
+            exit 1
+          fi
+          
+          echo "✓ google-services.json decoded successfully"
+          ls -lh ./app/google-services.json
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
