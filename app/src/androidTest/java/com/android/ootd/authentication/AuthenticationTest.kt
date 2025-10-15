@@ -514,7 +514,10 @@ class AuthenticationExtensiveTest {
 
     composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
 
     composeTestRule.onNodeWithText("WELCOME").assertIsDisplayed()
     composeTestRule.onNodeWithText("Sign in with Google").assertIsDisplayed()
@@ -538,7 +541,10 @@ class AuthenticationExtensiveTest {
 
     composeTestRule.setContent { SignInScreen(authViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .performScrollTo()
+        .performClick()
 
     verify { mockViewModel.signIn(any(), any()) }
   }
@@ -591,7 +597,10 @@ class AuthenticationExtensiveTest {
           .isNotEmpty()
     }
 
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   // ========== Sign-In Navigation Tests ==========
