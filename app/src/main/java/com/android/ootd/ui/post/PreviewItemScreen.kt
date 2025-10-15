@@ -56,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
@@ -93,7 +94,10 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
       topBar = {
         CenterAlignedTopAppBar(
             title = {
-              Text(text = "OOTD", fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.5f)
+              Text(
+                  text = "OOTD",
+                  fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.5f,
+              )
             },
             navigationIcon = {
               IconButton(onClick = { /* Handle navigation icon press */}) {
@@ -169,7 +173,11 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
                         Modifier.widthIn(220.dp)
                             .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
                     text = "What are you wearing today ?",
-                    style = MaterialTheme.typography.titleMedium,
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
               }
