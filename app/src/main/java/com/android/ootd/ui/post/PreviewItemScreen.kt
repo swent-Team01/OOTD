@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -63,8 +64,7 @@ import com.android.ootd.ui.theme.Primary
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
   const val ITEM_LIST = "itemList"
-  const val POST_BUTTON = "postFab"
-
+  const val POST_BUTTON = "postButton"
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
@@ -84,7 +84,6 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
 
   LaunchedEffect(uiState.errorMessage) {
     uiState.errorMessage?.let { message ->
-      // Show error message as a toast or snackbar
       Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
       outfitPreviewViewModel.clearErrorMessage()
     }
@@ -93,15 +92,7 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
       topBar = {
         CenterAlignedTopAppBar(
             title = {
-              Text(
-                  text = "OOTD",
-                  //                      style = Theme.typography.titleSmall.copy(
-                  //                            color = Primary,
-                  //                            fontSize =
-                  // MaterialTheme.typography.displayLarge.fontSize * 1.5f,
-                  //                            fontWeight = FontWeight.SemiBold
-                  //                        )
-              )
+              Text(text = "OOTD", fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.5f)
             },
             navigationIcon = {
               IconButton(onClick = { /* Handle navigation icon press */}) {
@@ -117,7 +108,40 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
                     scrolledContainerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = Primary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-            scrollBehavior = scrollBehavior)
+            scrollBehavior = scrollBehavior,
+        )
+      },
+      bottomBar = {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically) {
+              if (itemsList.isNotEmpty()) {
+                Button(
+                    onClick = { /* Handle Post outfit */},
+                    modifier =
+                        Modifier.height(47.dp)
+                            .width(140.dp)
+                            .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                      Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                      Spacer(Modifier.width(8.dp))
+                      Text("Post", color = White)
+                    }
+              }
+
+              Button(
+                  onClick = { /* Navigate to Add Item screen */},
+                  modifier =
+                      Modifier.height(47.dp)
+                          .width(140.dp)
+                          .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add Item", color = White)
+                  }
+            }
       }) { innerPadding ->
         if (itemsList.isNotEmpty()) {
           LazyColumn(
@@ -144,34 +168,9 @@ fun PreviewItemScreen(outfitPreviewViewModel: OutfitPreviewViewModel = viewModel
                         Modifier.widthIn(220.dp)
                             .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
                     text = "What are you wearing today ?",
-                    style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        ))
-
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = { /* Handle navigation icon press */},
-                    modifier =
-                        Modifier.height(47.dp)
-                            .width(140.dp)
-                            .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                      Row(
-                          verticalAlignment = Alignment.CenterVertically,
-                          horizontalArrangement = Arrangement.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Create item",
-                                tint = White,
-                                modifier = Modifier.size(20.dp))
-                            Text(
-                                text = "Add Item",
-                                modifier = Modifier.align(Alignment.CenterVertically))
-                          }
-                    }
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
               }
         }
       }
@@ -191,12 +190,10 @@ fun OutfitItem(item: Item, onClick: () -> Unit) {
       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSecondary),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
         Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-          // 🟣 Main content (image + text)
           Row(
               modifier = Modifier.fillMaxWidth(),
               horizontalArrangement = Arrangement.Start,
               verticalAlignment = Alignment.CenterVertically) {
-                // Left: image
                 AsyncImage(
                     model = item.image,
                     contentDescription = "Item image",
@@ -208,8 +205,6 @@ fun OutfitItem(item: Item, onClick: () -> Unit) {
                     contentScale = ContentScale.Crop)
 
                 Spacer(modifier = Modifier.width(12.dp))
-
-                // Right: text column
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.weight(1f)) {
@@ -224,8 +219,6 @@ fun OutfitItem(item: Item, onClick: () -> Unit) {
                           style =
                               MaterialTheme.typography.bodyMedium.copy(
                                   color = MaterialTheme.colorScheme.onSurface))
-
-                      // 🟢 Expanded section
                       AnimatedVisibility(visible = isExpanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                           item.brand?.let {
@@ -259,8 +252,6 @@ fun OutfitItem(item: Item, onClick: () -> Unit) {
                       }
                     }
               }
-
-          // 🟣 Top-right overlay icons (floating over content)
           Row(
               modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
