@@ -46,12 +46,22 @@ object SignInScreenTestTags {
   const val LOGIN_BUTTON = "loginButton"
 }
 
+/**
+ * A composable function for the SignIn screen, which includes functionality for user login.
+ *
+ * @param authViewModel The ViewModel that manages authentication state. Defaults to a view model
+ *   instance for SignIn.
+ * @param credentialManager Manages user credentials, created from the current context.
+ * @param onSignedIn Callback invoked when the user successfully signs in to the app.
+ * @param onRegister Callback invoked to navigate to the registration screen.
+ */
 @Preview
 @Composable
 fun SignInScreen(
     authViewModel: SignInViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onSignedIn: () -> Unit = {},
+    onRegister: () -> Unit = {}
 ) {
   val context = LocalContext.current
   val uiState by authViewModel.uiState.collectAsState()
@@ -66,12 +76,19 @@ fun SignInScreen(
     }
   }
 
-  // Navigate to overview screen on successful login
-  LaunchedEffect(uiState.user) {
-    uiState.user?.let {
-      Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-      onSignedIn()
-    }
+  LaunchedEffect(uiState.user?.uid) {
+    val user = uiState.user ?: return@LaunchedEffect
+    Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+    authViewModel.routeAfterGoogleSignIn(
+        onSignedIn = onSignedIn,
+        onRegister = onRegister,
+        onFailure = { err ->
+          Toast.makeText(
+                  context,
+                  "Post sign-in routing failed: ${err.localizedMessage}",
+                  Toast.LENGTH_SHORT)
+              .show()
+        })
   }
 
   Scaffold { innerPadding ->

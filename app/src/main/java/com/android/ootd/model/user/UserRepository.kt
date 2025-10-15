@@ -37,6 +37,15 @@ interface UserRepository {
   suspend fun getUser(userID: String): User
 
   /**
+   * Asserts if a user has a username or not in the database
+   *
+   * @param userID The wanted user's ID
+   * @return True if the user has a non empty/blank username
+   * @throws Exception If the user is not found
+   */
+  suspend fun userExists(userID: String): Boolean
+
+  /**
    * Adds the user with friendID in the friend list of userID.
    *
    * @param userID The unique identifier of the User which friend's list is updated.

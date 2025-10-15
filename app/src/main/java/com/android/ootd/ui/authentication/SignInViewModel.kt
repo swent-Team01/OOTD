@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.R
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.user.UserRepository
+import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,8 +42,10 @@ data class AuthUIState(
  *
  * @property repository The repository used to perform authentication operations.
  */
-class SignInViewModel(private val repository: AccountService = AccountServiceFirebase()) :
-    ViewModel() {
+class SignInViewModel(
+    private val repository: AccountService = AccountServiceFirebase(),
+    private val userRepository: UserRepository = UserRepositoryProvider.repository
+) : ViewModel() {
 
   private val _uiState = MutableStateFlow(AuthUIState())
   val uiState: StateFlow<AuthUIState> = _uiState
@@ -116,6 +120,27 @@ class SignInViewModel(private val repository: AccountService = AccountServiceFir
               signedOut = true,
               user = null)
         }
+      }
+    }
+  }
+
+  /** Redirects the user if he has already been registered (has username) or not */
+  fun routeAfterGoogleSignIn(
+      onSignedIn: () -> Unit,
+      onRegister: () -> Unit,
+      onFailure: (Throwable) -> Unit = {}
+  ) {
+    viewModelScope.launch {
+      _uiState.update { it.copy(isLoading = true) }
+      clearErrorMsg()
+      try {
+        val uid = repository.currentUserId
+        val exists = userRepository.userExists(uid)
+        if (exists) onSignedIn() else onRegister()
+      } catch (t: Throwable) {
+        onFailure(t)
+      } finally {
+        _uiState.update { it.copy(isLoading = false) }
       }
     }
   }
