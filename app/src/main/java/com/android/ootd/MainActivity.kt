@@ -69,7 +69,7 @@ fun OOTDApp(
 ) {
   val navController = rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Feed.route
+  val startDestination = Screen.Splash.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
