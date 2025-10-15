@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
@@ -100,7 +101,13 @@ fun OOTDApp(
         FeedScreen(
             onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
             onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
-            onProfileClick = { /* TODO: show user profile page */})
+            onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
+      }
+      composable(Screen.Account.route) {
+        AccountScreen(
+            onBack = { navigationActions.goBack() },
+            onEditAvatar = { /*TODO: handle edit avatar*/},
+            onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
       }
 
       /* TODO: add navigation to ProfileScreen*/

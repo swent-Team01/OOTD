@@ -2,9 +2,11 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.android.ootd.model.OutfitPost
+import com.android.ootd.ui.account.UiTestTags
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -26,12 +28,25 @@ class FeedScreenExtraCoverageTest {
       FeedScreen(
           onAddPostClick = {},
           onSearchClick = { searchClicked = true },
-          onProfileClick = { profileClicked = true })
+          onAccountIconClick = { profileClicked = true })
     }
+
+    // Wait for the UI to fully compose, especially for AccountIcon which uses a ViewModel
+    // The AccountIcon initializes a ViewModel that launches coroutines, so we need to give it time
+    composeTestRule.waitForIdle()
+
+    // Additional wait to ensure AccountIcon's ViewModel has initialized
+    Thread.sleep(100)
+    composeTestRule.waitForIdle()
 
     // Simulate clicks on both icons
     composeTestRule.onNodeWithContentDescription("Search").performClick()
-    composeTestRule.onNodeWithContentDescription("Profile").performClick()
+
+    // Use onNodeWithTag with assertion to ensure it exists before clicking
+    composeTestRule
+        .onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER)
+        .assertExists()
+        .performClick()
 
     assertTrue(searchClicked)
     assertTrue(profileClicked)
