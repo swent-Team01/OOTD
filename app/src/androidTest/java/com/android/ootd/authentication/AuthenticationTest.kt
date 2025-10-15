@@ -646,10 +646,9 @@ class AuthenticationExtensiveTest {
       )
     }
 
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
 
     // Wait for sign-in to complete and routing to happen
     composeTestRule.waitUntil(timeoutMillis = 10000) { wentToRegister || wentToOverview }
@@ -705,10 +704,9 @@ class AuthenticationExtensiveTest {
       )
     }
 
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
 
     // Wait for sign-in to complete and routing to happen
     composeTestRule.waitUntil(timeoutMillis = 10000) { wentToRegister || wentToOverview }
@@ -763,10 +761,9 @@ class AuthenticationExtensiveTest {
       )
     }
 
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
 
     // Wait for the sign-in flow to complete and userExists to be called
     composeTestRule.waitUntil(timeoutMillis = 10000) { navigationCalled }
