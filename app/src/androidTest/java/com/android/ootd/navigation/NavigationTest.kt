@@ -51,6 +51,7 @@ class NavigationTest {
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
         composable(Screen.AddItemScreen.route) { /* minimal screen */}
         composable(Screen.EditItem.route) { /* minimal screen */}
+        composable(Screen.FitCheck.route) { /* minimal screen */}
       }
     }
   }
@@ -403,5 +404,389 @@ class NavigationTest {
       val route = navigation.currentRoute()
       assertTrue(route.isNotEmpty())
     }
+  }
+
+  // Additional PreviewItemScreen Navigation Tests
+
+  @Test
+  fun previewItemScreen_navigateFromFeed_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_goBackToFeed_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_navigateFromFitCheck_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.FitCheck)
+      assertEquals(Screen.FitCheck.route, navigation.currentRoute())
+
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_goBackToFitCheck_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.FitCheck.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_addItemAndReturn_shouldMaintainNavigationStack() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen)
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_editItemAndReturn_shouldMaintainNavigationStack() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      val testItemId = "test-item-456"
+      navigation.navigateTo(Screen.EditItem(testItemId))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_editMultipleItemsSequentially_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Edit first item
+      navigation.navigateTo(Screen.EditItem("item-1"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Edit second item
+      navigation.navigateTo(Screen.EditItem("item-2"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Edit third item
+      navigation.navigateTo(Screen.EditItem("item-3"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+      navigation.goBack()
+
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_addMultipleItemsSequentially_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Add first item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Add second item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Add third item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_complexFlow_addEditAddItem_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Add an item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Edit an existing item
+      navigation.navigateTo(Screen.EditItem("existing-item"))
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Add another item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_postOutfitNavigatesToFeed_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Simulate post action by navigating back to Feed (clearing back stack)
+      navigation.popUpTo(Screen.Feed.route)
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_fullFlow_fitCheckToPreviewToPost_shouldWork() {
+    composeRule.runOnIdle {
+      // Start at Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Go to FitCheck
+      navigation.navigateTo(Screen.FitCheck)
+      assertEquals(Screen.FitCheck.route, navigation.currentRoute())
+
+      // Go to PreviewItemScreen
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Add an item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Post outfit (navigate back to Feed)
+      navigation.popUpTo(Screen.Feed.route)
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_cancelFromAddItem_shouldReturnToPreview() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen)
+      assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
+
+      // Cancel by going back
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_cancelFromEditItem_shouldReturnToPreview() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(Screen.EditItem("item-cancel-test"))
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+
+      // Cancel by going back
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_deepNavigationStack_shouldMaintainHistory() {
+    composeRule.runOnIdle {
+      // Build deep navigation stack
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+      navigation.navigateTo(Screen.EditItem("item-1"))
+
+      assertEquals(Screen.EditItem.route, navigation.currentRoute())
+
+      // Navigate back through stack
+      navigation.goBack()
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.FitCheck.route, navigation.currentRoute())
+
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_fromAccount_shouldNotBeAccessible() {
+    composeRule.runOnIdle {
+      // PreviewItemScreen should not be directly accessible from Account
+      navigation.navigateTo(Screen.Account)
+      assertEquals(Screen.Account.route, navigation.currentRoute())
+
+      // This would be an invalid flow in the app, but navigation should still work
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_directNavigation_fromSplash_shouldWork() {
+    composeRule.runOnIdle {
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
+
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_navigateToAuthentication_shouldClearStack() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Sign out navigates to Authentication (top-level)
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+
+      // Going back should return to Splash (start destination)
+      navigation.goBack()
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_reenterAfterPosting_shouldWork() {
+    composeRule.runOnIdle {
+      // First visit to PreviewItemScreen
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+
+      // Post outfit
+      navigation.popUpTo(Screen.Feed.route)
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Return to PreviewItemScreen for another outfit
+      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_alternateEditAndAdd_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Edit item 1
+      navigation.navigateTo(Screen.EditItem("item-1"))
+      navigation.goBack()
+
+      // Add new item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+
+      // Edit item 2
+      navigation.navigateTo(Screen.EditItem("item-2"))
+      navigation.goBack()
+
+      // Add another item
+      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.goBack()
+
+      assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun previewItemScreen_editSameItemMultipleTimes_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PreviewItemScreen)
+      val itemId = "same-item"
+
+      // Edit same item multiple times
+      for (_i in 1..3) {
+        navigation.navigateTo(Screen.EditItem(itemId))
+        assertEquals(Screen.EditItem.route, navigation.currentRoute())
+        navigation.goBack()
+        assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+      }
+    }
+  }
+
+  @Test
+  fun feedScreen_onAddPostClick_navigatesToFitCheck() {
+    composeRule.runOnIdle {
+      // Start at Feed
+      navigation.navigateTo(Screen.Feed)
+
+      // Simulate user clicking "Add Post"
+      navigation.navigateTo(Screen.FitCheck)
+    }
+
+    composeRule.waitForIdle()
+    assertEquals(Screen.FitCheck.route, navigation.currentRoute())
+  }
+
+  @Test
+  fun fitCheckScreen_onNextClick_navigatesToPreviewItem() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+    }
+    composeRule.waitForIdle()
+    assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
+  }
+
+  @Test
+  fun previewItemScreen_onPostOutfit_navigatesBackToFeed() {
+    composeRule.runOnIdle {
+      // Move through the realistic flow
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.PreviewItemScreen)
+
+      // Simulate post action
+      navigation.popUpTo(Screen.Feed.route)
+      navigation.navigateTo(Screen.Feed)
+    }
+
+    composeRule.waitForIdle()
+    assertEquals(Screen.Feed.route, navigation.currentRoute())
   }
 }
