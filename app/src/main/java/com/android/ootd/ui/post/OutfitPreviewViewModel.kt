@@ -64,6 +64,7 @@ class OutfitPreviewViewModel(
       } catch (e: Exception) {
         Log.e("OutfitPreviewViewModel", "Error fetching items", e)
         setErrorMessage("Failed to load items: ${e.message}")
+        _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
   }
