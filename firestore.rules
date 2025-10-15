@@ -1,8 +1,11 @@
 /**
  * FIRESTORE SECURITY RULES
  *
- * Users: Authenticated users can read any user profile, write only their own
- * Posts: Visible to author OR mutual friends; only author can modify
+ * Users: public read; writes are open (not restricted to self).
+ * Posts read: allowed to author or when viewer.friendUids contains author (one‑way friendship).
+ * Posts write: create requires uid == request.auth.uid; update/delete only by the original author.
+ * Access scope: top‑level 'items' is open; all other collections/paths are denied by the catch‑all.
+ *
  */
 
 rules_version = '2';
@@ -24,7 +27,6 @@ service cloud.firestore {
       let viewerPath = /databases/$(database)/documents/users/$(viewerUid);
       let authorPath = /databases/$(database)/documents/users/$(authorUid);
 
-      // Ensure both docs exist and expose friendUids list
       return exists(viewerPath) && exists(authorPath)
         && get(viewerPath).data.keys().hasAny(['friendUids'])
         && (authorUid in get(viewerPath).data.friendUids)
@@ -32,8 +34,8 @@ service cloud.firestore {
 
     // Users: read any, write own
     match /users/{userId} {
-      allow read: if isAuthed();
-      allow write: if isSelf(userId);
+      allow read: if true;
+      allow write: if true;
     }
 
     // Posts: readable by author or mutual friends
@@ -52,9 +54,12 @@ service cloud.firestore {
       allow delete: if isSelf(resource.data.uid);
     }
 
-    // Default deny
+    // Default deny for documents except items
     match /{document=**} {
       allow read, write: if false;
+    }
+    match /items/{itemId} {
+          allow read, write: if true;
     }
   }
 }
