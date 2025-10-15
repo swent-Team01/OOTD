@@ -25,6 +25,7 @@ import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.post.EditItemsScreen
+import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
@@ -122,6 +123,14 @@ fun OOTDApp(
               EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
             }
           }
+    }
+
+    navigation(startDestination = Screen.FitCheck.route, route = Screen.FitCheck.name) {
+      composable(Screen.FitCheck.route) {
+        FitCheckScreen(
+            onNextClick = { /* TODO: navigate to item selection screen */},
+            onBackClick = { navigationActions.goBack() })
+      }
     }
   }
 }

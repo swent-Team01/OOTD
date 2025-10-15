@@ -38,6 +38,8 @@ sealed class Screen(
 
   object Account : Screen(route = "account", name = "Account", isTopLevelDestination = false)
 
+  object FitCheck : Screen(route = "fitCheck", name = "FitCheck", isTopLevelDestination = false)
+
   // TODO: add routes for Search Screen and Profile Screen
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
@@ -82,11 +84,7 @@ open class NavigationActions(
       if (screen.isTopLevelDestination) {
         launchSingleTop = true
         // Clear back stack to start destination when navigating to top-level screens
-        popUpTo(navController.graph.startDestinationId) {
-          inclusive = true
-          // Don't save state when navigating to Authentication (e.g., after sign-out)
-          saveState = screen !is Screen.Authentication
-        }
+        popUpTo(navController.graph.startDestinationId) { saveState = true }
       }
 
       if (screen !is Screen.Authentication) {
