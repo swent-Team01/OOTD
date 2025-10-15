@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.FeedScreenTestTags
@@ -30,12 +31,9 @@ import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.search.UserSearchScreenPreview
 import com.android.ootd.ui.search.UserSearchViewModel
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
+import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkStatic
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
@@ -161,12 +159,8 @@ class UserSearchScreenTest : FirestoreTest() {
   }
 
   @Test
-  fun testFollowButtonNotLoggedIn() {
-    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
-    mockkStatic(FirebaseAuth::class)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns null
-
+  fun testFollowButtonNotLoggedIn() = runTest {
+    FirebaseEmulator.auth.signOut()
     val mockViewModel =
         UserSearchViewModel(userRepository = UserRepositoryInMemory(), overrideUser = false)
 
@@ -190,26 +184,26 @@ class UserSearchScreenTest : FirestoreTest() {
                   .performClick()
             }
             .exceptionOrNull()
+    FirebaseEmulator.auth.signInAnonymously()
     // There is no logged in user so this should throw an error
     assert(exception is IllegalStateException)
   }
 
   @Test
-  fun testSearchWithMockedAuth() {
-    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
-    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
-
-    every { mockFirebaseUser.uid } returns "user1"
-    mockkStatic(FirebaseAuth::class)
-
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
-
+  fun testSearchWithMockedAuth() = runTest {
+    val userRepositoryInMemory = UserRepositoryInMemory()
+    userRepositoryInMemory.removeUser("user1")
+    userRepositoryInMemory.addUser(
+        User(
+            uid = FirebaseEmulator.auth.uid ?: "",
+            username = userRepositoryInMemory.nameList[0],
+            friendUids = listOf("user2", "user3")))
+    userRepositoryInMemory.currentUser = FirebaseEmulator.auth.uid ?: ""
     val mockViewModel =
-        UserSearchViewModel(userRepository = UserRepositoryInMemory(), overrideUser = false)
+        UserSearchViewModel(userRepository = userRepositoryInMemory, overrideUser = false)
 
     composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
-    val secondUsername = UserRepositoryInMemory().nameList[1]
+    val secondUsername = userRepositoryInMemory.nameList[1]
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
         .assertIsDisplayed()
@@ -219,13 +213,21 @@ class UserSearchScreenTest : FirestoreTest() {
 
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
+        .assertIsDisplayed()
         .performClick()
 
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
-
     composeTestRule.waitForIdle()
+
     composeTestRule
         .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+        .assertIsDisplayed()
         .assertTextContains("Follow", substring = true)
   }
 }
