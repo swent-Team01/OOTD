@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.credentials.CredentialManager
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -65,11 +66,13 @@ class MainActivity : ComponentActivity() {
 fun OOTDApp(
     context: Context = LocalContext.current,
     credentialManager: CredentialManager = CredentialManager.create(context),
-    storage: FirebaseStorage = Firebase.storage
+    storage: FirebaseStorage = Firebase.storage,
+    testNavController: NavHostController? = null,
+    testStartDestination: String? = null,
 ) {
-  val navController = rememberNavController()
+  val navController = testNavController ?: rememberNavController()
   val navigationActions = NavigationActions(navController)
-  val startDestination = Screen.Splash.route
+  val startDestination = testStartDestination ?: Screen.Splash.route
 
   NavHost(navController = navController, startDestination = startDestination) {
     // 1. Splash route (top-level, for all users)
