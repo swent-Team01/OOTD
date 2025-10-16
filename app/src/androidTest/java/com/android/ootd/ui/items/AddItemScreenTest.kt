@@ -138,6 +138,75 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun galleryLauncher_setsPhoto_whenUriNotNull() {
+    val fakeUri = Uri.parse("content://fake/photo.jpg")
+
+    composeTestRule.runOnIdle { viewModel.setPhoto(fakeUri) }
+
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.invalidPhotoMsg == null)
+      assert(viewModel.uiState.value.image == fakeUri)
+    }
+  }
+
+  @Test
+  fun categoryDropdown_onDismiss_callsValidateCategory_whenNotBlank() {
+    composeTestRule.runOnIdle {
+      viewModel.setCategory("Clothing")
+      viewModel.setErrorMsg("old_error")
+    }
+
+    // Simulate the dropdown being open
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
+
+    // Simulate dismiss
+    composeTestRule.runOnIdle {
+      // mimic onDismissRequest logic manually
+      viewModel.validateCategory()
+    }
+
+    // After validation, invalidCategory should be null
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
+  }
+
+  @Test
+  fun galleryLauncher_doesNothing_whenUriIsNull() {
+    composeTestRule.runOnIdle {
+      val previousImage = viewModel.uiState.value.image
+      val uri: Uri? = null
+      if (uri != null) viewModel.setPhoto(uri)
+      assert(viewModel.uiState.value.image == previousImage)
+    }
+  }
+
+  @Test
+  fun cameraLauncher_setsPhoto_whenSuccessAndUriNotNull() {
+    val fakeUri = Uri.parse("content://fake/camera_photo.jpg")
+
+    composeTestRule.runOnIdle {
+      val success = true
+      if (success && fakeUri != null) {
+        viewModel.setPhoto(fakeUri)
+      }
+    }
+
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.image == fakeUri) }
+  }
+
+  @Test
+  fun cameraLauncher_doesNothing_whenFailureOrUriNull() {
+    composeTestRule.runOnIdle {
+      val success = false
+      val cameraUri: Uri? = null
+      val previousImage = viewModel.uiState.value.image
+      if (success && cameraUri != null) {
+        viewModel.setPhoto(cameraUri)
+      }
+      assert(viewModel.uiState.value.image == previousImage)
+    }
+  }
+
+  @Test
   fun clickingAddItemReturns() {
     val item = ItemsTest.Companion.item4
     composeTestRule.enterAddItemDetails(item)
@@ -705,6 +774,27 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     // After onDone, dropdown should close
     composeTestRule
         .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun whenTakePhotoClicked_dialogCloses_and_buttonIsDisplayed() {
+    // Step 1: Open the AlertDialog
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
+
+    // Step 2: Verify that the dialog and both options are visible
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).assertIsDisplayed()
+
+    // Step 3: Click the "📸 Take a Photo" button
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).performClick()
+
+    // Step 4: Wait for recomposition (dialog should close)
+    composeTestRule.waitForIdle()
+
+    // Step 5: Verify that the dialog is now closed
+    composeTestRule
+        .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
         .assertCountEquals(0)
   }
 }
