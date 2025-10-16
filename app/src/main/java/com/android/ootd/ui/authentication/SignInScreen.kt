@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -37,7 +40,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 
 object SignInScreenTestTags {
@@ -93,7 +95,11 @@ fun SignInScreen(
 
   Scaffold { innerPadding ->
     Column(
-        modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 24.dp),
+        modifier =
+            Modifier.fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top) {
           // Use a fraction of the screen height so the content group shifts lower on taller screens
@@ -101,7 +107,7 @@ fun SignInScreen(
 
           Text(
               text = "WELCOME",
-              style = Typography.displayLarge,
+              style = Typography.headlineMedium,
               color = Primary,
               modifier = Modifier.padding(top = 8.dp).testTag(SignInScreenTestTags.LOGIN_TITLE))
 
@@ -134,23 +140,28 @@ fun SignInScreen(
 
 @Composable
 fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-  OutlinedButton(onClick = onClick, shape = RoundedCornerShape(50), modifier = modifier) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Box(
-          modifier =
-              Modifier.size(28.dp)
-                  .background(Background, shape = CircleShape)
-                  .border(1.dp, Tertiary, CircleShape),
-          contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(id = R.drawable.google_logo),
-                contentDescription = "Google logo",
-                modifier = Modifier.size(18.dp))
-          }
+  OutlinedButton(
+      onClick = onClick,
+      shape = RoundedCornerShape(50),
+      modifier = modifier,
+      border = androidx.compose.foundation.BorderStroke(1.dp, Primary),
+      colors = ButtonDefaults.outlinedButtonColors(containerColor = Background)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Box(
+              modifier =
+                  Modifier.size(28.dp)
+                      .background(Background, shape = CircleShape)
+                      .border(1.dp, Primary, CircleShape),
+              contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(id = R.drawable.google_logo),
+                    contentDescription = "Google logo",
+                    modifier = Modifier.size(18.dp))
+              }
 
-      Spacer(modifier = Modifier.size(12.dp))
+          Spacer(modifier = Modifier.size(12.dp))
 
-      Text(text = "Sign in with Google", style = Typography.titleLarge, color = Tertiary)
-    }
-  }
+          Text(text = "Sign in with Google", style = Typography.titleLarge, color = Primary)
+        }
+      }
 }
