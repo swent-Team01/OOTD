@@ -6,7 +6,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowBack
@@ -125,7 +127,11 @@ fun FitCheckScreen(
             }
       }) { innerPadding ->
         Column(
-            modifier = Modifier.padding(innerPadding).padding(24.dp).fillMaxSize(),
+            modifier =
+                Modifier.padding(innerPadding)
+                    .padding(24.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
               Box(

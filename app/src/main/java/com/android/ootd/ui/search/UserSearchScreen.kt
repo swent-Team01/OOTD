@@ -2,6 +2,8 @@ package com.android.ootd.ui.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -29,6 +31,7 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), onBack: () ->
       modifier =
           Modifier.fillMaxSize()
               .background(MaterialTheme.colorScheme.background)
+              .verticalScroll(rememberScrollState())
               .padding(vertical = 32.dp, horizontal = 20.dp)
               .testTag(SearchScreenTestTags.SEARCH_SCREEN)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
