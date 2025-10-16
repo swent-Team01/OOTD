@@ -19,3 +19,20 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# Keep all classes annotated with @Keep
+-keep @androidx.annotation.Keep class * { *; }
+
+# Firebase Firestore
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+
+# Keep Firestore classes
+-keep class com.google.firebase.firestore.** { *; }
+-keep class com.google.android.gms.** { *; }
+
+# Keep data class constructors
+-keepclassmembers class * {
+    public <init>();
+}
