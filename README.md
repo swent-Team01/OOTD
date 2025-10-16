@@ -11,6 +11,13 @@ outfit of the day with their friends to inspire them and give new style ideas wh
 brands to buy viewed items from making it easy to replicate outfits that appear in your feed. Users 
 are also able to store their previous outfits and highlight ones that they like best.
 
+## App Architecture
+The app follows the MVVM (Model-View-ViewModel) architecture pattern, which separates the user 
+interface from the business logic and data handling. This architecture enhances code maintainability,
+testability, and scalability. Below is a brief diagram of the architecture, more details can be 
+found in our project wiki. The full Excalidraw file is available in the diagrams folder of the repository.
+
+![App Architecture](diagrams/App_Arch_M1.png)
 ## Installation
 
 ### Clone the Repository
@@ -72,6 +79,7 @@ cd OOTD
 - [GitHub](https://github.com/swent-Team01/OOTD)
 - [GitHub Wiki](https://github.com/swent-Team01/OOTD/wiki)
 - [Figma](https://www.figma.com/design/EQfCuEx3jJpUSZ3NKc4DE5/stefan.taga-s-team-library?t=1rG02nxGubCxY31q-0)
+- [Excalidraw Diagram](https://excalidraw.com/#room=6865124c29e8ec921503,zoRPDbzFGn37jQek7YM2ag)
 
 ## Our Team
 | Name                 | GitHub account                                   |
