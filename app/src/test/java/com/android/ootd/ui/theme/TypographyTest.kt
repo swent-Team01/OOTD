@@ -58,6 +58,19 @@ class TypographyTest {
   }
 
   @Test
+  fun typography_headlineMedium_usesBodoniFont() {
+    val headlineMedium = Typography.headlineMedium
+
+    Assert.assertEquals(
+        "headlineMedium should use Bodoni font family", Bodoni, headlineMedium.fontFamily)
+    Assert.assertEquals(
+        "headlineMedium should use Bold weight",
+        FontWeight.Companion.Bold,
+        headlineMedium.fontWeight)
+    Assert.assertEquals("headlineMedium should have 48sp font size", 48.sp, headlineMedium.fontSize)
+  }
+
+  @Test
   fun typography_allBodoniStyles_useSameFontFamily() {
     val displayLarge = Typography.displayLarge
     val titleLarge = Typography.titleLarge
@@ -86,6 +99,8 @@ class TypographyTest {
         "titleLarge font size should be 20sp", 20.sp, Typography.titleLarge.fontSize)
     Assert.assertEquals("bodyLarge font size should be 16sp", 16.sp, Typography.bodyLarge.fontSize)
     Assert.assertEquals("bodySmall font size should be 13sp", 13.sp, Typography.bodySmall.fontSize)
+    Assert.assertEquals(
+        "headlineMedium font size should be 48sp", 48.sp, Typography.headlineMedium.fontSize)
   }
 
   @Test
@@ -106,6 +121,10 @@ class TypographyTest {
         "bodySmall should use Normal weight",
         FontWeight.Companion.Normal,
         Typography.bodySmall.fontWeight)
+    Assert.assertEquals(
+        "headlineMedium should use Bold weight",
+        FontWeight.Companion.Bold,
+        Typography.headlineMedium.fontWeight)
   }
 
   @Test
@@ -116,7 +135,8 @@ class TypographyTest {
             Typography.displayLarge,
             Typography.titleLarge,
             Typography.bodyLarge,
-            Typography.bodySmall)
+            Typography.bodySmall,
+            Typography.headlineMedium)
 
     styles.forEach { style ->
       Assert.assertNotNull("Text style should have a font family", style.fontFamily)
@@ -135,5 +155,7 @@ class TypographyTest {
         "Bodoni should be used in bodyLarge", Typography.bodyLarge.fontFamily == Bodoni)
     Assert.assertTrue(
         "Bodoni should be used in bodySmall", Typography.bodySmall.fontFamily == Bodoni)
+    Assert.assertTrue(
+        "Bodoni should be used in headlineMedium", Typography.headlineMedium.fontFamily == Bodoni)
   }
 }
