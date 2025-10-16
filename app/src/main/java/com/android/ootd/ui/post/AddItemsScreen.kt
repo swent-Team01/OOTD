@@ -74,8 +74,11 @@ object AddItemScreenTestTags {
   const val IMAGE_PICKER = "itemImagePicker"
   const val IMAGE_PREVIEW = "itemImagePreview"
 
+  const val GO_BACK_BUTTON = "goBackButton"
+
   const val IMAGE_PICKER_DIALOG = "imagePickerDialog"
 
+  const val TITLE_ADD = "titleAddItem"
   const val PICK_FROM_GALLERY = "pickFromGallery"
   const val TAKE_A_PHOTO = "takeAPhoto"
 
@@ -91,7 +94,8 @@ object AddItemScreenTestTags {
 fun AddItemsScreen(
     addItemsViewModel: AddItemsViewModel = viewModel(),
     onNextScreen: () -> Unit = {},
-    goBack: () -> Unit = {}
+    goBack: () -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
 
   val context = LocalContext.current
@@ -133,18 +137,21 @@ fun AddItemsScreen(
                   Text(
                       text = "ADD ITEMS",
                       style = MaterialTheme.typography.displayLarge,
-                      color = Primary)
+                      color = Primary,
+                      modifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD))
                 }
               }
             },
             navigationIcon = {
               Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-                IconButton(onClick = { goBack() }) {
-                  Icon(
-                      imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                      contentDescription = "Back",
-                  )
-                }
+                IconButton(
+                    onClick = { goBack() },
+                    modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                          contentDescription = "Back",
+                      )
+                    }
               }
             })
       },

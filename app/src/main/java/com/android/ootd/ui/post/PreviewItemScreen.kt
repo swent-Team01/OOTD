@@ -72,6 +72,9 @@ object PreviewItemScreenTestTags {
   const val EDIT_ITEM_BUTTON = "editItemButton"
   const val CREATE_ITEM_BUTTON = "createItemButton"
 
+  const val GO_BACK_BUTTON = "goBackButton"
+  const val SCREEN_TITLE = "screenTitle"
+
   fun getTestTagForItem(item: Item): String = "item${item.uuid}"
 }
 
@@ -105,16 +108,19 @@ fun PreviewItemScreen(
             title = {
               Text(
                   text = "OOTD",
+                  modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
                   fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.5f,
               )
             },
             navigationIcon = {
-              IconButton(onClick = { onGoBack() }) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "go back",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
-              }
+              IconButton(
+                  onClick = { onGoBack() },
+                  modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "go back",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                  }
             },
             colors =
                 TopAppBarDefaults.centerAlignedTopAppBarColors(

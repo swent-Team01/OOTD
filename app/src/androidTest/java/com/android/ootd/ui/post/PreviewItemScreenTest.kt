@@ -244,6 +244,37 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     assert(addItemClicked)
   }
 
+  //  @Test
+  //  fun clickingAddItemButton_navigatesToAddItemScreen() {
+  //    composeTestRule.setContent {
+  //      val navController = rememberNavController()
+  //      NavHost(navController = navController, startDestination = Screen.PreviewItemScreen.route)
+  // {
+  //        composable(Screen.PreviewItemScreen.route) {
+  //          PreviewItemScreen(
+  //              outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+  //              onAddItem = { navController.navigate(Screen.AddItemScreen.route) },
+  //              onEditItem = {},
+  //              onPostOutfit = {},
+  //              onGoBack = {})
+  //        }
+  //        composable("addItem") {
+  //          AddItemsScreen(
+  //              addItemsViewModel = AddItemsViewModel(),
+  //              onNextScreen = {},
+  //              goBack = {},
+  //              modifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD))
+  //        }
+  //      }
+  //    }
+  //
+  //    // Click "Add Item" button
+  //    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+  //
+  //    // Check that AddItemScreen is now displayed
+  //    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TITLE_ADD).assertIsDisplayed()
+  //  }
+
   @Test
   fun clickingEditItemButton_callsOnEditItemCallback() {
     var editedItemId: String? = null
@@ -734,5 +765,71 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
     assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
     assert(viewModel.uiState.value.errorMessage?.contains("Error number 3") == true)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun launchedEffect_withErrorMessage_clearsErrorAfterShowingToast() = runTest {
+    val repo = fakeRepository(listOf(fakeItem))
+    val viewModel = OutfitPreviewViewModel(repo)
+
+    // Set an artificial error message
+    val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
+    field.isAccessible = true
+    val stateFlow = field.get(viewModel) as MutableStateFlow<PreviewUIState>
+    stateFlow.value = stateFlow.value.copy(errorMessage = "Network error occurred")
+
+    composeTestRule.setContent { PreviewItemScreen(outfitPreviewViewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+
+    // After LaunchedEffect runs, the error message should be cleared
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.errorMessage == null) }
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun launchedEffect_unit_callsRefreshItemsOnInit() = runTest {
+    var refreshCalled = false
+    val repo =
+        object : ItemsRepository {
+          override fun getNewItemId(): String = "id"
+
+          override suspend fun getAllItems(): List<Item> {
+            refreshCalled = true
+            return listOf(fakeItem)
+          }
+
+          override suspend fun getItemById(uuid: String): Item = fakeItem
+
+          override suspend fun addItem(item: Item) {}
+
+          override suspend fun editItem(itemUUID: String, newItem: Item) {}
+
+          override suspend fun deleteItem(uuid: String) {}
+        }
+
+    val viewModel = OutfitPreviewViewModel(repo)
+
+    composeTestRule.setContent { PreviewItemScreen(outfitPreviewViewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      assert(refreshCalled)
+      assert(viewModel.uiState.value.items.isNotEmpty())
+    }
+  }
+
+  @Test
+  fun topAppBar_displaysOOTDTitle() {
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(emptyList())))
+    }
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
+
+    composeTestRule.onNodeWithText("OOTD").assertIsDisplayed()
   }
 }
