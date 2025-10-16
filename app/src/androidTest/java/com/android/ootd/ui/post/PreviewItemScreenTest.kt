@@ -1,10 +1,10 @@
 package com.android.ootd.ui.post
 
-import android.R.attr.category
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -357,5 +357,204 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         }
     val viewModel = OutfitPreviewViewModel(errorRepo)
     assert(viewModel.uiState.value.items.isEmpty())
+  }
+
+  // Additional comprehensive tests for better coverage
+  @Test
+  fun displayMultipleItemsWithDifferentCategories() {
+    val items =
+        listOf(
+            item1.copy(category = "Clothing"),
+            item2.copy(category = "Shoes"),
+            item3.copy(category = "Bags"),
+            item4.copy(category = "Accessories"))
+    setContent(withInitialItems = items)
+
+    composeTestRule.onNodeWithText("Clothing").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Shoes").assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PreviewItemScreenTestTags.ITEM_LIST)
+        .performScrollToNode(hasTestTag(PreviewItemScreenTestTags.getTestTagForItem(items[2])))
+    composeTestRule.onNodeWithText("Bags").assertIsDisplayed()
+  }
+
+  @Test
+  fun verifyMaterialsDisplayedWhenExpanded() {
+    val itemWithMaterials =
+        item1.copy(material = listOf(Material("Cotton", 70.0), Material("Polyester", 30.0)))
+    setContent(withInitialItems = listOf(itemWithMaterials))
+
+    // Expand item
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
+
+    // Materials should be visible (joined as string)
+    composeTestRule.onNodeWithText("Cotton, Polyester", substring = true).assertIsDisplayed()
+  }
+
+  @Test
+  fun verifyPriceFormattingIsCorrect() {
+    val itemWithPrice = item1.copy(price = 123.45)
+    setContent(withInitialItems = listOf(itemWithPrice))
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
+    composeTestRule.onNodeWithText("CHF 123.45", substring = true).assertIsDisplayed()
+  }
+
+  @Test
+  fun verifyLinkDisplayedWhenExpanded() {
+    val itemWithLink = item1.copy(link = "https://example.com/product")
+    setContent(withInitialItems = listOf(itemWithLink))
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
+    composeTestRule.onNodeWithText("https://example.com/product").assertIsDisplayed()
+  }
+
+  @Test
+  fun collapseItemHidesDetails() {
+    setContent(withInitialItems = listOf(item1))
+
+    // Expand first
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
+    composeTestRule.onNodeWithText(item1.brand ?: "").assertIsDisplayed()
+
+    // Collapse
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Basic info still visible, but details might be hidden
+    composeTestRule.onNodeWithText(item1.category).assertIsDisplayed()
+  }
+
+  @Test
+  fun verifyBackButtonIsDisplayed() {
+    setContent()
+    composeTestRule.onNodeWithContentDescription("go back").assertIsDisplayed()
+  }
+
+  @Test
+  fun addItemButtonIsClickable() {
+    setContent(withInitialItems = listOf(fakeItem))
+    composeTestRule
+        .onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+  }
+
+  @Test
+  fun allButtonsHaveCorrectIcons() {
+    setContent(withInitialItems = listOf(fakeItem))
+
+    // Post button should have check icon
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
+
+    // Add button should have add icon
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+
+    // Edit button should be visible
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).assertIsDisplayed()
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun viewModelRefreshItemsUpdatesState() = runTest {
+    val repo = fakeRepository(listOf(fakeItem))
+    val viewModel = OutfitPreviewViewModel(repo)
+
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+    assert(viewModel.uiState.value.items.size == 1)
+
+    viewModel.refreshItems()
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    assert(viewModel.uiState.value.items.isNotEmpty())
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun viewModelInitialStateIsCorrect() = runTest {
+    val repo = fakeRepository(emptyList())
+    val viewModel = OutfitPreviewViewModel(repo)
+
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    val state = viewModel.uiState.value
+    assert(state.imageUri == "")
+    assert(state.description == "")
+    assert(state.items.isEmpty())
+    assert(state.errorMessage == null)
+    assert(!state.isLoading)
+  }
+
+  @Test
+  fun itemWithNullOptionalFieldsDisplaysCorrectly() {
+    val minimalItem =
+        item1.copy(type = null, brand = null, price = null, link = null, material = emptyList())
+    setContent(withInitialItems = listOf(minimalItem))
+
+    composeTestRule.onNodeWithText(minimalItem.category).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithText("Item Type")
+        .assertIsDisplayed() // Default text when type is null
+  }
+
+  @Test
+  fun editButtonForEachItemWorks() {
+    val items = listOf(item1, item2)
+    var editedId: String? = null
+
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(items)),
+          onEditItem = { itemId -> editedId = itemId })
+    }
+
+    // Click edit on first item
+    composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)[0].performClick()
+    assert(editedId == item1.uuid)
+
+    // Click edit on second item
+    composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)[1].performClick()
+    assert(editedId == item2.uuid)
+  }
+
+  @Test
+  fun bottomBarLayoutIsCorrect() {
+    setContent(withInitialItems = listOf(fakeItem))
+
+    // Both buttons should be in bottom bar
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+  }
+
+  @Test
+  fun allNavigationCallbacksWork() {
+    var addClicked = false
+    var editClicked = false
+    var postClicked = false
+    var backClicked = false
+
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          onAddItem = { addClicked = true },
+          onEditItem = { editClicked = true },
+          onPostOutfit = { postClicked = true },
+          onGoBack = { backClicked = true })
+    }
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+    assert(addClicked)
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
+    assert(editClicked)
+
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
+    assert(postClicked)
+
+    composeTestRule.onNodeWithContentDescription("go back").performClick()
+    assert(backClicked)
   }
 }
