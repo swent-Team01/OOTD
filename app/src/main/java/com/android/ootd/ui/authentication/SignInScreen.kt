@@ -107,7 +107,7 @@ fun SignInScreen(
 
           Text(
               text = "WELCOME",
-              style = Typography.headlineLarge,
+              style = Typography.headlineMedium,
               color = Primary,
               modifier = Modifier.padding(top = 8.dp).testTag(SignInScreenTestTags.LOGIN_TITLE))
 
