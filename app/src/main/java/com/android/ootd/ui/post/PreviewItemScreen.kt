@@ -96,6 +96,9 @@ fun PreviewItemScreen(
       outfitPreviewViewModel.clearErrorMessage()
     }
   }
+
+  LaunchedEffect(Unit) { outfitPreviewViewModel.refreshItems() }
+
   Scaffold(
       topBar = {
         CenterAlignedTopAppBar(

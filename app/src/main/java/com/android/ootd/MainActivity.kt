@@ -129,7 +129,12 @@ fun OOTDApp(
         )
       }
 
-      composable(Screen.AddItemScreen.route) { AddItemsScreen() }
+      composable(Screen.AddItemScreen.route) {
+        AddItemsScreen(
+            onNextScreen = { navigationActions.popUpTo(Screen.PreviewItemScreen.route) },
+            goBack = { navigationActions.goBack() },
+        )
+      }
 
       /* TODO: add navigation to ProfileScreen*/
       // Navigation to User Profile screen is not yet implemented

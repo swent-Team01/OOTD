@@ -85,7 +85,11 @@ object AddItemScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
+fun AddItemsScreen(
+    addItemsViewModel: AddItemsViewModel = viewModel(),
+    onNextScreen: () -> Unit = {},
+    goBack: () -> Unit = {}
+) {
 
   val context = LocalContext.current
   val focusManager = LocalFocusManager.current
@@ -132,7 +136,7 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
             },
             navigationIcon = {
               Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-                IconButton(onClick = {}) {
+                IconButton(onClick = { goBack() }) {
                   Icon(
                       imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                       contentDescription = "Back",
@@ -374,7 +378,11 @@ fun AddItemsScreen(addItemsViewModel: AddItemsViewModel = viewModel()) {
                 Spacer(modifier = Modifier.height(24.dp))
                 val isButtonEnabled = itemsUIState.isAddingValid
                 Button(
-                    onClick = { if (addItemsViewModel.canAddItems()) {} },
+                    onClick = {
+                      if (addItemsViewModel.canAddItems()) {
+                        onNextScreen()
+                      }
+                    },
                     enabled = isButtonEnabled,
                     modifier =
                         Modifier.height(47.dp)
