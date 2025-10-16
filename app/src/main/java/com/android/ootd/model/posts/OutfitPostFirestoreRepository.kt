@@ -7,9 +7,24 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
+/** Firestore collection name for outfit posts* */
 const val POSTS_COLLECTION = "outfit_posts"
+
+/** Firestore collection name for outfit images * */
 const val POSTS_IMAGES_FOLDER = "images"
 
+/**
+ * Repository implementation that handles all OutfitPost operations involving both Firestore and
+ * Firebase Storage.
+ *
+ * Each post is stored as a Firestore document in [POSTS_COLLECTION], while its corresponding image
+ * is stored under [POSTS_IMAGES_FOLDER]/{postId}.jpg.
+ *
+ * Firestore stores lightweight metadata (text, URLs, timestamps), and Storage handles binary image
+ * uploads/downloads.
+ *
+ * The `postUID` acts as the shared identifier across both systems.
+ */
 class OutfitPostRepositoryFirestore(
     private val db: FirebaseFirestore,
     private val storage: FirebaseStorage
@@ -24,7 +39,6 @@ class OutfitPostRepositoryFirestore(
     return ref.downloadUrl.await().toString()
   }
 
-  // 🆕 Renamed to avoid confusion with FeedRepositoryFirestore.addPost()
   override suspend fun savePostToFirestore(post: OutfitPost) {
     val data =
         mapOf(
@@ -54,6 +68,7 @@ class OutfitPostRepositoryFirestore(
     }
   }
 
+  /** Converts a Firestore [DocumentSnapshot] into an [OutfitPost] model. */
   private fun mapToOutfitPost(doc: DocumentSnapshot): OutfitPost? {
     return try {
       OutfitPost(
