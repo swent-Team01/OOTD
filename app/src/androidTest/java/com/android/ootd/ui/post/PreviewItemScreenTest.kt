@@ -557,4 +557,182 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.onNodeWithContentDescription("go back").performClick()
     assert(backClicked)
   }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun refreshItems_catchesExceptionAndSetsErrorMessage() = runTest {
+    // Create a repository that throws an exception on getAllItems
+    val errorMessage = "Network error - Failed to fetch items from server"
+    val failingRepo =
+        object : ItemsRepository {
+          override fun getNewItemId(): String = "id"
+
+          override suspend fun getAllItems(): List<Item> {
+            throw Exception(errorMessage)
+          }
+
+          override suspend fun getItemById(uuid: String): Item = fakeItem
+
+          override suspend fun addItem(item: Item) {}
+
+          override suspend fun editItem(itemUUID: String, newItem: Item) {}
+
+          override suspend fun deleteItem(uuid: String) {}
+        }
+
+    val viewModel = OutfitPreviewViewModel(failingRepo)
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // Initial load will fail, error message should be set
+    assert(viewModel.uiState.value.errorMessage != null)
+    assert(viewModel.uiState.value.errorMessage?.contains("Failed to load items") == true)
+
+    // Clear the error
+    viewModel.clearErrorMessage()
+    assert(viewModel.uiState.value.errorMessage == null)
+
+    // Now call refreshItems explicitly to test the catch block in refreshItems
+    viewModel.refreshItems()
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // Verify the error message is set correctly from refreshItems catch block
+    assert(viewModel.uiState.value.errorMessage != null)
+    assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
+    assert(viewModel.uiState.value.errorMessage?.contains(errorMessage) == true)
+
+    // Verify items list remains empty
+    assert(viewModel.uiState.value.items.isEmpty())
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun refreshItems_specificExceptionMessage_isPropagatedCorrectly() = runTest {
+    val specificError = "Database connection timeout after 30 seconds"
+    val failingRepo =
+        object : ItemsRepository {
+          override fun getNewItemId(): String = "id"
+
+          override suspend fun getAllItems(): List<Item> {
+            throw Exception(specificError)
+          }
+
+          override suspend fun getItemById(uuid: String): Item = fakeItem
+
+          override suspend fun addItem(item: Item) {}
+
+          override suspend fun editItem(itemUUID: String, newItem: Item) {}
+
+          override suspend fun deleteItem(uuid: String) {}
+        }
+
+    val viewModel = OutfitPreviewViewModel(failingRepo)
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // Clear initial error
+    viewModel.clearErrorMessage()
+
+    // Call refreshItems
+    viewModel.refreshItems()
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // Verify the specific error message is included
+    val errorMsg = viewModel.uiState.value.errorMessage
+    assert(errorMsg != null)
+    assert(errorMsg?.contains("Failed to refresh items") == true)
+    assert(errorMsg?.contains(specificError) == true)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun refreshItems_afterSuccessfulLoad_thenFailure_showsError() = runTest {
+    var shouldFail = false
+    val toggleRepo =
+        object : ItemsRepository {
+          override fun getNewItemId(): String = "id"
+
+          override suspend fun getAllItems(): List<Item> {
+            if (shouldFail) throw Exception("Refresh failed")
+            return listOf(fakeItem, fakeItem2)
+          }
+
+          override suspend fun getItemById(uuid: String): Item = fakeItem
+
+          override suspend fun addItem(item: Item) {}
+
+          override suspend fun editItem(itemUUID: String, newItem: Item) {}
+
+          override suspend fun deleteItem(uuid: String) {}
+        }
+
+    val viewModel = OutfitPreviewViewModel(toggleRepo)
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // Initial load should succeed
+    assert(viewModel.uiState.value.items.size == 2)
+    assert(viewModel.uiState.value.errorMessage == null)
+
+    // Now make it fail
+    shouldFail = true
+    viewModel.refreshItems()
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // Should have error message but items should still be there from before
+    assert(viewModel.uiState.value.errorMessage != null)
+    assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
+    assert(viewModel.uiState.value.items.size == 2) // Items preserved from previous successful
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun refreshItems_multipleFailures_updatesErrorMessageEachTime() = runTest {
+    var errorCount = 0
+    val multiFailRepo =
+        object : ItemsRepository {
+          override fun getNewItemId(): String = "id"
+
+          override suspend fun getAllItems(): List<Item> {
+            errorCount++
+            throw Exception("Error number $errorCount")
+          }
+
+          override suspend fun getItemById(uuid: String): Item = fakeItem
+
+          override suspend fun addItem(item: Item) {}
+
+          override suspend fun editItem(itemUUID: String, newItem: Item) {}
+
+          override suspend fun deleteItem(uuid: String) {}
+        }
+
+    val viewModel = OutfitPreviewViewModel(multiFailRepo)
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    // First failure (from init)
+    assert(viewModel.uiState.value.errorMessage?.contains("Error number 1") == true)
+
+    viewModel.clearErrorMessage()
+
+    // Second failure (from refreshItems)
+    viewModel.refreshItems()
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+    assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
+    assert(viewModel.uiState.value.errorMessage?.contains("Error number 2") == true)
+
+    viewModel.clearErrorMessage()
+
+    // Third failure (from refreshItems)
+    viewModel.refreshItems()
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+    assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
+    assert(viewModel.uiState.value.errorMessage?.contains("Error number 3") == true)
+  }
 }

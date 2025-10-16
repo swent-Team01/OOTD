@@ -48,10 +48,10 @@ class NavigationTest {
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */}
         composable(Screen.Account.route) { /* minimal screen */}
+        composable(Screen.FitCheck.route) { /* minimal screen */}
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
         composable(Screen.AddItemScreen.route) { /* minimal screen */}
         composable(Screen.EditItem.route) { /* minimal screen */}
-        composable(Screen.FitCheck.route) { /* minimal screen */}
       }
     }
   }
@@ -927,6 +927,7 @@ class NavigationTest {
     composeRule.runOnIdle {
       // Build deep stack
       navigation.navigateTo(Screen.Feed)
+
       navigation.navigateTo(Screen.FitCheck)
       navigation.navigateTo(Screen.PreviewItemScreen)
       navigation.navigateTo(Screen.AddItemScreen)
