@@ -3,7 +3,6 @@ package com.android.ootd.ui.post
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -75,6 +73,11 @@ object AddItemScreenTestTags {
   const val ERROR_MESSAGE = "errorMessage"
   const val IMAGE_PICKER = "itemImagePicker"
   const val IMAGE_PREVIEW = "itemImagePreview"
+
+  const val IMAGE_PICKER_DIALOG = "imagePickerDialog"
+
+  const val PICK_FROM_GALLERY = "pickFromGallery"
+  const val TAKE_A_PHOTO = "takeAPhoto"
 
   const val TYPE_SUGGESTIONS = "typeSuggestion"
 
@@ -159,7 +162,6 @@ fun AddItemsScreen(
                         Modifier.size(180.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
-                            .background(Color.White)
                             .testTag(AddItemScreenTestTags.IMAGE_PREVIEW),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -198,8 +200,9 @@ fun AddItemsScreen(
 
                       if (showDialog) {
                         AlertDialog(
+                            modifier = Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG),
                             onDismissRequest = { showDialog = false },
-                            title = { Text("Select Image") },
+                            title = { Text(text = "Select Image") },
                             text = {
                               Column {
                                 TextButton(
@@ -214,7 +217,9 @@ fun AddItemsScreen(
                                       cameraUri = uri
                                       cameraLauncher.launch(uri)
                                       showDialog = false
-                                    }) {
+                                    },
+                                    modifier =
+                                        Modifier.testTag(AddItemScreenTestTags.TAKE_A_PHOTO)) {
                                       Text("📸 Take a Photo")
                                     }
 
@@ -223,7 +228,9 @@ fun AddItemsScreen(
                                       // Pick from gallery
                                       galleryLauncher.launch("image/*")
                                       showDialog = false
-                                    }) {
+                                    },
+                                    modifier =
+                                        Modifier.testTag(AddItemScreenTestTags.PICK_FROM_GALLERY)) {
                                       Text("🖼️ Choose from Gallery")
                                     }
                               }
@@ -345,7 +352,7 @@ fun AddItemsScreen(
                 OutlinedTextField(
                     value = itemsUIState.price,
                     onValueChange = {
-                      if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                      if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) {
                         addItemsViewModel.setPrice(it)
                       }
                     },

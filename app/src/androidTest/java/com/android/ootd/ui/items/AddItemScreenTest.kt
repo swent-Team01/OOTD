@@ -1,14 +1,17 @@
 package com.android.ootd.ui.items
 
 import android.net.Uri
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
@@ -86,15 +89,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterMaterial() {
     val text = "Cotton 80%, Polyester 20%"
     composeTestRule.enterAddItemMaterial(text)
-
-    //    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-    //      composeTestRule
-    //        .onAllNodesWithTag(AddItemScreenTestTags.INPUT_MATERIAL)
-    //        .fetchSemanticsNodes()
-    //        .isNotEmpty()
-    //    }
-    //
-    //    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL).assertExists()
   }
 
   @Test
@@ -652,5 +646,65 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       val price = viewModel.uiState.value.price.toDoubleOrNull() ?: 0.0
       assert(price == 0.0)
     }
+  }
+
+  @Test
+  fun alertDialog_shows_and_has_all_buttons() {
+    // Open dialog
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
+
+    // Verify dialog title
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
+
+    // Verify both buttons are visible
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).assertIsDisplayed()
+
+    // Close dialog by clicking one option
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
+
+    // Assert dialog is dismissed
+    composeTestRule.onAllNodesWithText("Select Image").assertCountEquals(0)
+  }
+
+  @Test
+  fun category_dropdown_shows_and_validates_on_dismiss() {
+
+    val categoryField = composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+
+    // Enter some text to trigger suggestions
+    categoryField.performTextInput("Shoes")
+
+    // Force dropdown expansion
+    composeTestRule.waitUntil(timeoutMillis = 1_000) {
+      composeTestRule
+          .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Click another input to remove focus, triggering onDismissRequest()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performClick()
+
+    // Wait for recomposition
+    composeTestRule.waitForIdle()
+    // Assert dropdown no longer visible
+    composeTestRule
+        .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  /** Test the onDone keyboard action for Category field triggers validation and hides dropdown. */
+  @Test
+  fun categoryField_onDone_triggersValidation_and_hidesMenu() {
+
+    val categoryField = composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+    categoryField.performTextInput("Jacket")
+    categoryField.performImeAction()
+
+    // After onDone, dropdown should close
+    composeTestRule
+        .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
+        .assertCountEquals(0)
   }
 }
