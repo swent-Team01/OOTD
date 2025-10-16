@@ -79,7 +79,6 @@ cd OOTD
 - [GitHub](https://github.com/swent-Team01/OOTD)
 - [GitHub Wiki](https://github.com/swent-Team01/OOTD/wiki)
 - [Figma](https://www.figma.com/design/EQfCuEx3jJpUSZ3NKc4DE5/stefan.taga-s-team-library?t=1rG02nxGubCxY31q-0)
-- [Excalidraw Diagram](https://excalidraw.com/#room=6865124c29e8ec921503,zoRPDbzFGn37jQek7YM2ag)
 
 ## Our Team
 | Name                 | GitHub account                                   |
