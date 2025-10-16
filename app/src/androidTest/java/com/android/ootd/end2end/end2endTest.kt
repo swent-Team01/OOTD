@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
@@ -168,7 +169,10 @@ class End2EndTest {
     }
 
     // Verify we're on the Sign-In screen
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
     composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_TITLE).assertIsDisplayed()
 
@@ -176,7 +180,10 @@ class End2EndTest {
     // Update mock to return the signed-in user after sign-in
     every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
 
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .performScrollTo()
+        .performClick()
 
     composeTestRule.waitForIdle()
 
@@ -192,24 +199,36 @@ class End2EndTest {
     // STEP 5: Verify we're on the Registration screen
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
+        .performScrollTo()
+        .assertIsDisplayed()
 
     composeTestRule.waitForIdle()
 
     // STEP 6: Fill in the registration form - enter username FIRST
     // Use unique username for each test run to avoid "username already exists" errors
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performScrollTo()
     composeTestRule.enterUsername(testUsername)
     composeTestRule.waitForIdle()
     // Verify username was entered correctly before moving on
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+        .performScrollTo()
         .assertTextContains(testUsername)
 
     // STEP 6: Fill in the registration form - enter date of birth
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performScrollTo()
         .performClick()
 
     composeTestRule.waitForIdle()
@@ -229,7 +248,11 @@ class End2EndTest {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
+    // Ensure the Save button is visible by scrolling to it if necessary
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
+        .performScrollTo()
+        .assertIsEnabled()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
 
     // STEP 8: App automatically switches to feed screen
@@ -270,6 +293,7 @@ class End2EndTest {
     // Verify we're on the Search screen
     composeTestRule.onNodeWithTag(SearchScreenTestTags.SEARCH_SCREEN).assertIsDisplayed()
 
+    // This step don't work as we are on a local FireBase
     //    // STEP 10: Search for "Greg" in the username field
     //    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performClick()
     //    composeTestRule.waitForIdle()
@@ -343,7 +367,10 @@ class End2EndTest {
 
     // Verify we're on the FitCheck screen
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
 
     // STEP 15: Verify the "Add Fit Photo" button is available
     // Note: We cannot actually take a photo with the camera in an automated test because:
@@ -351,12 +378,10 @@ class End2EndTest {
     // - This causes the Compose hierarchy to be lost (app goes to background)
     // - ComposeTestRule can only interact with Compose UI in the foreground
     //
-    // For this E2E test, we'll skip the photo selection step and proceed directly
-    // to test the rest of the outfit posting flow.
 
     // STEP 16: Skip photo selection for testing purposes
     // In a real-world scenario, the user would select a photo here
-    // For automated testing, we'll proceed without it (the Next button requires a photo)
+    // For automated testing, we'll proceed without it
     // (Need to ask the coaches what can we do)
 
     // Since the Next button requires a valid photo, we cannot proceed further
@@ -401,13 +426,21 @@ class End2EndTest {
     }
 
     // Verify we're on the Account screen
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
+        .performScrollTo()
+        .assertIsDisplayed()
+
+    // Scroll to Sign Out button
+    composeTestRule
+        .onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
 
     composeTestRule.waitForIdle()
 
     // STEP 19: User clicks signout Button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performScrollTo().performClick()
 
     composeTestRule.waitForIdle()
 
@@ -420,9 +453,10 @@ class End2EndTest {
     }
 
     // Verify we're back on the Sign-In screen after logout
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
     composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
-
-    unmockkStatic(FirebaseAuth::class)
   }
 }
