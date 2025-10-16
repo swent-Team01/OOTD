@@ -54,6 +54,17 @@ class OutfitPreviewViewModel(
     _uiState.value = _uiState.value.copy(errorMessage = message)
   }
 
+  fun refreshItems() {
+    viewModelScope.launch {
+      try {
+        val items = itemsRepository.getAllItems()
+        _uiState.value = _uiState.value.copy(items = items)
+      } catch (e: Exception) {
+        setErrorMessage("Failed to refresh items: ${e.message}")
+      }
+    }
+  }
+
   private fun loadOutfitPost() {
 
     viewModelScope.launch {
