@@ -2,6 +2,7 @@ package com.android.ootd.model.user
 
 import android.net.Uri
 import android.util.Log
+import androidx.annotation.Keep
 import androidx.core.net.toUri
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -15,6 +16,7 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
+@Keep
 private data class UserDto(
     val uid: String = "",
     val username: String = "",
