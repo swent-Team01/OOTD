@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,7 +35,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -127,20 +128,14 @@ fun AddItemsScreen(
 
   Scaffold(
       topBar = {
-        TopAppBar(
+        CenterAlignedTopAppBar(
             title = {
-              Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                  Text(
-                      text = "ADD ITEMS",
-                      style = MaterialTheme.typography.displayLarge,
-                      color = Primary,
-                      modifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD))
-                }
-              }
+              Text(
+                  text = "ADD ITEMS",
+                  style =
+                      MaterialTheme.typography.displayLarge.copy(
+                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
+                  modifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD))
             },
             navigationIcon = {
               Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
@@ -150,7 +145,7 @@ fun AddItemsScreen(
                       Icon(
                           imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                           contentDescription = "Back",
-                      )
+                          tint = MaterialTheme.colorScheme.tertiary)
                     }
               }
             })

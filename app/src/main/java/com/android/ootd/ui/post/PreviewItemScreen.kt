@@ -108,8 +108,10 @@ fun PreviewItemScreen(
             title = {
               Text(
                   text = "OOTD",
+                  style =
+                      MaterialTheme.typography.displayLarge.copy(
+                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
                   modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
-                  fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.5f,
               )
             },
             navigationIcon = {
@@ -119,7 +121,7 @@ fun PreviewItemScreen(
                     Icon(
                         Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "go back",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        tint = MaterialTheme.colorScheme.tertiary)
                   }
             },
             colors =
@@ -213,7 +215,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
               .animateContentSize()
               .testTag(PreviewItemScreenTestTags.getTestTagForItem(item)),
       shape = MaterialTheme.shapes.large,
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSecondary),
+      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
         Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
           Row(
