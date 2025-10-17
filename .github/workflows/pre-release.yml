@@ -1,11 +1,11 @@
 # .github/workflows/build-on-release.yml
 
-# This CI creates a Signed release APK and AAB
-name: Build Android Release APK on Github Release
+# This CI creates a Signed debug APK
+name: Build Android debug APK on PreRelease
 
 on:
   release:
-    types: [published]
+    types: [prereleased]
   workflow_dispatch:
 
 jobs:
@@ -20,8 +20,8 @@ jobs:
 
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
-      
-      - name: CI Banner                            
+
+      - name: CI Banner
         run: |
           echo '             _      _    ___  ______ _   __'
           echo '            | |    | |  / _ \ | ___ \ | / /'
@@ -51,7 +51,7 @@ jobs:
       - name: Decode secrets for FireBase
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
-        run: |  
+        run: |
           if [ -z "$GOOGLE_SERVICES" ]; then
             echo "::error::GOOGLE_SERVICES secret is not set! Cannot build release without Firebase configuration."
             echo "Please set the GOOGLE_SERVICES secret in your repository settings."
@@ -73,52 +73,29 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build signed Release APK
+      - name: Build Debug APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ env.ANDROID_KEYSTORE_PATH }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease --stacktrace
-
-      - name: Build Play Store AAB
-        if: ${{ true }} # We can flip it to False later on if we dont want it anymore
-        env:
-          ANDROID_KEYSTORE_PATH: ${{ env.ANDROID_KEYSTORE_PATH }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :app:bundleRelease --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
 
       - name: Locate artifacts
         id: locate
         run: |
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n1)
-          AAB_PATH=$(find app/build/outputs/bundle/release -name "*.aab" -type f | head -n1 || true)
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" -type f | head -n1)
           if [[ -z "$APK_PATH" ]]; then
             echo "No APK found!" >&2
             exit 1
           fi
           echo "apk=$APK_PATH" >> $GITHUB_OUTPUT
-          if [[ -n "$AAB_PATH" ]]; then
-            echo "aab=$AAB_PATH" >> $GITHUB_OUTPUT
-          fi
           echo "Found APK: $APK_PATH"
-          if [[ -n "$AAB_PATH" ]]; then echo "Found AAB: $AAB_PATH"; fi
 
-      - name: Upload APK to Release
+      - name: Upload Debug APK to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ steps.locate.outputs.apk }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload AAB to Release
-        if: ${{ steps.locate.outputs.aab != '' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ${{ steps.locate.outputs.aab }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
