@@ -112,7 +112,6 @@ fun PreviewItemScreen(
                       MaterialTheme.typography.displayLarge.copy(
                           fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
                   modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
-                  // fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.4f,
               )
             },
             navigationIcon = {
