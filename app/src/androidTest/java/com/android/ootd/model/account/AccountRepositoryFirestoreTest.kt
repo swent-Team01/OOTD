@@ -130,7 +130,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun createAccount_successfullyCreatesNewAccount() = runTest {
     val user = User(uid = "user3", username = "charlie_brown")
 
-    accountRepository.createAccount(user)
+    accountRepository.createAccount(user, testDateOfBirth)
 
     val account = accountRepository.getAccount(user.uid)
     assertEquals(user.uid, account.uid)
@@ -143,9 +143,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val user1 = User(uid = "user3", username = "duplicate")
     val user2 = User(uid = "user4", username = "duplicate")
 
-    accountRepository.createAccount(user1)
+    accountRepository.createAccount(user1, testDateOfBirth)
 
-    val exception = runCatching { accountRepository.createAccount(user2) }.exceptionOrNull()
+    val exception =
+        runCatching { accountRepository.createAccount(user2, testDateOfBirth) }.exceptionOrNull()
 
     assertTrue(exception is TakenUserException)
     assertTrue(exception?.message?.contains("already in use") == true)
@@ -156,8 +157,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val user1 = User(uid = "user3", username = "")
     val user2 = User(uid = "user4", username = "")
 
-    accountRepository.createAccount(user1)
-    accountRepository.createAccount(user2)
+    accountRepository.createAccount(user1, testDateOfBirth)
+    accountRepository.createAccount(user2, testDateOfBirth)
 
     assertEquals(2, getAccountCount())
   }

@@ -12,6 +12,9 @@ import org.junit.Test
 class AccountRepositoryInMemoryTest {
   private lateinit var repository: AccountRepositoryInMemory
 
+  // Test date of birth constant
+  private val testDateOfBirth = "2000-01-01"
+
   @Before
   fun setUp() {
     repository = AccountRepositoryInMemory()
@@ -260,7 +263,7 @@ class AccountRepositoryInMemoryTest {
   fun createAccount_successfullyCreatesNewAccount() = runTest {
     val user = User(uid = "user6", username = "george_washington")
 
-    repository.createAccount(user)
+    repository.createAccount(user, testDateOfBirth)
     val account = repository.getAccount("user6")
 
     assertEquals("user6", account.uid)
@@ -277,8 +280,8 @@ class AccountRepositoryInMemoryTest {
     val exception =
         assertThrows(TakenUserException::class.java) {
           runTest {
-            repository.createAccount(user1)
-            repository.createAccount(user2) // Should throw
+            repository.createAccount(user1, testDateOfBirth)
+            repository.createAccount(user2, testDateOfBirth) // Should throw
           }
         }
 
@@ -290,8 +293,8 @@ class AccountRepositoryInMemoryTest {
     val user1 = User(uid = "tempUser1", username = "")
     val user2 = User(uid = "tempUser2", username = "")
 
-    repository.createAccount(user1)
-    repository.createAccount(user2) // Should not throw
+    repository.createAccount(user1, testDateOfBirth)
+    repository.createAccount(user2, testDateOfBirth) // Should not throw
 
     val account1 = repository.getAccount("tempUser1")
     val account2 = repository.getAccount("tempUser2")

@@ -14,6 +14,9 @@ open class AccountFirestoreTest : BaseTest() {
 
   lateinit var accountRepository: AccountRepository
 
+  // Test date of birth constant
+  val testDateOfBirth = "2000-01-01"
+
   val account1 =
       Account(
           uid = "user1",
