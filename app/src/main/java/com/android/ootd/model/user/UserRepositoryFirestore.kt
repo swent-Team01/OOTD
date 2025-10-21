@@ -1,11 +1,8 @@
 package com.android.ootd.model.user
 
-import android.net.Uri
 import android.util.Log
 import androidx.annotation.Keep
-import androidx.core.net.toUri
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import java.util.UUID
@@ -16,29 +13,14 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
-@Keep
-private data class UserDto(
-    val uid: String = "",
-    val username: String = "",
-    val profilePicture: String = "", // Store as String for Firestore
-    val friendUids: List<String> = emptyList()
-)
+@Keep private data class UserDto(val uid: String = "", val username: String = "")
 
 private fun User.toDto(): UserDto {
-  return UserDto(
-      uid = this.uid,
-      username = this.username,
-      profilePicture = this.profilePicture.toString(),
-      friendUids = this.friendUids)
+  return UserDto(uid = this.uid, username = this.username)
 }
 
 private fun UserDto.toDomain(): User {
-  return User(
-      uid = this.uid,
-      username = this.username,
-      profilePicture =
-          if (this.profilePicture.isBlank()) Uri.EMPTY else this.profilePicture.toUri(),
-      friendUids = this.friendUids)
+  return User(uid = this.uid, username = this.username)
 }
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
@@ -153,59 +135,6 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       Log.e("UserRepositoryFirestore", "Error adding user: ${e.message}", e)
       throw e
     }
-  }
-
-  override suspend fun addFriend(userID: String, friendID: String) {
-    try {
-      val friendDocumentList =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
-
-      if (friendDocumentList.documents.isEmpty()) {
-        throw NoSuchElementException("Friend with ID $friendID not found")
-      }
-
-      val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
-
-      // With arrayUnion there can be no duplicates
-      // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
-      // array section
-
-      userRef.update("friendUids", FieldValue.arrayUnion(friendID)).await()
-    } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error adding friend $friendID to $userID ${e.message}", e)
-      throw e
-    }
-  }
-
-  override suspend fun removeFriend(userID: String, friendID: String) {
-    try {
-      val friendDocumentList =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", friendID).get().await()
-
-      if (friendDocumentList.documents.isEmpty()) {
-        throw NoSuchElementException("Friend with ID $friendID not found")
-      }
-
-      val userRef = db.collection(USER_COLLECTION_PATH).document(userID)
-      userRef.update("friendUids", FieldValue.arrayRemove(friendID)).await()
-    } catch (e: Exception) {
-      Log.e(
-          "UserRepositoryFirestore", "Error removing friend $friendID from $userID ${e.message}", e)
-      throw e
-    }
-  }
-
-  override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
-    val documentList = db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
-    if (documentList.documents.isEmpty()) {
-      throw NoSuchElementException("The authenticated user has not been added to the database")
-    }
-    if (documentList.documents.size != 1) {
-      throw IllegalStateException("There are multiple users with the same uid")
-    }
-    val myUser = transformUserDocument(documentList.documents[0])
-
-    return (myUser?.friendUids?.isNotEmpty() == true && myUser.friendUids.any { it == friendID })
   }
 
   private suspend fun usernameExists(username: String): Boolean {
