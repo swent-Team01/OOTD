@@ -27,7 +27,18 @@ private fun DocumentSnapshot.toAccount(): Account {
   val birthday = getString("birthday") ?: ""
   val email = getString("googleAccountEmail") ?: ""
   val picture = getString("profilePicture") ?: ""
-  val friends = (get("friendUids") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+
+  // Validate that friendUids is actually a List, throw if not
+  val friendUidsRaw = get("friendUids")
+  val friends =
+      when {
+        friendUidsRaw == null -> emptyList()
+        friendUidsRaw is List<*> -> friendUidsRaw.filterIsInstance<String>()
+        else ->
+            throw IllegalArgumentException(
+                "friendUids field is not a List but ${friendUidsRaw::class.simpleName}")
+      }
+
   val uid = id // document id is the user id
 
   return Account(
