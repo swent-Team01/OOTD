@@ -3,16 +3,12 @@ package com.android.ootd.utils
 import android.util.Log
 import com.android.ootd.model.account.ACCOUNT_COLLECTION_PATH
 import com.android.ootd.model.account.Account
-import com.android.ootd.model.account.AccountRepository
-import com.android.ootd.model.account.AccountRepositoryFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 
-open class AccountFirestoreTest : BaseTest() {
-
-  lateinit var accountRepository: AccountRepository
+open class AccountFirestoreTest : FirestoreTest() {
 
   // Test date of birth constant
   val testDateOfBirth = "2000-01-01"
@@ -53,14 +49,9 @@ open class AccountFirestoreTest : BaseTest() {
     }
   }
 
-  override fun createInitializedRepository(): com.android.ootd.model.user.UserRepository {
-    return com.android.ootd.model.user.UserRepositoryFirestore(db = FirebaseEmulator.firestore)
-  }
-
   @Before
   override fun setUp() {
     super.setUp()
-    accountRepository = AccountRepositoryFirestore(db = FirebaseEmulator.firestore)
 
     runTest {
       FirebaseEmulator.auth.signInAnonymously().await()

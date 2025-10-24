@@ -1,5 +1,7 @@
 package com.android.ootd.utils
 
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -21,6 +23,8 @@ abstract class BaseTest() {
   val repository: UserRepository
     get() = UserRepositoryProvider.repository
 
+  lateinit var accountRepository: AccountRepository
+
   val currentUser: FirebaseUser
     get() {
       return FirebaseEmulator.auth.currentUser!!
@@ -37,6 +41,7 @@ abstract class BaseTest() {
   @Before
   open fun setUp() {
     UserRepositoryProvider.repository = createInitializedRepository()
+    accountRepository = AccountRepositoryFirestore(db = FirebaseEmulator.firestore)
   }
 
   @After
