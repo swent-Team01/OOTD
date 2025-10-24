@@ -3,8 +3,7 @@ package com.android.ootd.model.post
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
@@ -13,27 +12,17 @@ import org.junit.runner.RunWith
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class OutfitPostRepositoryFirestoreTest {
-
-  private lateinit var repo: OutfitPostRepositoryFirestore
-  private lateinit var firestore: FirebaseFirestore
-  private lateinit var storage: FirebaseStorage
+class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
 
   @Before
-  fun setup() {
+  override fun setUp() {
+    super.setUp()
     Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
-
-    firestore = FirebaseEmulator.firestore
-    storage = FirebaseEmulator.storage
-
-    FirebaseEmulator.clearFirestoreEmulator()
-
-    repo = OutfitPostRepositoryFirestore(firestore, storage)
   }
 
   @Test
   fun saveAndRetrievePost_worksCorrectly() = runTest {
-    val postId = repo.getNewPostId()
+    val postId = outfitPostRepository.getNewPostId()
 
     val post =
         OutfitPost(
@@ -46,9 +35,9 @@ class OutfitPostRepositoryFirestoreTest {
             itemsID = listOf("item1", "item2"),
             timestamp = System.currentTimeMillis())
 
-    repo.savePostToFirestore(post)
+    outfitPostRepository.savePostToFirestore(post)
 
-    val fetched = repo.getPostById(postId)
+    val fetched = outfitPostRepository.getPostById(postId)
 
     Assert.assertNotNull(fetched)
     Assert.assertEquals(post.name, fetched?.name)
@@ -58,7 +47,7 @@ class OutfitPostRepositoryFirestoreTest {
 
   @Test
   fun deletePost_removesPostFromFirestore() = runTest {
-    val postId = repo.getNewPostId()
+    val postId = outfitPostRepository.getNewPostId()
 
     val post =
         OutfitPost(
@@ -70,19 +59,19 @@ class OutfitPostRepositoryFirestoreTest {
             description = "To be deleted",
             timestamp = System.currentTimeMillis())
 
-    repo.savePostToFirestore(post)
-    Assert.assertNotNull(repo.getPostById(postId))
+    outfitPostRepository.savePostToFirestore(post)
+    Assert.assertNotNull(outfitPostRepository.getPostById(postId))
 
-    repo.deletePost(postId)
+    outfitPostRepository.deletePost(postId)
 
-    val deleted = repo.getPostById(postId)
+    val deleted = outfitPostRepository.getPostById(postId)
     Assert.assertNull(deleted)
   }
 
   @Test
   fun getNewPostId_returnsUniqueIds() {
-    val id1 = repo.getNewPostId()
-    val id2 = repo.getNewPostId()
+    val id1 = outfitPostRepository.getNewPostId()
+    val id2 = outfitPostRepository.getNewPostId()
     Assert.assertNotEquals(id1, id2)
     Assert.assertTrue(id1.isNotBlank())
     Assert.assertTrue(id2.isNotBlank())
@@ -90,7 +79,7 @@ class OutfitPostRepositoryFirestoreTest {
 
   @Test
   fun savePostToFirestore_overwritesExistingDocument() = runTest {
-    val postId = repo.getNewPostId()
+    val postId = outfitPostRepository.getNewPostId()
 
     val post1 =
         OutfitPost(
@@ -104,23 +93,23 @@ class OutfitPostRepositoryFirestoreTest {
 
     val post2 = post1.copy(name = "User B", description = "Updated")
 
-    repo.savePostToFirestore(post1)
-    repo.savePostToFirestore(post2)
+    outfitPostRepository.savePostToFirestore(post1)
+    outfitPostRepository.savePostToFirestore(post2)
 
-    val fetched = repo.getPostById(postId)
+    val fetched = outfitPostRepository.getPostById(postId)
     Assert.assertEquals("User B", fetched?.name)
     Assert.assertEquals("Updated", fetched?.description)
   }
 
   @Test
   fun getPostById_returnsNullForNonExistent() = runTest {
-    val result = repo.getPostById("does_not_exist")
+    val result = outfitPostRepository.getPostById("does_not_exist")
     Assert.assertNull(result)
   }
 
   @Test
   fun deletePost_ignoresMissingImage() = runTest {
-    val postId = repo.getNewPostId()
+    val postId = outfitPostRepository.getNewPostId()
     val post =
         OutfitPost(
             postUID = postId,
@@ -131,31 +120,31 @@ class OutfitPostRepositoryFirestoreTest {
             description = "No image to delete",
             timestamp = System.currentTimeMillis())
 
-    repo.savePostToFirestore(post)
-    repo.deletePost(postId)
+    outfitPostRepository.savePostToFirestore(post)
+    outfitPostRepository.deletePost(postId)
 
-    val deleted = repo.getPostById(postId)
+    val deleted = outfitPostRepository.getPostById(postId)
     Assert.assertNull(deleted)
   }
 
   @Test
   fun getPostById_handlesMalformedData() = runTest {
-    val postId = repo.getNewPostId()
+    val postId = outfitPostRepository.getNewPostId()
 
-    firestore
+    FirebaseEmulator.firestore
         .collection(POSTS_COLLECTION)
         .document(postId)
         .set(mapOf("unexpectedField" to 123))
         .await()
 
-    val result = repo.getPostById(postId)
+    val result = outfitPostRepository.getPostById(postId)
     Assert.assertNotNull(result)
     Assert.assertEquals("", result?.name)
   }
 
   @Test
   fun fullPostLifecycle_worksCorrectly() = runTest {
-    val postId = repo.getNewPostId()
+    val postId = outfitPostRepository.getNewPostId()
 
     val post =
         OutfitPost(
@@ -167,17 +156,12 @@ class OutfitPostRepositoryFirestoreTest {
             description = "Lifecycle test",
             timestamp = System.currentTimeMillis())
 
-    repo.savePostToFirestore(post)
-    val added = repo.getPostById(postId)
+    outfitPostRepository.savePostToFirestore(post)
+    val added = outfitPostRepository.getPostById(postId)
     Assert.assertNotNull(added)
 
-    repo.deletePost(postId)
-    val deleted = repo.getPostById(postId)
+    outfitPostRepository.deletePost(postId)
+    val deleted = outfitPostRepository.getPostById(postId)
     Assert.assertNull(deleted)
-  }
-
-  @After
-  fun tearDown() {
-    FirebaseEmulator.clearFirestoreEmulator()
   }
 }

@@ -1,9 +1,6 @@
 package com.android.ootd.utils
 
-import android.util.Log
 import com.android.ootd.model.user.USER_COLLECTION_PATH
-import com.android.ootd.model.user.UserRepository
-import com.android.ootd.model.user.UserRepositoryFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -27,24 +24,13 @@ open class FirestoreTest() : BaseTest() {
     }
   }
 
-  override fun createInitializedRepository(): UserRepository {
-    return UserRepositoryFirestore(db = FirebaseEmulator.firestore)
-  }
-
   @Before
   override fun setUp() {
     super.setUp()
 
     runTest {
+      FirebaseEmulator.clearFirestoreEmulator()
       FirebaseEmulator.auth.signInAnonymously().await()
-      val userCount = getUserCount()
-      if (userCount > 0) {
-        Log.w(
-            "FirebaseEmulatedTest",
-            "Warning: Test collection is not empty at the beginning of the test, count: $userCount",
-        )
-        clearTestCollection()
-      }
     }
   }
 
