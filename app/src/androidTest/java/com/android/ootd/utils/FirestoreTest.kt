@@ -44,6 +44,7 @@ open class FirestoreTest() : BaseTest() {
     super.setUp()
 
     runTest {
+      FirebaseEmulator.clearFirestoreEmulator()
       FirebaseEmulator.auth.signInAnonymously().await()
       val userCount = getUserCount()
       if (userCount > 0) {
