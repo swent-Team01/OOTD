@@ -1,5 +1,7 @@
 package com.android.ootd.utils
 
+import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -20,6 +22,9 @@ abstract class BaseTest() {
 
   val repository: UserRepository
     get() = UserRepositoryProvider.repository
+
+  val feedRepository: FeedRepository
+    get() = FeedRepositoryProvider.repository
 
   val currentUser: FirebaseUser
     get() {
