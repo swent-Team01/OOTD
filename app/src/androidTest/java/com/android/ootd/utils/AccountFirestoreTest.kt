@@ -54,7 +54,9 @@ open class AccountFirestoreTest : FirestoreTest() {
     super.setUp()
 
     runTest {
+      // Ensure authentication before accessing Firestore
       FirebaseEmulator.auth.signInAnonymously().await()
+
       val accountCount = getAccountCount()
       if (accountCount > 0) {
         Log.w(
@@ -68,7 +70,6 @@ open class AccountFirestoreTest : FirestoreTest() {
   @After
   override fun tearDown() {
     runTest { clearAccountCollection() }
-    FirebaseEmulator.clearFirestoreEmulator()
     super.tearDown()
   }
 }

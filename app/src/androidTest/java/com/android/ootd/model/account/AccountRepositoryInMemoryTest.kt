@@ -21,30 +21,6 @@ class AccountRepositoryInMemoryTest {
   }
 
   @Test
-  fun getAllAccounts_returnsAllPreloadedAccounts() = runTest {
-    val accounts = repository.getAllAccounts()
-
-    assertEquals(6, accounts.size)
-    assertTrue(accounts.any { it.uid == "user1" })
-    assertTrue(accounts.any { it.uid == "user2" })
-    assertTrue(accounts.any { it.uid == "user3" })
-    assertTrue(accounts.any { it.uid == "user4" })
-    assertTrue(accounts.any { it.uid == "user5" })
-    assertTrue(accounts.any { it.uid == "nonRegisterUser" })
-  }
-
-  @Test
-  fun getAllAccounts_returnsAccountsWithCorrectNames() = runTest {
-    val accounts = repository.getAllAccounts()
-
-    val account1 = accounts.find { it.uid == "user1" }
-    assertEquals("alice_wonder", account1?.username)
-
-    val account2 = accounts.find { it.uid == "user2" }
-    assertEquals("bob_builder", account2?.username)
-  }
-
-  @Test
   fun getAccount_returnsCorrectAccount() = runTest {
     val account = repository.getAccount("user1")
 
@@ -113,17 +89,6 @@ class AccountRepositoryInMemoryTest {
   }
 
   @Test
-  fun addAccount_increasesAccountCount() = runTest {
-    val initialCount = repository.getAllAccounts().size
-
-    val newAccount =
-        Account(uid = "user6", ownerId = "user6", username = "new_user", friendUids = emptyList())
-    repository.addAccount(newAccount)
-
-    assertEquals(initialCount + 1, repository.getAllAccounts().size)
-  }
-
-  @Test
   fun addFriend_successfullyAddsFriend() = runTest {
     repository.addFriend("user3", "user1")
 
@@ -182,17 +147,6 @@ class AccountRepositoryInMemoryTest {
 
     val account2AfterAdd = repository.getAccount("user2")
     assertEquals(account2BeforeAdd.friendUids.size, account2AfterAdd.friendUids.size)
-  }
-
-  @Test
-  fun getAllAccounts_returnsCorrectFriendListsForPreloadedAccounts() = runTest {
-    val account1 = repository.getAccount("user1")
-    val account4 = repository.getAccount("user4")
-    val account5 = repository.getAccount("user5")
-
-    assertEquals(2, account1.friendUids.size)
-    assertEquals(2, account4.friendUids.size)
-    assertTrue(account5.friendUids.isEmpty())
   }
 
   @Test

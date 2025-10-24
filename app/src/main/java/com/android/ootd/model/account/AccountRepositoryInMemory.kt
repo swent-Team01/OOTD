@@ -57,10 +57,6 @@ class AccountRepositoryInMemory : AccountRepository {
     addAccount(newAccount)
   }
 
-  override suspend fun getAllAccounts(): List<Account> {
-    return accounts.values.toList()
-  }
-
   override suspend fun addAccount(account: Account) {
     require(!(accounts.containsKey(account.uid))) {
       "Account with UID ${account.uid} already exists"

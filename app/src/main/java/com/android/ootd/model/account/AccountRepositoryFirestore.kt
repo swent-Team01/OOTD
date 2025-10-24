@@ -96,16 +96,6 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun getAllAccounts(): List<Account> {
-    return try {
-      val querySnapshot = db.collection(ACCOUNT_COLLECTION_PATH).get().await()
-      querySnapshot.documents.mapNotNull { document -> transformAccountDocument(document) }
-    } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error getting accounts: ${e.message}", e)
-      throw e
-    }
-  }
-
   override suspend fun getAccount(userId: String): Account {
     return try {
       val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
@@ -124,7 +114,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun accountExists(userId: String): Boolean {
     return try {
-      // Check if account exists in the accounts collection
+      // To respect privacy, we can only check if OUR OWN account exists
+      // For checking if other users exist, use UserRepository instead
       val accountDocument = db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
 
       if (!accountDocument.exists()) {
@@ -133,6 +124,18 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
         val username = accountDocument.getString("username")
         !username.isNullOrBlank()
       }
+    } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+      // If we get PERMISSION_DENIED, it means the account exists but we can't read it
+      // (because we're not the owner). This is expected behavior for other users' accounts.
+      if (e.code ==
+          com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+        Log.d(
+            "AccountRepositoryFirestore",
+            "Account $userId exists but is not accessible (not the owner)")
+        return true // Account exists, we just can't read it
+      }
+      Log.e("AccountRepositoryFirestore", "Error checking account existence: ${e.message}", e)
+      throw e
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error checking account existence: ${e.message}", e)
       throw e
@@ -141,7 +144,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addAccount(account: Account) {
     try {
-      // Use accountExists to check for duplicates (checks both user and account existence)
+      // Check if we can read this account (will throw if trying to create someone else's account)
       if (accountExists(account.uid)) {
         throw TakenAccountException("Account with UID ${account.uid} already exists")
       }
@@ -160,9 +163,11 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addFriend(userID: String, friendID: String) {
     try {
-      val friendDocument = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID).get().await()
+      // Instead of reading the friend's account (which we can't do due to privacy),
+      // check if the friend exists in the public User collection
+      val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
-      if (!friendDocument.exists()) {
+      if (!friendUserDoc.exists()) {
         throw NoSuchElementException("Friend with ID $friendID not found")
       }
 
@@ -182,9 +187,11 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun removeFriend(userID: String, friendID: String) {
     try {
-      val friendDocument = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID).get().await()
+      // Instead of reading the friend's account (which we can't do due to privacy),
+      // check if the friend exists in the public User collection
+      val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
-      if (!friendDocument.exists()) {
+      if (!friendUserDoc.exists()) {
         throw NoSuchElementException("Friend with ID $friendID not found")
       }
 

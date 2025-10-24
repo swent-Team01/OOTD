@@ -9,13 +9,6 @@ interface AccountRepository {
   suspend fun createAccount(user: User, dateOfBirth: String)
 
   /**
-   * Retrieves all accounts.
-   *
-   * @return list of accounts
-   */
-  suspend fun getAllAccounts(): List<Account>
-
-  /**
    * Add a new account.
    *
    * @throws IllegalArgumentException if account with the same UID already exists
