@@ -12,6 +12,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
+import com.android.ootd.model.account.AccountRepositoryFirestore
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
@@ -59,6 +61,7 @@ class End2EndTest {
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var mockAuthResult: AuthResult
   private lateinit var mockUserRepository: UserRepositoryFirestore
+  private lateinit var mockAccountRepository: AccountRepositoryFirestore
   private lateinit var testUserId: String
   private lateinit var testUsername: String
 
@@ -69,9 +72,11 @@ class End2EndTest {
     mockFirebaseUser = mockk(relaxed = true)
     mockAuthResult = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
+    mockAccountRepository = mockk(relaxed = true)
 
-    // Inject mock repository into the provider so the app uses it instead of real Firestore
+    // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
+    AccountRepositoryProvider.repository = mockAccountRepository
 
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
@@ -85,8 +90,9 @@ class End2EndTest {
   @After
   fun tearDown() {
     unmockkAll()
-    // Restore the real repository after test completes
+    // Restore the real repositories after test completes
     UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
+    AccountRepositoryProvider.repository = AccountRepositoryFirestore(Firebase.firestore)
   }
 
   /**
@@ -151,6 +157,10 @@ class End2EndTest {
     // Mock successful user creation - use any() matchers since we're testing the flow, not exact
     // values
     coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
+
+    // Mock successful account creation
+    coEvery { mockAccountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { mockAccountRepository.accountExists(any()) } returns false
 
     // STEP 1: Launch the full app
     composeTestRule.setContent {
