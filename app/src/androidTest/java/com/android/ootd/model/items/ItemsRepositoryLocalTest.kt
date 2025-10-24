@@ -1,9 +1,6 @@
-package com.android.ootd.model
+package com.android.ootd.model.items
 
 import android.net.Uri
-import com.android.ootd.model.items.Item
-import com.android.ootd.model.items.ItemsRepositoryLocal
-import com.android.ootd.model.items.Material
 import junit.framework.TestCase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
