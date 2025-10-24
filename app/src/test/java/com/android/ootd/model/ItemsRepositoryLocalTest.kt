@@ -1,7 +1,10 @@
-package com.android.ootd.model.items
+package com.android.ootd.model
 
 import android.net.Uri
-import junit.framework.TestCase.assertEquals
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepositoryLocal
+import com.android.ootd.model.items.Material
+import junit.framework.TestCase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -69,29 +72,29 @@ class ItemsRepositoryLocalTest {
   fun getNewItemIdReturnsUniqueIDs() = runTest {
     val numberIDs = 100
     val uids = (0 until numberIDs).toSet().map { repository.getNewItemId() }.toSet()
-    assertEquals(uids.size, numberIDs)
+    TestCase.assertEquals(uids.size, numberIDs)
   }
 
   @Test
   fun addItemWithTheCorrectID() = runTest {
     repository.addItem(item1)
 
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
     val storedItem = repository.getItemById(item1.uuid)
-    assertEquals(storedItem, item1)
+    TestCase.assertEquals(storedItem, item1)
   }
 
   @Test
   fun canAddItemToRepository() = runTest {
     repository.addItem(item1)
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
     val items = repository.getAllItems()
 
-    assertEquals(1, items.size)
+    TestCase.assertEquals(1, items.size)
     val expectedItem = item1.copy(uuid = "None", link = "None")
     val storedItem = items.first().copy(uuid = expectedItem.uuid, link = expectedItem.link)
 
-    assertEquals(expectedItem, storedItem)
+    TestCase.assertEquals(expectedItem, storedItem)
   }
 
   @Test
@@ -99,13 +102,13 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item1)
     repository.addItem(item2)
     repository.addItem(item3)
-    assertEquals(3, repository.getItemCount())
+    TestCase.assertEquals(3, repository.getItemCount())
 
     val storedItem = repository.getItemById(item3.uuid)
-    assertEquals(storedItem, item3)
+    TestCase.assertEquals(storedItem, item3)
 
     val storedItem2 = repository.getItemById(item2.uuid)
-    assertEquals(storedItem2, item2)
+    TestCase.assertEquals(storedItem2, item2)
   }
 
   @Test
@@ -118,14 +121,14 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item1Modified)
     repository.addItem(itemDuplicatedUID)
 
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
 
     val items = repository.getAllItems()
-    assertEquals(items.size, 1)
+    TestCase.assertEquals(items.size, 1)
     val storedItem = items.first()
-    assertEquals(storedItem.uuid, uid)
+    TestCase.assertEquals(storedItem.uuid, uid)
     // Should be the last added item (item2)
-    assertEquals(storedItem.brand, item2.brand)
+    TestCase.assertEquals(storedItem.brand, item2.brand)
   }
 
   @Test
@@ -133,12 +136,12 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item1)
     repository.addItem(item2)
     repository.addItem(item3)
-    assertEquals(3, repository.getItemCount())
+    TestCase.assertEquals(3, repository.getItemCount())
 
     repository.deleteItem(item2.uuid)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
     val items = repository.getAllItems()
-    assertEquals(items.size, 2)
+    TestCase.assertEquals(items.size, 2)
     assert(!items.contains(item2))
     assert(items.contains(item1))
     assert(items.contains(item3))
@@ -148,7 +151,7 @@ class ItemsRepositoryLocalTest {
   fun deleteNonExistingItemThrows() = runTest {
     repository.addItem(item1)
     repository.addItem(item3)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
 
     // Deleting an item that does not exist should throw
     var didThrow = false
@@ -159,13 +162,13 @@ class ItemsRepositoryLocalTest {
       assert(e.message?.contains("Item not found") == true)
     }
     assert(didThrow)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
   }
 
   @Test
   fun editItemById() = runTest {
     repository.addItem(item1)
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
 
     val newItem =
         item1.copy(
@@ -174,17 +177,17 @@ class ItemsRepositoryLocalTest {
             price = 20.0,
             material = listOf(Material(name = "Cotton", percentage = 100.0)))
     repository.editItem(item1.uuid, newItem)
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
     val items = repository.getAllItems()
-    assertEquals(items.size, 1)
+    TestCase.assertEquals(items.size, 1)
     val storedItem = items.first()
-    assertEquals(storedItem, newItem)
+    TestCase.assertEquals(storedItem, newItem)
   }
 
   @Test
   fun editNonExistingItemThrows() = runTest {
     repository.addItem(item1)
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
 
     // Editing an item that does not exist should throw
     val nonExistingItem = item2.copy(uuid = "nonExisting")
@@ -196,7 +199,7 @@ class ItemsRepositoryLocalTest {
       assert(e.message?.contains("Item not found") == true)
     }
     assert(didThrow)
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
   }
 
   @Test(expected = Exception::class)
@@ -205,8 +208,8 @@ class ItemsRepositoryLocalTest {
   @Test
   fun getAllItemsReturnsEmptyListWhenNoItems() = runTest {
     val items = repository.getAllItems()
-    assertEquals(0, items.size)
-    assertEquals(true, items.isEmpty())
+    TestCase.assertEquals(0, items.size)
+    TestCase.assertEquals(true, items.isEmpty())
   }
 
   @Test
@@ -217,7 +220,7 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item4)
 
     val items = repository.getAllItems()
-    assertEquals(4, items.size)
+    TestCase.assertEquals(4, items.size)
     assert(items.contains(item1))
     assert(items.contains(item2))
     assert(items.contains(item3))
@@ -245,11 +248,11 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item1)
     repository.addItem(item2)
     repository.addItem(item3)
-    assertEquals(3, repository.getItemCount())
+    TestCase.assertEquals(3, repository.getItemCount())
 
     repository.clearAll()
 
-    assertEquals(0, repository.getItemCount())
+    TestCase.assertEquals(0, repository.getItemCount())
     val items = repository.getAllItems()
     assert(items.isEmpty())
     assert(!repository.hasItem(item1.uuid))
@@ -259,22 +262,22 @@ class ItemsRepositoryLocalTest {
 
   @Test
   fun getItemCountReturnsCorrectCount() = runTest {
-    assertEquals(0, repository.getItemCount())
+    TestCase.assertEquals(0, repository.getItemCount())
 
     repository.addItem(item1)
-    assertEquals(1, repository.getItemCount())
+    TestCase.assertEquals(1, repository.getItemCount())
 
     repository.addItem(item2)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
 
     repository.addItem(item3)
-    assertEquals(3, repository.getItemCount())
+    TestCase.assertEquals(3, repository.getItemCount())
 
     repository.deleteItem(item2.uuid)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
 
     repository.clearAll()
-    assertEquals(0, repository.getItemCount())
+    TestCase.assertEquals(0, repository.getItemCount())
   }
 
   @Test
@@ -282,12 +285,12 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item4)
 
     val retrieved = repository.getItemById(item4.uuid)
-    assertEquals(item4, retrieved)
-    assertEquals(2, retrieved.material.size)
-    assertEquals("Plastic", retrieved.material[0]?.name)
-    assertEquals(80.0, retrieved.material[0]?.percentage)
-    assertEquals("Metal", retrieved.material[1]?.name)
-    assertEquals(20.0, retrieved.material[1]?.percentage)
+    TestCase.assertEquals(item4, retrieved)
+    TestCase.assertEquals(2, retrieved.material.size)
+    TestCase.assertEquals("Plastic", retrieved.material[0]?.name)
+    TestCase.assertEquals(80.0, retrieved.material[0]?.percentage)
+    TestCase.assertEquals("Metal", retrieved.material[1]?.name)
+    TestCase.assertEquals(20.0, retrieved.material[1]?.percentage)
   }
 
   @Test
@@ -295,29 +298,29 @@ class ItemsRepositoryLocalTest {
     // Add
     repository.addItem(item1)
     repository.addItem(item2)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
 
     // Edit
     val modifiedItem1 = item1.copy(price = 50.0)
     repository.editItem(item1.uuid, modifiedItem1)
-    assertEquals(2, repository.getItemCount())
+    TestCase.assertEquals(2, repository.getItemCount())
 
     // Retrieve
     val retrieved = repository.getItemById(item1.uuid)
-    assertEquals(50.0, retrieved.price)
+    TestCase.assertEquals(50.0, retrieved.price)
 
     // Add more
     repository.addItem(item3)
     repository.addItem(item4)
-    assertEquals(4, repository.getItemCount())
+    TestCase.assertEquals(4, repository.getItemCount())
 
     // Delete
     repository.deleteItem(item2.uuid)
-    assertEquals(3, repository.getItemCount())
+    TestCase.assertEquals(3, repository.getItemCount())
 
     // Verify remaining items
     val allItems = repository.getAllItems()
-    assertEquals(3, allItems.size)
+    TestCase.assertEquals(3, allItems.size)
     assert(allItems.contains(modifiedItem1))
     assert(!allItems.contains(item2))
     assert(allItems.contains(item3))
@@ -334,8 +337,8 @@ class ItemsRepositoryLocalTest {
 
     // Original should still be unchanged in repository
     val retrieved2 = repository.getItemById(item1.uuid)
-    assertEquals(item1.price, retrieved2.price)
-    assertEquals(0.0, retrieved2.price)
+    TestCase.assertEquals(item1.price, retrieved2.price)
+    TestCase.assertEquals(0.0, retrieved2.price)
   }
 
   @Test
@@ -343,8 +346,8 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item1) // item1 has empty material list
 
     val retrieved = repository.getItemById(item1.uuid)
-    assertEquals(item1, retrieved)
-    assertEquals(0, retrieved.material.size)
+    TestCase.assertEquals(item1, retrieved)
+    TestCase.assertEquals(0, retrieved.material.size)
     assert(retrieved.material.isEmpty())
   }
 
@@ -356,8 +359,8 @@ class ItemsRepositoryLocalTest {
     repository.addItem(itemWithCustomUri)
 
     val retrieved = repository.getItemById(itemWithCustomUri.uuid)
-    assertEquals(customUri, retrieved.image)
-    assertEquals(customUri.toString(), retrieved.image.toString())
+    TestCase.assertEquals(customUri, retrieved.image)
+    TestCase.assertEquals(customUri.toString(), retrieved.image.toString())
   }
 
   @After
