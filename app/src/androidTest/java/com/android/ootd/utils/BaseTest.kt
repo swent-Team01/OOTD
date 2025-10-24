@@ -1,9 +1,11 @@
 package com.android.ootd.utils
 
 import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.firebase.auth.FirebaseUser
 import org.junit.After
@@ -17,8 +19,6 @@ const val UI_WAIT_TIMEOUT = 5_000L
  * It also handles gracefully automatic sign-in and only runs firebase emulators.
  */
 abstract class BaseTest() {
-
-  abstract fun createInitializedRepository(): UserRepository
 
   val repository: UserRepository
     get() = UserRepositoryProvider.repository
@@ -41,7 +41,8 @@ abstract class BaseTest() {
 
   @Before
   open fun setUp() {
-    UserRepositoryProvider.repository = createInitializedRepository()
+    UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
+    FeedRepositoryProvider.repository = FeedRepositoryFirestore(FirebaseEmulator.firestore)
   }
 
   @After

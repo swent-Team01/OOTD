@@ -3,8 +3,6 @@ package com.android.ootd.utils
 import android.util.Log
 import com.android.ootd.model.feed.POSTS_COLLECTION_PATH
 import com.android.ootd.model.user.USER_COLLECTION_PATH
-import com.android.ootd.model.user.UserRepository
-import com.android.ootd.model.user.UserRepositoryFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -41,10 +39,6 @@ open class FirestoreTest() : BaseTest() {
     docs.forEach { it.reference.delete().await() }
   }
 
-  override fun createInitializedRepository(): UserRepository {
-    return UserRepositoryFirestore(db = FirebaseEmulator.firestore)
-  }
-
   @Before
   override fun setUp() {
     super.setUp()
@@ -65,7 +59,6 @@ open class FirestoreTest() : BaseTest() {
 
   @After
   override fun tearDown() {
-    runTest { clearTestCollection() }
     FirebaseEmulator.clearFirestoreEmulator()
     super.tearDown()
   }
