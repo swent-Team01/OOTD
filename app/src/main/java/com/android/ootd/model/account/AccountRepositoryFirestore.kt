@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import android.util.Log
+import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -214,10 +215,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
     return try {
       val querySnapshot =
-          db.collection(ACCOUNT_COLLECTION_PATH)
-              .whereEqualTo("username", user.username)
-              .get()
-              .await()
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("username", user.username).get().await()
       // If any document exists with a different id, the username is taken.
       querySnapshot.documents.any { it.id != user.uid }
     } catch (e: Exception) {
