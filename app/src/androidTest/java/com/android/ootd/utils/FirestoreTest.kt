@@ -1,9 +1,6 @@
 package com.android.ootd.utils
 
-import android.util.Log
 import com.android.ootd.model.user.USER_COLLECTION_PATH
-import com.android.ootd.model.user.UserRepository
-import com.android.ootd.model.user.UserRepositoryFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -15,42 +12,18 @@ open class FirestoreTest() : BaseTest() {
     return FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).get().await().size()
   }
 
-  private suspend fun clearTestCollection() {
-    val users = FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).get().await()
-
-    val batch = FirebaseEmulator.firestore.batch()
-    users.documents.forEach { batch.delete(it.reference) }
-    batch.commit().await()
-
-    assert(getUserCount() == 0) {
-      "Test collection is not empty after clearing, count: ${getUserCount()}"
-    }
-  }
-
-  override fun createInitializedRepository(): UserRepository {
-    return UserRepositoryFirestore(db = FirebaseEmulator.firestore)
-  }
-
   @Before
   override fun setUp() {
     super.setUp()
 
     runTest {
+      FirebaseEmulator.clearFirestoreEmulator()
       FirebaseEmulator.auth.signInAnonymously().await()
-      val userCount = getUserCount()
-      if (userCount > 0) {
-        Log.w(
-            "FirebaseEmulatedTest",
-            "Warning: Test collection is not empty at the beginning of the test, count: $userCount",
-        )
-        clearTestCollection()
-      }
     }
   }
 
   @After
   override fun tearDown() {
-    runTest { clearTestCollection() }
     FirebaseEmulator.clearFirestoreEmulator()
     super.tearDown()
   }
