@@ -13,6 +13,8 @@ const val ACCOUNT_COLLECTION_PATH = "accounts"
 // Custom exception for taken user scenario
 class TakenUserException(message: String) : Exception(message)
 
+class TakenAccountException(message: String) : Exception(message)
+
 /** Convert domain Account to Firestore-friendly Map (excludes uid as it's the document id) */
 private fun Account.toFirestoreMap(): Map<String, Any> =
     mapOf(
@@ -122,12 +124,13 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun accountExists(userId: String): Boolean {
     return try {
-      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
+      // Check if account exists in the accounts collection
+      val accountDocument = db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
 
-      if (!document.exists()) {
+      if (!accountDocument.exists()) {
         false
       } else {
-        val username = document.getString("username")
+        val username = accountDocument.getString("username")
         !username.isNullOrBlank()
       }
     } catch (e: Exception) {
@@ -138,10 +141,9 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addAccount(account: Account) {
     try {
-      val existingDoc = db.collection(ACCOUNT_COLLECTION_PATH).document(account.uid).get().await()
-
-      if (existingDoc.exists()) {
-        throw IllegalArgumentException("Account with UID ${account.uid} already exists")
+      // Use accountExists to check for duplicates (checks both user and account existence)
+      if (accountExists(account.uid)) {
+        throw TakenAccountException("Account with UID ${account.uid} already exists")
       }
 
       db.collection(ACCOUNT_COLLECTION_PATH)

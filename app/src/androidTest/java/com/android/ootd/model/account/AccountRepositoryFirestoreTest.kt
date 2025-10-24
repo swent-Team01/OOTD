@@ -27,7 +27,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
     val exception = runCatching { accountRepository.addAccount(account1) }.exceptionOrNull()
 
-    assertTrue(exception is IllegalArgumentException)
+    assertTrue(exception is TakenAccountException)
     assertTrue(exception?.message?.contains("already exists") == true)
     assertEquals(1, getAccountCount())
   }
@@ -139,12 +139,17 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun createAccount_throwsExceptionForDuplicateUsername() = runTest {
+  fun createAccount_throwsExceptionForDuplicateUser() = runTest {
     val user1 = User(uid = "user3", username = "duplicate")
     val user2 = User(uid = "user4", username = "duplicate")
 
+    // Add user1 to users collection first, then create account
+    repository.addUser(user1)
     accountRepository.createAccount(user1, testDateOfBirth)
 
+    // Add user2 to users collection - this should be allowed since different uid
+    repository.addUser(user2)
+    // But createAccount should fail because username is already in use
     val exception =
         runCatching { accountRepository.createAccount(user2, testDateOfBirth) }.exceptionOrNull()
 
