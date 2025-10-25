@@ -25,8 +25,8 @@ const val UI_WAIT_TIMEOUT = 5_000L
  */
 abstract class BaseTest() {
 
-  val repository: UserRepository
-    get() = UserRepositoryFirestore(FirebaseEmulator.firestore)
+  val userRepository: UserRepository
+    get() = UserRepositoryProvider.repository
 
   val itemsRepository: ItemsRepository
     get() = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
@@ -57,6 +57,7 @@ abstract class BaseTest() {
     FeedRepositoryProvider.repository = FeedRepositoryFirestore(FirebaseEmulator.firestore)
     outfitPostRepository =
         OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
+    UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
   }
 
   @After

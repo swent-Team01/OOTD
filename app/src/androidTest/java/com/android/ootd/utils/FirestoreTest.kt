@@ -12,18 +12,6 @@ open class FirestoreTest() : BaseTest() {
     return FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).get().await().size()
   }
 
-  private suspend fun clearTestCollection() {
-    val users = FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).get().await()
-
-    val batch = FirebaseEmulator.firestore.batch()
-    users.documents.forEach { batch.delete(it.reference) }
-    batch.commit().await()
-
-    assert(getUserCount() == 0) {
-      "Test collection is not empty after clearing, count: ${getUserCount()}"
-    }
-  }
-
   @Before
   override fun setUp() {
     super.setUp()
