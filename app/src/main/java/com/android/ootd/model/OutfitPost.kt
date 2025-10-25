@@ -1,5 +1,7 @@
 package com.android.ootd.model
 
+import androidx.annotation.Keep
+
 /**
  * Represents a single post in the feed
  *
@@ -12,6 +14,7 @@ package com.android.ootd.model
  * @property itemsID of the items the user is wearing
  * @property timestamp time passed since posting
  */
+@Keep
 data class OutfitPost(
     val postUID: String = "",
     val name: String = "",
@@ -20,7 +23,8 @@ data class OutfitPost(
     val outfitURL: String = "",
     val description: String = "",
     val itemsID: List<String> = emptyList(),
-    val timestamp: Long = 0L
+    val timestamp: Long = 0L,
+    val ownerId: String = ""
 
     // val reactionList - for when we implement reactions/commentaries to posts
     // val location - for when we implement location
