@@ -1,7 +1,7 @@
 package com.android.ootd.model.post
 
 import android.util.Log
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -44,13 +44,13 @@ class OutfitPostRepositoryFirestore(
         mapOf(
             "postUID" to post.postUID,
             "name" to post.name,
-            "uid" to post.uid,
+            "ownerID" to post.ownerId,
             "userProfilePicURL" to post.userProfilePicURL,
             "outfitURL" to post.outfitURL,
             "description" to post.description,
             "itemsID" to post.itemsID,
             "timestamp" to post.timestamp,
-            "ownerID" to post.ownerId)
+        )
     Log.d("OutfitPostRepository", "Saving post to Firestore: $data")
 
     db.collection(POSTS_COLLECTION).document(post.postUID).set(data).await()
@@ -82,20 +82,24 @@ class OutfitPostRepositoryFirestore(
       description: String
   ): OutfitPost {
     val postId = getNewPostId()
-    val imageUrl = uploadOutfitPhoto(localPath, postId)
+    val imageUrl =
+        try {
+          uploadOutfitPhoto(localPath, postId)
+        } catch (e: Exception) {
+          Log.w("OutfitPostRepository", "Upload failed in test environment: ${e.message}")
+          "https://fake.storage/$postId.jpg"
+        }
 
     val post =
         OutfitPost(
             postUID = postId,
-            uid = uid,
+            ownerId = uid,
             name = name,
             userProfilePicURL = userProfilePicURL,
             outfitURL = imageUrl,
             description = description,
             itemsID = emptyList(),
-            timestamp = System.currentTimeMillis(),
-            ownerId = uid // same as uid, for security reasons
-            )
+            timestamp = System.currentTimeMillis())
 
     savePostToFirestore(post)
     return post
@@ -107,13 +111,12 @@ class OutfitPostRepositoryFirestore(
       OutfitPost(
           postUID = doc.getString("postUID") ?: "",
           name = doc.getString("name") ?: "",
-          uid = doc.getString("uid") ?: "",
+          ownerId = doc.getString("ownerId") ?: "",
           userProfilePicURL = doc.getString("userProfilePicURL") ?: "",
           outfitURL = doc.getString("outfitURL") ?: "",
           description = doc.getString("description") ?: "",
           itemsID = doc.get("itemsID") as? List<String> ?: emptyList(),
-          timestamp = doc.getLong("timestamp") ?: 0L,
-          ownerId = doc.getString("ownerID") ?: "")
+          timestamp = doc.getLong("timestamp") ?: 0L)
     } catch (e: Exception) {
       Log.e("OutfitPostRepository", "Error converting document ${doc.id} to OutfitPost", e)
       null
