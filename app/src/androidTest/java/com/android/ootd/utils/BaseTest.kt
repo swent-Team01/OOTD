@@ -5,7 +5,9 @@ import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryFirestore
+import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryFirestore
@@ -32,7 +34,8 @@ abstract class BaseTest() {
   val feedRepository: FeedRepository
     get() = FeedRepositoryProvider.repository
 
-  lateinit var outfitPostRepository: OutfitPostRepositoryFirestore
+  val outfitPostRepository: OutfitPostRepository
+    get() = com.android.ootd.model.post.OutfitPostRepositoryProvider.repository
 
   val currentUser: FirebaseUser
     get() {
@@ -50,7 +53,7 @@ abstract class BaseTest() {
   @Before
   open fun setUp() {
     FeedRepositoryProvider.repository = FeedRepositoryFirestore(FirebaseEmulator.firestore)
-    outfitPostRepository =
+    OutfitPostRepositoryProvider.repository =
         OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
     UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
   }

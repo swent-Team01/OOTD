@@ -1,21 +1,24 @@
-package com.android.ootd.model
+package com.android.ootd.model.posts
+
+import androidx.annotation.Keep
 
 /**
  * Represents a single post in the feed
  *
  * @property postUID unique ID of the post
  * @property name name of the user who posted
- * @property uid UID of the user who created the post
+ * @property ownerId UID of the user who created the post
  * @property userProfilePicURL URL of the user's profile picture
  * @property outfitURL uploaded outfit image
  * @property description Optional post caption
  * @property itemsID of the items the user is wearing
  * @property timestamp time passed since posting
  */
+@Keep
 data class OutfitPost(
     val postUID: String = "",
     val name: String = "",
-    val uid: String = "",
+    val ownerId: String = "",
     val userProfilePicURL: String = "",
     val outfitURL: String = "",
     val description: String = "",
