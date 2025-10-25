@@ -1,7 +1,7 @@
 package com.android.ootd.model.feed
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import kotlin.collections.listOf
 import org.junit.Assert.assertEquals

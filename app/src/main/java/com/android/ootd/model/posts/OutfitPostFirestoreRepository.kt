@@ -1,7 +1,7 @@
 package com.android.ootd.model.post
 
 import android.util.Log
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -44,7 +44,7 @@ class OutfitPostRepositoryFirestore(
         mapOf(
             "postUID" to post.postUID,
             "name" to post.name,
-            "uid" to post.uid,
+            "ownerId" to post.ownerId,
             "userProfilePicURL" to post.userProfilePicURL,
             "outfitURL" to post.outfitURL,
             "description" to post.description,
@@ -74,7 +74,7 @@ class OutfitPostRepositoryFirestore(
       OutfitPost(
           postUID = doc.getString("postUID") ?: "",
           name = doc.getString("name") ?: "",
-          uid = doc.getString("uid") ?: "",
+          ownerId = doc.getString("uid") ?: "",
           userProfilePicURL = doc.getString("userProfilePicURL") ?: "",
           outfitURL = doc.getString("outfitURL") ?: "",
           description = doc.getString("description") ?: "",
