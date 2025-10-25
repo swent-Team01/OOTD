@@ -8,7 +8,7 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
 /** Firestore collection name for outfit posts* */
-const val POSTS_COLLECTION = "outfit_posts"
+const val POSTS_COLLECTION = "posts"
 
 /** Firestore collection name for outfit images * */
 const val POSTS_IMAGES_FOLDER = "images"
@@ -49,7 +49,9 @@ class OutfitPostRepositoryFirestore(
             "outfitURL" to post.outfitURL,
             "description" to post.description,
             "itemsID" to post.itemsID,
-            "timestamp" to post.timestamp)
+            "timestamp" to post.timestamp,
+            "ownerID" to post.ownerId)
+    Log.d("OutfitPostRepository", "Saving post to Firestore: $data")
 
     db.collection(POSTS_COLLECTION).document(post.postUID).set(data).await()
   }
@@ -59,6 +61,10 @@ class OutfitPostRepositoryFirestore(
     return if (doc.exists()) mapToOutfitPost(doc) else null
   }
 
+  override suspend fun updatePostFields(postId: String, updates: Map<String, Any?>) {
+    db.collection(POSTS_COLLECTION).document(postId).update(updates).await()
+  }
+
   override suspend fun deletePost(postId: String) {
     db.collection(POSTS_COLLECTION).document(postId).delete().await()
     try {
@@ -66,6 +72,33 @@ class OutfitPostRepositoryFirestore(
     } catch (e: Exception) {
       Log.w("OutfitPostRepository", "No image found for post $postId — skipping delete.")
     }
+  }
+
+  override suspend fun savePartialPost(
+      uid: String,
+      name: String,
+      userProfilePicURL: String,
+      localPath: String,
+      description: String
+  ): OutfitPost {
+    val postId = getNewPostId()
+    val imageUrl = uploadOutfitPhoto(localPath, postId)
+
+    val post =
+        OutfitPost(
+            postUID = postId,
+            uid = uid,
+            name = name,
+            userProfilePicURL = userProfilePicURL,
+            outfitURL = imageUrl,
+            description = description,
+            itemsID = emptyList(),
+            timestamp = System.currentTimeMillis(),
+            ownerId = uid // same as uid, for security reasons
+            )
+
+    savePostToFirestore(post)
+    return post
   }
 
   /** Converts a Firestore [DocumentSnapshot] into an [OutfitPost] model. */
@@ -79,7 +112,8 @@ class OutfitPostRepositoryFirestore(
           outfitURL = doc.getString("outfitURL") ?: "",
           description = doc.getString("description") ?: "",
           itemsID = doc.get("itemsID") as? List<String> ?: emptyList(),
-          timestamp = doc.getLong("timestamp") ?: 0L)
+          timestamp = doc.getLong("timestamp") ?: 0L,
+          ownerId = doc.getString("ownerID") ?: "")
     } catch (e: Exception) {
       Log.e("OutfitPostRepository", "Error converting document ${doc.id} to OutfitPost", e)
       null
