@@ -244,8 +244,6 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   fun uploadOutfitPhoto_returnsValidDownloadUrl() = runTest {
     val postId = outfitPostRepository.getNewPostId()
     val fakeUri = "file:///tmp/fake_upload_image.jpg"
-
-    // Just call the method — emulator will handle upload
     val url = outfitPostRepository.uploadOutfitPhoto(fakeUri, postId)
 
     Assert.assertTrue("Returned URL should not be blank", url.isNotBlank())
