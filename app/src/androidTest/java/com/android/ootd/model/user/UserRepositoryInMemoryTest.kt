@@ -67,7 +67,6 @@ class UserRepositoryInMemoryTest {
 
     assertEquals("user1", user.uid)
     assertEquals("alice_wonder", user.username)
-    assertEquals(2, user.friendUids.size)
   }
 
   @Test
@@ -101,19 +100,18 @@ class UserRepositoryInMemoryTest {
 
   @Test
   fun addUser_successfullyAddsNewUser() = runTest {
-    val newUser = User(uid = "user6", username = "frank_sinatra", friendUids = emptyList())
+    val newUser = User(uid = "user6", username = "frank_sinatra")
 
     repository.addUser(newUser)
     val retrievedUser = repository.getUser("user6")
 
     assertEquals("user6", retrievedUser.uid)
     assertEquals("frank_sinatra", retrievedUser.username)
-    assertTrue(retrievedUser.friendUids.isEmpty())
   }
 
   @Test
   fun addUser_throwsExceptionWhenUserAlreadyExists() {
-    val duplicateUser = User(uid = "user1", username = "duplicate_user", friendUids = emptyList())
+    val duplicateUser = User(uid = "user1", username = "duplicate_user")
 
     val exception =
         assertThrows(IllegalArgumentException::class.java) {
@@ -127,92 +125,10 @@ class UserRepositoryInMemoryTest {
   fun addUser_increasesUserCount() = runTest {
     val initialCount = repository.getAllUsers().size
 
-    val newUser = User(uid = "user6", username = "new_user", friendUids = emptyList())
+    val newUser = User(uid = "user6", username = "new_user")
     repository.addUser(newUser)
 
     assertEquals(initialCount + 1, repository.getAllUsers().size)
-  }
-
-  @Test
-  fun addFriend_successfullyAddsFriend() = runTest {
-    repository.addFriend("user3", "user1")
-
-    val user = repository.getUser("user3")
-    assertEquals(1, user.friendUids.size)
-    assertEquals("user1", user.friendUids[0])
-  }
-
-  @Test
-  fun addFriend_throwsExceptionWhenUserNotFound() {
-    val exception =
-        assertThrows(NoSuchElementException::class.java) {
-          runTest { repository.addFriend("nonexistent", "user1") }
-        }
-
-    assertEquals("User with ID nonexistent not found", exception.message)
-  }
-
-  @Test
-  fun addFriend_throwsExceptionWhenFriendNotFound() {
-    val exception =
-        assertThrows(NoSuchElementException::class.java) {
-          runTest { repository.addFriend("user3", "nonexistent") }
-        }
-
-    assertEquals("Friend with ID nonexistent not found", exception.message)
-  }
-
-  @Test
-  fun addFriend_doesNotAddDuplicateFriend() = runTest {
-    val initialFriendCount = repository.getUser("user1").friendUids.size
-
-    // Try to add user2 who is already a friend of user1
-    repository.addFriend("user1", "user2")
-
-    val user = repository.getUser("user1")
-    assertEquals(initialFriendCount, user.friendUids.size)
-  }
-
-  @Test
-  fun addFriend_preservesExistingFriends() = runTest {
-    repository.addFriend("user3", "user1")
-    repository.addFriend("user3", "user2")
-
-    val user = repository.getUser("user3")
-    assertEquals(2, user.friendUids.size)
-    assertTrue(user.friendUids.any { it == "user1" })
-    assertTrue(user.friendUids.any { it == "user2" })
-  }
-
-  @Test
-  fun addFriend_doesNotAffectOtherUsers() = runTest {
-    val user2BeforeAdd = repository.getUser("user2")
-
-    repository.addFriend("user3", "user1")
-
-    val user2AfterAdd = repository.getUser("user2")
-    assertEquals(user2BeforeAdd.friendUids.size, user2AfterAdd.friendUids.size)
-  }
-
-  @Test
-  fun getAllUsers_returnsCorrectFriendListsForPreloadedUsers() = runTest {
-    val user1 = repository.getUser("user1")
-    val user4 = repository.getUser("user4")
-    val user5 = repository.getUser("user5")
-
-    assertEquals(2, user1.friendUids.size)
-    assertEquals(2, user4.friendUids.size)
-    assertTrue(user5.friendUids.isEmpty())
-  }
-
-  @Test
-  fun addFriend_canAddMultipleFriendsSequentially() = runTest {
-    repository.addFriend("user5", "user1")
-    repository.addFriend("user5", "user2")
-    repository.addFriend("user5", "user3")
-
-    val user = repository.getUser("user5")
-    assertEquals(3, user.friendUids.size)
   }
 
   @Test(expected = TakenUsernameException::class)

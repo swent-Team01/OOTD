@@ -3,6 +3,8 @@ package com.android.ootd.ui.search
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -26,6 +28,7 @@ data class SearchUserUIState(
 
 class UserSearchViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val overrideUser: Boolean = false
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(SearchUserUIState())
@@ -70,7 +73,7 @@ class UserSearchViewModel(
               selectedUser = user,
               userSuggestions = emptyList(),
               isSelectedUserFollowed =
-                  userRepository.isMyFriend(userID = myUID, friendID = user.uid),
+                  accountRepository.isMyFriend(userID = myUID, friendID = user.uid),
               suggestionsExpanded = false)
     }
   }
@@ -98,9 +101,9 @@ class UserSearchViewModel(
       val friendID = _uiState.value.selectedUser?.uid ?: ""
 
       if (!_uiState.value.isSelectedUserFollowed) {
-        userRepository.addFriend(myUID, friendID)
+        accountRepository.addFriend(myUID, friendID)
       } else {
-        userRepository.removeFriend(myUID, friendID)
+        accountRepository.removeFriend(myUID, friendID)
       }
 
       _uiState.value =

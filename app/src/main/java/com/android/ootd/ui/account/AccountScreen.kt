@@ -128,7 +128,7 @@ fun AccountScreen(
         Box(
             modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER),
             contentAlignment = Alignment.Center) {
-              if (avatarUri != null) {
+              if (avatarUri.isNotBlank()) {
                 AsyncImage(
                     model = avatarUri,
                     contentDescription = "Avatar",

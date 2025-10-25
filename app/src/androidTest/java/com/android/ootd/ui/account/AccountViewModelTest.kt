@@ -1,8 +1,8 @@
 import android.net.Uri
 import androidx.credentials.CredentialManager
+import com.android.ootd.model.account.Account
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
-import com.android.ootd.model.user.User
-import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.account.AccountViewModel
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
@@ -36,7 +36,7 @@ import org.junit.Test
 class AccountViewModelTest {
 
   private lateinit var accountService: AccountService
-  private lateinit var userRepository: UserRepository
+  private lateinit var accountRepository: AccountRepository
   private lateinit var credentialManager: CredentialManager
   private lateinit var viewModel: AccountViewModel
   private lateinit var mockFirebaseUser: FirebaseUser
@@ -49,7 +49,7 @@ class AccountViewModelTest {
     Dispatchers.setMain(testDispatcher)
 
     accountService = mockk(relaxed = true)
-    userRepository = mockk(relaxed = true)
+    accountRepository = mockk(relaxed = true)
     credentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -58,8 +58,8 @@ class AccountViewModelTest {
     every { mockFirebaseUser.email } returns "test@example.com"
     every { mockFirebaseUser.photoUrl } returns null
 
-    coEvery { userRepository.getUser("test-uid") } returns
-        User(uid = "test-uid", username = "testuser", profilePicture = Uri.EMPTY)
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "")
 
     coEvery { credentialManager.clearCredentialState(any()) } just Runs
   }
@@ -72,12 +72,12 @@ class AccountViewModelTest {
 
   @Test
   fun uiState_initializes_with_empty_values() {
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
 
     val state = viewModel.uiState.value
     assertEquals("", state.username)
     assertEquals("", state.googleAccountName)
-    assertNull(state.profilePicture)
+    assertEquals("", state.profilePicture)
     assertNull(state.errorMsg)
     assertFalse(state.signedOut)
     assertFalse(state.isLoading)
@@ -85,7 +85,7 @@ class AccountViewModelTest {
 
   @Test
   fun observeAuthState_updates_uiState_when_user_is_signed_in() = runTest {
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
 
     userFlow.value = mockFirebaseUser
     advanceUntilIdle()
@@ -101,12 +101,12 @@ class AccountViewModelTest {
     val googlePhotoUri = Uri.parse("https://google.com/photo.jpg")
     every { mockFirebaseUser.photoUrl } returns googlePhotoUri
 
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
 
     userFlow.value = mockFirebaseUser
     advanceUntilIdle()
 
-    assertEquals(googlePhotoUri, viewModel.uiState.value.profilePicture)
+    assertEquals(googlePhotoUri.toString(), viewModel.uiState.value.profilePicture)
   }
 
   @Test
@@ -115,20 +115,21 @@ class AccountViewModelTest {
     val firestorePhotoUri = Uri.parse("https://firestore.com/photo.jpg")
 
     every { mockFirebaseUser.photoUrl } returns googlePhotoUri
-    coEvery { userRepository.getUser("test-uid") } returns
-        User(uid = "test-uid", username = "testuser", profilePicture = firestorePhotoUri)
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid", username = "testuser", profilePicture = firestorePhotoUri.toString())
 
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
 
     userFlow.value = mockFirebaseUser
     advanceUntilIdle()
 
-    assertEquals(firestorePhotoUri, viewModel.uiState.value.profilePicture)
+    assertEquals(firestorePhotoUri.toString(), viewModel.uiState.value.profilePicture)
   }
 
   @Test
   fun observeAuthState_handles_null_user() = runTest {
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
 
     userFlow.value = null
     advanceUntilIdle()
@@ -136,14 +137,14 @@ class AccountViewModelTest {
     val state = viewModel.uiState.value
     assertEquals("", state.username)
     assertEquals("", state.googleAccountName)
-    assertNull(state.profilePicture)
+    assertEquals("", state.profilePicture)
   }
 
   @Test
   fun clearErrorMsg_clears_error_message() = runTest {
-    coEvery { userRepository.getUser("test-uid") } throws Exception("Error")
+    coEvery { accountRepository.getAccount("test-uid") } throws Exception("Error")
 
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
     userFlow.value = mockFirebaseUser
     advanceUntilIdle()
 
@@ -156,7 +157,7 @@ class AccountViewModelTest {
 
   @Test
   fun observeAuthState_reactively_updates_when_user_data_changes() = runTest {
-    viewModel = AccountViewModel(accountService, userRepository)
+    viewModel = AccountViewModel(accountService, accountRepository)
 
     userFlow.value = mockFirebaseUser
     advanceUntilIdle()
@@ -165,8 +166,8 @@ class AccountViewModelTest {
     assertEquals("testuser", viewModel.uiState.value.username)
 
     // Change to a different user to trigger observeAuthState() to reload
-    coEvery { userRepository.getUser("test-uid-2") } returns
-        User(uid = "test-uid-2", username = "updateduser", profilePicture = Uri.EMPTY)
+    coEvery { accountRepository.getAccount("test-uid-2") } returns
+        Account(uid = "test-uid-2", username = "updateduser", profilePicture = "")
 
     val updatedMockUser =
         mockk<FirebaseUser> {

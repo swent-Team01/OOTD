@@ -50,7 +50,6 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.ui.authentication.*
-import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.utils.FakeCredentialManager
 import com.android.ootd.utils.FakeJwtGenerator
@@ -416,21 +415,7 @@ class AuthenticationExtensiveTest {
     assertTrue("Callback must be invoked (not just referenced)", callbackInvoked)
   }
 
-  // ========== NavigationActions Tests ==========
-
-  // This is in addition to the seperate navigation tests in navigation/NavigationTest.kt
-  @Test
-  fun navigationActions_currentRoute_returnsEmptyWhenNull() {
-    val navController = mockk<androidx.navigation.NavHostController>(relaxed = true)
-    every { navController.currentDestination } returns null
-
-    val navigationActions = NavigationActions(navController)
-
-    assertEquals("", navigationActions.currentRoute())
-  }
-
   // ========== AccountServiceFirebase Tests ==========
-
   @Test
   fun accountServiceFirebase_currentUserId_returnsEmptyWhenNoUser() {
     val mockAuth = mockk<FirebaseAuth>(relaxed = true)

@@ -30,7 +30,7 @@ import com.android.ootd.ui.theme.Secondary
  * Circular Material3 avatar showing the image from the account view model
  *
  * The composable observes `AccountViewModel.uiState` via `collectAsState()` so it will recompose
- * whenever the profile picture URI changes. The avatar URL is cache-busted with a timestamp
+ * whenever the profile picture string changes. The avatar URL is cache-busted with a timestamp
  * parameter to ensure Coil fetches fresh bytes when the URI itself changes (rather than serving
  * stale cached data).
  *
@@ -50,7 +50,7 @@ fun AccountIcon(
     onClick: () -> Unit
 ) {
   val uiState by accountViewModel.uiState.collectAsState()
-  val profilePictureUri = uiState.profilePicture
+  val profilePicture = uiState.profilePicture
 
   Surface(
       modifier =
@@ -62,8 +62,8 @@ fun AccountIcon(
       shape = CircleShape,
       tonalElevation = 2.dp,
       color = Primary) {
-        if (profilePictureUri != null && profilePictureUri.toString().isNotBlank()) {
-          val painter = rememberAsyncImagePainter(model = profilePictureUri)
+        if (profilePicture.isNotBlank()) {
+          val painter = rememberAsyncImagePainter(model = profilePicture)
           Image(
               painter = painter,
               contentDescription = contentDescription,

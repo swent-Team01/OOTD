@@ -38,10 +38,7 @@ fun UserProfileCardPreview() {
   OOTDTheme {
     UserProfileCard(
         selectedUser =
-            User(
-                uid = "Bob",
-                username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople",
-                friendUids = emptyList()),
+            User(uid = "Bob", username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople"),
         modifier = Modifier.padding(16.dp),
         isSelectedUserFollowed = true,
         onFollowClick = {})

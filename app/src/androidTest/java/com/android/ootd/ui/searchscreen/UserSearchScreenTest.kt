@@ -1,7 +1,6 @@
 package com.android.ootd.ui.searchscreen
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
@@ -17,6 +16,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.android.ootd.model.account.Account
+import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.feed.FeedScreen
@@ -162,7 +163,10 @@ class UserSearchScreenTest : FirestoreTest() {
   fun testFollowButtonNotLoggedIn() = runTest {
     FirebaseEmulator.auth.signOut()
     val mockViewModel =
-        UserSearchViewModel(userRepository = UserRepositoryInMemory(), overrideUser = false)
+        UserSearchViewModel(
+            userRepository = UserRepositoryInMemory(),
+            accountRepository = AccountRepositoryInMemory(),
+            overrideUser = false)
 
     composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
     val secondUsername = UserRepositoryInMemory().nameList[1]
@@ -192,15 +196,29 @@ class UserSearchScreenTest : FirestoreTest() {
   @Test
   fun testSearchWithMockedAuth() = runTest {
     val userRepositoryInMemory = UserRepositoryInMemory()
+    val accountRepositoryInMemory = AccountRepositoryInMemory()
+
+    // Remove and re-add user with Firebase auth UID
     userRepositoryInMemory.removeUser("user1")
     userRepositoryInMemory.addUser(
-        User(
+        User(uid = FirebaseEmulator.auth.uid ?: "", username = userRepositoryInMemory.nameList[0]))
+
+    // Remove and re-add account with Firebase auth UID
+    accountRepositoryInMemory.removeAccount("user1")
+    accountRepositoryInMemory.addAccount(
+        Account(
             uid = FirebaseEmulator.auth.uid ?: "",
+            ownerId = FirebaseEmulator.auth.uid ?: "",
             username = userRepositoryInMemory.nameList[0],
             friendUids = listOf("user2", "user3")))
-    userRepositoryInMemory.currentUser = FirebaseEmulator.auth.uid ?: ""
+
+    accountRepositoryInMemory.currentUser = FirebaseEmulator.auth.uid ?: ""
+
     val mockViewModel =
-        UserSearchViewModel(userRepository = userRepositoryInMemory, overrideUser = false)
+        UserSearchViewModel(
+            userRepository = userRepositoryInMemory,
+            accountRepository = accountRepositoryInMemory,
+            overrideUser = false)
 
     composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
     val secondUsername = userRepositoryInMemory.nameList[1]

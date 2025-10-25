@@ -12,9 +12,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.credentials.CredentialManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.model.account.Account
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
-import com.android.ootd.model.user.User
-import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
@@ -34,7 +34,7 @@ class AccountScreenTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   private lateinit var mockAccountService: AccountService
-  private lateinit var mockUserRepository: UserRepository
+  private lateinit var mockAccountRepository: AccountRepository
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
@@ -44,7 +44,7 @@ class AccountScreenTest {
   @Before
   fun setup() {
     mockAccountService = mockk(relaxed = true)
-    mockUserRepository = mockk(relaxed = true)
+    mockAccountRepository = mockk(relaxed = true)
     mockCredentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -53,10 +53,10 @@ class AccountScreenTest {
     every { mockFirebaseUser.email } returns "user1@google.com"
     every { mockFirebaseUser.photoUrl } returns null
 
-    coEvery { mockUserRepository.getUser("test-uid") } returns
-        User(uid = "test-uid", username = "user1", profilePicture = Uri.EMPTY)
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", ownerId = "test-uid", username = "user1", profilePicture = "")
 
-    viewModel = AccountViewModel(mockAccountService, mockUserRepository)
+    viewModel = AccountViewModel(mockAccountService, mockAccountRepository)
   }
 
   @After
@@ -91,8 +91,12 @@ class AccountScreenTest {
   fun accountScreen_showsAvatarImage_whenProfilePictureExists() {
     val avatarUri = Uri.parse("https://example.com/avatar.jpg")
     every { mockFirebaseUser.photoUrl } returns avatarUri
-    coEvery { mockUserRepository.getUser("test-uid") } returns
-        User(uid = "test-uid", username = "user1", profilePicture = avatarUri)
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = avatarUri.toString())
 
     userFlow.value = mockFirebaseUser
 

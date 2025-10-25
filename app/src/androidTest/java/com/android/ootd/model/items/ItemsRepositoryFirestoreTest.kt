@@ -5,8 +5,8 @@ import android.util.Log
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 
@@ -69,14 +69,14 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun getNewItemIdReturnsUniqueIDs() = runTest {
+  fun getNewItemIdReturnsUniqueIDs() = runBlocking {
     val numberIDs = 100
     val uids = (0 until 100).toSet<Int>().map { itemsRepository.getNewItemId() }.toSet()
     assertEquals(uids.size, numberIDs)
   }
 
   @Test
-  fun addItemWithTheCorrectID() = runTest {
+  fun addItemWithTheCorrectID() = runBlocking {
     itemsRepository.addItem(item1)
     val snapshot =
         FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).document(item1.uuid).get().await()
@@ -88,7 +88,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun canAddItemToRepository() = runTest {
+  fun canAddItemToRepository() = runBlocking {
     itemsRepository.addItem(item1)
     assertEquals(1, countItems())
     val todos = itemsRepository.getAllItems()
@@ -101,7 +101,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun retrieveItemById() = runTest {
+  fun retrieveItemById() = runBlocking {
     itemsRepository.addItem(item1)
     itemsRepository.addItem(item2)
     itemsRepository.addItem(item3)
@@ -114,7 +114,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun checkUidsAreUniqueInTheCollection() = runTest {
+  fun checkUidsAreUniqueInTheCollection() = runBlocking {
     val uid = "duplicate"
     val item1Modified = item1.copy(uuid = uid)
     val itemDuplicatedUID = item2.copy(uuid = uid)
@@ -134,7 +134,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun deleteItemById() = runTest {
+  fun deleteItemById() = runBlocking {
     itemsRepository.addItem(item1)
     itemsRepository.addItem(item2)
     itemsRepository.addItem(item3)
@@ -152,7 +152,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun editItemById() = runTest {
+  fun editItemById() = runBlocking {
     itemsRepository.addItem(item1)
     assertEquals(1, countItems())
 
@@ -182,10 +182,11 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test(expected = Exception::class)
-  fun getItemByIdThrowsWhenItemNotFound() = runTest { itemsRepository.getItemById("nonExistingId") }
+  fun getItemByIdThrowsWhenItemNotFound() =
+      runBlocking<Unit> { itemsRepository.getItemById("nonExistingId") }
 
   @Test
-  fun getAllItemsSkipsInvalidDocuments() = runTest {
+  fun getAllItemsSkipsInvalidDocuments() = runBlocking {
     val db = FirebaseEmulator.firestore
     val collection = db.collection(ITEMS_COLLECTION)
 
@@ -203,7 +204,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun getAllItemsParsesPartiallyValidMaterialList() = runTest {
+  fun getAllItemsParsesPartiallyValidMaterialList() = runBlocking {
     val db = FirebaseEmulator.firestore
     val collection = db.collection(ITEMS_COLLECTION)
 
@@ -230,7 +231,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun mapToItemCatchesExceptionForInvalidData() = runTest {
+  fun mapToItemCatchesExceptionForInvalidData() = runBlocking {
     val db = FirebaseEmulator.firestore
     val collection = db.collection(ITEMS_COLLECTION)
 
