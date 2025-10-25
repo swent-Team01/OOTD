@@ -36,7 +36,6 @@ open class FirestoreTest() : BaseTest() {
 
   @After
   override fun tearDown() {
-    runTest { clearTestCollection() }
     FirebaseEmulator.clearFirestoreEmulator()
     super.tearDown()
   }
