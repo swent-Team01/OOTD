@@ -54,6 +54,7 @@ class AccountViewModel(
   private val _uiState = MutableStateFlow(AccountViewState())
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
+  // Keep track of the last loaded account to avoid redundant loads
   private var lastLoadedAccountId: String? = null
   private var isSigningOut: Boolean = false
 
