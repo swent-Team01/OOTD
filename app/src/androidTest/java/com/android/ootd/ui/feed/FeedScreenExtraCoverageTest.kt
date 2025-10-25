@@ -5,7 +5,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.account.UiTestTags
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -56,7 +56,8 @@ class FeedScreenExtraCoverageTest {
   fun feedScreen_rendersOutfitPostCard_withFakeClick() {
     // This test only exists to exercise the onSeeFitClick lambda inside OutfitPostCard
     val fakePost =
-        OutfitPost(postUID = "fake-id", uid = "user1", outfitURL = "https://example.com/fake.jpg")
+        OutfitPost(
+            postUID = "fake-id", ownerId = "user1", outfitURL = "https://example.com/fake.jpg")
 
     composeTestRule.setContent {
       // Directly render a single card to “touch” the lambda line

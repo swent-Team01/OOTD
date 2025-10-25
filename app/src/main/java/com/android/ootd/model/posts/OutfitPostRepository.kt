@@ -1,6 +1,6 @@
 package com.android.ootd.model.post
 
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 
 interface OutfitPostRepository {
 
@@ -33,6 +33,28 @@ interface OutfitPostRepository {
    * @return The OutfitPost if found, or null otherwise.
    */
   suspend fun getPostById(postId: String): OutfitPost?
+
+  /**
+   * Updates one or more fields of a post document in Firestore.
+   *
+   * @param postId The ID of the post to update.
+   * @param updates A map of field-value pairs to update.
+   */
+  suspend fun updatePostFields(postId: String, updates: Map<String, Any?>)
+
+  /**
+   * Creates a new post in Firestore with only the photo and description fields filled. Uploads the
+   * outfit photo to Firebase Storage and saves the metadata document.
+   *
+   * Returns the created [OutfitPost] object (including its Firestore ID and photo URL).
+   */
+  suspend fun savePostWithMainPhoto(
+      uid: String,
+      name: String,
+      userProfilePicURL: String,
+      localPath: String,
+      description: String
+  ): OutfitPost
 
   /**
    * Deletes both the Firestore post document and its associated image in Storage.

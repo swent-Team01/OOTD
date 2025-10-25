@@ -63,7 +63,8 @@ class FeedScreenTest {
   fun feedScreen_showsFeedList_whenUserHasPostedToday() {
     val fakePosts =
         listOf(
-            OutfitPost(postUID = "1", uid = "user1", outfitURL = "https://example.com/outfit.jpg"))
+            OutfitPost(
+                postUID = "1", ownerId = "user1", outfitURL = "https://example.com/outfit.jpg"))
 
     val fakeRepo =
         object : FeedRepository {
@@ -72,7 +73,7 @@ class FeedScreenTest {
           override suspend fun getFeed() = fakePosts
 
           override suspend fun getFeedForUids(uids: List<String>) =
-              fakePosts.filter { it.uid in uids }
+              fakePosts.filter { it.ownerId in uids }
 
           override suspend fun addPost(post: OutfitPost) {}
 

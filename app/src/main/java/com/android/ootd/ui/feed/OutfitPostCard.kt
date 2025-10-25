@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OOTDTheme
 
 object OutfitPostCardTestTags {
@@ -93,7 +93,7 @@ fun OutfitPostCardPreview() {
             OutfitPost(
                 postUID = "1",
                 name = "Pit",
-                uid = "user123",
+                ownerId = "user123",
                 description = "Casual monochrome fit for fall 🍂"),
         isBlurred = false)
   }

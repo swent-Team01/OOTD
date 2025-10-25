@@ -1,7 +1,7 @@
 package com.android.ootd.model.post
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,12 +23,21 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun saveAndRetrievePost_worksCorrectly() = runTest {
     val postId = outfitPostRepository.getNewPostId()
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    // Create user document since the rules require it
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
 
     val post =
         OutfitPost(
             postUID = postId,
             name = "Test User",
-            uid = "uid123",
+            ownerId = currentUid,
             userProfilePicURL = "https://fake.com/profile.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "Cool outfit",
@@ -38,7 +47,6 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     outfitPostRepository.savePostToFirestore(post)
 
     val fetched = outfitPostRepository.getPostById(postId)
-
     Assert.assertNotNull(fetched)
     Assert.assertEquals(post.name, fetched?.name)
     Assert.assertEquals(post.description, fetched?.description)
@@ -49,11 +57,20 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   fun deletePost_removesPostFromFirestore() = runTest {
     val postId = outfitPostRepository.getNewPostId()
 
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
     val post =
         OutfitPost(
             postUID = postId,
             name = "Delete Test",
-            uid = "uid456",
+            ownerId = currentUid,
             userProfilePicURL = "https://fake.com/pic.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "To be deleted",
@@ -81,11 +98,20 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   fun savePostToFirestore_overwritesExistingDocument() = runTest {
     val postId = outfitPostRepository.getNewPostId()
 
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
     val post1 =
         OutfitPost(
             postUID = postId,
             name = "User A",
-            uid = "123",
+            ownerId = currentUid,
             userProfilePicURL = "https://example.com/a.jpg",
             outfitURL = "https://example.com/outfit1.jpg",
             description = "First",
@@ -110,11 +136,19 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun deletePost_ignoresMissingImage() = runTest {
     val postId = outfitPostRepository.getNewPostId()
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
     val post =
         OutfitPost(
             postUID = postId,
             name = "No Image User",
-            uid = "uidNoImage",
+            ownerId = currentUid,
             userProfilePicURL = "",
             outfitURL = "",
             description = "No image to delete",
@@ -146,11 +180,20 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   fun fullPostLifecycle_worksCorrectly() = runTest {
     val postId = outfitPostRepository.getNewPostId()
 
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
     val post =
         OutfitPost(
             postUID = postId,
             name = "Integration Test User",
-            uid = "uid_integration",
+            ownerId = currentUid,
             userProfilePicURL = "https://fake.com/user.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "Lifecycle test",
@@ -163,5 +206,77 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     outfitPostRepository.deletePost(postId)
     val deleted = outfitPostRepository.getPostById(postId)
     Assert.assertNull(deleted)
+  }
+
+  @Test
+  fun savePartialPost_createsPostWithUploadedPhoto() = runTest {
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    // Ensure user doc exists
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
+    // Fake URI for upload; since emulator doesn’t check for file existence,
+    // we can use any valid URI format.
+    val fakeUri = "file:///tmp/fake_photo.jpg"
+
+    val post =
+        outfitPostRepository.savePostWithMainPhoto(
+            uid = currentUid,
+            name = "Partial Save Tester",
+            userProfilePicURL = "https://example.com/profile.jpg",
+            localPath = fakeUri,
+            description = "Test post with photo")
+
+    // Assert Firestore document exists
+    val fetched = outfitPostRepository.getPostById(post.postUID)
+    Assert.assertNotNull(fetched)
+    Assert.assertEquals("Partial Save Tester", fetched!!.name)
+    Assert.assertEquals("Test post with photo", fetched.description)
+    Assert.assertTrue(fetched.outfitURL.isNotBlank())
+  }
+
+  @Test
+  fun uploadOutfitPhoto_returnsValidDownloadUrl() = runTest {
+    val postId = outfitPostRepository.getNewPostId()
+    val fakeUri = "file:///tmp/fake_upload_image.jpg"
+    val url = outfitPostRepository.uploadOutfitPhoto(fakeUri, postId)
+
+    Assert.assertTrue("Returned URL should not be blank", url.isNotBlank())
+    Assert.assertTrue("URL should include the post ID", url.contains(postId))
+  }
+
+  fun updatePostFields_updatesDescriptionSuccessfully() = runTest {
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
+    // Create a base post
+    val postId = outfitPostRepository.getNewPostId()
+    val post =
+        OutfitPost(
+            postUID = postId,
+            name = "Updater",
+            ownerId = currentUid,
+            userProfilePicURL = "https://example.com/pic.jpg",
+            outfitURL = "https://example.com/outfit.jpg",
+            description = "Old description",
+            timestamp = System.currentTimeMillis())
+    outfitPostRepository.savePostToFirestore(post)
+
+    // Update description only
+    outfitPostRepository.updatePostFields(postId, mapOf("description" to "New description"))
+
+    val updated = outfitPostRepository.getPostById(postId)
+    Assert.assertNotNull(updated)
+    Assert.assertEquals("New description", updated!!.description)
   }
 }

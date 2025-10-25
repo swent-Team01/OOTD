@@ -1,7 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
 import java.time.LocalDate
@@ -44,7 +44,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
         val snap =
             withTimeout(5_000) {
               db.collection(POSTS_COLLECTION_PATH)
-                  .whereIn("uid", chunk)
+                  .whereIn("ownerId", chunk)
                   .orderBy("timestamp")
                   .get()
                   .await()
@@ -88,7 +88,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
       val snapshot =
           db.collection(POSTS_COLLECTION_PATH)
-              .whereEqualTo("uid", userId)
+              .whereEqualTo("ownerId", userId)
               .whereGreaterThanOrEqualTo("timestamp", todayStart)
               .get()
               .await()
