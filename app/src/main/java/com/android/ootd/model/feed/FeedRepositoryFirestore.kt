@@ -1,9 +1,11 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
+import com.google.firebase.ktx.Firebase
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
@@ -13,12 +15,20 @@ import kotlinx.coroutines.withTimeout
 const val POSTS_COLLECTION_PATH = "posts"
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
+  private val ownerAttributeName = "ownerId"
 
   override suspend fun getFeed(): List<OutfitPost> {
+    val ownerId =
+        Firebase.auth.currentUser?.uid
+            ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
     return try {
       val snapshot =
           withTimeout(5_000) {
-            db.collection(POSTS_COLLECTION_PATH).orderBy("timestamp").get().await()
+            db.collection(POSTS_COLLECTION_PATH)
+                .whereEqualTo(ownerAttributeName, ownerId)
+                .orderBy("timestamp")
+                .get()
+                .await()
           }
 
       snapshot.toObjects<OutfitPost>()
@@ -44,7 +54,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
         val snap =
             withTimeout(5_000) {
               db.collection(POSTS_COLLECTION_PATH)
-                  .whereIn("uid", chunk)
+                  .whereIn(ownerAttributeName, chunk)
                   .orderBy("timestamp")
                   .get()
                   .await()
@@ -88,7 +98,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
       val snapshot =
           db.collection(POSTS_COLLECTION_PATH)
-              .whereEqualTo("uid", userId)
+              .whereEqualTo(ownerAttributeName, userId)
               .whereGreaterThanOrEqualTo("timestamp", todayStart)
               .get()
               .await()
