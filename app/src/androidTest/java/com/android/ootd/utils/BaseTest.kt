@@ -3,9 +3,9 @@ package com.android.ootd.utils
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
-import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.user.User
