@@ -53,8 +53,9 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun addPost_writesDocumentWithGivenId() = runTest {
+  fun addPost_writesDocumentWithGivenId() = runBlocking {
     val p = samplePost("explicit-id-123", ts = 42L)
+
     feedRepository.addPost(p)
 
     val doc = db.collection(POSTS_COLLECTION_PATH).document("explicit-id-123").get().await()
