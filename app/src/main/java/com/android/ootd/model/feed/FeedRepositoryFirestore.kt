@@ -44,7 +44,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
         val snap =
             withTimeout(5_000) {
               db.collection(POSTS_COLLECTION_PATH)
-                  .whereIn("uid", chunk)
+                  .whereIn("ownerId", chunk)
                   .orderBy("timestamp")
                   .get()
                   .await()
@@ -88,7 +88,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
       val snapshot =
           db.collection(POSTS_COLLECTION_PATH)
-              .whereEqualTo("uid", userId)
+              .whereEqualTo("ownerId", userId)
               .whereGreaterThanOrEqualTo("timestamp", todayStart)
               .get()
               .await()
