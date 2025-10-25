@@ -102,11 +102,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val user2 = User(uid = "user4", username = "duplicate")
 
     // Add user1 to users collection first, then create account
-    repository.addUser(user1)
+    userRepository.addUser(user1)
     accountRepository.createAccount(user1, testDateOfBirth)
 
     // Add user2 to users collection - this should be allowed since different uid
-    repository.addUser(user2)
+    userRepository.addUser(user2)
     // But createAccount should fail because username is already in use
     val exception =
         runCatching { accountRepository.createAccount(user2, testDateOfBirth) }.exceptionOrNull()
@@ -129,8 +129,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun addFriend_successfullyAddsFriend() = runTest {
     // Create User records first (required for addFriend to work with privacy rules)
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -145,8 +145,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun addFriend_doesNotAddDuplicateFriend() = runTest {
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -174,9 +174,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
-    repository.addUser(User(uid = account3.uid, username = account3.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account3.uid, username = account3.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -194,8 +194,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun removeFriend_successfullyRemovesFriend() = runTest {
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -224,9 +224,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
-    repository.addUser(User(uid = account3.uid, username = account3.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account3.uid, username = account3.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -245,9 +245,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
-    repository.addUser(User(uid = account3.uid, username = account3.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account3.uid, username = account3.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -265,8 +265,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun isMyFriend_returnsTrueForExistingFriend() = runTest {
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -281,9 +281,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
-    repository.addUser(User(uid = account3.uid, username = account3.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account3.uid, username = account3.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
@@ -298,8 +298,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun isMyFriend_returnsFalseAfterRemovingFriend() = runTest {
     // Create User records first
-    repository.addUser(User(uid = account1.uid, username = account1.username))
-    repository.addUser(User(uid = account2.uid, username = account2.username))
+    userRepository.addUser(User(uid = account1.uid, username = account1.username))
+    userRepository.addUser(User(uid = account2.uid, username = account2.username))
 
     accountRepository.addAccount(account1)
     accountRepository.addAccount(account2)
