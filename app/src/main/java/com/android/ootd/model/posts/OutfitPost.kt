@@ -1,4 +1,4 @@
-package com.android.ootd.model
+package com.android.ootd.model.posts
 
 /**
  * Represents a single post in the feed
