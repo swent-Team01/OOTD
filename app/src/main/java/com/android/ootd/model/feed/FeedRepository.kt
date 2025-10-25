@@ -24,7 +24,6 @@ interface FeedRepository {
    * @return false if hasn't posted, true if he has posted
    */
   suspend fun hasPostedToday(userId: String): Boolean
-  // This should be in the user data, but I leave it here for the moment for testing the screen
 
   /**
    * Adds user's post to the feed
@@ -32,7 +31,6 @@ interface FeedRepository {
    * @param post the user's post for the day
    */
   suspend fun addPost(post: OutfitPost)
-  // I am really not sure if this function should be here
 
   /** Generates a unique post ID. */
   fun getNewPostId(): String

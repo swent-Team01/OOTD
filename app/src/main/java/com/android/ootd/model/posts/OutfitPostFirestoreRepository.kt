@@ -1,6 +1,7 @@
 package com.android.ootd.model.post
 
 import android.util.Log
+import androidx.core.net.toUri
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -34,7 +35,7 @@ class OutfitPostRepositoryFirestore(
 
   override suspend fun uploadOutfitPhoto(localPath: String, postId: String): String {
     val ref = storage.reference.child("$POSTS_IMAGES_FOLDER/$postId.jpg")
-    val fileUri = android.net.Uri.parse(localPath)
+    val fileUri = localPath.toUri()
     ref.putFile(fileUri).await()
     return ref.downloadUrl.await().toString()
   }
@@ -51,7 +52,6 @@ class OutfitPostRepositoryFirestore(
             "itemsID" to post.itemsID,
             "timestamp" to post.timestamp,
         )
-    Log.d("OutfitPostRepository", "Saving post to Firestore: $data")
 
     db.collection(POSTS_COLLECTION).document(post.postUID).set(data).await()
   }
@@ -74,7 +74,7 @@ class OutfitPostRepositoryFirestore(
     }
   }
 
-  override suspend fun savePartialPost(
+  override suspend fun savePostWithMainPhoto(
       uid: String,
       name: String,
       userProfilePicURL: String,

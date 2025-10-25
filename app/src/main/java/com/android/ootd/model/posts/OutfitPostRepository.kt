@@ -48,7 +48,7 @@ interface OutfitPostRepository {
    *
    * Returns the created [OutfitPost] object (including its Firestore ID and photo URL).
    */
-  suspend fun savePartialPost(
+  suspend fun savePostWithMainPhoto(
       uid: String,
       name: String,
       userProfilePicURL: String,

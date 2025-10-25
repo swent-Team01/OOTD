@@ -11,7 +11,7 @@ object OutfitPostRepositoryProvider {
         // Firebase.storage comes from the Kotlin Extensions (KTX) library.
         // Import `com.google.firebase.ktx.Firebase` instead of the base
         // `com.google.firebase.Firebase`
-        // so we can access this extension property directly, as it prvides the default
+        // so we can access this extension property directly, as it provides the default
         // FirebaseStorage
         // instance associated with the default FirebaseApp.
         storage = com.google.firebase.ktx.Firebase.storage)

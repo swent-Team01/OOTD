@@ -225,7 +225,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val fakeUri = "file:///tmp/fake_photo.jpg"
 
     val post =
-        outfitPostRepository.savePartialPost(
+        outfitPostRepository.savePostWithMainPhoto(
             uid = currentUid,
             name = "Partial Save Tester",
             userProfilePicURL = "https://example.com/profile.jpg",
@@ -240,7 +240,8 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertTrue(fetched.outfitURL.isNotBlank())
   }
 
-  fun uploadOutfitPhoto_returnsValidDowwnloadUrl() = runTest {
+  @Test
+  fun uploadOutfitPhoto_returnsValidDownloadUrl() = runTest {
     val postId = outfitPostRepository.getNewPostId()
     val fakeUri = "file:///tmp/fake_upload_image.jpg"
 
