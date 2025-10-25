@@ -207,4 +207,77 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val deleted = outfitPostRepository.getPostById(postId)
     Assert.assertNull(deleted)
   }
+
+  @Test
+  fun savePartialPost_createsPostWithUploadedPhoto() = runTest {
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    // Ensure user doc exists
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
+    // Fake URI for upload; since emulator doesn’t check for file existence,
+    // we can use any valid URI format.
+    val fakeUri = "file:///tmp/fake_photo.jpg"
+
+    val post =
+        outfitPostRepository.savePartialPost(
+            uid = currentUid,
+            name = "Partial Save Tester",
+            userProfilePicURL = "https://example.com/profile.jpg",
+            localPath = fakeUri,
+            description = "Test post with photo")
+
+    // Assert Firestore document exists
+    val fetched = outfitPostRepository.getPostById(post.postUID)
+    Assert.assertNotNull(fetched)
+    Assert.assertEquals("Partial Save Tester", fetched!!.name)
+    Assert.assertEquals("Test post with photo", fetched.description)
+    Assert.assertTrue(fetched.outfitURL.isNotBlank())
+  }
+
+  fun uploadOutfitPhoto_returnsValidDowwnloadUrl() = runTest {
+    val postId = outfitPostRepository.getNewPostId()
+    val fakeUri = "file:///tmp/fake_upload_image.jpg"
+
+    // Just call the method — emulator will handle upload
+    val url = outfitPostRepository.uploadOutfitPhoto(fakeUri, postId)
+
+    Assert.assertTrue("Returned URL should not be blank", url.isNotBlank())
+    Assert.assertTrue("URL should include the post ID", url.contains(postId))
+  }
+
+  fun updatePostFields_updatesDescriptionSuccessfully() = runTest {
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+    FirebaseEmulator.firestore
+        .collection("users")
+        .document(currentUid)
+        .set(
+            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .await()
+
+    // Create a base post
+    val postId = outfitPostRepository.getNewPostId()
+    val post =
+        OutfitPost(
+            postUID = postId,
+            name = "Updater",
+            uid = currentUid,
+            userProfilePicURL = "https://example.com/pic.jpg",
+            outfitURL = "https://example.com/outfit.jpg",
+            description = "Old description",
+            timestamp = System.currentTimeMillis())
+    outfitPostRepository.savePostToFirestore(post)
+
+    // Update description only
+    outfitPostRepository.updatePostFields(postId, mapOf("description" to "New description"))
+
+    val updated = outfitPostRepository.getPostById(postId)
+    Assert.assertNotNull(updated)
+    Assert.assertEquals("New description", updated!!.description)
+  }
 }
