@@ -1,7 +1,7 @@
 package com.android.ootd.model.post
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +37,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "Test User",
-            uid = currentUid,
+            ownerId = currentUid,
             userProfilePicURL = "https://fake.com/profile.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "Cool outfit",
@@ -70,7 +70,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "Delete Test",
-            uid = currentUid,
+            ownerId = currentUid,
             userProfilePicURL = "https://fake.com/pic.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "To be deleted",
@@ -111,7 +111,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "User A",
-            uid = currentUid,
+            ownerId = currentUid,
             userProfilePicURL = "https://example.com/a.jpg",
             outfitURL = "https://example.com/outfit1.jpg",
             description = "First",
@@ -148,7 +148,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "No Image User",
-            uid = currentUid,
+            ownerId = currentUid,
             userProfilePicURL = "",
             outfitURL = "",
             description = "No image to delete",
@@ -193,7 +193,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "Integration Test User",
-            uid = currentUid,
+            ownerId = currentUid,
             userProfilePicURL = "https://fake.com/user.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "Lifecycle test",
@@ -266,7 +266,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "Updater",
-            uid = currentUid,
+            ownerId = currentUid,
             userProfilePicURL = "https://example.com/pic.jpg",
             outfitURL = "https://example.com/outfit.jpg",
             description = "Old description",

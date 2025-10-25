@@ -1,7 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
 import java.time.LocalDate
