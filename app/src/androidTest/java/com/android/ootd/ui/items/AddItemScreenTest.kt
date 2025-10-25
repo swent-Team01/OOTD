@@ -209,25 +209,30 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun clickingAddItemReturns() {
     val item = ItemsTest.Companion.item4
-    composeTestRule.enterAddItemDetails(item)
 
+    // Set the photo directly in the viewModel to avoid scrolling issues
     composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
+    // Enter the other item details (excluding photo)
+    item.type?.let { composeTestRule.enterAddItemType(it) }
+    composeTestRule.enterAddItemCategory(item.category)
+    item.brand?.let { composeTestRule.enterAddItemBrand(it) }
+    item.price?.let { composeTestRule.enterAddItemPrice(it) }
+    item.link?.let { composeTestRule.enterAddItemLink(it) }
+    item.material.forEach {
+      it?.let { material -> composeTestRule.enterAddItemMaterial(material.name) }
     }
 
+    composeTestRule.waitForIdle()
+
+    // Ensure the Add Item button is visible and click it
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-        .assertExists()
+        .assertIsDisplayed()
         .performClick()
-
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
   }
 
   @Test

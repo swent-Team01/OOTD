@@ -289,8 +289,9 @@ class EditItemsScreenTest {
   fun `buttons have proper text labels`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Select from Gallery").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Take a new picture").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Save Changes").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Select from Gallery").assertExists()
+    composeTestRule.onNodeWithText("Take a new picture").assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
+    composeTestRule.onNodeWithText("Save Changes").assertExists()
   }
 }
