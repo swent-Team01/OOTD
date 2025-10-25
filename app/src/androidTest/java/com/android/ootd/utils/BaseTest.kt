@@ -9,6 +9,7 @@ import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryFirestore
+import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.firebase.auth.FirebaseUser
 import org.junit.After
 import org.junit.Before
@@ -22,8 +23,8 @@ const val UI_WAIT_TIMEOUT = 5_000L
  */
 abstract class BaseTest() {
 
-  val repository: UserRepository
-    get() = UserRepositoryFirestore(FirebaseEmulator.firestore)
+  val userRepository: UserRepository
+    get() = UserRepositoryProvider.repository
 
   val itemsRepository: ItemsRepository
     get() = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
@@ -32,6 +33,7 @@ abstract class BaseTest() {
     get() = FeedRepositoryProvider.repository
 
   lateinit var outfitPostRepository: OutfitPostRepositoryFirestore
+
   val currentUser: FirebaseUser
     get() {
       return FirebaseEmulator.auth.currentUser!!
@@ -50,6 +52,7 @@ abstract class BaseTest() {
     FeedRepositoryProvider.repository = FeedRepositoryFirestore(FirebaseEmulator.firestore)
     outfitPostRepository =
         OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
+    UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
   }
 
   @After
