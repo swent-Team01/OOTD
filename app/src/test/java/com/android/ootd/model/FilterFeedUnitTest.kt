@@ -100,6 +100,6 @@ class FilterFeedTest {
       currentUser: User
   ): List<OutfitPost> {
     val allowed = currentUser.friendUids.toMutableSet()
-    return posts.filter { it.uid in allowed }
+    return posts.filter { it.ownerId in allowed }
   }
 }
