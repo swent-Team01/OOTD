@@ -702,7 +702,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
               brand = "TestBrand",
               price = viewModel.uiState.value.price.toDoubleOrNull() ?: 0.0,
               material = emptyList(),
-              link = "")
+              link = "",
+              ownerId = "user123")
 
       assert(item.price == 49.99)
     }

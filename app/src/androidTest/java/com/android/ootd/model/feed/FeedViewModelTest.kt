@@ -1,6 +1,6 @@
 package com.android.ootd.model.feed
 
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.FeedViewModel
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,7 @@ class FeedViewModelTest {
       OutfitPost(
           postUID = id,
           name = "N",
-          uid = uid,
+          ownerId = uid,
           userProfilePicURL = "",
           outfitURL = "url_$id",
           description = "",
@@ -140,7 +140,7 @@ class FeedViewModelTest {
     var throwOnGet: Boolean = false
 
     override suspend fun addPost(p: OutfitPost) {
-      postsByUid.getOrPut(p.uid) { mutableListOf() }.add(p)
+      postsByUid.getOrPut(p.ownerId) { mutableListOf() }.add(p)
     }
 
     override fun getNewPostId(): String = "test-${idSeq++}"

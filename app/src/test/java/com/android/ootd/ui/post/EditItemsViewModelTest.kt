@@ -207,7 +207,8 @@ class EditItemsViewModelTest {
             brand = "Nike",
             price = 49.99,
             material = materials,
-            link = "https://example.com")
+            link = "https://example.com",
+            ownerId = "ownerId")
 
     viewModel.loadItem(item)
 
@@ -235,7 +236,8 @@ class EditItemsViewModelTest {
             brand = null,
             price = null,
             material = emptyList(),
-            link = null)
+            link = null,
+            ownerId = "ownerId")
 
     viewModel.loadItem(item)
 
@@ -291,7 +293,8 @@ class EditItemsViewModelTest {
             brand = "Nike",
             price = 49.99,
             material = emptyList(),
-            link = "https://example.com"))
+            link = "https://example.com",
+            ownerId = "ownerId"))
 
     val result = viewModel.canEditItems()
 
@@ -317,7 +320,8 @@ class EditItemsViewModelTest {
             brand = "Nike",
             price = 49.99,
             material = emptyList(),
-            link = ""))
+            link = "",
+            ownerId = "ownerId"))
 
     val result = viewModel.canEditItems()
 
@@ -342,7 +346,8 @@ class EditItemsViewModelTest {
             brand = "Nike",
             price = 49.99,
             material = emptyList(),
-            link = "https://example.com")
+            link = "https://example.com",
+            ownerId = "ownerId")
 
     viewModel.editItemsInRepository(item)
 
@@ -369,7 +374,8 @@ class EditItemsViewModelTest {
             brand = "Nike",
             price = 49.99,
             material = emptyList(),
-            link = "https://example.com")
+            link = "https://example.com",
+            ownerId = "ownerId")
 
     viewModel.editItemsInRepository(item)
 
@@ -394,7 +400,8 @@ class EditItemsViewModelTest {
             brand = null,
             price = null,
             material = emptyList(),
-            link = null))
+            link = null,
+            ownerId = "ownerId"))
     viewModel.deleteItem()
 
     advanceUntilIdle()
@@ -430,7 +437,8 @@ class EditItemsViewModelTest {
             brand = null,
             price = null,
             material = emptyList(),
-            link = null))
+            link = null,
+            ownerId = "ownerId"))
     viewModel.deleteItem()
 
     advanceUntilIdle()

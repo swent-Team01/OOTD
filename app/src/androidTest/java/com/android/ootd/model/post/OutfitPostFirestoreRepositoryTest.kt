@@ -1,7 +1,7 @@
 package com.android.ootd.model.post
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,11 +13,16 @@ import org.junit.runner.RunWith
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
+  var ownerId = ""
 
   @Before
   override fun setUp() {
     super.setUp()
     Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
+    ownerId = FirebaseEmulator.auth.uid ?: ""
+    if (ownerId == "") {
+      throw IllegalStateException("There needs to be an authenticated user")
+    }
   }
 
   @Test
@@ -28,7 +33,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "Test User",
-            uid = "uid123",
+            ownerId = ownerId,
             userProfilePicURL = "https://fake.com/profile.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "Cool outfit",
@@ -48,12 +53,11 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun deletePost_removesPostFromFirestore() = runTest {
     val postId = outfitPostRepository.getNewPostId()
-
     val post =
         OutfitPost(
             postUID = postId,
             name = "Delete Test",
-            uid = "uid456",
+            ownerId = ownerId,
             userProfilePicURL = "https://fake.com/pic.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "To be deleted",
@@ -85,7 +89,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "User A",
-            uid = "123",
+            ownerId = ownerId,
             userProfilePicURL = "https://example.com/a.jpg",
             outfitURL = "https://example.com/outfit1.jpg",
             description = "First",
@@ -114,7 +118,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "No Image User",
-            uid = "uidNoImage",
+            ownerId = ownerId,
             userProfilePicURL = "",
             outfitURL = "",
             description = "No image to delete",
@@ -134,7 +138,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     FirebaseEmulator.firestore
         .collection(POSTS_COLLECTION)
         .document(postId)
-        .set(mapOf("unexpectedField" to 123))
+        .set(mapOf("unexpectedField" to 123, "ownerId" to ownerId))
         .await()
 
     val result = outfitPostRepository.getPostById(postId)
@@ -150,7 +154,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         OutfitPost(
             postUID = postId,
             name = "Integration Test User",
-            uid = "uid_integration",
+            ownerId = ownerId,
             userProfilePicURL = "https://fake.com/user.jpg",
             outfitURL = "https://fake.com/outfit.jpg",
             description = "Lifecycle test",

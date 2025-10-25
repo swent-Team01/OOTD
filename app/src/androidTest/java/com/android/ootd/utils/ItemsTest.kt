@@ -155,7 +155,8 @@ interface ItemsTest {
             brand = "Mango",
             price = 0.0,
             material = listOf(),
-            link = "https://example.com/item1")
+            link = "https://example.com/item1",
+            ownerId = "user123")
 
     val item2 =
         Item(
@@ -166,7 +167,8 @@ interface ItemsTest {
             brand = "Zara",
             price = 30.0,
             material = listOf(),
-            link = "https://example.com/item2")
+            link = "https://example.com/item2",
+            ownerId = "user123")
 
     val item3 =
         Item(
@@ -177,7 +179,8 @@ interface ItemsTest {
             brand = "Vakko",
             price = 0.0,
             material = listOf(),
-            link = "https://example.com/item3")
+            link = "https://example.com/item3",
+            ownerId = "user123")
 
     val item4 =
         Item(
@@ -188,6 +191,7 @@ interface ItemsTest {
             brand = "Mango",
             price = 0.0,
             material = listOf(),
-            link = "https://example.com/item4")
+            link = "https://example.com/item4",
+            ownerId = "user123")
   }
 }

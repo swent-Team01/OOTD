@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.account.AccountIcon
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
 

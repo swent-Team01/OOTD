@@ -1,6 +1,6 @@
 package com.android.ootd.model.post
 
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 
 interface OutfitPostRepository {
 

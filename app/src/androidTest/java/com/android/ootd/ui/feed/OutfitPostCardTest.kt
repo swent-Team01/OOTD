@@ -2,7 +2,7 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.android.ootd.model.OutfitPost
+import com.android.ootd.model.posts.OutfitPost
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,7 +27,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-post-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "John Doe",
             description = "Casual Friday outfit",
             timestamp = System.currentTimeMillis(),
@@ -48,7 +48,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "John Doe",
             description = "Casual Friday outfit",
             timestamp = System.currentTimeMillis(),
@@ -72,7 +72,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Jane Smith",
             description = "Summer vibes with denim jacket",
             timestamp = System.currentTimeMillis(),
@@ -96,7 +96,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
@@ -117,7 +117,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
@@ -142,7 +142,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
@@ -169,7 +169,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Test User",
             description = "Test description",
             timestamp = System.currentTimeMillis(),
@@ -197,7 +197,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Minimalist User",
             description = "",
             timestamp = System.currentTimeMillis(),
@@ -225,7 +225,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Blurred User",
             description = "This should be blurred",
             timestamp = System.currentTimeMillis(),
@@ -254,7 +254,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Verbose User",
             description = longDescription,
             timestamp = System.currentTimeMillis(),
@@ -283,7 +283,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "complete-post",
-            uid = "user-456",
+            ownerId = "user-456",
             name = "Complete User",
             description = "Complete outfit description",
             timestamp = System.currentTimeMillis(),
@@ -314,7 +314,7 @@ class OutfitPostCardTest {
     val testPost =
         OutfitPost(
             postUID = "test-id",
-            uid = "user-123",
+            ownerId = "user-123",
             name = "Fashionista",
             description = "Outfit with tracked items",
             timestamp = System.currentTimeMillis(),

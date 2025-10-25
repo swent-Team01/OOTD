@@ -7,65 +7,67 @@ import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 
 class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
+  var ownerId = ""
+  lateinit var item1: Item
+  lateinit var item2: Item
+  lateinit var item3: Item
+
   @Before
   override fun setUp() {
     super.setUp()
+    Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
+    ownerId = FirebaseEmulator.auth.uid ?: ""
+    if (ownerId == "") {
+      throw IllegalStateException("There needs to be an authenticated user")
+    }
+    item1 =
+        Item(
+            uuid = "0",
+            image = Uri.parse("https://example.com/image1.jpg"),
+            category = "clothes",
+            type = "t-shirt",
+            brand = "Mango",
+            price = 0.0,
+            material = listOf(),
+            link = "https://example.com/item1",
+            ownerId = ownerId)
+    item2 =
+        Item(
+            uuid = "1",
+            image = Uri.parse("https://example.com/image1.jpg"),
+            category = "shoes",
+            type = "high heels",
+            brand = "Zara",
+            price = 30.0,
+            material = listOf(),
+            link = "https://example.com/item2",
+            ownerId = ownerId)
+    item3 =
+        Item(
+            uuid = "2",
+            image = Uri.parse("https://example.com/image1.jpg"),
+            category = "bags",
+            type = "handbag",
+            brand = "Vakko",
+            price = 0.0,
+            material = listOf(),
+            link = "https://example.com/item3",
+            ownerId = ownerId)
   }
 
-  val item1 =
-      Item(
-          uuid = "0",
-          image = Uri.parse("https://example.com/image1.jpg"),
-          category = "clothes",
-          type = "t-shirt",
-          brand = "Mango",
-          price = 0.0,
-          material = listOf(),
-          link = "https://example.com/item1")
-
-  val item2 =
-      Item(
-          uuid = "1",
-          image = Uri.parse("https://example.com/image1.jpg"),
-          category = "shoes",
-          type = "high heels",
-          brand = "Zara",
-          price = 30.0,
-          material = listOf(),
-          link = "https://example.com/item2")
-
-  val item3 =
-      Item(
-          uuid = "2",
-          image = Uri.parse("https://example.com/image1.jpg"),
-          category = "bags",
-          type = "handbag",
-          brand = "Vakko",
-          price = 0.0,
-          material = listOf(),
-          link = "https://example.com/item3")
-
-  val item4 =
-      Item(
-          uuid = "3",
-          image = Uri.parse("https://example.com/image1.jpg"),
-          category = "accessories",
-          type = "sunglasses",
-          brand = "Ray-Ban",
-          price = 100.0,
-          material =
-              listOf(
-                  Material(name = "Plastic", percentage = 80.0),
-                  Material(name = "Metal", percentage = 20.0)),
-          link = "https://example.com/item4")
-
   suspend fun countItems(): Int {
-    return FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).get().await().size()
+    return FirebaseEmulator.firestore
+        .collection(ITEMS_COLLECTION)
+        .whereEqualTo("ownerId", ownerId)
+        .get()
+        .await()
+        .size()
   }
 
   @Test
@@ -190,7 +192,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val collection = db.collection(ITEMS_COLLECTION)
 
     // Add an invalid Firestore document (missing required fields)
-    collection.document("invalid").set(mapOf("brand" to "Zara")).await()
+    collection.document("invalid").set(mapOf("brand" to "Zara", "ownerId" to ownerId)).await()
 
     // Add a valid one too
     itemsRepository.addItem(item1)
@@ -218,7 +220,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
             "link" to "https://example.com/item",
             "material" to
                 listOf(
-                    mapOf("name" to "Cotton", "percentage" to 60.0), mapOf("invalidKey" to "oops")))
+                    mapOf("name" to "Cotton", "percentage" to 60.0), mapOf("invalidKey" to "oops")),
+            "ownerId" to ownerId)
     collection.document("mixedMat").set(partialMaterialData).await()
 
     val items = itemsRepository.getAllItems()
@@ -243,7 +246,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
             "type" to "jacket",
             "brand" to "Levi's",
             "price" to 120.0,
-            "link" to "https://example.com/item")
+            "link" to "https://example.com/item",
+            "ownerId" to ownerId)
 
     collection.document("badItem").set(invalidData).await()
 

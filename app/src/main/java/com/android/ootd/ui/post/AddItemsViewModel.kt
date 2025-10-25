@@ -9,6 +9,8 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,7 +109,7 @@ open class AddItemsViewModel(
       setErrorMsg(error)
       return false
     }
-
+    val ownerId = Firebase.auth.currentUser?.uid ?: ""
     addItemsToRepository(
         Item(
             uuid = repository.getNewItemId(),
@@ -117,7 +119,8 @@ open class AddItemsViewModel(
             brand = state.brand,
             price = state.price.toDoubleOrNull() ?: 0.0,
             material = state.material,
-            link = state.link))
+            link = state.link,
+            ownerId = ownerId))
     clearErrorMsg()
     return true
   }

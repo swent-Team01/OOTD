@@ -1,11 +1,11 @@
-package com.android.ootd.model
+package com.android.ootd.model.posts
 
 /**
  * Represents a single post in the feed
  *
  * @property postUID unique ID of the post
  * @property name name of the user who posted
- * @property uid UID of the user who created the post
+ * @property ownerId UID of the user who created the post
  * @property userProfilePicURL URL of the user's profile picture
  * @property outfitURL uploaded outfit image
  * @property description Optional post caption
@@ -15,7 +15,7 @@ package com.android.ootd.model
 data class OutfitPost(
     val postUID: String = "",
     val name: String = "",
-    val uid: String = "",
+    val ownerId: String = "",
     val userProfilePicURL: String = "",
     val outfitURL: String = "",
     val description: String = "",
