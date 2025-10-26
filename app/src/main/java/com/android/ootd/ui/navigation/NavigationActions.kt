@@ -50,6 +50,9 @@ sealed class Screen(
 
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
+  object InventoryScreen :
+      Screen(route = "inventory", name = "Inventory", isTopLevelDestination = false)
+
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {
     companion object {
