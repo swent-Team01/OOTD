@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -113,6 +114,14 @@ fun AddItemsScreen(
   val itemsUIState by addItemsViewModel.uiState.collectAsState()
   var showDialog by remember { mutableStateOf(false) }
 
+  val addOnSuccess by addItemsViewModel.addOnSuccess.collectAsState()
+
+  LaunchedEffect(addOnSuccess) {
+    if (addOnSuccess) {
+      onNextScreen()
+      addItemsViewModel.resetAddSuccess()
+    }
+  }
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { addItemsViewModel.initTypeSuggestions(context) }
 
@@ -188,56 +197,51 @@ fun AddItemsScreen(
                               Icon(
                                   painter = painterResource(R.drawable.ic_photo_placeholder),
                                   contentDescription = "Upload",
-                                  tint = Background,
+                                  tint = White,
                                   modifier = Modifier.size(16.dp))
                               Spacer(Modifier.width(8.dp))
-                              Text(text = "Upload a picture of the Item", color = Background)
+                              Text(text = "Upload a picture of the Item", color = White)
                             }
-
-                        if (showDialog) {
-                          AlertDialog(
-                              modifier =
-                                  Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG),
-                              onDismissRequest = { showDialog = false },
-                              title = { Text(text = "Select Image") },
-                              text = {
-                                Column {
-                                  TextButton(
-                                      onClick = {
-                                        // Take a photo
-                                        val file =
-                                            File(
-                                                context.cacheDir,
-                                                "${System.currentTimeMillis()}.jpg")
-                                        val uri =
-                                            FileProvider.getUriForFile(
-                                                context, "${context.packageName}.provider", file)
-                                        cameraUri = uri
-                                        cameraLauncher.launch(uri)
-                                        showDialog = false
-                                      },
-                                      modifier =
-                                          Modifier.testTag(AddItemScreenTestTags.TAKE_A_PHOTO)) {
-                                        Text("📸 Take a Photo")
-                                      }
-
-                                  TextButton(
-                                      onClick = {
-                                        // Pick from gallery
-                                        galleryLauncher.launch("image/*")
-                                        showDialog = false
-                                      },
-                                      modifier =
-                                          Modifier.testTag(
-                                              AddItemScreenTestTags.PICK_FROM_GALLERY)) {
-                                        Text("🖼️ Choose from Gallery")
-                                      }
-                                }
-                              },
-                              confirmButton = {},
-                              dismissButton = {})
-                        }
                       }
+
+                  if (showDialog) {
+                    AlertDialog(
+                        modifier = Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG),
+                        onDismissRequest = { showDialog = false },
+                        title = { Text(text = "Select Image") },
+                        text = {
+                          Column {
+                            TextButton(
+                                onClick = {
+                                  // Take a photo
+                                  val file =
+                                      File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
+                                  val uri =
+                                      FileProvider.getUriForFile(
+                                          context, "${context.packageName}.provider", file)
+                                  cameraUri = uri
+                                  cameraLauncher.launch(uri)
+                                  showDialog = false
+                                },
+                                modifier = Modifier.testTag(AddItemScreenTestTags.TAKE_A_PHOTO)) {
+                                  Text("📸 Take a Photo")
+                                }
+
+                            TextButton(
+                                onClick = {
+                                  // Pick from gallery
+                                  galleryLauncher.launch("image/*")
+                                  showDialog = false
+                                },
+                                modifier =
+                                    Modifier.testTag(AddItemScreenTestTags.PICK_FROM_GALLERY)) {
+                                  Text("🖼️ Choose from Gallery")
+                                }
+                          }
+                        },
+                        confirmButton = {},
+                        dismissButton = {})
+                  }
                 }
 
                 item {
@@ -385,11 +389,7 @@ fun AddItemsScreen(
                   Spacer(modifier = Modifier.height(24.dp))
                   val isButtonEnabled = itemsUIState.isAddingValid
                   Button(
-                      onClick = {
-                        if (addItemsViewModel.canAddItems()) {
-                          onNextScreen()
-                        }
-                      },
+                      onClick = { addItemsViewModel.onAddItemClick() },
                       enabled = isButtonEnabled,
                       modifier =
                           Modifier.height(47.dp)
@@ -433,15 +433,23 @@ fun AddItemsScreen(
                       .testTag(AddItemScreenTestTags.IMAGE_PREVIEW),
               contentAlignment = Alignment.Center,
           ) {
-            if (itemsUIState.image == Uri.EMPTY) {
+            val localUri = itemsUIState.localPhotoUri
+            val uploadURL = itemsUIState.image.imageUrl
+            if (localUri != null) {
+              AsyncImage(
+                  model = localUri,
+                  contentDescription = "Selected photo",
+                  modifier = Modifier.matchParentSize(),
+                  contentScale = ContentScale.Crop)
+            } else if (uploadURL.isEmpty()) {
               Icon(
                   painter = painterResource(R.drawable.ic_photo_placeholder),
                   contentDescription = "Placeholder icon",
                   modifier = Modifier.size(80.dp))
             } else {
               AsyncImage(
-                  model = itemsUIState.image,
-                  contentDescription = "Selected photo",
+                  model = uploadURL,
+                  contentDescription = "Uploaded photo",
                   modifier = Modifier.matchParentSize(),
                   contentScale = ContentScale.Crop)
             }

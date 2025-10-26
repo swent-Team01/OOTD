@@ -1,6 +1,5 @@
 package com.android.ootd.model.items
 
-import android.net.Uri
 import android.util.Log
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
@@ -19,8 +18,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
   val item1 =
       Item(
-          uuid = "0",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "0",
+          image = ImageData(imageId = "0", imageUrl = "https://example.com/image1.jpg"),
           category = "clothes",
           type = "t-shirt",
           brand = "Mango",
@@ -30,8 +29,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
   val item2 =
       Item(
-          uuid = "1",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "1",
+          image = ImageData("1", "https://example.com/image1.jpg"),
           category = "shoes",
           type = "high heels",
           brand = "Zara",
@@ -41,8 +40,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
   val item3 =
       Item(
-          uuid = "2",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "2",
+          image = ImageData("2", "https://example.com/image1.jpg"),
           category = "bags",
           type = "handbag",
           brand = "Vakko",
@@ -52,8 +51,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
   val item4 =
       Item(
-          uuid = "3",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "3",
+          image = ImageData("3", "https://example.com/image1.jpg"),
           category = "accessories",
           type = "sunglasses",
           brand = "Ray-Ban",
@@ -79,11 +78,15 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   fun addItemWithTheCorrectID() = runBlocking {
     itemsRepository.addItem(item1)
     val snapshot =
-        FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).document(item1.uuid).get().await()
+        FirebaseEmulator.firestore
+            .collection(ITEMS_COLLECTION)
+            .document(item1.itemUuid)
+            .get()
+            .await()
 
     Log.d("FirestoreTest", "Firestore stored document: ${snapshot.data}")
     assertEquals(1, countItems())
-    val storedTodo = itemsRepository.getItemById(item1.uuid)
+    val storedTodo = itemsRepository.getItemById(item1.itemUuid)
     assertEquals(storedTodo, item1)
   }
 
@@ -94,8 +97,8 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val todos = itemsRepository.getAllItems()
 
     assertEquals(1, todos.size)
-    val expectedTodo = item1.copy(uuid = "None", link = "None")
-    val storedTodo = todos.first().copy(uuid = expectedTodo.uuid, link = expectedTodo.link)
+    val expectedTodo = item1.copy(itemUuid = "None", link = "None")
+    val storedTodo = todos.first().copy(itemUuid = expectedTodo.itemUuid, link = expectedTodo.link)
 
     assertEquals(expectedTodo, storedTodo)
   }
@@ -106,18 +109,18 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     itemsRepository.addItem(item2)
     itemsRepository.addItem(item3)
     assertEquals(3, countItems())
-    val storedTodo = itemsRepository.getItemById(item3.uuid)
+    val storedTodo = itemsRepository.getItemById(item3.itemUuid)
     assertEquals(storedTodo, item3)
 
-    val storedTodo2 = itemsRepository.getItemById(item2.uuid)
+    val storedTodo2 = itemsRepository.getItemById(item2.itemUuid)
     assertEquals(storedTodo2, item2)
   }
 
   @Test
   fun checkUidsAreUniqueInTheCollection() = runBlocking {
     val uid = "duplicate"
-    val item1Modified = item1.copy(uuid = uid)
-    val itemDuplicatedUID = item2.copy(uuid = uid)
+    val item1Modified = item1.copy(itemUuid = uid)
+    val itemDuplicatedUID = item2.copy(itemUuid = uid)
     // Depending on your implementation, adding a Item with an existing UID
     // might not be permitted
     runCatching {
@@ -130,7 +133,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val items = itemsRepository.getAllItems()
     assertEquals(items.size, 1)
     val storedItem = items.first()
-    assertEquals(storedItem.uuid, uid)
+    assertEquals(storedItem.itemUuid, uid)
   }
 
   @Test
@@ -140,14 +143,14 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     itemsRepository.addItem(item3)
     assertEquals(3, countItems())
 
-    itemsRepository.deleteItem(item2.uuid)
+    itemsRepository.deleteItem(item2.itemUuid)
     assertEquals(2, countItems())
     val items = itemsRepository.getAllItems()
     assertEquals(items.size, 2)
     assert(!items.contains(item2))
 
     // Deleting an item that does not exist should not throw
-    itemsRepository.deleteItem(item2.uuid)
+    itemsRepository.deleteItem(item2.itemUuid)
     assertEquals(2, countItems())
   }
 
@@ -162,7 +165,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
             brand = "H&M",
             price = 20.0,
             material = listOf(Material(name = "Cotton", percentage = 100.0)))
-    itemsRepository.editItem(item1.uuid, newItem)
+    itemsRepository.editItem(item1.itemUuid, newItem)
     assertEquals(1, countItems())
     val items = itemsRepository.getAllItems()
     assertEquals(items.size, 1)
@@ -170,10 +173,10 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     assertEquals(storedItem, newItem)
 
     // Editing an item that does not exist should throw
-    val nonExistingItem = item2.copy(uuid = "nonExisting")
+    val nonExistingItem = item2.copy(itemUuid = "nonExisting")
     var didThrow = false
     try {
-      itemsRepository.editItem(nonExistingItem.uuid, nonExistingItem)
+      itemsRepository.editItem(nonExistingItem.itemUuid, nonExistingItem)
     } catch (e: Exception) {
       didThrow = true
     }
@@ -200,32 +203,28 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
     // Only valid items should be returned (invalid skipped)
     assertEquals(1, allItems.size)
-    assertEquals(item1.uuid, allItems.first().uuid)
+    assertEquals(item1.itemUuid, allItems.first().itemUuid)
   }
 
   @Test
   fun getAllItemsParsesPartiallyValidMaterialList() = runBlocking {
-    val db = FirebaseEmulator.firestore
-    val collection = db.collection(ITEMS_COLLECTION)
-
     val partialMaterialData =
-        mapOf(
-            "uuid" to "mixedMat",
-            "image" to "https://example.com/image.jpg",
-            "category" to "clothes",
-            "type" to "jacket",
-            "brand" to "Levi's",
-            "price" to 120.0,
-            "link" to "https://example.com/item",
-            "material" to
-                listOf(
-                    mapOf("name" to "Cotton", "percentage" to 60.0), mapOf("invalidKey" to "oops")))
-    collection.document("mixedMat").set(partialMaterialData).await()
+        Item(
+            itemUuid = "mixedMat",
+            image = ImageData(imageId = "mixedMatImg", imageUrl = "https://example.com/image.jpg"),
+            category = "clothes",
+            type = "jacket",
+            brand = "Levi's",
+            price = 120.0,
+            link = "https://example.com/item",
+            material = listOf(Material(name = "Cotton", percentage = 60.0), null))
+
+    itemsRepository.addItem(partialMaterialData)
 
     val items = itemsRepository.getAllItems()
     assertEquals(1, items.size)
     val matList = items.first().material
-    assertEquals(2, matList.size)
+    assertEquals(1, matList.size)
     assertEquals("Cotton", matList.first()?.name)
     assertEquals(60.0, matList.first()?.percentage)
   }

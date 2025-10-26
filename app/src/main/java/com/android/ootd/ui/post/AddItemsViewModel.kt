@@ -2,17 +2,24 @@ package com.android.ootd.ui.post
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.ktx.storage
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 // import com.google.firebase.storage.FirebaseStorage
 
@@ -20,7 +27,8 @@ import kotlinx.coroutines.launch
  * UI state for the AddItems screen. This state holds the data needed to create a new Clothing item.
  */
 data class AddItemsUIState(
-    val image: Uri = Uri.EMPTY,
+    val image: ImageData = ImageData(imageId = "", imageUrl = ""),
+    val localPhotoUri: Uri? = null, // temporary local URI for photo before upload
     val category: String = "",
     val type: String = "",
     val brand: String = "",
@@ -38,7 +46,7 @@ data class AddItemsUIState(
     get() =
         invalidPhotoMsg == null &&
             invalidCategory == null &&
-            image != Uri.EMPTY &&
+            (localPhotoUri != null || image.imageUrl.isNotEmpty()) &&
             category.isNotEmpty() &&
             isCategoryValid()
 
@@ -66,10 +74,13 @@ data class AddItemsUIState(
  */
 open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
+    private val storage: StorageReference = Firebase.storage.reference,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(AddItemsUIState())
   open val uiState: StateFlow<AddItemsUIState> = _uiState.asStateFlow()
+  private val _addOnSuccess = MutableStateFlow(false)
+  val addOnSuccess: StateFlow<Boolean> = _addOnSuccess
 
   private var typeSuggestions: Map<String, List<String>> = emptyMap()
 
@@ -89,12 +100,23 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(errorMessage = null)
   }
 
+  fun resetAddSuccess() {
+    _addOnSuccess.value = false
+  }
+
+  /**
+   * Sets the error message in the UI state.
+   *
+   * @param msg The error message to display.
+   */
   fun setErrorMsg(msg: String) {
     _uiState.value = _uiState.value.copy(errorMessage = msg)
   }
 
-  fun canAddItems(): Boolean {
+  fun onAddItemClick() {
     val state = _uiState.value
+    Log.d("AddItemsVM", "onAddItemClick() invoked. state = $state")
+
     if (!state.isAddingValid) {
       val error =
           when {
@@ -105,44 +127,176 @@ open class AddItemsViewModel(
           }
 
       setErrorMsg(error)
-      return false
-    }
-
-    addItemsToRepository(
-        Item(
-            uuid = repository.getNewItemId(),
-            image = state.image,
-            category = state.category,
-            type = state.type,
-            brand = state.brand,
-            price = state.price.toDoubleOrNull() ?: 0.0,
-            material = state.material,
-            link = state.link))
-    clearErrorMsg()
-    return true
-  }
-
-  fun addItemsToRepository(item: Item) {
-    val state = _uiState.value
-
-    if (!state.isAddingValid) {
-      setErrorMsg("At least one field is not valid")
+      _addOnSuccess.value = false
       return
     }
 
     viewModelScope.launch {
+      val uploadedImage = uploadImageToFirebase()
+      if (uploadedImage.imageUrl.isEmpty()) {
+        Log.e("AddItemsVM", "Image upload failed.")
+        setErrorMsg("Image upload failed. Please try again.")
+        _addOnSuccess.value = false
+        return@launch
+      }
+
+      val item =
+          Item(
+              itemUuid = repository.getNewItemId(),
+              image = uploadedImage,
+              category = state.category,
+              type = state.type,
+              brand = state.brand,
+              price = state.price.toDoubleOrNull() ?: 0.0,
+              material = state.material,
+              link = state.link)
+
       try {
+        _addOnSuccess.value = true
         repository.addItem(item)
+        clearErrorMsg()
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")
+        _addOnSuccess.value = false
       }
     }
   }
 
-  fun setPhoto(uri: Uri) {
-    _uiState.value =
-        _uiState.value.copy(
-            image = uri, invalidPhotoMsg = if (uri == Uri.EMPTY) "Please select a photo." else null)
+  //    suspend fun addItemAndWait(): Boolean {
+  //        val state = _uiState.value
+  //        Log.d("AddItemsVM", "addItemAndWait() invoked. state = $state")
+  //
+  //        if (!state.isAddingValid) {
+  //            setErrorMsg("Form not valid.")
+  //            return false
+  //        }
+  //
+  //        return try {
+  //            val uploadedImage = uploadImageToFirebase()
+  //            if (uploadedImage.imageUrl.isEmpty()) {
+  //                setErrorMsg("Image upload failed.")
+  //                return false
+  //            }
+  //
+  //            val item = Item(
+  //                itemUuid = repository.getNewItemId(),
+  //                image = uploadedImage,
+  //                category = state.category,
+  //                type = state.type,
+  //                brand = state.brand,
+  //                price = state.price.toDoubleOrNull() ?: 0.0,
+  //                material = state.material,
+  //                link = state.link
+  //            )
+  //
+  //            repository.addItem(item)
+  //            clearErrorMsg()
+  //            true // ✅ success
+  //        } catch (e: Exception) {
+  //            setErrorMsg("Failed to add item: ${e.message}")
+  //            false
+  //        }
+  //    }
+  //
+  //    fun canAddItems(): Boolean {
+  //        val state = _uiState.value
+  //        Log.d("AddItemsVM", "canAddItems() invoked. state = $state")
+  //        Log.d("AddItemsVM", "isAddingValid = ${state.isAddingValid}")
+  //        if (!state.isAddingValid) {
+  //            val error =
+  //                when {
+  //                    state.image == Uri.EMPTY -> "Please upload a photo before adding the item."
+  //                    state.category.isBlank() -> "Please enter a category before adding the
+  // item."
+  //                    state.invalidCategory != null -> "Please select a valid category."
+  //                    else -> "Some required fields are missing."
+  //                }
+  //
+  //            setErrorMsg(error)
+  //            return false
+  //        }
+  //        viewModelScope.launch {
+  //
+  //            val uploadedImage = uploadImageToFirebase()
+  //            Log.e("AddItemsVM", "Uploaded image: $uploadedImage")
+  //            if (uploadedImage.imageUrl.isEmpty()) {
+  //                Log.e("AddItemsVM", "Image upload failed.")
+  //                setErrorMsg("Image upload failed. Please try again.")
+  //                return@launch
+  //            }
+  //            Log.e("AddItemsVM", "Adding item with image: $uploadedImage")
+  //            addItemsToRepository(
+  //                Item(
+  //                    itemUuid = repository.getNewItemId(),
+  //                    image = uploadedImage,
+  //                    category = state.category,
+  //                    type = state.type,
+  //                    brand = state.brand,
+  //                    price = state.price.toDoubleOrNull() ?: 0.0,
+  //                    material = state.material,
+  //                    link = state.link
+  //                )
+  //            )
+  //            clearErrorMsg()
+  //        }
+  //        return true
+  //    }
+  //
+  //    fun addItemsToRepository(item: Item) {
+  //        val state = _uiState.value
+  //
+  //        if (!state.isAddingValid) {
+  //            Log.e("AddItemsVM", "Cannot add item, state is not valid: $state")
+  //            setErrorMsg("At least one field is not valid")
+  //            return
+  //        }
+  //
+  //        viewModelScope.launch {
+  //            try {
+  //                Log.e("AddItemsVM", "Adding item to repository: $item")
+  //                repository.addItem(item)
+  //            } catch (e: Exception) {
+  //                setErrorMsg("Failed to add item: ${e.message}")
+  //            }
+  //        }
+  //    }
+
+  fun setPhoto(uri: Uri) =
+      viewModelScope.launch {
+        if (uri == Uri.EMPTY) {
+          _uiState.value =
+              _uiState.value.copy(
+                  localPhotoUri = null,
+                  image = ImageData("", ""),
+                  invalidPhotoMsg = "Please select a photo.")
+        } else {
+          _uiState.value =
+              _uiState.value.copy(
+                  localPhotoUri = uri, image = ImageData("", ""), invalidPhotoMsg = null)
+        }
+      }
+
+  private suspend fun uploadImageToFirebase(): ImageData {
+    val state = _uiState.value
+    val localUri = state.localPhotoUri ?: return ImageData("", "")
+    Log.e("AddItemsVM", "Uploading image from URI: $localUri")
+
+    val fileName = UUID.randomUUID().toString()
+    val imageRef = storage.child("images/$fileName")
+
+    Log.d("AddItemsVM", "Attempting to upload image: $localUri")
+    Log.d("AddItemsVM", "Storage bucket: ${imageRef.bucket}")
+    Log.d("AddItemsVM", "Storage path: ${imageRef.path}")
+
+    return try {
+      imageRef.putFile(localUri).await()
+      val downloadUri = imageRef.downloadUrl.await()
+      ImageData(fileName, downloadUri.toString())
+    } catch (e: Exception) {
+      Log.e("AddItemsVM", "uploadImageToFirebase: exception during upload", e)
+      setErrorMsg("Failed to upload image: ${e.message}")
+      ImageData("", "")
+    }
   }
 
   fun setCategory(category: String) {

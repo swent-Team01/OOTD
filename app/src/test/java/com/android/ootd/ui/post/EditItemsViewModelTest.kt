@@ -3,6 +3,8 @@ package com.android.ootd.ui.post
 import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.items.FirebaseImageUploader
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
@@ -10,6 +12,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import kotlin.collections.emptyList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,7 +56,8 @@ class EditItemsViewModelTest {
   fun `initial state is correct`() {
     val state = viewModel.uiState.value
     assertEquals("", state.itemId)
-    assertEquals(Uri.EMPTY, state.image)
+    assertEquals(ImageData("", ""), state.image)
+    assertNull(state.localPhotoUri)
     assertEquals("", state.category)
     assertEquals("", state.type)
     assertEquals("", state.brand)
@@ -64,15 +68,18 @@ class EditItemsViewModelTest {
     assertNull(state.invalidPhotoMsg)
     assertNull(state.invalidCategory)
     assertEquals(emptyList<String>(), state.suggestions)
+    assertFalse(state.isSaveSuccessful)
   }
 
   @Test
-  fun `isEditValid returns true when all required fields are valid`() {
+  fun `isEditValid returns true when all required fields are valid`() = runTest {
     val mockUri = mockk<Uri>()
     every { mockUri.toString() } returns "content://test"
 
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
+
+    advanceUntilIdle()
 
     val state = viewModel.uiState.value
     assertTrue(state.isEditValid)
@@ -97,23 +104,29 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `setPhoto updates image in state`() {
+  fun `setPhoto updates localPhotoUri in state`() = runTest {
     val mockUri = mockk<Uri>()
     every { mockUri.toString() } returns "content://test"
 
     viewModel.setPhoto(mockUri)
 
+    advanceUntilIdle()
+
     val state = viewModel.uiState.value
-    assertEquals(mockUri, state.image)
+    assertEquals(mockUri, state.localPhotoUri)
+    assertEquals(ImageData("", ""), state.image)
     assertNull(state.invalidPhotoMsg)
   }
 
   @Test
-  fun `setPhoto with Uri EMPTY sets error message`() {
+  fun `setPhoto with Uri EMPTY sets error message`() = runTest {
     viewModel.setPhoto(Uri.EMPTY)
 
+    advanceUntilIdle()
+
     val state = viewModel.uiState.value
-    assertEquals(Uri.EMPTY, state.image)
+    assertNull(state.localPhotoUri)
+    assertEquals(ImageData("", ""), state.image)
     assertEquals("Please select a photo.", state.invalidPhotoMsg)
   }
 
@@ -195,13 +208,11 @@ class EditItemsViewModelTest {
 
   @Test
   fun `loadItem populates state with item data`() {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
     val materials = listOf(Material("Cotton", 100.0))
     val item =
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",
             brand = "Nike",
@@ -213,7 +224,7 @@ class EditItemsViewModelTest {
 
     val state = viewModel.uiState.value
     assertEquals("test-id", state.itemId)
-    assertEquals(mockUri, state.image)
+    assertEquals(ImageData("test-image-id", "https://example.com/test.jpg"), state.image)
     assertEquals("Clothing", state.category)
     assertEquals("T-shirt", state.type)
     assertEquals("Nike", state.brand)
@@ -224,12 +235,10 @@ class EditItemsViewModelTest {
 
   @Test
   fun `loadItem handles null optional values`() {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
     val item =
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = null,
             brand = null,
@@ -241,7 +250,7 @@ class EditItemsViewModelTest {
 
     val state = viewModel.uiState.value
     assertEquals("test-id", state.itemId)
-    assertEquals(mockUri, state.image)
+    assertEquals(ImageData("test-image-id", "https://example.com/test.jpg"), state.image)
     assertEquals("Clothing", state.category)
     assertEquals("", state.type)
     assertEquals("", state.brand)
@@ -250,16 +259,18 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `canEditItems returns false when validation fails`() {
-    val result = viewModel.canEditItems()
+  fun `onSaveItemClick sets error when validation fails`() = runTest {
+    viewModel.onSaveItemClick()
 
-    assertFalse(result)
+    advanceUntilIdle()
+
     val state = viewModel.uiState.value
     assertEquals("Please fill in all required fields.", state.errorMessage)
+    assertFalse(state.isSaveSuccessful)
   }
 
   @Test
-  fun `canEditItems returns false when URL is invalid`() {
+  fun `onSaveItemClick sets error when URL is invalid`() = runTest {
     val mockUri = mockk<Uri>()
     every { mockUri.toString() } returns "content://test"
 
@@ -267,15 +278,16 @@ class EditItemsViewModelTest {
     viewModel.setCategory("Clothing")
     viewModel.setLink("invalid-url")
 
-    val result = viewModel.canEditItems()
+    viewModel.onSaveItemClick()
 
-    assertFalse(result)
+    advanceUntilIdle()
+
     val state = viewModel.uiState.value
     assertEquals("Please enter a valid URL.", state.errorMessage)
   }
 
   @Test
-  fun `canEditItems returns true and calls repository when valid`() = runTest {
+  fun `onSaveItemClick returns true and calls repository when valid`() = runTest {
     val mockUri = mockk<Uri>()
     every { mockUri.toString() } returns "content://test"
 
@@ -284,8 +296,8 @@ class EditItemsViewModelTest {
     // Load an item first to set itemId
     viewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",
             brand = "Nike",
@@ -293,25 +305,22 @@ class EditItemsViewModelTest {
             material = emptyList(),
             link = "https://example.com"))
 
-    val result = viewModel.canEditItems()
-
+    viewModel.onSaveItemClick()
     advanceUntilIdle()
 
-    assertTrue(result)
-    coVerify { mockRepository.editItem(any(), any()) }
+    coVerify { mockRepository.editItem("test-id", any()) }
+    assertNull(viewModel.uiState.value.errorMessage)
+    assertTrue(viewModel.uiState.value.isSaveSuccessful)
   }
 
   @Test
-  fun `canEditItems allows empty link`() = runTest {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
-
+  fun `onSaveItemClick allows empty link`() = runTest {
     coEvery { mockRepository.editItem(any(), any()) } returns Unit
 
     viewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",
             brand = "Nike",
@@ -319,59 +328,30 @@ class EditItemsViewModelTest {
             material = emptyList(),
             link = ""))
 
-    val result = viewModel.canEditItems()
-
+    viewModel.onSaveItemClick()
     advanceUntilIdle()
 
-    assertTrue(result)
+    coVerify { mockRepository.editItem("test-id", any()) }
+    assertNull(viewModel.uiState.value.errorMessage)
+    assertTrue(viewModel.uiState.value.isSaveSuccessful)
   }
 
   @Test
-  fun `editItemsInRepository calls repository editItem`() = runTest {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
-
-    coEvery { mockRepository.editItem(any(), any()) } returns Unit
-
-    val item =
-        Item(
-            uuid = "test-id",
-            image = mockUri,
-            category = "Clothing",
-            type = "T-shirt",
-            brand = "Nike",
-            price = 49.99,
-            material = emptyList(),
-            link = "https://example.com")
-
-    viewModel.editItemsInRepository(item)
-
-    advanceUntilIdle()
-
-    coVerify { mockRepository.editItem("test-id", item) }
-    val state = viewModel.uiState.value
-    assertEquals(null, state.errorMessage)
-  }
-
-  @Test
-  fun `editItemsInRepository handles exception`() = runTest {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
-
+  fun `onSaveItemClick handles exception`() = runTest {
     coEvery { mockRepository.editItem(any(), any()) } throws Exception("Update failed")
 
-    val item =
+    viewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",
             brand = "Nike",
             price = 49.99,
             material = emptyList(),
-            link = "https://example.com")
+            link = "https://example.com"))
 
-    viewModel.editItemsInRepository(item)
+    viewModel.onSaveItemClick()
 
     advanceUntilIdle()
 
@@ -381,14 +361,13 @@ class EditItemsViewModelTest {
 
   @Test
   fun `deleteItem calls repository when itemId is not empty`() = runTest {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
-    coEvery { mockRepository.deleteItem(any()) } returns Unit
+    mockkObject(FirebaseImageUploader)
+    coEvery { FirebaseImageUploader.deleteImage(any()) } returns true
 
     viewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = null,
             brand = null,
@@ -417,14 +396,12 @@ class EditItemsViewModelTest {
 
   @Test
   fun `deleteItem handles exception`() = runTest {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
     coEvery { mockRepository.deleteItem(any()) } throws Exception("Delete failed")
 
     viewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = null,
             brand = null,

@@ -90,6 +90,12 @@ fun EditItemsScreen(
   val errorMsg = itemsUIState.errorMessage
   val context = LocalContext.current
 
+  LaunchedEffect(itemsUIState.isSaveSuccessful) {
+    if (itemsUIState.isSaveSuccessful) {
+      goBack()
+    }
+  }
+
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { editItemsViewModel.initTypeSuggestions(context) }
 
@@ -300,9 +306,8 @@ fun EditItemsScreen(
 
                             Button(
                                 onClick = {
-                                  if (editItemsViewModel.canEditItems()) {
-                                    goBack()
-                                  }
+                                  editItemsViewModel.onSaveItemClick()
+                                  goBack()
                                 },
                                 enabled =
                                     itemsUIState.image != Uri.EMPTY &&
@@ -335,10 +340,18 @@ fun EditItemsScreen(
                           .background(Secondary)
                           .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
                   contentAlignment = Alignment.Center) {
-                    if (itemsUIState.image != Uri.EMPTY) {
+                    val localUri = itemsUIState.localPhotoUri
+                    val remoteUrl = itemsUIState.image.imageUrl
+                    if (localUri != null) {
                       AsyncImage(
-                          model = itemsUIState.image,
+                          model = localUri,
                           contentDescription = "Selected image",
+                          modifier = Modifier.fillMaxSize(),
+                          contentScale = ContentScale.Crop)
+                    } else if (remoteUrl.isNotEmpty()) {
+                      AsyncImage(
+                          model = remoteUrl,
+                          contentDescription = "Uploaded image",
                           modifier = Modifier.fillMaxSize(),
                           contentScale = ContentScale.Crop)
                     } else {
@@ -349,10 +362,7 @@ fun EditItemsScreen(
                             tint = Tertiary,
                             modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "No picture yet",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
                       }
                     }
                   }

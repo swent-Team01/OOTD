@@ -1,10 +1,8 @@
 package com.android.ootd.model.items
 
-import android.net.Uri
-
 data class Item(
-    val uuid: String,
-    val image: Uri,
+    val itemUuid: String,
+    val image: ImageData,
     val category: String,
     val type: String?,
     val brand: String?,
@@ -14,3 +12,5 @@ data class Item(
 )
 
 data class Material(val name: String = "", val percentage: Double = 0.0)
+
+data class ImageData(val imageId: String, val imageUrl: String)

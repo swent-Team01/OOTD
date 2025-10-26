@@ -75,7 +75,7 @@ object PreviewItemScreenTestTags {
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
 
-  fun getTestTagForItem(item: Item): String = "item${item.uuid}"
+  fun getTestTagForItem(item: Item): String = "item${item.itemUuid}"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,8 +99,6 @@ fun PreviewItemScreen(
       outfitPreviewViewModel.clearErrorMessage()
     }
   }
-
-  LaunchedEffect(Unit) { outfitPreviewViewModel.refreshItems() }
 
   Scaffold(
       topBar = {
@@ -177,7 +175,7 @@ fun PreviewItemScreen(
                       .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
                 items(itemsList.size) { index ->
                   OutfitItem(
-                      item = itemsList[index], onClick = { onEditItem(itemsList[index].uuid) })
+                      item = itemsList[index], onClick = { onEditItem(itemsList[index].itemUuid) })
                 }
               }
         } else {
@@ -223,7 +221,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
               horizontalArrangement = Arrangement.Start,
               verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = item.image,
+                    model = item.image.imageUrl,
                     contentDescription = "Item image",
                     modifier =
                         Modifier.size(100.dp)
@@ -284,7 +282,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
               modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(
-                    onClick = { onClick(item.uuid) },
+                    onClick = { onClick(item.itemUuid) },
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)) {
                       Icon(

@@ -70,6 +70,9 @@ class OutfitPreviewViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
       try {
+        //        itemsRepository.observeAllItems().collect(){ items ->
+        //          _uiState.value = _uiState.value.copy(items = items, isLoading = false)
+        //        }
         val items = itemsRepository.getAllItems()
         _uiState.value = PreviewUIState(items = items, isLoading = false)
       } catch (e: Exception) {
