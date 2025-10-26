@@ -33,7 +33,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.firestore
 import io.mockk.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -135,7 +135,7 @@ class End2EndTest {
    * - Uses FakeCredentialManager and mocked Firebase to avoid network calls
    */
   @Test
-  fun fullAppFlow_newUser_signInAndCompleteRegistration() = runTest {
+  fun fullAppFlow_newUser_signInAndCompleteRegistration() = runBlocking {
     // Create a fake Google ID token for a new user
     val fakeGoogleIdToken =
         FakeJwtGenerator.createFakeGoogleIdToken("greg", email = "greg@gmail.com")
@@ -282,7 +282,7 @@ class End2EndTest {
             .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
             .fetchSemanticsNodes()
             .isNotEmpty()
-      } catch (e: Exception) {
+      } catch (_: Exception) {
         // Return false to continue waiting if there's an exception
         false
       }
@@ -394,7 +394,7 @@ class End2EndTest {
     // - This causes the Compose hierarchy to be lost (app goes to background)
     // - ComposeTestRule can only interact with Compose UI in the foreground
     //
-
+    //
     // STEP 16: Skip photo selection for testing purposes
     // In a real-world scenario, the user would select a photo here
     // For automated testing, we'll proceed without it
