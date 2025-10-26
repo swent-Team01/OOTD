@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -107,16 +108,34 @@ interface ItemsTest {
         .performTextInput(material)
   }
 
+  /**
+   * Waits until a node with the given test tag exists in the semantics tree. Prevents race
+   * conditions when the UI is still composing.
+   */
+  fun ComposeTestRule.waitForNodeWithTag(
+      tag: String,
+      timeoutMillis: Long = 5_000,
+      useUnmergedTree: Boolean = true
+  ) {
+    waitUntil(timeoutMillis) {
+      onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes().isNotEmpty()
+    }
+  }
+
   fun ComposeTestRule.enterAddItemDetails(item: Item, viewModel: AddItemsViewModel, testUri: Uri) {
     item.type?.let { enterAddItemType(it) }
     enterAddItemCategory(item.category)
     item.brand?.let { enterAddItemBrand(it) }
     item.price?.let { enterAddItemPrice(it) }
     item.link?.let { enterAddItemLink(it) }
+
     ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
+    waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER)
+    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER, useUnmergedTree = true).performClick()
+
     waitForIdle()
 
+    waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
     onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
 
     onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
