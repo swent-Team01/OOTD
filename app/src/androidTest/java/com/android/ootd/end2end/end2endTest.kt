@@ -150,6 +150,12 @@ class End2EndTest {
     every { mockFirebaseAuth.currentUser } returns null // Initially not signed in
     every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
 
+    // Mock signOut to update currentUser to null when called
+    every { mockFirebaseAuth.signOut() } answers
+        {
+          every { mockFirebaseAuth.currentUser } returns null
+        }
+
     // New user, so userExists returns false initially (no username set yet)
     // After registration, it will return true
     coEvery { mockUserRepository.userExists(any()) } returns false
