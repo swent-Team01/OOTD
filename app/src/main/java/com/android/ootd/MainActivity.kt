@@ -110,9 +110,6 @@ fun OOTDApp(
                 composable(Screen.RegisterUsername.route) {
                   RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
                 }
-                composable(Screen.SearchScreen.route) {
-                  UserSearchScreen(onBack = { navigationActions.goBack() })
-                }
               }
 
               // 2. SignIn route (top-level, for unauthenticated users)
@@ -136,6 +133,9 @@ fun OOTDApp(
                       }, // this will go to AddItemScreen
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
+                }
+                composable(Screen.SearchScreen.route) {
+                  UserSearchScreen(onBack = { navigationActions.goBack() })
                 }
                 composable(Screen.Account.route) {
                   AccountScreen(

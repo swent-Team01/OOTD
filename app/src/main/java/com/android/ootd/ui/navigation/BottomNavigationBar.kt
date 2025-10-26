@@ -34,6 +34,11 @@ sealed class Tab(val name: String, val icon: ImageVector, val destination: Scree
 
 private val tabs = listOf(Tab.Feed, Tab.Search, Tab.Inventory, Tab.Profile)
 
+/** Helpers for unit tests */
+fun routeToTab(route: String): Tab = tabs.find { it.destination.route == route } ?: Tab.Feed
+
+fun tabToScreen(tab: Tab): Screen = tab.destination
+
 @Composable
 fun BottomNavigationMenu(
     selectedTab: Tab,
