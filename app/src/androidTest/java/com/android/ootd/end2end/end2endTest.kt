@@ -12,6 +12,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
+import com.android.ootd.model.account.AccountRepositoryFirestore
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
@@ -31,7 +33,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.firestore
 import io.mockk.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -59,6 +61,7 @@ class End2EndTest {
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var mockAuthResult: AuthResult
   private lateinit var mockUserRepository: UserRepositoryFirestore
+  private lateinit var mockAccountRepository: AccountRepositoryFirestore
   private lateinit var testUserId: String
   private lateinit var testUsername: String
 
@@ -69,9 +72,11 @@ class End2EndTest {
     mockFirebaseUser = mockk(relaxed = true)
     mockAuthResult = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
+    mockAccountRepository = mockk(relaxed = true)
 
-    // Inject mock repository into the provider so the app uses it instead of real Firestore
+    // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
+    AccountRepositoryProvider.repository = mockAccountRepository
 
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
@@ -85,8 +90,9 @@ class End2EndTest {
   @After
   fun tearDown() {
     unmockkAll()
-    // Restore the real repository after test completes
+    // Restore the real repositories after test completes
     UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
+    AccountRepositoryProvider.repository = AccountRepositoryFirestore(Firebase.firestore)
   }
 
   /**
@@ -129,334 +135,346 @@ class End2EndTest {
    * - Uses FakeCredentialManager and mocked Firebase to avoid network calls
    */
   @Test
-  fun fullAppFlow_newUser_signInAndCompleteRegistration() = runTest {
-    // Create a fake Google ID token for a new user
-    val fakeGoogleIdToken =
-        FakeJwtGenerator.createFakeGoogleIdToken("greg", email = "greg@gmail.com")
-    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
+  fun fullAppFlow_newUser_signInAndCompleteRegistration() {
+    runBlocking {
+      // Create a fake Google ID token for a new user
+      val fakeGoogleIdToken =
+          FakeJwtGenerator.createFakeGoogleIdToken("greg", email = "greg@gmail.com")
+      val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
 
-    // Set up mock Firebase authentication with new unique test user ID
-    every { mockFirebaseUser.uid } returns testUserId
-    every { mockAuthResult.user } returns mockFirebaseUser
+      // Set up mock Firebase authentication with new unique test user ID
+      every { mockFirebaseUser.uid } returns testUserId
+      every { mockAuthResult.user } returns mockFirebaseUser
 
-    mockkStatic(FirebaseAuth::class)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns null // Initially not signed in
-    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
+      mockkStatic(FirebaseAuth::class)
+      every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
+      every { mockFirebaseAuth.currentUser } returns null // Initially not signed in
+      every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
 
-    // New user, so userExists returns false initially (no username set yet)
-    // After registration, it will return true
-    coEvery { mockUserRepository.userExists(any()) } returns false
+      // Mock signOut to update currentUser to null when called
+      every { mockFirebaseAuth.signOut() } answers
+          {
+            every { mockFirebaseAuth.currentUser } returns null
+          }
 
-    // Mock successful user creation - use any() matchers since we're testing the flow, not exact
-    // values
-    coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
+      // New user, so userExists returns false initially (no username set yet)
+      // After registration, it will return true
+      coEvery { mockUserRepository.userExists(any()) } returns false
 
-    // STEP 1: Launch the full app
-    composeTestRule.setContent {
-      OOTDApp(context = context, credentialManager = fakeCredentialManager)
-    }
+      // Mock successful user creation - use any() matchers since we're testing the flow, not exact
+      // values
+      coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
 
-    composeTestRule.waitForIdle()
+      // Mock successful account creation
+      coEvery { mockAccountRepository.createAccount(any(), any()) } returns Unit
+      coEvery { mockAccountRepository.accountExists(any()) } returns false
 
-    // STEP 2: Wait for navigation from Splash to Authentication screen
-    // (Since FirebaseAuth.currentUser is null, we should navigate to authentication)
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // STEP 1: Launch the full app
+      composeTestRule.setContent {
+        OOTDApp(context = context, credentialManager = fakeCredentialManager)
+      }
+
+      composeTestRule.waitForIdle()
+
+      // STEP 2: Wait for navigation from Splash to Authentication screen
+      // (Since FirebaseAuth.currentUser is null, we should navigate to authentication)
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Verify we're on the Sign-In screen
       composeTestRule
-          .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+          .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+          .performScrollTo()
+          .assertIsDisplayed()
+      composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
+      composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_TITLE).assertIsDisplayed()
 
-    // Verify we're on the Sign-In screen
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .performScrollTo()
-        .assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_TITLE).assertIsDisplayed()
+      // STEP 3: Click the Google Sign-In button
+      // Update mock to return the signed-in user after sign-in
+      every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
 
-    // STEP 3: Click the Google Sign-In button
-    // Update mock to return the signed-in user after sign-in
-    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
-
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .performScrollTo()
-        .performClick()
-
-    composeTestRule.waitForIdle()
-
-    // STEP 4: Wait for automatic navigation to Registration screen
-    // (userExists returns false, so the app should navigate to registration)
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule
-          .onAllNodesWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+          .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+          .performScrollTo()
+          .performClick()
 
-    // STEP 5: Verify we're on the Registration screen
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
-        .performScrollTo()
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE)
-        .performScrollTo()
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .performScrollTo()
-        .assertIsDisplayed()
+      composeTestRule.waitForIdle()
 
-    composeTestRule.waitForIdle()
+      // STEP 4: Wait for automatic navigation to Registration screen
+      // (userExists returns false, so the app should navigate to registration)
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(RegisterScreenTestTags.REGISTER_SAVE)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
 
-    // STEP 6: Fill in the registration form - enter username FIRST
-    // Use unique username for each test run to avoid "username already exists" errors
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performScrollTo()
-    composeTestRule.enterUsername(testUsername)
-    composeTestRule.waitForIdle()
-    // Verify username was entered correctly before moving on
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
-        .performScrollTo()
-        .assertTextContains(testUsername)
+      // STEP 5: Verify we're on the Registration screen
+      composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
+      composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
+      composeTestRule
+          .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+          .performScrollTo()
+          .assertIsDisplayed()
+      composeTestRule
+          .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE)
+          .performScrollTo()
+          .assertIsDisplayed()
+      composeTestRule
+          .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
+          .performScrollTo()
+          .assertIsDisplayed()
 
-    // STEP 6: Fill in the registration form - enter date of birth
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
-        .performScrollTo()
-        .performClick()
+      composeTestRule.waitForIdle()
 
-    composeTestRule.waitForIdle()
+      // STEP 6: Fill in the registration form - enter username FIRST
+      // Use unique username for each test run to avoid "username already exists" errors
+      composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performScrollTo()
+      composeTestRule.enterUsername(testUsername)
+      composeTestRule.waitForIdle()
+      // Verify username was entered correctly before moving on
+      composeTestRule
+          .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+          .performScrollTo()
+          .assertTextContains(testUsername)
 
-    // Verify date picker is displayed
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
+      // STEP 6: Fill in the registration form - enter date of birth
+      composeTestRule
+          .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+          .performScrollTo()
+          .performClick()
 
-    // Enter date and confirm
-    composeTestRule.enterDate("10102020")
-    composeTestRule.waitForIdle()
+      composeTestRule.waitForIdle()
 
-    // STEP 7: Save the registration
-    // Update mock behavior BEFORE clicking Save to avoid race conditions
-    // After successful registration, userExists should return true
-    coEvery { mockUserRepository.userExists(any()) } returns true
-    coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
+      // Verify date picker is displayed
+      composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
 
-    composeTestRule.waitForIdle()
+      // Enter date and confirm
+      composeTestRule.enterDate("10102020")
+      composeTestRule.waitForIdle()
 
-    // Ensure the Save button is visible by scrolling to it if necessary
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .performScrollTo()
-        .assertIsEnabled()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
+      // STEP 7: Save the registration
+      // Update mock behavior BEFORE clicking Save to avoid race conditions
+      // After successful registration, userExists should return true
+      coEvery { mockUserRepository.userExists(any()) } returns true
+      coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
 
-    // STEP 8: App automatically switches to feed screen
-    // Wait for navigation to Feed screen after successful registration
-    composeTestRule.waitForIdle()
+      composeTestRule.waitForIdle()
 
-    // More robust waiting with better error handling
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      try {
+      // Ensure the Save button is visible by scrolling to it if necessary
+      composeTestRule
+          .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
+          .performScrollTo()
+          .assertIsEnabled()
+      composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
+
+      // STEP 8: App automatically switches to feed screen
+      // Wait for navigation to Feed screen after successful registration
+      composeTestRule.waitForIdle()
+
+      // More robust waiting with better error handling
+      composeTestRule.waitUntil(timeoutMillis = 10000) {
+        try {
+          composeTestRule
+              .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
+              .fetchSemanticsNodes()
+              .isNotEmpty()
+        } catch (_: Exception) {
+          // Return false to continue waiting if there's an exception
+          false
+        }
+      }
+
+      // Verify we're on the Feed screen
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertIsDisplayed()
+
+      composeTestRule.waitForIdle()
+
+      // STEP 9: Click on search icon to navigate to search screen
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN).performClick()
+      composeTestRule.waitForIdle()
+
+      // Wait for Search screen to appear
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(SearchScreenTestTags.SEARCH_SCREEN)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Verify we're on the Search screen
+      composeTestRule.onNodeWithTag(SearchScreenTestTags.SEARCH_SCREEN).assertIsDisplayed()
+
+      // This step don't work as we are on a local FireBase
+      //    // STEP 10: Search for "Greg" in the username field
+      //    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performClick()
+      //    composeTestRule.waitForIdle()
+      //    composeTestRule
+      //        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
+      //        .performTextInput("Greg")
+      //    composeTestRule.waitForIdle()
+      //
+      //    // STEP 11: Wait for and click on the username suggestion
+      //    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      //      composeTestRule
+      //          .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
+      //          .fetchSemanticsNodes()
+      //          .isNotEmpty()
+      //    }
+      //
+      //    // Click on the first suggestion (Greg)
+      //    composeTestRule
+      //        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
+      //        .performClick()
+      //
+      //    composeTestRule.waitForIdle()
+      //
+      //    // STEP 12: Wait for the profile card to appear and click Follow button
+      //    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      //      composeTestRule
+      //          .onAllNodesWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+      //          .fetchSemanticsNodes()
+      //          .isNotEmpty()
+      //    }
+      //
+      //
+      // composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
+      //    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+      //    composeTestRule.waitForIdle()
+
+      // STEP 13: Click back button to return to Feed screen
+      composeTestRule.onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON).performClick()
+      composeTestRule.waitForIdle()
+
+      // Wait for Feed screen to appear again
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
         composeTestRule
             .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
             .fetchSemanticsNodes()
             .isNotEmpty()
-      } catch (e: Exception) {
-        // Return false to continue waiting if there's an exception
-        false
       }
-    }
 
-    // Verify we're on the Feed screen
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertIsDisplayed()
+      // Verify we're back on the Feed screen
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
 
-    composeTestRule.waitForIdle()
+      // STEP 14: Click "Do a Fit Check" button to start posting a new outfit
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(FeedScreenTestTags.ADD_POST_FAB)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
 
-    // STEP 9: Click on search icon to navigate to search screen
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN).performClick()
-    composeTestRule.waitForIdle()
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).assertIsDisplayed()
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
+      composeTestRule.waitForIdle()
 
-    // Wait for Search screen to appear
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Wait for FitCheck screen to appear
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(FitCheckScreenTestTags.SCREEN)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Verify we're on the FitCheck screen
+      composeTestRule.onNodeWithTag(FitCheckScreenTestTags.SCREEN).assertIsDisplayed()
       composeTestRule
-          .onAllNodesWithTag(SearchScreenTestTags.SEARCH_SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+          .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+          .performScrollTo()
+          .assertIsDisplayed()
 
-    // Verify we're on the Search screen
-    composeTestRule.onNodeWithTag(SearchScreenTestTags.SEARCH_SCREEN).assertIsDisplayed()
+      // STEP 15: Verify the "Add Fit Photo" button is available
+      // Note: We cannot actually take a photo with the camera in an automated test because:
+      // - Clicking "Take Photo" launches the native Android camera app as a separate activity
+      // - This causes the Compose hierarchy to be lost (app goes to background)
+      // - ComposeTestRule can only interact with Compose UI in the foreground
+      //
+      //
+      // STEP 16: Skip photo selection for testing purposes
+      // In a real-world scenario, the user would select a photo here
+      // For automated testing, we'll proceed without it
+      // (Need to ask the coaches what can we do)
 
-    // This step don't work as we are on a local FireBase
-    //    // STEP 10: Search for "Greg" in the username field
-    //    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performClick()
-    //    composeTestRule.waitForIdle()
-    //    composeTestRule
-    //        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-    //        .performTextInput("Greg")
-    //    composeTestRule.waitForIdle()
+      // Since the Next button requires a valid photo, we cannot proceed further
 
-    //    // STEP 11: Wait for and click on the username suggestion
-    //    composeTestRule.waitUntil(timeoutMillis = 5000) {
-    //      composeTestRule
-    //          .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
-    //          .fetchSemanticsNodes()
-    //          .isNotEmpty()
-    //    }
-    //
-    //    // Click on the first suggestion (Greg)
-    //    composeTestRule
-    //        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-    //        .performClick()
-    //
-    //    composeTestRule.waitForIdle()
-    //
-    //    // STEP 12: Wait for the profile card to appear and click Follow button
-    //    composeTestRule.waitUntil(timeoutMillis = 5000) {
-    //      composeTestRule
-    //          .onAllNodesWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-    //          .fetchSemanticsNodes()
-    //          .isNotEmpty()
-    //    }
-    //
-    //
-    // composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
-    //    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
-    //    composeTestRule.waitForIdle()
+      // STEP 17: Navigate back to Feed screen from FitCheck
+      composeTestRule.onNodeWithTag(FitCheckScreenTestTags.BACK_BUTTON).performClick()
+      composeTestRule.waitForIdle()
 
-    // STEP 13: Click back button to return to Feed screen
-    composeTestRule.onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON).performClick()
-    composeTestRule.waitForIdle()
+      // Wait for Feed screen to appear again
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
 
-    // Wait for Feed screen to appear again
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Verify we're back on the Feed screen
+      composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+
+      // STEP 18: User clicks profile Icon to navigate to Account screen
+      // Wait for the AccountIcon to be fully initialized and visible
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Click on the account icon
       composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+          .onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER, useUnmergedTree = true)
+          .performClick()
 
-    // Verify we're back on the Feed screen
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+      composeTestRule.waitForIdle()
 
-    // STEP 14: Click "Do a Fit Check" button to start posting a new outfit
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Wait for Account screen to appear
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Verify we're on the Account screen
       composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.ADD_POST_FAB)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+          .onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
+          .performScrollTo()
+          .assertIsDisplayed()
 
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    composeTestRule.waitForIdle()
-
-    // Wait for FitCheck screen to appear
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Scroll to Sign Out button
       composeTestRule
-          .onAllNodesWithTag(FitCheckScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+          .onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON)
+          .performScrollTo()
+          .assertIsDisplayed()
 
-    // Verify we're on the FitCheck screen
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.SCREEN).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
-        .performScrollTo()
-        .assertIsDisplayed()
+      composeTestRule.waitForIdle()
 
-    // STEP 15: Verify the "Add Fit Photo" button is available
-    // Note: We cannot actually take a photo with the camera in an automated test because:
-    // - Clicking "Take Photo" launches the native Android camera app as a separate activity
-    // - This causes the Compose hierarchy to be lost (app goes to background)
-    // - ComposeTestRule can only interact with Compose UI in the foreground
-    //
+      // STEP 19: User clicks signout Button
+      composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performScrollTo().performClick()
 
-    // STEP 16: Skip photo selection for testing purposes
-    // In a real-world scenario, the user would select a photo here
-    // For automated testing, we'll proceed without it
-    // (Need to ask the coaches what can we do)
+      composeTestRule.waitForIdle()
 
-    // Since the Next button requires a valid photo, we cannot proceed further
+      // Wait for navigation back to Authentication screen after logout
+      composeTestRule.waitUntil(timeoutMillis = 10000) {
+        composeTestRule
+            .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
 
-    // STEP 17: Navigate back to Feed screen from FitCheck
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.BACK_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Wait for Feed screen to appear again
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Verify we're back on the Sign-In screen after logout
       composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
+          .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
+          .performScrollTo()
+          .assertIsDisplayed()
+      composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
     }
-
-    // Verify we're back on the Feed screen
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
-
-    // STEP 18: User clicks profile Icon to navigate to Account screen
-    // Wait for the AccountIcon to be fully initialized and visible
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Click on the account icon
-    composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER, useUnmergedTree = true)
-        .performClick()
-
-    composeTestRule.waitForIdle()
-
-    // Wait for Account screen to appear
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're on the Account screen
-    composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    // Scroll to Sign Out button
-    composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON)
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    composeTestRule.waitForIdle()
-
-    // STEP 19: User clicks signout Button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performScrollTo().performClick()
-
-    composeTestRule.waitForIdle()
-
-    // Wait for navigation back to Authentication screen after logout
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule
-          .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're back on the Sign-In screen after logout
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .performScrollTo()
-        .assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
   }
 }

@@ -3,7 +3,11 @@ package com.android.ootd.ui.register
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.account.TakenUserException
 import com.android.ootd.model.user.TakenUsernameException
+import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.utils.UsernameValidator
@@ -39,10 +43,12 @@ data class RegisterUserViewModel(
  * This ViewModel handles user registration by coordinating with the [UserRepository], managing UI
  * state, and handling errors such as duplicate usernames.
  *
- * @property repository The repository used to create new users. Defaults to the provided instance.
+ * @property userRepository The repository used to create new users. Defaults to the provided
+ *   instance.
  */
 class RegisterViewModel(
-    private val repository: UserRepository = UserRepositoryProvider.repository,
+    private val userRepository: UserRepository = UserRepositoryProvider.repository,
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
@@ -146,7 +152,9 @@ class RegisterViewModel(
   private fun loadUser(username: String) {
     viewModelScope.launch {
       try {
-        repository.createUser(username, auth.currentUser!!.uid)
+        val user = User(uid = auth.currentUser!!.uid, username = username)
+        userRepository.createUser(username, auth.currentUser!!.uid)
+        accountRepository.createAccount(user, uiState.value.dateOfBirth)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {
@@ -154,11 +162,23 @@ class RegisterViewModel(
             Log.e("RegisterViewModel", "Username taken", e)
             _uiState.value =
                 _uiState.value.copy(
-                    errorMsg = "This username has already been taken", username = "")
+                    errorMsg = "This username has already been taken",
+                    username = "",
+                    registered = false)
+          }
+          is TakenUserException -> {
+            Log.e("RegisterViewModel", "User already exists", e)
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMsg = "An account with this username already exists",
+                    username = "",
+                    registered = false)
           }
           else -> {
             Log.e("RegisterViewModel", "Error registering user", e)
-            _uiState.value = _uiState.value.copy(errorMsg = "Failed to register user: ${e.message}")
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMsg = "Failed to register user: ${e.message}", registered = false)
           }
         }
       } finally {

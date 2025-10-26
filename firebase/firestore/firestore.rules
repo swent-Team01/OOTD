@@ -38,6 +38,14 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Accounts: only owner can read/update, authenticated users can create
+    match /accounts/{accountId} {
+      allow read: if isAuthed() && accountId == request.auth.uid;
+      allow create: if isAuthed()
+        && accountId == request.auth.uid;
+      allow update, delete: if isAuthed() && accountId == request.auth.uid;
+    }
+
     // Posts: readable by author or mutual friends
     match /posts/{postId} {
       allow read: if isAuthed() &&

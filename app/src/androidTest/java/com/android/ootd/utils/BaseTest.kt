@@ -1,5 +1,7 @@
 package com.android.ootd.utils
 
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
@@ -34,6 +36,7 @@ abstract class BaseTest() {
   val feedRepository: FeedRepository
     get() = FeedRepositoryProvider.repository
 
+  lateinit var accountRepository: AccountRepository
   val outfitPostRepository: OutfitPostRepository
     get() = com.android.ootd.model.post.OutfitPostRepositoryProvider.repository
 
@@ -46,12 +49,14 @@ abstract class BaseTest() {
     assert(FirebaseEmulator.isRunning) { "FirebaseEmulator must be running" }
   }
 
-  open val user1 = User(uid = "0", username = "Hank", friendUids = arrayListOf())
+  open val user1 = User(uid = "0", username = "Hank")
 
-  open val user2 = User(uid = "1", username = "John", friendUids = arrayListOf())
+  open val user2 = User(uid = "1", username = "John")
 
   @Before
   open fun setUp() {
+    accountRepository = AccountRepositoryFirestore(db = FirebaseEmulator.firestore)
+    UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
     FeedRepositoryProvider.repository = FeedRepositoryFirestore(FirebaseEmulator.firestore)
     OutfitPostRepositoryProvider.repository =
         OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)

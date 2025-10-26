@@ -2,10 +2,10 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.android.ootd.model.account.Account
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.model.user.User
 import org.junit.Rule
 import org.junit.Test
 
@@ -48,7 +48,7 @@ class FeedScreenTest {
     FeedRepositoryProvider.repository = fakeRepo
     val viewModel =
         FeedViewModel().apply {
-          setCurrentUser(User(uid = "user1", username = "Tester", friendUids = emptyList()))
+          setCurrentAccount(Account(uid = "user1", username = "Tester", friendUids = emptyList()))
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
@@ -83,7 +83,7 @@ class FeedScreenTest {
     FeedRepositoryProvider.repository = fakeRepo
     val viewModel =
         FeedViewModel().apply {
-          setCurrentUser(User(uid = "user1", username = "Tester", friendUids = emptyList()))
+          setCurrentAccount(Account(uid = "user1", username = "Tester", friendUids = emptyList()))
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
