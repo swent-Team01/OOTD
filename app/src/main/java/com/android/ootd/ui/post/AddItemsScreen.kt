@@ -48,14 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -116,31 +112,19 @@ fun AddItemsScreen(
   var categoryExpanded by remember { mutableStateOf(false) }
   val itemsUIState by addItemsViewModel.uiState.collectAsState()
   var showDialog by remember { mutableStateOf(false) }
-  var currentImageSize by remember { mutableStateOf(maxImageSize) }
-  var imageScale by remember { mutableFloatStateOf(1f) }
 
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { addItemsViewModel.initTypeSuggestions(context) }
 
-  val density = LocalDensity.current
+  val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
+  val imageScaleState = remember { mutableFloatStateOf(1f) }
+
   val nestedScrollConnection =
-      remember(density) {
-        object : NestedScrollConnection {
-          override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            val deltaDp = with(density) { available.y.toDp() }
-
-            val previousImageSize = currentImageSize
-            val newImageSize = (previousImageSize + deltaDp).coerceIn(minImageSize, maxImageSize)
-            val consumedDp = newImageSize - previousImageSize
-
-            currentImageSize = newImageSize
-            imageScale = currentImageSize / maxImageSize
-
-            val consumedPx = with(density) { consumedDp.toPx() }
-            return Offset(0f, consumedPx)
-          }
-        }
-      }
+      rememberImageResizeScrollConnection(
+          currentImageSize = currentImageSizeState,
+          imageScale = imageScaleState,
+          minImageSize = minImageSize,
+          maxImageSize = maxImageSize)
 
   var cameraUri by remember { mutableStateOf<Uri?>(null) }
   val galleryLauncher =
@@ -189,7 +173,7 @@ fun AddItemsScreen(
               modifier =
                   Modifier.fillMaxWidth()
                       .padding(18.dp)
-                      .offset { IntOffset(0, currentImageSize.roundToPx()) }
+                      .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
                       .testTag(AddItemScreenTestTags.ALL_FIELDS),
               horizontalAlignment = Alignment.CenterHorizontally) {
                 item {
@@ -439,9 +423,10 @@ fun AddItemsScreen(
                   Modifier.size(maxImageSize)
                       .align(Alignment.TopCenter)
                       .graphicsLayer {
-                        scaleX = imageScale
-                        scaleY = imageScale
-                        translationY = -(maxImageSize.toPx() - currentImageSize.toPx()) / 2f
+                        scaleX = imageScaleState.floatValue
+                        scaleY = imageScaleState.floatValue
+                        translationY =
+                            -(maxImageSize.toPx() - currentImageSizeState.value.toPx()) / 2f
                       }
                       .clip(RoundedCornerShape(16.dp))
                       .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
