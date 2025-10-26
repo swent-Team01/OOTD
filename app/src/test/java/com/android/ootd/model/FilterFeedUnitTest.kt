@@ -1,8 +1,8 @@
 package com.android.ootd.model.feed
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.account.Account
+import com.android.ootd.model.posts.OutfitPost
 import kotlin.collections.listOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -102,6 +102,7 @@ class FilterFeedTest {
       currentAccount: Account
   ): List<OutfitPost> {
     val allowed = currentAccount.friendUids.toMutableSet()
-    return posts.filter { it.uid in allowed }
+    // OutfitPost stores the post owner's uid in `ownerId` (not `uid`).
+    return posts.filter { it.ownerId in allowed }
   }
 }
