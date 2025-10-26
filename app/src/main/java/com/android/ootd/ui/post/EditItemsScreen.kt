@@ -54,6 +54,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -107,22 +108,25 @@ fun EditItemsScreen(
   var currentImageSize by remember { mutableStateOf(maxImageSize) }
   var imageScale by remember { mutableFloatStateOf(1f) }
 
-  val nestedScrollConnection = remember {
-    object : NestedScrollConnection {
-      override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        val delta = available.y
-        val newImageSize = currentImageSize + delta.dp
-        val previousImageSize = currentImageSize
+  val density = LocalDensity.current
+  val nestedScrollConnection =
+      remember(density) {
+        object : NestedScrollConnection {
+          override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+            val deltaDp = with(density) { available.y.toDp() }
 
-        currentImageSize = newImageSize.coerceIn(minImageSize, maxImageSize)
-        val consumed = currentImageSize - previousImageSize
+            val previousImageSize = currentImageSize
+            val newImageSize = (previousImageSize + deltaDp).coerceIn(minImageSize, maxImageSize)
+            val consumedDp = newImageSize - previousImageSize
 
-        imageScale = currentImageSize / maxImageSize
+            currentImageSize = newImageSize
+            imageScale = currentImageSize / maxImageSize
 
-        return Offset(0f, consumed.value)
+            val consumedPx = with(density) { consumedDp.toPx() }
+            return Offset(0f, consumedPx)
+          }
+        }
       }
-    }
-  }
 
   val galleryLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?

@@ -49,13 +49,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -122,22 +122,25 @@ fun AddItemsScreen(
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { addItemsViewModel.initTypeSuggestions(context) }
 
-  val nestedScrollConnection = remember {
-    object : NestedScrollConnection {
-      override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        val delta = available.y
-        val newImageSize = currentImageSize + delta.dp
-        val previousImageSize = currentImageSize
+  val density = LocalDensity.current
+  val nestedScrollConnection =
+      remember(density) {
+        object : NestedScrollConnection {
+          override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+            val deltaDp = with(density) { available.y.toDp() }
 
-        currentImageSize = newImageSize.coerceIn(minImageSize, maxImageSize)
-        val consumed = currentImageSize - previousImageSize
+            val previousImageSize = currentImageSize
+            val newImageSize = (previousImageSize + deltaDp).coerceIn(minImageSize, maxImageSize)
+            val consumedDp = newImageSize - previousImageSize
 
-        imageScale = currentImageSize / maxImageSize
+            currentImageSize = newImageSize
+            imageScale = currentImageSize / maxImageSize
 
-        return Offset(0f, consumed.value)
+            val consumedPx = with(density) { consumedDp.toPx() }
+            return Offset(0f, consumedPx)
+          }
+        }
       }
-    }
-  }
 
   var cameraUri by remember { mutableStateOf<Uri?>(null) }
   val galleryLauncher =
@@ -201,10 +204,10 @@ fun AddItemsScreen(
                               Icon(
                                   painter = painterResource(R.drawable.ic_photo_placeholder),
                                   contentDescription = "Upload",
-                                  tint = White,
+                                  tint = Background,
                                   modifier = Modifier.size(16.dp))
                               Spacer(Modifier.width(8.dp))
-                              Text(text = "Upload a picture of the Item", color = White)
+                              Text(text = "Upload a picture of the Item", color = Background)
                             }
 
                         if (showDialog) {
@@ -416,7 +419,7 @@ fun AddItemsScreen(
                           Icon(
                               imageVector = Icons.Default.Add,
                               contentDescription = "Add",
-                              tint = White,
+                              tint = Background,
                               modifier = Modifier.size(20.dp))
                           Spacer(Modifier.width(8.dp))
 
