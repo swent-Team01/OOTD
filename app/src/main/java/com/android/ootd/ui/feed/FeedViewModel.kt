@@ -3,10 +3,10 @@ package com.android.ootd.ui.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
+import com.android.ootd.model.posts.OutfitPost
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

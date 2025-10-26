@@ -1,7 +1,7 @@
 package com.android.ootd.model.feed
 
-import com.android.ootd.model.OutfitPost
 import com.android.ootd.model.account.Account
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
