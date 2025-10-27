@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Person
@@ -27,7 +28,7 @@ sealed class Tab(val name: String, val icon: ImageVector, val destination: Scree
 
   object Search : Tab("Search", Icons.Outlined.Search, Screen.SearchScreen)
 
-  object Inventory : Tab("Inventory", Icons.Outlined.List, Screen.InventoryScreen)
+  object Inventory : Tab("Inventory", Icons.AutoMirrored.Outlined.List, Screen.InventoryScreen)
 
   object Profile : Tab("Profile", Icons.Outlined.Person, Screen.Account)
 }
@@ -56,7 +57,7 @@ fun BottomNavigationMenu(
   ) {
     tabs.forEach { tab ->
       NavigationBarItem(
-          icon = { Icon(imageVector = tab.icon, contentDescription = null) },
+          icon = { Icon(imageVector = tab.icon, contentDescription = "Navigate to ${tab.name}") },
           label = { Text(tab.name) },
           selected = tab == selectedTab,
           onClick = { onTabSelected(tab) },

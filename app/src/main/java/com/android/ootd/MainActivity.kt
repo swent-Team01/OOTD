@@ -66,7 +66,6 @@ class MainActivity : ComponentActivity() {
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
  */
 @Composable
-@Suppress("UnusedMaterial3ScaffoldPaddingParameter")
 fun OOTDApp(
     context: Context = LocalContext.current,
     credentialManager: CredentialManager = CredentialManager.create(context),
