@@ -122,7 +122,7 @@ class AccountRepositoryInMemory : AccountRepository {
     accounts.remove(userID)
   }
 
-  override suspend fun editProfile(userID: String, username: String, birthDay: String) {
+  override suspend fun editAccount(userID: String, username: String, birthDay: String) {
     val acc = getAccount(userID)
     accounts[userID] =
         acc.copy(

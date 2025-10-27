@@ -236,7 +236,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun editProfile(userID: String, username: String, birthDay: String) {
+  override suspend fun editAccount(userID: String, username: String, birthDay: String) {
     try {
       val user = getAccount(userID)
 

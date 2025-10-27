@@ -48,7 +48,7 @@ interface AccountRepository {
   suspend fun isMyFriend(userID: String, friendID: String): Boolean
 
   /**
-   * Allows the User to delete his profile
+   * Allows the User to delete his account
    *
    * @param userID Said users ID
    * @throws NoSuchElementException If the account does not exist
@@ -64,5 +64,5 @@ interface AccountRepository {
    * @throws com.android.ootd.model.user.TakenUsernameException If the username already exists
    * @throws IllegalStateException The userID does not match the users ID
    */
-  suspend fun editProfile(userID: String, username: String = "", birthDay: String = "")
+  suspend fun editAccount(userID: String, username: String = "", birthDay: String = "")
 }
