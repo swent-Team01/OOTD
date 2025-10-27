@@ -3,15 +3,14 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
-import android.net.Uri
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
-import com.android.ootd.model.user.UserRepository
-import com.android.ootd.model.user.UserRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +22,7 @@ import kotlinx.coroutines.launch
  *
  * @param username display name shown in the UI.
  * @param googleAccountName Google email associated with the signed-in account.
- * @param profilePicture optional URI for the profile picture.
+ * @param profilePicture URL string for the profile picture (empty if none).
  * @param errorMsg transient error message to show to the user.
  * @param signedOut set to true when sign-out completed.
  * @param isLoading true while loading remote data.
@@ -31,7 +30,7 @@ import kotlinx.coroutines.launch
 data class AccountViewState(
     val username: String = "",
     val googleAccountName: String = "",
-    val profilePicture: Uri? = null,
+    val profilePicture: String = "",
     val errorMsg: String? = null,
     val signedOut: Boolean = false,
     val isLoading: Boolean = false
@@ -40,39 +39,43 @@ data class AccountViewState(
 /**
  * ViewModel that exposes [AccountViewState] and handles account-related actions.
  *
- * It observes the current authenticated user from [AccountService], loads additional user data from
- * [UserRepository], and provides methods to refresh the state, sign out and clear transient errors.
+ * It observes the current authenticated user from [AccountService], loads additional account data
+ * from [AccountRepository], and provides methods to refresh the state, sign out and clear transient
+ * errors.
  *
  * @param accountService source of authentication state (defaults to Firebase).
- * @param userRepository source of user profile data.
+ * @param accountRepository source of account profile data.
  */
 class AccountViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
-    private val userRepository: UserRepository = UserRepositoryProvider.repository
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(AccountViewState())
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
-  private var lastLoadedUserId: String? = null
+  // Keep track of the last loaded account to avoid redundant loads
+  private var lastLoadedAccountId: String? = null
   private var isSigningOut: Boolean = false
 
   init {
     observeAuthState()
   }
 
-  /** Start observing auth state and update the UI when the current user changes. */
+  /** Start observing auth state and update the UI when the current account changes. */
   private fun observeAuthState() {
     viewModelScope.launch {
-      accountService.currentUser.collect { user ->
-        if (user != null) {
-          // Only load user data if we haven't loaded this user yet or it's a different user
-          if (lastLoadedUserId != user.uid) {
-            lastLoadedUserId = user.uid
-            loadUserData(user.uid, user.email.orEmpty(), user.photoUrl)
+      accountService.currentUser.collect { account ->
+        if (account != null) {
+          // Only load account data if we haven't loaded this account yet or it's a different
+          // account
+          if (lastLoadedAccountId != account.uid) {
+            lastLoadedAccountId = account.uid
+            // Pass Google photo URL as String fallback (may be null)
+            loadAccountData(account.uid, account.email.orEmpty(), account.photoUrl?.toString())
           }
         } else {
-          lastLoadedUserId = null
+          lastLoadedAccountId = null
           // Don't reset state if we're in the process of signing out
           if (!isSigningOut) {
             _uiState.update { AccountViewState() }
@@ -83,36 +86,44 @@ class AccountViewModel(
   }
 
   /**
-   * Load user profile from the repository and update [uiState].
+   * Load account profile from the repository and update [uiState].
    *
    * Runs inside a coroutine scope.
    */
-  private suspend fun loadUserData(uid: String, email: String, googlePhotoUri: Uri?) {
+  private suspend fun loadAccountData(uid: String, email: String, googlePhotoUrl: String?) {
     _uiState.update { it.copy(googleAccountName = email, isLoading = true) }
 
     try {
-      val currentUser = userRepository.getUser(uid)
+      val currentAccount = accountRepository.getAccount(uid)
+
+      // Use account profilePicture if available, otherwise fall back to Google photo URL
+      val profilePictureString =
+          if (currentAccount.profilePicture.isNotBlank()) {
+            currentAccount.profilePicture
+          } else {
+            googlePhotoUrl ?: ""
+          }
+
       _uiState.update {
         it.copy(
-            username = currentUser.username,
-            profilePicture =
-                currentUser.profilePicture.takeIf { it != Uri.EMPTY } ?: googlePhotoUri,
+            username = currentAccount.username,
+            profilePicture = profilePictureString,
             errorMsg = null,
             isLoading = false)
       }
     } catch (e: Exception) {
       _uiState.update {
         it.copy(
-            errorMsg = e.localizedMessage ?: "Failed to load user data",
+            errorMsg = e.localizedMessage ?: "Failed to load account data",
             isLoading = false,
             googleAccountName = email,
-            profilePicture = googlePhotoUri)
+            profilePicture = googlePhotoUrl ?: "")
       }
     }
   }
 
   /**
-   * Sign out the current user and clear platform credentials.
+   * Sign out the current account and clear platform credentials.
    *
    * @param credentialManager used to clear stored credentials after sign-out.
    */

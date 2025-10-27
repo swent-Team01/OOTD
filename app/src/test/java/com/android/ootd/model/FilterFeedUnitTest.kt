@@ -1,8 +1,8 @@
 package com.android.ootd.model.feed
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.model.account.Account
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.model.user.User
 import kotlin.collections.listOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -57,9 +57,10 @@ class FilterFeedTest {
                 timestamp = 3L),
         )
 
-    val currentUser = User(uid = "me", username = "Me", friendUids = listOf("u1", "u2"))
+    val currentAccount =
+        Account(uid = "me", ownerId = "me", username = "Me", friendUids = listOf("u1", "u2"))
 
-    val filtered = filterPostsByFriendsForTest(posts, currentUser)
+    val filtered = filterPostsByFriendsForTest(posts, currentAccount)
 
     assertEquals(listOf("p1", "p4"), filtered.map { it.postUID })
   }
@@ -88,18 +89,20 @@ class FilterFeedTest {
                 timestamp = 1L),
         )
 
-    val currentUser = User(uid = "me", username = "Me", friendUids = emptyList())
+    val currentAccount =
+        Account(uid = "me", ownerId = "me", username = "Me", friendUids = emptyList())
 
-    val filtered = filterPostsByFriendsForTest(posts, currentUser)
+    val filtered = filterPostsByFriendsForTest(posts, currentAccount)
 
     assertEquals(emptyList<String>(), filtered.map { it.postUID })
   }
 
   private fun filterPostsByFriendsForTest(
       posts: List<OutfitPost>,
-      currentUser: User
+      currentAccount: Account
   ): List<OutfitPost> {
-    val allowed = currentUser.friendUids.toMutableSet()
+    val allowed = currentAccount.friendUids.toMutableSet()
+    // OutfitPost stores the post owner's uid in `ownerId` (not `uid`).
     return posts.filter { it.ownerId in allowed }
   }
 }

@@ -17,7 +17,7 @@ const val POSTS_COLLECTION_PATH = "posts"
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
   private val ownerAttributeName = "ownerId"
 
-  override suspend fun getFeed(): List<OutfitPost> {
+  override suspend fun getUserPosts(): List<OutfitPost> {
     val ownerId =
         Firebase.auth.currentUser?.uid
             ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")

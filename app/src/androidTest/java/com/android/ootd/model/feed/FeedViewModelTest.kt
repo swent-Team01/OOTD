@@ -1,7 +1,7 @@
 package com.android.ootd.model.feed
 
+import com.android.ootd.model.account.Account
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.FeedViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,8 +25,8 @@ class FeedViewModelTest {
 
   @get:Rule val mainRule = MainDispatcherRule()
 
-  private fun user(uid: String, friendUids: List<String>) =
-      User(uid = uid, username = "U-$uid", friendUids = friendUids)
+  private fun account(uid: String, friendUids: List<String>) =
+      Account(uid = uid, ownerId = uid, username = "U-$uid", friendUids = friendUids)
 
   private fun post(id: String, uid: String, ts: Long) =
       OutfitPost(
@@ -44,7 +44,7 @@ class FeedViewModelTest {
     val vm = FeedViewModel(FakeFeedRepository())
     assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
     assertEquals(false, vm.uiState.value.hasPostedToday)
-    assertEquals(null, vm.uiState.value.currentUser)
+    assertEquals(null, vm.uiState.value.currentAccount)
   }
 
   @Test
@@ -52,7 +52,7 @@ class FeedViewModelTest {
     val repo = FakeFeedRepository().apply { setHasPostedToday("me", false) }
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentUser(user("me", listOf("me")))
+    vm.setCurrentAccount(account("me", listOf("me")))
     advanceUntilIdle()
 
     assertEquals(false, vm.uiState.value.hasPostedToday)
@@ -64,7 +64,7 @@ class FeedViewModelTest {
     val repo = FakeFeedRepository().apply { setHasPostedToday("me", true) }
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentUser(user("me", emptyList()))
+    vm.setCurrentAccount(account("me", emptyList()))
     advanceUntilIdle()
 
     assertTrue(vm.uiState.value.hasPostedToday)
@@ -81,7 +81,7 @@ class FeedViewModelTest {
         }
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentUser(user("me", listOf("me", "  me  ", "")))
+    vm.setCurrentAccount(account("me", listOf("me", "  me  ", "")))
     advanceUntilIdle()
 
     assertEquals(listOf("p1", "p2"), vm.uiState.value.feedPosts.map { it.postUID })
@@ -96,7 +96,7 @@ class FeedViewModelTest {
         }
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentUser(user("me", listOf("me")))
+    vm.setCurrentAccount(account("me", listOf("me")))
     advanceUntilIdle()
 
     assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)

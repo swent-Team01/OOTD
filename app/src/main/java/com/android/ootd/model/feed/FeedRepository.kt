@@ -6,11 +6,11 @@ import com.android.ootd.model.posts.OutfitPost
 interface FeedRepository {
 
   /**
-   * Retrieves all posts in the feed
+   * Retrieves all posts of the user in the feed
    *
    * @return A list of all posts.
    */
-  suspend fun getFeed(): List<OutfitPost>
+  suspend fun getUserPosts(): List<OutfitPost>
 
   /**
    * Retrieves posts authored by any of the provided user IDs. Implementations should query using
@@ -24,7 +24,6 @@ interface FeedRepository {
    * @return false if hasn't posted, true if he has posted
    */
   suspend fun hasPostedToday(userId: String): Boolean
-  // This should be in the user data, but I leave it here for the moment for testing the screen
 
   /**
    * Adds user's post to the feed
@@ -32,7 +31,6 @@ interface FeedRepository {
    * @param post the user's post for the day
    */
   suspend fun addPost(post: OutfitPost)
-  // I am really not sure if this function should be here
 
   /** Generates a unique post ID. */
   fun getNewPostId(): String

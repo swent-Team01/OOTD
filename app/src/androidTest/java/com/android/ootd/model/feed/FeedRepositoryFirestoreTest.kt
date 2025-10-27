@@ -53,8 +53,9 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun addPost_writesDocumentWithGivenId() = runTest {
+  fun addPost_writesDocumentWithGivenId() = runBlocking {
     val p = samplePost("explicit-id-123", ts = 42L)
+
     feedRepository.addPost(p)
 
     val doc = db.collection(POSTS_COLLECTION_PATH).document("explicit-id-123").get().await()
@@ -87,7 +88,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     val badDb = firestoreForApp(appName = "feed-repo-bad", host = "10.0.2.2", port = 6553)
     val badRepo = FeedRepositoryFirestore(badDb)
 
-    val result = badRepo.getFeedForUids(listOf(currentUid))
+    val result = badRepo.getUserPosts(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
@@ -101,14 +102,14 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     runCatching { badRepo.addPost(p) }
 
     // Same instance: may or may not show local write depending on timing/timeout
-    val sameInstance = badRepo.getFeedForUids(listOf(currentUid))
+    val sameInstance = badRepo.getUserPosts(listOf(currentUid))
     assertTrue(sameInstance.isEmpty() || sameInstance.any { it.postUID == "will-fail" })
 
     // Fresh misconfigured instance has no local cache, so read is empty
     val badDbReader =
         firestoreForApp(appName = "feed-repo-bad2-reader", host = "10.0.2.2", port = 6553)
     val badRepoReader = FeedRepositoryFirestore(badDbReader)
-    val freshRead = badRepoReader.getFeedForUids(listOf(currentUid))
+    val freshRead = badRepoReader.getUserPosts(listOf(currentUid))
     assertTrue(freshRead.isEmpty())
   }
 
@@ -135,7 +136,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
   fun getFeed_throwsException_caughtAndReturnsEmptyList() = runTest {
     val invalidDb = firestoreForApp("feedrepo-throws", "localhost", 65533) // unreachable
     val repo = FeedRepositoryFirestore(invalidDb)
-    val result = repo.getFeedForUids(listOf(currentUid))
+    val result = repo.getUserPosts(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
@@ -153,7 +154,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
       // Offline ack path: verify a fresh misconfigured repo cannot read it
       val freshDb = firestoreForApp("feedrepo-addpost-fail-reader", "localhost", 65532)
       val freshRepo = FeedRepositoryFirestore(freshDb)
-      val freshRead = freshRepo.getFeedForUids(listOf(currentUid))
+      val freshRead = freshRepo.getUserPosts(listOf(currentUid))
       assertTrue(freshRead.isEmpty())
     }
   }
