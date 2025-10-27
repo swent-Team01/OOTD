@@ -32,6 +32,7 @@ data class EditItemsUIState(
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
+    val ownerId: String = ""
 ) {
   val isEditValid: Boolean
     get() =
@@ -98,7 +99,8 @@ open class EditItemsViewModel(
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
             material = item.material.filterNotNull(),
-            link = item.link ?: "")
+            link = item.link ?: "",
+            ownerId = item.ownerId)
   }
 
   /** Loads an item by its UUID directly from the repository. */
@@ -130,7 +132,6 @@ open class EditItemsViewModel(
       setErrorMsg("Please enter a valid URL.")
       return false
     }
-
     editItemsInRepository(
         Item(
             uuid = state.itemId,
@@ -140,7 +141,8 @@ open class EditItemsViewModel(
             brand = state.brand,
             price = state.price,
             material = state.material,
-            link = state.link))
+            link = state.link,
+            ownerId = state.ownerId))
     return true
   }
 
