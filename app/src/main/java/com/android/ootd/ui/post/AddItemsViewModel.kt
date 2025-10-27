@@ -262,18 +262,20 @@ open class AddItemsViewModel(
   //    }
 
   fun setPhoto(uri: Uri) =
-      viewModelScope.launch {
-        if (uri == Uri.EMPTY) {
-          _uiState.value =
-              _uiState.value.copy(
-                  localPhotoUri = null,
-                  image = ImageData("", ""),
-                  invalidPhotoMsg = "Please select a photo.")
-        } else {
-          _uiState.value =
-              _uiState.value.copy(
-                  localPhotoUri = uri, image = ImageData("", ""), invalidPhotoMsg = null)
-        }
+      if (uri == Uri.EMPTY) {
+        _uiState.value =
+            _uiState.value.copy(
+                localPhotoUri = null,
+                image = ImageData("", ""),
+                invalidPhotoMsg = "Please select a photo.",
+                errorMessage = null)
+      } else {
+        _uiState.value =
+            _uiState.value.copy(
+                localPhotoUri = uri,
+                image = ImageData("", ""),
+                invalidPhotoMsg = null,
+                errorMessage = null)
       }
 
   private suspend fun uploadImageToFirebase(): ImageData {

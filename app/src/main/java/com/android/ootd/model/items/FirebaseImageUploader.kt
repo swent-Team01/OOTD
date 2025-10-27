@@ -3,6 +3,7 @@ package com.android.ootd.model.items
 import android.net.Uri
 import android.util.Log
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
 
@@ -34,7 +35,8 @@ object FirebaseImageUploader {
     val ref = storage ?: return ImageData("", "")
 
     return try {
-      val imageRef = ref.child("images/$fileName.jpg")
+      val sanitizedFileName = refactorFileName(fileName)
+      val imageRef = ref.child("images/$sanitizedFileName.jpg")
       imageRef.putFile(localUri).await()
       val downloadUrl = imageRef.downloadUrl.await()
       ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
@@ -48,12 +50,24 @@ object FirebaseImageUploader {
     if (imageId.isEmpty()) return false
     val ref = storage ?: return true
     return try {
-      val imageRef = ref.child("images/$imageId.jpg")
+      val sanitizedImageId = refactorFileName(imageId)
+      val imageRef = ref.child("images/$sanitizedImageId.jpg")
       imageRef.delete().await()
       true
     } catch (e: Exception) {
-      Log.e("FirebaseImageUploader", "Image deletion failed", e)
-      false
+      // If the image does not exist, consider it a successful deletion because if the object is
+      // already missing, that post-condition is still true
+      if (e is StorageException && e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) {
+        Log.w("FirebaseImageUploader", "Image not found for deletion: $imageId")
+        true
+      } else {
+        Log.e("FirebaseImageUploader", "Image deletion failed", e)
+        false
+      }
     }
+  }
+
+  private fun refactorFileName(original: String): String {
+    return original.trim().replace("\\s+".toRegex(), "_").replace("[^A-Za-z0-9_.-]".toRegex(), "_")
   }
 }

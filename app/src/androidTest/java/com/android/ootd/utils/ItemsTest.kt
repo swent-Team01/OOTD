@@ -130,14 +130,10 @@ interface ItemsTest {
     item.link?.let { enterAddItemLink(it) }
 
     ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER)
     onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER, useUnmergedTree = true).performClick()
 
     waitForIdle()
-
-    waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
     onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
-
     onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
 
     runOnIdle { viewModel.setPhoto(testUri) }

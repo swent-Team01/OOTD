@@ -569,33 +569,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     }
   }
 
-  //  @OptIn(ExperimentalCoroutinesApi::class)
-  //  @Test
-  //  fun canAddItemsReturnsTrueWithValidData() = runTest {
-  //    val uri = "content://dummy/photo.jpg".toUri()
-  //    composeTestRule.runOnIdle {
-  //      viewModel.setPhoto(uri)
-  //      viewModel.setCategory("Clothing")
-  //      viewModel.validateCategory()
-  //    }
-  //
-  //    advanceUntilIdle()
-  //    composeTestRule.waitForIdle()
-  //
-  //    composeTestRule.runOnIdle {
-  //      viewModel.onAddItemClick()
-  //    }
-  //
-  //    advanceUntilIdle()
-  //    composeTestRule.waitForIdle()
-  //
-  //
-  //    composeTestRule.runOnIdle {
-  //      assert(viewModel.addOnSuccess.value)
-  //      assert(viewModel.uiState.value.errorMessage == null)
-  //    }
-  //  }
-
   @Test
   fun setPhotoWithEmptyUriSetsError() {
     composeTestRule.runOnIdle {
