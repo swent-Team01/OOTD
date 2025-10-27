@@ -258,9 +258,9 @@ class AccountRepositoryInMemoryTest {
   }
 
   @Test
-  fun removeAccount_successfullyRemovesAccount() {
+  fun deleteAccount_successfullyRemovesAccount() {
     // Perform removal inside a runTest to call suspend code if needed
-    runTest { repository.removeAccount("user5") }
+    runTest { repository.deleteAccount("user5") }
 
     val exception =
         assertThrows(NoSuchElementException::class.java) {

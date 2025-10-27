@@ -117,8 +117,16 @@ class AccountRepositoryInMemory : AccountRepository {
     return account.friendUids.isNotEmpty() && account.friendUids.any { it == friendID }
   }
 
-  // Useful for testing
-  fun removeAccount(uid: String) {
-    accounts.remove(uid)
+  // replaces removeAccount
+  override suspend fun deleteAccount(userID: String) {
+    accounts.remove(userID)
+  }
+
+  override suspend fun editProfile(userID: String, username: String, birthDay: String) {
+    val acc = getAccount(userID)
+    accounts[userID] =
+        acc.copy(
+            username = username.takeIf { it.isNotBlank() } ?: acc.username,
+            birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday)
   }
 }
