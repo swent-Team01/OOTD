@@ -22,7 +22,9 @@ private fun Account.toFirestoreMap(): Map<String, Any> =
         "birthday" to birthday,
         "googleAccountEmail" to googleAccountEmail,
         "profilePicture" to profilePicture,
-        "friendUids" to friendUids)
+        "friendUids" to friendUids,
+        "isPrivate" to isPrivate,
+    )
 
 /** Convert Firestore DocumentSnapshot to domain Account (uses document id as uid) */
 private fun DocumentSnapshot.toAccount(): Account {
@@ -30,6 +32,7 @@ private fun DocumentSnapshot.toAccount(): Account {
   val birthday = getString("birthday") ?: ""
   val email = getString("googleAccountEmail") ?: ""
   val picture = getString("profilePicture") ?: ""
+  val isPrivate = getBoolean("isPrivate") ?: false
 
   // Validate that friendUids is actually a List, throw if not
   val friendUidsRaw = get("friendUids")
@@ -51,7 +54,8 @@ private fun DocumentSnapshot.toAccount(): Account {
       birthday = birthday,
       googleAccountEmail = email,
       profilePicture = picture,
-      friendUids = friends)
+      friendUids = friends,
+      isPrivate = isPrivate)
 }
 
 class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRepository {
