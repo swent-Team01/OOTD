@@ -61,7 +61,7 @@ interface AccountRepository {
    * @param userID Said users ID
    * @param username Users new username, blank by default
    * @param birthDay Users updated date of birth, blank by default
-   * @throws com.android.ootd.model.user.TakenUsernameException If the username already exists
+   * @throws TakenUserException If the username already exists
    * @throws IllegalStateException The userID does not match the users ID
    */
   suspend fun editAccount(userID: String, username: String = "", birthDay: String = "")

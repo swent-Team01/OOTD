@@ -365,4 +365,47 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertTrue(exception is IllegalStateException)
     assertTrue(exception?.message?.contains("Failed to transform") == true)
   }
+
+  // New tests for edit and delete account
+  @Test
+  fun editAccount_updatesUsernameAndBirthday() = runTest {
+    accountRepository.addAccount(account1)
+
+    val newUsername = "new_username"
+    val newBirthday = "1990-01-01"
+
+    accountRepository.editAccount(account1.uid, username = newUsername, birthDay = newBirthday)
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+  }
+
+  @Test
+  fun editAccount_keepsValuesWhenBlank() = runTest {
+    accountRepository.addAccount(account1)
+
+    // Pass blank values - should preserve existing data
+    accountRepository.editAccount(account1.uid, username = "", birthDay = "")
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(account1.username, updated.username)
+    assertEquals(account1.birthday, updated.birthday)
+  }
+
+  @Test
+  fun deleteAccount_successfullyDeletesAccount() = runTest {
+    accountRepository.addAccount(account1)
+
+    accountRepository.deleteAccount(account1.uid)
+
+    val exception = runCatching { accountRepository.getAccount(account1.uid) }.exceptionOrNull()
+    assertTrue(exception is NoSuchElementException)
+  }
+
+  @Test
+  fun deleteAccount_throwsWhenAccountNotFound() = runTest {
+    val exception = runCatching { accountRepository.deleteAccount("nonexistent") }.exceptionOrNull()
+    assertTrue(exception is UnknowUserID)
+  }
 }

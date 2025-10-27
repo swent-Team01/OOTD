@@ -119,7 +119,11 @@ class AccountRepositoryInMemory : AccountRepository {
 
   // replaces removeAccount
   override suspend fun deleteAccount(userID: String) {
-    accounts.remove(userID)
+    if (accounts.containsKey(userID)) {
+      accounts.remove(userID)
+    } else {
+      throw NoSuchElementException("Account with ID $userID not found")
+    }
   }
 
   override suspend fun editAccount(userID: String, username: String, birthDay: String) {

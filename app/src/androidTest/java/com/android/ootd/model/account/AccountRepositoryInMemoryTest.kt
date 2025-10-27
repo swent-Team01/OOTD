@@ -269,4 +269,71 @@ class AccountRepositoryInMemoryTest {
 
     assertEquals("Account with ID user5 not found", exception.message)
   }
+
+  @Test
+  fun deleteAccount_throwsWhenAccountNotFound() {
+    val exception =
+        assertThrows(NoSuchElementException::class.java) {
+          runTest { repository.deleteAccount("nonexistent") }
+        }
+
+    assertEquals("Account with ID nonexistent not found", exception.message)
+  }
+
+  @Test
+  fun editAccount_updatesUsernameAndBirthday() = runTest {
+    val newUsername = "new_alice"
+    val newBirthday = "1995-05-15"
+
+    repository.editAccount("user1", username = newUsername, birthDay = newBirthday)
+
+    val updated = repository.getAccount("user1")
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+  }
+
+  @Test
+  fun editAccount_keepsUsernameWhenBlank() = runTest {
+    val originalAccount = repository.getAccount("user1")
+    val newBirthday = "1990-01-01"
+
+    repository.editAccount("user1", username = "", birthDay = newBirthday)
+
+    val updated = repository.getAccount("user1")
+    assertEquals(originalAccount.username, updated.username) // Username unchanged
+    assertEquals(newBirthday, updated.birthday) // Birthday updated
+  }
+
+  @Test
+  fun editAccount_keepsBirthdayWhenBlank() = runTest {
+    val originalAccount = repository.getAccount("user1")
+    val newUsername = "updated_alice"
+
+    repository.editAccount("user1", username = newUsername, birthDay = "")
+
+    val updated = repository.getAccount("user1")
+    assertEquals(newUsername, updated.username) // Username updated
+    assertEquals(originalAccount.birthday, updated.birthday) // Birthday unchanged
+  }
+
+  @Test
+  fun editAccount_keepsAllValuesWhenBothBlank() = runTest {
+    val originalAccount = repository.getAccount("user1")
+
+    repository.editAccount("user1", username = "", birthDay = "")
+
+    val updated = repository.getAccount("user1")
+    assertEquals(originalAccount.username, updated.username)
+    assertEquals(originalAccount.birthday, updated.birthday)
+  }
+
+  @Test
+  fun editAccount_throwsWhenAccountNotFound() {
+    val exception =
+        assertThrows(NoSuchElementException::class.java) {
+          runTest { repository.editAccount("nonexistent", username = "new_name") }
+        }
+
+    assertEquals("Account with ID nonexistent not found", exception.message)
+  }
 }
