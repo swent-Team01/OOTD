@@ -10,10 +10,9 @@ import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
+const val OWNER_ATTRIBUTE_NAME = "ownerId"
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
-
-  private val ownerAttributeName = "ownerId"
 
   override fun getNewItemId(): String {
     return db.collection(ITEMS_COLLECTION).document().id
@@ -24,7 +23,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
         Firebase.auth.currentUser?.uid
             ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
     val snapshot =
-        db.collection(ITEMS_COLLECTION).whereEqualTo(ownerAttributeName, ownerId).get().await()
+        db.collection(ITEMS_COLLECTION).whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId).get().await()
     return snapshot.mapNotNull { mapToItem(it) }
   }
 
