@@ -37,26 +37,10 @@ service cloud.firestore {
     }
 
     // Posts: readable by author or mutual friends
-    match /outfit_posts/{postId} {
-      allow read: if isAuthed() &&
-                  (resource == null || resource.data.ownerId == request.auth.uid ||
-                   isFriend(request.auth.uid, resource.data.ownerId));
-
-      allow create: if isAuthed()
-        && request.resource.data.ownerId == request.auth.uid;
-
-      allow update: if isAuthed()
-                 && resource.data.ownerId == request.auth.uid;
-
-      allow delete: if isAuthed()
-             && (resource == null || resource.data.ownerId == request.auth.uid);
-
-    }
-
-    // Posts: readable by author or mutual friends
     match /posts/{postId} {
       allow read: if isAuthed() &&
-                              (resource == null || resource.data.ownerId == request.auth.uid);
+                              (resource == null || resource.data.ownerId == request.auth.uid ||
+                                                 isFriend(request.auth.uid, resource.data.ownerId));
     allow create: if isAuthed()
         && request.resource.data.ownerId == request.auth.uid;
 
