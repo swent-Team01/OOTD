@@ -36,8 +36,6 @@ class FeedScreenTest {
         object : FeedRepository {
           override suspend fun hasPostedToday(userId: String) = false
 
-          override suspend fun getUserPosts() = emptyList<OutfitPost>()
-
           override suspend fun getFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
 
           override suspend fun addPost(post: OutfitPost) {}
@@ -69,8 +67,6 @@ class FeedScreenTest {
     val fakeRepo =
         object : FeedRepository {
           override suspend fun hasPostedToday(userId: String) = true
-
-          override suspend fun getUserPosts() = fakePosts
 
           override suspend fun getFeedForUids(uids: List<String>) =
               fakePosts.filter { it.ownerId in uids }

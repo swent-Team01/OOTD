@@ -2,10 +2,8 @@ package com.android.ootd.model.feed
 
 import android.util.Log
 import com.android.ootd.model.posts.OutfitPost
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
-import com.google.firebase.ktx.Firebase
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
@@ -16,30 +14,6 @@ const val POSTS_COLLECTION_PATH = "posts"
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
   private val ownerAttributeName = "ownerId"
-
-  override suspend fun getUserPosts(): List<OutfitPost> {
-    val ownerId =
-        Firebase.auth.currentUser?.uid
-            ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
-    return try {
-      val snapshot =
-          withTimeout(5_000) {
-            db.collection(POSTS_COLLECTION_PATH)
-                .whereEqualTo(ownerAttributeName, ownerId)
-                .orderBy("timestamp")
-                .get()
-                .await()
-          }
-
-      snapshot.toObjects<OutfitPost>()
-    } catch (e: TimeoutCancellationException) {
-      Log.w("FeedRepositoryFirestore", "Timed out fetching feed; returning empty list", e)
-      emptyList()
-    } catch (e: Exception) {
-      Log.e("FeedRepositoryFirestore", "Error fetching feed", e)
-      emptyList()
-    }
-  }
 
   override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
     if (uids.isEmpty()) return emptyList()

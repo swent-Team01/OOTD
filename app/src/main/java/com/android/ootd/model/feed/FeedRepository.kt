@@ -6,13 +6,6 @@ import com.android.ootd.model.posts.OutfitPost
 interface FeedRepository {
 
   /**
-   * Retrieves all posts of the user in the feed
-   *
-   * @return A list of all posts.
-   */
-  suspend fun getUserPosts(): List<OutfitPost>
-
-  /**
    * Retrieves posts authored by any of the provided user IDs. Implementations should query using
    * whereIn in chunks of 10 and sort by timestamp ascending.
    */
