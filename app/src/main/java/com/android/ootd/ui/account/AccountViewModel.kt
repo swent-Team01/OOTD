@@ -146,4 +146,27 @@ class AccountViewModel(
   fun clearErrorMsg() {
     _uiState.update { it.copy(errorMsg = null) }
   }
+
+  /**
+   * Update the username for the current account.
+   *
+   * @param newUsername the new username to set
+   */
+  fun editUsername(newUsername: String = "", newDate: String = "") {
+    viewModelScope.launch {
+      _uiState.update { it.copy(isLoading = true) }
+
+      try {
+        val currentUserId = accountService.currentUserId
+
+        accountRepository.editAccount(currentUserId, newUsername, newDate)
+
+        _uiState.update { it.copy(username = newUsername, isLoading = false, errorMsg = null) }
+      } catch (e: Exception) {
+        _uiState.update {
+          it.copy(errorMsg = e.localizedMessage ?: "Failed to update username", isLoading = false)
+        }
+      }
+    }
+  }
 }
