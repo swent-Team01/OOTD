@@ -10,8 +10,6 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +32,7 @@ data class EditItemsUIState(
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
+    val ownerId: String = ""
 ) {
   val isEditValid: Boolean
     get() =
@@ -100,7 +99,8 @@ open class EditItemsViewModel(
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
             material = item.material.filterNotNull(),
-            link = item.link ?: "")
+            link = item.link ?: "",
+            ownerId = item.ownerId)
   }
 
   /** Loads an item by its UUID directly from the repository. */
@@ -132,7 +132,6 @@ open class EditItemsViewModel(
       setErrorMsg("Please enter a valid URL.")
       return false
     }
-    val ownerId = Firebase.auth.currentUser?.uid ?: ""
     editItemsInRepository(
         Item(
             uuid = state.itemId,
@@ -143,7 +142,7 @@ open class EditItemsViewModel(
             price = state.price,
             material = state.material,
             link = state.link,
-            ownerId = ownerId))
+            ownerId = state.ownerId))
     return true
   }
 
