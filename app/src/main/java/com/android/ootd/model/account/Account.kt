@@ -18,5 +18,6 @@ data class Account(
     val birthday: String = "",
     val googleAccountEmail: String = "",
     val profilePicture: String = "",
-    val friendUids: List<String> = emptyList()
+    val friendUids: List<String> = emptyList(),
+    val isPrivate: Boolean = false
 )

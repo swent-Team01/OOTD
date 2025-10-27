@@ -219,6 +219,26 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
         myAccount.friendUids.any { it == friendID })
   }
 
+  override suspend fun togglePrivacy(userID: String): Boolean {
+    val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+
+    if (!document.exists()) {
+      throw NoSuchElementException("The authenticated user has not been added to the database")
+    }
+
+    val myAccount =
+        transformAccountDocument(document)
+            ?: throw IllegalStateException("Failed to transform document with ID $userID")
+
+    val newPrivacySetting = !myAccount.isPrivate
+    db.collection(ACCOUNT_COLLECTION_PATH)
+        .document(userID)
+        .update("isPrivate", newPrivacySetting)
+        .await()
+
+    return newPrivacySetting
+  }
+
   private suspend fun userExists(user: User): Boolean {
     if (user.username.isBlank()) return false
 
