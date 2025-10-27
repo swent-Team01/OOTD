@@ -153,7 +153,7 @@ class FeedViewModelTest {
       return hasPosted[userId] ?: false
     }
 
-    override suspend fun getFeed(): List<OutfitPost> {
+    override suspend fun getUserPosts(): List<OutfitPost> {
       return postsByUid.values
           .flatten()
           .sortedWith(compareBy<OutfitPost> { it.timestamp }.thenBy { it.postUID })

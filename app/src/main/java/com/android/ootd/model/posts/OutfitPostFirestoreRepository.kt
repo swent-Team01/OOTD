@@ -51,7 +51,7 @@ class OutfitPostRepositoryFirestore(
         mapOf(
             "postUID" to post.postUID,
             "name" to post.name,
-            "ownerID" to post.ownerId,
+            "ownerId" to post.ownerId,
             "userProfilePicURL" to post.userProfilePicURL,
             "outfitURL" to post.outfitURL,
             "description" to post.description,
