@@ -23,7 +23,7 @@ import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import junit.framework.TestCase
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -57,11 +57,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterCategory() {
     val text = "clothes"
     composeTestRule.enterAddItemCategory(text)
-    //
-    // composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).assertTextContains(text)
-    //    composeTestRule
-    //        .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-    //        .assertIsNotDisplayed()
   }
 
   @Test
@@ -117,13 +112,12 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun enteringInvalidCategoryShowsErrorMessageThenTheCorrectCategory() {
-    // viewModel = AddItemsViewModel(repository)
     // Type invalid category
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
 
     composeTestRule.runOnIdle {
       assert(viewModel.uiState.value.invalidCategory != null)
-      TestCase.assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
+      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
     }
 
     composeTestRule
@@ -824,5 +818,43 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule
         .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
         .assertCountEquals(0)
+  }
+
+  @Test
+  fun uploadingOverlay_isNotVisible_whenNotLoading() {
+    // Initially, isLoading should be false
+    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
+
+    // Verify the overlay text is not visible
+    composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
+  }
+
+  @Test
+  fun uploadingOverlay_hidesAfterItemAdded() = runTest {
+    // Set up valid item data
+    val uri = "content://dummy/photo.jpg".toUri()
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("T-Shirt")
+    composeTestRule.enterAddItemBrand("Nike")
+    composeTestRule.enterAddItemPrice(19.99)
+
+    composeTestRule.waitForIdle()
+
+    // Trigger add item
+    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
+
+    // Wait for the operation to complete
+    composeTestRule.waitForIdle()
+    kotlinx.coroutines.delay(1000) // Give time for async operation
+
+    // Verify loading is no longer shown after completion
+    composeTestRule.runOnIdle {
+      // After the operation completes, isLoading should be false
+      assert(!viewModel.uiState.value.isLoading)
+    }
+
+    // Verify overlay text is not visible
+    composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
   }
 }

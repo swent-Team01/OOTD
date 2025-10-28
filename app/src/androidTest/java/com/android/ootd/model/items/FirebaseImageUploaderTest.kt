@@ -256,4 +256,30 @@ class FirebaseImageUploaderTest : FirestoreTest() {
       assertTrue(deleteResult)
     }
   }
+
+  @Test
+  fun uploadImageWithInvalidUri() = runBlocking {
+    // Test uploading with an invalid URI that cannot be read
+    val invalidUri = Uri.parse("content://invalid/nonexistent/file.jpg")
+    val fileName = "test_invalid_uri"
+
+    val result = FirebaseImageUploader.uploadImage(invalidUri, fileName)
+
+    // Should return empty ImageData due to upload failure
+    assertEquals("", result.imageId)
+    assertEquals("", result.imageUrl)
+  }
+
+  @Test
+  fun uploadImageWithNonExistentFile() = runBlocking {
+    // Test uploading a file URI that doesn't exist
+    val nonExistentFile = Uri.parse("file:///path/to/nonexistent/file.jpg")
+    val fileName = "test_nonexistent_file"
+
+    val result = FirebaseImageUploader.uploadImage(nonExistentFile, fileName)
+
+    // Should fail gracefully and return empty ImageData
+    assertEquals("", result.imageId)
+    assertEquals("", result.imageUrl)
+  }
 }

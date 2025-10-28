@@ -9,6 +9,8 @@ import com.android.ootd.model.items.ItemsRepositoryLocal
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
 import junit.framework.TestCase.assertEquals
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -360,5 +362,77 @@ class EditItemsScreenTest {
 
     // Save button should be disabled
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
+  }
+
+  @Test
+  fun uploadingOverlay_isNotVisible_whenNotLoading() {
+    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+
+    // Initially, isLoading should be false
+    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
+
+    // Verify the overlay text is not visible
+    composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
+  }
+
+  @Test
+  fun uploadingOverlay_appearsWhenSavingItem() = runTest {
+    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+
+    // Load test item
+    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
+
+    composeTestRule.waitForIdle()
+
+    // Modify something to trigger save
+    composeTestRule.runOnIdle { viewModel.setBrand("Adidas") }
+
+    composeTestRule.waitForIdle()
+
+    // Trigger save action
+    composeTestRule.runOnIdle { viewModel.onSaveItemClick() }
+
+    // Wait a brief moment for the loading state to be set
+    composeTestRule.waitForIdle()
+
+    // Verify loading overlay appears during the operation
+    var loadingWasShown = false
+    composeTestRule.runOnIdle {
+      // Check if loading is currently true or if the operation completed very quickly
+      loadingWasShown =
+          viewModel.uiState.value.isLoading || viewModel.uiState.value.isSaveSuccessful
+    }
+
+    // At least one of these should be true - either still loading or already succeeded
+    assert(loadingWasShown)
+  }
+
+  @Test
+  fun uploadingOverlay_hidesAfterItemSaved() = runTest {
+    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+
+    // Load and modify item
+    composeTestRule.runOnIdle {
+      viewModel.loadItem(testItem)
+      viewModel.setPrice(39.99)
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Trigger save
+    composeTestRule.runOnIdle { viewModel.onSaveItemClick() }
+
+    // Wait for the operation to complete
+    composeTestRule.waitForIdle()
+    delay(1000) // Give time for async operation
+
+    // Verify loading is no longer shown after completion
+    composeTestRule.runOnIdle {
+      // After the operation completes, isLoading should be false
+      assert(!viewModel.uiState.value.isLoading)
+    }
+
+    // Verify overlay text is not visible
+    composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
   }
 }

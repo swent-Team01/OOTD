@@ -37,7 +37,8 @@ data class EditItemsUIState(
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
     val isSaveSuccessful: Boolean = false,
-    val ownerId: String = ""
+    val ownerId: String = "",
+    val isLoading: Boolean = false
 ) {
   val isEditValid: Boolean
     get() =
@@ -134,6 +135,7 @@ open class EditItemsViewModel(
     }
 
     viewModelScope.launch {
+      _uiState.value = _uiState.value.copy(isLoading = true)
       val finalImage =
           if (state.localPhotoUri != null)
               FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
@@ -156,10 +158,13 @@ open class EditItemsViewModel(
               ownerId = state.ownerId)
 
       try {
-        _uiState.value = _uiState.value.copy(isSaveSuccessful = true)
+        _uiState.value =
+            _uiState.value.copy(image = finalImage, errorMessage = null, isSaveSuccessful = true)
         repository.editItem(updatedItem.itemUuid, updatedItem)
       } catch (e: Exception) {
         setErrorMsg("Failed to update item: ${e.message}")
+      } finally {
+        _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
   }

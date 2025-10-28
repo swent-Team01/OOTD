@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -61,6 +64,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
 import java.io.File
 
 object EditItemsScreenTestTags {
@@ -143,229 +147,246 @@ fun EditItemsScreen(
     }
   }
 
-  Scaffold(
-      topBar = {
-        TopAppBar(
-            title = { Text("Edit Item", style = MaterialTheme.typography.titleLarge) },
-            navigationIcon = {
-              IconButton(onClick = goBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Go Back")
-              }
-            })
-      },
-      content = { innerPadding ->
-        Box(
-            modifier =
-                Modifier.fillMaxSize().padding(innerPadding).nestedScroll(nestedScrollConnection)) {
-              LazyColumn(
-                  modifier =
-                      Modifier.fillMaxWidth().padding(16.dp).offset {
-                        IntOffset(0, currentImageSizeState.value.roundToPx())
-                      },
-                  verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    item {
-                      Row(
-                          modifier = Modifier.fillMaxWidth(),
-                          horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { galleryLauncher.launch("image/*") },
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY),
-                                colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                                  Text("Select from Gallery")
-                                }
-                            Button(
-                                onClick = {
-                                  val file =
-                                      File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-                                  val uri =
-                                      FileProvider.getUriForFile(
-                                          context, "${context.packageName}.provider", file)
-                                  cameraUri = uri
-                                  cameraLauncher.launch(uri)
-                                },
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA),
-                                colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                                  Text("Take a new picture")
-                                }
-                          }
-                    }
-
-                    item {
-                      OutlinedTextField(
-                          value = itemsUIState.category,
-                          onValueChange = { editItemsViewModel.setCategory(it) },
-                          label = { Text("Category") },
-                          placeholder = { Text("e.g., Clothes") },
-                          modifier =
-                              Modifier.fillMaxWidth()
-                                  .testTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY))
-                    }
-
-                    item {
-                      Box {
-                        OutlinedTextField(
-                            value = itemsUIState.type,
-                            onValueChange = {
-                              editItemsViewModel.setType(it)
-                              editItemsViewModel.updateTypeSuggestions(it)
-                              expanded = true
-                            },
-                            label = { Text("Type") },
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
-                                    .onFocusChanged { focusState ->
-                                      if (focusState.isFocused) {
-                                        editItemsViewModel.updateTypeSuggestions(itemsUIState.type)
-                                        expanded = true
-                                      }
-                                    })
-                        DropdownMenu(
-                            expanded = expanded && itemsUIState.suggestions.isNotEmpty(),
-                            onDismissRequest = { expanded = false },
-                            modifier = Modifier.fillMaxWidth()) {
-                              itemsUIState.suggestions.forEach { suggestion ->
-                                DropdownMenuItem(
-                                    text = { Text(suggestion) },
-                                    onClick = {
-                                      editItemsViewModel.setType(suggestion)
-                                      expanded = false
-                                    })
-                              }
+  Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+          TopAppBar(
+              title = { Text("Edit Item", style = MaterialTheme.typography.titleLarge) },
+              navigationIcon = {
+                IconButton(onClick = goBack) {
+                  Icon(
+                      imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                      contentDescription = "Go Back")
+                }
+              })
+        },
+        content = { innerPadding ->
+          Box(
+              modifier =
+                  Modifier.fillMaxSize()
+                      .padding(innerPadding)
+                      .nestedScroll(nestedScrollConnection)) {
+                LazyColumn(
+                    modifier =
+                        Modifier.fillMaxWidth().padding(16.dp).offset {
+                          IntOffset(0, currentImageSizeState.value.roundToPx())
+                        },
+                    verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                      item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                              Button(
+                                  onClick = { galleryLauncher.launch("image/*") },
+                                  modifier =
+                                      Modifier.weight(1f)
+                                          .testTag(
+                                              EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY),
+                                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                                    Text("Select from Gallery")
+                                  }
+                              Button(
+                                  onClick = {
+                                    val file =
+                                        File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
+                                    val uri =
+                                        FileProvider.getUriForFile(
+                                            context, "${context.packageName}.provider", file)
+                                    cameraUri = uri
+                                    cameraLauncher.launch(uri)
+                                  },
+                                  modifier =
+                                      Modifier.weight(1f)
+                                          .testTag(
+                                              EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA),
+                                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                                    Text("Take a new picture")
+                                  }
                             }
                       }
-                    }
 
-                    item {
-                      OutlinedTextField(
-                          value = itemsUIState.brand,
-                          onValueChange = { editItemsViewModel.setBrand(it) },
-                          label = { Text("Brand") },
-                          modifier =
-                              Modifier.fillMaxWidth()
-                                  .testTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND))
-                    }
+                      item {
+                        OutlinedTextField(
+                            value = itemsUIState.category,
+                            onValueChange = { editItemsViewModel.setCategory(it) },
+                            label = { Text("Category") },
+                            placeholder = { Text("e.g., Clothes") },
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY))
+                      }
 
-                    item {
-                      OutlinedTextField(
-                          value =
-                              if (itemsUIState.price == 0.0) "" else itemsUIState.price.toString(),
-                          onValueChange = {
-                            val price = it.toDoubleOrNull() ?: 0.0
-                            editItemsViewModel.setPrice(price)
-                          },
-                          label = { Text("Price") },
-                          placeholder = { Text("e.g., 49.99") },
-                          modifier =
-                              Modifier.fillMaxWidth()
-                                  .testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
-                    }
-
-                    item {
-                      OutlinedTextField(
-                          value = itemsUIState.link,
-                          onValueChange = { editItemsViewModel.setLink(it) },
-                          label = { Text("Link") },
-                          placeholder = { Text("e.g., https://example.com") },
-                          modifier =
-                              Modifier.fillMaxWidth()
-                                  .testTag(EditItemsScreenTestTags.INPUT_ITEM_LINK))
-                    }
-
-                    item {
-                      Row(
-                          modifier = Modifier.fillMaxWidth(),
-                          horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { editItemsViewModel.deleteItem() },
-                                enabled = itemsUIState.itemId.isNotEmpty(),
-                                colors =
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error,
-                                        contentColor = MaterialTheme.colorScheme.onError),
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)) {
-                                  Row(
-                                      horizontalArrangement = Arrangement.Center,
-                                      verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            modifier = Modifier.size(20.dp))
-                                        Spacer(modifier = Modifier.size(8.dp))
-                                        Text("Delete Item")
-                                      }
+                      item {
+                        Box {
+                          OutlinedTextField(
+                              value = itemsUIState.type,
+                              onValueChange = {
+                                editItemsViewModel.setType(it)
+                                editItemsViewModel.updateTypeSuggestions(it)
+                                expanded = true
+                              },
+                              label = { Text("Type") },
+                              modifier =
+                                  Modifier.fillMaxWidth()
+                                      .testTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
+                                      .onFocusChanged { focusState ->
+                                        if (focusState.isFocused) {
+                                          editItemsViewModel.updateTypeSuggestions(
+                                              itemsUIState.type)
+                                          expanded = true
+                                        }
+                                      })
+                          DropdownMenu(
+                              expanded = expanded && itemsUIState.suggestions.isNotEmpty(),
+                              onDismissRequest = { expanded = false },
+                              modifier = Modifier.fillMaxWidth()) {
+                                itemsUIState.suggestions.forEach { suggestion ->
+                                  DropdownMenuItem(
+                                      text = { Text(suggestion) },
+                                      onClick = {
+                                        editItemsViewModel.setType(suggestion)
+                                        expanded = false
+                                      })
                                 }
+                              }
+                        }
+                      }
 
-                            Button(
-                                onClick = {
-                                  editItemsViewModel.onSaveItemClick()
-                                  goBack()
-                                },
-                                enabled =
-                                    itemsUIState.image != Uri.EMPTY &&
-                                        itemsUIState.category.isNotEmpty(),
-                                modifier =
-                                    Modifier.weight(1f)
-                                        .testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES),
-                                colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                                  Text("Save Changes")
-                                }
-                          }
+                      item {
+                        OutlinedTextField(
+                            value = itemsUIState.brand,
+                            onValueChange = { editItemsViewModel.setBrand(it) },
+                            label = { Text("Brand") },
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND))
+                      }
+
+                      item {
+                        OutlinedTextField(
+                            value =
+                                if (itemsUIState.price == 0.0) ""
+                                else itemsUIState.price.toString(),
+                            onValueChange = {
+                              val price = it.toDoubleOrNull() ?: 0.0
+                              editItemsViewModel.setPrice(price)
+                            },
+                            label = { Text("Price") },
+                            placeholder = { Text("e.g., 49.99") },
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
+                      }
+
+                      item {
+                        OutlinedTextField(
+                            value = itemsUIState.link,
+                            onValueChange = { editItemsViewModel.setLink(it) },
+                            label = { Text("Link") },
+                            placeholder = { Text("e.g., https://example.com") },
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_LINK))
+                      }
+
+                      item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                              Button(
+                                  onClick = { editItemsViewModel.deleteItem() },
+                                  enabled = itemsUIState.itemId.isNotEmpty(),
+                                  colors =
+                                      ButtonDefaults.buttonColors(
+                                          containerColor = MaterialTheme.colorScheme.error,
+                                          contentColor = MaterialTheme.colorScheme.onError),
+                                  modifier =
+                                      Modifier.weight(1f)
+                                          .testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically) {
+                                          Icon(
+                                              imageVector = Icons.Default.Delete,
+                                              contentDescription = "Delete",
+                                              modifier = Modifier.size(20.dp))
+                                          Spacer(modifier = Modifier.size(8.dp))
+                                          Text("Delete Item")
+                                        }
+                                  }
+
+                              Button(
+                                  onClick = { editItemsViewModel.onSaveItemClick() },
+                                  enabled =
+                                      itemsUIState.image != Uri.EMPTY &&
+                                          itemsUIState.category.isNotEmpty(),
+                                  modifier =
+                                      Modifier.weight(1f)
+                                          .testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES),
+                                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                                    Text("Save Changes")
+                                  }
+                            }
+                      }
+
+                      // Add extra spacing at the bottom to ensure all content is scrollable
+                      item { Spacer(modifier = Modifier.height(100.dp)) }
                     }
 
-                    // Add extra spacing at the bottom to ensure all content is scrollable
-                    item { Spacer(modifier = Modifier.height(100.dp)) }
-                  }
-
-              Box(
-                  modifier =
-                      Modifier.size(maxImageSize)
-                          .align(Alignment.TopCenter)
-                          .graphicsLayer {
-                            scaleX = imageScaleState.floatValue
-                            scaleY = imageScaleState.floatValue
-                            translationY =
-                                -(maxImageSize.toPx() - currentImageSizeState.value.toPx()) / 2f
-                          }
-                          .clip(RoundedCornerShape(16.dp))
-                          .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
-                          .background(Secondary)
-                          .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
-                  contentAlignment = Alignment.Center) {
-                    val localUri = itemsUIState.localPhotoUri
-                    val remoteUrl = itemsUIState.image.imageUrl
-                    if (localUri != null) {
-                      AsyncImage(
-                          model = localUri,
-                          contentDescription = "Selected image",
-                          modifier = Modifier.fillMaxSize(),
-                          contentScale = ContentScale.Crop)
-                    } else if (remoteUrl.isNotEmpty()) {
-                      AsyncImage(
-                          model = remoteUrl,
-                          contentDescription = "Uploaded image",
-                          modifier = Modifier.fillMaxSize(),
-                          contentScale = ContentScale.Crop)
-                    } else {
-                      Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add photo",
-                            tint = Tertiary,
-                            modifier = Modifier.size(48.dp))
-                        Spacer(Modifier.height(8.dp))
-                        Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
+                Box(
+                    modifier =
+                        Modifier.size(maxImageSize)
+                            .align(Alignment.TopCenter)
+                            .graphicsLayer {
+                              scaleX = imageScaleState.floatValue
+                              scaleY = imageScaleState.floatValue
+                              translationY =
+                                  -(maxImageSize.toPx() - currentImageSizeState.value.toPx()) / 2f
+                            }
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
+                            .background(Secondary)
+                            .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
+                    contentAlignment = Alignment.Center) {
+                      val localUri = itemsUIState.localPhotoUri
+                      val remoteUrl = itemsUIState.image.imageUrl
+                      if (localUri != null) {
+                        AsyncImage(
+                            model = localUri,
+                            contentDescription = "Selected image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop)
+                      } else if (remoteUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = remoteUrl,
+                            contentDescription = "Uploaded image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop)
+                      } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                          Icon(
+                              imageVector = Icons.Default.Add,
+                              contentDescription = "Add photo",
+                              tint = Tertiary,
+                              modifier = Modifier.size(48.dp))
+                          Spacer(Modifier.height(8.dp))
+                          Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
+                        }
                       }
                     }
-                  }
+              }
+        })
+
+    if (itemsUIState.isLoading) {
+      Box(
+          modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+          contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              CircularProgressIndicator(color = Primary)
+              Spacer(modifier = Modifier.height(12.dp))
+              Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
             }
-      })
+          }
+    }
+  }
 }

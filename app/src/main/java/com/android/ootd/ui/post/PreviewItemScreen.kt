@@ -100,6 +100,8 @@ fun PreviewItemScreen(
     }
   }
 
+  LaunchedEffect(Unit) { outfitPreviewViewModel.refreshItems() }
+
   Scaffold(
       topBar = {
         CenterAlignedTopAppBar(

@@ -36,7 +36,7 @@ object FirebaseImageUploader {
 
     return try {
       val sanitizedFileName = refactorFileName(fileName)
-      val imageRef = ref.child("images/$sanitizedFileName.jpg")
+      val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
       imageRef.putFile(localUri).await()
       val downloadUrl = imageRef.downloadUrl.await()
       ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
@@ -51,7 +51,7 @@ object FirebaseImageUploader {
     val ref = storage ?: return true
     return try {
       val sanitizedImageId = refactorFileName(imageId)
-      val imageRef = ref.child("images/$sanitizedImageId.jpg")
+      val imageRef = ref.child("images/items/$sanitizedImageId.jpg")
       imageRef.delete().await()
       true
     } catch (e: Exception) {

@@ -2,9 +2,9 @@ package com.android.ootd.ui.post
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
@@ -15,12 +15,10 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.ktx.storage
-import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 // import com.google.firebase.storage.FirebaseStorage
 
@@ -42,6 +40,7 @@ data class AddItemsUIState(
     val typeSuggestion: List<String> = emptyList(),
     val categorySuggestion: List<String> = emptyList(),
     val materialText: String = "", // raw user input for material field
+    val isLoading: Boolean = false,
 ) {
   val isAddingValid: Boolean
     get() =
@@ -131,33 +130,42 @@ open class AddItemsViewModel(
     }
     val ownerId = Firebase.auth.currentUser?.uid ?: ""
     viewModelScope.launch {
-      val uploadedImage = uploadImageToFirebase()
-      if (uploadedImage.imageUrl.isEmpty()) {
-        Log.e("AddItemsVM", "Image upload failed.")
-        setErrorMsg("Image upload failed. Please try again.")
-        _addOnSuccess.value = false
-        return@launch
-      }
-
-      val item =
-          Item(
-              itemUuid = repository.getNewItemId(),
-              image = uploadedImage,
-              category = state.category,
-              type = state.type,
-              brand = state.brand,
-              price = state.price.toDoubleOrNull() ?: 0.0,
-              material = state.material,
-              link = state.link,
-              ownerId = ownerId)
-
+      _uiState.value = _uiState.value.copy(isLoading = true)
       try {
+        val itemUuid = repository.getNewItemId()
+        val localUri = state.localPhotoUri
+        val uploadedImage =
+            if (localUri != null) {
+              FirebaseImageUploader.uploadImage(localUri, itemUuid)
+            } else {
+              ImageData("", "")
+            }
+        if (uploadedImage.imageUrl.isEmpty()) {
+          setErrorMsg("Image upload failed. Please try again.")
+          _addOnSuccess.value = false
+          return@launch
+        }
+
+        val item =
+            Item(
+                itemUuid = itemUuid,
+                image = uploadedImage,
+                category = state.category,
+                type = state.type,
+                brand = state.brand,
+                price = state.price.toDoubleOrNull() ?: 0.0,
+                material = state.material,
+                link = state.link,
+                ownerId = ownerId)
+
         _addOnSuccess.value = true
         repository.addItem(item)
         clearErrorMsg()
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")
         _addOnSuccess.value = false
+      } finally {
+        _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
   }
@@ -178,23 +186,6 @@ open class AddItemsViewModel(
                 invalidPhotoMsg = null,
                 errorMessage = null)
       }
-
-  private suspend fun uploadImageToFirebase(): ImageData {
-    val state = _uiState.value
-    val localUri = state.localPhotoUri ?: return ImageData("", "")
-
-    val fileName = UUID.randomUUID().toString()
-    val imageRef = storage.child("images/$fileName")
-    return try {
-      imageRef.putFile(localUri).await()
-      val downloadUri = imageRef.downloadUrl.await()
-      ImageData(fileName, downloadUri.toString())
-    } catch (e: Exception) {
-      Log.e("AddItemsVM", "uploadImageToFirebase: exception during upload", e)
-      setErrorMsg("Failed to upload image: ${e.message}")
-      ImageData("", "")
-    }
-  }
 
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()

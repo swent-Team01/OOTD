@@ -20,7 +20,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun getAllItems(): List<Item> {
     val ownerId =
         Firebase.auth.currentUser?.uid
-            ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
+            ?: throw Exception("ItemsRepositoryFirestore: User not logged in.")
     val snapshot =
         db.collection(ITEMS_COLLECTION).whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId).get().await()
     return snapshot.mapNotNull { mapToItem(it) }
