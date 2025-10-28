@@ -375,7 +375,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(newUsername, updated.username)
     assertEquals(newBirthday, updated.birthday)
-    assertEquals(newPicture, updated.birthday)
+    assertEquals(newPicture, updated.profilePicture)
   }
 
   @Test
@@ -388,7 +388,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(account1.username, updated.username)
     assertEquals(account1.birthday, updated.birthday)
-    assertEquals(account1.profilePicture, updated.birthday)
+    assertEquals(account1.profilePicture, updated.profilePicture)
   }
 
   @Test

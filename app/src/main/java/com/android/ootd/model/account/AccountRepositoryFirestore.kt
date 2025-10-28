@@ -259,9 +259,6 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
                   "profilePicture" to newProfilePic))
           .await()
 
-      if (isNewUsername) {
-        db.collection(USER_COLLECTION_PATH).document(userID).update("username", newUsername).await()
-      }
       Log.d(
           "AccountRepositoryFirestore",
           "Successfully updated account with UID: $userID, new username $newUsername, birthdate $birthDay, profilePic $newProfilePic")

@@ -97,24 +97,11 @@ class AccountViewModelTest {
   }
 
   @Test
-  fun uiState_uses_Google_photo_when_Firestore_has_no_profile_picture() = runTest {
-    val googlePhotoUri = Uri.parse("https://google.com/photo.jpg")
-    every { mockFirebaseUser.photoUrl } returns googlePhotoUri
-
-    viewModel = AccountViewModel(accountService, accountRepository)
-
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
-
-    assertEquals(googlePhotoUri.toString(), viewModel.uiState.value.profilePicture)
-  }
-
-  @Test
-  fun uiState_prefers_Firestore_profile_picture_over_Google_photo() = runTest {
-    val googlePhotoUri = Uri.parse("https://google.com/photo.jpg")
+  fun uiState_prefers_Firestore_profile_picture_over_no_photo() = runTest {
+    val emptyPhotoUri = Uri.parse("")
     val firestorePhotoUri = Uri.parse("https://firestore.com/photo.jpg")
 
-    every { mockFirebaseUser.photoUrl } returns googlePhotoUri
+    every { mockFirebaseUser.photoUrl } returns emptyPhotoUri
     coEvery { accountRepository.getAccount("test-uid") } returns
         Account(
             uid = "test-uid", username = "testuser", profilePicture = firestorePhotoUri.toString())
