@@ -24,6 +24,7 @@ private fun Account.toFirestoreMap(): Map<String, Any> =
         "birthday" to birthday,
         "googleAccountEmail" to googleAccountEmail,
         "profilePicture" to profilePicture,
+        "ownerId" to ownerId,
         "friendUids" to friendUids)
 
 /** Convert Firestore DocumentSnapshot to domain Account (uses document id as uid) */
@@ -116,9 +117,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun accountExists(userId: String): Boolean {
     return try {
-      // To respect privacy, we can only check if OUR OWN account exists
-      // For checking if other users exist, use UserRepository instead
-      val accountDocument = db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
+      // Here we need to check with the user collection where we look
+      val accountDocument = db.collection(USER_COLLECTION_PATH).document(userId).get().await()
 
       if (!accountDocument.exists()) {
         false
@@ -126,19 +126,10 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
         val username = accountDocument.getString("username")
         !username.isNullOrBlank()
       }
-    } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
-      // If we get PERMISSION_DENIED, it means the account exists but we can't read it
-      // (because we're not the owner). This is expected behavior for other users' accounts.
-      if (e.code ==
-          com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-        Log.d(
-            "AccountRepositoryFirestore",
-            "Account $userId exists but is not accessible (not the owner)")
-        return true // Account exists, we just can't read it
-      }
-      Log.e("AccountRepositoryFirestore", "Error checking account existence: ${e.message}", e)
-      throw e
-    } catch (e: Exception) {
+    }
+    // There is no way we can get permission denied because we are checking the public user
+    // collection.
+    catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error checking account existence: ${e.message}", e)
       throw e
     }

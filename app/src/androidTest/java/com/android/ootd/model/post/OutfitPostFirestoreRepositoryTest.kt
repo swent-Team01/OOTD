@@ -13,11 +13,16 @@ import org.junit.runner.RunWith
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
+  var ownerId = ""
 
   @Before
   override fun setUp() {
     super.setUp()
     Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
+    ownerId = FirebaseEmulator.auth.uid ?: ""
+    if (ownerId == "") {
+      throw IllegalStateException("There needs to be an authenticated user")
+    }
   }
 
   @Test
@@ -168,7 +173,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     FirebaseEmulator.firestore
         .collection(POSTS_COLLECTION)
         .document(postId)
-        .set(mapOf("unexpectedField" to 123))
+        .set(mapOf("unexpectedField" to 123, "ownerId" to ownerId))
         .await()
 
     val result = outfitPostRepository.getPostById(postId)

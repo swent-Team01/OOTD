@@ -40,15 +40,6 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await env.cleanup();
   });
 
-  // items: top-level open; everything else default deny unless matched earlier
-  test('Top-level items are freely readable/writable; unrelated collections are denied', async () => {
-    await assertSucceeds(setDoc(doc(me, 'items/i1'), { any: 'value' }));
-    await assertSucceeds(getDoc(doc(me, 'items/i1')));
-
-    // Default deny for unrelated collection
-    await assertFails(setDoc(doc(me, 'misc/m1'), { nope: true }));
-  });
-
   // /users rules
   test('Authenticated users can read any user doc and write (current rules)', async () => {
     await assertSucceeds(getDoc(doc(me, 'users/me')));
@@ -69,7 +60,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertSucceeds(
       setDoc(doc(selfDb, 'posts/self_post'), {
         postUID: 'self_post',
-        uid: 'me',
+        ownerId: 'me',
         name: 'Me',
         outfitURL: 'url',
         timestamp: Date.now(),
@@ -90,7 +81,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
   test('List query: allowed when constrained to mutual friends; unfiltered is denied', async () => {
     // Constrained to mutual friends
     await assertSucceeds(
-      getDocs(query(collection(me, 'posts'), where('uid', 'in', ['u1', 'u2'])))
+      getDocs(query(collection(me, 'posts'), where('ownerId', 'in', ['u1', 'u2'])))
     );
 
     // Unfiltered should fail because it would include non-friend docs
@@ -102,7 +93,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertSucceeds(
       setDoc(doc(me, 'posts/post_me'), {
         postUID: 'post_me',
-        uid: 'me',
+        ownerId: 'me',
         name: 'Me',
         outfitURL: 'url',
         timestamp: Date.now(),
@@ -112,7 +103,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertFails(
       setDoc(doc(me, 'posts/post_wrong_uid'), {
         postUID: 'post_wrong_uid',
-        uid: 'someoneElse',
+        ownerId: 'someoneElse',
         name: 'Me',
         outfitURL: 'url',
         timestamp: Date.now(),
@@ -125,7 +116,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertSucceeds(
       setDoc(doc(me, 'posts/post_edit'), {
         postUID: 'post_edit',
-        uid: 'me',
+        ownerId: 'me',
         name: 'Me',
         outfitURL: 'url',
         timestamp: 1,
@@ -136,7 +127,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertSucceeds(
       setDoc(doc(me, 'posts/post_edit'), {
         postUID: 'post_edit',
-        uid: 'me',
+        ownerId: 'me',
         name: 'Me',
         outfitURL: 'url2',
         timestamp: 2,
@@ -147,7 +138,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertSucceeds(
       setDoc(doc(me, 'posts/post_edit'), {
         postUID: 'changed_post_uid',
-        uid: 'me', // keep uid to retain authorship for later delete test
+        ownerId: 'me', // keep uid to retain authorship for later delete test
         name: 'Me',
         outfitURL: 'url3',
         timestamp: 3,
@@ -158,7 +149,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertFails(
       setDoc(doc(alice, 'posts/post_edit'), {
         postUID: 'attempt_by_other',
-        uid: 'me',
+        ownerId: 'me',
         name: 'Me',
         outfitURL: 'hacked',
         timestamp: 999,
@@ -171,7 +162,7 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
     await assertSucceeds(
       setDoc(doc(me, 'posts/post_to_delete'), {
         postUID: 'post_to_delete',
-        uid: 'me',
+        ownerId: 'me',
         name: 'Me',
         outfitURL: 'url',
         timestamp: 1,

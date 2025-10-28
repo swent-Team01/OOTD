@@ -13,23 +13,7 @@ import kotlinx.coroutines.withTimeout
 const val POSTS_COLLECTION_PATH = "posts"
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
-
-  override suspend fun getFeed(): List<OutfitPost> {
-    return try {
-      val snapshot =
-          withTimeout(5_000) {
-            db.collection(POSTS_COLLECTION_PATH).orderBy("timestamp").get().await()
-          }
-
-      snapshot.toObjects<OutfitPost>()
-    } catch (e: TimeoutCancellationException) {
-      Log.w("FeedRepositoryFirestore", "Timed out fetching feed; returning empty list", e)
-      emptyList()
-    } catch (e: Exception) {
-      Log.e("FeedRepositoryFirestore", "Error fetching feed", e)
-      emptyList()
-    }
-  }
+  private val ownerAttributeName = "ownerId"
 
   override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
     if (uids.isEmpty()) return emptyList()
@@ -44,7 +28,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
         val snap =
             withTimeout(5_000) {
               db.collection(POSTS_COLLECTION_PATH)
-                  .whereIn("ownerId", chunk)
+                  .whereIn(ownerAttributeName, chunk)
                   .orderBy("timestamp")
                   .get()
                   .await()
@@ -88,7 +72,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
       val snapshot =
           db.collection(POSTS_COLLECTION_PATH)
-              .whereEqualTo("ownerId", userId)
+              .whereEqualTo(ownerAttributeName, userId)
               .whereGreaterThanOrEqualTo("timestamp", todayStart)
               .get()
               .await()
