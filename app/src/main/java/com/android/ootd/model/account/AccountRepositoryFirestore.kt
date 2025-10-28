@@ -6,7 +6,6 @@ import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlin.text.get
 import kotlinx.coroutines.tasks.await
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
@@ -236,14 +235,22 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun editAccount(userID: String, username: String, birthDay: String) {
+  override suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String
+  ) {
     try {
       val user = getAccount(userID)
 
-      val newUsername = username.takeIf { it.isNotBlank() } ?: user.username
-      val newBirthDate = birthDay.takeIf { it.isNotBlank() } ?: user.birthday
+      val isNewUsername = username != user.username && username.isNotBlank()
 
-      if (newUsername != user.username) {
+      val newUsername = username.takeIf { isNewUsername } ?: user.username
+      val newBirthDate = birthDay.takeIf { it.isNotBlank() } ?: user.birthday
+      val newProfilePic = picture.takeIf { it.isNotBlank() } ?: user.profilePicture
+
+      if (isNewUsername) {
         val querySnapshot =
             db.collection(USER_COLLECTION_PATH).whereEqualTo("username", newUsername).get().await()
 
@@ -254,11 +261,19 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       db.collection(ACCOUNT_COLLECTION_PATH)
           .document(userID)
-          .update(mapOf("username" to newUsername, "birthday" to newBirthDate))
+          .update(
+              mapOf(
+                  "username" to newUsername,
+                  "birthday" to newBirthDate,
+                  "profilePicture" to newProfilePic))
           .await()
+
+      if (isNewUsername) {
+        db.collection(USER_COLLECTION_PATH).document(userID).update("username", newUsername).await()
+      }
       Log.d(
           "AccountRepositoryFirestore",
-          "Successfully updated account with UID: $userID, new username $newUsername, birthdate $birthDay")
+          "Successfully updated account with UID: $userID, new username $newUsername, birthdate $birthDay, profilePic $newProfilePic")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {

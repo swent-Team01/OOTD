@@ -64,5 +64,5 @@ interface AccountRepository {
    * @throws TakenUserException If the username already exists
    * @throws IllegalStateException The userID does not match the users ID
    */
-  suspend fun editAccount(userID: String, username: String, birthDay: String)
+  suspend fun editAccount(userID: String, username: String, birthDay: String, picture: String)
 }

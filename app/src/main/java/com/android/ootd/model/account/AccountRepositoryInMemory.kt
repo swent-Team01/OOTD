@@ -126,7 +126,12 @@ class AccountRepositoryInMemory : AccountRepository {
     }
   }
 
-  override suspend fun editAccount(userID: String, username: String, birthDay: String) {
+  override suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String
+  ) {
     val acc = getAccount(userID)
     accounts[userID] =
         acc.copy(

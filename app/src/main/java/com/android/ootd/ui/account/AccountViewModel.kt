@@ -152,14 +152,14 @@ class AccountViewModel(
    *
    * @param newUsername the new username to set
    */
-  fun editUsername(newUsername: String = "", newDate: String = "") {
+  fun editUser(newUsername: String = "", newDate: String = "", profilePicture: String = "") {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoading = true) }
 
       try {
         val currentUserId = accountService.currentUserId
 
-        accountRepository.editAccount(currentUserId, newUsername, newDate)
+        accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
 
         _uiState.update { it.copy(username = newUsername, isLoading = false, errorMsg = null) }
       } catch (e: Exception) {

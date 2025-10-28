@@ -35,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -152,7 +154,11 @@ fun AccountScreen(
                             .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
               } else {
                 Box(
-                    modifier = Modifier.size(180.dp).clip(CircleShape).background(Primary),
+                    modifier =
+                        Modifier.size(180.dp)
+                            .clip(CircleShape)
+                            .background(Primary)
+                            .pointerHoverIcon(icon = PointerIcon.Hand),
                     contentAlignment = Alignment.Center) {
                       Text(
                           text = username.firstOrNull()?.uppercase() ?: "",
@@ -209,7 +215,7 @@ fun AccountScreen(
                   IconButton(
                       onClick = {
                         if (editedUsername.isNotBlank() && editedUsername != username) {
-                          accountViewModel.editUsername(editedUsername)
+                          accountViewModel.editUser(newUsername = editedUsername)
                           isEditingUsername = false
                         }
                       },
