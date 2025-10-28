@@ -19,8 +19,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,8 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.android.ootd.ui.theme.LightColorScheme
-import com.android.ootd.ui.theme.Typography
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -52,6 +53,7 @@ object UiTestTags {
   const val TAG_USERNAME_CLEAR = "account_username_clear"
   const val TAG_GOOGLE_FIELD = "account_google_field"
   const val TAG_SIGNOUT_BUTTON = "account_signout_button"
+  const val TAG_PRIVACY_TOGGLE = "account_privacy_toggle"
   const val TAG_ACCOUNT_LOADING = "account_loading"
 }
 /**
@@ -75,8 +77,8 @@ fun AccountScreen(
     onSignOut: () -> Unit = {}
 ) {
   val scrollState = rememberScrollState()
-  val colors = LightColorScheme
-  val typography = Typography
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
   val context = LocalContext.current
   val uiState by accountViewModel.uiState.collectAsState()
   val username = uiState.username
@@ -226,6 +228,14 @@ fun AccountScreen(
                     unfocusedTextColor = colors.primary,
                 ),
             modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_GOOGLE_FIELD))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Privacy toggle
+        PrivacyToggleRow(
+            isPrivate = uiState.isPrivate,
+            onToggle = { accountViewModel.onTogglePrivacy() },
+            modifier =
+                Modifier.fillMaxWidth().padding(top = 4.dp).testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -251,5 +261,42 @@ fun AccountScreen(
           CircularProgressIndicator(
               modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
         }
+  }
+}
+
+@Composable
+private fun PrivacyToggleRow(
+    isPrivate: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+
+  Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+    Text(
+        text = "Account Privacy",
+        style = typography.titleLarge,
+        color = colors.primary,
+        modifier = Modifier.padding(start = 8.dp))
+
+    Spacer(modifier = Modifier.weight(1f))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Text(
+          text = if (isPrivate) "Private" else "Public",
+          style = typography.bodySmall,
+          color = colors.onSurface.copy(alpha = 0.65f))
+      Switch(
+          checked = isPrivate,
+          onCheckedChange = { onToggle() },
+          colors =
+              SwitchDefaults.colors(
+                  checkedThumbColor = colors.onPrimary,
+                  checkedTrackColor = colors.primary,
+                  uncheckedThumbColor = colors.onPrimary,
+                  uncheckedTrackColor = colors.outlineVariant))
+    }
+    // onCheckedChange = { onToggle() }
   }
 }

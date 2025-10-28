@@ -24,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -181,5 +182,49 @@ class AccountViewModelTest {
     val state = viewModel.uiState.value
     assertEquals("updateduser", state.username)
     assertEquals("updated@example.com", state.googleAccountName)
+  }
+
+  @Test
+  fun onTogglePrivacy_success_updatesStateWithRepositoryValue() = runTest {
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = false)
+    coEvery { accountRepository.togglePrivacy("test-uid") } returns true
+
+    viewModel = AccountViewModel(accountService, accountRepository)
+
+    // Emit authenticated user and wait for load
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    // Verify initial and post-toggle states
+    assertFalse(viewModel.uiState.value.isPrivate)
+    viewModel.onTogglePrivacy()
+    advanceUntilIdle()
+
+    assertTrue(viewModel.uiState.value.isPrivate)
+    assertNull(viewModel.uiState.value.errorMsg)
+  }
+
+  @Test
+  fun onTogglePrivacy_failure_revertsAndSetsError() = runTest {
+    // Arrange initial account with private profile (isPrivate = true)
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = true)
+    coEvery { accountRepository.togglePrivacy("test-uid") } throws Exception("boom")
+
+    viewModel = AccountViewModel(accountService, accountRepository)
+
+    // Emit authenticated user and wait for load
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    // Act
+    assertTrue(viewModel.uiState.value.isPrivate)
+    viewModel.onTogglePrivacy()
+    advanceUntilIdle()
+
+    // Assert: reverted to original and error was set
+    assertTrue(viewModel.uiState.value.isPrivate)
+    assertNotNull(viewModel.uiState.value.errorMsg)
   }
 }
