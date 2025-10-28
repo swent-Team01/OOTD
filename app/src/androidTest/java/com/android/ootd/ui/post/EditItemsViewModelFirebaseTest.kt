@@ -16,6 +16,7 @@ import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 
@@ -24,11 +25,18 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
   private lateinit var viewModel: EditItemsViewModel
   private lateinit var repository: ItemsRepositoryFirestore
 
+  var ownerId = ""
+
   @Before
   override fun setUp() {
     super.setUp()
     repository = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
     viewModel = EditItemsViewModel(repository)
+    Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
+    ownerId = FirebaseEmulator.auth.uid ?: ""
+    if (ownerId == "") {
+      throw IllegalStateException("There needs to be an authenticated user")
+    }
   }
 
   private fun createTempImageFile(): File {
@@ -64,7 +72,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
             price = price,
             material = emptyList(),
             link = "https://example.com",
-            ownerId = "test_user_id")
+            ownerId = ownerId)
     repository.addItem(item)
     return item
   }
@@ -76,6 +84,8 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
 
     // Create an existing item
     val existingItem = createTestItem()
+    val oldImageUuid = existingItem.itemUuid
+    val oldImageId = existingItem.image.imageId
 
     // Load it into the viewModel
     viewModel.loadItem(existingItem)
@@ -86,6 +96,9 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Nike")
     viewModel.setPrice(99.99)
     viewModel.setLink("https://nike.com/sneakers")
+    // Set a new photo
+    val newPhotoUri = createReadableUri()
+    viewModel.setPhoto(newPhotoUri)
 
     // Save changes
     viewModel.onSaveItemClick()
@@ -102,31 +115,6 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     assertEquals("Nike", updatedItem.brand)
     assertEquals(99.99, updatedItem.price)
     assertEquals("https://nike.com/sneakers", updatedItem.link)
-  }
-
-  @Test
-  fun onSaveItemClick_withNewPhoto_uploadsToStorageAndUpdatesFirestore() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
-    viewModel.initTypeSuggestions(context)
-
-    val existingItem = createTestItem()
-    val oldImageUuid = existingItem.itemUuid
-    val oldImageId = existingItem.image.imageId
-
-    viewModel.loadItem(existingItem)
-
-    // Set a new photo
-    val newPhotoUri = createReadableUri()
-    viewModel.setPhoto(newPhotoUri)
-
-    viewModel.onSaveItemClick()
-
-    kotlinx.coroutines.delay(2000)
-
-    assertTrue(viewModel.uiState.first().isSaveSuccessful)
-
-    // Verify new image was uploaded
-    val updatedItem = repository.getItemById(existingItem.itemUuid)
     assertEquals(oldImageUuid, updatedItem.itemUuid)
     assertTrue(updatedItem.image.imageId.isNotEmpty())
     assertFalse(oldImageId == updatedItem.image.imageId)
@@ -136,87 +124,36 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
   }
 
   @Test
-  fun onSaveItemClick_withoutPhoto_failsValidation() = runBlocking {
+  fun onSaveItemClick_validationFailures_returnErrorMessages() = runBlocking {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val existingItem = createTestItem()
-    viewModel.loadItem(existingItem)
 
-    // Clear the photo
+    // Case 1: no photo -> validation fails
+    viewModel.loadItem(existingItem)
     viewModel.setPhoto(Uri.EMPTY)
     viewModel.setCategory("Bags")
-
     viewModel.onSaveItemClick()
-
     kotlinx.coroutines.delay(500)
-
-    // Should fail
     assertFalse(viewModel.uiState.first().isSaveSuccessful)
     assertNotNull(viewModel.uiState.first().errorMessage)
-  }
 
-  @Test
-  fun onSaveItemClick_withInvalidUrl_failsValidation() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
-    viewModel.initTypeSuggestions(context)
-
-    val existingItem = createTestItem()
+    // Case 2: invalid URL -> validation fails with URL message
     viewModel.loadItem(existingItem)
-
-    // Set invalid URL
     viewModel.setLink("not-a-valid-url")
-
     viewModel.onSaveItemClick()
-
     kotlinx.coroutines.delay(500)
-
-    // Should fail with error message
     assertNotNull(viewModel.uiState.first().errorMessage)
     assertTrue(viewModel.uiState.first().errorMessage!!.contains("valid URL"))
-  }
 
-  @Test
-  fun onSaveItemClick_withMissingCategory_failsValidation() = runBlocking {
-    val existingItem = createTestItem()
+    // Case 3: missing category -> validation fails with required fields message
     viewModel.loadItem(existingItem)
-
-    // Clear category
     viewModel.setCategory("")
-
     viewModel.onSaveItemClick()
-
     kotlinx.coroutines.delay(500)
-
     assertNotNull(viewModel.uiState.first().errorMessage)
     assertTrue(viewModel.uiState.first().errorMessage!!.contains("required fields"))
-  }
-
-  @Test
-  fun onSaveItemClick_withMaterialUpdates_persistsCorrectly() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
-    viewModel.initTypeSuggestions(context)
-
-    val existingItem = createTestItem()
-    viewModel.loadItem(existingItem)
-
-    // Add materials
-    val materials =
-        listOf(Material("Wool", 60.0), Material("Cotton", 30.0), Material("Elastane", 10.0))
-    viewModel.setMaterial(materials)
-
-    viewModel.onSaveItemClick()
-
-    kotlinx.coroutines.delay(1000)
-
-    assertTrue(viewModel.uiState.first().isSaveSuccessful)
-
-    val updatedItem = repository.getItemById(existingItem.itemUuid)
-    assertEquals(3, updatedItem.material.size)
-    assertEquals("Wool", updatedItem.material[0]?.name)
-    assertEquals(60.0, updatedItem.material[0]?.percentage)
-    assertEquals("Cotton", updatedItem.material[1]?.name)
-    assertEquals(30.0, updatedItem.material[1]?.percentage)
   }
 
   @Test
@@ -236,12 +173,21 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     // Second edit
     viewModel.setBrand("SecondBrand")
     viewModel.setPrice(200.0)
+    val materials =
+        listOf(Material("Wool", 60.0), Material("Cotton", 30.0), Material("Elastane", 10.0))
+    viewModel.setMaterial(materials)
     viewModel.onSaveItemClick()
     kotlinx.coroutines.delay(1000)
 
+    assertTrue(viewModel.uiState.first().isSaveSuccessful)
     // Verify latest changes
     val updatedItem = repository.getItemById(existingItem.itemUuid)
     assertEquals("SecondBrand", updatedItem.brand)
+    assertEquals(3, updatedItem.material.size)
+    assertEquals("Wool", updatedItem.material[0]?.name)
+    assertEquals(60.0, updatedItem.material[0]?.percentage)
+    assertEquals("Cotton", updatedItem.material[1]?.name)
+    assertEquals(30.0, updatedItem.material[1]?.percentage)
     assertEquals(200.0, updatedItem.price)
   }
 
