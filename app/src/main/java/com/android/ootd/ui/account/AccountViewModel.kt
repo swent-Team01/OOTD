@@ -125,6 +125,7 @@ class AccountViewModel(
     }
   }
 
+  /** Toggle the account's privacy setting and update [uiState] accordingly. */
   fun onTogglePrivacy() {
     val uid = authenticatedUserId
 
