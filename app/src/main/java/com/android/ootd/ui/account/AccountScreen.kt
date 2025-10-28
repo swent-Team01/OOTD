@@ -4,6 +4,9 @@ package com.android.ootd.ui.account
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -56,9 +59,12 @@ object UiTestTags {
   const val TAG_ACCOUNT_TITLE = "account_title"
   const val TAG_ACCOUNT_AVATAR_CONTAINER = "account_avatar_container"
   const val TAG_ACCOUNT_AVATAR_IMAGE = "account_avatar_image"
+  const val TAG_ACCOUNT_AVATAR_LETTER = "account_avatar_letter"
   const val TAG_ACCOUNT_EDIT = "account_edit_button"
   const val TAG_USERNAME_FIELD = "account_username_field"
   const val TAG_USERNAME_CLEAR = "account_username_clear"
+  const val TAG_USERNAME_CANCEL = "account_username_cancel"
+  const val TAG_USERNAME_SAVE = "account_username_save"
   const val TAG_GOOGLE_FIELD = "account_google_field"
   const val TAG_SIGNOUT_BUTTON = "account_signout_button"
   const val TAG_ACCOUNT_LOADING = "account_loading"
@@ -90,11 +96,23 @@ fun AccountScreen(
   val uiState by accountViewModel.uiState.collectAsState()
   val username = uiState.username
   val email = uiState.googleAccountName
+  val dateOfBirth = uiState.dateOfBirth
   val avatarUri = uiState.profilePicture
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
   var editedUsername by remember { mutableStateOf("") }
+
+  // Image picker launcher
+  val imagePickerLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.PickVisualMedia(),
+          onResult = { uri ->
+            uri?.let {
+              accountViewModel.uploadProfilePicture(it.toString())
+              Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+            }
+          })
 
   LaunchedEffect(uiState.signedOut) {
     if (uiState.signedOut) {
@@ -164,7 +182,7 @@ fun AccountScreen(
                           text = username.firstOrNull()?.uppercase() ?: "",
                           style = typography.headlineLarge,
                           color = Secondary,
-                          modifier = Modifier.testTag("account_avatar_letter"))
+                          modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
                     }
               }
             }
@@ -174,7 +192,10 @@ fun AccountScreen(
         // Edit button under avatar
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
           Button(
-              onClick = onEditAvatar,
+              onClick = {
+                imagePickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+              },
               shape = CircleShape,
               colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
               modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
@@ -206,7 +227,7 @@ fun AccountScreen(
                         isEditingUsername = false
                         editedUsername = ""
                       },
-                      modifier = Modifier.testTag("account_username_cancel")) {
+                      modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CANCEL)) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Cancel",
@@ -219,7 +240,7 @@ fun AccountScreen(
                           isEditingUsername = false
                         }
                       },
-                      modifier = Modifier.testTag("account_username_save")) {
+                      modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_SAVE)) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Save",
