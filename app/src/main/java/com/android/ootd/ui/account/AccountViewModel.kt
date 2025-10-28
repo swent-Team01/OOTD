@@ -13,6 +13,8 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.user.UserRepository
+import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +57,7 @@ data class AccountViewState(
 class AccountViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
+    private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) : ViewModel() {
 
@@ -160,7 +163,7 @@ class AccountViewModel(
         val currentUserId = accountService.currentUserId
 
         accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
-
+        if (newUsername.isNotBlank()) userRepository.editUsername(currentUserId, newUsername)
         // Update UI state with new values
         val updatedState = _uiState.value.copy(isLoading = false, errorMsg = null)
         _uiState.update {

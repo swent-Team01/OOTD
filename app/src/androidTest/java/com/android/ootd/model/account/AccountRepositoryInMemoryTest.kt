@@ -281,57 +281,56 @@ class AccountRepositoryInMemoryTest {
   }
 
   @Test
-  fun editAccount_updatesUsernameAndBirthday() = runTest {
+  fun editAccount_updatesUsernameBirthdayAndProfilePicture() = runTest {
     val newUsername = "new_alice"
     val newBirthday = "1995-05-15"
+    val newProfilePic = ":3"
 
-    repository.editAccount("user1", username = newUsername, birthDay = newBirthday)
+    repository.editAccount(
+        "user1", username = newUsername, birthDay = newBirthday, picture = newProfilePic)
 
     val updated = repository.getAccount("user1")
     assertEquals(newUsername, updated.username)
     assertEquals(newBirthday, updated.birthday)
+    assertEquals(newProfilePic, updated.profilePicture)
   }
 
   @Test
-  fun editAccount_keepsUsernameWhenBlank() = runTest {
+  fun editAccount_keepsAllThreeWhenBlanks() = runTest {
     val originalAccount = repository.getAccount("user1")
-    val newBirthday = "1990-01-01"
 
-    repository.editAccount("user1", username = "", birthDay = newBirthday)
+    repository.editAccount("user1", username = "", birthDay = "", picture = "")
 
     val updated = repository.getAccount("user1")
     assertEquals(originalAccount.username, updated.username) // Username unchanged
-    assertEquals(newBirthday, updated.birthday) // Birthday updated
-  }
-
-  @Test
-  fun editAccount_keepsBirthdayWhenBlank() = runTest {
-    val originalAccount = repository.getAccount("user1")
-    val newUsername = "updated_alice"
-
-    repository.editAccount("user1", username = newUsername, birthDay = "")
-
-    val updated = repository.getAccount("user1")
-    assertEquals(newUsername, updated.username) // Username updated
     assertEquals(originalAccount.birthday, updated.birthday) // Birthday unchanged
+    assertEquals(originalAccount.profilePicture, updated.profilePicture) // ProfilePicture unchanged
   }
 
   @Test
   fun editAccount_keepsAllValuesWhenBothBlank() = runTest {
     val originalAccount = repository.getAccount("user1")
+    val newUsername = "Im new here"
+    val newBirthday = "01-01-2000"
+    val newProfilePic = ":3"
 
-    repository.editAccount("user1", username = "", birthDay = "")
+    repository.editAccount(
+        "user1", username = newUsername, birthDay = newBirthday, picture = newProfilePic)
 
     val updated = repository.getAccount("user1")
-    assertEquals(originalAccount.username, updated.username)
-    assertEquals(originalAccount.birthday, updated.birthday)
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newProfilePic, updated.profilePicture)
   }
 
   @Test
   fun editAccount_throwsWhenAccountNotFound() {
     val exception =
         assertThrows(NoSuchElementException::class.java) {
-          runTest { repository.editAccount("nonexistent", username = "new_name") }
+          runTest {
+            repository.editAccount(
+                "nonexistent", username = "new_name", birthDay = "", picture = "")
+          }
         }
 
     assertEquals("Account with ID nonexistent not found", exception.message)

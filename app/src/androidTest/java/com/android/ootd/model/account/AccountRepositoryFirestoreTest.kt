@@ -363,33 +363,36 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   // New tests for edit and delete account
   @Test
-  fun editAccount_updatesUsernameAndBirthday() = runTest {
+  fun editAccount_updatesUsernameAndBirthday() = runBlocking {
     accountRepository.addAccount(account1)
 
     val newUsername = "new_username"
     val newBirthday = "1990-01-01"
-
-    accountRepository.editAccount(account1.uid, username = newUsername, birthDay = newBirthday)
+    val newPicture = ":3"
+    accountRepository.editAccount(
+        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(newUsername, updated.username)
     assertEquals(newBirthday, updated.birthday)
+    assertEquals(newPicture, updated.birthday)
   }
 
   @Test
-  fun editAccount_keepsValuesWhenBlank() = runTest {
+  fun editAccount_keepsValuesWhenBlank() = runBlocking {
     accountRepository.addAccount(account1)
 
     // Pass blank values - should preserve existing data
-    accountRepository.editAccount(account1.uid, username = "", birthDay = "")
+    accountRepository.editAccount(account1.uid, username = "", birthDay = "", picture = "")
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(account1.username, updated.username)
     assertEquals(account1.birthday, updated.birthday)
+    assertEquals(account1.profilePicture, updated.birthday)
   }
 
   @Test
-  fun deleteAccount_successfullyDeletesAccount() = runTest {
+  fun deleteAccount_successfullyDeletesAccount() = runBlocking {
     accountRepository.addAccount(account1)
 
     accountRepository.deleteAccount(account1.uid)
@@ -399,7 +402,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun deleteAccount_throwsWhenAccountNotFound() = runTest {
+  fun deleteAccount_throwsWhenAccountNotFound() = runBlocking {
     val exception = runCatching { accountRepository.deleteAccount("nonexistent") }.exceptionOrNull()
     assertTrue(exception is UnknowUserID)
   }

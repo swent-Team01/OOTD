@@ -13,37 +13,43 @@ class AccountRepositoryInMemory : AccountRepository {
                   uid = "user1",
                   ownerId = "user1",
                   username = nameList[0],
-                  friendUids = listOf("user2", "user3")),
+                  friendUids = listOf("user2", "user3"),
+                  profilePicture = ""),
           "user2" to
               Account(
                   uid = "user2",
                   ownerId = "user2",
                   username = nameList[1],
-                  friendUids = listOf("user1")),
+                  friendUids = listOf("user1"),
+                  profilePicture = ""),
           "user3" to
               Account(
                   uid = "user3",
                   ownerId = "user3",
                   username = nameList[2],
-                  friendUids = emptyList()),
+                  friendUids = emptyList(),
+                  profilePicture = ""),
           "user4" to
               Account(
                   uid = "user4",
                   ownerId = "user4",
                   username = nameList[3],
-                  friendUids = listOf("user1", "user2")),
+                  friendUids = listOf("user1", "user2"),
+                  profilePicture = ""),
           "user5" to
               Account(
                   uid = "user5",
                   ownerId = "user5",
                   username = nameList[4],
-                  friendUids = emptyList()),
+                  friendUids = emptyList(),
+                  profilePicture = ""),
           "nonRegisterUser" to
               Account(
                   uid = "nonRegisterUser",
                   ownerId = "nonRegisterUser",
                   username = "",
-                  friendUids = listOf()))
+                  friendUids = listOf(),
+                  profilePicture = ""))
 
   override suspend fun createAccount(user: User, dateOfBirth: String) {
     // Check if username already exists
@@ -136,6 +142,7 @@ class AccountRepositoryInMemory : AccountRepository {
     accounts[userID] =
         acc.copy(
             username = username.takeIf { it.isNotBlank() } ?: acc.username,
-            birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday)
+            birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
+            profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
   }
 }
