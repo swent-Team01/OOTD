@@ -139,7 +139,6 @@ fun OOTDApp(
                 composable(Screen.Account.route) {
                   AccountScreen(
                       onBack = { navigationActions.goBack() },
-                      onEditAvatar = { /*TODO: handle edit avatar*/},
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
 

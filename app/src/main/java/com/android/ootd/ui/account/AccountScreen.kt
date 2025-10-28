@@ -62,7 +62,7 @@ object UiTestTags {
   const val TAG_ACCOUNT_AVATAR_LETTER = "account_avatar_letter"
   const val TAG_ACCOUNT_EDIT = "account_edit_button"
   const val TAG_USERNAME_FIELD = "account_username_field"
-  const val TAG_USERNAME_CLEAR = "account_username_clear"
+  const val TAG_USERNAME_EDIT = "account_username_EDIT"
   const val TAG_USERNAME_CANCEL = "account_username_cancel"
   const val TAG_USERNAME_SAVE = "account_username_save"
   const val TAG_GOOGLE_FIELD = "account_google_field"
@@ -78,7 +78,6 @@ object UiTestTags {
  * @param accountViewModel supplies [AccountViewState] and handles business logic.
  * @param credentialManager used when signing out to clear platform credentials.
  * @param onBack callback invoked when the back button is pressed.
- * @param onEditAvatar callback invoked when the Edit button under the avatar is pressed.
  * @param onSignOut callback invoked when the view model signals a successful sign-out.
  */
 @Composable
@@ -86,7 +85,6 @@ fun AccountScreen(
     accountViewModel: AccountViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onBack: () -> Unit = {},
-    onEditAvatar: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
   val scrollState = rememberScrollState()
@@ -253,7 +251,7 @@ fun AccountScreen(
                       isEditingUsername = true
                       editedUsername = username
                     },
-                    modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CLEAR)) {
+                    modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_EDIT)) {
                       Icon(
                           imageVector = Icons.Default.Edit,
                           contentDescription = "Edit username",
