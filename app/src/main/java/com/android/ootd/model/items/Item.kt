@@ -9,6 +9,7 @@ data class Item(
     val price: Double?,
     val material: List<Material?>,
     val link: String?,
+    val ownerId: String
 )
 
 data class Material(val name: String = "", val percentage: Double = 0.0)

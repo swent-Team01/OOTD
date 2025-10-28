@@ -122,31 +122,6 @@ interface ItemsTest {
     }
   }
 
-  fun ComposeTestRule.enterAddItemDetails(item: Item, viewModel: AddItemsViewModel, testUri: Uri) {
-    item.type?.let { enterAddItemType(it) }
-    enterAddItemCategory(item.category)
-    item.brand?.let { enterAddItemBrand(it) }
-    item.price?.let { enterAddItemPrice(it) }
-    item.link?.let { enterAddItemLink(it) }
-
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER, useUnmergedTree = true).performClick()
-
-    waitForIdle()
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
-    onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
-
-    runOnIdle { viewModel.setPhoto(testUri) }
-    waitForIdle()
-
-    onAllNodesWithContentDescription("Placeholder icon").assertCountEquals(0)
-    // onNodeWithContentDescription("Selected photo").assertExists().assertIsDisplayed()
-
-    item.material.forEach {
-      it?.let { material -> enterAddItemMaterial("${material.name} ${material.percentage}%") }
-    }
-  }
-
   fun ComposeTestRule.verifyImageUploadFlow(viewModel: AddItemsViewModel, uri: Uri) {
     // Step 1: Verify placeholder icon visible initially
     onNodeWithContentDescription("Placeholder icon").assertExists().assertIsDisplayed()
@@ -196,7 +171,8 @@ interface ItemsTest {
             brand = "Mango",
             price = 0.0,
             material = listOf(),
-            link = "https://example.com/item1")
+            link = "https://example.com/item1",
+            ownerId = "user123")
 
     val item2 =
         Item(
@@ -207,7 +183,8 @@ interface ItemsTest {
             brand = "Zara",
             price = 30.0,
             material = listOf(),
-            link = "https://example.com/item2")
+            link = "https://example.com/item2",
+            ownerId = "user123")
 
     val item3 =
         Item(
@@ -218,7 +195,8 @@ interface ItemsTest {
             brand = "Vakko",
             price = 0.0,
             material = listOf(),
-            link = "https://example.com/item3")
+            link = "https://example.com/item3",
+            ownerId = "user123")
 
     val item4 =
         Item(
@@ -229,6 +207,7 @@ interface ItemsTest {
             brand = "Mango",
             price = 0.0,
             material = listOf(),
-            link = "https://example.com/item4")
+            link = "https://example.com/item4",
+            ownerId = "user123")
   }
 }

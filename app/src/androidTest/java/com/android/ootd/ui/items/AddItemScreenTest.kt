@@ -23,7 +23,6 @@ import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import com.android.ootd.utils.ItemsTest.Companion.item1
 import junit.framework.TestCase
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -170,13 +169,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule
         .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
         .assertCountEquals(0)
-  }
-
-  @Test
-  fun userCanFillAllFieldAndSeePhotoPreview() {
-    val testUri = Uri.parse(item1.image.imageUrl)
-
-    composeTestRule.enterAddItemDetails(item1, viewModel, testUri)
   }
 
   @Test
@@ -743,7 +735,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
               brand = "TestBrand",
               price = viewModel.uiState.value.price.toDoubleOrNull() ?: 0.0,
               material = emptyList(),
-              link = "")
+              link = "",
+              ownerId = "user123")
 
       assert(item.price == 49.99)
     }

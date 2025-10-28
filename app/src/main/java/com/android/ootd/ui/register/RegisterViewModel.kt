@@ -153,8 +153,8 @@ class RegisterViewModel(
     viewModelScope.launch {
       try {
         val user = User(uid = auth.currentUser!!.uid, username = username)
-        userRepository.createUser(username, auth.currentUser!!.uid)
         accountRepository.createAccount(user, uiState.value.dateOfBirth)
+        userRepository.createUser(username, auth.currentUser!!.uid)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {

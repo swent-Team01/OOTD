@@ -357,13 +357,13 @@ class RegisterViewModelTest {
     val dateOfBirth = "01/01/2000"
     val callOrder = mutableListOf<String>()
 
-    coEvery { userRepository.createUser(username, testUid) } coAnswers
-        {
-          callOrder.add("userRepository")
-        }
     coEvery { accountRepository.createAccount(any(), any()) } coAnswers
         {
           callOrder.add("accountRepository")
+        }
+    coEvery { userRepository.createUser(username, testUid) } coAnswers
+        {
+          callOrder.add("userRepository")
         }
 
     viewModel.setUsername(username)
@@ -372,8 +372,8 @@ class RegisterViewModelTest {
     advanceUntilIdle()
 
     assertEquals(2, callOrder.size)
-    assertEquals("userRepository", callOrder[0])
-    assertEquals("accountRepository", callOrder[1])
+    assertEquals("userRepository", callOrder[1])
+    assertEquals("accountRepository", callOrder[0])
   }
 
   @Test
@@ -421,22 +421,6 @@ class RegisterViewModelTest {
 
     assertNull(viewModel.uiState.value.errorMsg)
     assertTrue(viewModel.uiState.value.registered)
-  }
-
-  @Test
-  fun registerUser_userSucceedsAccountFails_userRepositoryCalledOnce() = runTest {
-    val username = "testUser"
-    coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } throws Exception("Failed")
-
-    viewModel.setUsername(username)
-    viewModel.registerUser()
-    advanceUntilIdle()
-
-    // Verify user repository was called even though account creation failed
-    coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any()) }
-    assertFalse(viewModel.uiState.value.registered)
   }
 
   @Test

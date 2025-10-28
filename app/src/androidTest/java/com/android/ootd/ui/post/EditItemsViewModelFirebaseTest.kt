@@ -63,7 +63,8 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
             brand = brand,
             price = price,
             material = emptyList(),
-            link = "https://example.com")
+            link = "https://example.com",
+            ownerId = "test_user_id")
     repository.addItem(item)
     return item
   }

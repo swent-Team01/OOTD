@@ -47,6 +47,7 @@ class OutfitPostCardTest {
 
   @Test
   fun outfitPostCard_isDisplayed() {
+    // Given a post
     val testPost = createTestPost(name = "John Doe", description = "Casual Friday outfit")
 
     composeTestRule.setContent { OutfitPostCard(post = testPost, isBlurred = false) }

@@ -1,20 +1,28 @@
 package com.android.ootd.model.items
 
 import android.util.Log
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
+const val OWNER_ATTRIBUTE_NAME = "ownerId"
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
+
   override fun getNewItemId(): String {
     return db.collection(ITEMS_COLLECTION).document().id
   }
 
   override suspend fun getAllItems(): List<Item> {
-    val snapshot = db.collection(ITEMS_COLLECTION).get().await()
+    val ownerId =
+        Firebase.auth.currentUser?.uid
+            ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
+    val snapshot =
+        db.collection(ITEMS_COLLECTION).whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId).get().await()
     return snapshot.mapNotNull { mapToItem(it) }
   }
 
@@ -24,7 +32,6 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun addItem(item: Item) {
-    Log.d("AddItemsVM", "Repository adding item: $item")
     db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
   }
 
@@ -53,7 +60,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
     val brand = doc.getString("brand") ?: return null
     val price = doc.getDouble("price") ?: return null
     val link = doc.getString("link") ?: return null
-
+    val ownerId = doc.getString("ownerId") ?: return null
     val materialList = doc.get("material") as? List<*>
     val material =
         materialList?.mapNotNull { item ->
@@ -73,7 +80,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
         price = price,
         material = material,
         link = link,
-    )
+        ownerId = ownerId)
   } catch (e: Exception) {
     Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
     null

@@ -37,6 +37,7 @@ data class EditItemsUIState(
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
     val isSaveSuccessful: Boolean = false,
+    val ownerId: String = ""
 ) {
   val isEditValid: Boolean
     get() =
@@ -103,7 +104,8 @@ open class EditItemsViewModel(
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
             material = item.material.filterNotNull(),
-            link = item.link ?: "")
+            link = item.link ?: "",
+            ownerId = item.ownerId)
   }
 
   /** Loads an item by its UUID directly from the repository. */
@@ -117,53 +119,6 @@ open class EditItemsViewModel(
       }
     }
   }
-
-  //  /**
-  //   * Checks if all requirements are met to edit the item. If valid, automatically edits the item
-  // in
-  //   * the repository.
-  //   *
-  //   * @return true if the item can be edited, false otherwise.
-  //   */
-  //  fun canEditItems(): Boolean {
-  //    val state = _uiState.value
-  //    if (!state.isEditValid) {
-  //      setErrorMsg("Please fill in all required fields.")
-  //      return false
-  //    }
-  //
-  //    if (state.link.isNotEmpty() && !isValidUrl(state.link)) {
-  //      setErrorMsg("Please enter a valid URL.")
-  //      return false
-  //    }
-  //
-  //    editItemsInRepository(
-  //        Item(
-  //            itemUuid = state.itemId,
-  //            image = state.image,
-  //            category = state.category,
-  //            type = state.type,
-  //            brand = state.brand,
-  //            price = state.price,
-  //            material = state.material,
-  //            link = state.link))
-  //    return true
-  //  }
-  //
-  //  /**
-  //   * Edits the item in the repository.
-  //   *
-  //   * @param item The item to update.
-  //   */
-  //  fun editItemsInRepository(item: Item) {
-  //    viewModelScope.launch {
-  //      try {
-  //        repository.editItem(item.itemUuid, item)
-  //      } catch (e: Exception) {
-  //        setErrorMsg("Failed to update item: ${e.message}")
-  //      }
-  //    }
-  //  }
 
   fun onSaveItemClick() {
     val state = _uiState.value
@@ -197,7 +152,8 @@ open class EditItemsViewModel(
               brand = state.brand,
               price = state.price,
               material = state.material,
-              link = state.link)
+              link = state.link,
+              ownerId = state.ownerId)
 
       try {
         _uiState.value = _uiState.value.copy(isSaveSuccessful = true)

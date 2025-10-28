@@ -119,7 +119,8 @@ class EditItemsScreenTest {
             brand = null,
             price = null,
             material = emptyList(),
-            link = null))
+            link = null,
+            ownerId = "ownerID"))
 
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
@@ -200,7 +201,8 @@ class EditItemsScreenTest {
             brand = "Nike",
             price = 49.99,
             material = listOf(Material("Cotton", 100.0)),
-            link = "https://example.com")
+            link = "https://example.com",
+            ownerId = "ownerId")
 
     mockViewModel.loadItem(item)
 
@@ -248,7 +250,8 @@ class EditItemsScreenTest {
             brand = "Nike",
             price = 49.99,
             material = emptyList(),
-            link = "https://example.com"))
+            link = "https://example.com",
+            ownerId = "ownerId"))
 
     var backCalled = false
     composeTestRule.setContent {

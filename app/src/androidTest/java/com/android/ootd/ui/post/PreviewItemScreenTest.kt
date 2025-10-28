@@ -40,7 +40,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           price = 19.99,
           material = listOf(Material("Cotton"), Material("Polyester")),
           link = "https://example.com/product",
-      )
+          ownerId = "user123")
   private val fakeItem2 =
       Item(
           itemUuid = "2",
@@ -51,7 +51,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           price = 49.99,
           material = listOf(Material("Leather")),
           link = "https://example.com/product2",
-      )
+          ownerId = "user123")
 
   private fun fakeRepository(items: List<Item>) =
       object : ItemsRepository {

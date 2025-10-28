@@ -153,12 +153,6 @@ class FeedViewModelTest {
       return hasPosted[userId] ?: false
     }
 
-    override suspend fun getFeed(): List<OutfitPost> {
-      return postsByUid.values
-          .flatten()
-          .sortedWith(compareBy<OutfitPost> { it.timestamp }.thenBy { it.postUID })
-    }
-
     override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
       if (throwOnGet) throw IllegalStateException("Injected failure")
       // tiny async to exercise coroutine scheduling deterministically

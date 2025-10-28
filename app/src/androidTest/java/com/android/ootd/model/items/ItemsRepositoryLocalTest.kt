@@ -26,7 +26,8 @@ class ItemsRepositoryLocalTest {
           brand = "Mango",
           price = 0.0,
           material = listOf(),
-          link = "https://example.com/item1")
+          link = "https://example.com/item1",
+          ownerId = "user123")
 
   val item2 =
       Item(
@@ -37,7 +38,8 @@ class ItemsRepositoryLocalTest {
           brand = "Zara",
           price = 30.0,
           material = listOf(),
-          link = "https://example.com/item2")
+          link = "https://example.com/item2",
+          ownerId = "user123")
 
   val item3 =
       Item(
@@ -48,7 +50,8 @@ class ItemsRepositoryLocalTest {
           brand = "Vakko",
           price = 0.0,
           material = listOf(),
-          link = "https://example.com/item3")
+          link = "https://example.com/item3",
+          ownerId = "user123")
 
   val item4 =
       Item(
@@ -62,7 +65,8 @@ class ItemsRepositoryLocalTest {
               listOf(
                   Material(name = "Plastic", percentage = 80.0),
                   Material(name = "Metal", percentage = 20.0)),
-          link = "https://example.com/item4")
+          link = "https://example.com/item4",
+          ownerId = "user123")
 
   @Test
   fun getNewItemIdReturnsUniqueIDs() = runTest {

@@ -35,7 +35,8 @@ class EditItemsScreenTest {
               listOf(
                   Material(name = "Cotton", percentage = 80.0),
                   Material(name = "Polyester", percentage = 20.0)),
-          link = "https://nike.com/tshirt")
+          link = "https://nike.com/tshirt",
+          ownerId = "user123")
 
   @Before
   fun setUp() {
