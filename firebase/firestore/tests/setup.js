@@ -78,9 +78,9 @@ export function defaultUsers() {
 
 export function defaultPosts() {
   return [
-    { postUID: 'p1', uid: 'u1', name: 'Alice', outfitURL: 'url_p1', timestamp: 1 },
-    { postUID: 'p2', uid: 'u2', name: 'Bob',   outfitURL: 'url_p2', timestamp: 2 },
-    { postUID: 'p3', uid: 'u3', name: 'Carol', outfitURL: 'url_p3', timestamp: 3 },
-    { postUID: 'p9', uid: 'u9', name: 'Mallory', outfitURL: 'url_p9', timestamp: 9 }
+    { postUID: 'p1', ownerId: 'u1', name: 'Alice', outfitURL: 'url_p1', timestamp: 1 },
+    { postUID: 'p2', ownerId: 'u2', name: 'Bob',   outfitURL: 'url_p2', timestamp: 2 },
+    { postUID: 'p3', ownerId: 'u3', name: 'Carol', outfitURL: 'url_p3', timestamp: 3 },
+    { postUID: 'p9', ownerId: 'u9', name: 'Mallory', outfitURL: 'url_p9', timestamp: 9 }
   ];
 }

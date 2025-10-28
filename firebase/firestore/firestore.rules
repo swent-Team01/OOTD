@@ -1,13 +1,3 @@
-/**
- * FIRESTORE SECURITY RULES
- *
- * Users: public read; writes are open (not restricted to self).
- * Posts read: allowed to author or when viewer.friendUids contains author (one‑way friendship).
- * Posts write: create requires uid == request.auth.uid; update/delete only by the original author.
- * Access scope: top‑level 'items' is open; all other collections/paths are denied by the catch‑all.
- *
- */
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -15,10 +5,6 @@ service cloud.firestore {
     // Helper functions
     function isAuthed() {
       return request.auth != null;
-    }
-
-    function isSelf(uid) {
-      return isAuthed() && request.auth.uid == uid;
     }
 
     // Mutual friendship check using friendUids lists on both users
@@ -29,7 +15,7 @@ service cloud.firestore {
 
       return exists(viewerPath) && exists(authorPath)
         && get(viewerPath).data.keys().hasAny(['friendUids'])
-        && (authorUid in get(viewerPath).data.friendUids)
+        && (authorUid in get(viewerPath).data.friendUids);
     }
 
     // Users: read any, write own
@@ -40,34 +26,49 @@ service cloud.firestore {
 
     // Accounts: only owner can read/update, authenticated users can create
     match /accounts/{accountId} {
-      allow read: if isAuthed() && accountId == request.auth.uid;
+      allow read: if isAuthed() && (resource == null || resource.data.ownerId == request.auth.uid);
       allow create: if isAuthed()
-        && accountId == request.auth.uid;
-      allow update, delete: if isAuthed() && accountId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuthed()
+                       && resource.data.ownerId == request.auth.uid;
+
+      allow delete: if isAuthed()
+           && (resource == null || resource.data.ownerId == request.auth.uid);
     }
 
     // Posts: readable by author or mutual friends
     match /posts/{postId} {
       allow read: if isAuthed() &&
-                  (resource.data.uid == request.auth.uid ||
-                   isFriend(request.auth.uid, resource.data.uid));
+                              (resource == null || resource.data.ownerId == request.auth.uid ||
+                                                 isFriend(request.auth.uid, resource.data.ownerId));
+    allow create: if isAuthed()
+        && request.resource.data.ownerId == request.auth.uid;
+
+    allow update: if isAuthed()
+           && resource.data.ownerId == request.auth.uid;
+
+    allow delete: if isAuthed()
+           && (resource == null || resource.data.ownerId == request.auth.uid);
+
+    }
+
+    match /items/{itemId} {
+      allow read: if isAuthed() &&
+                        (resource == null || resource.data.ownerId == request.auth.uid);
 
       allow create: if isAuthed()
-        && request.resource.data.uid == request.auth.uid
-        // && request.resource.data.postUID == postId
+          && request.resource.data.ownerId == request.auth.uid;
 
       allow update: if isAuthed()
-        && resource.data.uid == request.auth.uid
+             && resource.data.ownerId == request.auth.uid;
 
-      allow delete: if isSelf(resource.data.uid);
+      allow delete: if isAuthed()
+             && (resource == null || resource.data.ownerId == request.auth.uid);
     }
 
     // Default deny for documents except items
     match /{document=**} {
       allow read, write: if false;
-    }
-    match /items/{itemId} {
-          allow read, write: if true;
     }
   }
 }
