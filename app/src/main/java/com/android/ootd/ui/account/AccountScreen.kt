@@ -44,6 +44,8 @@ import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 
 // Test tag constants for UI tests
@@ -150,16 +152,13 @@ fun AccountScreen(
                             .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
               } else {
                 Box(
-                    modifier =
-                        Modifier.size(180.dp)
-                            .clip(CircleShape)
-                            .background(colors.primary.copy(alpha = 0.12f)),
+                    modifier = Modifier.size(180.dp).clip(CircleShape).background(Primary),
                     contentAlignment = Alignment.Center) {
-                      Icon(
-                          imageVector = Icons.Default.AccountCircle,
-                          contentDescription = "Avatar",
-                          tint = colors.primary.copy(alpha = 0.85f),
-                          modifier = Modifier.size(96.dp))
+                      Text(
+                          text = username.firstOrNull()?.uppercase() ?: "",
+                          style = typography.headlineLarge,
+                          color = Secondary,
+                          modifier = Modifier.testTag("account_avatar_letter"))
                     }
               }
             }

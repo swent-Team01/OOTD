@@ -97,17 +97,17 @@ class AccountViewModel(
       val currentAccount = accountRepository.getAccount(uid)
 
       // Use account profilePicture if available, otherwise fall back to Google photo URL
-      val profilePictureString =
-          if (currentAccount.profilePicture.isNotBlank()) {
-            currentAccount.profilePicture
-          } else {
-            googlePhotoUrl ?: ""
-          }
+      //      val profilePictureString =
+      //          if (currentAccount.profilePicture.isNotBlank()) {
+      //            currentAccount.profilePicture
+      //          } else {
+      //            googlePhotoUrl ?: ""
+      //          }
 
       _uiState.update {
         it.copy(
             username = currentAccount.username,
-            profilePicture = profilePictureString,
+            profilePicture = currentAccount.profilePicture,
             errorMsg = null,
             isLoading = false)
       }
