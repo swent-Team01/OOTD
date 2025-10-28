@@ -481,7 +481,7 @@ fun AddItemsScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
               CircularProgressIndicator(color = Primary)
               Spacer(modifier = Modifier.height(12.dp))
-              Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
+              Text("Uploading item...", color = White, style = Typography.bodyLarge)
             }
           }
     }

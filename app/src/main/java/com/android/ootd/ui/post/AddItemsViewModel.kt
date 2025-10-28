@@ -13,8 +13,6 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.StorageReference
-import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -74,7 +72,6 @@ data class AddItemsUIState(
  */
 open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
-    private val storage: StorageReference = Firebase.storage.reference,
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(AddItemsUIState())

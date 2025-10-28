@@ -49,7 +49,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
     val uuid = doc.getString("itemUuid") ?: return null
-    val imageMap = doc.get("image") as? Map<*, *> ?: return null
+    val imageMap = doc["image"] as? Map<*, *> ?: return null
     val imageUri =
         ImageData(
             imageId = imageMap["imageId"] as? String ?: "",
