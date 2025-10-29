@@ -386,7 +386,8 @@ class EditItemsViewModelTest {
 
     coVerify { mockRepository.deleteItem("test-id") }
     val state = viewModel.uiState.value
-    assertEquals("Item deleted successfully!", state.errorMessage)
+    assertTrue(state.isDeleteSuccessful)
+    assertNull(state.errorMessage)
   }
 
   @Test
