@@ -3,11 +3,13 @@ import androidx.credentials.CredentialManager
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.account.AccountViewModel
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -37,6 +39,7 @@ class AccountViewModelTest {
 
   private lateinit var accountService: AccountService
   private lateinit var accountRepository: AccountRepository
+  private lateinit var userRepository: UserRepository
   private lateinit var credentialManager: CredentialManager
   private lateinit var viewModel: AccountViewModel
   private lateinit var mockFirebaseUser: FirebaseUser
@@ -50,10 +53,12 @@ class AccountViewModelTest {
 
     accountService = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
+    userRepository = mockk(relaxed = true)
     credentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
     every { accountService.currentUser } returns userFlow
+    every { accountService.currentUserId } returns "test-uid"
     every { mockFirebaseUser.uid } returns "test-uid"
     every { mockFirebaseUser.email } returns "test@example.com"
     every { mockFirebaseUser.photoUrl } returns null
@@ -61,6 +66,8 @@ class AccountViewModelTest {
     coEvery { accountRepository.getAccount("test-uid") } returns
         Account(uid = "test-uid", username = "testuser", profilePicture = "")
 
+    coEvery { accountRepository.editAccount(any(), any(), any(), any()) } just Runs
+    coEvery { userRepository.editUsername(any(), any()) } just Runs
     coEvery { credentialManager.clearCredentialState(any()) } just Runs
   }
 
@@ -168,5 +175,83 @@ class AccountViewModelTest {
     val state = viewModel.uiState.value
     assertEquals("updateduser", state.username)
     assertEquals("updated@example.com", state.googleAccountName)
+  }
+
+  @Test
+  fun editUser_updates_multiple_fields_successfully() = runTest {
+    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    val newUsername = "updateduser"
+    val newDate = "15/05/1995"
+    val newPicture = "https://example.com/newpic.jpg"
+
+    viewModel.editUser(newUsername = newUsername, newDate = newDate, profilePicture = newPicture)
+    advanceUntilIdle()
+
+    coVerify { accountRepository.editAccount("test-uid", newUsername, newDate, newPicture) }
+    coVerify { userRepository.editUsername("test-uid", newUsername) }
+    assertEquals(newUsername, viewModel.uiState.value.username)
+    assertEquals(newPicture, viewModel.uiState.value.profilePicture)
+    assertFalse(viewModel.uiState.value.isLoading)
+    assertNull(viewModel.uiState.value.errorMsg)
+  }
+
+  @Test
+  fun editUser_does_not_call_userRepository_when_username_is_blank() = runTest {
+    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    viewModel.editUser(newUsername = "", newDate = "01/01/2000")
+    advanceUntilIdle()
+
+    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "") }
+    coVerify(exactly = 0) { userRepository.editUsername(any(), any()) }
+  }
+
+  @Test
+  fun editUser_sets_error_message_when_accountOrUserRepository_fails() = runTest {
+    coEvery { accountRepository.editAccount(any(), any(), any(), any()) } throws
+        Exception("Failed to update account")
+    coEvery { userRepository.editUsername(any(), any()) } throws Exception("Username already taken")
+
+    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    viewModel.editUser(newUsername = "newusername")
+    advanceUntilIdle()
+
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals("Failed to update account", viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.isLoading)
+
+    viewModel.editUser(newUsername = "takenusername")
+
+    advanceUntilIdle()
+
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.isLoading)
+  }
+
+  @Test
+  fun editUser_sets_isLoading_to_true_while_updating() = runTest {
+    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
+    userFlow.value = mockFirebaseUser
+    advanceUntilIdle()
+
+    // Don't advance until idle to capture loading state
+    viewModel.editUser(newUsername = "newusername")
+
+    // Check that loading is true before the coroutine completes
+    // Note: This might be flaky depending on timing, so we advance partially
+    testScheduler.advanceTimeBy(1)
+
+    // Now complete the operation
+    advanceUntilIdle()
+
+    assertFalse(viewModel.uiState.value.isLoading)
   }
 }

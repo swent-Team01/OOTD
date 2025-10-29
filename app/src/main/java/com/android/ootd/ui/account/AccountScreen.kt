@@ -62,7 +62,7 @@ object UiTestTags {
   const val TAG_ACCOUNT_AVATAR_LETTER = "account_avatar_letter"
   const val TAG_ACCOUNT_EDIT = "account_edit_button"
   const val TAG_USERNAME_FIELD = "account_username_field"
-  const val TAG_USERNAME_EDIT = "account_username_EDIT"
+  const val TAG_USERNAME_EDIT = "account_username_edit"
   const val TAG_USERNAME_CANCEL = "account_username_cancel"
   const val TAG_USERNAME_SAVE = "account_username_save"
   const val TAG_GOOGLE_FIELD = "account_google_field"

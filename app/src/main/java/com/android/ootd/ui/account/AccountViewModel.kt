@@ -190,7 +190,6 @@ class AccountViewModel(
 
       try {
         val currentUserId = accountService.currentUserId
-
         val imageUrl = uploadImageToStorage(localImagePath, currentUserId)
         accountRepository.editAccount(currentUserId, "", "", imageUrl)
 
