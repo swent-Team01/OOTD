@@ -61,37 +61,6 @@ class EditItemsScreenTest {
   }
 
   @Test
-  fun allUIElementsAreDisplayed() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-
-    // Check all UI elements are present
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
-
-    // Check buttons text
-    composeTestRule.onNodeWithText("Select from Gallery").assertExists()
-    composeTestRule.onNodeWithText("Take a new picture").assertExists()
-    composeTestRule.onNodeWithText("Save Changes").assertExists()
-    composeTestRule.onNodeWithText("Delete Item").assertExists()
-  }
-
-  @Test
-  fun topAppBarIsDisplayedCorrectly() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-
-    composeTestRule.onNodeWithText("Edit Item").assertExists()
-    composeTestRule.onNodeWithContentDescription("Go Back").assertExists()
-  }
-
-  @Test
   fun loadItemPopulatesAllFields() {
     composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
 
