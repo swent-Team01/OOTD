@@ -46,4 +46,12 @@ interface AccountRepository {
    * @throws IllegalStateException if multiple users have the same uid
    */
   suspend fun isMyFriend(userID: String, friendID: String): Boolean
+
+  /**
+   * Toggle the privacy setting of the account corresponding to [userID].
+   *
+   * @return the new privacy setting after toggling
+   * @throws NoSuchElementException if account is not found
+   */
+  suspend fun togglePrivacy(userID: String): Boolean
 }

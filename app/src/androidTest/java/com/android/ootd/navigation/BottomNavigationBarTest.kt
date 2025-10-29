@@ -53,7 +53,7 @@ class BottomNavigationBarTest {
             NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Inventory))
         .assertIsDisplayed()
     composeRule
-        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Profile))
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Account))
         .assertIsDisplayed()
   }
 
@@ -71,9 +71,9 @@ class BottomNavigationBarTest {
   }
 
   @Test
-  fun bottomBar_clickProfile_navigatesToAccount() {
+  fun bottomBar_clickAccount_navigatesToAccount() {
     composeRule
-        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Profile))
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Account))
         .performClick()
     composeRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
   }

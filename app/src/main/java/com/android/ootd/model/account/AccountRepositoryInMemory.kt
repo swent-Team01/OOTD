@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import com.android.ootd.model.user.User
+import kotlin.text.set
 
 class AccountRepositoryInMemory : AccountRepository {
   var currentUser = "user1"
@@ -126,6 +127,13 @@ class AccountRepositoryInMemory : AccountRepository {
 
     val account = getAccount(currentUser)
     return account.friendUids.isNotEmpty() && account.friendUids.any { it == friendID }
+  }
+
+  override suspend fun togglePrivacy(userID: String): Boolean {
+    val account = getAccount(userID)
+    val updatedAccount = account.copy(isPrivate = !account.isPrivate)
+    accounts[userID] = updatedAccount
+    return updatedAccount.isPrivate
   }
 
   // Useful for testing
