@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,7 +36,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,6 +54,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -99,6 +100,12 @@ fun EditItemsScreen(
     }
   }
 
+  LaunchedEffect(itemsUIState.isDeleteSuccessful) {
+    if (itemsUIState.isDeleteSuccessful) {
+      goBack()
+    }
+  }
+
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { editItemsViewModel.initTypeSuggestions(context) }
 
@@ -140,23 +147,32 @@ fun EditItemsScreen(
     if (errorMsg != null) {
       Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
       editItemsViewModel.clearErrorMsg()
-    } else if (itemsUIState.itemId.isNotEmpty()) {
-      // This is used when we want to delete an item, as the call is asynchronous
-      goBack()
     }
   }
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
-          TopAppBar(
-              title = { Text("Edit Item", style = MaterialTheme.typography.titleLarge) },
+          CenterAlignedTopAppBar(
+              title = {
+                Text(
+                    "EDIT ITEMS",
+                    style =
+                        MaterialTheme.typography.displayLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary))
+              },
               navigationIcon = {
-                IconButton(onClick = goBack) {
-                  Icon(
-                      imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                      contentDescription = "Go Back")
-                }
+                Box(
+                    modifier = Modifier.padding(start = 4.dp),
+                    contentAlignment = Alignment.Center) {
+                      IconButton(onClick = { goBack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.tertiary)
+                      }
+                    }
               })
         },
         content = { innerPadding ->

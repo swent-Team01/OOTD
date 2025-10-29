@@ -37,6 +37,7 @@ data class EditItemsUIState(
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
     val isSaveSuccessful: Boolean = false,
+    val isDeleteSuccessful: Boolean = false,
     val ownerId: String = "",
     val isLoading: Boolean = false
 ) {
@@ -184,7 +185,7 @@ open class EditItemsViewModel(
         if (!deleted) {
           Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
         }
-        _uiState.value = EditItemsUIState(errorMessage = "Item deleted successfully!")
+        _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
       } catch (e: Exception) {
         setErrorMsg("Failed to delete item: ${e.message}")
       }
