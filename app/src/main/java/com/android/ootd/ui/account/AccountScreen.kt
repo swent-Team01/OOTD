@@ -14,13 +14,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,12 +40,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.android.ootd.ui.theme.LightColorScheme
-import com.android.ootd.ui.theme.Typography
+import com.android.ootd.ui.theme.OOTDTheme
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -52,7 +58,10 @@ object UiTestTags {
   const val TAG_USERNAME_CLEAR = "account_username_clear"
   const val TAG_GOOGLE_FIELD = "account_google_field"
   const val TAG_SIGNOUT_BUTTON = "account_signout_button"
+  const val TAG_PRIVACY_TOGGLE = "account_privacy_toggle"
   const val TAG_ACCOUNT_LOADING = "account_loading"
+  const val TAG_PRIVACY_HELP_ICON = "account_privacy_help_icon"
+  const val TAG_PRIVACY_HELP_MENU = "account_privacy_help_menu"
 }
 /**
  * Account screen UI.
@@ -74,14 +83,8 @@ fun AccountScreen(
     onEditAvatar: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
-  val scrollState = rememberScrollState()
-  val colors = LightColorScheme
-  val typography = Typography
-  val context = LocalContext.current
   val uiState by accountViewModel.uiState.collectAsState()
-  val username = uiState.username
-  val email = uiState.googleAccountName
-  val avatarUri = uiState.profilePicture
+  val context = LocalContext.current
 
   LaunchedEffect(uiState.signedOut) {
     if (uiState.signedOut) {
@@ -97,6 +100,32 @@ fun AccountScreen(
     }
   }
 
+  AccountScreenContent(
+      uiState = uiState,
+      onBack = onBack,
+      onEditAvatar = onEditAvatar,
+      onSignOutClick = { accountViewModel.signOut(credentialManager) },
+      onToggle = { accountViewModel.onTogglePrivacy() },
+      onHelpClick = { accountViewModel.onPrivacyHelpClick() },
+      onHelpDismiss = { accountViewModel.onPrivacyHelpDismiss() })
+}
+
+@Composable
+private fun AccountScreenContent(
+    uiState: AccountViewState,
+    onBack: () -> Unit,
+    onEditAvatar: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onToggle: () -> Unit,
+    onHelpClick: () -> Unit,
+    onHelpDismiss: () -> Unit,
+) {
+  val scrollState = rememberScrollState()
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+  val username = uiState.username
+  val email = uiState.googleAccountName
+  val avatarUri = uiState.profilePicture
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
 
   Column(
@@ -219,13 +248,24 @@ fun AccountScreen(
                   }
             },
             readOnly = true,
-            textStyle = typography.bodyLarge, // 16/24 for input text
+            textStyle = typography.bodyLarge,
             colors =
                 OutlinedTextFieldDefaults.colors(
                     focusedTextColor = colors.primary,
                     unfocusedTextColor = colors.primary,
                 ),
             modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_GOOGLE_FIELD))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Privacy toggle
+        PrivacyToggleRow(
+            isPrivate = uiState.isPrivate,
+            onToggle = onToggle,
+            showPrivacyHelp = uiState.showPrivacyHelp,
+            onHelpClick = onHelpClick,
+            onHelpDismiss = onHelpDismiss,
+            modifier =
+                Modifier.fillMaxWidth().padding(top = 4.dp).testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -234,7 +274,7 @@ fun AccountScreen(
             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
             contentAlignment = Alignment.Center) {
               Button(
-                  onClick = { accountViewModel.signOut(credentialManager) },
+                  onClick = onSignOutClick,
                   shape = CircleShape,
                   colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
                   modifier = Modifier.testTag(UiTestTags.TAG_SIGNOUT_BUTTON)) {
@@ -243,7 +283,6 @@ fun AccountScreen(
             }
       }
 
-  // Loading indicator (circular progress) in the center of the screen
   if (uiState.isLoading) {
     Box(
         modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
@@ -251,5 +290,87 @@ fun AccountScreen(
           CircularProgressIndicator(
               modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
         }
+  }
+}
+
+@Composable
+private fun PrivacyToggleRow(
+    isPrivate: Boolean,
+    onToggle: () -> Unit,
+    showPrivacyHelp: Boolean,
+    onHelpClick: () -> Unit,
+    onHelpDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+
+  Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(
+          text = "Account Privacy",
+          style = typography.titleLarge,
+          color = colors.primary,
+          modifier = Modifier.padding(start = 8.dp))
+      Spacer(modifier = Modifier.width(6.dp))
+      Box {
+        IconButton(
+            onClick = onHelpClick, modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_ICON)) {
+              Icon(imageVector = Icons.Outlined.Info, contentDescription = "Privacy help")
+            }
+        DropdownMenu(expanded = showPrivacyHelp, onDismissRequest = onHelpDismiss) {
+          DropdownMenuItem(
+              modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_MENU),
+              text = {
+                Text(
+                    "Private: only you and mutual friends can view your posts. Public: everyone can view.",
+                    style = typography.bodySmall,
+                    color = colors.onSurface)
+              },
+              onClick = onHelpDismiss)
+        }
+      }
+    }
+
+    Spacer(modifier = Modifier.weight(1f))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Text(
+          text = if (isPrivate) "Private" else "Public",
+          style = typography.bodySmall,
+          color = colors.onSurface.copy(alpha = 0.65f))
+      Switch(
+          checked = isPrivate,
+          onCheckedChange = { onToggle() },
+          colors =
+              SwitchDefaults.colors(
+                  checkedThumbColor = colors.onPrimary,
+                  checkedTrackColor = colors.primary,
+                  uncheckedThumbColor = colors.onPrimary,
+                  uncheckedTrackColor = colors.outlineVariant))
+    }
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AccountScreenPreview() {
+  OOTDTheme {
+    AccountScreenContent(
+        uiState =
+            AccountViewState(
+                username = "Jane Doe",
+                googleAccountName = "jane@google.com",
+                profilePicture = "",
+                isPrivate = false,
+                showPrivacyHelp = true,
+            ),
+        onBack = {},
+        onEditAvatar = {},
+        onSignOutClick = {},
+        onToggle = {},
+        onHelpClick = {},
+        onHelpDismiss = {},
+    )
   }
 }
