@@ -71,7 +71,7 @@ class BottomNavigationBarTest {
   }
 
   @Test
-  fun bottomBar_clickProfile_navigatesToAccount() {
+  fun bottomBar_clickAccount_navigatesToAccount() {
     composeRule
         .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Account))
         .performClick()
