@@ -32,6 +32,7 @@ import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.notifications.NotificationsScreen
 import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
@@ -130,7 +131,9 @@ fun OOTDApp(
                   FeedScreen(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
-                      onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
+                      onAccountIconClick = {
+                        navigationActions.navigateTo(Screen.NotificationsScreen)
+                      })
                 }
                 composable(Screen.SearchScreen.route) {
                   UserSearchScreen(onBack = { navigationActions.goBack() })
@@ -223,6 +226,7 @@ fun OOTDApp(
                         EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
                       }
                     }
+                composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }
               }
             }
       }
