@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-// Test generated with the help of AI
+// Tests generated with the help of AI
 class AccountRepositoryInMemoryTest {
   private lateinit var repository: AccountRepositoryInMemory
 
@@ -333,6 +333,47 @@ class AccountRepositoryInMemoryTest {
           }
         }
 
+    assertEquals("Account with ID nonexistent not found", exception.message)
+  }
+
+  @Test
+  fun togglePrivacy_togglesAndReturnsNewValue() = runTest {
+    val initial = repository.getAccount("user1").isPrivate
+
+    val returned = repository.togglePrivacy("user1")
+
+    assertEquals(!initial, returned)
+    assertEquals(!initial, repository.getAccount("user1").isPrivate)
+  }
+
+  @Test
+  fun togglePrivacy_doubleToggleRestoresOriginalState() = runTest {
+    val initial = repository.getAccount("user1").isPrivate
+
+    repository.togglePrivacy("user1")
+    repository.togglePrivacy("user1")
+
+    val current = repository.getAccount("user1").isPrivate
+    assertEquals(initial, current)
+  }
+
+  @Test
+  fun togglePrivacy_doesNotAffectOtherAccounts() = runTest {
+    val user1Initial = repository.getAccount("user1").isPrivate
+    val user2Initial = repository.getAccount("user2").isPrivate
+
+    repository.togglePrivacy("user1")
+
+    assertEquals(!user1Initial, repository.getAccount("user1").isPrivate)
+    assertEquals(user2Initial, repository.getAccount("user2").isPrivate)
+  }
+
+  @Test
+  fun togglePrivacy_throwsExceptionWhenAccountNotFound() {
+    val exception =
+        assertThrows(NoSuchElementException::class.java) {
+          runTest { repository.togglePrivacy("nonexistent") }
+        }
     assertEquals("Account with ID nonexistent not found", exception.message)
   }
 }

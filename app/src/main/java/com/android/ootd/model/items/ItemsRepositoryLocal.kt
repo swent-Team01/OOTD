@@ -48,7 +48,7 @@ class ItemsRepositoryLocal : ItemsRepository {
    * @param item The item to add.
    */
   override suspend fun addItem(item: Item) {
-    items[item.uuid] = item
+    items[item.itemUuid] = item
   }
 
   /**
@@ -77,7 +77,6 @@ class ItemsRepositoryLocal : ItemsRepository {
     }
     items.remove(uuid)
   }
-
   /** Clears all items from the local storage. Useful for resetting state between tests. */
   fun clearAll() {
     items.clear()

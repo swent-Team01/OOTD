@@ -48,6 +48,14 @@ interface AccountRepository {
   suspend fun isMyFriend(userID: String, friendID: String): Boolean
 
   /**
+   * Toggle the privacy setting of the account corresponding to [userID].
+   *
+   * @return the new privacy setting after toggling
+   * @throws NoSuchElementException if account is not found
+   */
+  suspend fun togglePrivacy(userID: String): Boolean
+
+  /**
    * Allows the User to delete his account
    *
    * @param userID Said users ID

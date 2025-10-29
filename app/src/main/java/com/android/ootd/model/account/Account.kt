@@ -10,6 +10,7 @@ package com.android.ootd.model.account
  * @property googleAccountEmail linked Google account email (may be blank)
  * @property profilePicture URL to the profile picture (Firebase Storage URL or empty string)
  * @property friendUids list of friend user IDs
+ * @property isPrivate whether the account is private or not
  */
 data class Account(
     val uid: String = "",
@@ -18,5 +19,6 @@ data class Account(
     val birthday: String = "",
     val googleAccountEmail: String = "",
     val profilePicture: String = "",
-    val friendUids: List<String> = emptyList()
+    val friendUids: List<String> = emptyList(),
+    val isPrivate: Boolean = false
 )

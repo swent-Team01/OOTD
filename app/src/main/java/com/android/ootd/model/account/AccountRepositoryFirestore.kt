@@ -24,6 +24,8 @@ private fun Account.toFirestoreMap(): Map<String, Any> =
         "birthday" to birthday,
         "googleAccountEmail" to googleAccountEmail,
         "profilePicture" to profilePicture,
+        "friendUids" to friendUids,
+        "isPrivate" to isPrivate,
         "ownerId" to ownerId,
         "friendUids" to friendUids)
 
@@ -33,6 +35,7 @@ private fun DocumentSnapshot.toAccount(): Account {
   val birthday = getString("birthday") ?: ""
   val email = getString("googleAccountEmail") ?: ""
   val picture = getString("profilePicture") ?: ""
+  val isPrivate = getBoolean("isPrivate") ?: false
 
   // Validate that friendUids is actually a List, throw if not
   val friendUidsRaw = get("friendUids")
@@ -54,7 +57,8 @@ private fun DocumentSnapshot.toAccount(): Account {
       birthday = birthday,
       googleAccountEmail = email,
       profilePicture = picture,
-      friendUids = friends)
+      friendUids = friends,
+      isPrivate = isPrivate)
 }
 
 class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRepository {
@@ -210,6 +214,26 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
     return (myAccount?.friendUids?.isNotEmpty() == true &&
         myAccount.friendUids.any { it == friendID })
+  }
+
+  override suspend fun togglePrivacy(userID: String): Boolean {
+    val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+
+    if (!document.exists()) {
+      throw NoSuchElementException("The authenticated user has not been added to the database")
+    }
+
+    val myAccount =
+        transformAccountDocument(document)
+            ?: throw IllegalStateException("Failed to transform document with ID $userID")
+
+    val newPrivacySetting = !myAccount.isPrivate
+    db.collection(ACCOUNT_COLLECTION_PATH)
+        .document(userID)
+        .update("isPrivate", newPrivacySetting)
+        .await()
+
+    return newPrivacySetting
   }
 
   override suspend fun deleteAccount(userID: String) {

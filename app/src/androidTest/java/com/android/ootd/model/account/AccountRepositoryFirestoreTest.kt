@@ -406,4 +406,39 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val exception = runCatching { accountRepository.deleteAccount("nonexistent") }.exceptionOrNull()
     assertTrue(exception is UnknowUserID)
   }
+
+  @Test
+  fun togglePrivacy_togglesAndPersists() = runBlocking {
+    accountRepository.addAccount(account1)
+
+    val first = accountRepository.togglePrivacy(account1.uid)
+    assertTrue(first)
+
+    val doc1 =
+        FirebaseEmulator.firestore
+            .collection(ACCOUNT_COLLECTION_PATH)
+            .document(account1.uid)
+            .get()
+            .await()
+    assertTrue(doc1.getBoolean("isPrivate") == true)
+
+    val second = accountRepository.togglePrivacy(account1.uid)
+    assertTrue(!second)
+
+    val doc2 =
+        FirebaseEmulator.firestore
+            .collection(ACCOUNT_COLLECTION_PATH)
+            .document(account1.uid)
+            .get()
+            .await()
+    assertTrue(doc2.getBoolean("isPrivate") == false)
+  }
+
+  @Test
+  fun togglePrivacy_throwsWhenAccountMissing() = runBlocking {
+    val exception = runCatching { accountRepository.togglePrivacy("nonexistent") }.exceptionOrNull()
+
+    assertTrue(exception is NoSuchElementException)
+    assertTrue(exception?.message?.contains("authenticated user") == true)
+  }
 }

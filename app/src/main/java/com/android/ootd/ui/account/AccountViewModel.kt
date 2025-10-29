@@ -19,6 +19,7 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -40,7 +41,9 @@ data class AccountViewState(
     val dateOfBirth: String = "",
     val errorMsg: String? = null,
     val signedOut: Boolean = false,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val isPrivate: Boolean = false,
+    val showPrivacyHelp: Boolean = false,
 )
 
 /**
@@ -64,9 +67,10 @@ class AccountViewModel(
   private val _uiState = MutableStateFlow(AccountViewState())
   val uiState: StateFlow<AccountViewState> = _uiState.asStateFlow()
 
-  // Keep track of the last loaded account to avoid redundant loads
-  private var lastLoadedAccountId: String? = null
+  // Track authenticated user id for actions (don't rely on a last-loaded value)
+  private var authenticatedUserId: String? = null
   private var isSigningOut: Boolean = false
+  private var isTogglingPrivacy: Boolean = false
 
   init {
     observeAuthState()
@@ -75,23 +79,22 @@ class AccountViewModel(
   /** Start observing auth state and update the UI when the current account changes. */
   private fun observeAuthState() {
     viewModelScope.launch {
-      accountService.currentUser.collect { account ->
-        if (account != null) {
-          // Only load account data if we haven't loaded this account yet or it's a different
-          // account
-          if (lastLoadedAccountId != account.uid) {
-            lastLoadedAccountId = account.uid
-            // Pass Google photo URL as String fallback (may be null)
-            loadAccountData(account.uid, account.email.orEmpty(), account.photoUrl?.toString())
+      // Avoid redundant loads by only reacting when the uid changes
+      accountService.currentUser
+          .distinctUntilChangedBy { it?.uid }
+          .collect { account ->
+            if (account != null) {
+              authenticatedUserId = account.uid
+              // Pass Google photo URL as String fallback (may be null)
+              loadAccountData(account.uid, account.email.orEmpty(), account.photoUrl?.toString())
+            } else {
+              authenticatedUserId = null
+              // Don't reset state if we're in the process of signing out
+              if (!isSigningOut) {
+                _uiState.update { AccountViewState() }
+              }
+            }
           }
-        } else {
-          lastLoadedAccountId = null
-          // Don't reset state if we're in the process of signing out
-          if (!isSigningOut) {
-            _uiState.update { AccountViewState() }
-          }
-        }
-      }
     }
   }
 
@@ -109,6 +112,7 @@ class AccountViewModel(
       _uiState.update {
         it.copy(
             username = currentAccount.username,
+            isPrivate = currentAccount.isPrivate,
             profilePicture = currentAccount.profilePicture,
             dateOfBirth = currentAccount.birthday,
             errorMsg = null,
@@ -121,6 +125,35 @@ class AccountViewModel(
             isLoading = false,
             googleAccountName = email,
             profilePicture = googlePhotoUrl ?: "")
+      }
+    }
+  }
+
+  /** Toggle the account's privacy setting and update [uiState] accordingly. */
+  fun onTogglePrivacy() {
+    val uid = authenticatedUserId
+
+    if (uid == null) {
+      _uiState.update { it.copy(errorMsg = "No authenticated user") }
+      return
+    }
+
+    if (isTogglingPrivacy) return
+    isTogglingPrivacy = true
+
+    val previous = _uiState.value.isPrivate
+    _uiState.update { it.copy(isPrivate = !previous) }
+
+    viewModelScope.launch {
+      try {
+        val newValue = accountRepository.togglePrivacy(uid)
+        _uiState.update { it.copy(isPrivate = newValue, errorMsg = null) }
+      } catch (e: Exception) {
+        _uiState.update {
+          it.copy(isPrivate = previous, errorMsg = e.localizedMessage ?: "Failed to toggle privacy")
+        }
+      } finally {
+        isTogglingPrivacy = false
       }
     }
   }
@@ -223,5 +256,14 @@ class AccountViewModel(
       Log.e("AccountViewModel", "Upload failed: ${e.message}", e)
       throw e
     }
+  }
+
+  // --- Help popup intents ---
+  fun onPrivacyHelpClick() {
+    _uiState.update { it.copy(showPrivacyHelp = !it.showPrivacyHelp) }
+  }
+
+  fun onPrivacyHelpDismiss() {
+    _uiState.update { it.copy(showPrivacyHelp = false) }
   }
 }

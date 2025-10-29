@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import com.android.ootd.model.user.User
+import kotlin.text.set
 
 class AccountRepositoryInMemory : AccountRepository {
   var currentUser = "user1"
@@ -144,5 +145,10 @@ class AccountRepositoryInMemory : AccountRepository {
             username = username.takeIf { it.isNotBlank() } ?: acc.username,
             birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
             profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
+  override suspend fun togglePrivacy(userID: String): Boolean {
+    val account = getAccount(userID)
+    val updatedAccount = account.copy(isPrivate = !account.isPrivate)
+    accounts[userID] = updatedAccount
+    return updatedAccount.isPrivate
   }
 }

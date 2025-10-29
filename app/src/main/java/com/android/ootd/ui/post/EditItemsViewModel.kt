@@ -2,9 +2,12 @@ package com.android.ootd.ui.post
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.items.FirebaseImageUploader
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
@@ -21,7 +24,8 @@ import kotlinx.coroutines.launch
  */
 data class EditItemsUIState(
     val itemId: String = "",
-    val image: Uri = Uri.EMPTY,
+    val image: ImageData = ImageData("", ""),
+    val localPhotoUri: Uri? = null,
     val category: String = "",
     val type: String = "",
     val brand: String = "",
@@ -32,13 +36,15 @@ data class EditItemsUIState(
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
-    val ownerId: String = ""
+    val isSaveSuccessful: Boolean = false,
+    val ownerId: String = "",
+    val isLoading: Boolean = false
 ) {
   val isEditValid: Boolean
     get() =
         invalidPhotoMsg == null &&
             invalidCategory == null &&
-            image != Uri.EMPTY &&
+            (localPhotoUri != null || image.imageUrl.isNotEmpty()) &&
             category.isNotEmpty()
 }
 
@@ -92,7 +98,7 @@ open class EditItemsViewModel(
   fun loadItem(item: Item) {
     _uiState.value =
         EditItemsUIState(
-            itemId = item.uuid,
+            itemId = item.itemUuid,
             image = item.image,
             category = item.category,
             type = item.type ?: "",
@@ -115,48 +121,50 @@ open class EditItemsViewModel(
     }
   }
 
-  /**
-   * Checks if all requirements are met to edit the item. If valid, automatically edits the item in
-   * the repository.
-   *
-   * @return true if the item can be edited, false otherwise.
-   */
-  fun canEditItems(): Boolean {
+  fun onSaveItemClick() {
     val state = _uiState.value
-    if (!state.isEditValid) {
-      setErrorMsg("Please fill in all required fields.")
-      return false
-    }
 
     if (state.link.isNotEmpty() && !isValidUrl(state.link)) {
       setErrorMsg("Please enter a valid URL.")
-      return false
+      return
     }
-    editItemsInRepository(
-        Item(
-            uuid = state.itemId,
-            image = state.image,
-            category = state.category,
-            type = state.type,
-            brand = state.brand,
-            price = state.price,
-            material = state.material,
-            link = state.link,
-            ownerId = state.ownerId))
-    return true
-  }
 
-  /**
-   * Edits the item in the repository.
-   *
-   * @param item The item to update.
-   */
-  fun editItemsInRepository(item: Item) {
+    if (!state.isEditValid) {
+      setErrorMsg("Please fill in all required fields.")
+      return
+    }
+
     viewModelScope.launch {
+      _uiState.value = _uiState.value.copy(isLoading = true)
+      val finalImage =
+          if (state.localPhotoUri != null)
+              FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
+          else state.image
+      if (finalImage.imageUrl.isEmpty()) {
+        setErrorMsg("Please select a photo.")
+        _uiState.value = _uiState.value.copy(isSaveSuccessful = false)
+        return@launch
+      }
+      val updatedItem =
+          Item(
+              itemUuid = state.itemId,
+              image = finalImage,
+              category = state.category,
+              type = state.type,
+              brand = state.brand,
+              price = state.price,
+              material = state.material,
+              link = state.link,
+              ownerId = state.ownerId)
+
       try {
-        repository.editItem(item.uuid, item)
+        _uiState.value =
+            _uiState.value.copy(image = finalImage, errorMessage = null, isSaveSuccessful = true)
+        repository.editItem(updatedItem.itemUuid, updatedItem)
       } catch (e: Exception) {
         setErrorMsg("Failed to update item: ${e.message}")
+      } finally {
+        _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
   }
@@ -172,6 +180,10 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         repository.deleteItem(state.itemId)
+        val deleted = FirebaseImageUploader.deleteImage(state.image.imageId)
+        if (!deleted) {
+          Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
+        }
         _uiState.value = EditItemsUIState(errorMessage = "Item deleted successfully!")
       } catch (e: Exception) {
         setErrorMsg("Failed to delete item: ${e.message}")
@@ -185,9 +197,18 @@ open class EditItemsViewModel(
    * @param uri The URI of the selected photo.
    */
   fun setPhoto(uri: Uri) {
-    _uiState.value =
-        _uiState.value.copy(
-            image = uri, invalidPhotoMsg = if (uri == Uri.EMPTY) "Please select a photo." else null)
+
+    if (uri == Uri.EMPTY) {
+      _uiState.value =
+          _uiState.value.copy(
+              localPhotoUri = null,
+              image = ImageData("", ""),
+              invalidPhotoMsg = "Please select a photo.")
+    } else {
+      _uiState.value =
+          _uiState.value.copy(
+              localPhotoUri = uri, image = ImageData("", ""), invalidPhotoMsg = null)
+    }
   }
 
   /**
