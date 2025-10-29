@@ -10,7 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import androidx.core.net.toUri
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
@@ -32,8 +32,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   // Fake data setup for viewModel
   private val fakeItem =
       Item(
-          uuid = "1",
-          image = "https://example.com/image.jpg".toUri(),
+          itemUuid = "1",
+          image = ImageData("Photo1", "https://example.com/image.jpg"),
           category = "Clothes",
           type = "T-Shirt",
           brand = "Nike",
@@ -43,8 +43,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           ownerId = "user123")
   private val fakeItem2 =
       Item(
-          uuid = "2",
-          image = "https://example.com/image2.jpg".toUri(),
+          itemUuid = "2",
+          image = ImageData("Photo2", "https://example.com/image2.jpg"),
           category = "Shoes",
           type = "Sneakers",
           brand = "Adidas",
@@ -160,7 +160,9 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   fun canScrollThroughItemList() {
     val items =
         (1..50).map {
-          item4.copy(uuid = it.toString(), image = "https://example.com/image${it}.jpg".toUri())
+          item4.copy(
+              itemUuid = it.toString(),
+              image = ImageData("image$it", "https://example.com/image${it}.jpg"))
         }
     setContent(withInitialItems = items)
     val firstTag = PreviewItemScreenTestTags.getTestTagForItem(items.first())
@@ -186,7 +188,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun imagePlaceholderIsDisplayedWhenImageFailsToLoad() {
-    val itemWithBrokenImage = item1.copy(image = "invalid_url".toUri())
+    val itemWithBrokenImage = item1.copy(image = ImageData("broken", "invalid_url"))
     setContent(withInitialItems = listOf(itemWithBrokenImage))
     composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW).assertIsDisplayed()
   }
@@ -285,7 +287,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     }
     // Click the edit button
     composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
-    assert(editedItemId == fakeItem.uuid)
+    assert(editedItemId == fakeItem.itemUuid)
   }
 
   @Test
@@ -544,11 +546,11 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
     // Click edit on first item
     composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)[0].performClick()
-    assert(editedId == item1.uuid)
+    assert(editedId == item1.itemUuid)
 
     // Click edit on second item
     composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)[1].performClick()
-    assert(editedId == item2.uuid)
+    assert(editedId == item2.itemUuid)
   }
 
   @Test

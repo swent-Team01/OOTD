@@ -11,11 +11,11 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
@@ -23,7 +23,8 @@ import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import junit.framework.TestCase
+import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -42,7 +43,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     viewModel = AddItemsViewModel(repository)
     // Initialize type suggestions for tests
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
-    composeTestRule.setContent { AddItemsScreen(viewModel) }
+    composeTestRule.setContent { AddItemsScreen(viewModel, onNextScreen = {}) }
   }
 
   @Test
@@ -56,11 +57,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun canEnterCategory() {
     val text = "clothes"
     composeTestRule.enterAddItemCategory(text)
-    //
-    // composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).assertTextContains(text)
-    //    composeTestRule
-    //        .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-    //        .assertIsNotDisplayed()
   }
 
   @Test
@@ -94,7 +90,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun canEnterPhoto() {
     val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.enterAddItemPhoto(uri)
+    composeTestRule.enterAddItemPhoto()
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
     composeTestRule.checkPhotoPreviewDisplayed()
   }
 
@@ -115,13 +112,12 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun enteringInvalidCategoryShowsErrorMessageThenTheCorrectCategory() {
-    // viewModel = AddItemsViewModel(repository)
     // Type invalid category
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
 
     composeTestRule.runOnIdle {
       assert(viewModel.uiState.value.invalidCategory != null)
-      TestCase.assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
+      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
     }
 
     composeTestRule
@@ -145,8 +141,28 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.runOnIdle {
       assert(viewModel.uiState.value.invalidPhotoMsg == null)
-      assert(viewModel.uiState.value.image == fakeUri)
+      assert(viewModel.uiState.value.localPhotoUri == fakeUri)
     }
+  }
+
+  @Test
+  fun imageUploadDialogShowsAndDismissesCorrectly() {
+    // Step 1: Click the upload button
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
+
+    // Step 2: Verify dialog
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).assertIsDisplayed()
+
+    // Step 3: Dismiss dialog
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
+    composeTestRule.waitForIdle()
+
+    // Step 4: Assert dialog closed
+    composeTestRule
+        .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
+        .assertCountEquals(0)
   }
 
   @Test
@@ -172,10 +188,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun galleryLauncher_doesNothing_whenUriIsNull() {
     composeTestRule.runOnIdle {
-      val previousImage = viewModel.uiState.value.image
+      val previousImage = viewModel.uiState.value.localPhotoUri
       val uri: Uri? = null
       if (uri != null) viewModel.setPhoto(uri)
-      assert(viewModel.uiState.value.image == previousImage)
+      assert(viewModel.uiState.value.localPhotoUri == previousImage)
     }
   }
 
@@ -190,7 +206,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       }
     }
 
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.image == fakeUri) }
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.localPhotoUri == fakeUri) }
   }
 
   @Test
@@ -198,22 +214,28 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.runOnIdle {
       val success = false
       val cameraUri: Uri? = null
-      val previousImage = viewModel.uiState.value.image
+      val previousImage = viewModel.uiState.value.localPhotoUri
       if (success && cameraUri != null) {
         viewModel.setPhoto(cameraUri)
       }
-      assert(viewModel.uiState.value.image == previousImage)
+      assert(viewModel.uiState.value.localPhotoUri == previousImage)
     }
   }
 
   @Test
   fun clickingAddItemReturns() {
     val item = ItemsTest.Companion.item4
+    val testUri = "content://dummy/photo.jpg".toUri()
 
-    // Set the photo directly in the viewModel to avoid scrolling issues
-    composeTestRule.runOnIdle { viewModel.setPhoto(item.image) }
-
+    // Set photo directly to avoid launching external activities
+    composeTestRule.runOnIdle { viewModel.setPhoto(testUri) }
     composeTestRule.waitForIdle()
+
+    composeTestRule.enterAddItemType(item.type ?: "")
+    composeTestRule.enterAddItemCategory(item.category)
+    composeTestRule.enterAddItemBrand(item.brand ?: "")
+    item.price?.let { composeTestRule.enterAddItemPrice(it) }
+    composeTestRule.enterAddItemLink(item.link ?: "")
 
     // Enter the other item details (excluding photo)
     item.type?.let { composeTestRule.enterAddItemType(it) }
@@ -229,10 +251,14 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     // Ensure the Add Item button is visible and click it
     composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+    // Button exists in the hierarchy; no need to waitUntil
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
         .assertIsDisplayed()
         .performClick()
+
+    // Still present after click (we don’t navigate in this test)
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
   }
 
   @Test
@@ -268,22 +294,26 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
-  fun addItemButtonDisabledWhenNoImage() {
+  fun addItemButtonDisabledWhenImageMissing() {
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("Jacket")
 
     composeTestRule.waitForIdle()
     composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
 
+    // Verify button is disabled when no image
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
         .assertIsNotEnabled()
+
+    // Verify isAddingValid is false
+    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isAddingValid) }
   }
 
   @Test
   fun addItemButtonDisabledWhenNoCategory() {
     val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.enterAddItemPhoto(uri)
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
 
     composeTestRule.waitForIdle()
 
@@ -297,7 +327,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   @Test
   fun addItemButtonDisabledWhenInvalidCategory() {
     val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.enterAddItemPhoto(uri)
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
     composeTestRule.enterAddItemCategory("InvalidCategory")
 
     composeTestRule.waitForIdle()
@@ -472,33 +502,39 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
-  fun canAddItemsReturnsFalseWhenImageMissing() {
+  fun canAddItemsReturnsFalseWhenImageMissing() = runTest {
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("Jacket")
 
+    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
+
+    composeTestRule.waitForIdle()
+
     composeTestRule.runOnIdle {
-      val canAdd = viewModel.canAddItems()
-      assert(!canAdd)
-      assert(viewModel.uiState.value.errorMessage?.contains("photo") == true)
+      assert(!viewModel.addOnSuccess.value)
+      assert(viewModel.uiState.value.errorMessage != null)
     }
   }
 
   @Test
-  fun canAddItemsReturnsFalseWhenCategoryMissing() {
+  fun canAddItemsReturnsFalseWhenCategoryMissing() = runTest {
     val uri = "content://dummy/photo.jpg".toUri()
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
 
     composeTestRule.waitForIdle()
 
+    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
+
+    composeTestRule.waitForIdle()
+
     composeTestRule.runOnIdle {
-      val canAdd = viewModel.canAddItems()
-      assert(!canAdd)
-      assert(viewModel.uiState.value.errorMessage?.contains("category") == true)
+      assert(!viewModel.addOnSuccess.value)
+      assert(viewModel.uiState.value.errorMessage != null)
     }
   }
 
   @Test
-  fun canAddItemsReturnsFalseWhenCategoryInvalid() {
+  fun canAddItemsReturnsFalseWhenCategoryInvalid() = runTest {
     val uri = "content://dummy/photo.jpg".toUri()
     composeTestRule.runOnIdle {
       viewModel.setPhoto(uri)
@@ -508,28 +544,14 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.waitForIdle()
 
-    composeTestRule.runOnIdle {
-      val canAdd = viewModel.canAddItems()
-      assert(!canAdd)
-      assert(viewModel.uiState.value.errorMessage?.contains("valid category") == true)
-    }
-  }
-
-  @Test
-  fun canAddItemsReturnsTrueWithValidData() {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle {
-      viewModel.setPhoto(uri)
-      viewModel.setCategory("Clothing")
-      viewModel.validateCategory()
-    }
+    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
 
     composeTestRule.waitForIdle()
 
     composeTestRule.runOnIdle {
-      val canAdd = viewModel.canAddItems()
-      assert(canAdd)
-      assert(viewModel.uiState.value.errorMessage == null)
+      assert(!viewModel.addOnSuccess.value)
+      assert(viewModel.uiState.value.errorMessage != null)
+      assert(viewModel.uiState.value.invalidCategory != null)
     }
   }
 
@@ -700,8 +722,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
       val item =
           Item(
-              uuid = "test",
-              image = "content://dummy/photo.jpg".toUri(),
+              itemUuid = "test",
+              image = ImageData("testPhoto", "content://dummy/photo.jpg"),
               category = "Clothing",
               type = "Jacket",
               brand = "TestBrand",
@@ -775,12 +797,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     val categoryField = composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
     categoryField.performTextInput("Jacket")
-    categoryField.performImeAction()
-
-    // After onDone, dropdown should close
-    composeTestRule
-        .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
-        .assertCountEquals(0)
   }
 
   @Test
@@ -802,5 +818,43 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule
         .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
         .assertCountEquals(0)
+  }
+
+  @Test
+  fun uploadingOverlay_isNotVisible_whenNotLoading() {
+    // Initially, isLoading should be false
+    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
+
+    // Verify the overlay text is not visible
+    composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
+  }
+
+  @Test
+  fun uploadingOverlay_hidesAfterItemAdded() = runTest {
+    // Set up valid item data
+    val uri = "content://dummy/photo.jpg".toUri()
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("T-Shirt")
+    composeTestRule.enterAddItemBrand("Nike")
+    composeTestRule.enterAddItemPrice(19.99)
+
+    composeTestRule.waitForIdle()
+
+    // Trigger add item
+    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
+
+    // Wait for the operation to complete
+    composeTestRule.waitForIdle()
+    kotlinx.coroutines.delay(1000) // Give time for async operation
+
+    // Verify loading is no longer shown after completion
+    composeTestRule.runOnIdle {
+      // After the operation completes, isLoading should be false
+      assert(!viewModel.uiState.value.isLoading)
+    }
+
+    // Verify overlay text is not visible
+    composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
   }
 }

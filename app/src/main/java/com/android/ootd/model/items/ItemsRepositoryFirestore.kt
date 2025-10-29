@@ -1,7 +1,6 @@
 package com.android.ootd.model.items
 
 import android.util.Log
-import androidx.core.net.toUri
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,7 +20,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun getAllItems(): List<Item> {
     val ownerId =
         Firebase.auth.currentUser?.uid
-            ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
+            ?: throw Exception("ItemsRepositoryFirestore: User not logged in.")
     val snapshot =
         db.collection(ITEMS_COLLECTION).whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId).get().await()
     return snapshot.mapNotNull { mapToItem(it) }
@@ -33,7 +32,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun addItem(item: Item) {
-    db.collection(ITEMS_COLLECTION).document(item.uuid).set(item).await()
+    db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
   }
 
   override suspend fun editItem(itemUUID: String, newItem: Item) {
@@ -49,9 +48,13 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
-    val uuid = doc.getString("uuid") ?: return null
-    val image = doc.getString("image") ?: return null
-    val imageUri = image.toUri()
+    val uuid = doc.getString("itemUuid") ?: return null
+    val imageMap = doc["image"] as? Map<*, *> ?: return null
+    val imageUri =
+        ImageData(
+            imageId = imageMap["imageId"] as? String ?: "",
+            imageUrl = imageMap["imageUrl"] as? String ?: "",
+        )
     val category = doc.getString("category") ?: return null
     val type = doc.getString("type") ?: return null
     val brand = doc.getString("brand") ?: return null
@@ -69,7 +72,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
         } ?: emptyList()
 
     Item(
-        uuid = uuid,
+        itemUuid = uuid,
         image = imageUri,
         category = category,
         type = type,

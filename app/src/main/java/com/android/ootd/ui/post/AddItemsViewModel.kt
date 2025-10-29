@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.items.FirebaseImageUploader
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
@@ -22,7 +24,8 @@ import kotlinx.coroutines.launch
  * UI state for the AddItems screen. This state holds the data needed to create a new Clothing item.
  */
 data class AddItemsUIState(
-    val image: Uri = Uri.EMPTY,
+    val image: ImageData = ImageData(imageId = "", imageUrl = ""),
+    val localPhotoUri: Uri? = null, // temporary local URI for photo before upload
     val category: String = "",
     val type: String = "",
     val brand: String = "",
@@ -35,12 +38,13 @@ data class AddItemsUIState(
     val typeSuggestion: List<String> = emptyList(),
     val categorySuggestion: List<String> = emptyList(),
     val materialText: String = "", // raw user input for material field
+    val isLoading: Boolean = false,
 ) {
   val isAddingValid: Boolean
     get() =
         invalidPhotoMsg == null &&
             invalidCategory == null &&
-            image != Uri.EMPTY &&
+            (localPhotoUri != null || image.imageUrl.isNotEmpty()) &&
             category.isNotEmpty() &&
             isCategoryValid()
 
@@ -72,6 +76,8 @@ open class AddItemsViewModel(
 
   private val _uiState = MutableStateFlow(AddItemsUIState())
   open val uiState: StateFlow<AddItemsUIState> = _uiState.asStateFlow()
+  private val _addOnSuccess = MutableStateFlow(false)
+  val addOnSuccess: StateFlow<Boolean> = _addOnSuccess
 
   private var typeSuggestions: Map<String, List<String>> = emptyMap()
 
@@ -91,11 +97,20 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(errorMessage = null)
   }
 
+  fun resetAddSuccess() {
+    _addOnSuccess.value = false
+  }
+
+  /**
+   * Sets the error message in the UI state.
+   *
+   * @param msg The error message to display.
+   */
   fun setErrorMsg(msg: String) {
     _uiState.value = _uiState.value.copy(errorMessage = msg)
   }
 
-  fun canAddItems(): Boolean {
+  fun onAddItemClick() {
     val state = _uiState.value
     if (!state.isAddingValid) {
       val error =
@@ -107,46 +122,67 @@ open class AddItemsViewModel(
           }
 
       setErrorMsg(error)
-      return false
-    }
-    val ownerId = Firebase.auth.currentUser?.uid ?: ""
-    addItemsToRepository(
-        Item(
-            uuid = repository.getNewItemId(),
-            image = state.image,
-            category = state.category,
-            type = state.type,
-            brand = state.brand,
-            price = state.price.toDoubleOrNull() ?: 0.0,
-            material = state.material,
-            link = state.link,
-            ownerId = ownerId))
-    clearErrorMsg()
-    return true
-  }
-
-  fun addItemsToRepository(item: Item) {
-    val state = _uiState.value
-
-    if (!state.isAddingValid) {
-      setErrorMsg("At least one field is not valid")
+      _addOnSuccess.value = false
       return
     }
-
+    val ownerId = Firebase.auth.currentUser?.uid ?: ""
     viewModelScope.launch {
+      _uiState.value = _uiState.value.copy(isLoading = true)
       try {
+        val itemUuid = repository.getNewItemId()
+        val localUri = state.localPhotoUri
+        val uploadedImage =
+            if (localUri != null) {
+              FirebaseImageUploader.uploadImage(localUri, itemUuid)
+            } else {
+              ImageData("", "")
+            }
+        if (uploadedImage.imageUrl.isEmpty()) {
+          setErrorMsg("Image upload failed. Please try again.")
+          _addOnSuccess.value = false
+          return@launch
+        }
+
+        val item =
+            Item(
+                itemUuid = itemUuid,
+                image = uploadedImage,
+                category = state.category,
+                type = state.type,
+                brand = state.brand,
+                price = state.price.toDoubleOrNull() ?: 0.0,
+                material = state.material,
+                link = state.link,
+                ownerId = ownerId)
+
+        _addOnSuccess.value = true
         repository.addItem(item)
+        clearErrorMsg()
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")
+        _addOnSuccess.value = false
+      } finally {
+        _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
   }
 
-  fun setPhoto(uri: Uri) {
-    _uiState.value =
-        _uiState.value.copy(
-            image = uri, invalidPhotoMsg = if (uri == Uri.EMPTY) "Please select a photo." else null)
-  }
+  fun setPhoto(uri: Uri) =
+      if (uri == Uri.EMPTY) {
+        _uiState.value =
+            _uiState.value.copy(
+                localPhotoUri = null,
+                image = ImageData("", ""),
+                invalidPhotoMsg = "Please select a photo.",
+                errorMessage = null)
+      } else {
+        _uiState.value =
+            _uiState.value.copy(
+                localPhotoUri = uri,
+                image = ImageData("", ""),
+                invalidPhotoMsg = null,
+                errorMessage = null)
+      }
 
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
@@ -109,12 +110,10 @@ class EditItemsScreenTest {
 
   @Test
   fun `delete button is enabled when itemId is not empty`() {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
     mockViewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = null,
             brand = null,
@@ -193,13 +192,10 @@ class EditItemsScreenTest {
 
   @Test
   fun `screen loads item data correctly`() {
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
-
     val item =
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",
             brand = "Nike",
@@ -245,13 +241,10 @@ class EditItemsScreenTest {
   fun `save callback is triggered when save button is clicked with valid data`() {
     coEvery { mockRepository.editItem(any(), any()) } returns Unit
 
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
-
     mockViewModel.loadItem(
         Item(
-            uuid = "test-id",
-            image = mockUri,
+            itemUuid = "test-id",
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",
             brand = "Nike",
