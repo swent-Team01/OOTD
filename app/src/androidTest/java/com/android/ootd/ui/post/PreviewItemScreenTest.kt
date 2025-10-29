@@ -33,6 +33,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   private val fakeItem =
       Item(
           itemUuid = "1",
+          postUuid = "post_3456",
           image = ImageData("Photo1", "https://example.com/image.jpg"),
           category = "Clothes",
           type = "T-Shirt",
@@ -44,6 +45,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   private val fakeItem2 =
       Item(
           itemUuid = "2",
+          postUuid = "post_3456",
           image = ImageData("Photo2", "https://example.com/image2.jpg"),
           category = "Shoes",
           type = "Sneakers",
@@ -58,6 +60,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         override fun getNewItemId(): String = "fakeId"
 
         override suspend fun getAllItems(): List<Item> = items
+
+        override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+          TODO("Not yet implemented")
+        }
 
         override suspend fun getItemById(uuid: String): Item = items.first()
 
@@ -374,6 +380,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             throw Exception("Failed to fetch items")
           }
 
+          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+            throw Exception("Failed to fetch items")
+          }
+
           override suspend fun getItemById(uuid: String): Item = fakeItem2
 
           override suspend fun addItem(item: Item) {
@@ -604,6 +614,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             throw Exception(errorMessage)
           }
 
+          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+            throw Exception(errorMessage)
+          }
+
           override suspend fun getItemById(uuid: String): Item = fakeItem
 
           override suspend fun addItem(item: Item) {}
@@ -651,6 +665,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             throw Exception(specificError)
           }
 
+          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+            throw Exception(specificError)
+          }
+
           override suspend fun getItemById(uuid: String): Item = fakeItem
 
           override suspend fun addItem(item: Item) {}
@@ -691,6 +709,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             if (shouldFail) throw Exception("Refresh failed")
             return listOf(fakeItem, fakeItem2)
           }
+
+          override suspend fun getAssociatedItems(postUuid: String): List<Item> = emptyList()
 
           override suspend fun getItemById(uuid: String): Item = fakeItem
 
@@ -733,6 +753,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             errorCount++
             throw Exception("Error number $errorCount")
           }
+
+          override suspend fun getAssociatedItems(postUuid: String): List<Item> = emptyList()
 
           override suspend fun getItemById(uuid: String): Item = fakeItem
 
@@ -800,6 +822,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun getAllItems(): List<Item> {
             refreshCalled = true
             return listOf(fakeItem)
+          }
+
+          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+            throw Exception("Not implemented")
           }
 
           override suspend fun getItemById(uuid: String): Item = fakeItem

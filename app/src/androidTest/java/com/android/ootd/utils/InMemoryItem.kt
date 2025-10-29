@@ -27,6 +27,10 @@ object InMemoryItem : ItemsTest {
       itemList.removeIf { it.itemUuid == uuid }
     }
 
+    override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+      return itemList.filter { it.postUuid == postUuid }
+    }
+
     override fun getNewItemId(): String {
       return "${itemList.size}"
     }

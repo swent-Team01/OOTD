@@ -65,6 +65,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     val item =
         Item(
             itemUuid = itemId,
+            postUuid = "test_post2",
             image = ImageData("test_image_id", "https://example.com/image.jpg"),
             category = category,
             type = type,

@@ -33,6 +33,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item1 =
         Item(
             itemUuid = "0",
+            postUuid = "0",
             image = ImageData(imageId = "0", imageUrl = "https://example.com/image1.jpg"),
             category = "clothes",
             type = "t-shirt",
@@ -45,6 +46,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item2 =
         Item(
             itemUuid = "1",
+            postUuid = "0",
             image = ImageData("1", "https://example.com/image1.jpg"),
             category = "shoes",
             type = "high heels",
@@ -57,6 +59,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item3 =
         Item(
             itemUuid = "2",
+            postUuid = "0",
             image = ImageData("2", "https://example.com/image1.jpg"),
             category = "bags",
             type = "handbag",
@@ -69,6 +72,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item4 =
         Item(
             itemUuid = "3",
+            postUuid = "0",
             image = ImageData("3", "https://example.com/image1.jpg"),
             category = "accessories",
             type = "sunglasses",
@@ -259,6 +263,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val partialMaterialData =
         Item(
             itemUuid = "mixedMat",
+            postUuid = "simple_post",
             image = ImageData(imageId = "mixedMatImg", imageUrl = "https://example.com/image.jpg"),
             category = "clothes",
             type = "jacket",
@@ -429,6 +434,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val dataWithNullMaterial =
         mapOf(
             "itemUuid" to "itemWithNulls",
+            "postUuid" to "post_id_1",
             "image" to mapOf("imageId" to "id1", "imageUrl" to "https://example.com/img.jpg"),
             "category" to "clothes",
             "type" to "jacket",
@@ -597,6 +603,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "image" to mapOf("imageId" to "id", "imageUrl" to "url"),
+                "postUuid" to "post_id_4",
                 "category" to "clothes",
                 "type" to "shirt",
                 "brand" to "Brand",
@@ -612,6 +619,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test1",
+                "postUuid" to "post_id_6",
                 "category" to "clothes",
                 "type" to "shirt",
                 "brand" to "Brand",
@@ -628,6 +636,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             hashMapOf(
                 "itemUuid" to itemId,
+                "postUuid" to "post_id_5",
                 "image" to
                     hashMapOf("imageId" to "img_789", "imageUrl" to "https://example.com/img.jpg"),
                 // Missing "category"
@@ -644,6 +653,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test2",
+                "postUuid" to "post_id_6",
                 "image" to mapOf("imageId" to "id", "imageUrl" to "url"),
                 "category" to "clothes",
                 "brand" to "Brand",
@@ -659,6 +669,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test3",
+                "postUuid" to "post_id_7",
                 "image" to mapOf("imageId" to "id", "imageUrl" to "url"),
                 "category" to "clothes",
                 "type" to "shirt",
@@ -674,6 +685,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test4",
+                "postUuid" to "post_id_8",
                 "image" to mapOf("imageId" to "id", "imageUrl" to "url"),
                 "category" to "clothes",
                 "type" to "shirt",
@@ -689,6 +701,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test5",
+                "postUuid" to "post_id_9",
                 "image" to mapOf("imageId" to "id", "imageUrl" to "url"),
                 "category" to "clothes",
                 "type" to "shirt",
@@ -704,6 +717,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test6",
+                "postUuid" to "post_id_10",
                 "image" to mapOf("imageId" to "id", "imageUrl" to "url"),
                 "category" to "clothes",
                 "type" to "shirt",
@@ -748,6 +762,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test1",
+                "postUuid" to "post_id_2",
                 "image" to mapOf("imageId" to 123, "imageUrl" to "url"),
                 "category" to "clothes",
                 "type" to "shirt",
@@ -764,6 +779,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "test2",
+                "postUuid" to "post_id_2",
                 "image" to mapOf("imageId" to "id", "imageUrl" to false),
                 "category" to "clothes",
                 "type" to "shirt",
@@ -826,6 +842,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf(
                 "itemUuid" to "completeItem",
+                "postUuid" to "post_id_3",
                 "image" to
                     mapOf("imageId" to "img123", "imageUrl" to "https://example.com/img.jpg"),
                 "category" to "clothes",

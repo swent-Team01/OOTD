@@ -26,6 +26,11 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     return snapshot.mapNotNull { mapToItem(it) }
   }
 
+  override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+    val snapshot = db.collection(ITEMS_COLLECTION).whereEqualTo("postUuid", postUuid).get().await()
+    return snapshot.mapNotNull { mapToItem(it) }
+  }
+
   override suspend fun getItemById(uuid: String): Item {
     val doc = db.collection(ITEMS_COLLECTION).document(uuid).get().await()
     return mapToItem(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
@@ -44,11 +49,18 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun deleteItem(uuid: String) {
     db.collection(ITEMS_COLLECTION).document(uuid).delete().await()
   }
+
+  override suspend fun deletePostItems(postUuid: String) {
+    db.collection(ITEMS_COLLECTION).whereEqualTo("postUuid", postUuid).get().await().forEach {
+      it.reference.delete()
+    }
+  }
 }
 
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
     val uuid = doc.getString("itemUuid") ?: return null
+    val postUuid = doc.getString("postUuid") ?: return null
     val imageMap = doc["image"] as? Map<*, *> ?: return null
     val imageUri =
         ImageData(
@@ -73,6 +85,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
 
     Item(
         itemUuid = uuid,
+        postUuid = postUuid,
         image = imageUri,
         category = category,
         type = type,

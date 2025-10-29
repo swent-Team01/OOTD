@@ -723,6 +723,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       val item =
           Item(
               itemUuid = "test",
+              postUuid = "test_post1",
               image = ImageData("testPhoto", "content://dummy/photo.jpg"),
               category = "Clothing",
               type = "Jacket",

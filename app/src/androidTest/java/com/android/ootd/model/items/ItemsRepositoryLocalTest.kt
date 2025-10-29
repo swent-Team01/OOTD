@@ -20,6 +20,7 @@ class ItemsRepositoryLocalTest {
   val item1 =
       Item(
           itemUuid = "0",
+          postUuid = "post1",
           image = ImageData("0", "https://example.com/image1.jpg"),
           category = "clothes",
           type = "t-shirt",
@@ -32,6 +33,7 @@ class ItemsRepositoryLocalTest {
   val item2 =
       Item(
           itemUuid = "1",
+          postUuid = "post1",
           image = ImageData("1", "https://example.com/image1.jpg"),
           category = "shoes",
           type = "high heels",
@@ -44,6 +46,7 @@ class ItemsRepositoryLocalTest {
   val item3 =
       Item(
           itemUuid = "2",
+          postUuid = "post1",
           image = ImageData("2", "https://example.com/image1.jpg"),
           category = "bags",
           type = "handbag",
@@ -56,6 +59,7 @@ class ItemsRepositoryLocalTest {
   val item4 =
       Item(
           itemUuid = "3",
+          postUuid = "post1",
           image = ImageData("4", "https://example.com/image1.jpg"),
           category = "accessories",
           type = "sunglasses",

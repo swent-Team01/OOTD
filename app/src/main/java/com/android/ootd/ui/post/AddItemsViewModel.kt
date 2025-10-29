@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
  */
 data class AddItemsUIState(
     val image: ImageData = ImageData(imageId = "", imageUrl = ""),
+    val postUuid: String = "",
     val localPhotoUri: Uri? = null, // temporary local URI for photo before upload
     val category: String = "",
     val type: String = "",
@@ -146,6 +147,7 @@ open class AddItemsViewModel(
         val item =
             Item(
                 itemUuid = itemUuid,
+                postUuid = state.postUuid,
                 image = uploadedImage,
                 category = state.category,
                 type = state.type,
