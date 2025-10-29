@@ -227,4 +227,18 @@ class AccountViewModelTest {
     assertTrue(viewModel.uiState.value.isPrivate)
     assertNotNull(viewModel.uiState.value.errorMsg)
   }
+
+  @Test
+  fun privacyHelp_togglesAndDismisses() = runTest {
+    viewModel = AccountViewModel(accountService, accountRepository)
+
+    // Initially hidden
+    assertFalse(viewModel.uiState.value.showPrivacyHelp)
+    // Toggle on
+    viewModel.onPrivacyHelpClick()
+    assertTrue(viewModel.uiState.value.showPrivacyHelp)
+    // Dismiss -> off
+    viewModel.onPrivacyHelpDismiss()
+    assertFalse(viewModel.uiState.value.showPrivacyHelp)
+  }
 }

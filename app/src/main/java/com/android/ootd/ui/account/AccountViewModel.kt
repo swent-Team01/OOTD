@@ -36,6 +36,7 @@ data class AccountViewState(
     val signedOut: Boolean = false,
     val isLoading: Boolean = false,
     val isPrivate: Boolean = false,
+    val showPrivacyHelp: Boolean = false,
 )
 
 /**
@@ -177,5 +178,14 @@ class AccountViewModel(
   /** Clear any transient error message shown in the UI. */
   fun clearErrorMsg() {
     _uiState.update { it.copy(errorMsg = null) }
+  }
+
+  // --- Help popup intents ---
+  fun onPrivacyHelpClick() {
+    _uiState.update { it.copy(showPrivacyHelp = !it.showPrivacyHelp) }
+  }
+
+  fun onPrivacyHelpDismiss() {
+    _uiState.update { it.copy(showPrivacyHelp = false) }
   }
 }

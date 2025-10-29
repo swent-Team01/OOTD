@@ -211,4 +211,21 @@ class AccountScreenTest {
     composeTestRule.onNodeWithText("Private").assertIsDisplayed()
     coVerify(exactly = 1) { mockAccountRepository.togglePrivacy("test-uid") }
   }
+
+  @Test
+  fun accountScreen_helpIcon_showsAndDismissesPopup() {
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+  }
 }
