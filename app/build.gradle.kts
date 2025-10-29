@@ -229,7 +229,7 @@ dependencies {
     implementation(libs.accompanist.permissions)
     
     // Guava for CameraX ListenableFuture
-    implementation("com.google.guava:guava:31.1-android")
+    implementation(libs.guava)
     
     // Integration with ViewModels
     implementation(libs.compose.viewmodel)
