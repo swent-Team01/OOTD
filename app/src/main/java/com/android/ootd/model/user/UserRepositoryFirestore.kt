@@ -13,14 +13,19 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
-@Keep private data class UserDto(val uid: String = "", val username: String = "")
+@Keep
+private data class UserDto(
+    val uid: String = "",
+    val username: String = "",
+    val profilePicture: String = ""
+)
 
 private fun User.toDto(): UserDto {
-  return UserDto(uid = this.uid, username = this.username)
+  return UserDto(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
 }
 
 private fun UserDto.toDomain(): User {
-  return User(uid = this.uid, username = this.username)
+  return User(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
 }
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
@@ -57,14 +62,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     return UUID.randomUUID().toString()
   }
 
-  override suspend fun createUser(username: String, uid: String) {
+  override suspend fun createUser(username: String, uid: String, profilePicture: String) {
 
     if (usernameExists(username)) {
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
     }
 
-    val newUser = User(uid, username)
+    val newUser = User(uid, username, profilePicture)
     try {
       addUser(newUser)
     } catch (e: Exception) {

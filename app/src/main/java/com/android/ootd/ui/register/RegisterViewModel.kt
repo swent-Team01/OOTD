@@ -22,19 +22,28 @@ import kotlinx.coroutines.launch
 /**
  * Data class representing the user registration state.
  *
+ * This immutable state object holds all the information needed for the registration UI, including
+ * user input fields, loading state, error messages, and registration status.
+ *
  * @property uid The unique identifier of the user. Empty string by default.
- * @property username The username entered by the user. Empty string by default.
- * @property dateOfBirth The users date of birth. Empty string by default
- * @property errorMsg An optional error message to display to the user. Null by default.
- * @property isLoading Indicates whether a registration operation is in progress. False by default.
- * @property registered Indicates whether the user has been successfully registered. False by
+ * @property username The username entered by the user. Must be 3-20 characters long and contain
+ *   only letters, numbers, and underscores. Empty string by default.
+ * @property dateOfBirth The user's date of birth in string format. Empty string by default.
+ * @property userEmail The user's email address. Empty string by default.
+ * @property profilePicture The URL or path to the user's profile picture. Empty string by default.
+ * @property errorMsg An optional error message to display to the user when validation or
+ *   registration fails. Null when no error is present.
+ * @property isLoading Indicates whether a registration operation is currently in progress. False by
  *   default.
+ * @property registered Indicates whether the user has been successfully registered. False by
+ *   default. Should be reset after handling the successful registration event.
  */
 data class RegisterUserViewModel(
     val uid: String = "",
     val username: String = "",
     val dateOfBirth: String = "",
     val userEmail: String = "",
+    val profilePicture: String = "",
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false
@@ -159,7 +168,11 @@ class RegisterViewModel(
         val user = User(uid = auth.currentUser!!.uid, username = username)
         val email = auth.currentUser!!.email.orEmpty()
         accountRepository.createAccount(user, email, uiState.value.dateOfBirth)
-        userRepository.createUser(username, auth.currentUser!!.uid)
+        userRepository.createUser(
+            username,
+            auth.currentUser!!.uid,
+            profilePicture =
+                user.profilePicture) // TODO: Add profile picture to register (empty string for now)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {

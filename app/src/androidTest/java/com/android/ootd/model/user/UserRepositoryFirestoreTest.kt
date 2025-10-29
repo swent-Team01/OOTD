@@ -263,9 +263,13 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   fun creatingNewUserWorks() = runTest {
     val uid1 = userRepository.getNewUid()
     val uid2 = userRepository.getNewUid()
+    val profilePic1 = "profile1.jpg"
 
-    userRepository.createUser(user1.username, uid1)
-    userRepository.createUser(user2.username, uid2)
+    // empty profile pic
+    val profilePic2 = ""
+
+    userRepository.createUser(user1.username, uid1, profilePicture = profilePic1)
+    userRepository.createUser(user2.username, uid2, profilePicture = profilePic2)
 
     val users = userRepository.getAllUsers()
 
@@ -273,6 +277,9 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assert(users.any { user -> user.username == user1.username })
     assert(users.any { user -> user.username == user2.username })
     assert(users.none { user -> user.uid == user1.uid || user.uid == user2.uid })
+    assert(users.any { user -> user.profilePicture == profilePic1 && user.uid == uid1 })
+    // empty profile pic, shouldn't throw
+    assert(users.any { user -> user.profilePicture == profilePic2 && user.uid == uid2 })
   }
 
   @Test
@@ -280,9 +287,10 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val uid1 = userRepository.getNewUid()
     val uid2 = userRepository.getNewUid()
 
-    userRepository.createUser(user1.username, uid1)
+    userRepository.createUser(user1.username, uid1, profilePicture = "")
     val exception =
-        runCatching { userRepository.createUser(user1.username, uid2) }.exceptionOrNull()
+        runCatching { userRepository.createUser(user1.username, uid2, profilePicture = "") }
+            .exceptionOrNull()
 
     assert(exception != null)
   }

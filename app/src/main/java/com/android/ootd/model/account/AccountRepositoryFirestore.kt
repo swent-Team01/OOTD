@@ -92,7 +92,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
             ownerId = user.uid,
             googleAccountEmail = userEmail,
             username = user.username,
-            birthday = dateOfBirth)
+            birthday = dateOfBirth,
+            profilePicture = user.profilePicture)
     try {
       addAccount(newAccount)
     } catch (e: Exception) {

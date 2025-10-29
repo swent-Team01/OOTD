@@ -15,6 +15,7 @@ class AccountRepositoryInMemoryTest {
   // Test date of birth constant
   private val testDateOfBirth = "2000-01-01"
   private val testEmail = "test@example.com"
+  private val testProfilePicture = "https://example.com/profile.jpg"
 
   @Before
   fun setUp() {
@@ -216,7 +217,8 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun createAccount_successfullyCreatesNewAccount() = runTest {
-    val user = User(uid = "user6", username = "george_washington")
+    val user =
+        User(uid = "user6", username = "george_washington", profilePicture = testProfilePicture)
 
     repository.createAccount(user, testEmail, dateOfBirth = testDateOfBirth)
     val account = repository.getAccount("user6")
@@ -224,13 +226,15 @@ class AccountRepositoryInMemoryTest {
     assertEquals("user6", account.uid)
     assertEquals("user6", account.ownerId)
     assertEquals("george_washington", account.username)
+    assertEquals(user.profilePicture, account.profilePicture)
+    assertEquals(account.googleAccountEmail, testEmail)
     assertTrue(account.friendUids.isEmpty())
   }
 
   @Test
   fun createAccount_throwsExceptionForDuplicateUsername() {
-    val user1 = User(uid = "newUser1", username = "duplicate_user")
-    val user2 = User(uid = "newUser2", username = "duplicate_user")
+    val user1 = User(uid = "newUser1", username = "duplicate_user", profilePicture = "")
+    val user2 = User(uid = "newUser2", username = "duplicate_user", profilePicture = "")
 
     val exception =
         assertThrows(TakenUserException::class.java) {
@@ -246,8 +250,8 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun createAccount_allowsBlankUsernamesForDifferentUsers() = runTest {
-    val user1 = User(uid = "tempUser1", username = "")
-    val user2 = User(uid = "tempUser2", username = "")
+    val user1 = User(uid = "tempUser1", username = "", profilePicture = "")
+    val user2 = User(uid = "tempUser2", username = "", profilePicture = "")
 
     repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth)
     repository.createAccount(
@@ -275,7 +279,7 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun createAccount_handlesEmptyEmailCorrectly() = runTest {
-    val user = User(uid = "user8", username = "empty_email_user")
+    val user = User(uid = "user8", username = "empty_email_user", profilePicture = "")
     val emptyEmail = ""
 
     repository.createAccount(user, emptyEmail, dateOfBirth = testDateOfBirth)
@@ -287,8 +291,8 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun createAccount_allowsSameEmailForDifferentUsers() = runTest {
-    val user1 = User(uid = "user9", username = "first_user")
-    val user2 = User(uid = "user10", username = "second_user")
+    val user1 = User(uid = "user9", username = "first_user", profilePicture = "")
+    val user2 = User(uid = "user10", username = "second_user", profilePicture = "")
     val sharedEmail = "shared@example.com"
 
     repository.createAccount(user1, sharedEmail, dateOfBirth = testDateOfBirth)

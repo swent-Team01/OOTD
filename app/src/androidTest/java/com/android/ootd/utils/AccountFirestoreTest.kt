@@ -11,6 +11,8 @@ open class AccountFirestoreTest : FirestoreTest() {
 
   // Test date of birth constant
   val testDateOfBirth = "2000-01-01"
+
+  val testEmail = "123@example.com"
   lateinit var account1: Account
   lateinit var account2: Account
 

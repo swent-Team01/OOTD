@@ -51,14 +51,16 @@ class UserRepositoryInMemoryTest {
   }
 
   @Test
-  fun getAllUsers_returnsUsersWithCorrectNames() = runTest {
+  fun getAllUsers_returnsUsersWithCorrectNamesAndProfilePic() = runTest {
     val users = repository.getAllUsers()
 
     val user1 = users.find { it.uid == "user1" }
     assertEquals("alice_wonder", user1?.username)
+    assertEquals("1", user1?.profilePicture)
 
     val user2 = users.find { it.uid == "user2" }
     assertEquals("bob_builder", user2?.username)
+    assertEquals("2", user2?.profilePicture)
   }
 
   @Test
@@ -100,18 +102,19 @@ class UserRepositoryInMemoryTest {
 
   @Test
   fun addUser_successfullyAddsNewUser() = runTest {
-    val newUser = User(uid = "user6", username = "frank_sinatra")
+    val newUser = User(uid = "user6", username = "frank_sinatra", profilePicture = "Hello.jpg")
 
     repository.addUser(newUser)
     val retrievedUser = repository.getUser("user6")
 
     assertEquals("user6", retrievedUser.uid)
     assertEquals("frank_sinatra", retrievedUser.username)
+    assertEquals("Hello.jpg", retrievedUser.profilePicture)
   }
 
   @Test
   fun addUser_throwsExceptionWhenUserAlreadyExists() {
-    val duplicateUser = User(uid = "user1", username = "duplicate_user")
+    val duplicateUser = User(uid = "user1", username = "duplicate_user", profilePicture = "")
 
     val exception =
         assertThrows(IllegalArgumentException::class.java) {
@@ -125,7 +128,7 @@ class UserRepositoryInMemoryTest {
   fun addUser_increasesUserCount() = runTest {
     val initialCount = repository.getAllUsers().size
 
-    val newUser = User(uid = "user6", username = "new_user")
+    val newUser = User(uid = "user6", username = "new_user", profilePicture = "")
     repository.addUser(newUser)
 
     assertEquals(initialCount + 1, repository.getAllUsers().size)
@@ -137,7 +140,20 @@ class UserRepositoryInMemoryTest {
     val uid1 = repository.getNewUid()
     val uid2 = repository.getNewUid()
 
-    repository.createUser(username, uid1)
-    repository.createUser(username, uid2) // Should throw
+    repository.createUser(username, uid1, profilePicture = "")
+    repository.createUser(username, uid2, profilePicture = "") // Should throw
+  }
+
+  @Test
+  fun createUser_handlesEmptyProfilePictureCorrectly() = runTest {
+    val username = "user_no_pic"
+    val uid = repository.getNewUid()
+
+    repository.createUser(username, uid, profilePicture = "")
+    val user = repository.getUser(uid)
+
+    assertEquals(username, user.username)
+    assertEquals(uid, user.uid)
+    assertEquals("", user.profilePicture)
   }
 }

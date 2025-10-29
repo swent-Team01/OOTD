@@ -6,5 +6,6 @@ package com.android.ootd.model.user
  *
  * @property uid Firebase user id.
  * @property username Display name of the user.
+ * @property profilePicture URL path to the user's profile picture, empty string by default
  */
-data class User(val uid: String = "", val username: String = "")
+data class User(val uid: String = "", val username: String = "", val profilePicture: String = "")

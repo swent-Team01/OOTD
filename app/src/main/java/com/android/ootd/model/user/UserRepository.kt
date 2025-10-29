@@ -10,8 +10,10 @@ interface UserRepository {
    * Creates a new user with the username he chose
    *
    * @param username The chosen username
+   * @param uid the user's ID
+   * @param profilePicture the URL path to the user's profile picture. Blank by default
    */
-  suspend fun createUser(username: String, uid: String)
+  suspend fun createUser(username: String, uid: String, profilePicture: String = "")
 
   /**
    * Retrieves all Users from the repository.
