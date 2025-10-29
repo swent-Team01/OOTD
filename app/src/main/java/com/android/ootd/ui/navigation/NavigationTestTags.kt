@@ -7,4 +7,13 @@ object NavigationTestTags {
    * const val MAP_TAB = "MapTab"
    */
   const val SPLASH = "Route_Splash"
+  const val BOTTOM_NAVIGATION_MENU = "BottomNavigationMenu"
+
+  fun getTabTestTag(tab: Tab): String =
+      when (tab) {
+        is Tab.Feed -> "FeedTab"
+        is Tab.Search -> "SearchTab"
+        is Tab.Inventory -> "InventoryTab"
+        is Tab.Profile -> "ProfileTab"
+      }
 }
