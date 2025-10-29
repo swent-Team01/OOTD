@@ -1,6 +1,5 @@
 package com.android.ootd.model.items
 
-import android.net.Uri
 import junit.framework.TestCase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -20,8 +19,8 @@ class ItemsRepositoryLocalTest {
 
   val item1 =
       Item(
-          uuid = "0",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "0",
+          image = ImageData("0", "https://example.com/image1.jpg"),
           category = "clothes",
           type = "t-shirt",
           brand = "Mango",
@@ -32,8 +31,8 @@ class ItemsRepositoryLocalTest {
 
   val item2 =
       Item(
-          uuid = "1",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "1",
+          image = ImageData("1", "https://example.com/image1.jpg"),
           category = "shoes",
           type = "high heels",
           brand = "Zara",
@@ -44,8 +43,8 @@ class ItemsRepositoryLocalTest {
 
   val item3 =
       Item(
-          uuid = "2",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "2",
+          image = ImageData("2", "https://example.com/image1.jpg"),
           category = "bags",
           type = "handbag",
           brand = "Vakko",
@@ -56,8 +55,8 @@ class ItemsRepositoryLocalTest {
 
   val item4 =
       Item(
-          uuid = "3",
-          image = Uri.parse("https://example.com/image1.jpg"),
+          itemUuid = "3",
+          image = ImageData("4", "https://example.com/image1.jpg"),
           category = "accessories",
           type = "sunglasses",
           brand = "Ray-Ban",
@@ -81,7 +80,7 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item1)
 
     TestCase.assertEquals(1, repository.getItemCount())
-    val storedItem = repository.getItemById(item1.uuid)
+    val storedItem = repository.getItemById(item1.itemUuid)
     TestCase.assertEquals(storedItem, item1)
   }
 
@@ -92,8 +91,8 @@ class ItemsRepositoryLocalTest {
     val items = repository.getAllItems()
 
     TestCase.assertEquals(1, items.size)
-    val expectedItem = item1.copy(uuid = "None", link = "None")
-    val storedItem = items.first().copy(uuid = expectedItem.uuid, link = expectedItem.link)
+    val expectedItem = item1.copy(itemUuid = "None", link = "None")
+    val storedItem = items.first().copy(itemUuid = expectedItem.itemUuid, link = expectedItem.link)
 
     TestCase.assertEquals(expectedItem, storedItem)
   }
@@ -105,18 +104,18 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item3)
     TestCase.assertEquals(3, repository.getItemCount())
 
-    val storedItem = repository.getItemById(item3.uuid)
+    val storedItem = repository.getItemById(item3.itemUuid)
     TestCase.assertEquals(storedItem, item3)
 
-    val storedItem2 = repository.getItemById(item2.uuid)
+    val storedItem2 = repository.getItemById(item2.itemUuid)
     TestCase.assertEquals(storedItem2, item2)
   }
 
   @Test
   fun checkUidsAreUniqueInTheCollection() = runTest {
     val uid = "duplicate"
-    val item1Modified = item1.copy(uuid = uid)
-    val itemDuplicatedUID = item2.copy(uuid = uid)
+    val item1Modified = item1.copy(itemUuid = uid)
+    val itemDuplicatedUID = item2.copy(itemUuid = uid)
 
     // Adding an item with an existing UID will overwrite the previous one
     repository.addItem(item1Modified)
@@ -127,7 +126,7 @@ class ItemsRepositoryLocalTest {
     val items = repository.getAllItems()
     TestCase.assertEquals(items.size, 1)
     val storedItem = items.first()
-    TestCase.assertEquals(storedItem.uuid, uid)
+    TestCase.assertEquals(storedItem.itemUuid, uid)
     // Should be the last added item (item2)
     TestCase.assertEquals(storedItem.brand, item2.brand)
   }
@@ -139,7 +138,7 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item3)
     TestCase.assertEquals(3, repository.getItemCount())
 
-    repository.deleteItem(item2.uuid)
+    repository.deleteItem(item2.itemUuid)
     TestCase.assertEquals(2, repository.getItemCount())
     val items = repository.getAllItems()
     TestCase.assertEquals(items.size, 2)
@@ -157,7 +156,7 @@ class ItemsRepositoryLocalTest {
     // Deleting an item that does not exist should throw
     var didThrow = false
     try {
-      repository.deleteItem(item2.uuid)
+      repository.deleteItem(item2.itemUuid)
     } catch (e: Exception) {
       didThrow = true
       assert(e.message?.contains("Item not found") == true)
@@ -177,7 +176,7 @@ class ItemsRepositoryLocalTest {
             brand = "H&M",
             price = 20.0,
             material = listOf(Material(name = "Cotton", percentage = 100.0)))
-    repository.editItem(item1.uuid, newItem)
+    repository.editItem(item1.itemUuid, newItem)
     TestCase.assertEquals(1, repository.getItemCount())
     val items = repository.getAllItems()
     TestCase.assertEquals(items.size, 1)
@@ -191,10 +190,10 @@ class ItemsRepositoryLocalTest {
     TestCase.assertEquals(1, repository.getItemCount())
 
     // Editing an item that does not exist should throw
-    val nonExistingItem = item2.copy(uuid = "nonExisting")
+    val nonExistingItem = item2.copy(itemUuid = "nonExisting")
     var didThrow = false
     try {
-      repository.editItem(nonExistingItem.uuid, nonExistingItem)
+      repository.editItem(nonExistingItem.itemUuid, nonExistingItem)
     } catch (e: Exception) {
       didThrow = true
       assert(e.message?.contains("Item not found") == true)
@@ -232,8 +231,8 @@ class ItemsRepositoryLocalTest {
   fun hasItemReturnsTrueForExistingItem() = runTest {
     repository.addItem(item1)
 
-    assert(repository.hasItem(item1.uuid))
-    assert(!repository.hasItem(item2.uuid))
+    assert(repository.hasItem(item1.itemUuid))
+    assert(!repository.hasItem(item2.itemUuid))
   }
 
   @Test
@@ -256,9 +255,9 @@ class ItemsRepositoryLocalTest {
     TestCase.assertEquals(0, repository.getItemCount())
     val items = repository.getAllItems()
     assert(items.isEmpty())
-    assert(!repository.hasItem(item1.uuid))
-    assert(!repository.hasItem(item2.uuid))
-    assert(!repository.hasItem(item3.uuid))
+    assert(!repository.hasItem(item1.itemUuid))
+    assert(!repository.hasItem(item2.itemUuid))
+    assert(!repository.hasItem(item3.itemUuid))
   }
 
   @Test
@@ -274,7 +273,7 @@ class ItemsRepositoryLocalTest {
     repository.addItem(item3)
     TestCase.assertEquals(3, repository.getItemCount())
 
-    repository.deleteItem(item2.uuid)
+    repository.deleteItem(item2.itemUuid)
     TestCase.assertEquals(2, repository.getItemCount())
 
     repository.clearAll()
@@ -285,7 +284,7 @@ class ItemsRepositoryLocalTest {
   fun itemsWithComplexMaterialListAreStoredCorrectly() = runTest {
     repository.addItem(item4)
 
-    val retrieved = repository.getItemById(item4.uuid)
+    val retrieved = repository.getItemById(item4.itemUuid)
     TestCase.assertEquals(item4, retrieved)
     TestCase.assertEquals(2, retrieved.material.size)
     TestCase.assertEquals("Plastic", retrieved.material[0]?.name)
@@ -303,11 +302,11 @@ class ItemsRepositoryLocalTest {
 
     // Edit
     val modifiedItem1 = item1.copy(price = 50.0)
-    repository.editItem(item1.uuid, modifiedItem1)
+    repository.editItem(item1.itemUuid, modifiedItem1)
     TestCase.assertEquals(2, repository.getItemCount())
 
     // Retrieve
-    val retrieved = repository.getItemById(item1.uuid)
+    val retrieved = repository.getItemById(item1.itemUuid)
     TestCase.assertEquals(50.0, retrieved.price)
 
     // Add more
@@ -316,7 +315,7 @@ class ItemsRepositoryLocalTest {
     TestCase.assertEquals(4, repository.getItemCount())
 
     // Delete
-    repository.deleteItem(item2.uuid)
+    repository.deleteItem(item2.itemUuid)
     TestCase.assertEquals(3, repository.getItemCount())
 
     // Verify remaining items
@@ -331,13 +330,10 @@ class ItemsRepositoryLocalTest {
   @Test
   fun itemsAreIndependent() = runTest {
     repository.addItem(item1)
-    val retrieved1 = repository.getItemById(item1.uuid)
-
-    // Modify the retrieved item
-    val modified = retrieved1.copy(price = 999.0)
+    val retrieved1 = repository.getItemById(item1.itemUuid)
 
     // Original should still be unchanged in repository
-    val retrieved2 = repository.getItemById(item1.uuid)
+    val retrieved2 = repository.getItemById(item1.itemUuid)
     TestCase.assertEquals(item1.price, retrieved2.price)
     TestCase.assertEquals(0.0, retrieved2.price)
   }
@@ -346,7 +342,7 @@ class ItemsRepositoryLocalTest {
   fun emptyMaterialListIsHandledCorrectly() = runTest {
     repository.addItem(item1) // item1 has empty material list
 
-    val retrieved = repository.getItemById(item1.uuid)
+    val retrieved = repository.getItemById(item1.itemUuid)
     TestCase.assertEquals(item1, retrieved)
     TestCase.assertEquals(0, retrieved.material.size)
     assert(retrieved.material.isEmpty())
@@ -354,14 +350,14 @@ class ItemsRepositoryLocalTest {
 
   @Test
   fun uriIsPreservedCorrectly() = runTest {
-    val customUri = Uri.parse("content://media/external/images/123")
-    val itemWithCustomUri = item1.copy(image = customUri)
+    val customUri = "content://media/external/images/123"
+    val itemWithCustomUri = item1.copy(image = item1.image.copy(imageUrl = customUri))
 
     repository.addItem(itemWithCustomUri)
 
-    val retrieved = repository.getItemById(itemWithCustomUri.uuid)
-    TestCase.assertEquals(customUri, retrieved.image)
-    TestCase.assertEquals(customUri.toString(), retrieved.image.toString())
+    val retrieved = repository.getItemById(itemWithCustomUri.itemUuid)
+    TestCase.assertEquals(customUri, retrieved.image.imageUrl)
+    // TestCase.assertEquals(customUri.toString(), retrieved.image.toString())
   }
 
   @After

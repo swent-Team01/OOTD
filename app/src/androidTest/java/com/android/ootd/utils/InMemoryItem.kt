@@ -20,11 +20,11 @@ object InMemoryItem : ItemsTest {
     }
 
     override suspend fun editItem(itemUUID: String, newItem: Item) {
-      itemList.replaceAll { if (it.uuid == itemUUID) newItem else it }
+      itemList.replaceAll { if (it.itemUuid == itemUUID) newItem else it }
     }
 
     override suspend fun deleteItem(uuid: String) {
-      itemList.removeIf { it.uuid == uuid }
+      itemList.removeIf { it.itemUuid == uuid }
     }
 
     override fun getNewItemId(): String {
@@ -36,7 +36,7 @@ object InMemoryItem : ItemsTest {
     }
 
     override suspend fun getItemById(uuid: String): Item {
-      return itemList.first { it.uuid == uuid }
+      return itemList.first { it.itemUuid == uuid }
     }
   }
 }
