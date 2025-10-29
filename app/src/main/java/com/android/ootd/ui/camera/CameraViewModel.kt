@@ -38,6 +38,7 @@ data class CameraUIState(
 class CameraViewModel(private val repository: CameraRepository = CameraRepository()) : ViewModel() {
   private val _uiState = MutableStateFlow(CameraUIState())
   val uiState: StateFlow<CameraUIState> = _uiState.asStateFlow()
+  private var cameraProvider: ProcessCameraProvider? = null
 
   /** Toggles between front and back camera. */
   fun switchCamera() {
@@ -137,7 +138,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
   }
 
   /**
-   * Gets the ProcessCameraProvider asynchronously.
+   * Gets the ProcessCameraProvider asynchronously. Uses cached provider if available.
    *
    * @param context The context for getting the camera provider
    * @param onSuccess Callback with the camera provider
@@ -148,9 +149,16 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
       onSuccess: (ProcessCameraProvider) -> Unit,
       onError: (String) -> Unit
   ) {
+    // Return cached provider if available
+    cameraProvider?.let {
+      onSuccess(it)
+      return
+    }
+
     viewModelScope.launch {
       try {
         val provider = repository.getCameraProvider(context)
+        cameraProvider = provider // Cache the provider
         onSuccess(provider)
       } catch (e: Exception) {
         onError("Failed to get camera provider: ${e.message}")

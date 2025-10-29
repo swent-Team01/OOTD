@@ -128,34 +128,25 @@ private fun CameraView(
 
   var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
   val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
+  val previewView = remember { PreviewView(context) }
 
   DisposableEffect(Unit) { onDispose { cameraExecutor.shutdown() } }
+
+  // Rebind camera when lensFacing changes
+  LaunchedEffect(cameraUiState.lensFacing) {
+    cameraViewModel.getCameraProvider(
+        context,
+        onSuccess = { cameraProvider ->
+          val capture = cameraViewModel.bindCamera(cameraProvider, previewView, lifecycleOwner)
+          imageCapture = capture
+        },
+        onError = { error -> cameraViewModel.setError(error) })
+  }
 
   Box(modifier = Modifier.fillMaxSize()) {
     // Camera Preview
     AndroidView(
-        factory = { ctx ->
-          val previewView = PreviewView(ctx)
-          cameraViewModel.getCameraProvider(
-              ctx,
-              onSuccess = { cameraProvider ->
-                val capture =
-                    cameraViewModel.bindCamera(cameraProvider, previewView, lifecycleOwner)
-                imageCapture = capture
-              },
-              onError = { error -> cameraViewModel.setError(error) })
-          previewView
-        },
-        update = { previewView ->
-          cameraViewModel.getCameraProvider(
-              context,
-              onSuccess = { cameraProvider ->
-                val capture =
-                    cameraViewModel.bindCamera(cameraProvider, previewView, lifecycleOwner)
-                imageCapture = capture
-              },
-              onError = { error -> cameraViewModel.setError(error) })
-        },
+        factory = { previewView },
         modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.CAMERA_PREVIEW))
 
     // Close button (top-left)
@@ -164,12 +155,13 @@ private fun CameraView(
         modifier =
             Modifier.align(Alignment.TopStart)
                 .padding(16.dp)
+                .background(Primary.copy(alpha = 0.5f), CircleShape)
                 .testTag(CameraScreenTestTags.CLOSE_BUTTON)) {
           Icon(
               imageVector = Icons.Default.Close,
               contentDescription = "Close Camera",
-              tint = Tertiary,
-              modifier = Modifier.size(32.dp))
+              tint = White,
+              modifier = Modifier.size(36.dp))
         }
 
     // Bottom controls
@@ -187,7 +179,7 @@ private fun CameraView(
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Switch Camera",
-                    tint = Color.White,
+                    tint = White,
                     modifier = Modifier.size(32.dp))
               }
 

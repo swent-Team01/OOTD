@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.withTimeout
 
 /**
  * Repository for handling CameraX operations. Separates camera business logic from UI and
@@ -97,18 +98,22 @@ class CameraRepository {
    *
    * @param context The context for getting the camera provider
    * @return ProcessCameraProvider instance
+   * @throws kotlinx.coroutines.TimeoutCancellationException if provider not available within 10
+   *   seconds
    */
   suspend fun getCameraProvider(context: Context): ProcessCameraProvider =
-      suspendCoroutine { continuation ->
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener(
-            {
-              try {
-                continuation.resume(cameraProviderFuture.get())
-              } catch (e: Exception) {
-                continuation.resumeWithException(e)
-              }
-            },
-            ContextCompat.getMainExecutor(context))
+      withTimeout(10_000) {
+        suspendCoroutine { continuation ->
+          val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+          cameraProviderFuture.addListener(
+              {
+                try {
+                  continuation.resume(cameraProviderFuture.get())
+                } catch (e: Exception) {
+                  continuation.resumeWithException(e)
+                }
+              },
+              ContextCompat.getMainExecutor(context))
+        }
       }
 }
