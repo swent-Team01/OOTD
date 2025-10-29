@@ -14,6 +14,7 @@ class AccountRepositoryInMemoryTest {
 
   // Test date of birth constant
   private val testDateOfBirth = "2000-01-01"
+  private val testEmail = "test@example.com"
 
   @Before
   fun setUp() {
@@ -217,7 +218,7 @@ class AccountRepositoryInMemoryTest {
   fun createAccount_successfullyCreatesNewAccount() = runTest {
     val user = User(uid = "user6", username = "george_washington")
 
-    repository.createAccount(user, testDateOfBirth)
+    repository.createAccount(user, testEmail, dateOfBirth = testDateOfBirth)
     val account = repository.getAccount("user6")
 
     assertEquals("user6", account.uid)
@@ -234,8 +235,9 @@ class AccountRepositoryInMemoryTest {
     val exception =
         assertThrows(TakenUserException::class.java) {
           runTest {
-            repository.createAccount(user1, testDateOfBirth)
-            repository.createAccount(user2, testDateOfBirth) // Should throw
+            repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth)
+            repository.createAccount(
+                user2, testEmail, dateOfBirth = testDateOfBirth) // Should throw
           }
         }
 
@@ -247,8 +249,9 @@ class AccountRepositoryInMemoryTest {
     val user1 = User(uid = "tempUser1", username = "")
     val user2 = User(uid = "tempUser2", username = "")
 
-    repository.createAccount(user1, testDateOfBirth)
-    repository.createAccount(user2, testDateOfBirth) // Should not throw
+    repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth)
+    repository.createAccount(
+        user2, "another@example.com", dateOfBirth = testDateOfBirth) // Should not throw
 
     val account1 = repository.getAccount("tempUser1")
     val account2 = repository.getAccount("tempUser2")
@@ -268,5 +271,35 @@ class AccountRepositoryInMemoryTest {
         }
 
     assertEquals("Account with ID user5 not found", exception.message)
+  }
+
+  @Test
+  fun createAccount_handlesEmptyEmailCorrectly() = runTest {
+    val user = User(uid = "user8", username = "empty_email_user")
+    val emptyEmail = ""
+
+    repository.createAccount(user, emptyEmail, dateOfBirth = testDateOfBirth)
+    val account = repository.getAccount("user8")
+
+    assertEquals(emptyEmail, account.googleAccountEmail)
+    assertEquals("user8", account.uid)
+  }
+
+  @Test
+  fun createAccount_allowsSameEmailForDifferentUsers() = runTest {
+    val user1 = User(uid = "user9", username = "first_user")
+    val user2 = User(uid = "user10", username = "second_user")
+    val sharedEmail = "shared@example.com"
+
+    repository.createAccount(user1, sharedEmail, dateOfBirth = testDateOfBirth)
+    repository.createAccount(user2, sharedEmail, dateOfBirth = testDateOfBirth) // Should not throw
+
+    val account1 = repository.getAccount("user9")
+    val account2 = repository.getAccount("user10")
+
+    assertEquals(sharedEmail, account1.googleAccountEmail)
+    assertEquals(sharedEmail, account2.googleAccountEmail)
+    assertEquals("first_user", account1.username)
+    assertEquals("second_user", account2.username)
   }
 }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.TakenUserException
+import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
@@ -32,6 +34,7 @@ data class RegisterUserViewModel(
     val uid: String = "",
     val username: String = "",
     val dateOfBirth: String = "",
+    val userEmail: String = "",
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false
@@ -49,6 +52,7 @@ data class RegisterUserViewModel(
 class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
+    private val accountService: AccountService = AccountServiceFirebase(),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
@@ -153,7 +157,8 @@ class RegisterViewModel(
     viewModelScope.launch {
       try {
         val user = User(uid = auth.currentUser!!.uid, username = username)
-        accountRepository.createAccount(user, uiState.value.dateOfBirth)
+        val email = auth.currentUser!!.email.orEmpty()
+        accountRepository.createAccount(user, email, uiState.value.dateOfBirth)
         userRepository.createUser(username, auth.currentUser!!.uid)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {

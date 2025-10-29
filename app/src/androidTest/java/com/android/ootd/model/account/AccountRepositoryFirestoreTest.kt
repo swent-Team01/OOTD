@@ -93,7 +93,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun createAccount_successfullyCreatesNewAccount() = runBlocking {
     val user = User(uid = currentUser.uid, username = "charlie_brown")
 
-    accountRepository.createAccount(user, testDateOfBirth)
+    accountRepository.createAccount(user, dateOfBirth = testDateOfBirth)
     userRepository.addUser(User(uid = user.uid, username = user.username))
 
     val account = accountRepository.getAccount(user.uid)
@@ -113,7 +113,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     userRepository.addUser(user2)
     // But createAccount should fail because username is already in use
     val exception =
-        runCatching { accountRepository.createAccount(user2, testDateOfBirth) }.exceptionOrNull()
+        runCatching { accountRepository.createAccount(user2, dateOfBirth = testDateOfBirth) }
+            .exceptionOrNull()
 
     assertTrue(exception is TakenUserException)
     assertTrue(exception?.message?.contains("already in use") == true)

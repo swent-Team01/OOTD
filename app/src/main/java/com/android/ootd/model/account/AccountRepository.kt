@@ -6,7 +6,7 @@ import com.android.ootd.model.user.User
 interface AccountRepository {
 
   /** Create an account for the given user. */
-  suspend fun createAccount(user: User, dateOfBirth: String)
+  suspend fun createAccount(user: User, userEmail: String = "", dateOfBirth: String)
 
   /**
    * Add a new account.

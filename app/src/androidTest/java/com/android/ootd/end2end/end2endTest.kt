@@ -166,7 +166,7 @@ class End2EndTest {
       coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
 
       // Mock successful account creation
-      coEvery { mockAccountRepository.createAccount(any(), any()) } returns Unit
+      coEvery { mockAccountRepository.createAccount(any(), any(), any()) } returns Unit
       coEvery { mockAccountRepository.accountExists(any()) } returns false
 
       // STEP 1: Launch the full app

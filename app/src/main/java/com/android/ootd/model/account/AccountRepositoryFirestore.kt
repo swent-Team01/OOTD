@@ -80,7 +80,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun createAccount(user: User, dateOfBirth: String) {
+  override suspend fun createAccount(user: User, userEmail: String, dateOfBirth: String) {
     if (userExists(user)) {
       Log.e("AccountRepositoryFirestore", "Username already in use")
       throw TakenUserException("Username already in use")
@@ -88,7 +88,11 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
     val newAccount =
         Account(
-            uid = user.uid, ownerId = user.uid, username = user.username, birthday = dateOfBirth)
+            uid = user.uid,
+            ownerId = user.uid,
+            googleAccountEmail = userEmail,
+            username = user.username,
+            birthday = dateOfBirth)
     try {
       addAccount(newAccount)
     } catch (e: Exception) {

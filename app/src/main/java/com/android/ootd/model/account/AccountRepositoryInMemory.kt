@@ -45,7 +45,7 @@ class AccountRepositoryInMemory : AccountRepository {
                   username = "",
                   friendUids = listOf()))
 
-  override suspend fun createAccount(user: User, dateOfBirth: String) {
+  override suspend fun createAccount(user: User, userEmail: String, dateOfBirth: String) {
     // Check if username already exists
     if (accounts.values.any { it.username == user.username && it.username.isNotBlank() }) {
       throw TakenUserException("Username already in use")
@@ -53,7 +53,11 @@ class AccountRepositoryInMemory : AccountRepository {
 
     val newAccount =
         Account(
-            uid = user.uid, ownerId = user.uid, username = user.username, birthday = dateOfBirth)
+            uid = user.uid,
+            ownerId = user.uid,
+            googleAccountEmail = userEmail,
+            username = user.username,
+            birthday = dateOfBirth)
     addAccount(newAccount)
   }
 
