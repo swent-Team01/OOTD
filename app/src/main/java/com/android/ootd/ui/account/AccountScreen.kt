@@ -56,10 +56,8 @@ import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
-import com.android.ootd.ui.theme.Typography
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -100,25 +98,6 @@ fun AccountScreen(
 ) {
   val uiState by accountViewModel.uiState.collectAsState()
   val context = LocalContext.current
-  val username = uiState.username
-  val email = uiState.googleAccountName
-  val dateOfBirth = uiState.dateOfBirth
-  val avatarUri = uiState.profilePicture
-
-  // State for username editing
-  var isEditingUsername by remember { mutableStateOf(false) }
-  var editedUsername by remember { mutableStateOf("") }
-
-  // Image picker launcher
-  val imagePickerLauncher =
-      rememberLauncherForActivityResult(
-          contract = ActivityResultContracts.PickVisualMedia(),
-          onResult = { uri ->
-            uri?.let {
-              accountViewModel.uploadProfilePicture(it.toString())
-              Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
-            }
-          })
 
   LaunchedEffect(uiState.signedOut) {
     if (uiState.signedOut) {
@@ -135,6 +114,7 @@ fun AccountScreen(
   }
 
   AccountScreenContent(
+      accountViewModel = accountViewModel,
       uiState = uiState,
       onBack = onBack,
       onSignOutClick = { accountViewModel.signOut(credentialManager) },
@@ -145,6 +125,7 @@ fun AccountScreen(
 
 @Composable
 private fun AccountScreenContent(
+    accountViewModel: AccountViewModel = viewModel(),
     uiState: AccountViewState,
     onBack: () -> Unit,
     onSignOutClick: () -> Unit,
@@ -152,6 +133,8 @@ private fun AccountScreenContent(
     onHelpClick: () -> Unit,
     onHelpDismiss: () -> Unit,
 ) {
+  val context = LocalContext.current
+
   val scrollState = rememberScrollState()
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
@@ -159,6 +142,23 @@ private fun AccountScreenContent(
   val email = uiState.googleAccountName
   val avatarUri = uiState.profilePicture
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
+
+  val dateOfBirth = uiState.dateOfBirth
+
+  // State for username editing
+  var isEditingUsername by remember { mutableStateOf(false) }
+  var editedUsername by remember { mutableStateOf("") }
+
+  // Image picker launcher
+  val imagePickerLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.PickVisualMedia(),
+          onResult = { uri ->
+            uri?.let {
+              accountViewModel.uploadProfilePicture(it.toString())
+              Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+            }
+          })
 
   Column(
       modifier =
