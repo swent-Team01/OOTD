@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -84,7 +85,7 @@ fun CameraScreen(
                   verticalArrangement = Arrangement.Center) {
                     Text(
                         "Camera permission is required to take your fit checks photos !",
-                        color = Primary,
+                        color = White,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier =
                             Modifier.padding(16.dp)
