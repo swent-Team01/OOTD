@@ -25,7 +25,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
   override fun setUp() {
     super.setUp()
     repository = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
-    viewModel = AddItemsViewModel(repository, FirebaseEmulator.storage.reference)
+    viewModel = AddItemsViewModel(repository)
   }
 
   private fun createTempImageFile(): File {
@@ -202,7 +202,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
     // Reset and add second item
     viewModel.resetAddSuccess()
-    val viewModel2 = AddItemsViewModel(repository, FirebaseEmulator.storage.reference)
+    val viewModel2 = AddItemsViewModel(repository)
     viewModel2.initTypeSuggestions(context)
 
     val uri2 = createReadableUri()
