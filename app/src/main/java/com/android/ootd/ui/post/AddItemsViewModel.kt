@@ -111,6 +111,11 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(errorMessage = msg)
   }
 
+  /** Initializes the ViewModel with the post UUID. */
+  fun initPostUuid(postUuid: String) {
+    _uiState.value = _uiState.value.copy(postUuid = postUuid)
+  }
+
   fun onAddItemClick() {
     val state = _uiState.value
     if (!state.isAddingValid) {
