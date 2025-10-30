@@ -10,7 +10,7 @@ class BottomNavigationBarUnitTest {
     assertEquals(Tab.Feed, routeToTab(Screen.Feed.route))
     assertEquals(Tab.Search, routeToTab(Screen.SearchScreen.route))
     assertEquals(Tab.Inventory, routeToTab(Screen.InventoryScreen.route))
-    assertEquals(Tab.Profile, routeToTab(Screen.Account.route))
+    assertEquals(Tab.Account, routeToTab(Screen.Account.route))
   }
 
   @Test
@@ -23,7 +23,7 @@ class BottomNavigationBarUnitTest {
     assertEquals(Screen.Feed, tabToScreen(Tab.Feed))
     assertEquals(Screen.SearchScreen, tabToScreen(Tab.Search))
     assertEquals(Screen.InventoryScreen, tabToScreen(Tab.Inventory))
-    assertEquals(Screen.Account, tabToScreen(Tab.Profile))
+    assertEquals(Screen.Account, tabToScreen(Tab.Account))
   }
 
   @Test
@@ -31,6 +31,6 @@ class BottomNavigationBarUnitTest {
     assertEquals("FeedTab", NavigationTestTags.getTabTestTag(Tab.Feed))
     assertEquals("SearchTab", NavigationTestTags.getTabTestTag(Tab.Search))
     assertEquals("InventoryTab", NavigationTestTags.getTabTestTag(Tab.Inventory))
-    assertEquals("ProfileTab", NavigationTestTags.getTabTestTag(Tab.Profile))
+    assertEquals("AccountTab", NavigationTestTags.getTabTestTag(Tab.Account))
   }
 }

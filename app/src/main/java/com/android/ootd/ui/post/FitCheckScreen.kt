@@ -10,8 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,16 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
-import java.io.File
+import com.android.ootd.ui.camera.CameraScreen
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -52,11 +50,10 @@ fun FitCheckScreen(
     onNextClick: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {}
 ) {
-  val context = LocalContext.current
   val uiState by fitCheckViewModel.uiState.collectAsState()
 
   var showDialog by remember { mutableStateOf(false) }
-  var cameraUri by remember { mutableStateOf<Uri?>(null) }
+  var showCamera by remember { mutableStateOf(false) }
 
   val galleryLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?
@@ -64,13 +61,15 @@ fun FitCheckScreen(
         if (uri != null) fitCheckViewModel.setPhoto(uri)
       }
 
-  val cameraLauncher =
-      rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) { success
-        ->
-        if (success && cameraUri != null) {
-          fitCheckViewModel.setPhoto(cameraUri!!)
-        }
-      }
+  // Show custom camera screen when needed
+  if (showCamera) {
+    CameraScreen(
+        onImageCaptured = { uri ->
+          fitCheckViewModel.setPhoto(uri)
+          showCamera = false
+        },
+        onDismiss = { showCamera = false })
+  }
 
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
@@ -89,7 +88,7 @@ fun FitCheckScreen(
                   onClick = onBackClick,
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON)) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.tertiary)
                   }
@@ -198,13 +197,8 @@ fun FitCheckScreen(
                       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(
                             onClick = {
-                              val file = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-                              val uri =
-                                  FileProvider.getUriForFile(
-                                      context, "${context.packageName}.provider", file)
-                              cameraUri = uri
-                              cameraLauncher.launch(uri)
                               showDialog = false
+                              showCamera = true
                             },
                             modifier = Modifier.testTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)) {
                               Text("Take Photo")

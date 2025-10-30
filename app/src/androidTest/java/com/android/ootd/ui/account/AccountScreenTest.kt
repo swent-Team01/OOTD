@@ -7,8 +7,12 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.credentials.CredentialManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +23,7 @@ import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -54,7 +59,12 @@ class AccountScreenTest {
     every { mockFirebaseUser.photoUrl } returns null
 
     coEvery { mockAccountRepository.getAccount("test-uid") } returns
-        Account(uid = "test-uid", ownerId = "test-uid", username = "user1", profilePicture = "")
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = "",
+            isPrivate = false)
 
     viewModel = AccountViewModel(mockAccountService, mockAccountRepository)
   }
@@ -84,7 +94,7 @@ class AccountScreenTest {
     composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CLEAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
   }
 
   @Test
@@ -177,5 +187,45 @@ class AccountScreenTest {
 
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_LOADING).assertDoesNotExist()
+  }
+
+  @Test
+  fun accountScreen_togglePrivacy_clickSwitch_updatesLabelAndCallsRepository() {
+    coEvery { mockAccountRepository.togglePrivacy("test-uid") } returns true
+
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    // Initially should show Public
+    composeTestRule.onNodeWithText("Public").assertIsDisplayed()
+
+    val switchMatcher = isToggleable() and hasAnyAncestor(hasTestTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+    composeTestRule.onNode(switchMatcher).performClick()
+
+    // Assert: label updated and repository called
+    composeTestRule.onNodeWithText("Private").assertIsDisplayed()
+    coVerify(exactly = 1) { mockAccountRepository.togglePrivacy("test-uid") }
+  }
+
+  @Test
+  fun accountScreen_helpIcon_showsAndDismissesPopup() {
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
   }
 }

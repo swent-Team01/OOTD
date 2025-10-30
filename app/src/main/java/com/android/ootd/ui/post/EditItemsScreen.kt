@@ -57,14 +57,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import java.io.File
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -93,6 +92,8 @@ fun EditItemsScreen(
   val errorMsg = itemsUIState.errorMessage
   val context = LocalContext.current
 
+  var showCamera by remember { mutableStateOf(false) }
+
   LaunchedEffect(itemsUIState.isSaveSuccessful) {
     if (itemsUIState.isSaveSuccessful) {
       goBack()
@@ -109,7 +110,6 @@ fun EditItemsScreen(
   }
 
   var expanded by remember { mutableStateOf(false) }
-  var cameraUri by remember { mutableStateOf<Uri?>(null) }
   val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
   val imageScaleState = remember { mutableFloatStateOf(1f) }
 
@@ -128,13 +128,15 @@ fun EditItemsScreen(
         }
       }
 
-  val cameraLauncher =
-      rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) {
-          success: Boolean ->
-        if (success && cameraUri != null) {
-          editItemsViewModel.setPhoto(cameraUri!!)
-        }
-      }
+  // Show custom camera screen when needed
+  if (showCamera) {
+    CameraScreen(
+        onImageCaptured = { uri ->
+          editItemsViewModel.setPhoto(uri)
+          showCamera = false
+        },
+        onDismiss = { showCamera = false })
+  }
 
   LaunchedEffect(errorMsg) {
     if (errorMsg != null) {
@@ -185,15 +187,7 @@ fun EditItemsScreen(
                                     Text("Select from Gallery")
                                   }
                               Button(
-                                  onClick = {
-                                    val file =
-                                        File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-                                    val uri =
-                                        FileProvider.getUriForFile(
-                                            context, "${context.packageName}.provider", file)
-                                    cameraUri = uri
-                                    cameraLauncher.launch(uri)
-                                  },
+                                  onClick = { showCamera = true },
                                   modifier =
                                       Modifier.weight(1f)
                                           .testTag(
@@ -317,7 +311,8 @@ fun EditItemsScreen(
                               Button(
                                   onClick = { editItemsViewModel.onSaveItemClick() },
                                   enabled =
-                                      itemsUIState.image != Uri.EMPTY &&
+                                      (itemsUIState.localPhotoUri != null ||
+                                          itemsUIState.image.imageUrl.isNotEmpty()) &&
                                           itemsUIState.category.isNotEmpty(),
                                   modifier =
                                       Modifier.weight(1f)

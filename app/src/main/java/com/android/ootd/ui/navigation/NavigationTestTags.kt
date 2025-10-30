@@ -14,6 +14,6 @@ object NavigationTestTags {
         is Tab.Feed -> "FeedTab"
         is Tab.Search -> "SearchTab"
         is Tab.Inventory -> "InventoryTab"
-        is Tab.Profile -> "ProfileTab"
+        is Tab.Account -> "AccountTab"
       }
 }

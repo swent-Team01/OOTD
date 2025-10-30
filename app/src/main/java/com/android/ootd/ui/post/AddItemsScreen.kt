@@ -67,12 +67,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
-import com.android.ootd.ui.theme.*
-import java.io.File
+import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.theme.Background
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
 
 object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"
@@ -119,6 +121,7 @@ fun AddItemsScreen(
   var categoryExpanded by remember { mutableStateOf(false) }
   val itemsUIState by addItemsViewModel.uiState.collectAsState()
   var showDialog by remember { mutableStateOf(false) }
+  var showCamera by remember { mutableStateOf(false) }
 
   val addOnSuccess by addItemsViewModel.addOnSuccess.collectAsState()
 
@@ -146,7 +149,6 @@ fun AddItemsScreen(
           minImageSize = minImageSize,
           maxImageSize = maxImageSize)
 
-  var cameraUri by remember { mutableStateOf<Uri?>(null) }
   val galleryLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?
         ->
@@ -155,13 +157,15 @@ fun AddItemsScreen(
         }
       }
 
-  val cameraLauncher =
-      rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) {
-          success: Boolean ->
-        if (success && cameraUri != null) {
-          addItemsViewModel.setPhoto(cameraUri!!)
-        }
-      }
+  // Show custom camera screen when needed
+  if (showCamera) {
+    CameraScreen(
+        onImageCaptured = { uri ->
+          addItemsViewModel.setPhoto(uri)
+          showCamera = false
+        },
+        onDismiss = { showCamera = false })
+  }
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
@@ -228,15 +232,9 @@ fun AddItemsScreen(
                             Column {
                               TextButton(
                                   onClick = {
-                                    // Take a photo
-                                    val file =
-                                        File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-                                    val uri =
-                                        FileProvider.getUriForFile(
-                                            context, "${context.packageName}.provider", file)
-                                    cameraUri = uri
-                                    cameraLauncher.launch(uri)
+                                    // Take a photo with custom camera
                                     showDialog = false
+                                    showCamera = true
                                   },
                                   modifier = Modifier.testTag(AddItemScreenTestTags.TAKE_A_PHOTO)) {
                                     Text("📸 Take a Photo")

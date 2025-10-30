@@ -29,10 +29,10 @@ sealed class Tab(val name: String, val icon: ImageVector, val destination: Scree
 
   object Inventory : Tab("Inventory", Icons.AutoMirrored.Outlined.List, Screen.InventoryScreen)
 
-  object Profile : Tab("Profile", Icons.Outlined.Person, Screen.Account)
+  object Account : Tab("Account", Icons.Outlined.Person, Screen.Account)
 }
 
-private val tabs = listOf(Tab.Feed, Tab.Search, Tab.Inventory, Tab.Profile)
+private val tabs = listOf(Tab.Feed, Tab.Search, Tab.Inventory, Tab.Account)
 
 /** Helpers for unit tests */
 fun routeToTab(route: String): Tab = tabs.find { it.destination.route == route } ?: Tab.Feed
