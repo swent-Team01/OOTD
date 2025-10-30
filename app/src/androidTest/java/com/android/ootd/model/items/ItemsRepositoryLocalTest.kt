@@ -364,6 +364,67 @@ class ItemsRepositoryLocalTest {
     // TestCase.assertEquals(customUri.toString(), retrieved.image.toString())
   }
 
+  @Test
+  fun getAssociatedItemsReturnsOnlyMatchingPostItems() = runTest {
+    val post1 = "post-A"
+    val post2 = "post-B"
+
+    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
+    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
+    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+
+    repository.addItem(itemA)
+    repository.addItem(itemB)
+    repository.addItem(itemC)
+
+    val post1Items = repository.getAssociatedItems(post1)
+    val post2Items = repository.getAssociatedItems(post2)
+    val noItems = repository.getAssociatedItems("post-XYZ")
+
+    TestCase.assertEquals(2, post1Items.size)
+    TestCase.assertTrue(post1Items.all { it.postUuid == post1 })
+
+    TestCase.assertEquals(1, post2Items.size)
+    TestCase.assertEquals(post2, post2Items.first().postUuid)
+
+    TestCase.assertTrue(noItems.isEmpty())
+  }
+
+  @Test
+  fun deletePostItemsRemovesAllItemsForSpecificPost() = runTest {
+    val post1 = "delete-this"
+    val post2 = "keep-this"
+
+    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
+    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
+    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+
+    repository.addItem(itemA)
+    repository.addItem(itemB)
+    repository.addItem(itemC)
+    TestCase.assertEquals(3, repository.getItemCount())
+
+    repository.deletePostItems(post1)
+
+    val remaining = repository.getAllItems()
+    TestCase.assertEquals(1, remaining.size)
+    TestCase.assertEquals(post2, remaining.first().postUuid)
+    TestCase.assertTrue(repository.hasItem("C"))
+    TestCase.assertFalse(repository.hasItem("A"))
+    TestCase.assertFalse(repository.hasItem("B"))
+  }
+
+  @Test
+  fun deletePostItemsDoesNothingWhenNoMatchFound() = runTest {
+    val post1 = "existing-post"
+    repository.addItem(item1.copy(postUuid = post1))
+    TestCase.assertEquals(1, repository.getItemCount())
+
+    repository.deletePostItems("non-existent-post")
+    TestCase.assertEquals(1, repository.getItemCount())
+    TestCase.assertTrue(repository.hasItem(item1.itemUuid))
+  }
+
   @After
   fun tearDown() {
     repository.clearAll()
