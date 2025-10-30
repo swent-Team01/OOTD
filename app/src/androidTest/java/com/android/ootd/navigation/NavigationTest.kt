@@ -453,7 +453,7 @@ class NavigationTest {
   fun previewItemScreen_navigateFromFitCheck_shouldWork() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       assertEquals(Screen.FitCheck.route, navigation.currentRoute())
 
       navigation.navigateTo(
@@ -467,7 +467,7 @@ class NavigationTest {
   fun previewItemScreen_goBackToFitCheck_shouldWork() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -608,7 +608,7 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go to FitCheck
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       assertEquals(Screen.FitCheck.route, navigation.currentRoute())
 
       // Go to PreviewItemScreen
@@ -664,7 +664,7 @@ class NavigationTest {
     composeRule.runOnIdle {
       // Build deep navigation stack
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -748,7 +748,7 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Return to PreviewItemScreen for another outfit
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -808,7 +808,7 @@ class NavigationTest {
       navigation.navigateTo(Screen.Feed)
 
       // Simulate user clicking "Add Post"
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
     }
 
     composeRule.waitForIdle()
@@ -819,7 +819,7 @@ class NavigationTest {
   fun fitCheckScreen_onNextClick_navigatesToPreviewItem() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -833,7 +833,7 @@ class NavigationTest {
     composeRule.runOnIdle {
       // Move through the realistic flow
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -904,7 +904,7 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go to FitCheck
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       assertEquals(Screen.FitCheck.route, navigation.currentRoute())
 
       // Go to PreviewItemScreen
@@ -1004,7 +1004,7 @@ class NavigationTest {
       // Build deep stack
       navigation.navigateTo(Screen.Feed)
 
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -1052,7 +1052,7 @@ class NavigationTest {
   fun statePreservation_navigationDoesNotClearStack() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))

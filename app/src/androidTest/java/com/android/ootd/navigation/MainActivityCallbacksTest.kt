@@ -74,7 +74,7 @@ class MainActivityCallbacksTest {
 
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -88,7 +88,7 @@ class MainActivityCallbacksTest {
 
     composeRule.runOnIdle {
       // Simulate real user flow: Feed → FitCheck → PreviewItem → AddItem
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -110,7 +110,7 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       // Build deep stack
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -160,7 +160,7 @@ class MainActivityCallbacksTest {
     // launchAppAt(Screen.Feed.route)
 
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -237,7 +237,7 @@ class MainActivityCallbacksTest {
       Assert.assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go to FitCheck
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       Assert.assertEquals(Screen.FitCheck.route, navigation.currentRoute())
 
       // Go to PreviewItemScreen
@@ -337,7 +337,7 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       // Navigate through the valid path: Feed → FitCheck → Preview → Edit(item-123)
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -359,7 +359,7 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       // First outfit
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -375,7 +375,7 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Second outfit
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -413,7 +413,7 @@ class MainActivityCallbacksTest {
   fun deepNestedNavigation_maintainsCorrectBackStack() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -462,7 +462,7 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       // User is in the middle of creating an outfit
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -508,7 +508,7 @@ class MainActivityCallbacksTest {
   fun navigationActions_popUpTo_clearsIntermediateScreens() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
@@ -529,7 +529,7 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.Feed)
 
       // To FitCheck
-      navigation.navigateTo(Screen.FitCheck)
+      navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       assertEquals(Screen.FitCheck.route, navigation.currentRoute())
       navigation.goBack()
 

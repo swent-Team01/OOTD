@@ -315,7 +315,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
           imageUri = "test_image_uri",
           description = "test outfit description",
-          onPostOutfit = { postClicked = true })
+          onPostSuccess = { postClicked = true })
     }
 
     composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
@@ -618,7 +618,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           description = "test outfit description",
           onAddItem = { addClicked = true },
           onEditItem = { editClicked = true },
-          onPostOutfit = { postClicked = true },
+          onPostSuccess = { postClicked = true },
           onGoBack = { backClicked = true })
     }
 
