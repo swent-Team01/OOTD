@@ -79,6 +79,7 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_LINK = "inputItemLink"
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
+  const val ALL_FIELDS = "allFields"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -184,9 +185,10 @@ fun EditItemsScreen(
                       .nestedScroll(nestedScrollConnection)) {
                 LazyColumn(
                     modifier =
-                        Modifier.fillMaxWidth().padding(16.dp).offset {
-                          IntOffset(0, currentImageSizeState.value.roundToPx())
-                        },
+                        Modifier.fillMaxWidth()
+                            .padding(16.dp)
+                            .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
+                            .testTag(EditItemsScreenTestTags.ALL_FIELDS),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
                       item {
                         Row(
@@ -345,7 +347,8 @@ fun EditItemsScreen(
                               Button(
                                   onClick = { editItemsViewModel.onSaveItemClick() },
                                   enabled =
-                                      itemsUIState.image != Uri.EMPTY &&
+                                      (itemsUIState.localPhotoUri != null ||
+                                          itemsUIState.image.imageUrl.isNotEmpty()) &&
                                           itemsUIState.category.isNotEmpty(),
                                   modifier =
                                       Modifier.weight(1f)
