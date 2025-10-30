@@ -54,4 +54,23 @@ interface AccountRepository {
    * @throws NoSuchElementException if account is not found
    */
   suspend fun togglePrivacy(userID: String): Boolean
+
+  /**
+   * Allows the User to delete his account
+   *
+   * @param userID Said users ID
+   * @throws NoSuchElementException If the account does not exist
+   */
+  suspend fun deleteAccount(userID: String)
+
+  /**
+   * Allows the user to edit his username or date of birth
+   *
+   * @param userID Said users ID
+   * @param username Users new username, blank by default
+   * @param birthDay Users updated date of birth, blank by default
+   * @throws TakenUserException If the username already exists
+   * @throws IllegalStateException The userID does not match the users ID
+   */
+  suspend fun editAccount(userID: String, username: String, birthDay: String, picture: String)
 }

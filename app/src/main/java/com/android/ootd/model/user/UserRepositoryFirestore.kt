@@ -142,6 +142,85 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
+  override suspend fun editUsername(userID: String, newUsername: String) {
+    try {
+      // Validate input
+      if (userID.isBlank() || newUsername.isBlank()) {
+        throw IllegalArgumentException("User ID and username cannot be blank")
+      }
+      // Check if user exists
+      val querySnapshot =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+
+      if (querySnapshot.documents.isEmpty()) {
+        throw NoSuchElementException("User with ID $userID not found")
+      }
+
+      val userDocument = querySnapshot.documents[0]
+      val currentUsername = userDocument.getString("username")
+
+      if (currentUsername == newUsername) {
+        Log.d("UserRepositoryFirestore", "Username is already $newUsername for user $userID")
+        return
+      }
+
+      if (usernameExists(newUsername)) {
+        Log.e("UserRepositoryFirestore", "Username $newUsername is already taken")
+        throw TakenUsernameException("Username already in use")
+      }
+
+      // Update the username
+      db.collection(USER_COLLECTION_PATH).document(userID).update("username", newUsername).await()
+
+      Log.d(
+          "UserRepositoryFirestore",
+          "Successfully updated username for user $userID to $newUsername")
+    } catch (e: TakenUsernameException) {
+      Log.e("UserRepositoryFirestore", "Username already taken: ${e.message}", e)
+      throw e
+    } catch (e: NoSuchElementException) {
+      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      throw e
+    } catch (e: IllegalArgumentException) {
+      Log.e("UserRepositoryFirestore", "Invalid argument: ${e.message}", e)
+      throw e
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error updating username: ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun deleteUser(userID: String) {
+    try {
+      // Validate input
+      if (userID.isBlank()) {
+        throw IllegalArgumentException("User ID cannot be blank")
+      }
+
+      // Check if user exists before attempting deletion
+      val querySnapshot =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+
+      if (querySnapshot.documents.isEmpty()) {
+        throw NoSuchElementException("User with ID $userID not found")
+      }
+
+      // Delete the user document
+      db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
+
+      Log.d("UserRepositoryFirestore", "Successfully deleted user with ID: $userID")
+    } catch (e: NoSuchElementException) {
+      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      throw e
+    } catch (e: IllegalArgumentException) {
+      Log.e("UserRepositoryFirestore", "Invalid argument: ${e.message}", e)
+      throw e
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error deleting user: ${e.message}", e)
+      throw e
+    }
+  }
+
   private suspend fun usernameExists(username: String): Boolean {
     val querySnapshot =
         db.collection(USER_COLLECTION_PATH).whereEqualTo("username", username).get().await()

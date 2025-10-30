@@ -4,6 +4,9 @@ package com.android.ootd.ui.account
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,7 +16,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -32,10 +37,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -46,6 +56,8 @@ import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -53,9 +65,12 @@ object UiTestTags {
   const val TAG_ACCOUNT_TITLE = "account_title"
   const val TAG_ACCOUNT_AVATAR_CONTAINER = "account_avatar_container"
   const val TAG_ACCOUNT_AVATAR_IMAGE = "account_avatar_image"
+  const val TAG_ACCOUNT_AVATAR_LETTER = "account_avatar_letter"
   const val TAG_ACCOUNT_EDIT = "account_edit_button"
   const val TAG_USERNAME_FIELD = "account_username_field"
-  const val TAG_USERNAME_CLEAR = "account_username_clear"
+  const val TAG_USERNAME_EDIT = "account_username_edit"
+  const val TAG_USERNAME_CANCEL = "account_username_cancel"
+  const val TAG_USERNAME_SAVE = "account_username_save"
   const val TAG_GOOGLE_FIELD = "account_google_field"
   const val TAG_SIGNOUT_BUTTON = "account_signout_button"
   const val TAG_PRIVACY_TOGGLE = "account_privacy_toggle"
@@ -72,7 +87,6 @@ object UiTestTags {
  * @param accountViewModel supplies [AccountViewState] and handles business logic.
  * @param credentialManager used when signing out to clear platform credentials.
  * @param onBack callback invoked when the back button is pressed.
- * @param onEditAvatar callback invoked when the Edit button under the avatar is pressed.
  * @param onSignOut callback invoked when the view model signals a successful sign-out.
  */
 @Composable
@@ -80,7 +94,6 @@ fun AccountScreen(
     accountViewModel: AccountViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onBack: () -> Unit = {},
-    onEditAvatar: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
   val uiState by accountViewModel.uiState.collectAsState()
@@ -101,9 +114,9 @@ fun AccountScreen(
   }
 
   AccountScreenContent(
+      accountViewModel = accountViewModel,
       uiState = uiState,
       onBack = onBack,
-      onEditAvatar = onEditAvatar,
       onSignOutClick = { accountViewModel.signOut(credentialManager) },
       onToggle = { accountViewModel.onTogglePrivacy() },
       onHelpClick = { accountViewModel.onPrivacyHelpClick() },
@@ -112,14 +125,16 @@ fun AccountScreen(
 
 @Composable
 private fun AccountScreenContent(
+    accountViewModel: AccountViewModel = viewModel(),
     uiState: AccountViewState,
     onBack: () -> Unit,
-    onEditAvatar: () -> Unit,
     onSignOutClick: () -> Unit,
     onToggle: () -> Unit,
     onHelpClick: () -> Unit,
     onHelpDismiss: () -> Unit,
 ) {
+  val context = LocalContext.current
+
   val scrollState = rememberScrollState()
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
@@ -127,6 +142,23 @@ private fun AccountScreenContent(
   val email = uiState.googleAccountName
   val avatarUri = uiState.profilePicture
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
+
+  val dateOfBirth = uiState.dateOfBirth
+
+  // State for username editing
+  var isEditingUsername by remember { mutableStateOf(false) }
+  var editedUsername by remember { mutableStateOf("") }
+
+  // Image picker launcher
+  val imagePickerLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.PickVisualMedia(),
+          onResult = { uri ->
+            uri?.let {
+              accountViewModel.uploadProfilePicture(it.toString())
+              Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+            }
+          })
 
   Column(
       modifier =
@@ -173,13 +205,14 @@ private fun AccountScreenContent(
                     modifier =
                         Modifier.size(180.dp)
                             .clip(CircleShape)
-                            .background(colors.primary.copy(alpha = 0.12f)),
+                            .background(Primary)
+                            .pointerHoverIcon(icon = PointerIcon.Hand),
                     contentAlignment = Alignment.Center) {
-                      Icon(
-                          imageVector = Icons.Default.AccountCircle,
-                          contentDescription = "Avatar",
-                          tint = colors.primary.copy(alpha = 0.85f),
-                          modifier = Modifier.size(96.dp))
+                      Text(
+                          text = username.firstOrNull()?.uppercase() ?: "",
+                          style = typography.headlineLarge,
+                          color = Secondary,
+                          modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
                     }
               }
             }
@@ -189,7 +222,10 @@ private fun AccountScreenContent(
         // Edit button under avatar
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
           Button(
-              onClick = onEditAvatar,
+              onClick = {
+                imagePickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+              },
               shape = CircleShape,
               colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
               modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
@@ -201,27 +237,59 @@ private fun AccountScreenContent(
 
         // Username field (outlined) with colored rounded label
         OutlinedTextField(
-            value = username,
-            onValueChange = {},
+            value = if (isEditingUsername) editedUsername else username,
+            onValueChange = { editedUsername = it },
             label = {
               Box(
                   modifier =
-                      Modifier.background(colors.secondary, RoundedCornerShape(6.dp))
+                      Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
                           .padding(horizontal = 8.dp, vertical = 4.dp)) {
                     Text(text = "Username", style = typography.bodySmall, color = colors.tertiary)
                   }
             },
-            readOnly = true,
+            readOnly = !isEditingUsername,
             textStyle = typography.bodyLarge,
             trailingIcon = {
-              IconButton(
-                  onClick = { /* noop, UI only */},
-                  modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CLEAR)) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Clear",
-                        tint = colors.onSurface.copy(alpha = 0.7f))
-                  }
+              if (isEditingUsername) {
+                Row {
+                  IconButton(
+                      onClick = {
+                        isEditingUsername = false
+                        editedUsername = ""
+                      },
+                      modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CANCEL)) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cancel",
+                            tint = colors.error)
+                      }
+                  IconButton(
+                      onClick = {
+                        if (editedUsername.isNotBlank() && editedUsername != username) {
+                          accountViewModel.editUser(newUsername = editedUsername)
+                          isEditingUsername = false
+                        }
+                      },
+                      modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_SAVE)) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Save",
+                            tint = colors.primary)
+                      }
+                }
+              } else {
+                IconButton(
+                    onClick = {
+                      isEditingUsername = true
+                      editedUsername = username
+                    },
+                    modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_EDIT)) {
+                      Icon(
+                          imageVector = Icons.Default.Edit,
+                          contentDescription = "Edit username",
+                          tint = colors.onSurface.copy(alpha = 0.7f))
+                    }
+              }
             },
             colors =
                 OutlinedTextFieldDefaults.colors(
@@ -366,7 +434,6 @@ private fun AccountScreenPreview() {
                 showPrivacyHelp = true,
             ),
         onBack = {},
-        onEditAvatar = {},
         onSignOutClick = {},
         onToggle = {},
         onHelpClick = {},

@@ -129,15 +129,33 @@ class AccountRepositoryInMemory : AccountRepository {
     return account.friendUids.isNotEmpty() && account.friendUids.any { it == friendID }
   }
 
+  // replaces removeAccount
+  override suspend fun deleteAccount(userID: String) {
+    if (accounts.containsKey(userID)) {
+      accounts.remove(userID)
+    } else {
+      throw NoSuchElementException("Account with ID $userID not found")
+    }
+  }
+
+  override suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String
+  ) {
+    val acc = getAccount(userID)
+    accounts[userID] =
+        acc.copy(
+            username = username.takeIf { it.isNotBlank() } ?: acc.username,
+            birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
+            profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
+  }
+
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)
     accounts[userID] = updatedAccount
     return updatedAccount.isPrivate
-  }
-
-  // Useful for testing
-  fun removeAccount(uid: String) {
-    accounts.remove(uid)
   }
 }

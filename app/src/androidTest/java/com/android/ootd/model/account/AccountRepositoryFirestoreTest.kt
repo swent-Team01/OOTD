@@ -392,6 +392,52 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertTrue(exception?.message?.contains("Failed to transform") == true)
   }
 
+  // New tests for edit and delete account
+  @Test
+  fun editAccount_updatesUsernameAndBirthday() = runBlocking {
+    accountRepository.addAccount(account1)
+
+    val newUsername = "new_username"
+    val newBirthday = "1990-01-01"
+    val newPicture = ":3"
+    accountRepository.editAccount(
+        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newPicture, updated.profilePicture)
+  }
+
+  @Test
+  fun editAccount_keepsValuesWhenBlank() = runBlocking {
+    accountRepository.addAccount(account1)
+
+    // Pass blank values - should preserve existing data
+    accountRepository.editAccount(account1.uid, username = "", birthDay = "", picture = "")
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(account1.username, updated.username)
+    assertEquals(account1.birthday, updated.birthday)
+    assertEquals(account1.profilePicture, updated.profilePicture)
+  }
+
+  @Test
+  fun deleteAccount_successfullyDeletesAccount() = runBlocking {
+    accountRepository.addAccount(account1)
+
+    accountRepository.deleteAccount(account1.uid)
+
+    val exception = runCatching { accountRepository.getAccount(account1.uid) }.exceptionOrNull()
+    assertTrue(exception is NoSuchElementException)
+  }
+
+  @Test
+  fun deleteAccount_throwsWhenAccountNotFound() = runBlocking {
+    val exception = runCatching { accountRepository.deleteAccount("nonexistent") }.exceptionOrNull()
+    assertTrue(exception is UnknowUserID)
+  }
+
   @Test
   fun togglePrivacy_togglesAndPersists() = runBlocking {
     accountRepository.addAccount(account1)

@@ -15,6 +15,8 @@ class TakenUserException(message: String) : Exception(message)
 
 class TakenAccountException(message: String) : Exception(message)
 
+class UnknowUserID : Exception("No account with such userID")
+
 /** Convert domain Account to Firestore-friendly Map (excludes uid as it's the document id) */
 private fun Account.toFirestoreMap(): Map<String, Any> =
     mapOf(
@@ -237,6 +239,64 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
         .await()
 
     return newPrivacySetting
+  }
+
+  override suspend fun deleteAccount(userID: String) {
+    try {
+      getAccount(userID)
+
+      db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
+      Log.d("AccountRepositoryFirestore", "Successfully deleted account with UID: $userID")
+    } catch (_: NoSuchElementException) {
+      throw UnknowUserID()
+    } catch (e: Exception) {
+      Log.e("AccountRepositoryFirestore", "Error deleting account: ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String
+  ) {
+    try {
+      val user = getAccount(userID)
+
+      val isNewUsername = username != user.username && username.isNotBlank()
+
+      val newUsername = username.takeIf { isNewUsername } ?: user.username
+      val newBirthDate = birthDay.takeIf { it.isNotBlank() } ?: user.birthday
+      val newProfilePic = picture.takeIf { it.isNotBlank() } ?: user.profilePicture
+
+      if (isNewUsername) {
+        val querySnapshot =
+            db.collection(USER_COLLECTION_PATH).whereEqualTo("username", newUsername).get().await()
+
+        if (querySnapshot.documents.any { it.id != userID }) {
+          throw TakenUserException("Username '$newUsername' is already in use")
+        }
+      }
+
+      db.collection(ACCOUNT_COLLECTION_PATH)
+          .document(userID)
+          .update(
+              mapOf(
+                  "username" to newUsername,
+                  "birthday" to newBirthDate,
+                  "profilePicture" to newProfilePic))
+          .await()
+
+      Log.d(
+          "AccountRepositoryFirestore",
+          "Successfully updated account with UID: $userID, new username $newUsername, birthdate $birthDay, profilePic $newProfilePic")
+    } catch (_: NoSuchElementException) {
+      throw UnknowUserID()
+    } catch (e: Exception) {
+      Log.e("AccountRepositoryFirestore", "Error updating account: ${e.message}", e)
+      throw e
+    }
   }
 
   private suspend fun userExists(user: User): Boolean {

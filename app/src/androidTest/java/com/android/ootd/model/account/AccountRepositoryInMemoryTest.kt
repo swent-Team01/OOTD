@@ -265,9 +265,9 @@ class AccountRepositoryInMemoryTest {
   }
 
   @Test
-  fun removeAccount_successfullyRemovesAccount() {
+  fun deleteAccount_successfullyRemovesAccount() {
     // Perform removal inside a runTest to call suspend code if needed
-    runTest { repository.removeAccount("user5") }
+    runTest { repository.deleteAccount("user5") }
 
     val exception =
         assertThrows(NoSuchElementException::class.java) {
@@ -275,6 +275,72 @@ class AccountRepositoryInMemoryTest {
         }
 
     assertEquals("Account with ID user5 not found", exception.message)
+  }
+
+  @Test
+  fun deleteAccount_throwsWhenAccountNotFound() {
+    val exception =
+        assertThrows(NoSuchElementException::class.java) {
+          runTest { repository.deleteAccount("nonexistent") }
+        }
+
+    assertEquals("Account with ID nonexistent not found", exception.message)
+  }
+
+  @Test
+  fun editAccount_updatesUsernameBirthdayAndProfilePicture() = runTest {
+    val newUsername = "new_alice"
+    val newBirthday = "1995-05-15"
+    val newProfilePic = ":3"
+
+    repository.editAccount(
+        "user1", username = newUsername, birthDay = newBirthday, picture = newProfilePic)
+
+    val updated = repository.getAccount("user1")
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newProfilePic, updated.profilePicture)
+  }
+
+  @Test
+  fun editAccount_keepsAllThreeWhenBlanks() = runTest {
+    val originalAccount = repository.getAccount("user1")
+
+    repository.editAccount("user1", username = "", birthDay = "", picture = "")
+
+    val updated = repository.getAccount("user1")
+    assertEquals(originalAccount.username, updated.username) // Username unchanged
+    assertEquals(originalAccount.birthday, updated.birthday) // Birthday unchanged
+    assertEquals(originalAccount.profilePicture, updated.profilePicture) // ProfilePicture unchanged
+  }
+
+  @Test
+  fun editAccount_keepsAllValuesWhenBothBlank() = runTest {
+    val originalAccount = repository.getAccount("user1")
+    val newUsername = "Im new here"
+    val newBirthday = "01-01-2000"
+    val newProfilePic = ":3"
+
+    repository.editAccount(
+        "user1", username = newUsername, birthDay = newBirthday, picture = newProfilePic)
+
+    val updated = repository.getAccount("user1")
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newProfilePic, updated.profilePicture)
+  }
+
+  @Test
+  fun editAccount_throwsWhenAccountNotFound() {
+    val exception =
+        assertThrows(NoSuchElementException::class.java) {
+          runTest {
+            repository.editAccount(
+                "nonexistent", username = "new_name", birthDay = "", picture = "")
+          }
+        }
+
+    assertEquals("Account with ID nonexistent not found", exception.message)
   }
 
   @Test
