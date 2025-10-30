@@ -43,7 +43,9 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     viewModel = AddItemsViewModel(repository)
     // Initialize type suggestions for tests
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
-    composeTestRule.setContent { AddItemsScreen(viewModel, onNextScreen = {}) }
+    composeTestRule.setContent {
+      AddItemsScreen(addItemsViewModel = viewModel, onNextScreen = {}, postUuid = "postuid")
+    }
   }
 
   @Test

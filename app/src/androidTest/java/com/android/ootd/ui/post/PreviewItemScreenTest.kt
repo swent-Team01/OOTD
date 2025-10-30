@@ -74,6 +74,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun deleteItem(uuid: String) {
           TODO("Not yet implemented")
         }
+
+        override suspend fun deletePostItems(postUuid: String) {
+          TODO("Not yet implemented")
+        }
       }
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -81,7 +85,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   fun setContent(withInitialItems: List<Item> = emptyList()) {
     runTest { withInitialItems.forEach { repository.addItem(it) } }
     composeTestRule.setContent {
-      PreviewItemScreen(outfitPreviewViewModel = OutfitPreviewViewModel(repository))
+      PreviewItemScreen(
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(withInitialItems)),
+          imageUri = "fake_image_uri",
+          description = "Test outfit description")
     }
   }
 
@@ -245,6 +252,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       PreviewItemScreen(
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onAddItem = { addItemClicked = true })
     }
 
@@ -289,6 +298,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       PreviewItemScreen(
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onEditItem = { itemId -> editedItemId = itemId })
     }
     // Click the edit button
@@ -302,6 +313,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       PreviewItemScreen(
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onPostOutfit = { postClicked = true })
     }
 
@@ -315,6 +328,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       PreviewItemScreen(
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onGoBack = { goBackClicked = true })
     }
 
@@ -327,7 +342,9 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     var goBackClicked = false
     composeTestRule.setContent {
       PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(emptyList())),
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onGoBack = { goBackClicked = true })
     }
 
@@ -370,6 +387,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     assert(viewModel.uiState.value.errorMessage == null)
   }
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   @Test
   fun viewModelHandlesErrorsGracefully() = runTest {
     val errorRepo =
@@ -397,9 +415,21 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun deleteItem(uuid: String) {
             throw Exception("Failed to delete item")
           }
+
+          override suspend fun deletePostItems(postUuid: String) {
+            throw Exception("Failed to delete post items")
+          }
         }
+
     val viewModel = OutfitPreviewViewModel(errorRepo)
+
+    // Trigger the load sequence that will throw
+    viewModel.initFromFitCheck("fake_uri", "test description")
+    advanceUntilIdle()
+
+    // After the failure, we expect:
     assert(viewModel.uiState.value.items.isEmpty())
+    assert(viewModel.uiState.value.errorMessage?.contains("Failed to load items") == true)
   }
 
   // Additional comprehensive tests for better coverage
@@ -507,7 +537,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
     assert(viewModel.uiState.value.items.size == 1)
 
-    viewModel.refreshItems()
+    viewModel.loadItemsForPost()
     advanceUntilIdle()
     composeTestRule.waitForIdle()
 
@@ -550,7 +580,9 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.setContent {
       PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(items)),
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onEditItem = { itemId -> editedId = itemId })
     }
 
@@ -582,6 +614,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       PreviewItemScreen(
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
+          imageUri = "test_image_uri",
+          description = "test outfit description",
           onAddItem = { addClicked = true },
           onEditItem = { editClicked = true },
           onPostOutfit = { postClicked = true },
@@ -625,6 +659,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun editItem(itemUUID: String, newItem: Item) {}
 
           override suspend fun deleteItem(uuid: String) {}
+
+          override suspend fun deletePostItems(postUuid: String) {}
         }
 
     val viewModel = OutfitPreviewViewModel(failingRepo)
@@ -640,7 +676,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     assert(viewModel.uiState.value.errorMessage == null)
 
     // Now call refreshItems explicitly to test the catch block in refreshItems
-    viewModel.refreshItems()
+    viewModel.loadItemsForPost()
     advanceUntilIdle()
     composeTestRule.waitForIdle()
 
@@ -676,6 +712,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun editItem(itemUUID: String, newItem: Item) {}
 
           override suspend fun deleteItem(uuid: String) {}
+
+          override suspend fun deletePostItems(postUuid: String) {}
         }
 
     val viewModel = OutfitPreviewViewModel(failingRepo)
@@ -686,7 +724,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     viewModel.clearErrorMessage()
 
     // Call refreshItems
-    viewModel.refreshItems()
+    viewModel.loadItemsForPost()
     advanceUntilIdle()
     composeTestRule.waitForIdle()
 
@@ -719,6 +757,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun editItem(itemUUID: String, newItem: Item) {}
 
           override suspend fun deleteItem(uuid: String) {}
+
+          override suspend fun deletePostItems(postUuid: String) {}
         }
 
     val viewModel = OutfitPreviewViewModel(toggleRepo)
@@ -731,7 +771,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
     // Now make it fail
     shouldFail = true
-    viewModel.refreshItems()
+    viewModel.loadItemsForPost()
     advanceUntilIdle()
     composeTestRule.waitForIdle()
 
@@ -763,6 +803,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun editItem(itemUUID: String, newItem: Item) {}
 
           override suspend fun deleteItem(uuid: String) {}
+
+          override suspend fun deletePostItems(postUuid: String) {}
         }
 
     val viewModel = OutfitPreviewViewModel(multiFailRepo)
@@ -775,7 +817,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     viewModel.clearErrorMessage()
 
     // Second failure (from refreshItems)
-    viewModel.refreshItems()
+    viewModel.loadItemsForPost()
     advanceUntilIdle()
     composeTestRule.waitForIdle()
     assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
@@ -784,7 +826,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     viewModel.clearErrorMessage()
 
     // Third failure (from refreshItems)
-    viewModel.refreshItems()
+    viewModel.loadItemsForPost()
     advanceUntilIdle()
     composeTestRule.waitForIdle()
     assert(viewModel.uiState.value.errorMessage?.contains("Failed to refresh items") == true)
@@ -803,7 +845,12 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     val stateFlow = field.get(viewModel) as MutableStateFlow<PreviewUIState>
     stateFlow.value = stateFlow.value.copy(errorMessage = "Network error occurred")
 
-    composeTestRule.setContent { PreviewItemScreen(outfitPreviewViewModel = viewModel) }
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = viewModel,
+          imageUri = "test_image_uri",
+          description = "test outfit description")
+    }
 
     composeTestRule.waitForIdle()
 
@@ -835,11 +882,18 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun editItem(itemUUID: String, newItem: Item) {}
 
           override suspend fun deleteItem(uuid: String) {}
+
+          override suspend fun deletePostItems(postUuid: String) {}
         }
 
     val viewModel = OutfitPreviewViewModel(repo)
 
-    composeTestRule.setContent { PreviewItemScreen(outfitPreviewViewModel = viewModel) }
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = viewModel,
+          imageUri = "test_image_uri",
+          description = "test outfit description")
+    }
 
     composeTestRule.waitForIdle()
 
@@ -853,7 +907,9 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   fun topAppBar_displaysOOTDTitle() {
     composeTestRule.setContent {
       PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(emptyList())))
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(emptyList())),
+          imageUri = "test_image_uri",
+          description = "test outfit description")
     }
 
     composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
