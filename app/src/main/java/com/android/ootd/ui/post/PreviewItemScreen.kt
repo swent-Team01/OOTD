@@ -1,6 +1,7 @@
 package com.android.ootd.ui.post
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -82,17 +83,22 @@ object PreviewItemScreenTestTags {
 @Composable
 fun PreviewItemScreen(
     outfitPreviewViewModel: OutfitPreviewViewModel = viewModel(),
+    imageUri: String,
+    description: String,
     onEditItem: (String) -> Unit = {},
-    onAddItem: () -> Unit = {},
-    onPostOutfit: () -> Unit = {},
+    onAddItem: (String) -> Unit = {}, // now takes postUuid
+    onPostSuccess: () -> Unit = {},
     onGoBack: () -> Unit = {},
 ) {
   val context = LocalContext.current
   val uiState by outfitPreviewViewModel.uiState.collectAsState()
   val itemsList = uiState.items
-
   val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
+  // Initialise ViewModel with args
+  LaunchedEffect(Unit) { outfitPreviewViewModel.initFromFitCheck(imageUri, description) }
+
+  // Handle error messages
   LaunchedEffect(uiState.errorMessage) {
     uiState.errorMessage?.let { message ->
       Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -100,7 +106,18 @@ fun PreviewItemScreen(
     }
   }
 
-  LaunchedEffect(Unit) { outfitPreviewViewModel.refreshItems() }
+  LaunchedEffect(uiState.successMessage) {
+    uiState.successMessage?.let { message ->
+      Log.d("PreviewItemScreen", "Success message: $message")
+      Log.d("PreviewItemScreen", "Is Published: ${uiState.isPublished}")
+
+      Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+      outfitPreviewViewModel.clearErrorMessage()
+      if (uiState.isPublished) {
+        onPostSuccess()
+      }
+    }
+  }
 
   Scaffold(
       topBar = {
@@ -140,7 +157,7 @@ fun PreviewItemScreen(
             verticalAlignment = Alignment.CenterVertically) {
               if (itemsList.isNotEmpty()) {
                 Button(
-                    onClick = { onPostOutfit() },
+                    onClick = { outfitPreviewViewModel.publishPost() },
                     modifier =
                         Modifier.height(47.dp)
                             .width(140.dp)
@@ -153,7 +170,9 @@ fun PreviewItemScreen(
               }
 
               Button(
-                  onClick = { onAddItem() },
+                  onClick = {
+                    onAddItem(uiState.postUuid)
+                  }, // pass the post id to the addItem screen
                   modifier =
                       Modifier.height(47.dp)
                           .width(140.dp)
