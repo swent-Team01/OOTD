@@ -13,14 +13,19 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
-@Keep private data class UserDto(val uid: String = "", val username: String = "")
+@Keep
+private data class UserDto(
+    val uid: String = "",
+    val username: String = "",
+    val profilePicture: String = ""
+)
 
 private fun User.toDto(): UserDto {
-  return UserDto(uid = this.uid, username = this.username)
+  return UserDto(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
 }
 
 private fun UserDto.toDomain(): User {
-  return User(uid = this.uid, username = this.username)
+  return User(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
 }
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
@@ -57,14 +62,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     return UUID.randomUUID().toString()
   }
 
-  override suspend fun createUser(username: String, uid: String) {
+  override suspend fun createUser(username: String, uid: String, profilePicture: String) {
 
     if (usernameExists(username)) {
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
     }
 
-    val newUser = User(uid, username)
+    val newUser = User(uid, username, profilePicture)
     try {
       addUser(newUser)
     } catch (e: Exception) {
@@ -133,6 +138,85 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       Log.d("UserRepositoryFirestore", "Successfully added user with UID: ${user.uid}")
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error adding user: ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun editUsername(userID: String, newUsername: String) {
+    try {
+      // Validate input
+      if (userID.isBlank() || newUsername.isBlank()) {
+        throw IllegalArgumentException("User ID and username cannot be blank")
+      }
+      // Check if user exists
+      val querySnapshot =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+
+      if (querySnapshot.documents.isEmpty()) {
+        throw NoSuchElementException("User with ID $userID not found")
+      }
+
+      val userDocument = querySnapshot.documents[0]
+      val currentUsername = userDocument.getString("username")
+
+      if (currentUsername == newUsername) {
+        Log.d("UserRepositoryFirestore", "Username is already $newUsername for user $userID")
+        return
+      }
+
+      if (usernameExists(newUsername)) {
+        Log.e("UserRepositoryFirestore", "Username $newUsername is already taken")
+        throw TakenUsernameException("Username already in use")
+      }
+
+      // Update the username
+      db.collection(USER_COLLECTION_PATH).document(userID).update("username", newUsername).await()
+
+      Log.d(
+          "UserRepositoryFirestore",
+          "Successfully updated username for user $userID to $newUsername")
+    } catch (e: TakenUsernameException) {
+      Log.e("UserRepositoryFirestore", "Username already taken: ${e.message}", e)
+      throw e
+    } catch (e: NoSuchElementException) {
+      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      throw e
+    } catch (e: IllegalArgumentException) {
+      Log.e("UserRepositoryFirestore", "Invalid argument: ${e.message}", e)
+      throw e
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error updating username: ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun deleteUser(userID: String) {
+    try {
+      // Validate input
+      if (userID.isBlank()) {
+        throw IllegalArgumentException("User ID cannot be blank")
+      }
+
+      // Check if user exists before attempting deletion
+      val querySnapshot =
+          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+
+      if (querySnapshot.documents.isEmpty()) {
+        throw NoSuchElementException("User with ID $userID not found")
+      }
+
+      // Delete the user document
+      db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
+
+      Log.d("UserRepositoryFirestore", "Successfully deleted user with ID: $userID")
+    } catch (e: NoSuchElementException) {
+      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      throw e
+    } catch (e: IllegalArgumentException) {
+      Log.e("UserRepositoryFirestore", "Invalid argument: ${e.message}", e)
+      throw e
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error deleting user: ${e.message}", e)
       throw e
     }
   }

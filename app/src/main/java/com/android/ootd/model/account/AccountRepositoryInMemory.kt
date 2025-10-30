@@ -14,39 +14,45 @@ class AccountRepositoryInMemory : AccountRepository {
                   uid = "user1",
                   ownerId = "user1",
                   username = nameList[0],
+                  profilePicture = "u1.jpg",
                   friendUids = listOf("user2", "user3")),
           "user2" to
               Account(
                   uid = "user2",
                   ownerId = "user2",
                   username = nameList[1],
+                  profilePicture = "u2.jpg",
                   friendUids = listOf("user1")),
           "user3" to
               Account(
                   uid = "user3",
                   ownerId = "user3",
                   username = nameList[2],
+                  profilePicture = "u3.jpg",
                   friendUids = emptyList()),
           "user4" to
               Account(
                   uid = "user4",
                   ownerId = "user4",
                   username = nameList[3],
+                  profilePicture = "u4.jpg",
                   friendUids = listOf("user1", "user2")),
           "user5" to
               Account(
                   uid = "user5",
                   ownerId = "user5",
                   username = nameList[4],
+                  profilePicture = "u5.jpg",
                   friendUids = emptyList()),
           "nonRegisterUser" to
               Account(
                   uid = "nonRegisterUser",
                   ownerId = "nonRegisterUser",
                   username = "",
+                  profilePicture = "u0.jpg",
                   friendUids = listOf()))
 
-  override suspend fun createAccount(user: User, dateOfBirth: String) {
+  override suspend fun createAccount(user: User, userEmail: String, dateOfBirth: String) {
     // Check if username already exists
     if (accounts.values.any { it.username == user.username && it.username.isNotBlank() }) {
       throw TakenUserException("Username already in use")
@@ -54,7 +60,12 @@ class AccountRepositoryInMemory : AccountRepository {
 
     val newAccount =
         Account(
-            uid = user.uid, ownerId = user.uid, username = user.username, birthday = dateOfBirth)
+            uid = user.uid,
+            ownerId = user.uid,
+            googleAccountEmail = userEmail,
+            username = user.username,
+            birthday = dateOfBirth,
+            profilePicture = user.profilePicture)
     addAccount(newAccount)
   }
 
@@ -118,15 +129,33 @@ class AccountRepositoryInMemory : AccountRepository {
     return account.friendUids.isNotEmpty() && account.friendUids.any { it == friendID }
   }
 
+  // replaces removeAccount
+  override suspend fun deleteAccount(userID: String) {
+    if (accounts.containsKey(userID)) {
+      accounts.remove(userID)
+    } else {
+      throw NoSuchElementException("Account with ID $userID not found")
+    }
+  }
+
+  override suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String
+  ) {
+    val acc = getAccount(userID)
+    accounts[userID] =
+        acc.copy(
+            username = username.takeIf { it.isNotBlank() } ?: acc.username,
+            birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
+            profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
+  }
+
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)
     accounts[userID] = updatedAccount
     return updatedAccount.isPrivate
-  }
-
-  // Useful for testing
-  fun removeAccount(uid: String) {
-    accounts.remove(uid)
   }
 }

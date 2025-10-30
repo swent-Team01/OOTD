@@ -1,7 +1,7 @@
 package com.android.ootd.ui.account
 /*
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
- * Copilot provided suggestions which were reviewed and adapted by the developer.
+ * Copilot provided suggestions which were reviewed and adapted by the developers.
  */
 import android.net.Uri
 import androidx.activity.ComponentActivity
@@ -89,10 +89,11 @@ class AccountScreenTest {
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CLEAR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
   }
@@ -158,24 +159,6 @@ class AccountScreenTest {
   }
 
   @Test
-  fun accountScreen_callsOnEditAvatar_whenEditButtonClicked() {
-    val onEditAvatar = mockk<() -> Unit>(relaxed = true)
-    userFlow.value = mockFirebaseUser
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(
-            accountViewModel = viewModel,
-            credentialManager = mockCredentialManager,
-            onEditAvatar = onEditAvatar)
-      }
-    }
-
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
-    verify { onEditAvatar() }
-  }
-
-  @Test
   fun accountScreen_showsLoadingIndicator_whenLoading() {
     userFlow.value = null
 
@@ -187,6 +170,109 @@ class AccountScreenTest {
 
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_LOADING).assertDoesNotExist()
+  }
+
+  @Test
+  fun accountScreen_showsEditControls_whenUsernameEditButtonClickedAndBack() {
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Initially, edit controls should not be visible
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+
+    // Click the edit button
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+
+    // Edit controls should now be visible
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
+
+    // Click cancel button
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+
+    // Should return to normal state
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+  }
+
+  @Test
+  fun accountScreen_doesNothingIfUsernameDidNotChange() {
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Click edit button
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+
+    // Click save button (the field already contains the current username)
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
+
+    // Should return to normal state
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+  }
+
+  @Test
+  fun accountScreen_displaysOriginalUsername_afterCancellingEdit() {
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Verify original username
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+
+    // Click edit button
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+
+    // Click cancel
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+
+    // Username should still be the original
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+  }
+
+  @Test
+  fun accountScreen_usernameFieldIsReadOnly_whenNotEditing() {
+    userFlow.value = mockFirebaseUser
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Username field should display current username
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+
+    // Only edit button should be visible, not save/cancel
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
 
   @Test

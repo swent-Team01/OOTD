@@ -6,7 +6,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryFirestore
-import com.android.ootd.model.items.Material
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import java.io.File
@@ -174,9 +173,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     // Second edit
     viewModel.setBrand("SecondBrand")
     viewModel.setPrice(200.0)
-    val materials =
-        listOf(Material("Wool", 60.0), Material("Cotton", 30.0), Material("Elastane", 10.0))
-    viewModel.setMaterial(materials)
+    viewModel.setMaterial("Wool 60%, Cotton 30%, Elastane 10%")
     viewModel.onSaveItemClick()
     kotlinx.coroutines.delay(1000)
 

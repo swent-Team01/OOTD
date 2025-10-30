@@ -1,6 +1,7 @@
 package com.android.ootd.model.user
 
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.ui.register.RegisterViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -10,6 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -29,26 +31,30 @@ import org.junit.Test
 class RegisterViewModelTest {
 
   private lateinit var userRepository: UserRepository
-
   private lateinit var accountRepository: AccountRepository
+  private lateinit var accountService: AccountService
   private lateinit var auth: FirebaseAuth
   private lateinit var firebaseUser: FirebaseUser
   private lateinit var viewModel: RegisterViewModel
   private val testDispatcher = StandardTestDispatcher()
   private val testUid = "test-uid-123"
+  private val testEmail = "test@example.com"
 
   @Before
   fun setUp() {
     Dispatchers.setMain(testDispatcher)
     userRepository = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
+    accountService = mockk(relaxed = true)
     auth = mockk(relaxed = true)
     firebaseUser = mockk(relaxed = true)
 
     every { auth.currentUser } returns firebaseUser
     every { firebaseUser.uid } returns testUid
+    every { firebaseUser.email } returns testEmail
+    every { accountService.currentUser } returns flowOf(firebaseUser)
 
-    viewModel = RegisterViewModel(userRepository, accountRepository, auth)
+    viewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
   }
 
   @After
@@ -61,7 +67,7 @@ class RegisterViewModelTest {
     val username = "validUser123"
     val dateOfBirth = "01/01/2000"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -71,7 +77,7 @@ class RegisterViewModelTest {
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, dateOfBirth)
+          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth)
     }
   }
 
@@ -79,7 +85,7 @@ class RegisterViewModelTest {
   fun registerUserWithValidUsername_setsRegisteredToTrueOnSuccess() = runTest {
     val username = "validUser123"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -160,14 +166,14 @@ class RegisterViewModelTest {
   fun registerUser_trimsWhitespaceBeforeValidation() = runTest {
     val username = "  validUser  "
     coEvery { userRepository.createUser("validUser", testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
     advanceUntilIdle()
 
     coVerify(exactly = 1) { userRepository.createUser("validUser", testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
   }
 
   @Test
@@ -177,7 +183,7 @@ class RegisterViewModelTest {
         {
           kotlinx.coroutines.delay(100)
         }
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -206,7 +212,7 @@ class RegisterViewModelTest {
   fun markRegisteredHandled_resetsRegisteredFlag() = runTest {
     val username = "validUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -236,7 +242,7 @@ class RegisterViewModelTest {
   fun registerUserWithValidUsernameContainingUnderscores_succeeds() = runTest {
     val username = "valid_user_123"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -244,14 +250,14 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
   }
 
   @Test
   fun registerUserWithExactly3Characters_succeeds() = runTest {
     val username = "abc"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -259,14 +265,14 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
   }
 
   @Test
   fun registerUserWithExactly20Characters_succeeds() = runTest {
     val username = "a".repeat(20)
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -274,7 +280,7 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
   }
 
   @Test
@@ -287,7 +293,7 @@ class RegisterViewModelTest {
 
     val validUsername = "validUser"
     coEvery { userRepository.createUser(validUsername, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(validUsername)
     viewModel.registerUser()
@@ -309,7 +315,7 @@ class RegisterViewModelTest {
     val username = "testUser"
     val dateOfBirth = "15/03/1995"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -318,7 +324,7 @@ class RegisterViewModelTest {
 
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, dateOfBirth)
+          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth)
     }
   }
 
@@ -326,7 +332,7 @@ class RegisterViewModelTest {
   fun registerUser_usesEmptyDateIfNotSet() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     // Don't set dateOfBirth - should use default empty string
@@ -334,7 +340,8 @@ class RegisterViewModelTest {
     advanceUntilIdle()
 
     coVerify(exactly = 1) {
-      accountRepository.createAccount(match { it.uid == testUid && it.username == username }, "")
+      accountRepository.createAccount(
+          match { it.uid == testUid && it.username == username }, testEmail, "")
     }
   }
 
@@ -342,7 +349,8 @@ class RegisterViewModelTest {
   fun registerUser_accountCreationFailure_stopsLoading() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } throws Exception("Account error")
+    coEvery { accountRepository.createAccount(any(), any(), any()) } throws
+        Exception("Account error")
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -357,7 +365,7 @@ class RegisterViewModelTest {
     val dateOfBirth = "01/01/2000"
     val callOrder = mutableListOf<String>()
 
-    coEvery { accountRepository.createAccount(any(), any()) } coAnswers
+    coEvery { accountRepository.createAccount(any(), any(), any()) } coAnswers
         {
           callOrder.add("accountRepository")
         }
@@ -372,8 +380,8 @@ class RegisterViewModelTest {
     advanceUntilIdle()
 
     assertEquals(2, callOrder.size)
-    assertEquals("userRepository", callOrder[1])
     assertEquals("accountRepository", callOrder[0])
+    assertEquals("userRepository", callOrder[1])
   }
 
   @Test
@@ -381,7 +389,7 @@ class RegisterViewModelTest {
     val username = "testUser"
     val dateOfBirth = "01/01/2000"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -397,7 +405,7 @@ class RegisterViewModelTest {
   fun registerUser_accountCreationFails_registeredRemainsFalse() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } throws
+    coEvery { accountRepository.createAccount(any(), any(), any()) } throws
         Exception("Account creation failed")
 
     viewModel.setUsername(username)
@@ -413,7 +421,7 @@ class RegisterViewModelTest {
   fun registerUser_bothOperationsSucceed_noErrorMessage() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -431,7 +439,7 @@ class RegisterViewModelTest {
           // Check state during operation
           assertFalse(viewModel.uiState.value.registered)
         }
-    coEvery { accountRepository.createAccount(any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -443,5 +451,79 @@ class RegisterViewModelTest {
 
     // Now it should be true
     assertTrue(viewModel.uiState.value.registered)
+  }
+
+  // Email implementation tests
+  @Test
+  fun registerUser_passesCorrectEmailToAccountRepository() = runTest {
+    val username = "testUser"
+    val dateOfBirth = "01/01/2000"
+    coEvery { userRepository.createUser(username, testUid) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+
+    viewModel.setUsername(username)
+    viewModel.setDateOfBirth(dateOfBirth)
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    coVerify(exactly = 1) {
+      accountRepository.createAccount(
+          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth)
+    }
+  }
+
+  @Test
+  fun registerUser_withDifferentEmail_usesCorrectEmail() = runTest {
+    val username = "anotherUser"
+    val differentEmail = "different@example.com"
+
+    // Create a new firebase user with different email
+    val differentFirebaseUser = mockk<FirebaseUser>(relaxed = true)
+    every { differentFirebaseUser.uid } returns testUid
+    every { differentFirebaseUser.email } returns differentEmail
+    every { auth.currentUser } returns differentFirebaseUser
+    every { accountService.currentUser } returns flowOf(differentFirebaseUser)
+
+    // Create new viewModel with updated auth
+    val newViewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+
+    coEvery { userRepository.createUser(username, testUid) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+
+    newViewModel.setUsername(username)
+    newViewModel.registerUser()
+    advanceUntilIdle()
+
+    coVerify(exactly = 1) {
+      accountRepository.createAccount(
+          match { it.uid == testUid && it.username == username }, differentEmail, "")
+    }
+  }
+
+  @Test
+  fun registerUser_emailFromAccountService_isUsedInAccountCreation() = runTest {
+    val username = "emailTestUser"
+    val customEmail = "custom@test.com"
+
+    // Setup a custom firebase user with specific email
+    val customFirebaseUser = mockk<FirebaseUser>(relaxed = true)
+    every { customFirebaseUser.uid } returns testUid
+    every { customFirebaseUser.email } returns customEmail
+    every { accountService.currentUser } returns flowOf(customFirebaseUser)
+    every { auth.currentUser } returns customFirebaseUser
+
+    val testViewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+
+    coEvery { userRepository.createUser(username, testUid) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+
+    testViewModel.setUsername(username)
+    testViewModel.registerUser()
+    advanceUntilIdle()
+
+    // Verify that the custom email is passed to createAccount
+    coVerify(exactly = 1) {
+      accountRepository.createAccount(match { it.username == username }, customEmail, "")
+    }
   }
 }

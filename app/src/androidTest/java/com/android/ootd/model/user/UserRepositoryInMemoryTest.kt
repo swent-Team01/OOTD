@@ -51,14 +51,16 @@ class UserRepositoryInMemoryTest {
   }
 
   @Test
-  fun getAllUsers_returnsUsersWithCorrectNames() = runTest {
+  fun getAllUsers_returnsUsersWithCorrectNamesAndProfilePic() = runTest {
     val users = repository.getAllUsers()
 
     val user1 = users.find { it.uid == "user1" }
     assertEquals("alice_wonder", user1?.username)
+    assertEquals("1", user1?.profilePicture)
 
     val user2 = users.find { it.uid == "user2" }
     assertEquals("bob_builder", user2?.username)
+    assertEquals("2", user2?.profilePicture)
   }
 
   @Test
@@ -100,18 +102,19 @@ class UserRepositoryInMemoryTest {
 
   @Test
   fun addUser_successfullyAddsNewUser() = runTest {
-    val newUser = User(uid = "user6", username = "frank_sinatra")
+    val newUser = User(uid = "user6", username = "frank_sinatra", profilePicture = "Hello.jpg")
 
     repository.addUser(newUser)
     val retrievedUser = repository.getUser("user6")
 
     assertEquals("user6", retrievedUser.uid)
     assertEquals("frank_sinatra", retrievedUser.username)
+    assertEquals("Hello.jpg", retrievedUser.profilePicture)
   }
 
   @Test
   fun addUser_throwsExceptionWhenUserAlreadyExists() {
-    val duplicateUser = User(uid = "user1", username = "duplicate_user")
+    val duplicateUser = User(uid = "user1", username = "duplicate_user", profilePicture = "")
 
     val exception =
         assertThrows(IllegalArgumentException::class.java) {
@@ -125,7 +128,7 @@ class UserRepositoryInMemoryTest {
   fun addUser_increasesUserCount() = runTest {
     val initialCount = repository.getAllUsers().size
 
-    val newUser = User(uid = "user6", username = "new_user")
+    val newUser = User(uid = "user6", username = "new_user", profilePicture = "")
     repository.addUser(newUser)
 
     assertEquals(initialCount + 1, repository.getAllUsers().size)
@@ -137,7 +140,123 @@ class UserRepositoryInMemoryTest {
     val uid1 = repository.getNewUid()
     val uid2 = repository.getNewUid()
 
-    repository.createUser(username, uid1)
-    repository.createUser(username, uid2) // Should throw
+    repository.createUser(username, uid1, profilePicture = "")
+    repository.createUser(username, uid2, profilePicture = "") // Should throw
+  }
+
+  @Test
+  fun createUser_handlesEmptyProfilePictureCorrectly() = runTest {
+    val username = "user_no_pic"
+    val uid = repository.getNewUid()
+
+    repository.createUser(username, uid, profilePicture = "")
+    val user = repository.getUser(uid)
+
+    assertEquals(username, user.username)
+    assertEquals(uid, user.uid)
+    assertEquals("", user.profilePicture)
+  }
+
+  @Test
+  fun editUsernameSuccessfullyUpdatesUsername() = runTest {
+    val newUsername = "new_alice_wonder"
+
+    repository.editUsername("user1", newUsername)
+
+    val updatedUser = repository.getUser("user1")
+    assertEquals(newUsername, updatedUser.username)
+    assertEquals("user1", updatedUser.uid)
+  }
+
+  @Test
+  fun editUsernameThrowsExceptionWhenUserIdOrUsernameIsBlank() = runTest {
+    val exception1 = runCatching { repository.editUsername("", "newUsername") }.exceptionOrNull()
+    assertTrue(exception1 is IllegalArgumentException)
+    assertTrue(exception1?.message?.contains("cannot be blank") == true)
+
+    val exception2 = runCatching { repository.editUsername("user1", "") }.exceptionOrNull()
+    assertTrue(exception2 is IllegalArgumentException)
+    assertTrue(exception2?.message?.contains("cannot be blank") == true)
+  }
+
+  @Test
+  fun editUsernameThrowsExceptionWhenUsernameAlreadyTaken() = runTest {
+    val exception =
+        runCatching { repository.editUsername("user1", "bob_builder") }.exceptionOrNull()
+
+    assertTrue(exception is TakenUsernameException)
+    assertTrue(exception?.message?.contains("already in use") == true)
+  }
+
+  @Test
+  fun editUsernameAllowsUpdatingToSameUsername() = runTest {
+    repository.editUsername("user1", "updated_alice")
+    repository.editUsername("user2", "updated_bob")
+
+    val user1 = repository.getUser("user1")
+    val user2 = repository.getUser("user2")
+
+    assertEquals("updated_alice", user1.username)
+    assertEquals("updated_bob", user2.username)
+  }
+
+  @Test
+  fun deleteUserSuccessfullyRemovesUser() = runTest {
+    val initialCount = repository.getAllUsers().size
+
+    repository.deleteUser("user1")
+
+    assertEquals(initialCount - 1, repository.getAllUsers().size)
+
+    val exception = runCatching { repository.getUser("user1") }.exceptionOrNull()
+    assertTrue(exception is NoSuchElementException)
+  }
+
+  @Test
+  fun deleteUserThrowsExceptionWhenUserIdIsBlank() = runTest {
+    val exception = runCatching { repository.deleteUser("") }.exceptionOrNull()
+    assertTrue(exception is IllegalArgumentException)
+  }
+
+  @Test
+  fun deleteUserDoesNotThrowWhenUserNotFound() = runTest {
+    val initialCount = repository.getAllUsers().size
+
+    // In-memory implementation doesn't throw for non-existent users
+    repository.deleteUser("nonExistentUser")
+
+    assertEquals(initialCount, repository.getAllUsers().size)
+  }
+
+  @Test
+  fun deleteUserDoesNotAffectOtherUsers() = runTest {
+    repository.deleteUser("user1")
+
+    val user2 = repository.getUser("user2")
+    assertEquals("bob_builder", user2.username)
+
+    val user3 = repository.getUser("user3")
+    assertEquals("charlie_brown", user3.username)
+  }
+
+  @Test
+  fun deleteMultipleUsersSuccessfully() = runTest {
+    val initialCount = repository.getAllUsers().size
+
+    repository.deleteUser("user1")
+    repository.deleteUser("user2")
+    repository.deleteUser("user3")
+
+    assertEquals(initialCount - 3, repository.getAllUsers().size)
+
+    // Verify users are deleted
+    val exception1 = runCatching { repository.getUser("user1") }.exceptionOrNull()
+    assertTrue(exception1 is NoSuchElementException)
+
+    val exception2 = runCatching { repository.getUser("user2") }.exceptionOrNull()
+    assertTrue(exception2 is NoSuchElementException)
+
+    val exception3 = runCatching { repository.getUser("user3") }.exceptionOrNull()
+    assertTrue(exception3 is NoSuchElementException)
   }
 }

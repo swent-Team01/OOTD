@@ -199,12 +199,12 @@ class UserSearchScreenTest : FirestoreTest() {
     val accountRepositoryInMemory = AccountRepositoryInMemory()
 
     // Remove and re-add user with Firebase auth UID
-    userRepositoryInMemory.removeUser("user1")
+    userRepositoryInMemory.deleteUser("user1")
     userRepositoryInMemory.addUser(
         User(uid = FirebaseEmulator.auth.uid ?: "", username = userRepositoryInMemory.nameList[0]))
 
     // Remove and re-add account with Firebase auth UID
-    accountRepositoryInMemory.removeAccount("user1")
+    accountRepositoryInMemory.deleteAccount("user1")
     accountRepositoryInMemory.addAccount(
         Account(
             uid = FirebaseEmulator.auth.uid ?: "",

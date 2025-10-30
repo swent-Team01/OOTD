@@ -263,9 +263,13 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   fun creatingNewUserWorks() = runTest {
     val uid1 = userRepository.getNewUid()
     val uid2 = userRepository.getNewUid()
+    val profilePic1 = "profile1.jpg"
 
-    userRepository.createUser(user1.username, uid1)
-    userRepository.createUser(user2.username, uid2)
+    // empty profile pic
+    val profilePic2 = ""
+
+    userRepository.createUser(user1.username, uid1, profilePicture = profilePic1)
+    userRepository.createUser(user2.username, uid2, profilePicture = profilePic2)
 
     val users = userRepository.getAllUsers()
 
@@ -273,6 +277,9 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assert(users.any { user -> user.username == user1.username })
     assert(users.any { user -> user.username == user2.username })
     assert(users.none { user -> user.uid == user1.uid || user.uid == user2.uid })
+    assert(users.any { user -> user.profilePicture == profilePic1 && user.uid == uid1 })
+    // empty profile pic, shouldn't throw
+    assert(users.any { user -> user.profilePicture == profilePic2 && user.uid == uid2 })
   }
 
   @Test
@@ -280,10 +287,107 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val uid1 = userRepository.getNewUid()
     val uid2 = userRepository.getNewUid()
 
-    userRepository.createUser(user1.username, uid1)
+    userRepository.createUser(user1.username, uid1, profilePicture = "")
     val exception =
-        runCatching { userRepository.createUser(user1.username, uid2) }.exceptionOrNull()
+        runCatching { userRepository.createUser(user1.username, uid2, profilePicture = "") }
+            .exceptionOrNull()
 
     assert(exception != null)
+  }
+
+  @Test
+  fun editUsernameThrowsExceptionWhenBlankArguments() = runTest {
+    val exception = runCatching { userRepository.editUsername("", "newUsername") }.exceptionOrNull()
+
+    assert(exception is IllegalArgumentException)
+    assert(exception?.message?.contains("cannot be blank") == true)
+
+    val blankUname = runCatching { userRepository.editUsername(user1.uid, "") }.exceptionOrNull()
+
+    assert(blankUname is IllegalArgumentException)
+    assert(blankUname?.message?.contains("cannot be blank") == true)
+  }
+
+  @Test
+  fun editUsernameThrowsExceptionWhenUserNotFound() = runTest {
+    val nonExistentUserId = "nonExistentUser123"
+
+    val exception =
+        runCatching { userRepository.editUsername(nonExistentUserId, "newUsername") }
+            .exceptionOrNull()
+
+    assert(exception is NoSuchElementException)
+    assert(exception?.message?.contains(nonExistentUserId) == true)
+  }
+
+  @Test
+  fun editUsernameThrowsExceptionWhenUsernameAlreadyTaken() = runTest {
+    userRepository.addUser(user1)
+    userRepository.addUser(user2)
+
+    val exception =
+        runCatching { userRepository.editUsername(user1.uid, user2.username) }.exceptionOrNull()
+
+    assert(exception is TakenUsernameException)
+    assert(exception?.message?.contains("already in use") == true)
+  }
+
+  @Test
+  fun editUsernameDoesNothingWhenNewUsernameIsSameAsCurrent() = runTest {
+    userRepository.addUser(user1)
+
+    userRepository.editUsername(user1.uid, user1.username)
+
+    val retrievedUser = userRepository.getUser(user1.uid)
+    assertEquals(user1.username, retrievedUser.username)
+  }
+
+  @Test
+  fun editUsernameAllowsMultipleUsersToUpdateUsernames() = runTest {
+    userRepository.addUser(user1)
+    userRepository.addUser(user2)
+
+    userRepository.editUsername(user1.uid, "updatedUser1")
+    userRepository.editUsername(user2.uid, "updatedUser2")
+
+    val updatedUser1 = userRepository.getUser(user1.uid)
+    val updatedUser2 = userRepository.getUser(user2.uid)
+
+    assertEquals("updatedUser1", updatedUser1.username)
+    assertEquals("updatedUser2", updatedUser2.username)
+  }
+
+  @Test
+  fun deleteUserThrowsExceptionWhenUserIdIsBlank() = runTest {
+    val exception = runCatching { userRepository.deleteUser("") }.exceptionOrNull()
+
+    assert(exception is IllegalArgumentException)
+    assert(exception?.message?.contains("cannot be blank") == true)
+  }
+
+  @Test
+  fun deleteUserThrowsExceptionWhenUserNotFound() = runTest {
+    val nonExistentUserId = "nonExistentUser123"
+
+    val exception = runCatching { userRepository.deleteUser(nonExistentUserId) }.exceptionOrNull()
+
+    assert(exception is NoSuchElementException)
+    assert(exception?.message?.contains(nonExistentUserId) == true)
+  }
+
+  @Test
+  fun deleteMultipleUsersSuccessfully() = runTest {
+    val user3 = user1.copy(uid = "user3", username = "user3name")
+    userRepository.addUser(user1)
+    userRepository.addUser(user2)
+    userRepository.addUser(user3)
+    assertEquals(3, getUserCount())
+
+    userRepository.deleteUser(user1.uid)
+    userRepository.deleteUser(user2.uid)
+
+    assertEquals(1, getUserCount())
+    val remainingUser = userRepository.getUser(user3.uid)
+    assertEquals(user3, remainingUser)
   }
 }

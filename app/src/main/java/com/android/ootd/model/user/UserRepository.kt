@@ -10,8 +10,10 @@ interface UserRepository {
    * Creates a new user with the username he chose
    *
    * @param username The chosen username
+   * @param uid the user's ID
+   * @param profilePicture the URL path to the user's profile picture. Blank by default
    */
-  suspend fun createUser(username: String, uid: String)
+  suspend fun createUser(username: String, uid: String, profilePicture: String = "")
 
   /**
    * Retrieves all Users from the repository.
@@ -44,4 +46,26 @@ interface UserRepository {
    * @throws Exception If the user is not found
    */
   suspend fun userExists(userID: String): Boolean
+
+  /**
+   * Edits the user's username.
+   *
+   * @param userID The user's ID
+   * @param newUsername The new username to set
+   * @throws IllegalArgumentException if userID or newUsername is blank
+   * @throws NoSuchElementException if the user with the given ID is not found
+   * @throws TakenUsernameException if the new username is already taken by another user
+   * @throws Exception for other Firestore-related errors
+   */
+  suspend fun editUsername(userID: String, newUsername: String)
+
+  /**
+   * Deletes the user from the database.
+   *
+   * @param userID The user's ID
+   * @throws IllegalArgumentException if userID is blank
+   * @throws NoSuchElementException if the user with the given ID is not found
+   * @throws Exception for other Firestore-related errors
+   */
+  suspend fun deleteUser(userID: String)
 }

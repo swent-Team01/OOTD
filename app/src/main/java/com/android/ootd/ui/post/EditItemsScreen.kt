@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,7 +36,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,6 +54,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -73,9 +74,11 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_TYPE = "inputItemType"
   const val INPUT_ITEM_BRAND = "inputItemBrand"
   const val INPUT_ITEM_PRICE = "inputItemPrice"
+  const val INPUT_ITEM_MATERIAL = "inputItemMaterial"
   const val INPUT_ITEM_LINK = "inputItemLink"
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
+  const val ALL_FIELDS = "allFields"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +99,12 @@ fun EditItemsScreen(
 
   LaunchedEffect(itemsUIState.isSaveSuccessful) {
     if (itemsUIState.isSaveSuccessful) {
+      goBack()
+    }
+  }
+
+  LaunchedEffect(itemsUIState.isDeleteSuccessful) {
+    if (itemsUIState.isDeleteSuccessful) {
       goBack()
     }
   }
@@ -142,23 +151,32 @@ fun EditItemsScreen(
     if (errorMsg != null) {
       Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
       editItemsViewModel.clearErrorMsg()
-    } else if (itemsUIState.itemId.isNotEmpty()) {
-      // This is used when we want to delete an item, as the call is asynchronous
-      goBack()
     }
   }
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
-          TopAppBar(
-              title = { Text("Edit Item", style = MaterialTheme.typography.titleLarge) },
+          CenterAlignedTopAppBar(
+              title = {
+                Text(
+                    "EDIT ITEMS",
+                    style =
+                        MaterialTheme.typography.displayLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary))
+              },
               navigationIcon = {
-                IconButton(onClick = goBack) {
-                  Icon(
-                      imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                      contentDescription = "Go Back")
-                }
+                Box(
+                    modifier = Modifier.padding(start = 4.dp),
+                    contentAlignment = Alignment.Center) {
+                      IconButton(onClick = { goBack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.tertiary)
+                      }
+                    }
               })
         },
         content = { innerPadding ->
@@ -169,9 +187,10 @@ fun EditItemsScreen(
                       .nestedScroll(nestedScrollConnection)) {
                 LazyColumn(
                     modifier =
-                        Modifier.fillMaxWidth().padding(16.dp).offset {
-                          IntOffset(0, currentImageSizeState.value.roundToPx())
-                        },
+                        Modifier.fillMaxWidth()
+                            .padding(16.dp)
+                            .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
+                            .testTag(EditItemsScreenTestTags.ALL_FIELDS),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
                       item {
                         Row(
@@ -269,6 +288,17 @@ fun EditItemsScreen(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
+                      }
+
+                      item {
+                        OutlinedTextField(
+                            value = itemsUIState.materialText,
+                            onValueChange = { editItemsViewModel.setMaterial(it) },
+                            label = { Text("Material") },
+                            placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL))
                       }
 
                       item {
