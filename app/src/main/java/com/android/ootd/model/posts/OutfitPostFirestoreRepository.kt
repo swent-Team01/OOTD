@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
@@ -59,7 +60,17 @@ class OutfitPostRepositoryFirestore(
             "timestamp" to post.timestamp,
         )
 
-    db.collection(POSTS_COLLECTION).document(post.postUID).set(data).await()
+    try {
+
+      val documentReference = db.collection(POSTS_COLLECTION).document(post.postUID)
+
+      // Use set with merge option to ensure the document is created if it doesn't exist
+      documentReference.set(data, SetOptions.merge()).await()
+    } catch (e: Exception) {
+      Log.e("OutfitPostRepository", "Error saving post to Firestore", e)
+      // Rethrow to allow caller to handle the error
+      throw e
+    }
   }
 
   override suspend fun getPostById(postId: String): OutfitPost? {
