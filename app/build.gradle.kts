@@ -218,6 +218,19 @@ dependencies {
     // Coil for image loading in Compose
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation(libs.compose.activity)
+    
+    // CameraX
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    
+    // Accompanist for permissions
+    implementation(libs.accompanist.permissions)
+    
+    // Guava for CameraX ListenableFuture
+    implementation(libs.guava)
+    
     // Integration with ViewModels
     implementation(libs.compose.viewmodel)
     // Android Studio Preview support
