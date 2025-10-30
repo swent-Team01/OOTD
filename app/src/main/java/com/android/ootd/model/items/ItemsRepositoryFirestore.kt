@@ -10,6 +10,7 @@ import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
 const val OWNER_ATTRIBUTE_NAME = "ownerId"
+const val POST_ATTRIBUTE_NAME = "postUuid"
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
 
@@ -33,8 +34,8 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val snapshot =
         db.collection(ITEMS_COLLECTION)
-            .whereEqualTo("postUuid", postUuid)
-            .whereEqualTo("ownerId", ownerId)
+            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
             .get()
             .await()
 
@@ -67,14 +68,12 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val snapshot =
         db.collection(ITEMS_COLLECTION)
-            .whereEqualTo("postUuid", postUuid)
-            .whereEqualTo("ownerId", ownerId)
+            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
             .get()
             .await()
-    Log.d("FirestoreDelete", "Found ${snapshot.size()} items for post $postUuid")
 
     for (doc in snapshot.documents) {
-      Log.d("FirestoreDelete", "Deleting item ${doc.id}")
       doc.reference.delete().await()
     }
   }
