@@ -49,7 +49,11 @@ class MainActivityCallbacksTest {
     // launchAppAt(Screen.Feed.name)
 
     // Navigate along the real user flow: Feed -> FitCheck -> Preview
-    composeRule.runOnIdle { navigation.navigateTo(Screen.PreviewItemScreen) }
+    composeRule.runOnIdle {
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+    }
 
     composeRule.waitUntil(timeoutMillis = 5_000) {
       composeRule
@@ -71,7 +75,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
     }
   }
@@ -83,8 +89,10 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       // Simulate real user flow: Feed → FitCheck → PreviewItem → AddItem
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("testpostUuid"))
 
       // Now the current screen is AddItem
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
@@ -103,8 +111,10 @@ class MainActivityCallbacksTest {
       // Build deep stack
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // Go to edit instead
       navigation.goBack()
@@ -127,14 +137,16 @@ class MainActivityCallbacksTest {
     // launchAppAt(Screen.Feed.route)
 
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
 
       // Add first item and don't save
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_id"))
       navigation.goBack()
 
       // Add second item and don't save
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_id"))
       navigation.goBack()
 
       // Verify we can still navigate back properly
@@ -149,8 +161,10 @@ class MainActivityCallbacksTest {
 
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_id"))
 
       // Cancel
       navigation.goBack()
@@ -167,15 +181,20 @@ class MainActivityCallbacksTest {
   @Test
   fun multipleCycles_addItemFromPreview_threeTimesSaving() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
 
       for (i in 1..3) {
-        navigation.navigateTo(Screen.AddItemScreen)
+        navigation.navigateTo(Screen.AddItemScreen("test_id"))
         Assert.assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
 
         // Simulate save
         navigation.popUpTo(Screen.PreviewItemScreen.route)
-        navigation.navigateTo(Screen.PreviewItemScreen)
+        navigation.navigateTo(
+            Screen.PreviewItemScreen(
+                imageUri = "content://another_uri",
+                description = "Another Test Outfit Description"))
         Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
       }
     }
@@ -184,10 +203,12 @@ class MainActivityCallbacksTest {
   @Test
   fun multipleCycles_alternatingAddAndEdit() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
 
       // Add first item
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       navigation.goBack()
       Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
@@ -197,7 +218,7 @@ class MainActivityCallbacksTest {
       Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Add second item
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       navigation.goBack()
       Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
@@ -220,11 +241,13 @@ class MainActivityCallbacksTest {
       Assert.assertEquals(Screen.FitCheck.route, navigation.currentRoute())
 
       // Go to PreviewItemScreen
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
       Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Add an item
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       Assert.assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
 
       // Return to preview after adding
@@ -236,7 +259,9 @@ class MainActivityCallbacksTest {
   @Test
   fun previewItemScreen_editSameItemMultipleTimes_shouldWork() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
       val itemId = "same-item"
 
       // Edit same item multiple times
@@ -313,7 +338,9 @@ class MainActivityCallbacksTest {
       // Navigate through the valid path: Feed → FitCheck → Preview → Edit(item-123)
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
       navigation.navigateTo(Screen.EditItem("item-123"))
 
       // Confirm we’re at EditItem
@@ -333,11 +360,15 @@ class MainActivityCallbacksTest {
       // First outfit
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       navigation.popUpTo(Screen.PreviewItemScreen.route)
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
       navigation.popUpTo(Screen.Feed.route)
       navigation.navigateTo(Screen.Feed)
 
@@ -345,8 +376,10 @@ class MainActivityCallbacksTest {
 
       // Second outfit
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
     }
   }
@@ -381,12 +414,14 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       navigation.goBack()
       navigation.navigateTo(Screen.EditItem("item-1"))
       navigation.goBack()
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
 
@@ -404,14 +439,16 @@ class MainActivityCallbacksTest {
   fun editItemFromDifferentContexts_navigatesCorrectly() {
     composeRule.runOnIdle {
       // Edit from Preview
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
       navigation.navigateTo(Screen.EditItem("item-1"))
       assertEquals(Screen.EditItem.route, navigation.currentRoute())
       navigation.goBack()
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Edit after adding items
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       navigation.goBack()
       navigation.navigateTo(Screen.EditItem("item-2"))
       assertEquals(Screen.EditItem.route, navigation.currentRoute())
@@ -426,8 +463,10 @@ class MainActivityCallbacksTest {
       // User is in the middle of creating an outfit
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // User decides to sign out
       navigation.navigateTo(Screen.Account)
@@ -444,10 +483,12 @@ class MainActivityCallbacksTest {
   @Test
   fun previewItemScreen_withItems_allCallbacksWork() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.PreviewItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
 
       // Test onAddItem
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
       navigation.goBack()
 
@@ -468,8 +509,10 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck)
-      navigation.navigateTo(Screen.PreviewItemScreen)
-      navigation.navigateTo(Screen.AddItemScreen)
+      navigation.navigateTo(
+          Screen.PreviewItemScreen(
+              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // PopUpTo Preview and navigate there
       navigation.goBack()

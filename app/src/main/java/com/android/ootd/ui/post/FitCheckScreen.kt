@@ -49,7 +49,7 @@ object FitCheckScreenTestTags {
 @Composable
 fun FitCheckScreen(
     fitCheckViewModel: FitCheckViewModel = viewModel(),
-    onNextClick: () -> Unit = {},
+    onNextClick: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {}
 ) {
   val context = LocalContext.current
@@ -101,7 +101,7 @@ fun FitCheckScreen(
             onClick = {
               if (uiState.isPhotoValid) {
                 fitCheckViewModel.clearError()
-                onNextClick()
+                onNextClick(uiState.image.toString(), uiState.description)
               } else {
                 fitCheckViewModel.setErrorMsg("Please select a photo before continuing.")
               }
