@@ -31,6 +31,7 @@ data class EditItemsUIState(
     val brand: String = "",
     val price: Double = 0.0,
     val material: List<Material> = emptyList(),
+    val materialText: String = "",
     val link: String = "",
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
@@ -97,6 +98,8 @@ open class EditItemsViewModel(
    * @param item The item to load.
    */
   fun loadItem(item: Item) {
+    val materialText =
+        item.material.filterNotNull().joinToString(", ") { "${it.name} ${it.percentage}%" }
     _uiState.value =
         EditItemsUIState(
             itemId = item.itemUuid,
@@ -106,6 +109,7 @@ open class EditItemsViewModel(
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
             material = item.material.filterNotNull(),
+            materialText = materialText,
             link = item.link ?: "",
             ownerId = item.ownerId)
   }
@@ -256,8 +260,20 @@ open class EditItemsViewModel(
    *
    * @param material The list of materials.
    */
-  fun setMaterial(material: List<Material>) {
-    _uiState.value = _uiState.value.copy(material = material)
+  fun setMaterial(material: String) {
+    _uiState.value = _uiState.value.copy(materialText = material)
+
+    // Use to parse the text for the material
+    val materials =
+        material.split(",").mapNotNull { entry ->
+          val parts = entry.trim().split(" ")
+          if (parts.size == 2 && parts[1].endsWith("%")) {
+            val name = parts[0]
+            val percentage = parts[1].removeSuffix("%").toDoubleOrNull()
+            if (percentage != null) Material(name, percentage) else null
+          } else null
+        }
+    _uiState.value = _uiState.value.copy(material = materials)
   }
 
   /**

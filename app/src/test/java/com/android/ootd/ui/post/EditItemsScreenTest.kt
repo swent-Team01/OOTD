@@ -55,6 +55,7 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
@@ -190,6 +191,19 @@ class EditItemsScreenTest {
   }
 
   @Test
+  fun `material field accepts text input`() {
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .performTextInput("Cotton 80%, Wool 20%")
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .assertTextContains("Cotton 80%, Wool 20%")
+  }
+
+  @Test
   fun `screen loads item data correctly`() {
     val item =
         Item(
@@ -219,6 +233,9 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .assertTextContains("Cotton 100.0%")
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
         .assertTextContains("https://example.com")
@@ -251,6 +268,7 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
     composeTestRule.onNodeWithText("Price").assertExists()
+    composeTestRule.onNodeWithText("Material").assertExists()
     composeTestRule.onNodeWithText("Link").assertExists()
   }
 

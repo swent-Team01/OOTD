@@ -75,6 +75,7 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_TYPE = "inputItemType"
   const val INPUT_ITEM_BRAND = "inputItemBrand"
   const val INPUT_ITEM_PRICE = "inputItemPrice"
+  const val INPUT_ITEM_MATERIAL = "inputItemMaterial"
   const val INPUT_ITEM_LINK = "inputItemLink"
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
@@ -291,6 +292,17 @@ fun EditItemsScreen(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
+                      }
+
+                      item {
+                        OutlinedTextField(
+                            value = itemsUIState.materialText,
+                            onValueChange = { editItemsViewModel.setMaterial(it) },
+                            label = { Text("Material") },
+                            placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL))
                       }
 
                       item {
