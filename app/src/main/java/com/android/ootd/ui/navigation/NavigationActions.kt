@@ -39,7 +39,12 @@ sealed class Screen(
 
   object Account : Screen(route = "account", name = "Account", isTopLevelDestination = false)
 
-  object FitCheck : Screen(route = "fitCheck", name = "FitCheck", isTopLevelDestination = false)
+  data class FitCheck(val postUuid: String = "") :
+      Screen(route = "fitCheck?postUuid=$postUuid", name = "FitCheck") {
+    companion object {
+      const val route = "fitCheck?postUuid={postUuid}"
+    }
+  }
 
   data class AddItemScreen(val postUuid: String) :
       Screen(route = "addItem?postUuid=$postUuid", name = "Add Item") {

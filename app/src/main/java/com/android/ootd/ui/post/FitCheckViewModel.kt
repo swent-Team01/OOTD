@@ -2,11 +2,13 @@ package com.android.ootd.ui.post
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
-import com.android.ootd.model.post.OutfitPostRepository
-import com.android.ootd.model.post.OutfitPostRepositoryProvider
+import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class FitCheckUIState(
     val image: Uri = Uri.EMPTY,
@@ -22,10 +24,22 @@ data class FitCheckUIState(
 }
 
 class FitCheckViewModel(
-    private val repository: OutfitPostRepository = OutfitPostRepositoryProvider.repository
+    private val repository: ItemsRepository = ItemsRepositoryProvider.repository
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(FitCheckUIState())
   val uiState: StateFlow<FitCheckUIState> = _uiState.asStateFlow()
+
+  fun deleteItemsForPost(postUuid: String) {
+    viewModelScope.launch {
+      try {
+        val itemsRepo = ItemsRepositoryProvider.repository
+        itemsRepo.deletePostItems(postUuid)
+      } catch (e: Exception) {
+        // optional: log or show error
+        e.printStackTrace()
+      }
+    }
+  }
 
   fun setPhoto(uri: Uri) {
     _uiState.value =

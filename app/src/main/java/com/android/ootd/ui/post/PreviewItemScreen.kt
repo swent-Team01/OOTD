@@ -88,7 +88,7 @@ fun PreviewItemScreen(
     onEditItem: (String) -> Unit = {},
     onAddItem: (String) -> Unit = {}, // now takes postUuid
     onPostSuccess: () -> Unit = {},
-    onGoBack: () -> Unit = {},
+    onGoBack: (String) -> Unit = {},
 ) {
   val context = LocalContext.current
   val uiState by outfitPreviewViewModel.uiState.collectAsState()
@@ -133,7 +133,7 @@ fun PreviewItemScreen(
             },
             navigationIcon = {
               IconButton(
-                  onClick = { onGoBack() },
+                  onClick = { onGoBack(uiState.postUuid) },
                   modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
                     Icon(
                         Icons.AutoMirrored.Outlined.ArrowBack,

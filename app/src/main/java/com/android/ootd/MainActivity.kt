@@ -128,9 +128,7 @@ fun OOTDApp(
               navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
                 composable(Screen.Feed.route) {
                   FeedScreen(
-                      onAddPostClick = {
-                        navigationActions.navigateTo(Screen.FitCheck)
-                      }, // this will go to AddItemScreen
+                      onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
                 }
@@ -146,14 +144,27 @@ fun OOTDApp(
 
                 composable(Screen.InventoryScreen.route) { InventoryScreen() }
 
-                composable(Screen.FitCheck.route) {
-                  FitCheckScreen(
-                      onNextClick = { imageUri, description ->
-                        navigationActions.navigateTo(
-                            Screen.PreviewItemScreen(imageUri, description))
-                      },
-                      onBackClick = { navigationActions.goBack() })
-                }
+                composable(
+                    route = Screen.FitCheck.route,
+                    arguments =
+                        listOf(
+                            navArgument("postUuid") {
+                              type = NavType.StringType
+                              defaultValue = ""
+                            })) { backStackEntry ->
+                      val postUuid = backStackEntry.arguments?.getString("postUuid") ?: ""
+
+                      FitCheckScreen(
+                          postUuid = postUuid,
+                          onNextClick = { imageUri, description ->
+                            navigationActions.navigateTo(
+                                Screen.PreviewItemScreen(imageUri, description))
+                          },
+                          onBackClick = {
+                            // later we'll use postUuid to delete items
+                            navigationActions.goBack()
+                          })
+                    }
 
                 composable(
                     route = Screen.PreviewItemScreen.route,
@@ -181,7 +192,12 @@ fun OOTDApp(
                               launchSingleTop = true
                             }
                           },
-                          onGoBack = { navController.popBackStack() })
+                          onGoBack = { postUuid ->
+                            navController.navigate(Screen.FitCheck(postUuid).route) {
+                              popUpTo(Screen.Feed.route) { inclusive = false }
+                              launchSingleTop = true
+                            }
+                          })
                     }
 
                 composable(

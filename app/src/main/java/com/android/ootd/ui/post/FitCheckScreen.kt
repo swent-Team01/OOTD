@@ -1,6 +1,7 @@
 package com.android.ootd.ui.post
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -47,6 +48,7 @@ object FitCheckScreenTestTags {
 @Composable
 fun FitCheckScreen(
     fitCheckViewModel: FitCheckViewModel = viewModel(),
+    postUuid: String = "",
     onNextClick: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {}
 ) {
@@ -85,7 +87,15 @@ fun FitCheckScreen(
             },
             navigationIcon = {
               IconButton(
-                  onClick = onBackClick,
+                  onClick = {
+                    if (postUuid.isNotEmpty()) {
+                      Log.d("FitCheckScreen", "Deleting items for post: $postUuid")
+                      fitCheckViewModel.deleteItemsForPost(postUuid)
+                    } else {
+                      Log.d("FitCheckScreen", "No postUuid found, skipping deletion")
+                    }
+                    onBackClick()
+                  },
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
