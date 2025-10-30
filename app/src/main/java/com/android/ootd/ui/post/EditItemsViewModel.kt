@@ -57,50 +57,48 @@ data class EditItemsUIState(
  */
 open class EditItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository
-) : BaseItemViewModel() {
+) : BaseItemViewModel<EditItemsUIState>() {
 
-  private val _uiState = MutableStateFlow(EditItemsUIState())
-  open val uiState: StateFlow<EditItemsUIState> = _uiState.asStateFlow()
+  override val _uiState = MutableStateFlow(EditItemsUIState())
+  override val uiState: StateFlow<EditItemsUIState> = _uiState.asStateFlow()
 
-  /** Clears the error message in the UI state. */
-  override fun clearErrorMsg() {
-    _uiState.value = _uiState.value.copy(errorMessage = null)
-  }
+  override fun updateType(state: EditItemsUIState, type: String): EditItemsUIState =
+      state.copy(type = type)
 
-  /**
-   * Sets the error message in the UI state.
-   *
-   * @param msg The error message to display.
-   */
-  override fun setErrorMsg(msg: String) {
-    _uiState.value = _uiState.value.copy(errorMessage = msg)
-  }
+  override fun updateBrand(state: EditItemsUIState, brand: String): EditItemsUIState =
+      state.copy(brand = brand)
 
-  override fun updateType(type: String) {
-    _uiState.value = _uiState.value.copy(type = type)
-  }
+  override fun updateLink(state: EditItemsUIState, link: String): EditItemsUIState =
+      state.copy(link = link)
 
-  override fun updateBrand(brand: String) {
-    _uiState.value = _uiState.value.copy(brand = brand)
-  }
+  override fun updateMaterial(
+      state: EditItemsUIState,
+      materialText: String,
+      materials: List<Material>
+  ): EditItemsUIState = state.copy(materialText = materialText, material = materials)
 
-  override fun updateLink(link: String) {
-    _uiState.value = _uiState.value.copy(link = link)
-  }
+  override fun getCategory(state: EditItemsUIState): String = state.category
 
-  override fun updateMaterial(materialText: String, materials: List<Material>) {
-    _uiState.value = _uiState.value.copy(materialText = materialText, material = materials)
-  }
+  override fun setErrorMessage(state: EditItemsUIState, message: String?): EditItemsUIState =
+      state.copy(errorMessage = message)
 
-  override fun getCurrentCategory(): String = _uiState.value.category
+  override fun updateTypeSuggestionsState(
+      state: EditItemsUIState,
+      suggestions: List<String>
+  ): EditItemsUIState = state.copy(suggestions = suggestions)
 
-  override fun updateSuggestions(suggestions: List<String>) {
-    _uiState.value = _uiState.value.copy(suggestions = suggestions)
-  }
+  override fun updateCategorySuggestionsState(
+      state: EditItemsUIState,
+      suggestions: List<String>
+  ): EditItemsUIState = state // Not used in EditItemsViewModel
 
-  override fun updateCategorySuggestionsState(suggestions: List<String>) {
-    // Not used in EditItemsViewModel
-  }
+  override fun setPhotoState(
+      state: EditItemsUIState,
+      uri: Uri?,
+      image: ImageData,
+      invalidPhotoMsg: String?
+  ): EditItemsUIState =
+      state.copy(localPhotoUri = uri, image = image, invalidPhotoMsg = invalidPhotoMsg)
 
   /**
    * Loads an existing item into the UI state for editing.
@@ -203,26 +201,6 @@ open class EditItemsViewModel(
       } catch (e: Exception) {
         setErrorMsg("Failed to delete item: ${e.message}")
       }
-    }
-  }
-
-  /**
-   * Sets the photo URI in the UI state.
-   *
-   * @param uri The URI of the selected photo.
-   */
-  fun setPhoto(uri: Uri) {
-
-    if (uri == Uri.EMPTY) {
-      _uiState.value =
-          _uiState.value.copy(
-              localPhotoUri = null,
-              image = ImageData("", ""),
-              invalidPhotoMsg = "Please select a photo.")
-    } else {
-      _uiState.value =
-          _uiState.value.copy(
-              localPhotoUri = uri, image = ImageData("", ""), invalidPhotoMsg = null)
     }
   }
 

@@ -1,19 +1,31 @@
 package com.android.ootd.ui.post
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Base ViewModel for item-related screens.
  *
  * Contains shared functionality for managing item data, including type suggestions, error messages,
- * and field setters.
+ * and field setters. Uses a generic type parameter to work with different UI state types.
+ *
+ * @param T The type of UI state this ViewModel manages.
  */
-abstract class BaseItemViewModel : ViewModel() {
+abstract class BaseItemViewModel<T : Any> : ViewModel() {
 
   protected var typeSuggestions: Map<String, List<String>> = emptyMap()
+
+  /** The mutable state flow that subclasses should initialize. */
+  protected abstract val _uiState: MutableStateFlow<T>
+
+  /** The public state flow that exposes the UI state. */
+  abstract val uiState: StateFlow<T>
 
   /**
    * Initializes the type suggestions from a YAML file.
@@ -32,7 +44,7 @@ abstract class BaseItemViewModel : ViewModel() {
    * @param type The type name.
    */
   fun setType(type: String) {
-    updateType(type)
+    updateState { updateType(it, type) }
   }
 
   /**
@@ -41,7 +53,7 @@ abstract class BaseItemViewModel : ViewModel() {
    * @param brand The brand name.
    */
   fun setBrand(brand: String) {
-    updateBrand(brand)
+    updateState { updateBrand(it, brand) }
   }
 
   /**
@@ -50,7 +62,7 @@ abstract class BaseItemViewModel : ViewModel() {
    * @param link The URL link.
    */
   fun setLink(link: String) {
-    updateLink(link)
+    updateState { updateLink(it, link) }
   }
 
   /**
@@ -69,7 +81,7 @@ abstract class BaseItemViewModel : ViewModel() {
             if (percentage != null) Material(name, percentage) else null
           } else null
         }
-    updateMaterial(material, materials)
+    updateState { updateMaterial(it, material, materials) }
   }
 
   /**
@@ -78,20 +90,9 @@ abstract class BaseItemViewModel : ViewModel() {
    * @param input The input string to filter suggestions.
    */
   fun updateTypeSuggestions(input: String) {
-    val currentCategory = getCurrentCategory()
+    val currentCategory = getCategory(_uiState.value)
 
-    val normalizedCategory =
-        when (currentCategory.trim().lowercase()) {
-          "clothes",
-          "clothing" -> "Clothing"
-          "shoe",
-          "shoes" -> "Shoes"
-          "bag",
-          "bags" -> "Bags"
-          "accessory",
-          "accessories" -> "Accessories"
-          else -> currentCategory
-        }
+    val normalizedCategory = normalizeCategory(currentCategory)
 
     val allSuggestions = typeSuggestions[normalizedCategory] ?: emptyList()
 
@@ -102,7 +103,7 @@ abstract class BaseItemViewModel : ViewModel() {
           allSuggestions.filter { it.startsWith(input, ignoreCase = true) }
         }
 
-    updateSuggestions(filtered)
+    updateState { updateTypeSuggestionsState(it, filtered) }
   }
 
   /**
@@ -119,84 +120,153 @@ abstract class BaseItemViewModel : ViewModel() {
           categories.filter { it.startsWith(input, ignoreCase = true) }
         }
 
-    updateCategorySuggestionsState(filtered)
+    updateState { updateCategorySuggestionsState(it, filtered) }
+  }
+
+  /**
+   * Normalizes category names to standard format.
+   *
+   * @param category The category to normalize.
+   * @return The normalized category name.
+   */
+  protected fun normalizeCategory(category: String): String {
+    return when (category.trim().lowercase()) {
+      "clothes",
+      "clothing" -> "Clothing"
+      "shoe",
+      "shoes" -> "Shoes"
+      "bag",
+      "bags" -> "Bags"
+      "accessory",
+      "accessories" -> "Accessories"
+      else -> category
+    }
   }
 
   /** Clears the error message in the UI state. */
-  abstract fun clearErrorMsg()
+  fun clearErrorMsg() {
+    updateState { setErrorMessage(it, null) }
+  }
 
   /**
    * Sets the error message in the UI state.
    *
    * @param msg The error message to display.
    */
-  abstract fun setErrorMsg(msg: String)
+  fun setErrorMsg(msg: String) {
+    updateState { setErrorMessage(it, msg) }
+  }
+
+  /**
+   * Updates the UI state using a transformation function.
+   *
+   * @param transform A function that takes the current state and returns the new state.
+   */
+  protected fun updateState(transform: (T) -> T) {
+    _uiState.value = transform(_uiState.value)
+  }
 
   /**
    * Updates the type in the UI state.
    *
+   * @param state The current state.
    * @param type The type value.
+   * @return The updated state.
    */
-  protected abstract fun updateType(type: String)
+  protected abstract fun updateType(state: T, type: String): T
 
   /**
    * Updates the brand in the UI state.
    *
+   * @param state The current state.
    * @param brand The brand value.
+   * @return The updated state.
    */
-  protected abstract fun updateBrand(brand: String)
+  protected abstract fun updateBrand(state: T, brand: String): T
 
   /**
    * Updates the link in the UI state.
    *
+   * @param state The current state.
    * @param link The link value.
+   * @return The updated state.
    */
-  protected abstract fun updateLink(link: String)
+  protected abstract fun updateLink(state: T, link: String): T
 
   /**
    * Updates the material in the UI state.
    *
+   * @param state The current state.
    * @param materialText The raw material text.
    * @param materials The parsed material list.
+   * @return The updated state.
    */
-  protected abstract fun updateMaterial(materialText: String, materials: List<Material>)
+  protected abstract fun updateMaterial(
+      state: T,
+      materialText: String,
+      materials: List<Material>
+  ): T
 
   /**
    * Gets the current category from the UI state.
    *
+   * @param state The current state.
    * @return The current category string.
    */
-  protected abstract fun getCurrentCategory(): String
+  protected abstract fun getCategory(state: T): String
+
+  /**
+   * Sets the error message in the UI state.
+   *
+   * @param state The current state.
+   * @param message The error message (null to clear).
+   * @return The updated state.
+   */
+  protected abstract fun setErrorMessage(state: T, message: String?): T
 
   /**
    * Updates the type suggestions in the UI state.
    *
+   * @param state The current state.
    * @param suggestions The filtered suggestions list.
+   * @return The updated state.
    */
-  protected abstract fun updateSuggestions(suggestions: List<String>)
+  protected abstract fun updateTypeSuggestionsState(state: T, suggestions: List<String>): T
 
   /**
    * Updates the category suggestions in the UI state.
    *
+   * @param state The current state.
    * @param suggestions The filtered category suggestions list.
+   * @return The updated state.
    */
-  protected abstract fun updateCategorySuggestionsState(suggestions: List<String>)
-}
+  protected abstract fun updateCategorySuggestionsState(state: T, suggestions: List<String>): T
 
-/** Common state properties interface for item-related UI states. */
-interface ItemUIState {
-  val type: String
-  val brand: String
-  val link: String
-  val material: List<Material>
-  val materialText: String
-  val category: String
+  /**
+   * Sets the photo URI in the UI state.
+   *
+   * @param state The current state.
+   * @param uri The URI of the selected photo.
+   * @param invalidPhotoMsg The validation message (null if valid).
+   * @return The updated state.
+   */
+  protected abstract fun setPhotoState(
+      state: T,
+      uri: Uri?,
+      image: ImageData,
+      invalidPhotoMsg: String?
+  ): T
 
-  fun copy(
-      type: String = this.type,
-      brand: String = this.brand,
-      link: String = this.link,
-      material: List<Material> = this.material,
-      materialText: String = this.materialText
-  ): ItemUIState
+  /**
+   * Sets the photo in the UI state.
+   *
+   * @param uri The URI of the selected photo.
+   */
+  open fun setPhoto(uri: Uri) {
+    if (uri == Uri.EMPTY) {
+      updateState { setPhotoState(it, null, ImageData("", ""), "Please select a photo.") }
+    } else {
+      updateState { setPhotoState(it, uri, ImageData("", ""), null) }
+    }
+  }
 }

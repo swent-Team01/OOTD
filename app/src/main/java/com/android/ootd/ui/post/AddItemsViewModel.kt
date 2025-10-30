@@ -69,56 +69,58 @@ data class AddItemsUIState(
  */
 open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
-) : BaseItemViewModel() {
+) : BaseItemViewModel<AddItemsUIState>() {
 
-  private val _uiState = MutableStateFlow(AddItemsUIState())
-  open val uiState: StateFlow<AddItemsUIState> = _uiState.asStateFlow()
+  override val _uiState = MutableStateFlow(AddItemsUIState())
+  override val uiState: StateFlow<AddItemsUIState> = _uiState.asStateFlow()
   private val _addOnSuccess = MutableStateFlow(false)
   val addOnSuccess: StateFlow<Boolean> = _addOnSuccess
-
-  /** Clears the error message in the UI state. */
-  override fun clearErrorMsg() {
-    _uiState.value = _uiState.value.copy(errorMessage = null)
-  }
 
   fun resetAddSuccess() {
     _addOnSuccess.value = false
   }
 
-  /**
-   * Sets the error message in the UI state.
-   *
-   * @param msg The error message to display.
-   */
-  override fun setErrorMsg(msg: String) {
-    _uiState.value = _uiState.value.copy(errorMessage = msg)
-  }
+  override fun updateType(state: AddItemsUIState, type: String): AddItemsUIState =
+      state.copy(type = type)
 
-  override fun updateType(type: String) {
-    _uiState.value = _uiState.value.copy(type = type)
-  }
+  override fun updateBrand(state: AddItemsUIState, brand: String): AddItemsUIState =
+      state.copy(brand = brand)
 
-  override fun updateBrand(brand: String) {
-    _uiState.value = _uiState.value.copy(brand = brand)
-  }
+  override fun updateLink(state: AddItemsUIState, link: String): AddItemsUIState =
+      state.copy(link = link)
 
-  override fun updateLink(link: String) {
-    _uiState.value = _uiState.value.copy(link = link)
-  }
+  override fun updateMaterial(
+      state: AddItemsUIState,
+      materialText: String,
+      materials: List<Material>
+  ): AddItemsUIState = state.copy(materialText = materialText, material = materials)
 
-  override fun updateMaterial(materialText: String, materials: List<Material>) {
-    _uiState.value = _uiState.value.copy(materialText = materialText, material = materials)
-  }
+  override fun getCategory(state: AddItemsUIState): String = state.category
 
-  override fun getCurrentCategory(): String = _uiState.value.category
+  override fun setErrorMessage(state: AddItemsUIState, message: String?): AddItemsUIState =
+      state.copy(errorMessage = message)
 
-  override fun updateSuggestions(suggestions: List<String>) {
-    _uiState.value = _uiState.value.copy(typeSuggestion = suggestions)
-  }
+  override fun updateTypeSuggestionsState(
+      state: AddItemsUIState,
+      suggestions: List<String>
+  ): AddItemsUIState = state.copy(typeSuggestion = suggestions)
 
-  override fun updateCategorySuggestionsState(suggestions: List<String>) {
-    _uiState.value = _uiState.value.copy(categorySuggestion = suggestions)
-  }
+  override fun updateCategorySuggestionsState(
+      state: AddItemsUIState,
+      suggestions: List<String>
+  ): AddItemsUIState = state.copy(categorySuggestion = suggestions)
+
+  override fun setPhotoState(
+      state: AddItemsUIState,
+      uri: Uri?,
+      image: ImageData,
+      invalidPhotoMsg: String?
+  ): AddItemsUIState =
+      state.copy(
+          localPhotoUri = uri,
+          image = image,
+          invalidPhotoMsg = invalidPhotoMsg,
+          errorMessage = null)
 
   fun onAddItemClick() {
     val state = _uiState.value
@@ -178,22 +180,15 @@ open class AddItemsViewModel(
     }
   }
 
-  fun setPhoto(uri: Uri) =
-      if (uri == Uri.EMPTY) {
-        _uiState.value =
-            _uiState.value.copy(
-                localPhotoUri = null,
-                image = ImageData("", ""),
-                invalidPhotoMsg = "Please select a photo.",
-                errorMessage = null)
-      } else {
-        _uiState.value =
-            _uiState.value.copy(
-                localPhotoUri = uri,
-                image = ImageData("", ""),
-                invalidPhotoMsg = null,
-                errorMessage = null)
+  override fun setPhoto(uri: Uri) {
+    if (uri == Uri.EMPTY) {
+      updateState {
+        setErrorMessage(setPhotoState(it, null, ImageData("", ""), "Please select a photo."), null)
       }
+    } else {
+      updateState { setErrorMessage(setPhotoState(it, uri, ImageData("", ""), null), null) }
+    }
+  }
 
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()
