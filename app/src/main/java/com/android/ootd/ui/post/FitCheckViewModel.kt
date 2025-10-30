@@ -33,8 +33,7 @@ class FitCheckViewModel(
   fun deleteItemsForPost(postUuid: String) {
     viewModelScope.launch {
       try {
-        val itemsRepo = ItemsRepositoryProvider.repository
-        itemsRepo.deletePostItems(postUuid)
+        repository.deletePostItems(postUuid)
       } catch (e: Exception) {
         Log.e("FitCheckViewModel", "Failed to delete items for post: $postUuid", e)
       }
