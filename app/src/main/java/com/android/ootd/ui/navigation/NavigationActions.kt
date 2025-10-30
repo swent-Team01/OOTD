@@ -1,5 +1,6 @@
 package com.android.ootd.ui.navigation
 
+import android.net.Uri
 import androidx.navigation.NavHostController
 
 /**
@@ -40,13 +41,22 @@ sealed class Screen(
 
   object FitCheck : Screen(route = "fitCheck", name = "FitCheck", isTopLevelDestination = false)
 
-  // TODO: add routes for Search Screen and Profile Screen
+  data class AddItemScreen(val postUuid: String) :
+      Screen(route = "addItem?postUuid=$postUuid", name = "Add Item") {
+    companion object {
+      const val route = "addItem?postUuid={postUuid}"
+    }
+  }
 
-  object AddItemScreen :
-      Screen(route = "addItem", name = "Add Item", isTopLevelDestination = false)
-
-  object PreviewItemScreen :
-      Screen(route = "previewItem", name = "Preview Item", isTopLevelDestination = false)
+  data class PreviewItemScreen(val imageUri: String, val description: String) :
+      Screen(
+          route =
+              "overview?imageUri=${Uri.encode(imageUri)}&description=${Uri.encode(description)}",
+          name = "Overview") {
+    companion object {
+      const val route = "overview?imageUri={imageUri}&description={description}"
+    }
+  }
 
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
