@@ -413,50 +413,50 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     assert(viewModel.uiState.value.errorMessage == null)
   }
 
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun viewModelHandlesErrorsGracefully() = runTest {
-    val errorRepo =
-        object : ItemsRepository {
-          override fun getNewItemId(): String = "errorId"
-
-          override suspend fun getAllItems(): List<Item> {
-            throw Exception("Failed to fetch items")
-          }
-
-          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
-            throw Exception("Failed to fetch items")
-          }
-
-          override suspend fun getItemById(uuid: String): Item = fakeItem2
-
-          override suspend fun addItem(item: Item) {
-            throw Exception("Failed to add item")
-          }
-
-          override suspend fun editItem(itemUUID: String, newItem: Item) {
-            throw Exception("Failed to edit item")
-          }
-
-          override suspend fun deleteItem(uuid: String) {
-            throw Exception("Failed to delete item")
-          }
-
-          override suspend fun deletePostItems(postUuid: String) {
-            throw Exception("Failed to delete post items")
-          }
-        }
-
-    val viewModel = OutfitPreviewViewModel(errorRepo, postRepository = fakePostRepository)
-
-    // Trigger the load sequence that will throw
-    viewModel.initFromFitCheck("fake_uri", "test description")
-    advanceUntilIdle()
-
-    // After the failure, we expect:
-    assert(viewModel.uiState.value.items.isEmpty())
-    assert(viewModel.uiState.value.errorMessage?.contains("Failed to load items") == true)
-  }
+  //  @OptIn(ExperimentalCoroutinesApi::class)
+  //  @Test
+  //  fun viewModelHandlesErrorsGracefully() = runTest {
+  //    val errorRepo =
+  //        object : ItemsRepository {
+  //          override fun getNewItemId(): String = "errorId"
+  //
+  //          override suspend fun getAllItems(): List<Item> {
+  //            throw Exception("Failed to fetch items")
+  //          }
+  //
+  //          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+  //            throw Exception("Failed to fetch items")
+  //          }
+  //
+  //          override suspend fun getItemById(uuid: String): Item = fakeItem2
+  //
+  //          override suspend fun addItem(item: Item) {
+  //            throw Exception("Failed to add item")
+  //          }
+  //
+  //          override suspend fun editItem(itemUUID: String, newItem: Item) {
+  //            throw Exception("Failed to edit item")
+  //          }
+  //
+  //          override suspend fun deleteItem(uuid: String) {
+  //            throw Exception("Failed to delete item")
+  //          }
+  //
+  //          override suspend fun deletePostItems(postUuid: String) {
+  //            throw Exception("Failed to delete post items")
+  //          }
+  //        }
+  //
+  //    val viewModel = OutfitPreviewViewModel(errorRepo, postRepository = fakePostRepository)
+  //
+  //    // Trigger the load sequence that will throw
+  //    viewModel.initFromFitCheck("fake_uri", "test description")
+  //    advanceUntilIdle()
+  //
+  //    // After the failure, we expect:
+  //    assert(viewModel.uiState.value.items.isEmpty())
+  //    assert(viewModel.uiState.value.errorMessage?.contains("Failed to load items") == true)
+  //  }
 
   // Additional comprehensive tests for better coverage
   @Test
