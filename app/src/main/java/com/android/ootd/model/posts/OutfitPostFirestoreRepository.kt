@@ -13,7 +13,7 @@ import kotlinx.coroutines.tasks.await
 const val POSTS_COLLECTION = "posts"
 
 /** Firestore collection name for outfit images * */
-const val POSTS_IMAGES_FOLDER = "images"
+const val POSTS_IMAGES_FOLDER = "images/posts"
 
 /**
  * Repository implementation that handles all OutfitPost operations involving both Firestore and
