@@ -27,7 +27,17 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun getAssociatedItems(postUuid: String): List<Item> {
-    val snapshot = db.collection(ITEMS_COLLECTION).whereEqualTo("postUuid", postUuid).get().await()
+    val ownerId =
+        Firebase.auth.currentUser?.uid
+            ?: throw Exception("ItemsRepositoryFirestore: User not logged in.")
+
+    val snapshot =
+        db.collection(ITEMS_COLLECTION)
+            .whereEqualTo("postUuid", postUuid)
+            .whereEqualTo("ownerId", ownerId)
+            .get()
+            .await()
+
     return snapshot.mapNotNull { mapToItem(it) }
   }
 

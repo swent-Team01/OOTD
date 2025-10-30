@@ -86,6 +86,11 @@ class ItemsRepositoryLocal : ItemsRepository {
     }
     items.remove(uuid)
   }
+
+  override suspend fun deletePostItems(postUuid: String) {
+    items.values.removeIf { it.postUuid == postUuid }
+  }
+
   /** Clears all items from the local storage. Useful for resetting state between tests. */
   fun clearAll() {
     items.clear()
