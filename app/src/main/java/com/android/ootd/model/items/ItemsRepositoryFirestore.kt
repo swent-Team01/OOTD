@@ -61,8 +61,21 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun deletePostItems(postUuid: String) {
-    db.collection(ITEMS_COLLECTION).whereEqualTo("postUuid", postUuid).get().await().forEach {
-      it.reference.delete()
+    val ownerId =
+        Firebase.auth.currentUser?.uid
+            ?: throw Exception("ItemsRepositoryFirestore: User not logged in.")
+
+    val snapshot =
+        db.collection(ITEMS_COLLECTION)
+            .whereEqualTo("postUuid", postUuid)
+            .whereEqualTo("ownerId", ownerId)
+            .get()
+            .await()
+    Log.d("FirestoreDelete", "Found ${snapshot.size()} items for post $postUuid")
+
+    for (doc in snapshot.documents) {
+      Log.d("FirestoreDelete", "Deleting item ${doc.id}")
+      doc.reference.delete().await()
     }
   }
 }
