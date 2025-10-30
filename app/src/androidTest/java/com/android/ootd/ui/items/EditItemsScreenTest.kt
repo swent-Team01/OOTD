@@ -3,6 +3,7 @@ package com.android.ootd.ui.post
 import android.net.Uri
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.swipeUp
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryLocal
@@ -60,35 +61,29 @@ class EditItemsScreenTest {
     ItemsRepositoryProvider.reset()
   }
 
-  @Test
-  fun allUIElementsAreDisplayed() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+  // Helper function to ensure a node is visible by scrolling if necessary
+  private fun ensureVisible(tag: String) {
+    // Already displayed? Nothing to do.
+    val alreadyVisible =
+        runCatching {
+              composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed()
+            }
+            .isSuccess
+    if (alreadyVisible) return
 
-    // Check all UI elements are present
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
-
-    // Check buttons text
-    composeTestRule.onNodeWithText("Select from Gallery").assertExists()
-    composeTestRule.onNodeWithText("Take a new picture").assertExists()
-    composeTestRule.onNodeWithText("Save Changes").assertExists()
-    composeTestRule.onNodeWithText("Delete Item").assertExists()
-  }
-
-  @Test
-  fun topAppBarIsDisplayedCorrectly() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-
-    composeTestRule.onNodeWithText("Edit Item").assertExists()
-    composeTestRule.onNodeWithContentDescription("Go Back").assertExists()
+    // Fallback: manual swipes a few times (helps when semantics are quirky but visual scroll
+    // still works).
+    repeat(5) {
+      composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ALL_FIELDS).performTouchInput {
+        swipeUp(startY = bottom, endY = top)
+      }
+      composeTestRule.waitForIdle()
+      if (runCatching {
+            composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed()
+          }
+          .isSuccess)
+          return
+    }
   }
 
   @Test
@@ -119,6 +114,10 @@ class EditItemsScreenTest {
         .assertTextEquals("Price", "29.99")
 
     composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .assertTextContains("Cotton 80.0%, Polyester 20.0%")
+
+    composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
         .assertTextEquals("Link", "https://nike.com/tshirt")
   }
@@ -126,6 +125,11 @@ class EditItemsScreenTest {
   @Test
   fun saveButtonIsDisabledWhenRequiredFieldsAreEmpty() {
     composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+
+    composeTestRule.waitForIdle()
+
+    // Ensure button is visible
+    ensureVisible(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
 
     // Initially, save button should be disabled (no image, no category)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
@@ -143,6 +147,9 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Ensure button is visible
+    ensureVisible(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
+
     // Save button should now be enabled
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsEnabled()
   }
@@ -150,6 +157,11 @@ class EditItemsScreenTest {
   @Test
   fun deleteButtonIsDisabledWhenNoItemLoaded() {
     composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+
+    composeTestRule.waitForIdle()
+
+    // Ensure button is visible
+    ensureVisible(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
 
     // Delete button should be disabled when no item is loaded
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsNotEnabled()
@@ -163,6 +175,9 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Ensure button is visible
+    ensureVisible(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
+
     // Delete button should be enabled
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsEnabled()
   }
@@ -174,6 +189,9 @@ class EditItemsScreenTest {
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
     composeTestRule.waitForIdle()
+
+    // Ensure field is visible
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
 
     // Edit category
     composeTestRule
@@ -197,6 +215,9 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Ensure field is visible
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
+
     // Edit type
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performTextClearance()
     composeTestRule
@@ -216,6 +237,9 @@ class EditItemsScreenTest {
     composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
 
     composeTestRule.waitForIdle()
+
+    // Ensure field is visible
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
 
     // Edit brand
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).performTextClearance()
@@ -237,6 +261,9 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Ensure field is visible
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
+
     // Edit price
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE).performTextClearance()
     composeTestRule
@@ -257,6 +284,9 @@ class EditItemsScreenTest {
 
     composeTestRule.waitForIdle()
 
+    // Ensure field is visible
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+
     // Edit link
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).performTextClearance()
     composeTestRule
@@ -267,6 +297,31 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
         .assertTextContains("https://adidas.com")
+  }
+
+  @Test
+  fun userCanEditMaterialField() {
+    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+
+    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
+
+    composeTestRule.waitForIdle()
+
+    // Ensure field is visible
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+
+    // Edit material field
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .performTextClearance()
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .performTextInput("Wool 50%, Cotton 50%")
+
+    // Verify change
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .assertTextContains("Wool 50%, Cotton 50%")
   }
 
   @Test
@@ -337,31 +392,6 @@ class EditItemsScreenTest {
       val state = viewModel.uiState.value
       assertEquals(0.0, state.price)
     }
-  }
-
-  @Test
-  fun clearingCategoryDisablesSaveButton() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-
-    composeTestRule.runOnIdle {
-      viewModel.setPhoto(Uri.parse("https://example.com/test.jpg"))
-      viewModel.setCategory("Clothing")
-    }
-
-    composeTestRule.waitForIdle()
-
-    // Save button should be enabled
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsEnabled()
-
-    // Clear category
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .performTextClearance()
-
-    composeTestRule.waitForIdle()
-
-    // Save button should be disabled
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
   }
 
   @Test

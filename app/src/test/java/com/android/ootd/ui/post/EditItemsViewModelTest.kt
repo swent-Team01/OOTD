@@ -63,6 +63,7 @@ class EditItemsViewModelTest {
     assertEquals("", state.brand)
     assertEquals(0.0, state.price, 0.0)
     assertEquals(emptyList<Material>(), state.material)
+    assertEquals("", state.materialText)
     assertEquals("", state.link)
     assertNull(state.errorMessage)
     assertNull(state.invalidPhotoMsg)
@@ -174,11 +175,44 @@ class EditItemsViewModelTest {
 
   @Test
   fun `setMaterial updates material in state`() {
-    val materials = listOf(Material("Cotton", 100.0))
-    viewModel.setMaterial(materials)
+    viewModel.setMaterial("Cotton 80%, Wool 20%")
 
     val state = viewModel.uiState.value
-    assertEquals(materials, state.material)
+    assertEquals("Cotton 80%, Wool 20%", state.materialText)
+    assertEquals(2, state.material.size)
+    assertEquals("Cotton", state.material[0].name)
+    assertEquals(80.0, state.material[0].percentage, 0.0)
+    assertEquals("Wool", state.material[1].name)
+    assertEquals(20.0, state.material[1].percentage, 0.0)
+  }
+
+  @Test
+  fun `setMaterial handles single material`() {
+    viewModel.setMaterial("Cotton 100%")
+
+    val state = viewModel.uiState.value
+    assertEquals("Cotton 100%", state.materialText)
+    assertEquals(1, state.material.size)
+    assertEquals("Cotton", state.material[0].name)
+    assertEquals(100.0, state.material[0].percentage, 0.0)
+  }
+
+  @Test
+  fun `setMaterial handles invalid format`() {
+    viewModel.setMaterial("Invalid Format")
+
+    val state = viewModel.uiState.value
+    assertEquals("Invalid Format", state.materialText)
+    assertEquals(0, state.material.size)
+  }
+
+  @Test
+  fun `setMaterial handles empty string`() {
+    viewModel.setMaterial("")
+
+    val state = viewModel.uiState.value
+    assertEquals("", state.materialText)
+    assertEquals(0, state.material.size)
   }
 
   @Test
@@ -231,6 +265,7 @@ class EditItemsViewModelTest {
     assertEquals("Nike", state.brand)
     assertEquals(49.99, state.price, 0.0)
     assertEquals(materials, state.material)
+    assertEquals("Cotton 100.0%", state.materialText)
     assertEquals("https://example.com", state.link)
   }
 
@@ -257,6 +292,7 @@ class EditItemsViewModelTest {
     assertEquals("", state.type)
     assertEquals("", state.brand)
     assertEquals(0.0, state.price, 0.0)
+    assertEquals("", state.materialText)
     assertEquals("", state.link)
   }
 
@@ -386,7 +422,8 @@ class EditItemsViewModelTest {
 
     coVerify { mockRepository.deleteItem("test-id") }
     val state = viewModel.uiState.value
-    assertEquals("Item deleted successfully!", state.errorMessage)
+    assertTrue(state.isDeleteSuccessful)
+    assertNull(state.errorMessage)
   }
 
   @Test

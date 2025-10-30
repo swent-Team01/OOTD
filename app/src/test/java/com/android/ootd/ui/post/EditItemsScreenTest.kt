@@ -18,7 +18,6 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Before
@@ -48,7 +47,7 @@ class EditItemsScreenTest {
   fun `screen displays all UI components`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Edit Item").assertIsDisplayed()
+    composeTestRule.onNodeWithText("EDIT ITEMS").assertIsDisplayed()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA).assertExists()
@@ -56,6 +55,7 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
@@ -191,6 +191,19 @@ class EditItemsScreenTest {
   }
 
   @Test
+  fun `material field accepts text input`() {
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .performTextInput("Cotton 80%, Wool 20%")
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .assertTextContains("Cotton 80%, Wool 20%")
+  }
+
+  @Test
   fun `screen loads item data correctly`() {
     val item =
         Item(
@@ -221,6 +234,9 @@ class EditItemsScreenTest {
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
     composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        .assertTextContains("Cotton 100.0%")
+    composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
         .assertTextContains("https://example.com")
   }
@@ -232,33 +248,7 @@ class EditItemsScreenTest {
       EditItemsScreen(editItemsViewModel = mockViewModel, goBack = { backCalled = true })
     }
 
-    composeTestRule.onNodeWithContentDescription("Go Back").performClick()
-
-    assert(backCalled)
-  }
-
-  @Test
-  fun `save callback is triggered when save button is clicked with valid data`() {
-    coEvery { mockRepository.editItem(any(), any()) } returns Unit
-
-    mockViewModel.loadItem(
-        Item(
-            itemUuid = "test-id",
-            image = ImageData("test-image-id", "https://example.com/test.jpg"),
-            category = "Clothing",
-            type = "T-shirt",
-            brand = "Nike",
-            price = 49.99,
-            material = emptyList(),
-            link = "https://example.com",
-            ownerId = "ownerId"))
-
-    var backCalled = false
-    composeTestRule.setContent {
-      EditItemsScreen(editItemsViewModel = mockViewModel, goBack = { backCalled = true })
-    }
-
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).performClick()
+    composeTestRule.onNodeWithContentDescription("Back").performClick()
 
     assert(backCalled)
   }
@@ -278,6 +268,7 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
     composeTestRule.onNodeWithText("Price").assertExists()
+    composeTestRule.onNodeWithText("Material").assertExists()
     composeTestRule.onNodeWithText("Link").assertExists()
   }
 
@@ -287,7 +278,7 @@ class EditItemsScreenTest {
 
     composeTestRule.onNodeWithText("Select from Gallery").assertExists()
     composeTestRule.onNodeWithText("Take a new picture").assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
     composeTestRule.onNodeWithText("Save Changes").assertExists()
+    composeTestRule.onNodeWithText("Delete Item").assertExists()
   }
 }

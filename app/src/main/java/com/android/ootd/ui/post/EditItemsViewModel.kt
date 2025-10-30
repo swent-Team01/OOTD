@@ -1,10 +1,8 @@
 package com.android.ootd.ui.post
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil.isValidUrl
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
@@ -12,7 +10,6 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
-import com.android.ootd.utils.TypeSuggestionsLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,12 +28,14 @@ data class EditItemsUIState(
     val brand: String = "",
     val price: Double = 0.0,
     val material: List<Material> = emptyList(),
+    val materialText: String = "",
     val link: String = "",
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val suggestions: List<String> = emptyList(),
     val isSaveSuccessful: Boolean = false,
+    val isDeleteSuccessful: Boolean = false,
     val ownerId: String = "",
     val isLoading: Boolean = false
 ) {
@@ -58,37 +57,48 @@ data class EditItemsUIState(
  */
 open class EditItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository
-) : ViewModel() {
+) : BaseItemViewModel<EditItemsUIState>() {
 
-  private val _uiState = MutableStateFlow(EditItemsUIState())
-  open val uiState: StateFlow<EditItemsUIState> = _uiState.asStateFlow()
+  override val _uiState = MutableStateFlow(EditItemsUIState())
+  override val uiState: StateFlow<EditItemsUIState> = _uiState.asStateFlow()
 
-  private var typeSuggestions: Map<String, List<String>> = emptyMap()
+  override fun updateType(state: EditItemsUIState, type: String): EditItemsUIState =
+      state.copy(type = type)
 
-  /**
-   * Initializes the type suggestions from a YAML file.
-   *
-   * Should be called from the composable with the context.
-   *
-   * @param context The Android context used to load suggestions.
-   */
-  fun initTypeSuggestions(context: Context) {
-    typeSuggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
-  }
+  override fun updateBrand(state: EditItemsUIState, brand: String): EditItemsUIState =
+      state.copy(brand = brand)
 
-  /** Clears the error message in the UI state. */
-  fun clearErrorMsg() {
-    _uiState.value = _uiState.value.copy(errorMessage = null)
-  }
+  override fun updateLink(state: EditItemsUIState, link: String): EditItemsUIState =
+      state.copy(link = link)
 
-  /**
-   * Sets the error message in the UI state.
-   *
-   * @param msg The error message to display.
-   */
-  fun setErrorMsg(msg: String) {
-    _uiState.value = _uiState.value.copy(errorMessage = msg)
-  }
+  override fun updateMaterial(
+      state: EditItemsUIState,
+      materialText: String,
+      materials: List<Material>
+  ): EditItemsUIState = state.copy(materialText = materialText, material = materials)
+
+  override fun getCategory(state: EditItemsUIState): String = state.category
+
+  override fun setErrorMessage(state: EditItemsUIState, message: String?): EditItemsUIState =
+      state.copy(errorMessage = message)
+
+  override fun updateTypeSuggestionsState(
+      state: EditItemsUIState,
+      suggestions: List<String>
+  ): EditItemsUIState = state.copy(suggestions = suggestions)
+
+  override fun updateCategorySuggestionsState(
+      state: EditItemsUIState,
+      suggestions: List<String>
+  ): EditItemsUIState = state // Not used in EditItemsViewModel
+
+  override fun setPhotoState(
+      state: EditItemsUIState,
+      uri: Uri?,
+      image: ImageData,
+      invalidPhotoMsg: String?
+  ): EditItemsUIState =
+      state.copy(localPhotoUri = uri, image = image, invalidPhotoMsg = invalidPhotoMsg)
 
   /**
    * Loads an existing item into the UI state for editing.
@@ -96,6 +106,8 @@ open class EditItemsViewModel(
    * @param item The item to load.
    */
   fun loadItem(item: Item) {
+    val materialText =
+        item.material.filterNotNull().joinToString(", ") { "${it.name} ${it.percentage}%" }
     _uiState.value =
         EditItemsUIState(
             itemId = item.itemUuid,
@@ -105,6 +117,7 @@ open class EditItemsViewModel(
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
             material = item.material.filterNotNull(),
+            materialText = materialText,
             link = item.link ?: "",
             ownerId = item.ownerId)
   }
@@ -184,30 +197,10 @@ open class EditItemsViewModel(
         if (!deleted) {
           Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
         }
-        _uiState.value = EditItemsUIState(errorMessage = "Item deleted successfully!")
+        _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
       } catch (e: Exception) {
         setErrorMsg("Failed to delete item: ${e.message}")
       }
-    }
-  }
-
-  /**
-   * Sets the photo URI in the UI state.
-   *
-   * @param uri The URI of the selected photo.
-   */
-  fun setPhoto(uri: Uri) {
-
-    if (uri == Uri.EMPTY) {
-      _uiState.value =
-          _uiState.value.copy(
-              localPhotoUri = null,
-              image = ImageData("", ""),
-              invalidPhotoMsg = "Please select a photo.")
-    } else {
-      _uiState.value =
-          _uiState.value.copy(
-              localPhotoUri = uri, image = ImageData("", ""), invalidPhotoMsg = null)
     }
   }
 
@@ -224,79 +217,11 @@ open class EditItemsViewModel(
   }
 
   /**
-   * Sets the type in the UI state.
-   *
-   * @param type The type name.
-   */
-  fun setType(type: String) {
-    _uiState.value = _uiState.value.copy(type = type)
-  }
-
-  /**
-   * Sets the brand in the UI state.
-   *
-   * @param brand The brand name.
-   */
-  fun setBrand(brand: String) {
-    _uiState.value = _uiState.value.copy(brand = brand)
-  }
-
-  /**
    * Sets the price in the UI state.
    *
    * @param price The price value.
    */
   fun setPrice(price: Double) {
     _uiState.value = _uiState.value.copy(price = price)
-  }
-
-  /**
-   * Sets the material list in the UI state.
-   *
-   * @param material The list of materials.
-   */
-  fun setMaterial(material: List<Material>) {
-    _uiState.value = _uiState.value.copy(material = material)
-  }
-
-  /**
-   * Sets the link in the UI state.
-   *
-   * @param link The URL link.
-   */
-  fun setLink(link: String) {
-    _uiState.value = _uiState.value.copy(link = link)
-  }
-
-  /**
-   * Updates the type suggestions based on the current category and input.
-   *
-   * @param input The input string to filter suggestions.
-   */
-  fun updateTypeSuggestions(input: String) {
-    val state = _uiState.value
-
-    val normalizeCategory =
-        when (state.category.trim().lowercase()) {
-          "clothes",
-          "clothing" -> "Clothing"
-          "shoe",
-          "shoes" -> "Shoes"
-          "bag",
-          "bags" -> "Bags"
-          "accessory",
-          "accessories" -> "Accessories"
-          else -> state.category
-        }
-    val allSuggestions = typeSuggestions[normalizeCategory] ?: emptyList()
-
-    val filtered =
-        if (input.isBlank()) {
-          allSuggestions
-        } else {
-          allSuggestions.filter { it.startsWith(input, ignoreCase = true) }
-        }
-
-    _uiState.value = state.copy(suggestions = filtered)
   }
 }
