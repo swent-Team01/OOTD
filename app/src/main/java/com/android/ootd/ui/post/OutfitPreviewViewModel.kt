@@ -95,19 +95,13 @@ class OutfitPreviewViewModel(
       try {
         val user = Firebase.auth.currentUser ?: throw Exception("User not logged in")
 
-        Log.d("OutfitPreviewViewModel", "Publishing post: ${state.postUuid}")
-
         // Upload main outfit image
         val outfitPhotoUrl =
             postRepository.uploadOutfitPhoto(localPath = state.imageUri, postId = state.postUuid)
 
-        Log.d("OutfitPreviewViewModel", "Outfit photo uploaded: $outfitPhotoUrl")
-
         // Fetch all items for this post
         val items = itemsRepository.getAssociatedItems(state.postUuid)
         val itemIds = items.map { it.itemUuid }
-
-        Log.d("OutfitPreviewViewModel", "Associated items: $itemIds")
 
         // Build and save Firestore post
         val post =
@@ -121,14 +115,7 @@ class OutfitPreviewViewModel(
                 itemsID = itemIds,
                 timestamp = System.currentTimeMillis())
 
-        Log.d("OutfitPreviewViewModel", "Post to be saved:")
-        Log.d("OutfitPreviewViewModel", "PostUID: ${post.postUID}")
-        Log.d("OutfitPreviewViewModel", "OwnerID: ${post.ownerId}")
-        Log.d("OutfitPreviewViewModel", "Name: ${post.name}")
-
         postRepository.savePostToFirestore(post)
-
-        Log.d("OutfitPreviewViewModel", "Post saved successfully")
 
         _uiState.value =
             state.copy(
@@ -143,32 +130,6 @@ class OutfitPreviewViewModel(
     }
   }
 
-  //  fun refreshItems() {
-  //    viewModelScope.launch {
-  //      try {
-  //        val items = itemsRepository.getAllItems()
-  //        _uiState.value = _uiState.value.copy(items = items)
-  //      } catch (e: Exception) {
-  //        setErrorMessage("Failed to refresh items: ${e.message}")
-  //      }
-  //    }
-  //  }
-
-  //  private fun loadOutfitPost() {
-  //
-  //    viewModelScope.launch {
-  //      _uiState.value = _uiState.value.copy(isLoading = true)
-  //      try {
-  //        val items = itemsRepository.getAllItems()
-  //        _uiState.value = PreviewUIState(items = items, isLoading = false)
-  //      } catch (e: Exception) {
-  //        Log.e("OutfitPreviewViewModel", "Error fetching items", e)
-  //        setErrorMessage("Failed to load items: ${e.message}")
-  //        _uiState.value = _uiState.value.copy(isLoading = false)
-  //      }
-  //    }
-  //  }
-
   /** Clears the error message in the UI state */
   fun clearErrorMessage() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
@@ -177,9 +138,5 @@ class OutfitPreviewViewModel(
   /** Sets an error message in the UI state */
   private fun setErrorMessage(message: String) {
     _uiState.value = _uiState.value.copy(errorMessage = message)
-  }
-
-  fun clearSuccessMessage() {
-    _uiState.value = _uiState.value.copy(successMessage = null)
   }
 }

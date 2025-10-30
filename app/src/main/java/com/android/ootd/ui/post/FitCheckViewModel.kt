@@ -1,6 +1,7 @@
 package com.android.ootd.ui.post
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.items.ItemsRepository
@@ -35,8 +36,7 @@ class FitCheckViewModel(
         val itemsRepo = ItemsRepositoryProvider.repository
         itemsRepo.deletePostItems(postUuid)
       } catch (e: Exception) {
-        // optional: log or show error
-        e.printStackTrace()
+        Log.e("FitCheckViewModel", "Failed to delete items for post: $postUuid", e)
       }
     }
   }
