@@ -255,6 +255,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertTrue("URL should include the post ID", url.contains(postId))
   }
 
+  @Test
   fun updatePostFields_updatesDescriptionSuccessfully() = runTest {
     val currentUid = FirebaseEmulator.auth.currentUser!!.uid
     FirebaseEmulator.firestore
@@ -283,5 +284,64 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val updated = outfitPostRepository.getPostById(postId)
     Assert.assertNotNull(updated)
     Assert.assertEquals("New description", updated!!.description)
+  }
+
+  @Test(expected = Exception::class)
+  fun savePostToFirestore_logsAndThrowsOnFailure() = runTest {
+    val post =
+        OutfitPost(
+            postUID = "bad/post/path", // Firestore rejects '/' in document IDs
+            name = "Invalid",
+            ownerId = ownerId,
+            userProfilePicURL = "",
+            outfitURL = "",
+            description = "This will fail",
+            itemsID = emptyList(),
+            timestamp = System.currentTimeMillis())
+
+    try {
+      outfitPostRepository.savePostToFirestore(post)
+    } catch (e: Exception) {
+      // We expect it to throw after logging
+      Assert.assertTrue(e is Exception)
+      throw e
+    }
+  }
+
+  @Test
+  fun uploadOutfitPhoto_returnsFakeUrlOnFailure() = runTest {
+    val postId = outfitPostRepository.getNewPostId()
+
+    // This path cannot be uploaded (invalid URI format)
+    val fakeBadPath = "not_a_valid_uri"
+
+    val url = outfitPostRepository.uploadOutfitPhoto(fakeBadPath, postId)
+
+    // It should not throw, but return the fallback fake URL
+    Assert.assertTrue(url.contains("https://fake.storage/"))
+    Assert.assertTrue(url.contains(postId))
+  }
+
+  @Test
+  fun savePostWithMainPhoto_usesFallbackUrlOnUploadFailure() = runTest {
+    val currentUid = FirebaseEmulator.auth.currentUser!!.uid
+
+    // Invalid path will make upload fail
+    val invalidPath = "not_a_valid_uri"
+
+    val post =
+        outfitPostRepository.savePostWithMainPhoto(
+            uid = currentUid,
+            name = "Fallback Upload",
+            userProfilePicURL = "https://example.com/profile.jpg",
+            localPath = invalidPath,
+            description = "Fallback triggered")
+
+    Assert.assertTrue(post.outfitURL.startsWith("https://fake.storage/"))
+    Assert.assertTrue(post.outfitURL.contains(post.postUID))
+
+    val fetched = outfitPostRepository.getPostById(post.postUID)
+    Assert.assertNotNull(fetched)
+    Assert.assertEquals("Fallback Upload", fetched?.name)
   }
 }
