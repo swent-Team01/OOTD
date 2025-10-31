@@ -1,7 +1,6 @@
 package com.android.ootd.ui.post
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -108,9 +107,6 @@ fun PreviewItemScreen(
 
   LaunchedEffect(uiState.successMessage) {
     uiState.successMessage?.let { message ->
-      Log.d("PreviewItemScreen", "Success message: $message")
-      Log.d("PreviewItemScreen", "Is Published: ${uiState.isPublished}")
-
       Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
       outfitPreviewViewModel.clearErrorMessage()
       if (uiState.isPublished) {
