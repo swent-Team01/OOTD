@@ -2,10 +2,12 @@ package com.android.ootd.ui.camera
 
 import android.content.Context
 import android.net.Uri
+import androidx.camera.core.Camera
 import androidx.camera.core.ImageCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.util.concurrent.ExecutorService
@@ -21,12 +23,18 @@ import kotlinx.coroutines.launch
  * @property capturedImageUri URI of the captured image, null if not yet captured
  * @property isCapturing Whether a photo capture is in progress
  * @property errorMessage Error message to display, null if no error
+ * @property zoomRatio Current zoom ratio
+ * @property minZoomRatio Minimum zoom ratio supported by the camera
+ * @property maxZoomRatio Maximum zoom ratio supported by the camera
  */
 data class CameraUIState(
     val lensFacing: Int = androidx.camera.core.CameraSelector.LENS_FACING_BACK,
     val capturedImageUri: Uri? = null,
     val isCapturing: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val zoomRatio: Float = 1f,
+    val minZoomRatio: Float = 1f,
+    val maxZoomRatio: Float = 1f
 )
 
 /**
@@ -39,6 +47,8 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
   private val _uiState = MutableStateFlow(CameraUIState())
   val uiState: StateFlow<CameraUIState> = _uiState.asStateFlow()
   private var cameraProvider: ProcessCameraProvider? = null
+  private var camera: Camera? = null
+  private var zoomStateObserver: Observer<androidx.camera.core.ZoomState>? = null
 
   /** Toggles between front and back camera. */
   fun switchCamera() {
@@ -101,13 +111,48 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
       previewView: PreviewView,
       lifecycleOwner: LifecycleOwner
   ): ImageCapture? {
+
+    // This removes previous observer if exists so that we can use our own camera zoom
+    camera?.let { cam ->
+      zoomStateObserver?.let { observer -> cam.cameraInfo.zoomState.removeObserver(observer) }
+    }
+
     val result =
         repository.bindCamera(
             cameraProvider, previewView, lifecycleOwner, _uiState.value.lensFacing)
 
-    return result.getOrElse { exception ->
-      setError("Failed to bind camera: ${exception.message}")
-      null
+    return result
+        .getOrElse { exception ->
+          setError("Failed to bind camera: ${exception.message}")
+          null
+        }
+        ?.let { (cameraInstance, imageCapture) ->
+          camera = cameraInstance
+
+          // Observe zoom state changes on our camera
+          zoomStateObserver = Observer { zoomState ->
+            _uiState.value =
+                _uiState.value.copy(
+                    zoomRatio = zoomState.zoomRatio,
+                    minZoomRatio = zoomState.minZoomRatio,
+                    maxZoomRatio = zoomState.maxZoomRatio)
+          }
+
+          cameraInstance.cameraInfo.zoomState.observe(lifecycleOwner, zoomStateObserver!!)
+
+          imageCapture
+        }
+  }
+
+  /**
+   * Sets the zoom ratio.
+   *
+   * @param ratio The zoom ratio to set (must be between minZoomRatio and maxZoomRatio)
+   */
+  fun setZoomRatio(ratio: Float) {
+    camera?.let { cam ->
+      val clampedRatio = ratio.coerceIn(_uiState.value.minZoomRatio, _uiState.value.maxZoomRatio)
+      cam.cameraControl.setZoomRatio(clampedRatio)
     }
   }
 

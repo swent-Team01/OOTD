@@ -1,13 +1,16 @@
 package com.android.ootd.ui.camera
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.camera.core.ImageCapture
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
@@ -17,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -41,6 +45,7 @@ object CameraScreenTestTags {
   const val CLOSE_BUTTON = "closeButton"
   const val PERMISSION_DENIED_MESSAGE = "permissionDeniedMessage"
   const val PERMISSION_REQUEST_BUTTON = "permissionRequestButton"
+  const val ZOOM_SLIDER = "zoomSlider"
 }
 
 /**
@@ -116,6 +121,7 @@ fun CameraScreen(
       }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 private fun CameraView(
     onImageCaptured: (Uri) -> Unit,
@@ -144,10 +150,46 @@ private fun CameraView(
   }
 
   Box(modifier = Modifier.fillMaxSize()) {
-    // Camera Preview
+    // Camera Preview with pinch-to-zoom gesture
+    var scale by remember { mutableStateOf(1f) }
+
     AndroidView(
         factory = { previewView },
-        modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.CAMERA_PREVIEW))
+        modifier =
+            Modifier.fillMaxSize().testTag(CameraScreenTestTags.CAMERA_PREVIEW).pointerInput(Unit) {
+              detectTransformGestures { _, _, zoom, _ ->
+                scale *= zoom
+                val newZoomRatio = cameraUiState.zoomRatio * zoom
+                cameraViewModel.setZoomRatio(newZoomRatio)
+              }
+            })
+
+    // Zoom Slider
+    if (cameraUiState.maxZoomRatio > cameraUiState.minZoomRatio) {
+      Column(
+          modifier =
+              Modifier.align(Alignment.TopCenter)
+                  .padding(top = 80.dp, start = 16.dp, end = 16.dp)
+                  .background(Primary.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                  .padding(horizontal = 16.dp, vertical = 8.dp),
+          horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "${String.format("%.1f", cameraUiState.zoomRatio)}x",
+                color = White,
+                style = MaterialTheme.typography.bodyMedium)
+
+            Slider(
+                value = cameraUiState.zoomRatio,
+                onValueChange = { newRatio -> cameraViewModel.setZoomRatio(newRatio) },
+                valueRange = cameraUiState.minZoomRatio..cameraUiState.maxZoomRatio,
+                modifier = Modifier.width(200.dp).testTag(CameraScreenTestTags.ZOOM_SLIDER),
+                colors =
+                    SliderDefaults.colors(
+                        thumbColor = Tertiary,
+                        activeTrackColor = Tertiary,
+                        inactiveTrackColor = White.copy(alpha = 0.3f)))
+          }
+    }
 
     // Close button (top-left)
     IconButton(

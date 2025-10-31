@@ -3,6 +3,7 @@ package com.android.ootd.ui.camera
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -25,20 +26,20 @@ import kotlinx.coroutines.withTimeout
 class CameraRepository {
 
   /**
-   * Binds the camera to the lifecycle and returns the ImageCapture instance.
+   * Binds the camera to the lifecycle and returns the Camera instance.
    *
    * @param cameraProvider The ProcessCameraProvider instance
    * @param previewView The PreviewView to display camera preview
    * @param lifecycleOwner The LifecycleOwner to bind the camera to
    * @param lensFacing The camera lens facing (front or back)
-   * @return ImageCapture instance for taking pictures
+   * @return Pair of Camera and ImageCapture instances
    */
   fun bindCamera(
       cameraProvider: ProcessCameraProvider,
       previewView: PreviewView,
       lifecycleOwner: LifecycleOwner,
       lensFacing: Int
-  ): Result<ImageCapture> {
+  ): Result<Pair<Camera, ImageCapture>> {
     return try {
       val preview =
           Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
@@ -48,9 +49,10 @@ class CameraRepository {
       val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
       cameraProvider.unbindAll()
-      cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture)
+      val camera =
+          cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture)
 
-      Result.success(imageCapture)
+      Result.success(Pair(camera, imageCapture))
     } catch (e: Exception) {
       Log.e("CameraRepository", "Camera binding failed", e)
       Result.failure(e)
