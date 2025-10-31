@@ -2,6 +2,7 @@ package com.android.ootd.model.user
 
 import android.util.Log
 import androidx.annotation.Keep
+import com.android.ootd.model.account.TakenUserException
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
@@ -142,35 +143,27 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
-  override suspend fun editUsername(userID: String, newUsername: String) {
+  override suspend fun editUser(userID: String, newUsername: String, profilePicture: String) {
     try {
-      // Validate input
-      if (userID.isBlank() || newUsername.isBlank()) {
-        throw IllegalArgumentException("User ID and username cannot be blank")
-      }
-      // Check if user exists
-      val querySnapshot =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+      val user = getUser(userID)
 
-      if (querySnapshot.documents.isEmpty()) {
-        throw NoSuchElementException("User with ID $userID not found")
-      }
+      val isNewUsername = user.username != newUsername && newUsername.isNotBlank()
 
-      val userDocument = querySnapshot.documents[0]
-      val currentUsername = userDocument.getString("username")
+      val newUname = newUsername.takeIf { isNewUsername } ?: user.username
+      val newPicture = profilePicture.takeIf { it.isNotBlank() } ?: user.profilePicture
 
-      if (currentUsername == newUsername) {
-        Log.d("UserRepositoryFirestore", "Username is already $newUsername for user $userID")
-        return
+      if (isNewUsername) {
+        val querySnapshot =
+            db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+        if (querySnapshot.documents.any { it.id == userID }) {
+          throw TakenUserException("Username '$newUsername' is already in use")
+        }
       }
 
-      if (usernameExists(newUsername)) {
-        Log.e("UserRepositoryFirestore", "Username $newUsername is already taken")
-        throw TakenUsernameException("Username already in use")
-      }
-
-      // Update the username
-      db.collection(USER_COLLECTION_PATH).document(userID).update("username", newUsername).await()
+      db.collection(USER_COLLECTION_PATH)
+          .document(userID)
+          .update(mapOf("profilePicture" to newPicture, "username" to newUname))
+          .await()
 
       Log.d(
           "UserRepositoryFirestore",
@@ -193,19 +186,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun deleteUser(userID: String) {
     try {
       // Validate input
-      if (userID.isBlank()) {
-        throw IllegalArgumentException("User ID cannot be blank")
-      }
-
-      // Check if user exists before attempting deletion
-      val querySnapshot =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
-
-      if (querySnapshot.documents.isEmpty()) {
-        throw NoSuchElementException("User with ID $userID not found")
-      }
-
-      // Delete the user document
+      getUser(userID)
       db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
 
       Log.d("UserRepositoryFirestore", "Successfully deleted user with ID: $userID")
