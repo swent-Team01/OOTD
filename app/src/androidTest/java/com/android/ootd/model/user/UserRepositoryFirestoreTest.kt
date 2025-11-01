@@ -296,25 +296,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun editUsernameThrowsExceptionWhenBlankArguments() = runTest {
-    val exception = runCatching { userRepository.editUsername("", "newUsername") }.exceptionOrNull()
-
-    assert(exception is IllegalArgumentException)
-    assert(exception?.message?.contains("cannot be blank") == true)
-
-    val blankUname = runCatching { userRepository.editUsername(user1.uid, "") }.exceptionOrNull()
-
-    assert(blankUname is IllegalArgumentException)
-    assert(blankUname?.message?.contains("cannot be blank") == true)
-  }
-
-  @Test
-  fun editUsernameThrowsExceptionWhenUserNotFound() = runTest {
+  fun editUserThrowsExceptionWhenUserNotFound() = runTest {
     val nonExistentUserId = "nonExistentUser123"
 
     val exception =
-        runCatching { userRepository.editUsername(nonExistentUserId, "newUsername") }
-            .exceptionOrNull()
+        runCatching { userRepository.editUser(nonExistentUserId, "newUsername") }.exceptionOrNull()
 
     assert(exception is NoSuchElementException)
     assert(exception?.message?.contains(nonExistentUserId) == true)
@@ -326,7 +312,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     userRepository.addUser(user2)
 
     val exception =
-        runCatching { userRepository.editUsername(user1.uid, user2.username) }.exceptionOrNull()
+        runCatching { userRepository.editUser(user1.uid, user2.username) }.exceptionOrNull()
 
     assert(exception is TakenUsernameException)
     assert(exception?.message?.contains("already in use") == true)
@@ -336,25 +322,28 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   fun editUsernameDoesNothingWhenNewUsernameIsSameAsCurrent() = runTest {
     userRepository.addUser(user1)
 
-    userRepository.editUsername(user1.uid, user1.username)
+    userRepository.editUser(user1.uid, user1.username)
 
     val retrievedUser = userRepository.getUser(user1.uid)
     assertEquals(user1.username, retrievedUser.username)
   }
 
   @Test
-  fun editUsernameAllowsMultipleUsersToUpdateUsernames() = runTest {
+  fun editUserAllowsMultipleUsersToUpdateUsers() = runTest {
     userRepository.addUser(user1)
     userRepository.addUser(user2)
 
-    userRepository.editUsername(user1.uid, "updatedUser1")
-    userRepository.editUsername(user2.uid, "updatedUser2")
+    userRepository.editUser(user1.uid, "updatedUser1", "pic1.jpg")
+    userRepository.editUser(user2.uid, "updatedUser2", "pic2.jpg")
 
     val updatedUser1 = userRepository.getUser(user1.uid)
     val updatedUser2 = userRepository.getUser(user2.uid)
 
     assertEquals("updatedUser1", updatedUser1.username)
     assertEquals("updatedUser2", updatedUser2.username)
+
+    assertEquals("pic1.jpg", updatedUser1.profilePicture)
+    assertEquals("pic2.jpg", updatedUser2.profilePicture)
   }
 
   @Test

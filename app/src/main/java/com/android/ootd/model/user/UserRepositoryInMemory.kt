@@ -58,8 +58,11 @@ class UserRepositoryInMemory : UserRepository {
     val newUname = newUsername.takeIf { it.isNotBlank() } ?: currentUser.username
     val newPicture = profilePicture.takeIf { it.isNotBlank() } ?: currentUser.profilePicture
 
-    if (users.values.any { it.username == newUsername && it.uid != userID }) {
-      throw TakenUsernameException("Username already in use")
+    // Only check for taken username if we're actually changing to a new non-blank username
+    if (newUsername.isNotBlank() && newUsername != currentUser.username) {
+      if (users.values.any { it.username == newUsername && it.uid != userID }) {
+        throw TakenUsernameException("Username already in use")
+      }
     }
 
     users[userID] = currentUser.copy(username = newUname, profilePicture = newPicture)

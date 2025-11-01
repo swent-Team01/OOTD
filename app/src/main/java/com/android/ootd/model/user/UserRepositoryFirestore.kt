@@ -2,7 +2,6 @@ package com.android.ootd.model.user
 
 import android.util.Log
 import androidx.annotation.Keep
-import com.android.ootd.model.account.TakenUserException
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
@@ -152,12 +151,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       val newUname = newUsername.takeIf { isNewUsername } ?: user.username
       val newPicture = profilePicture.takeIf { it.isNotBlank() } ?: user.profilePicture
 
-      if (isNewUsername) {
-        val querySnapshot =
-            db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
-        if (querySnapshot.documents.any { it.id == userID }) {
-          throw TakenUserException("Username '$newUsername' is already in use")
-        }
+      if (isNewUsername && usernameExists(newUname)) {
+        throw TakenUsernameException("Username $newUname already in use")
       }
 
       db.collection(USER_COLLECTION_PATH)
@@ -186,6 +181,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun deleteUser(userID: String) {
     try {
       // Validate input
+      if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
       getUser(userID)
       db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
 
