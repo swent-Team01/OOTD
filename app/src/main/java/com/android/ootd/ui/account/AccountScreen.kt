@@ -155,7 +155,7 @@ private fun AccountScreenContent(
           contract = ActivityResultContracts.PickVisualMedia(),
           onResult = { uri ->
             uri?.let {
-              accountViewModel.uploadProfilePicture(it.toString())
+              accountViewModel.editUser(profilePicture = it.toString())
               Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
             }
           })
