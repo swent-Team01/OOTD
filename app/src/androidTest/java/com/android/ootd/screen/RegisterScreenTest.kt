@@ -20,6 +20,8 @@ import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -261,6 +263,7 @@ class RegisterScreenTest {
     composeTestRule.runOnUiThread {
       viewModel.setLocationSuggestions(listOf(Location(47.0, 8.0, "Zürich, Switzerland")))
     }
+    composeTestRule.waitForIdle()
 
     // Type into the location input to open the dropdown
     val input = composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
@@ -272,5 +275,81 @@ class RegisterScreenTest {
     composeTestRule
         .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
         .assertCountEquals(1)
+  }
+
+  // ========== Location Selection Tests ==========
+
+  @Test
+  fun locationInput_showsMultipleSuggestions_whenAvailable() {
+    // Arrange: set multiple suggestions
+    val suggestions =
+        listOf(
+            Location(47.3769, 8.5417, "Zürich, Switzerland"),
+            Location(46.2044, 6.1432, "Lausanne, Switzerland"),
+            Location(46.9481, 7.4474, "Bern, Switzerland"))
+
+    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(suggestions) }
+
+    // Act: type to trigger dropdown
+    composeTestRule.enterLocation("Switz")
+
+    // Assert: should show exactly 3 suggestions (max displayed)
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(3)
+  }
+
+  @Test
+  fun locationSuggestion_selectsLocation_whenClicked() {
+    // Arrange: set suggestions
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(listOf(testLocation)) }
+
+    // Act: type and click suggestion
+    composeTestRule.enterLocation("Zur")
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be selected and query updated
+    composeTestRule.runOnUiThread {
+      assertEquals(testLocation, viewModel.uiState.value.selectedLocation)
+      assertEquals(testLocation.name, viewModel.uiState.value.locationQuery)
+    }
+  }
+
+  @Test
+  fun locationDropdown_closesAfterSelection() {
+    // Arrange
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(listOf(testLocation)) }
+
+    // Act: type, click suggestion
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be closed (suggestions cleared)
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationInput_clearsSelectedLocation_whenQueryChanged() {
+    // Arrange: set a location first
+    val initialLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocation(initialLocation) }
+    composeTestRule.waitForIdle()
+
+    // Act: type new text
+    composeTestRule.enterLocation("Lausanne")
+
+    // Assert: selected location should be cleared
+    composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.selectedLocation) }
   }
 }
