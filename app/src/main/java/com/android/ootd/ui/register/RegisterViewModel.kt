@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.account.TakenUserException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
@@ -175,7 +177,9 @@ class RegisterViewModel(
       try {
         val user = User(uid = auth.currentUser!!.uid, username = username)
         val email = auth.currentUser!!.email.orEmpty()
-        accountRepository.createAccount(user, email, uiState.value.dateOfBirth)
+        val location = uiState.value.selectedLocation ?: emptyLocation
+        if (location == emptyLocation) throw MissingLocationException()
+        accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
         userRepository.createUser(
             username,
             auth.currentUser!!.uid,
@@ -184,6 +188,11 @@ class RegisterViewModel(
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {
+          is MissingLocationException -> {
+            _uiState.value =
+                _uiState.value.copy(
+                    errorMsg = "Please select a location before registering", registered = false)
+          }
           is TakenUsernameException -> {
             Log.e("RegisterViewModel", "Username taken", e)
             _uiState.value =
