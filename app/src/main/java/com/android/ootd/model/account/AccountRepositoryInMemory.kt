@@ -1,7 +1,7 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
-import kotlin.text.set
 
 class AccountRepositoryInMemory : AccountRepository {
   var currentUser = "user1"
@@ -52,7 +52,12 @@ class AccountRepositoryInMemory : AccountRepository {
                   profilePicture = "u0.jpg",
                   friendUids = listOf()))
 
-  override suspend fun createAccount(user: User, userEmail: String, dateOfBirth: String) {
+  override suspend fun createAccount(
+      user: User,
+      userEmail: String,
+      dateOfBirth: String,
+      location: Location
+  ) {
     // Check if username already exists
     if (accounts.values.any { it.username == user.username && it.username.isNotBlank() }) {
       throw TakenUserException("Username already in use")
@@ -65,7 +70,8 @@ class AccountRepositoryInMemory : AccountRepository {
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
-            profilePicture = user.profilePicture)
+            profilePicture = user.profilePicture,
+            location = location)
     addAccount(newAccount)
   }
 
@@ -142,7 +148,7 @@ class AccountRepositoryInMemory : AccountRepository {
       userID: String,
       username: String,
       birthDay: String,
-      picture: String
+      picture: String,
   ) {
     val acc = getAccount(userID)
     accounts[userID] =

@@ -1,20 +1,28 @@
 package com.android.ootd.screen
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
+import io.mockk.coEvery
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -31,11 +39,13 @@ class RegisterScreenTest {
 
   private lateinit var viewModel: RegisterViewModel
   private lateinit var repository: UserRepository
+  private lateinit var locationRepository: LocationRepository
 
   @Before
   fun setUp() {
     repository = mockk(relaxed = true)
-    viewModel = RegisterViewModel(repository)
+    locationRepository = mockk(relaxed = true)
+    viewModel = RegisterViewModel(repository, locationRepository = locationRepository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
 
@@ -50,6 +60,8 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()
@@ -157,6 +169,22 @@ class RegisterScreenTest {
   }
 
   @Test
+  fun showsErrorMessage_whenLocationBlank_afterLeavingField() {
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+        .performClick() // Leave field
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertIsDisplayed()
+        .assertTextContains("Please select a valid location")
+  }
+
+  @Test
   fun registerButton_disabled_whenUsernameError() {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
@@ -180,17 +208,23 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun registerButton_enabled_whenBothFieldsValid() {
+  fun registerButton_enabled_whenAllFieldsValid() {
     composeTestRule.enterUsername("validUser")
     composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
         .performClick()
-
     composeTestRule.waitForIdle()
     composeTestRule.enterDate("10102020")
     composeTestRule.waitForIdle()
+
+    // Set a valid location
+    composeTestRule.runOnUiThread {
+      viewModel.setLocation(Location(47.0, 8.0, "Zürich, Switzerland"))
+    }
+    composeTestRule.waitForIdle()
+
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
   }
 
@@ -224,5 +258,87 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
+  }
+
+  // ========== Location Selection Tests ==========
+
+  @Test
+  fun locationInput_showsMultipleSuggestions_whenAvailable() {
+    // Arrange: mock repository to return multiple suggestions
+    val suggestions =
+        listOf(
+            Location(47.3769, 8.5417, "Zürich, Switzerland"),
+            Location(46.2044, 6.1432, "Lausanne, Switzerland"),
+            Location(46.9481, 7.4474, "Bern, Switzerland"))
+
+    coEvery { locationRepository.search(any()) } returns suggestions
+
+    // Act: type to trigger dropdown
+    composeTestRule.enterLocation("Switz")
+    composeTestRule.waitForIdle()
+
+    // Assert: should show exactly 3 suggestions
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(3)
+  }
+
+  @Test
+  fun locationSuggestion_selectsLocation_whenClicked() {
+    // Arrange: mock repository to return suggestions
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    coEvery { locationRepository.search(any()) } returns listOf(testLocation)
+
+    // Act: type and click suggestion
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be selected and query updated
+    composeTestRule.runOnUiThread {
+      assertEquals(testLocation, viewModel.uiState.value.selectedLocation)
+      assertEquals(testLocation.name, viewModel.uiState.value.locationQuery)
+    }
+  }
+
+  @Test
+  fun locationDropdown_closesAfterSelection() {
+    // Arrange: mock repository to return suggestions
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    coEvery { locationRepository.search(any()) } returns listOf(testLocation)
+
+    // Act: type, click suggestion
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be closed (suggestions cleared)
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationInput_clearsSelectedLocation_whenQueryChanged() {
+    // Arrange: set a location first
+    val initialLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocation(initialLocation) }
+    composeTestRule.waitForIdle()
+
+    // Mock repository for when user types new text
+    coEvery { locationRepository.search(any()) } returns emptyList()
+
+    // Act: type new text
+    composeTestRule.enterLocation("Lausanne")
+    composeTestRule.waitForIdle()
+
+    // Assert: selected location should be cleared
+    composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.selectedLocation) }
   }
 }

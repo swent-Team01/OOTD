@@ -1,12 +1,18 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
 
 /** Repository interface for managing account-related operations. */
 interface AccountRepository {
 
   /** Create an account for the given user. */
-  suspend fun createAccount(user: User, userEmail: String = "", dateOfBirth: String)
+  suspend fun createAccount(
+      user: User,
+      userEmail: String = "",
+      dateOfBirth: String,
+      location: Location
+  )
 
   /**
    * Add a new account.
@@ -69,6 +75,7 @@ interface AccountRepository {
    * @param userID Said users ID
    * @param username Users new username, blank by default
    * @param birthDay Users updated date of birth, blank by default
+   * @param picture Users profile picture URL, blank by default
    * @throws TakenUserException If the username already exists
    * @throws IllegalStateException The userID does not match the users ID
    */

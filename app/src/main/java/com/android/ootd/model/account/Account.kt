@@ -1,5 +1,8 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
+
 /**
  * Account model representing a user's account data.
  *
@@ -11,6 +14,7 @@ package com.android.ootd.model.account
  * @property profilePicture URL to the profile picture (Firebase Storage URL or empty string)
  * @property friendUids list of friend user IDs
  * @property isPrivate whether the account is private or not
+ * @property location user's location
  */
 data class Account(
     val uid: String = "",
@@ -20,5 +24,9 @@ data class Account(
     val googleAccountEmail: String = "",
     val profilePicture: String = "",
     val friendUids: List<String> = emptyList(),
-    val isPrivate: Boolean = false
+    val isPrivate: Boolean = false,
+    val location: Location = emptyLocation
 )
+
+/** Exception thrown when a required location is missing. */
+class MissingLocationException : Exception("Location must be selected")
