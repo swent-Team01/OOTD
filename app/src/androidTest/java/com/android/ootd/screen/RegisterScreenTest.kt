@@ -1,16 +1,21 @@
 package com.android.ootd.screen
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
@@ -50,6 +55,8 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()
@@ -157,6 +164,22 @@ class RegisterScreenTest {
   }
 
   @Test
+  fun showsErrorMessage_whenLocationBlank_afterLeavingField() {
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+        .performClick() // Leave field
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertIsDisplayed()
+        .assertTextContains("Please select a valid location")
+  }
+
+  @Test
   fun registerButton_disabled_whenUsernameError() {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
@@ -224,5 +247,24 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
+  }
+
+  @Test
+  fun locationSuggestions_show_whenTyping() {
+    // Fast arrangement: set suggestions directly on the ViewModel
+    composeTestRule.runOnUiThread {
+      viewModel.setLocationSuggestions(listOf(Location(47.0, 8.0, "Zürich, Switzerland")))
+    }
+
+    // Type into the location input to open the dropdown
+    val input = composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
+    input.performClick()
+    input.performTextInput("Z")
+    composeTestRule.waitForIdle()
+
+    // Expect at least one suggestion node
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(1)
   }
 }
