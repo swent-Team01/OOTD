@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,6 +17,8 @@ class AccountRepositoryInMemoryTest {
   private val testDateOfBirth = "2000-01-01"
   private val testEmail = "test@example.com"
   private val testProfilePicture = "https://example.com/profile.jpg"
+  private val EPFL_LOCATION =
+      Location(46.5191, 6.5668, "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
 
   @Before
   fun setUp() {
@@ -220,7 +223,8 @@ class AccountRepositoryInMemoryTest {
     val user =
         User(uid = "user6", username = "george_washington", profilePicture = testProfilePicture)
 
-    repository.createAccount(user, testEmail, dateOfBirth = testDateOfBirth)
+    repository.createAccount(
+        user, testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     val account = repository.getAccount("user6")
 
     assertEquals("user6", account.uid)
@@ -239,9 +243,13 @@ class AccountRepositoryInMemoryTest {
     val exception =
         assertThrows(TakenUserException::class.java) {
           runTest {
-            repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth)
             repository.createAccount(
-                user2, testEmail, dateOfBirth = testDateOfBirth) // Should throw
+                user1, testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+            repository.createAccount(
+                user2,
+                testEmail,
+                dateOfBirth = testDateOfBirth,
+                location = EPFL_LOCATION) // Should throw
           }
         }
 
@@ -253,9 +261,13 @@ class AccountRepositoryInMemoryTest {
     val user1 = User(uid = "tempUser1", username = "", profilePicture = "")
     val user2 = User(uid = "tempUser2", username = "", profilePicture = "")
 
-    repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth)
     repository.createAccount(
-        user2, "another@example.com", dateOfBirth = testDateOfBirth) // Should not throw
+        user1, testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+    repository.createAccount(
+        user2,
+        "another@example.com",
+        dateOfBirth = testDateOfBirth,
+        location = EPFL_LOCATION) // Should not throw
 
     val account1 = repository.getAccount("tempUser1")
     val account2 = repository.getAccount("tempUser2")
@@ -389,7 +401,8 @@ class AccountRepositoryInMemoryTest {
     val user = User(uid = "user8", username = "empty_email_user", profilePicture = "")
     val emptyEmail = ""
 
-    repository.createAccount(user, emptyEmail, dateOfBirth = testDateOfBirth)
+    repository.createAccount(
+        user, emptyEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     val account = repository.getAccount("user8")
 
     assertEquals(emptyEmail, account.googleAccountEmail)
@@ -402,8 +415,13 @@ class AccountRepositoryInMemoryTest {
     val user2 = User(uid = "user10", username = "second_user", profilePicture = "")
     val sharedEmail = "shared@example.com"
 
-    repository.createAccount(user1, sharedEmail, dateOfBirth = testDateOfBirth)
-    repository.createAccount(user2, sharedEmail, dateOfBirth = testDateOfBirth) // Should not throw
+    repository.createAccount(
+        user1, sharedEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+    repository.createAccount(
+        user2,
+        sharedEmail,
+        dateOfBirth = testDateOfBirth,
+        location = EPFL_LOCATION) // Should not throw
 
     val account1 = repository.getAccount("user9")
     val account2 = repository.getAccount("user10")
