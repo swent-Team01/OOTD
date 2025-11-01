@@ -23,6 +23,13 @@ interface ItemsRepository {
   suspend fun getItemById(uuid: String): Item
 
   /**
+   * Gets all the items associated with a specific post.
+   *
+   * @param postUuid The unique identifier of the post.
+   */
+  suspend fun getAssociatedItems(postUuid: String): List<Item>
+
+  /**
    * Adds a new item to the repository.
    *
    * @param item The item to add.
@@ -45,4 +52,11 @@ interface ItemsRepository {
    * @throws Exception if the Clothing item is not found.
    */
   suspend fun deleteItem(uuid: String)
+
+  /**
+   * Deletes all items associated with a specific post.
+   *
+   * @param postUuid The unique identifier of the post.
+   */
+  suspend fun deletePostItems(postUuid: String)
 }

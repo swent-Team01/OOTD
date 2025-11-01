@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
@@ -12,7 +13,7 @@ import kotlinx.coroutines.tasks.await
 const val POSTS_COLLECTION = "posts"
 
 /** Firestore collection name for outfit images * */
-const val POSTS_IMAGES_FOLDER = "images"
+const val POSTS_IMAGES_FOLDER = "images/posts"
 
 /**
  * Repository implementation that handles all OutfitPost operations involving both Firestore and
@@ -59,7 +60,14 @@ class OutfitPostRepositoryFirestore(
             "timestamp" to post.timestamp,
         )
 
-    db.collection(POSTS_COLLECTION).document(post.postUID).set(data).await()
+    try {
+
+      val documentReference = db.collection(POSTS_COLLECTION).document(post.postUID)
+      documentReference.set(data, SetOptions.merge()).await()
+    } catch (e: Exception) {
+      // Rethrow allowing caller to handle the error
+      throw e
+    }
   }
 
   override suspend fun getPostById(postId: String): OutfitPost? {
@@ -76,7 +84,7 @@ class OutfitPostRepositoryFirestore(
     try {
       storage.reference.child("$POSTS_IMAGES_FOLDER/$postId.jpg").delete().await()
     } catch (e: Exception) {
-      Log.w("OutfitPostRepository", "No image found for post $postId — skipping delete.")
+      throw e
     }
   }
 
@@ -92,8 +100,7 @@ class OutfitPostRepositoryFirestore(
         try {
           uploadOutfitPhoto(localPath, postId)
         } catch (e: Exception) {
-          Log.w("OutfitPostRepository", "Upload failed in test environment: ${e.message}")
-          "https://fake.storage/$postId.jpg"
+          throw e
         }
 
     val post =

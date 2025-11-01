@@ -10,6 +10,8 @@ import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
 const val OWNER_ATTRIBUTE_NAME = "ownerId"
+const val POST_ATTRIBUTE_NAME = "postUuid"
+const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged in."
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
 
@@ -18,11 +20,22 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun getAllItems(): List<Item> {
-    val ownerId =
-        Firebase.auth.currentUser?.uid
-            ?: throw Exception("ItemsRepositoryFirestore: User not logged in.")
+    val ownerId = Firebase.auth.currentUser?.uid ?: throw Exception(NOT_LOGGED_IN_EXCEPTION)
     val snapshot =
         db.collection(ITEMS_COLLECTION).whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId).get().await()
+    return snapshot.mapNotNull { mapToItem(it) }
+  }
+
+  override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+    val ownerId = Firebase.auth.currentUser?.uid ?: throw Exception(NOT_LOGGED_IN_EXCEPTION)
+
+    val snapshot =
+        db.collection(ITEMS_COLLECTION)
+            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
+            .get()
+            .await()
+
     return snapshot.mapNotNull { mapToItem(it) }
   }
 
@@ -44,11 +57,27 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun deleteItem(uuid: String) {
     db.collection(ITEMS_COLLECTION).document(uuid).delete().await()
   }
+
+  override suspend fun deletePostItems(postUuid: String) {
+    val ownerId = Firebase.auth.currentUser?.uid ?: throw Exception(NOT_LOGGED_IN_EXCEPTION)
+
+    val snapshot =
+        db.collection(ITEMS_COLLECTION)
+            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
+            .get()
+            .await()
+
+    for (doc in snapshot.documents) {
+      doc.reference.delete().await()
+    }
+  }
 }
 
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
     val uuid = doc.getString("itemUuid") ?: return null
+    val postUuid = doc.getString(POST_ATTRIBUTE_NAME) ?: return null
     val imageMap = doc["image"] as? Map<*, *> ?: return null
     val imageUri =
         ImageData(
@@ -60,7 +89,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
     val brand = doc.getString("brand") ?: return null
     val price = doc.getDouble("price") ?: return null
     val link = doc.getString("link") ?: return null
-    val ownerId = doc.getString("ownerId") ?: return null
+    val ownerId = doc.getString(OWNER_ATTRIBUTE_NAME) ?: return null
     val materialList = doc.get("material") as? List<*>
     val material =
         materialList?.mapNotNull { item ->
@@ -73,6 +102,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
 
     Item(
         itemUuid = uuid,
+        postUuid = postUuid,
         image = imageUri,
         category = category,
         type = type,
