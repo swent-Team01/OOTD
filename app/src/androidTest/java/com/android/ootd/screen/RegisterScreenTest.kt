@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
@@ -38,11 +39,13 @@ class RegisterScreenTest {
 
   private lateinit var viewModel: RegisterViewModel
   private lateinit var repository: UserRepository
+  private lateinit var locationRepository: LocationRepository
 
   @Before
   fun setUp() {
     repository = mockk(relaxed = true)
-    viewModel = RegisterViewModel(repository)
+    locationRepository = mockk(relaxed = true)
+    viewModel = RegisterViewModel(repository, locationRepository = locationRepository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
 
