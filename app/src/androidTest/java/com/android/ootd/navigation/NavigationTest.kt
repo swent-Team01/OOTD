@@ -48,6 +48,7 @@ class NavigationTest {
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */}
         composable(Screen.Account.route) { /* minimal screen */}
+        composable(Screen.Map.route) { /* minimal screen */}
         composable(Screen.FitCheck.route) { /* minimal screen */}
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
         composable(Screen.AddItemScreen.route) { /* minimal screen */}
@@ -987,6 +988,46 @@ class NavigationTest {
       assertEquals(Screen.FitCheck.route, navigation.currentRoute())
       navigation.goBack()
       assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  // Map Screen Navigation Tests
+
+  @Test
+  fun navigationActions_navigateToMap_shouldUpdateRoute() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_mapToFeedFlow_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_mapScreen_navigateToAuthentication_shouldClearStack() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Sign out navigates to Authentication (top-level)
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+
+      // Going back should return to Splash (start destination)
+      navigation.goBack()
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
     }
   }
 }
