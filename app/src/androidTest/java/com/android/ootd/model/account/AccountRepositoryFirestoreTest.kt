@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
 import com.android.ootd.utils.FirebaseEmulator
@@ -97,7 +98,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun createAccount_successfullyCreatesNewAccount() = runBlocking {
     val user = User(uid = currentUser.uid, username = "charlie_brown", profilePicture = ":3")
 
-    accountRepository.createAccount(user, userEmail = testEmail, dateOfBirth = testDateOfBirth)
+    accountRepository.createAccount(
+        user, userEmail = testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     userRepository.addUser(
         User(uid = user.uid, username = user.username, profilePicture = "Hello.jpg"))
 
@@ -120,7 +122,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     userRepository.addUser(user2)
     // But createAccount should fail because username is already in use
     val exception =
-        runCatching { accountRepository.createAccount(user2, dateOfBirth = testDateOfBirth) }
+        runCatching {
+              accountRepository.createAccount(
+                  user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+            }
             .exceptionOrNull()
 
     assertTrue(exception is TakenUserException)
@@ -471,5 +476,18 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
     assertTrue(exception is NoSuchElementException)
     assertTrue(exception?.message?.contains("authenticated user") == true)
+  }
+
+  @Test
+  fun createAccount_persistsLocationToFirestore() = runBlocking {
+    val location = com.android.ootd.model.map.Location(46.5197, 6.6323, "Lausanne")
+    val user = User(uid = currentUser.uid, username = "test_location_user", profilePicture = "")
+
+    accountRepository.createAccount(user, testEmail, testDateOfBirth, location)
+
+    val retrieved = accountRepository.getAccount(currentUser.uid)
+    assertEquals(location.latitude, retrieved.location.latitude, 0.0001)
+    assertEquals(location.longitude, retrieved.location.longitude, 0.0001)
+    assertEquals(location.name, retrieved.location.name)
   }
 }
