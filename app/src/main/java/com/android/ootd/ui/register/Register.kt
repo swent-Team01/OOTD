@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
+import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
@@ -86,7 +87,7 @@ object RegisterScreenTestTags {
   const val REGISTER_LOADING = "registerLoading"
 }
 
-private val SPACER = 38.dp
+private val SPACER = 16.dp
 
 /**
  * Register screen composable that allows users to create a new account.
@@ -116,11 +117,18 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   var showDatePicker by remember { mutableStateOf(false) }
   var textColorDate by remember { mutableStateOf(Tertiary) }
   var focusDate by remember { mutableStateOf(false) }
+
+  var touchedLocation by remember { mutableStateOf(false) }
+  var leftLocation by remember { mutableStateOf(false) }
+  var textColorLocation by remember { mutableStateOf(Tertiary) }
+  var focusLocation by remember { mutableStateOf(false) }
+
   val disabledLabelColor = if (registerUiState.isLoading) Secondary else Tertiary
 
   val usernameError = leftUsername && registerUiState.username.isBlank()
   val dateError = leftDate && registerUiState.dateOfBirth.isBlank()
-  val anyError = usernameError || dateError
+  val locationError = leftLocation && registerUiState.selectedLocation == null
+  val anyError = usernameError || dateError || locationError
 
   LaunchedEffect(errorMsg) {
     if (errorMsg != null) {
@@ -152,6 +160,15 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           else -> Tertiary
         }
   }
+
+  LaunchedEffect(focusLocation) {
+    textColorLocation =
+        when {
+          locationError && !focusLocation -> Color.Red
+          touchedLocation -> Primary
+          else -> Tertiary
+        }
+  }
   LaunchedEffect(registerUiState.isLoading) {
     if (registerUiState.isLoading) showDatePicker = false
   }
@@ -176,7 +193,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               text = "Welcome\nTime to drop a fit.",
               fontFamily = Bodoni,
               color = Primary,
-              style = Typography.displayMedium,
+              fontSize = 20.sp,
               textAlign = TextAlign.Center,
               modifier =
                   Modifier.fillMaxWidth()
@@ -276,12 +293,44 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                 modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
           }
 
+          // LocationSelection wired to RegisterViewModel's location fields
+          LocationSelectionSection(
+              locationQuery = registerUiState.locationQuery,
+              selectedLocation = registerUiState.selectedLocation,
+              suggestions = registerUiState.locationSuggestions,
+              isLoadingLocation = registerUiState.isLoadingLocation,
+              onLocationQueryChange = { query -> viewModel.setLocationQuery(query) },
+              onLocationSelect = { location -> viewModel.setLocation(location) },
+              onGPSClick = { /* keep GPS behavior handled elsewhere or add viewModel method */},
+              onClearSuggestions = { viewModel.clearLocationSuggestions() },
+              textColor = textColorLocation,
+              isError = locationError && !focusLocation,
+              onFocusChanged = { isFocused ->
+                focusLocation = isFocused
+                if (focusLocation) {
+                  touchedLocation = true
+                } else {
+                  if (touchedLocation) leftLocation = true
+                }
+              },
+              modifier =
+                  Modifier.padding(vertical = 8.dp)
+                      .testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
+
+          if (locationError && !focusLocation) {
+            Text(
+                text = "Please select a valid location",
+                color = Color.Red,
+                fontFamily = Bodoni,
+                modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
+          }
+
           Spacer(modifier = Modifier.height(SPACER))
 
           Text(
               text = "Outfit Of The Day,\n Inspire Drip",
               fontFamily = Bodoni,
-              fontSize = 24.sp,
+              fontSize = 18.sp,
               color = Primary,
               fontWeight = FontWeight(400),
               textAlign = TextAlign.Center,
