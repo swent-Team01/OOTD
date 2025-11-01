@@ -3,7 +3,6 @@ package com.android.ootd.ui.register
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.ootd.HttpClientProvider
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.TakenUserException
@@ -11,7 +10,7 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
-import com.android.ootd.model.map.NominatimLocationRepository
+import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
@@ -70,8 +69,7 @@ class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val accountService: AccountService = AccountServiceFirebase(),
-    private val locationRepository: LocationRepository =
-        NominatimLocationRepository(HttpClientProvider.client),
+    private val locationRepository: LocationRepository = LocationRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
