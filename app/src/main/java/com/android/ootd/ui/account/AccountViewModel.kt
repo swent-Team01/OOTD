@@ -186,7 +186,9 @@ class AccountViewModel(
   /**
    * Update the username for the current account.
    *
-   * @param newUsername the new username to set
+   * @param newUsername the new username to set, blank by default
+   * @param newDate the new date to set, blank by default
+   * @param profilePicture the new profile picture to set, blank by default
    */
   fun editUser(newUsername: String = "", newDate: String = "", profilePicture: String = "") {
     viewModelScope.launch {
@@ -194,45 +196,21 @@ class AccountViewModel(
 
       try {
         val currentUserId = accountService.currentUserId
+        val imageUrl = uploadImageToStorage(profilePicture, currentUserId)
 
-        accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
-        if (newUsername.isNotBlank()) userRepository.editUsername(currentUserId, newUsername)
+        accountRepository.editAccount(currentUserId, newUsername, newDate, imageUrl)
+        userRepository.editUser(currentUserId, newUsername, imageUrl)
         // Update UI state with new values
         val updatedState = _uiState.value.copy(isLoading = false, errorMsg = null)
         _uiState.update {
           updatedState.copy(
               username = newUsername.ifBlank { it.username },
+              dateOfBirth = newDate.ifBlank { it.dateOfBirth },
               profilePicture = profilePicture.ifBlank { it.profilePicture })
         }
       } catch (e: Exception) {
         _uiState.update {
           it.copy(errorMsg = e.localizedMessage ?: "Failed to update account", isLoading = false)
-        }
-      }
-    }
-  }
-
-  /**
-   * Upload a profile picture to Firebase Storage and update the account.
-   *
-   * @param localImagePath the local path/URI of the image to upload
-   */
-  fun uploadProfilePicture(localImagePath: String) {
-    viewModelScope.launch {
-      _uiState.update { it.copy(isLoading = true) }
-
-      try {
-        val currentUserId = accountService.currentUserId
-        val imageUrl = uploadImageToStorage(localImagePath, currentUserId)
-        accountRepository.editAccount(currentUserId, "", "", imageUrl)
-
-        _uiState.update { it.copy(profilePicture = imageUrl, isLoading = false, errorMsg = null) }
-      } catch (e: Exception) {
-        Log.e("AccountViewModel", "Error uploading profile picture: ${e.message}", e)
-        _uiState.update {
-          it.copy(
-              errorMsg = e.localizedMessage ?: "Failed to upload profile picture",
-              isLoading = false)
         }
       }
     }
@@ -247,6 +225,7 @@ class AccountViewModel(
    * @return the download URL of the uploaded image
    */
   private suspend fun uploadImageToStorage(localPath: String, userId: String): String {
+    if (localPath.isBlank()) return localPath
     return try {
       val ref = storage.reference.child("profile_pictures/$userId.jpg")
       val fileUri = localPath.toUri()

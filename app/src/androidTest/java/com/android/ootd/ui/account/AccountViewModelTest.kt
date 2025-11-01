@@ -68,7 +68,7 @@ class AccountViewModelTest {
         Account(uid = "test-uid", username = "testuser", profilePicture = "")
 
     coEvery { accountRepository.editAccount(any(), any(), any(), any()) } just Runs
-    coEvery { userRepository.editUsername(any(), any()) } just Runs
+    coEvery { userRepository.editUser(any(), any(), any()) } just Runs
     coEvery { credentialManager.clearCredentialState(any()) } just Runs
   }
 
@@ -192,7 +192,7 @@ class AccountViewModelTest {
     advanceUntilIdle()
 
     coVerify { accountRepository.editAccount("test-uid", newUsername, newDate, newPicture) }
-    coVerify { userRepository.editUsername("test-uid", newUsername) }
+    coVerify { userRepository.editUser("test-uid", newUsername, newPicture) }
     assertEquals(newUsername, viewModel.uiState.value.username)
     assertEquals(newPicture, viewModel.uiState.value.profilePicture)
     assertFalse(viewModel.uiState.value.isLoading)
@@ -200,23 +200,11 @@ class AccountViewModelTest {
   }
 
   @Test
-  fun editUser_does_not_call_userRepository_when_username_is_blank() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
-
-    viewModel.editUser(newUsername = "", newDate = "01/01/2000")
-    advanceUntilIdle()
-
-    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "") }
-    coVerify(exactly = 0) { userRepository.editUsername(any(), any()) }
-  }
-
-  @Test
   fun editUser_sets_error_message_when_accountOrUserRepository_fails() = runTest {
     coEvery { accountRepository.editAccount(any(), any(), any(), any()) } throws
         Exception("Failed to update account")
-    coEvery { userRepository.editUsername(any(), any()) } throws Exception("Username already taken")
+    coEvery { userRepository.editUser(any(), any(), any()) } throws
+        Exception("Username already taken")
 
     viewModel = AccountViewModel(accountService, accountRepository, userRepository)
     userFlow.value = mockFirebaseUser
