@@ -85,7 +85,8 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.Account.route)
+              Screen.Account.route,
+              Screen.Map.route)
 
   Scaffold(
       bottomBar = {
@@ -140,6 +141,11 @@ fun OOTDApp(
                   AccountScreen(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
+                }
+                composable(Screen.Map.route) {
+                  // Placeholder for Map Screen
+                  // Todo
+                  Text(text = "Map Screen - To be implemented")
                 }
 
                 composable(Screen.InventoryScreen.route) { InventoryScreen() }

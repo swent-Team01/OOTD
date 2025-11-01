@@ -40,8 +40,9 @@ sealed class Screen(
 
   object FitCheck : Screen(route = "fitCheck", name = "FitCheck", isTopLevelDestination = false)
 
-  // TODO: add routes for Search Screen and Profile Screen
+  object Map : Screen(route = "map", name = "Map", isTopLevelDestination = false)
 
+  // TODO: add routes for Search Screen and Profile Screen
   object AddItemScreen :
       Screen(route = "addItem", name = "Add Item", isTopLevelDestination = false)
 
