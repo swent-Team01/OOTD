@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -115,107 +118,123 @@ fun PreviewItemScreen(
     }
   }
 
-  Scaffold(
-      topBar = {
-        CenterAlignedTopAppBar(
-            title = {
-              Text(
-                  text = "OOTD",
-                  style =
-                      MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
-                  modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
-              )
-            },
-            navigationIcon = {
-              IconButton(
-                  onClick = { onGoBack(uiState.postUuid) },
-                  modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "go back",
-                        tint = MaterialTheme.colorScheme.tertiary)
-                  }
-            },
-            colors =
-                TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = Primary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-            scrollBehavior = scrollBehavior,
-        )
-      },
-      bottomBar = {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically) {
-              if (itemsList.isNotEmpty()) {
+  Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+          CenterAlignedTopAppBar(
+              title = {
+                Text(
+                    text = "OOTD",
+                    style =
+                        MaterialTheme.typography.displayLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
+                )
+              },
+              navigationIcon = {
+                IconButton(
+                    onClick = { onGoBack(uiState.postUuid) },
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
+                      Icon(
+                          Icons.AutoMirrored.Outlined.ArrowBack,
+                          contentDescription = "go back",
+                          tint = MaterialTheme.colorScheme.tertiary)
+                    }
+              },
+              colors =
+                  TopAppBarDefaults.centerAlignedTopAppBarColors(
+                      containerColor = MaterialTheme.colorScheme.background,
+                      scrolledContainerColor = MaterialTheme.colorScheme.background,
+                      titleContentColor = Primary,
+                      navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+              scrollBehavior = scrollBehavior,
+          )
+        },
+        bottomBar = {
+          Row(
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+              horizontalArrangement = Arrangement.SpaceEvenly,
+              verticalAlignment = Alignment.CenterVertically) {
+                if (itemsList.isNotEmpty()) {
+                  Button(
+                      onClick = { outfitPreviewViewModel.publishPost() },
+                      modifier =
+                          Modifier.height(47.dp)
+                              .width(140.dp)
+                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                        Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Post", color = White)
+                      }
+                }
+
                 Button(
-                    onClick = { outfitPreviewViewModel.publishPost() },
+                    onClick = { onAddItem(uiState.postUuid) },
                     modifier =
                         Modifier.height(47.dp)
                             .width(140.dp)
-                            .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                            .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                      Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                      Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
                       Spacer(Modifier.width(8.dp))
-                      Text("Post", color = White)
+                      Text("Add Item", color = White)
                     }
               }
-
-              Button(
-                  onClick = {
-                    onAddItem(uiState.postUuid)
-                  }, // pass the post id to the addItem screen
-                  modifier =
-                      Modifier.height(47.dp)
-                          .width(140.dp)
-                          .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Item", color = White)
+        }) { innerPadding ->
+          if (itemsList.isNotEmpty()) {
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .padding(16.dp)
+                        .padding(innerPadding)
+                        .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
+                  items(itemsList.size) { index ->
+                    OutfitItem(
+                        item = itemsList[index],
+                        onClick = { onEditItem(itemsList[index].itemUuid) })
                   }
-            }
-      }) { innerPadding ->
-        if (itemsList.isNotEmpty()) {
-          LazyColumn(
-              contentPadding = PaddingValues(bottom = 24.dp),
-              verticalArrangement = Arrangement.spacedBy(12.dp),
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .nestedScroll(scrollBehavior.nestedScrollConnection)
-                      .padding(16.dp)
-                      .padding(innerPadding)
-                      .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
-                items(itemsList.size) { index ->
-                  OutfitItem(
-                      item = itemsList[index], onClick = { onEditItem(itemsList[index].itemUuid) })
                 }
-              }
-        } else {
-
-          Column(
-              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
-              horizontalAlignment = Alignment.CenterHorizontally,
-              verticalArrangement = Arrangement.Center) {
-                Text(
-                    modifier =
-                        Modifier.widthIn(220.dp)
-                            .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
-                    text = "What are you wearing today ?",
-                    style =
-                        MaterialTheme.typography.titleLarge.copy(
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-              }
+          } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center) {
+                  Text(
+                      modifier =
+                          Modifier.widthIn(220.dp)
+                              .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
+                      text = "What are you wearing today ?",
+                      style =
+                          MaterialTheme.typography.titleLarge.copy(
+                              fontSize = 20.sp,
+                              fontWeight = FontWeight.Medium,
+                              color = MaterialTheme.colorScheme.onSurfaceVariant),
+                      textAlign = TextAlign.Center,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+          }
         }
-      }
+
+    if (uiState.isLoading) {
+      Box(
+          modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+          contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              CircularProgressIndicator(color = Primary)
+              Spacer(modifier = Modifier.height(12.dp))
+              Text(
+                  text = "Publishing your outfit...",
+                  color = White,
+                  style = MaterialTheme.typography.bodyLarge)
+            }
+          }
+    }
+  }
 }
 
 @SuppressLint("DefaultLocale")
