@@ -49,6 +49,7 @@ class RegisterViewModelTest {
     userRepository = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
     accountService = mockk(relaxed = true)
+    locationRepository = mockk(relaxed = true)
     auth = mockk(relaxed = true)
     firebaseUser = mockk(relaxed = true)
 
@@ -534,5 +535,50 @@ class RegisterViewModelTest {
     coVerify(exactly = 1) {
       accountRepository.createAccount(match { it.username == username }, customEmail, "")
     }
+  }
+
+  // Location functionality tests
+  @Test
+  fun setLocation_updatesSelectedLocationAndQuery() = runTest {
+    val location = com.android.ootd.model.map.Location(48.8566, 2.3522, "Paris")
+
+    viewModel.setLocation(location)
+
+    assertEquals(location, viewModel.uiState.value.selectedLocation)
+    assertEquals("Paris", viewModel.uiState.value.locationQuery)
+  }
+
+  @Test
+  fun setLocationQuery_withEmptyQuery_clearsSuggestions() = runTest {
+    viewModel.setLocationQuery("")
+    advanceUntilIdle()
+
+    assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun setLocationQuery_withNonEmptyQuery_fetchesSuggestions() = runTest {
+    val mockLocations =
+        listOf(
+            com.android.ootd.model.map.Location(48.8566, 2.3522, "Paris"),
+            com.android.ootd.model.map.Location(51.5074, -0.1278, "London"))
+    coEvery { locationRepository.search("Par") } returns mockLocations
+
+    viewModel.setLocationQuery("Par")
+    advanceUntilIdle()
+
+    assertEquals(mockLocations, viewModel.uiState.value.locationSuggestions)
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun clearLocationSuggestions_clearsTheList() = runTest {
+    val mockLocations = listOf(com.android.ootd.model.map.Location(48.8566, 2.3522, "Paris"))
+    viewModel.setLocationSuggestions(mockLocations)
+
+    viewModel.clearLocationSuggestions()
+
+    assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
   }
 }
