@@ -1,5 +1,6 @@
 package com.android.ootd.ui.map
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -8,9 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -50,7 +50,6 @@ object LocationSelectionTestTags {
  * - Styling is aligned with the Register screen: uses the Bodoni font and Primary/Tertiary colors
  *   for headings and controls without changing the app theme.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationSelectionSection(
     locationQuery: String,
@@ -69,6 +68,7 @@ fun LocationSelectionSection(
   Column(modifier = modifier) {
     // Local state to control dropdown visibility
     var showDropdown by remember { mutableStateOf(false) }
+    var isFocused by remember { mutableStateOf(false) }
 
     // GPS Button
     OutlinedButton(
@@ -86,69 +86,77 @@ fun LocationSelectionSection(
           Text("Use Current Location (GPS)", fontFamily = Bodoni)
         }
 
-    // Manual Input Field with ExposedDropdownMenuBox
-    ExposedDropdownMenuBox(
-        expanded = showDropdown && suggestions.isNotEmpty(),
-        onExpandedChange = { showDropdown = it }) {
-          OutlinedTextField(
-              value = locationQuery,
-              onValueChange = {
-                onLocationQueryChange(it)
-                showDropdown = true // Show dropdown when user starts typing
-              },
-              textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = Bodoni),
-              label = { Text("Search location", color = textColor, fontFamily = Bodoni) },
-              placeholder = {
-                Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
-              },
-              trailingIcon = {
-                if (isLoadingLocation) {
-                  CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                }
-              },
-              modifier =
-                  Modifier.menuAnchor() // Anchor the dropdown to this text field
-                      .fillMaxWidth()
-                      .testTag(LocationSelectionTestTags.INPUT_LOCATION)
-                      .onFocusChanged { focusState -> onFocusChanged(focusState.isFocused) },
-              singleLine = true,
-              isError = isError)
+    // Manual Input Field with custom dropdown
+    Box {
+      OutlinedTextField(
+          value = locationQuery,
+          onValueChange = {
+            onLocationQueryChange(it)
+            showDropdown = true // Show dropdown when user starts typing
+          },
+          textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = Bodoni),
+          label = { Text("Search location", color = textColor, fontFamily = Bodoni) },
+          placeholder = {
+            Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
+          },
+          trailingIcon = {
+            if (isLoadingLocation) {
+              CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+          },
+          modifier =
+              Modifier.fillMaxWidth()
+                  .testTag(LocationSelectionTestTags.INPUT_LOCATION)
+                  .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
+                    onFocusChanged(focusState.isFocused)
+                    // Show dropdown when focused if there are suggestions
+                    if (focusState.isFocused && suggestions.isNotEmpty()) {
+                      showDropdown = true
+                    }
+                  },
+          singleLine = true,
+          isError = isError)
 
-          // Dropdown menu for location suggestions using ExposedDropdownMenu
-          ExposedDropdownMenu(
-              expanded = showDropdown && suggestions.isNotEmpty(),
-              onDismissRequest = { showDropdown = false }) {
-                suggestions.filterNotNull().take(3).forEach { location ->
-                  DropdownMenuItem(
-                      text = {
-                        Text(
-                            text =
-                                location.name.take(30) +
-                                    if (location.name.length > 30) "..." else "",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontFamily = Bodoni)
-                      },
-                      onClick = {
-                        onLocationQueryChange(location.name)
-                        onLocationSelect(location)
-                        onClearSuggestions()
-                        showDropdown = false // Close dropdown on selection
-                      },
-                      modifier =
-                          Modifier.padding(8.dp)
-                              .testTag(LocationSelectionTestTags.LOCATION_SUGGESTION))
-                }
+      // Dropdown menu for location suggestions
+      DropdownMenu(
+          expanded = showDropdown && suggestions.isNotEmpty(),
+          onDismissRequest = {
+            // Only dismiss if the field is not focused
+            if (!isFocused) {
+              showDropdown = false
+            }
+          },
+          modifier = Modifier.fillMaxWidth()) {
+            suggestions.filterNotNull().take(3).forEach { location ->
+              DropdownMenuItem(
+                  text = {
+                    Text(
+                        text =
+                            location.name.take(30) + if (location.name.length > 30) "..." else "",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontFamily = Bodoni)
+                  },
+                  onClick = {
+                    onLocationQueryChange(location.name)
+                    onLocationSelect(location)
+                    onClearSuggestions()
+                    showDropdown = false // Close dropdown on selection
+                  },
+                  modifier =
+                      Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_SUGGESTION))
+            }
 
-                if (suggestions.size > 3) {
-                  DropdownMenuItem(
-                      text = { Text("More...", fontFamily = Bodoni) },
-                      onClick = { /* Optionally show more results */},
-                      modifier =
-                          Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
-                }
-              }
-        }
+            if (suggestions.size > 3) {
+              DropdownMenuItem(
+                  text = { Text("More...", fontFamily = Bodoni) },
+                  onClick = { /* Optionally show more results */},
+                  modifier =
+                      Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
+            }
+          }
+    }
   }
 }
 
