@@ -919,4 +919,35 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.onNodeWithText("OOTD").assertIsDisplayed()
   }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun launchedEffect_successMessage_triggersOnPostSuccessAndClearsMessage() = runTest {
+    val repo = fakeRepository(listOf(fakeItem))
+    val viewModel = OutfitPreviewViewModel(repo)
+
+    var onPostSuccessCalled = false
+
+    val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
+    field.isAccessible = true
+    val stateFlow = field.get(viewModel) as MutableStateFlow<PreviewUIState>
+
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = viewModel,
+          imageUri = "test_uri",
+          description = "test_desc",
+          onPostSuccess = { onPostSuccessCalled = true })
+    }
+
+    composeTestRule.waitForIdle()
+
+    stateFlow.value =
+        stateFlow.value.copy(successMessage = "Post created successfully!", isPublished = true)
+
+    advanceUntilIdle()
+    composeTestRule.waitForIdle()
+
+    assert(onPostSuccessCalled) { "Expected onPostSuccess callback to be called, but it wasn't" }
+  }
 }
