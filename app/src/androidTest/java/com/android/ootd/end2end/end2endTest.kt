@@ -9,11 +9,15 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
@@ -62,6 +66,7 @@ class End2EndTest {
   private lateinit var mockAuthResult: AuthResult
   private lateinit var mockUserRepository: UserRepositoryFirestore
   private lateinit var mockAccountRepository: AccountRepositoryFirestore
+  private lateinit var mockLocationRepository: LocationRepository
   private lateinit var testUserId: String
   private lateinit var testUsername: String
 
@@ -73,10 +78,12 @@ class End2EndTest {
     mockAuthResult = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
+    mockLocationRepository = mockk(relaxed = true)
 
     // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
     AccountRepositoryProvider.repository = mockAccountRepository
+    LocationRepositoryProvider.repository = mockLocationRepository
 
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
@@ -93,6 +100,9 @@ class End2EndTest {
     // Restore the real repositories after test completes
     UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
     AccountRepositoryProvider.repository = AccountRepositoryFirestore(Firebase.firestore)
+    LocationRepositoryProvider.repository =
+        com.android.ootd.model.map.NominatimLocationRepository(
+            com.android.ootd.HttpClientProvider.client)
   }
 
   /**
@@ -255,6 +265,40 @@ class End2EndTest {
 
       // Enter date and confirm
       composeTestRule.enterDate("10102020")
+      composeTestRule.waitForIdle()
+
+      // STEP 6b: Select a location
+      // Mock the location repository to return suggestions when user types "Zurich"
+      val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+      coEvery { mockLocationRepository.search(any()) } returns listOf(testLocation)
+
+      // Enter location text in the input field
+      composeTestRule
+          .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+          .performScrollTo()
+          .performClick()
+      composeTestRule.waitForIdle()
+
+      // Type "Zurich" to trigger location search
+      composeTestRule
+          .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+          .performTextInput("Zurich")
+      composeTestRule.waitForIdle()
+
+      // Wait for location suggestions to appear (now from mocked repository)
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(
+                com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Click the first location suggestion to select it
+      composeTestRule
+          .onAllNodesWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)[
+              0]
+          .performClick()
       composeTestRule.waitForIdle()
 
       // STEP 7: Save the registration
