@@ -1,7 +1,6 @@
 package com.android.ootd.ui.post
 
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -89,10 +88,7 @@ fun FitCheckScreen(
               IconButton(
                   onClick = {
                     if (postUuid.isNotEmpty()) {
-                      Log.d("FitCheckScreen", "Deleting items for post: $postUuid")
                       fitCheckViewModel.deleteItemsForPost(postUuid)
-                    } else {
-                      Log.d("FitCheckScreen", "No postUuid found, skipping deletion")
                     }
                     onBackClick()
                   },

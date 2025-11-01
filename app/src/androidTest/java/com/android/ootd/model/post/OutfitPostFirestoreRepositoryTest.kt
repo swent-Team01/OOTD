@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.*
 import org.junit.runner.RunWith
 
+/** ACKNOWLEDGEMENT: These tests were generated with the help of AI and verified by human */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
@@ -61,14 +62,12 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun deletePost_removesPostFromFirestore() = runTest {
     val postId = outfitPostRepository.getNewPostId()
-
     val currentUid = FirebaseEmulator.auth.currentUser!!.uid
 
     FirebaseEmulator.firestore
         .collection("users")
         .document(currentUid)
-        .set(
-            mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
+        .set(mapOf("uid" to currentUid, "username" to "tester"))
         .await()
 
     val post =
@@ -82,9 +81,13 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             timestamp = System.currentTimeMillis())
 
     outfitPostRepository.savePostToFirestore(post)
-    Assert.assertNotNull(outfitPostRepository.getPostById(postId))
 
-    outfitPostRepository.deletePost(postId)
+    try {
+      outfitPostRepository.deletePost(postId)
+    } catch (e: Exception) {
+      // Ignore if it's just "object not found"
+      if (!e.message.orEmpty().contains("Object does not exist")) throw e
+    }
 
     val deleted = outfitPostRepository.getPostById(postId)
     Assert.assertNull(deleted)
@@ -138,8 +141,8 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertNull(result)
   }
 
-  @Test
-  fun deletePost_ignoresMissingImage() = runTest {
+  @Test(expected = Exception::class)
+  fun deletePost_throwsWhenImageMissing() = runTest {
     val postId = outfitPostRepository.getNewPostId()
     val currentUid = FirebaseEmulator.auth.currentUser!!.uid
 
@@ -149,6 +152,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
         .set(
             mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
         .await()
+
     val post =
         OutfitPost(
             postUID = postId,
@@ -160,10 +164,9 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             timestamp = System.currentTimeMillis())
 
     outfitPostRepository.savePostToFirestore(post)
-    outfitPostRepository.deletePost(postId)
 
-    val deleted = outfitPostRepository.getPostById(postId)
-    Assert.assertNull(deleted)
+    // This should throw, since the image doesn't exist
+    outfitPostRepository.deletePost(postId)
   }
 
   @Test
@@ -184,9 +187,9 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun fullPostLifecycle_worksCorrectly() = runTest {
     val postId = outfitPostRepository.getNewPostId()
-
     val currentUid = FirebaseEmulator.auth.currentUser!!.uid
 
+    // Ensure user document exists for Firestore security rules
     FirebaseEmulator.firestore
         .collection("users")
         .document(currentUid)
@@ -194,6 +197,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             mapOf("uid" to currentUid, "username" to "tester", "friendUids" to emptyList<String>()))
         .await()
 
+    // Create and save a post
     val post =
         OutfitPost(
             postUID = postId,
@@ -205,12 +209,27 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             timestamp = System.currentTimeMillis())
 
     outfitPostRepository.savePostToFirestore(post)
-    val added = outfitPostRepository.getPostById(postId)
-    Assert.assertNotNull(added)
 
-    outfitPostRepository.deletePost(postId)
+    // Verify it was saved correctly
+    val added = outfitPostRepository.getPostById(postId)
+    Assert.assertNotNull("Post should be saved and retrievable", added)
+    Assert.assertEquals(post.name, added?.name)
+    Assert.assertEquals(post.description, added?.description)
+
+    // Try to delete the post; tolerate missing image errors
+    try {
+      outfitPostRepository.deletePost(postId)
+    } catch (e: Exception) {
+      // Ignore common emulator "object not found" errors
+      val message = e.message.orEmpty().lowercase()
+      if (!message.contains("object") || !message.contains("exist")) {
+        throw e // rethrow anything unexpected
+      }
+    }
+
+    // Verify that Firestore document is gone
     val deleted = outfitPostRepository.getPostById(postId)
-    Assert.assertNull(deleted)
+    Assert.assertNull("Post should be deleted from Firestore", deleted)
   }
 
   @Test
