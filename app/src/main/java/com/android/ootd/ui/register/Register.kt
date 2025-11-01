@@ -298,10 +298,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               locationQuery = registerUiState.locationQuery,
               selectedLocation = registerUiState.selectedLocation,
               suggestions = registerUiState.locationSuggestions,
-              isLoadingLocation = registerUiState.isLoadingLocation,
+              isLoadingLocation = registerUiState.isLoadingLocations,
               onLocationQueryChange = { query -> viewModel.setLocationQuery(query) },
               onLocationSelect = { location -> viewModel.setLocation(location) },
-              onGPSClick = { /* keep GPS behavior handled elsewhere or add viewModel method */},
+              onGPSClick = { /* TODO: Implement GPS functionality */},
               onClearSuggestions = { viewModel.clearLocationSuggestions() },
               textColor = textColorLocation,
               isError = locationError && !focusLocation,
@@ -345,6 +345,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                   !registerUiState.isLoading &&
                       registerUiState.dateOfBirth.isNotBlank() &&
                       registerUiState.username.isNotBlank() &&
+                      registerUiState.selectedLocation != null &&
                       !anyError,
               colors =
                   ButtonDefaults.buttonColors(

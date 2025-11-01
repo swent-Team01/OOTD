@@ -203,17 +203,23 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun registerButton_enabled_whenBothFieldsValid() {
+  fun registerButton_enabled_whenAllFieldsValid() {
     composeTestRule.enterUsername("validUser")
     composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
         .performClick()
-
     composeTestRule.waitForIdle()
     composeTestRule.enterDate("10102020")
     composeTestRule.waitForIdle()
+
+    // Set a valid location
+    composeTestRule.runOnUiThread {
+      viewModel.setLocation(Location(47.0, 8.0, "Zürich, Switzerland"))
+    }
+    composeTestRule.waitForIdle()
+
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
   }
 
