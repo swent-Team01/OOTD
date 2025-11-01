@@ -12,7 +12,6 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
@@ -20,6 +19,7 @@ import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
+import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -260,43 +260,24 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
   }
 
-  @Test
-  fun locationSuggestions_show_whenTyping() {
-    // Fast arrangement: set suggestions directly on the ViewModel
-    composeTestRule.runOnUiThread {
-      viewModel.setLocationSuggestions(listOf(Location(47.0, 8.0, "Zürich, Switzerland")))
-    }
-    composeTestRule.waitForIdle()
-
-    // Type into the location input to open the dropdown
-    val input = composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
-    input.performClick()
-    input.performTextInput("Z")
-    composeTestRule.waitForIdle()
-
-    // Expect at least one suggestion node
-    composeTestRule
-        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-        .assertCountEquals(1)
-  }
-
   // ========== Location Selection Tests ==========
 
   @Test
   fun locationInput_showsMultipleSuggestions_whenAvailable() {
-    // Arrange: set multiple suggestions
+    // Arrange: mock repository to return multiple suggestions
     val suggestions =
         listOf(
             Location(47.3769, 8.5417, "Zürich, Switzerland"),
             Location(46.2044, 6.1432, "Lausanne, Switzerland"),
             Location(46.9481, 7.4474, "Bern, Switzerland"))
 
-    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(suggestions) }
+    coEvery { locationRepository.search(any()) } returns suggestions
 
     // Act: type to trigger dropdown
     composeTestRule.enterLocation("Switz")
+    composeTestRule.waitForIdle()
 
-    // Assert: should show exactly 3 suggestions (max displayed)
+    // Assert: should show exactly 3 suggestions
     composeTestRule
         .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
         .assertCountEquals(3)
@@ -304,12 +285,13 @@ class RegisterScreenTest {
 
   @Test
   fun locationSuggestion_selectsLocation_whenClicked() {
-    // Arrange: set suggestions
+    // Arrange: mock repository to return suggestions
     val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
-    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(listOf(testLocation)) }
+    coEvery { locationRepository.search(any()) } returns listOf(testLocation)
 
     // Act: type and click suggestion
     composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
     composeTestRule
         .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
         .performClick()
@@ -324,9 +306,9 @@ class RegisterScreenTest {
 
   @Test
   fun locationDropdown_closesAfterSelection() {
-    // Arrange
+    // Arrange: mock repository to return suggestions
     val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
-    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(listOf(testLocation)) }
+    coEvery { locationRepository.search(any()) } returns listOf(testLocation)
 
     // Act: type, click suggestion
     composeTestRule.enterLocation("Zur")
@@ -349,8 +331,12 @@ class RegisterScreenTest {
     composeTestRule.runOnUiThread { viewModel.setLocation(initialLocation) }
     composeTestRule.waitForIdle()
 
+    // Mock repository for when user types new text
+    coEvery { locationRepository.search(any()) } returns emptyList()
+
     // Act: type new text
     composeTestRule.enterLocation("Lausanne")
+    composeTestRule.waitForIdle()
 
     // Assert: selected location should be cleared
     composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.selectedLocation) }
