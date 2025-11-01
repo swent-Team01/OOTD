@@ -14,3 +14,6 @@ data class Location(
     val longitude: Double,
     val name: String,
 )
+
+// An empty location constant
+val emptyLocation = Location(0.0, 0.0, "")
