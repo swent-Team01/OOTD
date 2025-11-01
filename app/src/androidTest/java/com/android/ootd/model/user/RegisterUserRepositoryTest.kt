@@ -2,6 +2,7 @@ package com.android.ootd.model.user
 
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.ui.register.RegisterViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -33,6 +34,8 @@ class RegisterViewModelTest {
   private lateinit var userRepository: UserRepository
   private lateinit var accountRepository: AccountRepository
   private lateinit var accountService: AccountService
+
+  private lateinit var locationRepository: LocationRepository
   private lateinit var auth: FirebaseAuth
   private lateinit var firebaseUser: FirebaseUser
   private lateinit var viewModel: RegisterViewModel
@@ -54,7 +57,9 @@ class RegisterViewModelTest {
     every { firebaseUser.email } returns testEmail
     every { accountService.currentUser } returns flowOf(firebaseUser)
 
-    viewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+    viewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
   }
 
   @After
@@ -485,7 +490,9 @@ class RegisterViewModelTest {
     every { accountService.currentUser } returns flowOf(differentFirebaseUser)
 
     // Create new viewModel with updated auth
-    val newViewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+    val newViewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
 
     coEvery { userRepository.createUser(username, testUid) } returns Unit
     coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
@@ -512,7 +519,9 @@ class RegisterViewModelTest {
     every { accountService.currentUser } returns flowOf(customFirebaseUser)
     every { auth.currentUser } returns customFirebaseUser
 
-    val testViewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+    val testViewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
 
     coEvery { userRepository.createUser(username, testUid) } returns Unit
     coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
