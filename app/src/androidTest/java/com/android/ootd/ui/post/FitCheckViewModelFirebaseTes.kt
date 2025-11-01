@@ -1,11 +1,13 @@
 package com.android.ootd.ui.post
 
+import android.net.Uri
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -93,5 +95,35 @@ class FitCheckViewModelFirebaseTest : FirestoreTest() {
     delay(500)
 
     assertTrue(true)
+  }
+
+  @Test
+  fun setPhoto_withValidUri_updatesUiState() = runBlocking {
+    val uri = Uri.parse("content://test/photo.jpg")
+
+    viewModel.setPhoto(uri)
+
+    val state = viewModel.uiState.value
+    assertEquals(uri, state.image)
+    assertNull(state.errorMessage)
+  }
+
+  @Test
+  fun setPhoto_withEmptyUri_setsErrorMessage() = runBlocking {
+    viewModel.setPhoto(Uri.EMPTY)
+
+    val state = viewModel.uiState.value
+    assertEquals(Uri.EMPTY, state.image)
+    assertEquals("Please select a photo before continuing.", state.errorMessage)
+  }
+
+  @Test
+  fun setDescription_updatesDescriptionField() = runBlocking {
+    val desc = "OOTD Look Description"
+
+    viewModel.setDescription(desc)
+
+    val state = viewModel.uiState.value
+    assertEquals(desc, state.description)
   }
 }
