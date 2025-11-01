@@ -38,7 +38,16 @@ import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import okhttp3.OkHttpClient
 
+/**
+ * Provide an OkHttpClient client for network requests.
+ *
+ * Property `client` is mutable for testing purposes.
+ */
+object HttpClientProvider {
+  var client: OkHttpClient = OkHttpClient()
+}
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
