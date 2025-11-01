@@ -3,11 +3,15 @@ package com.android.ootd.ui.register
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.HttpClientProvider
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.TakenUserException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.NominatimLocationRepository
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
@@ -46,7 +50,11 @@ data class RegisterUserViewModel(
     val profilePicture: String = "",
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
-    val registered: Boolean = false
+    val registered: Boolean = false,
+    val locationQuery: String = "",
+    val selectedLocation: Location? = null,
+    val locationSuggestions: List<Location> = emptyList(),
+    val isLoadingLocations: Boolean = false,
 )
 
 /**
@@ -62,6 +70,8 @@ class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val accountService: AccountService = AccountServiceFirebase(),
+    private val locationRepository: LocationRepository =
+        NominatimLocationRepository(HttpClientProvider.client),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
@@ -203,5 +213,72 @@ class RegisterViewModel(
         showLoading(false)
       }
     }
+  }
+
+  // ----------------- Location-related helpers -----------------
+  /**
+   * Selects a location and updates the UI state.
+   *
+   * @param location The chosen Location; also sets the location query to the location's name.
+   */
+  fun setLocation(location: Location) {
+    _uiState.value = _uiState.value.copy(selectedLocation = location, locationQuery = location.name)
+  }
+
+  /**
+   * Updates the location search query and fetches suggestions.
+   *
+   * If the query is non-empty a background search is started and the resulting suggestions are
+   * stored in the UI state; otherwise suggestions are cleared.
+   *
+   * Disclaimer: This method has been adapted from the bootcamp week 3 solution
+   *
+   * @param query The new location query string.
+   */
+  fun setLocationQuery(query: String) {
+    _uiState.value = _uiState.value.copy(locationQuery = query, selectedLocation = null)
+
+    if (query.isNotEmpty()) {
+      _uiState.value = _uiState.value.copy(isLoadingLocations = true)
+      viewModelScope.launch {
+        try {
+          val results = locationRepository.search(query)
+          _uiState.value =
+              _uiState.value.copy(locationSuggestions = results, isLoadingLocations = false)
+        } catch (e: Exception) {
+          Log.e("RegisterViewModel", "Error fetching location suggestions", e)
+          _uiState.value =
+              _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)
+        }
+      }
+    } else {
+      _uiState.value =
+          _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)
+    }
+  }
+
+  /**
+   * Clears the location suggestions from the UI state.
+   *
+   * This method can be called to reset the location suggestions, for example, when the user clears
+   * the location query.
+   */
+  fun clearLocationSuggestions() {
+    _uiState.value = _uiState.value.copy(locationSuggestions = emptyList())
+  }
+
+  /**
+   * Sets location suggestions directly in the UI state.
+   *
+   * This is primarily used for testing purposes to inject mock location data.
+   *
+   * @param suggestions The list of locations to set as suggestions.
+   */
+  fun setLocationSuggestions(suggestions: List<Location>) {
+    _uiState.value = _uiState.value.copy(locationSuggestions = suggestions)
+  }
+
+  fun isLoadingLocations(): Boolean {
+    return uiState.value.locationSuggestions.isEmpty() && uiState.value.locationQuery.isNotEmpty()
   }
 }
