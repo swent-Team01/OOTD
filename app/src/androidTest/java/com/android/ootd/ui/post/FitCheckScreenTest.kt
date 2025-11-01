@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
 
+/** DISCLAIMER: These tests were generated with the help of AI and verified by human */
 class FitCheckScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
