@@ -490,4 +490,97 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertEquals(location.longitude, retrieved.location.longitude, 0.0001)
     assertEquals(location.name, retrieved.location.name)
   }
+
+  @Test
+  fun getAccount_parsesLocationFromMap() = runBlocking {
+    // Manually create a document with location as a Map
+    val locationMap =
+        mapOf("latitude" to 47.3769, "longitude" to 8.5417, "name" to "Zürich, Switzerland")
+
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId,
+                "location" to locationMap))
+        .await()
+
+    val retrieved = accountRepository.getAccount(account1.uid)
+    assertEquals(47.3769, retrieved.location.latitude, 0.0001)
+    assertEquals(8.5417, retrieved.location.longitude, 0.0001)
+    assertEquals("Zürich, Switzerland", retrieved.location.name)
+  }
+
+  @Test
+  fun getAccount_handlesNullLocation() = runBlocking {
+    // Create account without location field
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId))
+        .await()
+
+    val retrieved = accountRepository.getAccount(account1.uid)
+    assertEquals(0.0, retrieved.location.latitude, 0.0001)
+    assertEquals(0.0, retrieved.location.longitude, 0.0001)
+    assertEquals("", retrieved.location.name)
+  }
+
+  @Test
+  fun getAccount_handlesInvalidLocationFormat() = runBlocking {
+    // Create account with invalid location type (string instead of map)
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId,
+                "location" to "Invalid location string"))
+        .await()
+
+    val retrieved = accountRepository.getAccount(account1.uid)
+    // Should fall back to emptyLocation
+    assertEquals(0.0, retrieved.location.latitude, 0.0001)
+    assertEquals(0.0, retrieved.location.longitude, 0.0001)
+    assertEquals("", retrieved.location.name)
+  }
+
+  @Test
+  fun editAccount_logsSuccessMessage() = runBlocking {
+    accountRepository.addAccount(account1)
+
+    val newUsername = "updated_user"
+    val newBirthday = "1995-12-25"
+    val newPicture = "new_pic.jpg"
+
+    // This test verifies the method executes successfully and logs the success message
+    accountRepository.editAccount(
+        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newPicture, updated.profilePicture)
+  }
 }
