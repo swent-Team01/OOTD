@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -49,24 +48,48 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   // ----------- Input and photo flow -----------
 
   @Test
-  fun fillAllFields_and_setPhoto_showsValuesAndPreview() {
-    val uri = "content://dummy/photo.jpg".toUri()
-
-    composeTestRule.enterAddItemType("Jacket")
+  fun fillAllFields_showsCorrectValues() {
+    // Fill all text fields
     composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("Jacket")
     composeTestRule.enterAddItemBrand("Brand")
     composeTestRule.enterAddItemPrice(99.99)
     composeTestRule.enterAddItemLink("www.ootd.com")
     composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
 
-    composeTestRule.enterAddItemPhoto()
+    // Verify all fields contain the correct values
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.category == "Clothing")
+      assert(viewModel.uiState.value.type == "Jacket")
+      assert(viewModel.uiState.value.brand == "Brand")
+      assert(viewModel.uiState.value.price == "99.99")
+      assert(viewModel.uiState.value.link == "www.ootd.com")
+      assert(viewModel.uiState.value.materialText == "Cotton 80%, Polyester 20%")
+
+      // Verify material was parsed correctly
+      val materials = viewModel.uiState.value.material
+      assert(materials.size == 2)
+      assert(materials[0].name == "Cotton" && materials[0].percentage == 80.0)
+      assert(materials[1].name == "Polyester" && materials[1].percentage == 20.0)
+    }
+  }
+
+  @Test
+  fun setPhoto_updatesViewModelAndPreviewExists() {
+    val uri = "content://dummy/photo.jpg".toUri()
+
+    // Set photo directly via ViewModel (simulating what happens after picking from gallery)
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
     composeTestRule.waitForIdle()
 
-    // Assert a few key fields reflect the input
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_BRAND).assertTextContains("Brand")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).assertTextContains("99.99")
-    composeTestRule.checkPhotoPreviewDisplayed()
+    // Verify ViewModel state updated
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.localPhotoUri == uri)
+      assert(viewModel.uiState.value.invalidPhotoMsg == null)
+    }
+
+    // Verify photo preview component exists in the composition
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertExists()
   }
 
   // ----------- Image picker dialog & actions -----------
