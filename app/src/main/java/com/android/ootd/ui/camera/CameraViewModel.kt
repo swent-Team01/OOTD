@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
  * @property zoomRatio Current zoom ratio
  * @property minZoomRatio Minimum zoom ratio supported by the camera
  * @property maxZoomRatio Maximum zoom ratio supported by the camera
+ * @property showPreview Whether to show the preview screen after capture
  */
 data class CameraUIState(
     val lensFacing: Int = androidx.camera.core.CameraSelector.LENS_FACING_BACK,
@@ -34,7 +35,8 @@ data class CameraUIState(
     val errorMessage: String? = null,
     val zoomRatio: Float = 1f,
     val minZoomRatio: Float = 1f,
-    val maxZoomRatio: Float = 1f
+    val maxZoomRatio: Float = 1f,
+    val showPreview: Boolean = false
 )
 
 /**
@@ -76,7 +78,18 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
    * @param uri The URI of the captured image
    */
   fun setCapturedImage(uri: Uri?) {
-    _uiState.value = _uiState.value.copy(capturedImageUri = uri, isCapturing = false)
+    _uiState.value =
+        _uiState.value.copy(capturedImageUri = uri, isCapturing = false, showPreview = uri != null)
+  }
+
+  /** Shows the preview screen. */
+  fun showPreview(show: Boolean) {
+    _uiState.value = _uiState.value.copy(showPreview = show)
+  }
+
+  /** Retakes the photo (clears captured image and shows camera). */
+  fun retakePhoto() {
+    _uiState.value = _uiState.value.copy(capturedImageUri = null, showPreview = false)
   }
 
   /**

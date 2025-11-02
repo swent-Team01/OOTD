@@ -225,6 +225,9 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
     
+    // ExifInterface for reading image orientation
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    
     // Accompanist for permissions
     implementation(libs.accompanist.permissions)
     
