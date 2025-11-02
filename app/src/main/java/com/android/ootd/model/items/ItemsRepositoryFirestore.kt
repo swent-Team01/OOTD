@@ -77,8 +77,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
     val uuid = doc.getString("itemUuid") ?: return null
-    val postUuidList =
-        doc.get(POST_ATTRIBUTE_NAME) as? List<*> // doc.getString("postUuid") ?: return null
+    val postUuidList = doc[POST_ATTRIBUTE_NAME] as? List<*>
     val postUuids = postUuidList?.mapNotNull { it as? String } ?: emptyList()
     val imageMap = doc["image"] as? Map<*, *> ?: return null
     val imageUri =
