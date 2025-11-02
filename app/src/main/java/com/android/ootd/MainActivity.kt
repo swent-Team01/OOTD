@@ -28,6 +28,7 @@ import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
+import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -151,11 +152,7 @@ fun OOTDApp(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
-                composable(Screen.Map.route) {
-                  // Placeholder for Map Screen
-                  // Todo
-                  Text(text = "Map Screen - To be implemented")
-                }
+                composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
 
                 composable(Screen.InventoryScreen.route) { InventoryScreen() }
 
