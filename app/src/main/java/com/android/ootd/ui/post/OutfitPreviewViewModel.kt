@@ -82,6 +82,12 @@ class OutfitPreviewViewModel(
     }
   }
 
+  /**
+   * Publishes the current outfit post to Firebase.
+   *
+   * On success, updates the state with `isPublished = true` and a success message. On failure, logs
+   * the error and updates the state with an error message.
+   */
   fun publishPost() {
     val state = _uiState.value
     if (state.imageUri.isEmpty() || state.postUuid.isEmpty()) {

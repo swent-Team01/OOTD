@@ -14,10 +14,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 
-/**
- * Integration test for [FitCheckViewModel] using the Firebase emulator. Verifies that
- * deleteItemsForPost() correctly removes associated items from Firestore.
- */
 class FitCheckViewModelFirebaseTest : FirestoreTest() {
 
   private lateinit var viewModel: FitCheckViewModel
@@ -50,37 +46,30 @@ class FitCheckViewModelFirebaseTest : FirestoreTest() {
   fun deleteItemsForPost_removesAllItemsFromFirestore() = runBlocking {
     val postUuid = "post_to_delete"
 
-    // Create multiple test items associated with the same post
     createTestItem(postUuid)
     createTestItem(postUuid)
 
-    // Confirm they were saved
     val before = itemsRepository.getAssociatedItems(postUuid)
     assertEquals(2, before.size)
 
-    // Perform deletion via the ViewModel
     viewModel.deleteItemsForPost(postUuid)
 
-    // Allow async operations to finish
     delay(1000)
 
-    // Verify that the items are gone
     val after = itemsRepository.getAssociatedItems(postUuid)
     assertTrue("Expected items to be deleted, but found ${after.size}", after.isEmpty())
   }
 
   @Test
   fun deleteItemsForPost_withEmptyUuid_doesNotCrash() = runBlocking {
-    // Should safely return without throwing
     viewModel.deleteItemsForPost("")
     delay(300)
 
-    assertTrue(true) // passes if no exception
+    assertTrue(true)
   }
 
   @Test
   fun deleteItemsForPost_whenRepositoryThrows_logsErrorButDoesNotCrash() = runBlocking {
-    // Create a fake throwing repository
     val throwingRepo =
         object : com.android.ootd.model.items.ItemsRepository by itemsRepository {
           override suspend fun deletePostItems(postUuid: String) {
@@ -90,7 +79,6 @@ class FitCheckViewModelFirebaseTest : FirestoreTest() {
 
     val failingVM = FitCheckViewModel(repository = throwingRepo)
 
-    // Should not crash or throw to test
     failingVM.deleteItemsForPost("post_error")
     delay(500)
 

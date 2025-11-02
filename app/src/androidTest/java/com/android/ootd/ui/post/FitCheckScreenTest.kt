@@ -46,13 +46,10 @@ class FitCheckScreenTest {
   fun clickingNextButtonWithoutPhoto_showsErrorMessage() {
     composeTestRule.setContent { FitCheckScreen() }
 
-    // Initially, there should be no error message displayed
     composeTestRule.onAllNodesWithTag(FitCheckScreenTestTags.ERROR_MESSAGE).assertCountEquals(0)
 
-    // Click the "Next" button without selecting a photo
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
 
-    // Verify that the error message appears with the correct text
     composeTestRule
         .onNodeWithTag(FitCheckScreenTestTags.ERROR_MESSAGE)
         .assertIsDisplayed()

@@ -38,13 +38,10 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
         OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
     viewModel = OutfitPreviewViewModel(itemsRepository, postRepository)
 
-    // Sign in a test user
     runBlocking {
       try {
         auth.signInAnonymously().await()
-      } catch (_: Exception) {
-        // User might already be signed in
-      }
+      } catch (_: Exception) {}
     }
   }
 
@@ -87,39 +84,31 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     val description = "My awesome outfit for today!"
 
     val beforeTimestamp = System.currentTimeMillis()
-    // Initialize the viewModel
     viewModel.initFromFitCheck(imageUri.toString(), description)
-    delay(500) // Wait for initialization
+    delay(500)
 
     val state = viewModel.uiState.first()
     val postUuid = state.postUuid
 
-    // Create some test items associated with this post
     createTestItem(postUuid)
     createTestItem(postUuid)
 
-    // Reload items
     viewModel.loadItemsForPost()
     delay(500)
 
-    // Verify items are loaded
     val stateWithItems = viewModel.uiState.first()
     assertEquals(2, stateWithItems.items.size)
 
-    // Now publish the post
     viewModel.publishPost()
 
-    // Wait for the async operation to complete
     delay(3000)
 
-    // Verify the UI state is updated correctly (this is the uncovered code)
     val finalState = viewModel.uiState.first()
     assertFalse(finalState.isLoading)
     assertTrue(finalState.isPublished)
     assertEquals("Post created successfully!", finalState.successMessage)
 
     val afterTimestamp = System.currentTimeMillis()
-    // Verify the post was saved to Firestore
     val savedPost = postRepository.getPostById(postUuid)
     assertNotNull(savedPost)
     assertTrue(savedPost!!.timestamp >= beforeTimestamp)
@@ -127,14 +116,13 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertEquals(postUuid, savedPost!!.postUID)
     assertEquals(description, savedPost.description)
     assertEquals(2, savedPost.itemsID.size)
-    assertEquals(auth.currentUser?.uid, savedPost.ownerId) // check owner ID
-    assertNotNull(savedPost.name) // User's display name
-    assertTrue(savedPost!!.outfitURL.isNotEmpty()) // check outfit URL is set
+    assertEquals(auth.currentUser?.uid, savedPost.ownerId)
+    assertNotNull(savedPost.name)
+    assertTrue(savedPost!!.outfitURL.isNotEmpty())
   }
 
   @Test
   fun publishPost_withMissingRequiredData_failsWithErrorMessage() = runBlocking {
-    // Test 1: Initialize with empty image URI
     viewModel.initFromFitCheck("", "Test description")
     delay(500)
 
@@ -149,15 +137,12 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertNotNull(finalState1.errorMessage)
     assertTrue(finalState1.errorMessage!!.contains("Missing required post data"))
 
-    // Clear error for next test
     viewModel.clearErrorMessage()
     val stateNullMessage = viewModel.uiState.first()
     assertNull(stateNullMessage.errorMessage)
 
     delay(100)
 
-    // Test 2: Don't initialize, so postUuid will be empty
-    // Create a new viewModel instance to ensure clean state
     val viewModel2 = OutfitPreviewViewModel(itemsRepository, postRepository)
 
     viewModel2.publishPost()
@@ -177,7 +162,6 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     viewModel.initFromFitCheck(imageUri.toString(), description)
     delay(500)
 
-    // Don't add any items, just publish
     viewModel.publishPost()
     delay(3000)
 
@@ -192,7 +176,6 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun initFromFitCheck_andLoadItems_handlesInitializationCorrectly() = runBlocking {
-    // Test 1: Verify loading items without initialization doesn't crash
     viewModel.loadItemsForPost()
     delay(500)
 
@@ -200,7 +183,6 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertEquals(0, stateBeforeInit.items.size)
     assertTrue(stateBeforeInit.postUuid.isEmpty())
 
-    // Test 2: Initialize and verify postUuid is generated and state is set correctly
     val imageUri = createReadableUri()
     val description = "Init test"
 
@@ -211,9 +193,8 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertTrue(stateAfterInit.postUuid.isNotEmpty())
     assertEquals(imageUri.toString(), stateAfterInit.imageUri)
     assertEquals(description, stateAfterInit.description)
-    assertEquals(0, stateAfterInit.items.size) // Still no items since none were added
+    assertEquals(0, stateAfterInit.items.size)
 
-    // Test 3: Add an item and verify loading works after initialization
     val postUuid = stateAfterInit.postUuid
     createTestItem(postUuid)
 
