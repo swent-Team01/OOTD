@@ -27,6 +27,8 @@ import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
+import com.android.ootd.ui.consent.BetaConsentScreen
+import com.android.ootd.ui.consent.BetaConsentViewModel
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
@@ -74,6 +76,7 @@ fun OOTDApp(
 ) {
   val navController = testNavController ?: rememberNavController()
   val navigationActions = remember { NavigationActions(navController) }
+  val betaConsentViewModel = remember { BetaConsentViewModel(context) }
   val startDestination = testStartDestination ?: Screen.Splash.route
 
   // Observe nav backstack to reactively show the bottom bar
@@ -103,11 +106,37 @@ fun OOTDApp(
               navigation(startDestination = Screen.Splash.route, route = Screen.Splash.name) {
                 composable(Screen.Splash.route) {
                   SplashScreen(
-                      onSignedIn = { navigationActions.navigateTo(Screen.Feed) },
+                      onSignedIn = {
+                        // Check if user has consented to beta terms
+                        if (betaConsentViewModel.getConsentStatus()) {
+                          navigationActions.navigateTo(Screen.Feed)
+                        } else {
+                          navigationActions.navigateTo(Screen.BetaConsent)
+                        }
+                      },
                       onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
                 }
                 composable(Screen.RegisterUsername.route) {
-                  RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
+                  RegisterScreen(
+                      onRegister = {
+                        // After registration, show beta consent if not already given
+                        if (betaConsentViewModel.getConsentStatus()) {
+                          navigationActions.navigateTo(Screen.Feed)
+                        } else {
+                          navigationActions.navigateTo(Screen.BetaConsent)
+                        }
+                      })
+                }
+                composable(Screen.BetaConsent.route) {
+                  BetaConsentScreen(
+                      onAgree = {
+                        betaConsentViewModel.recordConsent()
+                        navigationActions.navigateTo(Screen.Feed)
+                      },
+                      onDecline = {
+                        // If user declines, sign them out and return to authentication
+                        navigationActions.navigateTo(Screen.Authentication)
+                      })
                 }
               }
 

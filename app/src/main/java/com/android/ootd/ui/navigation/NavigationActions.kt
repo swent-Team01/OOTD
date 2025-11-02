@@ -31,6 +31,9 @@ sealed class Screen(
   object RegisterUsername :
       Screen(route = "register", name = "Register", isTopLevelDestination = true)
 
+  object BetaConsent :
+      Screen(route = "betaConsent", name = "BetaConsent", isTopLevelDestination = true)
+
   /** Splash / launch screen. Marked as a top\-level destination. */
   object Splash : Screen(route = "splash", name = "Splash", isTopLevelDestination = false)
 
