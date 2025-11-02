@@ -33,6 +33,8 @@ import org.junit.Test
  * Note: The main registration logic (checking if user exists in backend) is tested in
  * AuthenticationTest. These tests focus on UI component rendering, validation, and user
  * interactions with the registration form.
+ *
+ * Disclaimer: Parts of the code were done with AI
  */
 class RegisterScreenTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
@@ -172,11 +174,17 @@ class RegisterScreenTest {
   fun showsErrorMessage_whenLocationBlank_afterLeavingField() {
     composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
     composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
-        .performClick() // Leave field
 
+    // Click on username field to leave the location field
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
     composeTestRule.waitForIdle()
+
+    // Additional waits to ensure focus change completes and state updates propagate
+    composeTestRule.mainClock.advanceTimeBy(200)
+    composeTestRule.waitForIdle()
+
+    // Verify that the username field has focus now (ensures we really left location field)
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertExists()
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
