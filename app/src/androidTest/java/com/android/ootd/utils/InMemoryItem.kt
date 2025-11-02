@@ -28,7 +28,7 @@ object InMemoryItem : ItemsTest {
     }
 
     override suspend fun getAssociatedItems(postUuid: String): List<Item> {
-      return itemList.filter { it.postUuid == postUuid }
+      return itemList.filter { it.postUuids.contains(postUuid) }
     }
 
     override fun getNewItemId(): String {
@@ -44,7 +44,7 @@ object InMemoryItem : ItemsTest {
     }
 
     override suspend fun deletePostItems(postUuid: String) {
-      itemList.removeIf { it.postUuid == postUuid }
+      itemList.removeIf { it.postUuids.contains(postUuid) }
     }
   }
 }

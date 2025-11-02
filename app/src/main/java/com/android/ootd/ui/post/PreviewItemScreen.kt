@@ -74,7 +74,6 @@ object PreviewItemScreenTestTags {
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
   const val CREATE_ITEM_BUTTON = "createItemButton"
-
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
 
@@ -97,7 +96,7 @@ fun PreviewItemScreen(
   val itemsList = uiState.items
   val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-  // Initialise ViewModel with args
+  // Initialise ViewModel with args and generate a new postUuid if needed
   LaunchedEffect(Unit) { outfitPreviewViewModel.initFromFitCheck(imageUri, description) }
 
   // Handle error messages

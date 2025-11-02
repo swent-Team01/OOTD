@@ -10,7 +10,7 @@ import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
 const val OWNER_ATTRIBUTE_NAME = "ownerId"
-const val POST_ATTRIBUTE_NAME = "postUuid"
+const val POST_ATTRIBUTE_NAME = "postUuids"
 const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged in."
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
@@ -31,7 +31,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val snapshot =
         db.collection(ITEMS_COLLECTION)
-            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
             .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
             .get()
             .await()
@@ -63,7 +63,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val snapshot =
         db.collection(ITEMS_COLLECTION)
-            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
             .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
             .get()
             .await()
@@ -77,7 +77,8 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
     val uuid = doc.getString("itemUuid") ?: return null
-    val postUuid = doc.getString(POST_ATTRIBUTE_NAME) ?: return null
+    val postUuidList = doc[POST_ATTRIBUTE_NAME] as? List<*>
+    val postUuids = postUuidList?.mapNotNull { it as? String } ?: emptyList()
     val imageMap = doc["image"] as? Map<*, *> ?: return null
     val imageUri =
         ImageData(
@@ -102,7 +103,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
 
     Item(
         itemUuid = uuid,
-        postUuid = postUuid,
+        postUuids = postUuids,
         image = imageUri,
         category = category,
         type = type,

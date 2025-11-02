@@ -33,7 +33,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item1 =
         Item(
             itemUuid = "0",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData(imageId = "0", imageUrl = "https://example.com/image1.jpg"),
             category = "clothes",
             type = "t-shirt",
@@ -46,7 +46,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item2 =
         Item(
             itemUuid = "1",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData("1", "https://example.com/image1.jpg"),
             category = "shoes",
             type = "high heels",
@@ -59,7 +59,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item3 =
         Item(
             itemUuid = "2",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData("2", "https://example.com/image1.jpg"),
             category = "bags",
             type = "handbag",
@@ -72,7 +72,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item4 =
         Item(
             itemUuid = "3",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData("3", "https://example.com/image1.jpg"),
             category = "accessories",
             type = "sunglasses",
@@ -263,7 +263,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val partialMaterialData =
         Item(
             itemUuid = "mixedMat",
-            postUuid = "simple_post",
+            postUuids = listOf("simple_post"),
             image = ImageData(imageId = "mixedMatImg", imageUrl = "https://example.com/image.jpg"),
             category = "clothes",
             type = "jacket",
@@ -876,9 +876,9 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val postUuid1 = "post_123"
     val postUuid2 = "post_456"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = postUuid2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(postUuid1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(postUuid1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(postUuid2))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -898,9 +898,9 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   fun deletePostItemsRemovesAllItemsForGivenPost() = runBlocking {
     val postUuid = "postToDelete"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid)
-    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid)
-    val itemC = item3.copy(itemUuid = "C", postUuid = "otherPost")
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(postUuid))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(postUuid))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf("otherPost"))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -934,10 +934,10 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val postUuid1 = "post-aaa"
     val postUuid2 = "post-bbb"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = postUuid2)
-    val itemD = item4.copy(itemUuid = "D", postUuid = postUuid2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(postUuid1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(postUuid1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(postUuid2))
+    val itemD = item4.copy(itemUuid = "D", postUuids = listOf(postUuid2))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -948,16 +948,16 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val associated2 = itemsRepository.getAssociatedItems(postUuid2)
 
     assertEquals(2, associated1.size)
-    assertTrue(associated1.all { it.postUuid == postUuid1 })
+    assertTrue(associated1.all { it.postUuids.contains(postUuid1) })
 
     assertEquals(2, associated2.size)
-    assertTrue(associated2.all { it.postUuid == postUuid2 })
+    assertTrue(associated2.all { it.postUuids.contains(postUuid2) })
   }
 
   @Test
   fun getAssociatedItemsReturnsEmptyListWhenNoneMatch() = runBlocking {
-    itemsRepository.addItem(item1.copy(postUuid = "some_post"))
-    itemsRepository.addItem(item2.copy(postUuid = "another_post"))
+    itemsRepository.addItem(item1.copy(postUuids = listOf("some_post")))
+    itemsRepository.addItem(item2.copy(postUuids = listOf("another_post")))
 
     val associated = itemsRepository.getAssociatedItems("unrelated_post")
     assertTrue(associated.isEmpty())
@@ -968,9 +968,9 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val post1 = "delete_me"
     val post2 = "keep_me"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(post1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(post1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(post2))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -981,13 +981,13 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val remaining = itemsRepository.getAllItems()
 
     assertEquals(1, remaining.size)
-    assertEquals(post2, remaining.first().postUuid)
+    assertEquals(post2, remaining.first().postUuids.first())
   }
 
   @Test
   fun deletePostItemsDoesNothingWhenNoMatch() = runBlocking {
     val post1 = "existing"
-    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(post1))
     itemsRepository.addItem(itemA)
     assertEquals(1, countItems())
 

@@ -65,7 +65,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     val item =
         Item(
             itemUuid = itemsRepository.getNewItemId(),
-            postUuid = postUuid,
+            postUuids = listOf(postUuid),
             image = ImageData("test_img", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-Shirt",
@@ -113,12 +113,12 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertNotNull(savedPost)
     assertTrue(savedPost!!.timestamp >= beforeTimestamp)
     assertTrue(savedPost.timestamp <= afterTimestamp)
-    assertEquals(postUuid, savedPost!!.postUID)
+    assertEquals(postUuid, savedPost.postUID)
     assertEquals(description, savedPost.description)
     assertEquals(2, savedPost.itemsID.size)
     assertEquals(auth.currentUser?.uid, savedPost.ownerId)
     assertNotNull(savedPost.name)
-    assertTrue(savedPost!!.outfitURL.isNotEmpty())
+    assertTrue(savedPost.outfitURL.isNotEmpty())
   }
 
   @Test
