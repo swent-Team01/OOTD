@@ -17,8 +17,7 @@ object FirebaseImageUploader {
   private val storage by lazy {
     try {
       Firebase.storage.reference
-    } catch (e: IllegalStateException) {
-      // This happens in unit tests (Firebase not initialized)
+    } catch (_: IllegalStateException) {
       Log.w("FirebaseImageUploader", "Firebase not initialized, using dummy reference.")
       null
     }
@@ -35,7 +34,7 @@ object FirebaseImageUploader {
     val ref = storage ?: return ImageData("", "")
 
     return try {
-      val sanitizedFileName = refactorFileName(fileName)
+      val sanitizedFileName = com.android.ootd.model.items.ImageFilenameSanitizer.sanitize(fileName)
       val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
       imageRef.putFile(localUri).await()
       val downloadUrl = imageRef.downloadUrl.await()
@@ -50,7 +49,7 @@ object FirebaseImageUploader {
     if (imageId.isEmpty()) return false
     val ref = storage ?: return true
     return try {
-      val sanitizedImageId = refactorFileName(imageId)
+      val sanitizedImageId = com.android.ootd.model.items.ImageFilenameSanitizer.sanitize(imageId)
       val imageRef = ref.child("images/items/$sanitizedImageId.jpg")
       imageRef.delete().await()
       true
@@ -65,9 +64,5 @@ object FirebaseImageUploader {
         false
       }
     }
-  }
-
-  private fun refactorFileName(original: String): String {
-    return original.trim().replace("\\s+".toRegex(), "_").replace("[^A-Za-z0-9_.-]".toRegex(), "_")
   }
 }

@@ -5,7 +5,6 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
-import kotlin.collections.get
 import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
@@ -48,39 +47,8 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
-    val uuid = doc.getString("itemUuid") ?: return null
-    val imageMap = doc["image"] as? Map<*, *> ?: return null
-    val imageUri =
-        ImageData(
-            imageId = imageMap["imageId"] as? String ?: "",
-            imageUrl = imageMap["imageUrl"] as? String ?: "",
-        )
-    val category = doc.getString("category") ?: return null
-    val type = doc.getString("type") ?: return null
-    val brand = doc.getString("brand") ?: return null
-    val price = doc.getDouble("price") ?: return null
-    val link = doc.getString("link") ?: return null
-    val ownerId = doc.getString("ownerId") ?: return null
-    val materialList = doc.get("material") as? List<*>
-    val material =
-        materialList?.mapNotNull { item ->
-          (item as? Map<*, *>)?.let {
-            Material(
-                name = it["name"] as? String ?: "",
-                percentage = (it["percentage"] as? Number)?.toDouble() ?: 0.0)
-          }
-        } ?: emptyList()
-
-    Item(
-        itemUuid = uuid,
-        image = imageUri,
-        category = category,
-        type = type,
-        brand = brand,
-        price = price,
-        material = material,
-        link = link,
-        ownerId = ownerId)
+    val data = doc.data ?: return null
+    ItemsMappers.parseItem(data)
   } catch (e: Exception) {
     Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
     null
