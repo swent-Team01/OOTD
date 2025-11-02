@@ -30,6 +30,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item1 =
         Item(
             itemUuid = "0",
+            postUuid = "0",
             image = ImageData(imageId = "0", imageUrl = "https://example.com/image1.jpg"),
             category = "clothes",
             type = "t-shirt",
@@ -42,6 +43,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item2 =
         Item(
             itemUuid = "1",
+            postUuid = "0",
             image = ImageData("1", "https://example.com/image1.jpg"),
             category = "shoes",
             type = "high heels",
@@ -54,6 +56,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item3 =
         Item(
             itemUuid = "2",
+            postUuid = "0",
             image = ImageData("2", "https://example.com/image1.jpg"),
             category = "bags",
             type = "handbag",
@@ -66,6 +69,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item4 =
         Item(
             itemUuid = "3",
+            postUuid = "0",
             image = ImageData("3", "https://example.com/image1.jpg"),
             category = "accessories",
             type = "sunglasses",
@@ -152,5 +156,130 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
       threw = true
     }
     assertTrue(threw)
+  }
+
+  @Test
+  fun getAssociatedItemsReturnsOnlyItemsForSpecificPost() = runBlocking {
+    // Given multiple items with different postUuid values
+    val postUuid1 = "post_123"
+    val postUuid2 = "post_456"
+
+    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid1)
+    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid1)
+    val itemC = item3.copy(itemUuid = "C", postUuid = postUuid2)
+
+    itemsRepository.addItem(itemA)
+    itemsRepository.addItem(itemB)
+    itemsRepository.addItem(itemC)
+
+    // When fetching items associated with postUuid1
+    val associatedItems = itemsRepository.getAssociatedItems(postUuid1)
+
+    // Then only A and B should be returned
+    assertEquals(2, associatedItems.size)
+    val ids = associatedItems.map { it.itemUuid }.toSet()
+    assertTrue(ids.containsAll(listOf("A", "B")))
+    assertTrue(!ids.contains("C"))
+  }
+
+  @Test
+  fun deletePostItemsRemovesAllItemsForGivenPost() = runBlocking {
+    val postUuid = "postToDelete"
+
+    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid)
+    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid)
+    val itemC = item3.copy(itemUuid = "C", postUuid = "otherPost")
+
+    itemsRepository.addItem(itemA)
+    itemsRepository.addItem(itemB)
+    itemsRepository.addItem(itemC)
+    assertEquals(3, countItems())
+
+    // When deleting items belonging to postUuid
+    itemsRepository.deletePostItems(postUuid)
+
+    // Then only itemC should remain
+    val remaining = itemsRepository.getAllItems()
+    assertEquals(1, remaining.size)
+    assertEquals("C", remaining.first().itemUuid)
+  }
+
+  @Test
+  fun deletePostItemsHandlesEmptyQueryGracefully() = runBlocking {
+    // No items exist for this postUuid
+    val postUuid = "nonexistent_post"
+
+    // Should not throw or affect other data
+    itemsRepository.addItem(item1)
+    assertEquals(1, countItems())
+
+    itemsRepository.deletePostItems(postUuid)
+    assertEquals(1, countItems())
+  }
+
+  @Test
+  fun getAssociatedItemsReturnsCorrectSubset() = runBlocking {
+    val postUuid1 = "post-aaa"
+    val postUuid2 = "post-bbb"
+
+    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid1)
+    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid1)
+    val itemC = item3.copy(itemUuid = "C", postUuid = postUuid2)
+    val itemD = item4.copy(itemUuid = "D", postUuid = postUuid2)
+
+    itemsRepository.addItem(itemA)
+    itemsRepository.addItem(itemB)
+    itemsRepository.addItem(itemC)
+    itemsRepository.addItem(itemD)
+
+    val associated1 = itemsRepository.getAssociatedItems(postUuid1)
+    val associated2 = itemsRepository.getAssociatedItems(postUuid2)
+
+    assertEquals(2, associated1.size)
+    assertTrue(associated1.all { it.postUuid == postUuid1 })
+
+    assertEquals(2, associated2.size)
+    assertTrue(associated2.all { it.postUuid == postUuid2 })
+  }
+
+  @Test
+  fun getAssociatedItemsReturnsEmptyListWhenNoneMatch() = runBlocking {
+    itemsRepository.addItem(item1.copy(postUuid = "some_post"))
+    itemsRepository.addItem(item2.copy(postUuid = "another_post"))
+
+    val associated = itemsRepository.getAssociatedItems("unrelated_post")
+    assertTrue(associated.isEmpty())
+  }
+
+  @Test
+  fun deletePostItemsDeletesOnlyMatchingItems() = runBlocking {
+    val post1 = "delete_me"
+    val post2 = "keep_me"
+
+    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
+    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
+    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+
+    itemsRepository.addItem(itemA)
+    itemsRepository.addItem(itemB)
+    itemsRepository.addItem(itemC)
+    assertEquals(3, countItems())
+
+    itemsRepository.deletePostItems(post1)
+    val remaining = itemsRepository.getAllItems()
+
+    assertEquals(1, remaining.size)
+    assertEquals(post2, remaining.first().postUuid)
+  }
+
+  @Test
+  fun deletePostItemsDoesNothingWhenNoMatch() = runBlocking {
+    val post1 = "existing"
+    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
+    itemsRepository.addItem(itemA)
+    assertEquals(1, countItems())
+
+    itemsRepository.deletePostItems("non_existing_post")
+    assertEquals(1, countItems())
   }
 }

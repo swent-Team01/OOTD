@@ -109,6 +109,7 @@ fun AddItemsScreen(
     addItemsViewModel: AddItemsViewModel = viewModel(),
     onNextScreen: () -> Unit = {},
     goBack: () -> Unit = {},
+    postUuid: String, // will be received from navigation
     modifier: Modifier = Modifier,
     maxImageSize: Dp = 250.dp,
     minImageSize: Dp = 100.dp
@@ -131,6 +132,10 @@ fun AddItemsScreen(
       addItemsViewModel.resetAddSuccess()
     }
   }
+
+  // Initialise post ID
+  LaunchedEffect(postUuid) { addItemsViewModel.initPostUuid(postUuid) }
+
   // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { addItemsViewModel.initTypeSuggestions(context) }
 

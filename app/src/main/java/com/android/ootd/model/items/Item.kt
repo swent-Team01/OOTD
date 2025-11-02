@@ -2,6 +2,7 @@ package com.android.ootd.model.items
 
 data class Item(
     val itemUuid: String,
+    val postUuid: String,
     val image: ImageData,
     val category: String,
     val type: String?,

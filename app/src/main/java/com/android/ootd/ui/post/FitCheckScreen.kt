@@ -47,7 +47,8 @@ object FitCheckScreenTestTags {
 @Composable
 fun FitCheckScreen(
     fitCheckViewModel: FitCheckViewModel = viewModel(),
-    onNextClick: () -> Unit = {},
+    postUuid: String = "",
+    onNextClick: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {}
 ) {
   val uiState by fitCheckViewModel.uiState.collectAsState()
@@ -85,7 +86,12 @@ fun FitCheckScreen(
             },
             navigationIcon = {
               IconButton(
-                  onClick = onBackClick,
+                  onClick = {
+                    if (postUuid.isNotEmpty()) {
+                      fitCheckViewModel.deleteItemsForPost(postUuid)
+                    }
+                    onBackClick()
+                  },
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -100,7 +106,7 @@ fun FitCheckScreen(
             onClick = {
               if (uiState.isPhotoValid) {
                 fitCheckViewModel.clearError()
-                onNextClick()
+                onNextClick(uiState.image.toString(), uiState.description)
               } else {
                 fitCheckViewModel.setErrorMsg("Please select a photo before continuing.")
               }

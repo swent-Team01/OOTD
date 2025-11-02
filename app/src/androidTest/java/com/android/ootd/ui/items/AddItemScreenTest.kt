@@ -41,7 +41,9 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     super.setUp()
     viewModel = AddItemsViewModel(repository)
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
-    composeTestRule.setContent { AddItemsScreen(viewModel, onNextScreen = {}) }
+    composeTestRule.setContent {
+      AddItemsScreen(addItemsViewModel = viewModel, onNextScreen = {}, postUuid = "postuid")
+    }
   }
 
   // ----------- Input and photo flow -----------
@@ -303,6 +305,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       val item =
           Item(
               itemUuid = "test",
+              postUuid = "test_post1",
               image = ImageData("testPhoto", "content://dummy/photo.jpg"),
               category = "Clothing",
               type = "Jacket",
