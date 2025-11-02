@@ -165,7 +165,9 @@ open class AddItemsViewModel(
         val item =
             Item(
                 itemUuid = itemUuid,
-                postUuid = state.postUuid,
+                postUuids =
+                    listOf(
+                        state.postUuid), // Add to a list since an item can belong to multiple posts
                 image = uploadedImage,
                 category = state.category,
                 type = state.type,

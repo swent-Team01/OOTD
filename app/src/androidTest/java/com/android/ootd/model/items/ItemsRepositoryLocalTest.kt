@@ -20,7 +20,7 @@ class ItemsRepositoryLocalTest {
   val item1 =
       Item(
           itemUuid = "0",
-          postUuid = "post1",
+          postUuids = listOf("post1"),
           image = ImageData("0", "https://example.com/image1.jpg"),
           category = "clothes",
           type = "t-shirt",
@@ -33,7 +33,7 @@ class ItemsRepositoryLocalTest {
   val item2 =
       Item(
           itemUuid = "1",
-          postUuid = "post1",
+          postUuids = listOf("post1"),
           image = ImageData("1", "https://example.com/image1.jpg"),
           category = "shoes",
           type = "high heels",
@@ -46,7 +46,7 @@ class ItemsRepositoryLocalTest {
   val item3 =
       Item(
           itemUuid = "2",
-          postUuid = "post1",
+          postUuids = listOf("post1"),
           image = ImageData("2", "https://example.com/image1.jpg"),
           category = "bags",
           type = "handbag",
@@ -59,7 +59,7 @@ class ItemsRepositoryLocalTest {
   val item4 =
       Item(
           itemUuid = "3",
-          postUuid = "post1",
+          postUuids = listOf("post1"),
           image = ImageData("4", "https://example.com/image1.jpg"),
           category = "accessories",
           type = "sunglasses",
@@ -369,9 +369,9 @@ class ItemsRepositoryLocalTest {
     val post1 = "post-A"
     val post2 = "post-B"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(post1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(post1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(post2))
 
     repository.addItem(itemA)
     repository.addItem(itemB)
@@ -382,10 +382,10 @@ class ItemsRepositoryLocalTest {
     val noItems = repository.getAssociatedItems("post-XYZ")
 
     TestCase.assertEquals(2, post1Items.size)
-    TestCase.assertTrue(post1Items.all { it.postUuid == post1 })
+    TestCase.assertTrue(post1Items.all { it.postUuids.contains(post1) })
 
     TestCase.assertEquals(1, post2Items.size)
-    TestCase.assertEquals(post2, post2Items.first().postUuid)
+    TestCase.assertTrue(post2Items.all { it.postUuids.contains(post2) })
 
     TestCase.assertTrue(noItems.isEmpty())
   }
@@ -395,9 +395,9 @@ class ItemsRepositoryLocalTest {
     val post1 = "delete-this"
     val post2 = "keep-this"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(post1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(post1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(post2))
 
     repository.addItem(itemA)
     repository.addItem(itemB)
@@ -408,7 +408,7 @@ class ItemsRepositoryLocalTest {
 
     val remaining = repository.getAllItems()
     TestCase.assertEquals(1, remaining.size)
-    TestCase.assertEquals(post2, remaining.first().postUuid)
+    TestCase.assertTrue(remaining.all { it.postUuids.contains(post2) })
     TestCase.assertTrue(repository.hasItem("C"))
     TestCase.assertFalse(repository.hasItem("A"))
     TestCase.assertFalse(repository.hasItem("B"))
@@ -417,7 +417,7 @@ class ItemsRepositoryLocalTest {
   @Test
   fun deletePostItemsDoesNothingWhenNoMatchFound() = runTest {
     val post1 = "existing-post"
-    repository.addItem(item1.copy(postUuid = post1))
+    repository.addItem(item1.copy(postUuids = listOf(post1)))
     TestCase.assertEquals(1, repository.getItemCount())
 
     repository.deletePostItems("non-existent-post")

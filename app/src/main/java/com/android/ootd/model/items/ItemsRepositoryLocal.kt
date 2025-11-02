@@ -37,7 +37,7 @@ class ItemsRepositoryLocal : ItemsRepository {
    * @param postUuid The unique identifier of the post to filter by.
    */
   override suspend fun getAssociatedItems(postUuid: String): List<Item> {
-    return items.values.filter { it.postUuid == postUuid }
+    return items.values.filter { it.postUuids.contains(postUuid) }
   }
 
   /**
@@ -88,7 +88,7 @@ class ItemsRepositoryLocal : ItemsRepository {
   }
 
   override suspend fun deletePostItems(postUuid: String) {
-    items.values.removeIf { it.postUuid == postUuid }
+    items.values.removeIf { it.postUuids.contains(postUuid) }
   }
 
   /** Clears all items from the local storage. Useful for resetting state between tests. */
