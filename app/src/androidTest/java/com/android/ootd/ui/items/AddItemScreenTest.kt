@@ -61,6 +61,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.enterAddItemPhoto()
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
+    composeTestRule.waitForIdle()
 
     // Assert a few key fields reflect the input
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_BRAND).assertTextContains("Brand")
