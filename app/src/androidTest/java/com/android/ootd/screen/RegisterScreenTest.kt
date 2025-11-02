@@ -327,4 +327,53 @@ class RegisterScreenTest {
     // Assert: selected location should be cleared
     composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.selectedLocation) }
   }
+
+  @Test
+  fun showsLocationError_whenLocationNotSelected_afterLeavingField() {
+    // Touch location field
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+
+    // Leave field without selecting a location
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: should show location error
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
+        .assertIsDisplayed()
+        .assertTextContains("Please select a valid location")
+  }
+
+  @Test
+  fun registerButton_disabled_whenLocationError() {
+    composeTestRule.enterUsername("validUser")
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.enterDate("10102020")
+    composeTestRule.waitForIdle()
+
+    // Touch and leave location field without selecting
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Button should be disabled due to location error
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsNotEnabled()
+  }
+
+  @Test
+  fun errorMessage_triggersToast() {
+    // Set an error message directly in the viewModel
+    composeTestRule.runOnUiThread { viewModel.emitError("Test error message") }
+    composeTestRule.waitForIdle()
+
+    // The toast is displayed (we can't easily verify Toast content in tests,
+    // but we can verify the error was cleared after being shown)
+    composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.errorMsg) }
+  }
 }
