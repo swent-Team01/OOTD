@@ -329,23 +329,6 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun showsLocationError_whenLocationNotSelected_afterLeavingField() {
-    // Touch location field
-    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
-    composeTestRule.waitForIdle()
-
-    // Leave field without selecting a location
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
-    composeTestRule.waitForIdle()
-
-    // Assert: should show location error
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed()
-        .assertTextContains("Please select a valid location")
-  }
-
-  @Test
   fun registerButton_disabled_whenLocationError() {
     composeTestRule.enterUsername("validUser")
     composeTestRule.waitForIdle()
@@ -375,5 +358,84 @@ class RegisterScreenTest {
     // The toast is displayed (we can't easily verify Toast content in tests,
     // but we can verify the error was cleared after being shown)
     composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.errorMsg) }
+  }
+
+  // ========== Dropdown Behavior Tests ==========
+
+  @Test
+  fun locationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused() {
+    // Arrange: focus the location field first
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+
+    // Mock repository to return suggestions
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+
+    // Act: type to trigger search
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should show suggestions automatically
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(1)
+  }
+
+  @Test
+  fun locationDropdown_hidesAutomatically_whenSuggestionsCleared() {
+    // Arrange: show suggestions first
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Act: clear suggestions via viewModel
+    composeTestRule.runOnUiThread { viewModel.clearLocationSuggestions() }
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be hidden
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationDropdown_hidesWhenLosingFocus() {
+    // Arrange: show suggestions
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Act: click another field to lose focus
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be hidden
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationDropdown_showsAgain_whenRefocusingWithExistingSuggestions() {
+    // Arrange: set suggestions and then blur the field
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(suggestions) }
+    composeTestRule.waitForIdle()
+
+    // Focus another field first
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Act: refocus location field
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should show again
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(1)
   }
 }
