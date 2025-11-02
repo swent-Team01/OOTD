@@ -2,6 +2,7 @@ package com.android.ootd.ui.camera
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.camera.core.Camera
 import androidx.camera.core.ImageCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -10,7 +11,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.camera.CameraRepository
+import com.android.ootd.model.camera.CameraRepositoryImpl
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,12 +49,39 @@ data class CameraUIState(
  *
  * @property repository The camera repository for handling CameraX operations
  */
-class CameraViewModel(private val repository: CameraRepository = CameraRepository()) : ViewModel() {
+class CameraViewModel(private val repository: CameraRepository = CameraRepositoryImpl()) :
+    ViewModel() {
+
+  companion object {
+    private const val TAG = "CameraViewModel"
+  }
+
   private val _uiState = MutableStateFlow(CameraUIState())
   val uiState: StateFlow<CameraUIState> = _uiState.asStateFlow()
+
   private var cameraProvider: ProcessCameraProvider? = null
   private var camera: Camera? = null
   private var zoomStateObserver: Observer<androidx.camera.core.ZoomState>? = null
+
+  // ExecutorService managed by ViewModel to ensure proper cleanup
+  private val cameraExecutor: ExecutorService by lazy { Executors.newSingleThreadExecutor() }
+
+  /** Called when the ViewModel is cleared. Cleans up resources to prevent memory leaks. */
+  override fun onCleared() {
+    super.onCleared()
+    Log.d(TAG, "Cleaning up ViewModel resources")
+
+    // Shutdown executor
+    cameraExecutor.shutdown()
+
+    // Remove zoom state observer to prevent mem leaks
+    zoomStateObserver?.let { observer -> camera?.cameraInfo?.zoomState?.removeObserver(observer) }
+
+    // Clear references
+    camera = null
+    cameraProvider = null
+    zoomStateObserver = null
+  }
 
   /** Toggles between front and back camera. */
   fun switchCamera() {
@@ -80,11 +111,6 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
   fun setCapturedImage(uri: Uri?) {
     _uiState.value =
         _uiState.value.copy(capturedImageUri = uri, isCapturing = false, showPreview = uri != null)
-  }
-
-  /** Shows the preview screen. */
-  fun showPreview(show: Boolean) {
-    _uiState.value = _uiState.value.copy(showPreview = show)
   }
 
   /** Retakes the photo (clears captured image and shows camera). */
@@ -163,36 +189,42 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
    * @param ratio The zoom ratio to set (must be between minZoomRatio and maxZoomRatio)
    */
   fun setZoomRatio(ratio: Float) {
+    require(ratio > 0) { "Zoom ratio must be positive" }
+
     camera?.let { cam ->
       val clampedRatio = ratio.coerceIn(_uiState.value.minZoomRatio, _uiState.value.maxZoomRatio)
-      cam.cameraControl.setZoomRatio(clampedRatio)
-    }
+
+      if (clampedRatio != _uiState.value.zoomRatio) {
+        cam.cameraControl.setZoomRatio(clampedRatio)
+        Log.d(TAG, "Zoom ratio set to: $clampedRatio")
+      }
+    } ?: Log.w(TAG, "Cannot set zoom ratio: camera is null")
   }
 
   /**
-   * Captures a photo using the repository.
+   * Captures a photo using the repository. Uses the ViewModel's managed executor.
    *
    * @param context The context for creating the output file
    * @param imageCapture The ImageCapture instance
-   * @param executor The executor for running the capture operation
    * @param onSuccess Callback when image is successfully captured
    */
-  fun capturePhoto(
-      context: Context,
-      imageCapture: ImageCapture,
-      executor: ExecutorService,
-      onSuccess: (Uri) -> Unit
-  ) {
+  fun capturePhoto(context: Context, imageCapture: ImageCapture, onSuccess: (Uri) -> Unit) {
     setCapturing(true)
+    Log.d(TAG, "Starting photo capture")
+
     repository.capturePhoto(
         context = context,
         imageCapture = imageCapture,
-        executor = executor,
+        executor = cameraExecutor,
         onSuccess = { uri ->
+          Log.d(TAG, "Photo captured successfully: $uri")
           setCapturedImage(uri)
           onSuccess(uri)
         },
-        onError = { error -> setError(error) })
+        onError = { error ->
+          Log.e(TAG, "Photo capture failed: $error")
+          setError(error)
+        })
   }
 
   /**
@@ -216,7 +248,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
     viewModelScope.launch {
       try {
         val provider = repository.getCameraProvider(context)
-        cameraProvider = provider // Cache the provider
+        cameraProvider = provider // Cache the provider for later use
         onSuccess(provider)
       } catch (e: Exception) {
         onError("Failed to get camera provider: ${e.message}")

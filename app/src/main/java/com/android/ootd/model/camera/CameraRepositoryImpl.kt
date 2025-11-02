@@ -1,4 +1,4 @@
-package com.android.ootd.ui.camera
+package com.android.ootd.model.camera
 
 import android.content.Context
 import android.net.Uri
@@ -13,6 +13,9 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -20,10 +23,17 @@ import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.withTimeout
 
 /**
- * Repository for handling CameraX operations. Separates camera business logic from UI and
- * ViewModel.
+ * Implementation of CameraRepository for handling CameraX operations. Separates camera logic from
+ * UI and ViewModel.
  */
-class CameraRepository {
+class CameraRepositoryImpl : CameraRepository {
+
+  companion object {
+    private const val TAG = "CameraRepositoryImpl"
+    private const val CAMERA_PROVIDER_TIMEOUT_MS = 10_000L
+    private const val IMAGE_FILE_PREFIX = "OOTD_"
+    private const val IMAGE_FILE_EXTENSION = ".jpg"
+  }
 
   /**
    * Binds the camera to the lifecycle and returns the Camera instance.
@@ -32,15 +42,18 @@ class CameraRepository {
    * @param previewView The PreviewView to display camera preview
    * @param lifecycleOwner The LifecycleOwner to bind the camera to
    * @param lensFacing The camera lens facing (front or back)
-   * @return Pair of Camera and ImageCapture instances
+   * @return Result containing Pair of Camera and ImageCapture instances on success, or exception on
+   *   failure
    */
-  fun bindCamera(
+  override fun bindCamera(
       cameraProvider: ProcessCameraProvider,
       previewView: PreviewView,
       lifecycleOwner: LifecycleOwner,
       lensFacing: Int
   ): Result<Pair<Camera, ImageCapture>> {
     return try {
+      Log.d(TAG, "Binding camera with lensFacing: $lensFacing")
+
       val preview =
           Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
 
@@ -54,7 +67,6 @@ class CameraRepository {
 
       Result.success(Pair(camera, imageCapture))
     } catch (e: Exception) {
-      Log.e("CameraRepository", "Camera binding failed", e)
       Result.failure(e)
     }
   }
@@ -68,15 +80,19 @@ class CameraRepository {
    * @param onSuccess Callback when image is successfully captured
    * @param onError Callback when capture fails
    */
-  fun capturePhoto(
+  override fun capturePhoto(
       context: Context,
       imageCapture: ImageCapture,
       executor: ExecutorService,
       onSuccess: (Uri) -> Unit,
       onError: (String) -> Unit
   ) {
-    val photoFile = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val photoFile = File(context.cacheDir, "$IMAGE_FILE_PREFIX$timestamp$IMAGE_FILE_EXTENSION")
+
     val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+    Log.d(TAG, "Capturing photo to: ${photoFile.absolutePath}")
 
     imageCapture.takePicture(
         outputOptions,
@@ -84,12 +100,13 @@ class CameraRepository {
         object : ImageCapture.OnImageSavedCallback {
           override fun onImageSaved(output: ImageCapture.OutputFileResults) {
             val savedUri = Uri.fromFile(photoFile)
+            Log.d(TAG, "Photo captured successfully: $savedUri")
             onSuccess(savedUri)
           }
 
           override fun onError(exception: ImageCaptureException) {
             val errorMsg = "Photo capture failed: ${exception.message}"
-            Log.e("CameraRepository", errorMsg, exception)
+            Log.e(TAG, errorMsg, exception)
             onError(errorMsg)
           }
         })
@@ -103,15 +120,18 @@ class CameraRepository {
    * @throws kotlinx.coroutines.TimeoutCancellationException if provider not available within 10
    *   seconds
    */
-  suspend fun getCameraProvider(context: Context): ProcessCameraProvider =
-      withTimeout(10_000) {
+  override suspend fun getCameraProvider(context: Context): ProcessCameraProvider =
+      withTimeout(CAMERA_PROVIDER_TIMEOUT_MS) {
         suspendCoroutine { continuation ->
           val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
           cameraProviderFuture.addListener(
               {
                 try {
-                  continuation.resume(cameraProviderFuture.get())
+                  val provider = cameraProviderFuture.get()
+                  Log.d(TAG, "CameraProvider obtained successfully")
+                  continuation.resume(provider)
                 } catch (e: Exception) {
+                  Log.e(TAG, "Failed to get CameraProvider", e)
                   continuation.resumeWithException(e)
                 }
               },

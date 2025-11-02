@@ -3,8 +3,6 @@ package com.android.ootd.ui.camera
 import android.Manifest
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.Uri
 import androidx.camera.core.ImageCapture
 import androidx.camera.view.PreviewView
@@ -35,17 +33,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.model.camera.ImageOrientationHelper
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 object CameraScreenTestTags {
   const val CAMERA_PREVIEW = "cameraPreview"
@@ -59,54 +55,6 @@ object CameraScreenTestTags {
   const val RETAKE_BUTTON = "retakeButton"
   const val APPROVE_BUTTON = "approveButton"
   const val CROP_BUTTON = "cropButton"
-}
-
-/**
- * Helper function to load a bitmap with correct orientation based on EXIF data.
- *
- * @param context The context for accessing content resolver
- * @param uri The URI of the image to load
- * @return Bitmap with correct orientation, or null if loading fails
- */
-private fun loadBitmapWithCorrectOrientation(context: android.content.Context, uri: Uri): Bitmap? {
-  return try {
-    val inputStream = context.contentResolver.openInputStream(uri)
-    val bitmap = BitmapFactory.decodeStream(inputStream)
-    inputStream?.close()
-
-    if (bitmap == null) return null
-
-    // Read EXIF orientation
-    val exifInputStream = context.contentResolver.openInputStream(uri)
-    val exif = exifInputStream?.let { ExifInterface(it) }
-    exifInputStream?.close()
-
-    val orientation =
-        exif?.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-            ?: ExifInterface.ORIENTATION_NORMAL
-
-    // Calculate rotation angle based on EXIF orientation
-    val rotationAngle =
-        when (orientation) {
-          ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-          ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-          ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-          else -> 0f
-        }
-
-    // Return original bitmap if no rotation needed
-    if (rotationAngle == 0f) return bitmap
-
-    // Apply rotation
-    val matrix = Matrix()
-    matrix.postRotate(rotationAngle)
-    val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    bitmap.recycle() // Recycle the original bitmap to free memory
-    rotatedBitmap
-  } catch (e: Exception) {
-    e.printStackTrace()
-    null
-  }
 }
 
 /**
@@ -210,10 +158,7 @@ private fun CameraView(
   val cameraUiState by cameraViewModel.uiState.collectAsState()
 
   var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
-  val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
   val previewView = remember { PreviewView(context) }
-
-  DisposableEffect(Unit) { onDispose { cameraExecutor.shutdown() } }
 
   // Rebind camera when lensFacing changes
   LaunchedEffect(cameraUiState.lensFacing) {
@@ -228,7 +173,7 @@ private fun CameraView(
 
   Box(modifier = Modifier.fillMaxSize()) {
     // Camera Preview with pinch-to-zoom gesture
-    var scale by remember { mutableStateOf(1f) }
+    var scale by remember { mutableFloatStateOf(1f) }
 
     AndroidView(
         factory = { previewView },
@@ -321,7 +266,6 @@ private fun CameraView(
                               cameraViewModel.capturePhoto(
                                   context = context,
                                   imageCapture = capture,
-                                  executor = cameraExecutor,
                                   onSuccess = {
                                     // Just set the captured image, don't close or call
                                     // onImageCaptured
@@ -358,35 +302,75 @@ private fun ImagePreviewScreen(
     onClose: () -> Unit
 ) {
   val context = LocalContext.current
+  val imageHelper = remember { ImageOrientationHelper() }
+
   var isCropping by remember { mutableStateOf(false) }
   var croppedImageUri by remember { mutableStateOf<Uri?>(null) }
   val currentImageUri = croppedImageUri ?: imageUri
   var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+  var isLoading by remember { mutableStateOf(true) }
+  var errorMessage by remember { mutableStateOf<String?>(null) }
 
   // Load bitmap for preview with correct orientation
   LaunchedEffect(currentImageUri) {
-    bitmap = loadBitmapWithCorrectOrientation(context, currentImageUri)
+    isLoading = true
+    errorMessage = null
+
+    imageHelper
+        .loadBitmapWithCorrectOrientation(context, currentImageUri)
+        .onSuccess { loadedBitmap ->
+          bitmap?.recycle() // Recycle old bitmap if exists
+          bitmap = loadedBitmap
+          isLoading = false
+        }
+        .onFailure { error ->
+          errorMessage = "Failed to load image: ${error.message}"
+          isLoading = false
+        }
+  }
+
+  // Clean up bitmap when composable leaves composition
+  DisposableEffect(Unit) {
+    onDispose {
+      bitmap?.recycle()
+      bitmap = null
+    }
   }
 
   Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
     if (isCropping) {
       Text("Crop will be implemented later on !")
     } else {
-
       // Preview mode
       Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
           Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
-            bitmap?.let { bmp ->
-              Image(
-                  bitmap = bmp.asImageBitmap(),
-                  contentDescription = "Captured Image",
-                  modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.IMAGE_PREVIEW),
-                  contentScale = ContentScale.Fit)
+            when {
+              isLoading -> {
+                // Show loading indicator
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center), color = Tertiary)
+              }
+              errorMessage != null -> {
+                // Show error message
+                Text(
+                    text = errorMessage ?: "Unknown error",
+                    color = White,
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge)
+              }
+              bitmap != null -> {
+                // Show the loaded bitmap
+                Image(
+                    bitmap = bitmap!!.asImageBitmap(),
+                    contentDescription = "Captured Image",
+                    modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.IMAGE_PREVIEW),
+                    contentScale = ContentScale.Fit)
+              }
             }
           }
 
-          // Close button (top-left, overlays the image)
+          // Close button
           IconButton(
               onClick = onClose,
               modifier =
@@ -401,7 +385,7 @@ private fun ImagePreviewScreen(
                     modifier = Modifier.size(36.dp))
               }
 
-          // Bottom action buttons (always visible at the bottom)
+          // Bottom action buttons
           Row(
               modifier =
                   Modifier.align(Alignment.BottomCenter)

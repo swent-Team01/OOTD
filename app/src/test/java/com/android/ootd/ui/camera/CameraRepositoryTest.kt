@@ -8,6 +8,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
+import com.android.ootd.model.camera.CameraRepository
+import com.android.ootd.model.camera.CameraRepositoryImpl
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -30,11 +32,11 @@ class CameraRepositoryTest {
 
   @Before
   fun setup() {
-    repository = CameraRepository()
+    repository = CameraRepositoryImpl()
   }
 
   @Test
-  fun `bindCamera returns success with ImageCapture when binding succeeds`() {
+  fun `bindCamera returns success with Camera and ImageCapture when binding succeeds`() {
     val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
     val mockPreviewView = mockk<PreviewView>(relaxed = true)
     val mockLifecycleOwner = mockk<LifecycleOwner>()
@@ -47,8 +49,10 @@ class CameraRepositoryTest {
             CameraSelector.LENS_FACING_BACK)
 
     assertTrue(result.isSuccess)
-    assertNotNull(result.getOrNull())
-    assertTrue(result.getOrNull() is ImageCapture)
+    val cameraAndCapture = result.getOrNull()
+    assertNotNull(cameraAndCapture)
+    assertNotNull(cameraAndCapture?.first) // Camera
+    assertNotNull(cameraAndCapture?.second) // ImageCapture
   }
 
   @Test

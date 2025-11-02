@@ -7,6 +7,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
+import com.android.ootd.model.camera.CameraRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
