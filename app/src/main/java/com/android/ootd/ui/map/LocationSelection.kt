@@ -17,6 +17,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,6 +71,15 @@ fun LocationSelectionSection(
     var showDropdown by remember { mutableStateOf(false) }
     var isFocused by remember { mutableStateOf(false) }
 
+    // Automatically show dropdown when suggestions are available and field is focused
+    LaunchedEffect(suggestions, isFocused) {
+      if (isFocused && suggestions.isNotEmpty()) {
+        showDropdown = true
+      } else if (suggestions.isEmpty()) {
+        showDropdown = false
+      }
+    }
+
     // GPS Button
     OutlinedButton(
         onClick = onGPSClick,
@@ -92,7 +102,10 @@ fun LocationSelectionSection(
           value = locationQuery,
           onValueChange = {
             onLocationQueryChange(it)
-            showDropdown = true // Show dropdown when user starts typing
+            // Ensure dropdown is shown when user types and we're focused
+            if (isFocused) {
+              showDropdown = true
+            }
           },
           textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = Bodoni),
           label = { Text("Search location", color = textColor, fontFamily = Bodoni) },
@@ -108,11 +121,17 @@ fun LocationSelectionSection(
               Modifier.fillMaxWidth()
                   .testTag(LocationSelectionTestTags.INPUT_LOCATION)
                   .onFocusChanged { focusState ->
+                    val wasFocused = isFocused
                     isFocused = focusState.isFocused
                     onFocusChanged(focusState.isFocused)
-                    // Show dropdown when focused if there are suggestions
-                    if (focusState.isFocused && suggestions.isNotEmpty()) {
+
+                    // Show dropdown when gaining focus if there are suggestions
+                    if (focusState.isFocused && !wasFocused && suggestions.isNotEmpty()) {
                       showDropdown = true
+                    }
+                    // Hide dropdown when losing focus
+                    if (!focusState.isFocused && wasFocused) {
+                      showDropdown = false
                     }
                   },
           singleLine = true,
@@ -120,13 +139,8 @@ fun LocationSelectionSection(
 
       // Dropdown menu for location suggestions
       DropdownMenu(
-          expanded = showDropdown && suggestions.isNotEmpty(),
-          onDismissRequest = {
-            // Only dismiss if the field is not focused
-            if (!isFocused) {
-              showDropdown = false
-            }
-          },
+          expanded = showDropdown && suggestions.isNotEmpty() && isFocused,
+          onDismissRequest = { showDropdown = false },
           modifier = Modifier.fillMaxWidth()) {
             suggestions.filterNotNull().take(3).forEach { location ->
               DropdownMenuItem(
@@ -142,7 +156,7 @@ fun LocationSelectionSection(
                     onLocationQueryChange(location.name)
                     onLocationSelect(location)
                     onClearSuggestions()
-                    showDropdown = false // Close dropdown on selection
+                    showDropdown = false
                   },
                   modifier =
                       Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_SUGGESTION))
