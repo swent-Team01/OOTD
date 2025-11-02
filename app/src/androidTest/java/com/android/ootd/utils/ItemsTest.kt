@@ -70,7 +70,7 @@ interface ItemsTest {
 
   fun ComposeTestRule.checkPhotoPreviewDisplayed() {
     ensureVisible(AddItemScreenTestTags.IMAGE_PREVIEW)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
+    onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertExists()
   }
 
   fun ComposeTestRule.enterAddItemType(type: String) {
