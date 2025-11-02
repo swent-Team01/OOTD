@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import com.android.ootd.model.items.ImageData
@@ -105,7 +106,7 @@ interface ItemsTest {
     ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
 
     onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
-        .performTextInput(material)
+        .performTextReplacement(material)
   }
 
   /**
