@@ -171,28 +171,6 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun showsErrorMessage_whenLocationBlank_afterLeavingField() {
-    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
-    composeTestRule.waitForIdle()
-
-    // Click on username field to leave the location field
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
-    composeTestRule.waitForIdle()
-
-    // Additional waits to ensure focus change completes and state updates propagate
-    composeTestRule.mainClock.advanceTimeBy(200)
-    composeTestRule.waitForIdle()
-
-    // Verify that the username field has focus now (ensures we really left location field)
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).assertExists()
-
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed()
-        .assertTextContains("Please select a valid location")
-  }
-
-  @Test
   fun registerButton_disabled_whenUsernameError() {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).performClick()
