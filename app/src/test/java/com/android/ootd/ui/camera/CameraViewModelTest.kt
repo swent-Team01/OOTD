@@ -519,4 +519,46 @@ class CameraViewModelTest {
     viewModel.reset()
     assertEquals(CameraSelector.LENS_FACING_BACK, viewModel.uiState.value.lensFacing)
   }
+
+  // ========== Zoom Ratio Tests ==========
+
+  @Test
+  fun `setZoomRatio does not crash when camera is bound`() {
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+    val mockCameraControl = mockk<androidx.camera.core.CameraControl>(relaxed = true)
+    val mockCameraInfo = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
+    val mockZoomState =
+        mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
+
+    every { mockCamera.cameraControl } returns mockCameraControl
+    every { mockCamera.cameraInfo } returns mockCameraInfo
+    every { mockCameraInfo.zoomState } returns mockZoomState
+
+    // Simulate bindCamera to set camera reference
+    val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
+    val mockPreviewView = mockk<PreviewView>(relaxed = true)
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockImageCapture = mockk<ImageCapture>()
+
+    every {
+      mockRepository.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner, any())
+    } returns Result.success(Pair(mockCamera, mockImageCapture))
+
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
+
+    // Set zoom ratio - should not crash
+    viewModel.setZoomRatio(1.5f)
+
+    // Test passes if no exception is thrown
+    assertTrue(true)
+  }
+
+  @Test
+  fun `setZoomRatio does nothing when camera is not bound`() {
+    // Don't bind camera, just try to set zoom - should not crash
+    viewModel.setZoomRatio(2.0f)
+
+    // Verify no exception was thrown and state remains at default
+    assertEquals(1.0f, viewModel.uiState.value.zoomRatio, 0.01f)
+  }
 }

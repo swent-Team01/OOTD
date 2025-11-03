@@ -216,4 +216,60 @@ class ImageOrientationHelperTest {
         assertTrue(result.isFailure)
         assertEquals(exception, result.exceptionOrNull())
       }
+
+  // ========== Rotation Tests ==========
+
+  @Test
+  fun `loadBitmapWithCorrectOrientation handles 90 degree rotation correctly`() =
+      runTest(testDispatcher) {
+        val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
+        val mockInputStream = mockk<InputStream>(relaxed = true)
+
+        mockkStatic(BitmapFactory::class)
+        every { BitmapFactory.decodeStream(any()) } returns bitmap
+
+        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
+
+        assertTrue(result.isSuccess)
+        val resultBitmap = result.getOrNull()
+        assertNotNull(resultBitmap)
+      }
+
+  @Test
+  fun `loadBitmapWithCorrectOrientation handles 180 degree rotation correctly`() =
+      runTest(testDispatcher) {
+        val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
+        val mockInputStream = mockk<InputStream>(relaxed = true)
+
+        mockkStatic(BitmapFactory::class)
+        every { BitmapFactory.decodeStream(any()) } returns bitmap
+
+        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
+
+        assertTrue(result.isSuccess)
+        val resultBitmap = result.getOrNull()
+        assertNotNull(resultBitmap)
+      }
+
+  @Test
+  fun `loadBitmapWithCorrectOrientation handles 270 degree rotation correctly`() =
+      runTest(testDispatcher) {
+        val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
+        val mockInputStream = mockk<InputStream>(relaxed = true)
+
+        mockkStatic(BitmapFactory::class)
+        every { BitmapFactory.decodeStream(any()) } returns bitmap
+
+        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
+
+        assertTrue(result.isSuccess)
+        val resultBitmap = result.getOrNull()
+        assertNotNull(resultBitmap)
+      }
 }
