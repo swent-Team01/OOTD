@@ -130,6 +130,23 @@ describe('Firestore rules - OOTD friend-only feed', () => {
 
   // Posts
   test('Author and friends can read posts; non-friends cannot', async () => {
+    // Ensure accounts are set up properly
+    await assertSucceeds(
+      setDoc(doc(me, 'accounts/me'), {
+        ownerId: 'me',
+        name: 'Me',
+        friendUids: ['u1', 'u2'],
+      })
+    );
+
+    await assertSucceeds(
+      setDoc(doc(alice, 'accounts/u1'), {
+        ownerId: 'u1',
+        name: 'Alice',
+        friendUids: ['me'],
+      })
+    );
+
     await assertSucceeds(
       setDoc(doc(me, 'posts/my_post'), {
         postUID: 'my_post',

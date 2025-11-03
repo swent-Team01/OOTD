@@ -80,7 +80,7 @@ export function defaultAccounts() {
       ownerId: 'u3',
       name: 'Carol',
       email: 'carol@example.com',
-      friendUids: ['me'] // one-way: me does NOT list u3 (Carol follows me, but me doesn't follow Carol)
+      friendUids: []
     },
     {
       ownerId: 'u9',
