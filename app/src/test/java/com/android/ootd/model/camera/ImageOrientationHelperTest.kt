@@ -62,7 +62,7 @@ class ImageOrientationHelperTest {
 
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
         assertNotNull(result.getOrNull())
@@ -78,7 +78,7 @@ class ImageOrientationHelperTest {
 
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isFailure)
       }
@@ -88,7 +88,7 @@ class ImageOrientationHelperTest {
       runTest(testDispatcher) {
         every { mockContext.contentResolver.openInputStream(mockUri) } returns null
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isFailure)
       }
@@ -99,7 +99,7 @@ class ImageOrientationHelperTest {
         every { mockContext.contentResolver.openInputStream(mockUri) } throws
             RuntimeException("File not found")
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is RuntimeException)
@@ -118,7 +118,7 @@ class ImageOrientationHelperTest {
 
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
         val resultBitmap = result.getOrNull()
@@ -140,7 +140,7 @@ class ImageOrientationHelperTest {
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
         // Should still succeed even if EXIF reading fails
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
       }
@@ -158,7 +158,7 @@ class ImageOrientationHelperTest {
 
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
         val resultBitmap = result.getOrNull()
@@ -178,7 +178,7 @@ class ImageOrientationHelperTest {
 
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
         val resultBitmap = result.getOrNull()
@@ -197,7 +197,7 @@ class ImageOrientationHelperTest {
 
         every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         // Should complete successfully on background thread
         assertTrue(result.isSuccess)
@@ -211,7 +211,7 @@ class ImageOrientationHelperTest {
         val exception = IllegalArgumentException("Invalid URI")
         every { mockContext.contentResolver.openInputStream(mockUri) } throws exception
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isFailure)
         assertEquals(exception, result.exceptionOrNull())

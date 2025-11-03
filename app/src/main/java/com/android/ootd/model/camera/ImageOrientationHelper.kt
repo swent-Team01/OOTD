@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.util.Log
 import androidx.exifinterface.media.ExifInterface
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -28,8 +29,12 @@ class ImageOrientationHelper {
    * @param uri The URI of the image to load
    * @return Result containing the correctly oriented Bitmap on success, or exception on failure
    */
-  suspend fun loadBitmapWithCorrectOrientation(context: Context, uri: Uri): Result<Bitmap> =
-      withContext(Dispatchers.IO) {
+  suspend fun loadBitmapWithCorrectOrientation(
+      context: Context,
+      uri: Uri,
+      dispatcher: CoroutineDispatcher = Dispatchers.IO
+  ): Result<Bitmap> =
+      withContext(dispatcher) {
         runCatching {
               Log.d(TAG, "Loading bitmap from URI: $uri")
 
