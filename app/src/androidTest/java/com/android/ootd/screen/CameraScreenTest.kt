@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -196,20 +197,29 @@ class CameraScreenPermissionTest {
             "pm revoke ${composeTestRule.activity.packageName} ${Manifest.permission.CAMERA}")
         .close()
 
-    // Wait for permission state to update
-    Thread.sleep(100)
+    // Wait longer for permission state to update on CI emulators
+    // CI emulators can be slower than local devices
+    Thread.sleep(500)
 
     composeTestRule.setContent {
       CameraScreen(
           onImageCaptured = {}, onDismiss = { dismissed = true }, cameraViewModel = viewModel)
     }
 
-    // Wait for compose to settle after permission revocation
+    // Wait for compose to settle and ensure permission state is reflected in UI
+    composeTestRule.waitForIdle()
+
+    // Additional wait to ensure permission denied UI is rendered
+    // This is especially important on slower CI emulators
+    Thread.sleep(200)
     composeTestRule.waitForIdle()
   }
 
   @Test
   fun displayPermissionRequestWhenNotGranted() {
+    // Wait for UI to stabilize before assertions
+    composeTestRule.waitForIdle()
+
     composeTestRule
         .onNodeWithTag(CameraScreenTestTags.PERMISSION_DENIED_MESSAGE)
         .assertIsDisplayed()
@@ -220,6 +230,9 @@ class CameraScreenPermissionTest {
 
   @Test
   fun permissionMessageDisplaysCorrectText() {
+    // Wait for UI to stabilize before assertions
+    composeTestRule.waitForIdle()
+
     composeTestRule
         .onNodeWithText("Camera permission is required to take your fit checks photos !")
         .assertIsDisplayed()
@@ -227,11 +240,23 @@ class CameraScreenPermissionTest {
 
   @Test
   fun grantPermissionButtonDisplayed() {
+    // Wait for the permission denied UI to be fully rendered
+    // This is necessary because permission state updates can be async
+    composeTestRule.waitForIdle()
+
+    // Use waitUntil for more robust waiting in CI environments
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Grant Permission !").fetchSemanticsNodes().isNotEmpty()
+    }
+
     composeTestRule.onNodeWithText("Grant Permission !").assertIsDisplayed()
   }
 
   @Test
   fun cancelButtonDisplayedInPermissionRequest() {
+    // Wait for UI to stabilize before assertions
+    composeTestRule.waitForIdle()
+
     composeTestRule.onNodeWithText("Cancel").assertIsDisplayed()
   }
 
