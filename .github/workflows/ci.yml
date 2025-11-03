@@ -372,3 +372,31 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --parallel --build-cache
+
+  # Final job: CI Status Check (required for branch protection)
+  # This job depends on all other jobs and provides a single check for branch protection rules
+  ci-status:
+    name: CI
+    runs-on: ubuntu-latest
+    needs: [format-check, assemble-and-lint, compile-debug, android-instrumentation-tests, unit-tests, coverage-report]
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.format-check.result }}" != "success" || \
+                "${{ needs.assemble-and-lint.result }}" != "success" || \
+                "${{ needs.compile-debug.result }}" != "success" || \
+                "${{ needs.android-instrumentation-tests.result }}" != "success" || \
+                "${{ needs.unit-tests.result }}" != "success" || \
+                "${{ needs.coverage-report.result }}" != "success" ]]; then
+            echo "One or more jobs failed:"
+            echo "Format Check: ${{ needs.format-check.result }}"
+            echo "Assemble and Lint: ${{ needs.assemble-and-lint.result }}"
+            echo "Compile Debug: ${{ needs.compile-debug.result }}"
+            echo "Android Instrumentation Tests: ${{ needs.android-instrumentation-tests.result }}"
+            echo "Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "Coverage Report: ${{ needs.coverage-report.result }}"
+            exit 1
+          fi
+          echo "All CI jobs completed successfully!"
