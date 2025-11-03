@@ -11,10 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.account.AccountIcon
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
 
 object FeedScreenTestTags {
@@ -32,7 +33,7 @@ fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onAddPostClick: () -> Unit,
     onSearchClick: () -> Unit = {},
-    onAccountIconClick: () -> Unit = {}
+    onNotificationIconClick: () -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -60,7 +61,14 @@ fun FeedScreen(
                         tint = MaterialTheme.colorScheme.tertiary)
                   }
             },
-            actions = { AccountIcon(onClick = onAccountIconClick) },
+            actions = {
+              IconButton(onClick = onNotificationIconClick) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_notification),
+                    contentDescription = "Notifications",
+                    tint = MaterialTheme.colorScheme.tertiary)
+              }
+            },
             colors =
                 TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background))

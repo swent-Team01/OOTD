@@ -155,8 +155,6 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           .document(account.uid)
           .set(account.toFirestoreMap())
           .await()
-
-      Log.d("AccountRepositoryFirestore", "Successfully added account with UID: ${account.uid}")
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error adding account: ${e.message}", e)
       throw e

@@ -104,35 +104,8 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
           .document(notification.uid)
           .set(notification.toDto())
           .await()
-
-      Log.d(
-          "NotificationRepositoryFirestore",
-          "Successfully added notification with UID: ${notification.uid}")
     } catch (e: Exception) {
       Log.e("NotificationRepositoryFirestore", "Error adding notification: ${e.message}", e)
-      throw e
-    }
-  }
-
-  override suspend fun getNotification(notificationId: String): Notification {
-    return try {
-      val documentList =
-          db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("uid", notificationId)
-              .get()
-              .await()
-
-      if (documentList.documents.isEmpty()) {
-        throw NoSuchElementException("Notification with ID $notificationId not found")
-      }
-
-      transformNotificationDocument(documentList.documents[0])
-          ?: throw IllegalStateException("Failed to transform document with ID $notificationId")
-    } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error getting notification $notificationId: ${e.message}",
-          e)
       throw e
     }
   }
@@ -188,35 +161,8 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       if (documentList.documents.isEmpty()) {
         throw NoSuchElementException("Notification with ID ${notification.uid} not found")
       }
-      Log.d("NotificationRepositoryFirestore", "Successfully found the necessary document")
-      db.collection(NOTIFICATION_COLLECTION_PATH)
-          .document(documentList.documents[0].id)
-          .delete()
-          .await()
-
-      Log.d(
-          "NotificationRepositoryFirestore",
-          "Successfully deleted notification with UID: ${notification.uid}")
     } catch (e: Exception) {
       Log.e("NotificationRepositoryFirestore", "Error deleting notification: ${e.message}", e)
-      throw e
-    }
-  }
-
-  override suspend fun notificationExists(notificationId: String): Boolean {
-    return try {
-      val querySnapshot =
-          db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("uid", notificationId)
-              .get()
-              .await()
-
-      querySnapshot.documents.isNotEmpty()
-    } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error checking notification existence: ${e.message}",
-          e)
       throw e
     }
   }
