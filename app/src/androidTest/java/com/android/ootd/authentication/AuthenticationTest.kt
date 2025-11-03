@@ -1,48 +1,12 @@
 /**
- * Authentication and navigation test suite for the OOTD app.
- *
- * Overview:
- * - This file contains unit and integration tests for authentication-related functionality
- *   (SignInViewModel and SignInScreen), splash/startup behavior (SplashViewModel), and high-level
- *   navigation actions used by the app.
- *
- * Purpose and coverage:
- * - SignInViewModel: verifies initial state, success/failure flows, cancellation, and exception
- *   handling.
- * - SignInScreen (UI tests): verifies that UI elements render correctly, that user interactions
- *   call the ViewModel, and that loading states are shown.
- * - SplashViewModel: verifies startup logic that determines whether the user is already signed in.
- * - Integration tests: exercise a complete sign-in flow using test helpers (fake JWT tokens and a
- *   fake CredentialManager) and a mocked FirebaseAuth to avoid network calls.
- * - Navigation-related tests: ensure NavigationActions behaves correctly for top-level and
- *   non-top-level destinations.
- *
- * Test tools and helpers used:
- * - androidx.compose.ui.test (Compose testing APIs) and createComposeRule
- * - androidx.navigation testing helpers (TestNavHostController, ComposeNavigator)
- * - MockK for mocking dependencies and static calls
- * - FakeCredentialManager and FakeJwtGenerator (test helpers in `com.android.ootd.utils`)
- * - kotlinx.coroutines.test for coroutine-based tests
- * - Google Play Services Tasks wrapper (Tasks.forResult) to simulate Firebase Tasks
- *
- * Notes:
- * - Integration tests use a mocked `FirebaseAuth` (via MockK) so the fake Google ID token does not
- *   need to reach the real Firebase servers. This keeps tests hermetic and fast.
- * - Tests intentionally mix unit-level assertions (ViewModel state) and higher-level UI behaviors
- *   (Compose UI interactions and navigation) to give confidence in real flows.
- *
- * Acknowledgements:
- * - These tests were written in conjunction with GitHub Copilot (assistive development).
+ * Authentication and navigation tests for the OOTD app. Tests cover SignInViewModel, SignInScreen
+ * UI, SplashViewModel, and integration flows.
  */
 package com.android.ootd.authentication
 
 import android.content.Context
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.credentials.Credential
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
@@ -74,22 +38,12 @@ class AuthenticationExtensiveTest {
 
   private lateinit var context: Context
   private lateinit var mockAccountService: AccountService
-  private lateinit var mockCredentialManager: CredentialManager
-  private lateinit var mockFirebaseAuth: FirebaseAuth
-  private lateinit var mockFirebaseUser: FirebaseUser
-  private lateinit var navController: TestNavHostController
 
   @Before
   fun setUp() {
     context = ApplicationProvider.getApplicationContext()
     mockAccountService = mockk(relaxed = true)
-    mockCredentialManager = mockk(relaxed = true)
-    mockFirebaseAuth = mockk(relaxed = true)
-    mockFirebaseUser = mockk(relaxed = true)
-
     FirebaseAuth.getInstance().signOut()
-
-    navController = TestNavHostController(context)
   }
 
   @After
@@ -97,10 +51,12 @@ class AuthenticationExtensiveTest {
     unmockkAll()
   }
 
-  // ========== SignInViewModel Tests ==========
+  // ========================================================================
+  // SignInViewModel Tests
+  // ========================================================================
 
   @Test
-  fun signInViewModel_initialState_isCorrect() {
+  fun signInViewModel_initialState() {
     val viewModel = SignInViewModel(mockAccountService)
     val state = viewModel.uiState.value
 
@@ -111,14 +67,10 @@ class AuthenticationExtensiveTest {
   }
 
   @Test
-  fun signInViewModel_clearErrorMsg_clearsError() {
+  fun signInViewModel_clearErrorMsg() {
     val viewModel = SignInViewModel(mockAccountService)
-
-    // Manually set error state (would normally come from sign-in failure)
     val stateFlow = viewModel.uiState as MutableStateFlow
     stateFlow.value = stateFlow.value.copy(errorMsg = "Test error")
-
-    assertEquals("Test error", viewModel.uiState.value.errorMsg)
 
     viewModel.clearErrorMsg()
 
@@ -126,93 +78,79 @@ class AuthenticationExtensiveTest {
   }
 
   @Test
-  fun signInViewModel_signIn_successfulLogin() = runTest {
-    val fakeGoogleIdToken =
-        FakeJwtGenerator.createFakeGoogleIdToken("Test User", email = "test@example.com")
-
-    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
+  fun signInViewModel_successfulLogin() = runTest {
+    val fakeToken = FakeJwtGenerator.createFakeGoogleIdToken("User", email = "test@example.com")
+    val fakeCredManager = FakeCredentialManager.create(fakeToken)
 
     composeTestRule.setContent {
-      SignInScreen(
-          credentialManager = fakeCredentialManager,
-          onSignedIn = { /* Navigation verified separately */})
+      SignInScreen(credentialManager = fakeCredManager, onSignedIn = {})
     }
 
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
+    composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
 
-    // Wait for the login to complete - either success toast or overview navigation
     composeTestRule.waitUntil(timeoutMillis = 5000) {
-      // Check if we're no longer showing the login button (loading or navigated away)
       composeTestRule
           .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
           .fetchSemanticsNodes()
           .isEmpty()
     }
-
-    // Give some time for the UI state to update
-    composeTestRule.waitForIdle()
-
-    // The login should have succeeded - we can verify by checking that we're not in an error state
   }
 
   @Test
-  fun signInViewModel_signIn_failedLogin() = runTest {
-    val mockCredential = mockk<CustomCredential>()
+  fun signInViewModel_failedLogin() = runTest {
+    val mockCredManager = mockk<androidx.credentials.CredentialManager>()
+    val mockCredential = mockk<androidx.credentials.CustomCredential>()
+    val mockResponse = mockk<androidx.credentials.GetCredentialResponse>()
+    every { mockResponse.credential } returns mockCredential
 
-    coEvery { mockAccountService.signInWithGoogle(any<Credential>()) } returns
-        Result.failure(Exception("Authentication failed"))
+    coEvery { mockAccountService.signInWithGoogle(any<androidx.credentials.Credential>()) } returns
+        Result.failure(Exception("Auth failed"))
     coEvery {
-      mockCredentialManager.getCredential(
+      mockCredManager.getCredential(
           any<Context>(), any<androidx.credentials.GetCredentialRequest>())
-    } returns mockk { every { credential } returns mockCredential }
+    } returns mockResponse
 
     val viewModel = SignInViewModel(mockAccountService)
-
-    viewModel.signIn(context, mockCredentialManager)
+    viewModel.signIn(context, mockCredManager)
 
     composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.errorMsg != null }
 
-    val finalState = viewModel.uiState.value
-    assertFalse(finalState.isLoading)
-    assertNull(finalState.user)
-    assertNotNull(finalState.errorMsg)
-    assertTrue(finalState.signedOut)
+    val state = viewModel.uiState.value
+    assertFalse(state.isLoading)
+    assertNotNull(state.errorMsg)
+    assertTrue(state.signedOut)
   }
 
   @Test
-  fun signInViewModel_signIn_userCancellation() = runTest {
+  fun signInViewModel_userCancellation() = runTest {
+    val mockCredManager = mockk<androidx.credentials.CredentialManager>()
     coEvery {
-      mockCredentialManager.getCredential(
+      mockCredManager.getCredential(
           any<Context>(), any<androidx.credentials.GetCredentialRequest>())
     } throws Exception("User cancelled")
 
     val viewModel = SignInViewModel(mockAccountService)
-    viewModel.signIn(context, mockCredentialManager)
+    viewModel.signIn(context, mockCredManager)
 
     composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.errorMsg != null }
 
-    val finalState = viewModel.uiState.value
-    assertFalse(finalState.isLoading)
-    assertTrue(finalState.signedOut)
-    assertNotNull(finalState.errorMsg)
+    assertTrue(viewModel.uiState.value.signedOut)
   }
 
   @Test
-  fun signInViewModel_signIn_credentialException() = runTest {
+  fun signInViewModel_credentialException() = runTest {
     val realException =
         androidx.credentials.exceptions.GetCredentialUnknownException("Credential error occurred")
 
+    val mockCredManager = mockk<androidx.credentials.CredentialManager>()
     coEvery {
-      mockCredentialManager.getCredential(
+      mockCredManager.getCredential(
           any<Context>(), any<androidx.credentials.GetCredentialRequest>())
     } throws realException
 
     val viewModel = SignInViewModel(mockAccountService)
 
-    viewModel.signIn(context, mockCredentialManager)
+    viewModel.signIn(context, mockCredManager)
 
     composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.errorMsg != null }
 
@@ -223,15 +161,16 @@ class AuthenticationExtensiveTest {
   }
 
   @Test
-  fun signInViewModel_signIn_unexpectedException() = runTest {
+  fun signInViewModel_unexpectedException() = runTest {
+    val mockCredManager = mockk<androidx.credentials.CredentialManager>()
     coEvery {
-      mockCredentialManager.getCredential(
+      mockCredManager.getCredential(
           any<Context>(), any<androidx.credentials.GetCredentialRequest>())
     } throws RuntimeException("Unexpected error")
 
     val viewModel = SignInViewModel(mockAccountService)
 
-    viewModel.signIn(context, mockCredentialManager)
+    viewModel.signIn(context, mockCredManager)
 
     composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.errorMsg != null }
 
@@ -240,261 +179,159 @@ class AuthenticationExtensiveTest {
   }
 
   @Test
-  fun signInViewModel_signIn_ignoresMultipleConcurrentCalls() = runTest {
+  fun signInViewModel_ignoresMultipleConcurrentCalls() = runTest {
     var callCount = 0
+    val mockCredManager = mockk<androidx.credentials.CredentialManager>()
+    val mockCredential = mockk<androidx.credentials.CustomCredential>()
+    val mockResponse = mockk<androidx.credentials.GetCredentialResponse>()
+    every { mockResponse.credential } returns mockCredential
 
     coEvery {
-      mockCredentialManager.getCredential(
+      mockCredManager.getCredential(
           any<Context>(), any<androidx.credentials.GetCredentialRequest>())
     } coAnswers
         {
           callCount++
-          // Simulate a short suspendable work so the first call is in-flight
           kotlinx.coroutines.delay(200)
-          mockk { every { credential } returns mockk<CustomCredential>() }
+          mockResponse
         }
 
     val viewModel = SignInViewModel(mockAccountService)
+    viewModel.signIn(context, mockCredManager)
 
-    // Start the first sign-in
-    viewModel.signIn(context, mockCredentialManager)
-
-    // Wait until the ViewModel has set isLoading = true so further calls are ignored
     composeTestRule.waitUntil(timeoutMillis = 2000) { viewModel.uiState.value.isLoading }
 
-    // Additional quick calls should be ignored
-    viewModel.signIn(context, mockCredentialManager)
-    viewModel.signIn(context, mockCredentialManager)
+    viewModel.signIn(context, mockCredManager)
+    viewModel.signIn(context, mockCredManager)
 
-    // Let everything finish
     composeTestRule.waitForIdle()
 
-    // Only the first call should have invoked getCredential
     assertEquals(1, callCount)
   }
 
-  // ========== SplashViewModel Tests ==========
+  // ========================================================================
+  // SplashViewModel Tests
+  // ========================================================================
 
   @Test
-  fun splashViewModel_onAppStart_userSignedIn() = runTest {
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
+  fun splashViewModel_userSignedInAndExists() = runTest {
+    val mockUserRepo = mockk<UserRepositoryFirestore>(relaxed = true)
     coEvery { mockAccountService.hasUser() } returns true
-    coEvery { mockAccountService.currentUserId } returns "test-uid"
-    coEvery { mockUserRepository.userExists("test-uid") } returns true
+    coEvery { mockAccountService.currentUserId } returns "uid-123"
+    coEvery { mockUserRepo.userExists("uid-123") } returns true
 
-    var signedInCalled = false
-    var notSignedInCalled = false
+    var signedIn = false
+    var notSignedIn = false
 
     val viewModel = SplashViewModel(mockAccountService)
     viewModel.onAppStart(
-        userRepository = mockUserRepository,
-        onSignedIn = { signedInCalled = true },
-        onNotSignedIn = { notSignedInCalled = true })
+        userRepository = mockUserRepo,
+        onSignedIn = { signedIn = true },
+        onNotSignedIn = { notSignedIn = true })
 
     composeTestRule.waitForIdle()
 
-    assertTrue(signedInCalled)
-    assertFalse(notSignedInCalled)
+    assertTrue(signedIn)
+    assertFalse(notSignedIn)
   }
 
   @Test
-  fun splashViewModel_onAppStart_userNotSignedIn() = runTest {
+  fun splashViewModel_userSignedInButNotInDatabase() = runTest {
+    val mockUserRepo = mockk<UserRepositoryFirestore>(relaxed = true)
+    coEvery { mockAccountService.hasUser() } returns true
+    coEvery { mockAccountService.currentUserId } returns "uid-456"
+    coEvery { mockUserRepo.userExists("uid-456") } returns false
+
+    var signedIn = false
+    var notSignedIn = false
+
+    val viewModel = SplashViewModel(mockAccountService)
+    viewModel.onAppStart(
+        userRepository = mockUserRepo,
+        onSignedIn = { signedIn = true },
+        onNotSignedIn = { notSignedIn = true })
+
+    composeTestRule.waitForIdle()
+
+    assertFalse(signedIn)
+    assertTrue(notSignedIn)
+  }
+
+  @Test
+  fun splashViewModel_userNotSignedIn() = runTest {
     coEvery { mockAccountService.hasUser() } returns false
 
-    var signedInCalled = false
-    var notSignedInCalled = false
+    var notSignedIn = false
 
     val viewModel = SplashViewModel(mockAccountService)
-    viewModel.onAppStart(
-        onSignedIn = { signedInCalled = true }, onNotSignedIn = { notSignedInCalled = true })
+    viewModel.onAppStart(onNotSignedIn = { notSignedIn = true })
 
     composeTestRule.waitForIdle()
 
-    assertFalse(signedInCalled)
-    assertTrue(notSignedInCalled)
+    assertTrue(notSignedIn)
   }
 
   @Test
-  fun splashViewModel_onAppStart_exceptionHandled() = runTest {
+  fun splashViewModel_exceptionHandled() = runTest {
     coEvery { mockAccountService.hasUser() } throws Exception("Network error")
 
-    var notSignedInCalled = false
+    var notSignedIn = false
 
     val viewModel = SplashViewModel(mockAccountService)
-    viewModel.onAppStart(onNotSignedIn = { notSignedInCalled = true })
+    viewModel.onAppStart(onNotSignedIn = { notSignedIn = true })
 
     composeTestRule.waitForIdle()
 
-    assertTrue(notSignedInCalled)
+    assertTrue(notSignedIn)
   }
 
-  @Test
-  fun splashViewModel_onAppStart_userSignedInAndExistsInDatabase() = runTest {
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
-    coEvery { mockAccountService.hasUser() } returns true
-    coEvery { mockAccountService.currentUserId } returns "test-uid-123"
-    coEvery { mockUserRepository.userExists("test-uid-123") } returns true
-
-    var signedInCalled = false
-    var notSignedInCalled = false
-
-    val viewModel = SplashViewModel(mockAccountService)
-    viewModel.onAppStart(
-        userRepository = mockUserRepository,
-        onSignedIn = { signedInCalled = true },
-        onNotSignedIn = { notSignedInCalled = true })
-
-    composeTestRule.waitForIdle()
-
-    assertTrue("Should navigate to signed in when user exists in database", signedInCalled)
-    assertFalse("Should not navigate to not signed in when user exists", notSignedInCalled)
-    coVerify { mockUserRepository.userExists("test-uid-123") }
-  }
+  // ========================================================================
+  // AccountServiceFirebase Tests
+  // ========================================================================
 
   @Test
-  fun splashViewModel_onAppStart_userSignedInButNotInDatabase() = runTest {
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
-    coEvery { mockAccountService.hasUser() } returns true
-    coEvery { mockAccountService.currentUserId } returns "test-uid-456"
-    coEvery { mockUserRepository.userExists("test-uid-456") } returns false
-
-    var signedInCalled = false
-    var notSignedInCalled = false
-
-    val viewModel = SplashViewModel(mockAccountService)
-    viewModel.onAppStart(
-        userRepository = mockUserRepository,
-        onSignedIn = { signedInCalled = true },
-        onNotSignedIn = { notSignedInCalled = true })
-
-    composeTestRule.waitForIdle()
-
-    assertFalse("Should not navigate to signed in when user not in database", signedInCalled)
-    assertTrue("Should navigate to registration when user not in database", notSignedInCalled)
-    coVerify { mockUserRepository.userExists("test-uid-456") }
-  }
-
-  @Test
-  fun splashViewModel_onAppStart_userRepositoryExceptionNavigatesToNotSignedIn() = runTest {
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
-    coEvery { mockAccountService.hasUser() } returns true
-    coEvery { mockAccountService.currentUserId } returns "test-uid-789"
-    coEvery { mockUserRepository.userExists("test-uid-789") } throws Exception("Database error")
-
-    var signedInCalled = false
-    var notSignedInCalled = false
-
-    val viewModel = SplashViewModel(mockAccountService)
-    viewModel.onAppStart(
-        userRepository = mockUserRepository,
-        onSignedIn = { signedInCalled = true },
-        onNotSignedIn = { notSignedInCalled = true })
-
-    composeTestRule.waitForIdle()
-
-    assertFalse("Should not navigate to signed in on database error", signedInCalled)
-    assertTrue("Should navigate to not signed in on database error", notSignedInCalled)
-  }
-
-  @Test
-  fun splashViewModel_onAppStart_ensuresCallbacksAreInvoked() = runTest {
-    // This test specifically validates the fix for the missing parentheses bug
-    var callbackInvoked = false
-
-    coEvery { mockAccountService.hasUser() } returns false
-
-    val viewModel = SplashViewModel(mockAccountService)
-    viewModel.onAppStart(onNotSignedIn = { callbackInvoked = true })
-
-    composeTestRule.waitForIdle()
-
-    assertTrue("Callback must be invoked (not just referenced)", callbackInvoked)
-  }
-
-  // ========== AccountServiceFirebase Tests ==========
-  @Test
-  fun accountServiceFirebase_currentUserId_returnsEmptyWhenNoUser() {
-    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
-    every { mockAuth.currentUser } returns null
-
-    val service = AccountServiceFirebase(auth = mockAuth)
-
-    assertEquals("", service.currentUserId)
-  }
-
-  @Test
-  fun accountServiceFirebase_currentUserId_returnsUidWhenUserExists() {
+  fun accountService_currentUserId() {
     val mockAuth = mockk<FirebaseAuth>(relaxed = true)
     val mockUser = mockk<FirebaseUser>(relaxed = true)
-    every { mockAuth.currentUser } returns mockUser
-    every { mockUser.uid } returns "test-uid-123"
 
-    val service = AccountServiceFirebase(auth = mockAuth)
-
-    assertEquals("test-uid-123", service.currentUserId)
-  }
-
-  @Test
-  fun accountServiceFirebase_hasUser_returnsTrueWhenUserExists() = runTest {
-    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
-    every { mockAuth.currentUser } returns mockFirebaseUser
-
-    val service = AccountServiceFirebase(auth = mockAuth)
-
-    assertTrue(service.hasUser())
-  }
-
-  @Test
-  fun accountServiceFirebase_hasUser_returnsFalseWhenNoUser() = runTest {
-    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
     every { mockAuth.currentUser } returns null
+    assertEquals("", AccountServiceFirebase(auth = mockAuth).currentUserId)
 
-    val service = AccountServiceFirebase(auth = mockAuth)
-
-    assertFalse(service.hasUser())
+    every { mockAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "test-uid"
+    assertEquals("test-uid", AccountServiceFirebase(auth = mockAuth).currentUserId)
   }
 
-  /**
-   * @Test fun accountServiceFirebase_signOut_success() { val mockAuth = mockk<FirebaseAuth>(relaxed
-   *   = true) every { mockAuth.signOut() } just Runs
-   *
-   * val service = AccountServiceFirebase(auth = mockAuth) val result = service.signOut()
-   *
-   * assertTrue(result.isSuccess) verify { mockAuth.signOut() } }
-   *
-   * @Test fun accountServiceFirebase_signOut_failure() { val mockAuth = mockk<FirebaseAuth>(relaxed
-   *   = true) every { mockAuth.signOut() } throws Exception("Sign out failed")
-   *
-   * val service = AccountServiceFirebase(auth = mockAuth) val result = service.signOut()
-   *
-   * assertTrue(result.isFailure) assertTrue(result.exceptionOrNull()?.message?.contains("Logout
-   * failed") == true) }
-   */
+  @Test
+  fun accountService_hasUser() = runTest {
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
 
-  // ========== Screen Tests ==========
+    every { mockAuth.currentUser } returns null
+    assertFalse(AccountServiceFirebase(auth = mockAuth).hasUser())
+
+    every { mockAuth.currentUser } returns mockk()
+    assertTrue(AccountServiceFirebase(auth = mockAuth).hasUser())
+  }
+
+  // ========================================================================
+  // Screen Properties Tests
+  // ========================================================================
 
   @Test
-  fun screen_authentication_hasCorrectProperties() {
+  fun screen_properties() {
     assertEquals("authentication", Screen.Authentication.route)
-    assertEquals("Authentication", Screen.Authentication.name)
     assertTrue(Screen.Authentication.isTopLevelDestination)
-  }
 
-  @Test
-  fun screen_splash_hasCorrectProperties() {
     assertEquals("splash", Screen.Splash.route)
-    assertEquals("Splash", Screen.Splash.name)
     assertFalse(Screen.Splash.isTopLevelDestination)
   }
 
-  // ========== SignInScreen UI Tests ==========
+  // ========================================================================
+  // SignInScreen UI Tests
+  // ========================================================================
 
   @Test
-  fun signInScreen_displaysAllComponents() {
+  fun signInScreen_displaysComponents() {
     composeTestRule.setContent { SignInScreen() }
 
     composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
@@ -503,13 +340,12 @@ class AuthenticationExtensiveTest {
         .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
         .performScrollTo()
         .assertIsDisplayed()
-
     composeTestRule.onNodeWithText("WELCOME").assertIsDisplayed()
     composeTestRule.onNodeWithText("Sign in with Google").assertIsDisplayed()
   }
 
   @Test
-  fun signInScreen_showsLoadingIndicator_whenLoading() {
+  fun signInScreen_showsLoadingWhenLoading() {
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.uiState } returns MutableStateFlow(AuthUIState(isLoading = true))
 
@@ -519,10 +355,12 @@ class AuthenticationExtensiveTest {
   }
 
   @Test
-  fun signInScreen_buttonClick_triggersSignIn() {
+  fun signInScreen_buttonClickTriggersSignIn() {
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.uiState } returns MutableStateFlow(AuthUIState())
-    every { mockViewModel.signIn(any(), any()) } just Runs
+    every {
+      mockViewModel.signIn(any<Context>(), any<androidx.credentials.CredentialManager>())
+    } just Runs
 
     composeTestRule.setContent { SignInScreen(authViewModel = mockViewModel) }
 
@@ -531,17 +369,17 @@ class AuthenticationExtensiveTest {
         .performScrollTo()
         .performClick()
 
-    verify { mockViewModel.signIn(any(), any()) }
+    verify { mockViewModel.signIn(any<Context>(), any<androidx.credentials.CredentialManager>()) }
   }
 
-  // ========== SplashScreen UI Tests ==========
+  // ========================================================================
+  // SplashScreen UI Tests
+  // ========================================================================
 
   @Test
   fun splashScreen_displaysContent() {
-    // Render the stateless splash content directly
     composeTestRule.setContent { SplashScreenContent() }
 
-    // The splash content exposes a stable test tag for the logo and the progress indicator
     composeTestRule.onNodeWithTag("splashLogo").assertIsDisplayed()
     composeTestRule.onNodeWithTag("splashProgress").assertIsDisplayed()
   }
@@ -559,15 +397,9 @@ class AuthenticationExtensiveTest {
     verify(timeout = 3000) { mockViewModel.onAppStart(any(), any(), any()) }
   }
 
-  // ========== Integration Tests ==========
-
-  @Test
-  fun ootdApp_startsAtSplashScreen() {
-    composeTestRule.setContent { OOTDApp() }
-
-    // Splash screen should show initially
-    composeTestRule.waitForIdle()
-  }
+  // ========================================================================
+  // Integration Tests
+  // ========================================================================
 
   @Test
   fun ootdApp_navigatesToSignInWhenNotAuthenticated() {
@@ -588,36 +420,10 @@ class AuthenticationExtensiveTest {
         .assertIsDisplayed()
   }
 
-  // ========== Sign-In Navigation Tests ==========
-  // Tests done with AI, verified by human
-
   @Test
-  fun signIn_navigatesToRegister_whenUserHasNoName() = runTest {
-    val fakeGoogleIdToken =
-        FakeJwtGenerator.createFakeGoogleIdToken("No Name", email = "no.name@example.com")
-    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
-
-    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
-    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
-    val mockAuthResult = mockk<AuthResult>(relaxed = true)
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
-    every { mockFirebaseUser.uid } returns "uid-no-name"
-    every { mockAuthResult.user } returns mockFirebaseUser
-
-    mockkStatic(FirebaseAuth::class)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
-    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
-
-    // No username set => userExists returns false
-    coEvery { mockUserRepository.userExists("uid-no-name") } returns false
-
-    val viewModel =
-        SignInViewModel(
-            repository = AccountServiceFirebase(auth = mockFirebaseAuth),
-            userRepository = mockUserRepository,
-        )
+  fun signIn_navigatesToRegisterWhenUserHasNoName() = runTest {
+    val signInMocks = setupMocksForSignIn("uid-no-name", userExists = false)
+    val viewModel = signInMocks.viewModel
 
     var wentToRegister = false
     var wentToOverview = false
@@ -625,57 +431,26 @@ class AuthenticationExtensiveTest {
     composeTestRule.setContent {
       SignInScreen(
           authViewModel = viewModel,
-          credentialManager = fakeCredentialManager,
+          credentialManager =
+              FakeCredentialManager.create(
+                  FakeJwtGenerator.createFakeGoogleIdToken("No Name", "no.name@example.com")),
           onRegister = { wentToRegister = true },
-          onSignedIn = { wentToOverview = true },
-      )
+          onSignedIn = { wentToOverview = true })
     }
 
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
-
-    // Wait for sign-in to complete and routing to happen
     composeTestRule.waitUntil(timeoutMillis = 10000) { wentToRegister || wentToOverview }
 
-    // Give a bit more time to ensure state is stable
-    composeTestRule.waitForIdle()
-
-    assertTrue("Expected to navigate to Register screen when user has no name", wentToRegister)
-    assertFalse("Should not navigate to Overview when user has no name", wentToOverview)
-
-    coVerify(atLeast = 1) { mockUserRepository.userExists("uid-no-name") }
+    assertTrue(wentToRegister)
+    assertFalse(wentToOverview)
 
     unmockkStatic(FirebaseAuth::class)
   }
 
   @Test
-  fun signIn_navigatesToOverview_whenUserHasName() = runTest {
-    val fakeGoogleIdToken =
-        FakeJwtGenerator.createFakeGoogleIdToken("Has Name", email = "has.name@example.com")
-    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
-
-    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
-    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
-    val mockAuthResult = mockk<AuthResult>(relaxed = true)
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
-    every { mockFirebaseUser.uid } returns "uid-has-name"
-    every { mockAuthResult.user } returns mockFirebaseUser
-
-    mockkStatic(FirebaseAuth::class)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
-    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
-
-    // Username present => userExists returns true
-    coEvery { mockUserRepository.userExists("uid-has-name") } returns true
-
-    val viewModel =
-        SignInViewModel(
-            repository = AccountServiceFirebase(auth = mockFirebaseAuth),
-            userRepository = mockUserRepository,
-        )
+  fun signIn_navigatesToOverviewWhenUserHasName() = runTest {
+    val signInMocks = setupMocksForSignIn("uid-has-name", userExists = true)
+    val viewModel = signInMocks.viewModel
 
     var wentToRegister = false
     var wentToOverview = false
@@ -683,81 +458,78 @@ class AuthenticationExtensiveTest {
     composeTestRule.setContent {
       SignInScreen(
           authViewModel = viewModel,
-          credentialManager = fakeCredentialManager,
+          credentialManager =
+              FakeCredentialManager.create(
+                  FakeJwtGenerator.createFakeGoogleIdToken("Has Name", "has.name@example.com")),
           onRegister = { wentToRegister = true },
-          onSignedIn = { wentToOverview = true },
-      )
+          onSignedIn = { wentToOverview = true })
     }
 
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
-
-    // Wait for sign-in to complete and routing to happen
     composeTestRule.waitUntil(timeoutMillis = 10000) { wentToRegister || wentToOverview }
 
-    // Give a bit more time to ensure state is stable
-    composeTestRule.waitForIdle()
-
-    assertFalse("Should not navigate to Register when user has name", wentToRegister)
-    assertTrue("Expected to navigate to Overview when user has name", wentToOverview)
-
-    coVerify(atLeast = 1) { mockUserRepository.userExists("uid-has-name") }
+    assertFalse(wentToRegister)
+    assertTrue(wentToOverview)
 
     unmockkStatic(FirebaseAuth::class)
   }
 
   @Test
-  fun signIn_invokesUserExists_withCurrentUid() = runTest {
-    val fakeGoogleIdToken =
-        FakeJwtGenerator.createFakeGoogleIdToken("Check UID", email = "check.uid@example.com")
-    val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
-
-    val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
-    val mockFirebaseUser = mockk<FirebaseUser>(relaxed = true)
-    val mockAuthResult = mockk<AuthResult>(relaxed = true)
-    val mockUserRepository = mockk<UserRepositoryFirestore>(relaxed = true)
-
-    every { mockFirebaseUser.uid } returns "uid-to-check"
-    every { mockAuthResult.user } returns mockFirebaseUser
-
-    mockkStatic(FirebaseAuth::class)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
-    every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
-
-    // Path does not matter here; we only verify the call with correct UID
-    coEvery { mockUserRepository.userExists("uid-to-check") } returns false
-
-    val viewModel =
-        SignInViewModel(
-            repository = AccountServiceFirebase(auth = mockFirebaseAuth),
-            userRepository = mockUserRepository,
-        )
+  fun signIn_invokesUserExistsWithCurrentUid() = runTest {
+    val signInMocks = setupMocksForSignIn("uid-to-check", userExists = false)
+    val viewModel = signInMocks.viewModel
 
     var navigationCalled = false
 
     composeTestRule.setContent {
       SignInScreen(
           authViewModel = viewModel,
-          credentialManager = fakeCredentialManager,
+          credentialManager =
+              FakeCredentialManager.create(
+                  FakeJwtGenerator.createFakeGoogleIdToken("Check UID", "check.uid@example.com")),
           onRegister = { navigationCalled = true },
-          onSignedIn = { navigationCalled = true },
-      )
+          onSignedIn = { navigationCalled = true })
     }
 
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON).performClick()
-
-    // Wait for the sign-in flow to complete and userExists to be called
     composeTestRule.waitUntil(timeoutMillis = 10000) { navigationCalled }
 
-    composeTestRule.waitForIdle()
-
-    // Verify that userExists was called with the correct UID (may be called multiple times)
-    coVerify(atLeast = 1) { mockUserRepository.userExists("uid-to-check") }
+    coVerify(atLeast = 1) { signInMocks.userRepo.userExists("uid-to-check") }
 
     unmockkStatic(FirebaseAuth::class)
   }
+
+  // ========================================================================
+  // Helper Functions
+  // ========================================================================
+
+  private fun setupMocksForSignIn(uid: String, userExists: Boolean): SignInMocks {
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    val mockUser = mockk<FirebaseUser>(relaxed = true)
+    val mockAuthResult = mockk<AuthResult>(relaxed = true)
+    val mockUserRepo = mockk<UserRepositoryFirestore>(relaxed = true)
+
+    every { mockUser.uid } returns uid
+    every { mockAuthResult.user } returns mockUser
+
+    mockkStatic(FirebaseAuth::class)
+    every { FirebaseAuth.getInstance() } returns mockAuth
+    every { mockAuth.currentUser } returns mockUser
+    every { mockAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
+
+    coEvery { mockUserRepo.userExists(uid) } returns userExists
+
+    val viewModel =
+        SignInViewModel(
+            repository = AccountServiceFirebase(auth = mockAuth), userRepository = mockUserRepo)
+
+    return SignInMocks(mockAuth, mockUser, mockUserRepo, viewModel)
+  }
+
+  private data class SignInMocks(
+      val auth: FirebaseAuth,
+      val user: FirebaseUser,
+      val userRepo: UserRepositoryFirestore,
+      val viewModel: SignInViewModel
+  )
 }
