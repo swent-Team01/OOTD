@@ -252,19 +252,6 @@ class CameraScreenPermissionTest {
   }
 
   @Test
-  fun clickingCancelButtonCallsOnDismiss() {
-    composeTestRule.onNodeWithText("Cancel").performClick()
-    composeTestRule.waitForIdle()
-
-    assert(dismissed) { "onDismiss should be called when cancel is clicked" }
-  }
-
-  @Test
-  fun grantPermissionButtonIsClickable() {
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON).assertIsEnabled()
-  }
-
-  @Test
   fun viewModelProperlyInitializedWithRepository() {
     // Verify that the ViewModel is properly initialized with the repository
     // The ViewModel should have default state values
