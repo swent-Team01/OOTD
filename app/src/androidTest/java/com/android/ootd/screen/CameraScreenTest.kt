@@ -177,6 +177,9 @@ class CameraScreenTest {
 class CameraScreenPermissionTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
+  @get:Rule
+  val permissionRule: GrantPermissionRule = GrantPermissionRule.grant() // Grant NO permissions
+
   private lateinit var viewModel: CameraViewModel
   private var dismissed = false
 
@@ -186,10 +189,23 @@ class CameraScreenPermissionTest {
     viewModel = CameraViewModel()
     dismissed = false
 
+    // Revoke camera permission explicitly to ensure we're testing the permission request flow
+    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        .uiAutomation
+        .executeShellCommand(
+            "pm revoke ${composeTestRule.activity.packageName} ${Manifest.permission.CAMERA}")
+        .close()
+
+    // Wait for permission state to update
+    Thread.sleep(100)
+
     composeTestRule.setContent {
       CameraScreen(
           onImageCaptured = {}, onDismiss = { dismissed = true }, cameraViewModel = viewModel)
     }
+
+    // Wait for compose to settle after permission revocation
+    composeTestRule.waitForIdle()
   }
 
   @Test

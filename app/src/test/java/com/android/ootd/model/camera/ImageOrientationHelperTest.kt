@@ -140,35 +140,6 @@ class ImageOrientationHelperTest {
     assertTrue(result.isSuccess)
   }
 
-  // ========== Memory Management Tests ==========
-
-  //  @Test
-  //  fun `loadBitmapWithCorrectOrientation recycles original bitmap when rotation applied`() =
-  //      runTest {
-  //        // Create a rectangular bitmap to test rotation
-  //        val originalBitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
-  //        val mockInputStream1 = ByteArrayInputStream(ByteArray(0))
-  //        val mockInputStream2 = ByteArrayInputStream(ByteArray(0))
-  //
-  //        mockkStatic(BitmapFactory::class)
-  //        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-  //
-  //        // First call for bitmap decoding, second for EXIF reading
-  //        every { mockContext.contentResolver.openInputStream(mockUri) } returnsMany
-  //            listOf(mockInputStream1, mockInputStream2)
-  //
-  //        mockkStatic(ExifInterface::class)
-  //        val mockExif = mockk<ExifInterface>()
-  //        every { mockExif.getAttributeInt(ExifInterface.TAG_ORIENTATION, any()) } returns
-  //            ExifInterface.ORIENTATION_ROTATE_90
-  //
-  //        // Note: We can't easily test bitmap recycling in unit tests
-  //        // This would require integration tests or manual verification
-  //        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
-  //
-  //        assertTrue(result.isSuccess)
-  //      }
-
   // ========== Edge Cases Tests ==========
 
   @Test
