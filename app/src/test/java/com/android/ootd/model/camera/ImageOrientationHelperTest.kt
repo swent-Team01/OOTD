@@ -253,11 +253,14 @@ class ImageOrientationHelperTest {
       runTest(testDispatcher) {
         val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
         val mockInputStream = mockk<InputStream>(relaxed = true)
+        val mockExifStream = mockk<InputStream>(relaxed = true)
 
         mockkStatic(BitmapFactory::class)
         every { BitmapFactory.decodeStream(any()) } returns bitmap
 
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+        // Return multiple streams: one for bitmap decode, one for EXIF reading
+        every { mockContext.contentResolver.openInputStream(mockUri) } returnsMany
+            listOf(mockInputStream, mockExifStream)
 
         val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
@@ -272,11 +275,14 @@ class ImageOrientationHelperTest {
       runTest(testDispatcher) {
         val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
         val mockInputStream = mockk<InputStream>(relaxed = true)
+        val mockExifStream = mockk<InputStream>(relaxed = true)
 
         mockkStatic(BitmapFactory::class)
         every { BitmapFactory.decodeStream(any()) } returns bitmap
 
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+        // Return multiple streams: one for bitmap decode, one for EXIF reading
+        every { mockContext.contentResolver.openInputStream(mockUri) } returnsMany
+            listOf(mockInputStream, mockExifStream)
 
         val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
@@ -291,11 +297,14 @@ class ImageOrientationHelperTest {
       runTest(testDispatcher) {
         val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
         val mockInputStream = mockk<InputStream>(relaxed = true)
+        val mockExifStream = mockk<InputStream>(relaxed = true)
 
         mockkStatic(BitmapFactory::class)
         every { BitmapFactory.decodeStream(any()) } returns bitmap
 
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+        // Return multiple streams: one for bitmap decode, one for EXIF reading
+        every { mockContext.contentResolver.openInputStream(mockUri) } returnsMany
+            listOf(mockInputStream, mockExifStream)
 
         val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
@@ -308,11 +317,14 @@ class ImageOrientationHelperTest {
       runTest(testDispatcher) {
         val bitmap = Bitmap.createBitmap(100, 200, Bitmap.Config.ARGB_8888)
         val mockInputStream = mockk<InputStream>(relaxed = true)
+        val mockExifStream = mockk<InputStream>(relaxed = true)
 
         mockkStatic(BitmapFactory::class)
         every { BitmapFactory.decodeStream(any()) } returns bitmap
 
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+        // Return multiple streams: one for bitmap decode, one for EXIF reading
+        every { mockContext.contentResolver.openInputStream(mockUri) } returnsMany
+            listOf(mockInputStream, mockExifStream)
 
         val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
