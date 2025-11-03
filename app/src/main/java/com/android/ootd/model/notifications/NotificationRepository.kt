@@ -5,8 +5,6 @@ interface NotificationRepository {
 
   suspend fun addNotification(notification: Notification)
 
-  suspend fun getAllNotifications(): List<Notification>
-
   suspend fun getNotification(notificationId: String): Notification
 
   suspend fun getNotificationsForReceiver(receiverId: String): List<Notification>

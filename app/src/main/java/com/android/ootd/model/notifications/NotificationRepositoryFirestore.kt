@@ -83,6 +83,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     try {
       val existingDoc =
           db.collection(NOTIFICATION_COLLECTION_PATH)
+              .whereEqualTo("senderId", notification.senderId)
               .whereEqualTo("uid", notification.uid)
               .get()
               .await()
@@ -101,17 +102,6 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
           "Successfully added notification with UID: ${notification.uid}")
     } catch (e: Exception) {
       Log.e("NotificationRepositoryFirestore", "Error adding notification: ${e.message}", e)
-      throw e
-    }
-  }
-
-  override suspend fun getAllNotifications(): List<Notification> {
-    return try {
-      val querySnapshot = db.collection(NOTIFICATION_COLLECTION_PATH).get().await()
-
-      querySnapshot.documents.mapNotNull { document -> transformNotificationDocument(document) }
-    } catch (e: Exception) {
-      Log.e("NotificationRepositoryFirestore", "Error getting notifications: ${e.message}", e)
       throw e
     }
   }
