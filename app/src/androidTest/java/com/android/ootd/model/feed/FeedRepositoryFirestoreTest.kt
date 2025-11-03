@@ -129,7 +129,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
         try {
           FirebaseApp.getInstance(appName)
         } catch (_: IllegalStateException) {
-          FirebaseApp.initializeApp(context, default.options, appName)!!
+          FirebaseApp.initializeApp(context, default.options, appName)
         }
     return FirebaseFirestore.getInstance(app).apply {
       useEmulator(host, port)
