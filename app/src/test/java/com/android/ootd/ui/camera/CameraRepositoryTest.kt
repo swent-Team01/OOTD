@@ -24,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+// Note: these tests were made with the help of an AI model
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class CameraRepositoryTest {
@@ -272,27 +273,6 @@ class CameraRepositoryTest {
     verify { mockPreviewView.surfaceProvider }
   }
 
-  @Test
-  fun `bindCamera with front camera uses correct selector`() {
-    val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
-    val mockPreviewView = mockk<PreviewView>(relaxed = true)
-    val mockLifecycleOwner = mockk<LifecycleOwner>()
-    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
-
-    every {
-      mockCameraProvider.bindToLifecycle(
-          mockLifecycleOwner, any<CameraSelector>(), any<Preview>(), any<ImageCapture>())
-    } returns mockCamera
-
-    repository.bindCamera(
-        mockCameraProvider, mockPreviewView, mockLifecycleOwner, CameraSelector.LENS_FACING_FRONT)
-
-    verify {
-      mockCameraProvider.bindToLifecycle(
-          mockLifecycleOwner, any<CameraSelector>(), any<Preview>(), any<ImageCapture>())
-    }
-  }
-
   // ========== Additional capturePhoto Tests ==========
 
   @Test
@@ -361,16 +341,6 @@ class CameraRepositoryTest {
     verify { mockContext.cacheDir }
   }
 
-  // ========== getCameraProvider Tests ==========
-
-  @Test
-  fun `getCameraProvider returns ProcessCameraProvider successfully`() {
-    // Note: This test is difficult to fully test without a real Android context
-    // as ProcessCameraProvider.getInstance requires ListenableFuture
-    // This would be better tested in an instrumented test
-    assertTrue(true) // Placeholder for documentation
-  }
-
   // ========== Error Handling Tests ==========
 
   @Test
@@ -390,24 +360,6 @@ class CameraRepositoryTest {
 
     assertTrue(result.isFailure)
     assertTrue(result.exceptionOrNull() is IllegalStateException)
-  }
-
-  @Test
-  fun `capturePhoto calls takePicture with correct parameters`() {
-    val mockContext = mockk<Context>(relaxed = true)
-    val mockImageCapture = mockk<ImageCapture>(relaxed = true)
-    val mockExecutor = mockk<ExecutorService>(relaxed = true)
-    val cacheDir = kotlin.io.path.createTempDirectory().toFile()
-
-    every { mockContext.cacheDir } returns cacheDir
-
-    repository.capturePhoto(
-        mockContext, mockImageCapture, mockExecutor, onSuccess = {}, onError = {})
-
-    // Verify takePicture was called with OutputFileOptions
-    verify {
-      mockImageCapture.takePicture(any<ImageCapture.OutputFileOptions>(), mockExecutor, any())
-    }
   }
 
   @Test

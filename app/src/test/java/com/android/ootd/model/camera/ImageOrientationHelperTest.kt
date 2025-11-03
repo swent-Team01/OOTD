@@ -13,7 +13,7 @@ import java.io.ByteArrayInputStream
 import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -26,6 +26,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+// Note: these tests were made with the help of an AI model
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class ImageOrientationHelperTest {
@@ -33,7 +34,7 @@ class ImageOrientationHelperTest {
   private lateinit var helper: ImageOrientationHelper
   private lateinit var mockContext: Context
   private lateinit var mockUri: Uri
-  private val testDispatcher = StandardTestDispatcher()
+  private val testDispatcher = UnconfinedTestDispatcher()
 
   @Before
   fun setup() {
@@ -226,22 +227,6 @@ class ImageOrientationHelperTest {
   }
 
   // ========== Result Type Tests ==========
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation returns Result type`() = runTest {
-    val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
-    val mockInputStream = mockk<InputStream>(relaxed = true)
-
-    mockkStatic(BitmapFactory::class)
-    every { BitmapFactory.decodeStream(any()) } returns bitmap
-
-    every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-    val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
-
-    // Verify it's a Result type
-    assertTrue(result.isSuccess || result.isFailure)
-  }
 
   @Test
   fun `loadBitmapWithCorrectOrientation failure contains exception details`() = runTest {

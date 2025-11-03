@@ -30,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+// Note: these tests were made with the help of an AI model
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class CameraViewModelTest {
@@ -112,7 +113,7 @@ class CameraViewModelTest {
 
     assertEquals(mockUri, viewModel.uiState.value.capturedImageUri)
     assertFalse(viewModel.uiState.value.isCapturing)
-    assertTrue(viewModel.uiState.value.showPreview) // New: showPreview should be true
+    assertTrue(viewModel.uiState.value.showPreview)
   }
 
   @Test
@@ -123,7 +124,7 @@ class CameraViewModelTest {
     viewModel.setCapturedImage(null)
 
     assertNull(viewModel.uiState.value.capturedImageUri)
-    assertFalse(viewModel.uiState.value.showPreview) // New: showPreview should be false
+    assertFalse(viewModel.uiState.value.showPreview)
   }
 
   // ========== Error Handling Tests ==========
@@ -175,7 +176,7 @@ class CameraViewModelTest {
     assertNull(state.capturedImageUri)
     assertFalse(state.isCapturing)
     assertNull(state.errorMessage)
-    assertFalse(state.showPreview) // New: should reset showPreview
+    assertFalse(state.showPreview)
   }
 
   @Test
