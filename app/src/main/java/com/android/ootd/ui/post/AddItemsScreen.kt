@@ -244,9 +244,7 @@ fun AddItemsScreen(
                                   onClick = {
                                     // Pick from gallery
                                     showDialog = false
-                                    try {
-                                      galleryLauncher.launch("image/*")
-                                    } catch (_: Exception) {}
+                                    galleryLauncher.launch("image/*")
                                   },
                                   modifier =
                                       Modifier.testTag(AddItemScreenTestTags.PICK_FROM_GALLERY)) {
