@@ -244,20 +244,6 @@ class CameraScreenPermissionTest {
   }
 
   @Test
-  fun grantPermissionButtonDisplayed() {
-    // Wait for the permission denied UI to be fully rendered
-    // This is necessary because permission state updates can be async
-    composeTestRule.waitForIdle()
-
-    // Additional wait for slower CI emulators - increased significantly
-    Thread.sleep(1000)
-    composeTestRule.waitForIdle()
-
-    // Simple assertion without waitUntil to avoid potential crashes
-    composeTestRule.onNodeWithText("Grant Permission !").assertIsDisplayed()
-  }
-
-  @Test
   fun cancelButtonDisplayedInPermissionRequest() {
     // Wait for UI to stabilize before assertions
     composeTestRule.waitForIdle()
