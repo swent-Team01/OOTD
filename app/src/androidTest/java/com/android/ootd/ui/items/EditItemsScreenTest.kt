@@ -25,6 +25,7 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.EditItemsScreenTestTags
 import com.android.ootd.ui.post.EditItemsViewModel
+import com.android.ootd.utils.InMemoryItem.waitForNodeWithTag
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -33,6 +34,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+// Test partially generated with an AI coding agent
 class EditItemsScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -226,14 +228,10 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performClick()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performTextInput("J")
     composeTestRule.runOnIdle { viewModel.updateTypeSuggestions("J") }
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      runCatching {
-            composeTestRule
-                .onNodeWithTag(EditItemsScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-                .assertExists()
-          }
-          .isSuccess
-    }
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        EditItemsScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
     composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).assertExists()
 
     // Shoes suggestions and selection: clear then type 'B' to filter Boots
@@ -241,14 +239,10 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performTextClearance()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performTextInput("B")
     composeTestRule.runOnIdle { viewModel.updateTypeSuggestions("B") }
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      runCatching {
-            composeTestRule
-                .onNodeWithTag(EditItemsScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-                .assertExists()
-          }
-          .isSuccess
-    }
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        EditItemsScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
     composeTestRule.onNodeWithText("Boots", useUnmergedTree = true).performClick()
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)

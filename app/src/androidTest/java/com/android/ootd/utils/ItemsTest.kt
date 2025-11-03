@@ -15,6 +15,7 @@ import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
 import org.junit.Before
 
+// Test partially generated with an AI coding agent
 interface ItemsTest {
 
   fun createInitializedRepository(): ItemsRepository
@@ -26,16 +27,10 @@ interface ItemsTest {
     ItemsRepositoryProvider.setRepository(createInitializedRepository())
   }
 
-  // Robustly bring a tagged node into view across devices where the list may or may not be
-  // scrollable.
   fun ComposeTestRule.ensureVisible(tag: String) {
-    // Already displayed? Nothing to do.
     val alreadyVisible =
         runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess
     if (alreadyVisible) return
-
-    // 3) Fallback: manual swipes a few times (helps when semantics are quirky but visual scroll
-    // still works).
     repeat(5) {
       onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput {
         swipeUp(startY = bottom, endY = top)
@@ -44,25 +39,6 @@ interface ItemsTest {
       if (runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess)
           return
     }
-  }
-
-  // UI check for the button upload photo
-  fun ComposeTestRule.enterAddItemPhoto() {
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).assertExists()
-  }
-
-  //  fun ComposeTestRule.checkImageUploadButtonIsDisplayed() {
-  //    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-  //    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).assertIsDisplayed()
-  //  }
-
-  //  fun ComposeTestRule.checkImageUploadButtonClickable() {
-  //    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-  //    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).assertIsDisplayed().performClick()
-  //  }
-
-  fun ComposeTestRule.checkPhotoPreviewDisplayed() {
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertExists()
   }
 
   fun ComposeTestRule.enterAddItemType(type: String) {

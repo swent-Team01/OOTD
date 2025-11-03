@@ -10,6 +10,7 @@ import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 
+// Test partially generated with an AI coding agent
 class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
   var ownerId = ""
@@ -93,7 +94,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun idUniquenessAndCrudEndToEnd() = runBlocking {
+  fun repositoryConsistencyTest() = runBlocking {
     // Unique IDs
     val total = 64
     val ids = (0 until total).map { itemsRepository.getNewItemId() }.toSet()

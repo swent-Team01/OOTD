@@ -28,6 +28,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+// Test partially generated with an AI coding agent
 class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -88,7 +89,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       assert(viewModel.uiState.value.invalidPhotoMsg == null)
     }
 
-    // Verify photo preview component exists in the composition
+    // Wait for photo preview component to appear in the composition tree
+    composeTestRule.waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW, timeoutMillis = 5_000)
+
+    // Verify photo preview component exists
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertExists()
   }
 
@@ -206,12 +210,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
 
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+
     composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).assertIsDisplayed()
     composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).performClick()
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.type == "Jacket") }
@@ -221,12 +223,9 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun categorySuggestion_showsAndSelectingClearsError() {
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("C")
 
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    // Wait for category suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.CATEGORY_SUGGESTION, timeoutMillis = 10_000)
 
     composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).performClick()
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
@@ -238,12 +237,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemCategory("Accessories")
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("H")
     composeTestRule.waitForIdle()
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
     composeTestRule.onNodeWithText("Hat", useUnmergedTree = true).assertIsDisplayed()
 
     // Shoes -> Boots
@@ -255,12 +252,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("B")
     composeTestRule.waitForIdle()
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
     composeTestRule.onNodeWithText("Boots", useUnmergedTree = true).assertIsDisplayed()
 
     // Bags -> Backpack
@@ -272,12 +267,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("B")
     composeTestRule.waitForIdle()
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
     composeTestRule.onNodeWithText("Backpack", useUnmergedTree = true).assertIsDisplayed()
   }
 

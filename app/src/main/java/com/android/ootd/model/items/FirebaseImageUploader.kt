@@ -34,7 +34,7 @@ object FirebaseImageUploader {
     val ref = storage ?: return ImageData("", "")
 
     return try {
-      val sanitizedFileName = com.android.ootd.model.items.ImageFilenameSanitizer.sanitize(fileName)
+      val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
       val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
       imageRef.putFile(localUri).await()
       val downloadUrl = imageRef.downloadUrl.await()
@@ -49,7 +49,7 @@ object FirebaseImageUploader {
     if (imageId.isEmpty()) return false
     val ref = storage ?: return true
     return try {
-      val sanitizedImageId = com.android.ootd.model.items.ImageFilenameSanitizer.sanitize(imageId)
+      val sanitizedImageId = ImageFilenameSanitizer.sanitize(imageId)
       val imageRef = ref.child("images/items/$sanitizedImageId.jpg")
       imageRef.delete().await()
       true

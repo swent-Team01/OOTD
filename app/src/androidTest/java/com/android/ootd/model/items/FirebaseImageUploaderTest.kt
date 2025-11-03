@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 
+// Test partially generated with an AI coding agent
 class FirebaseImageUploaderTest : FirestoreTest() {
 
   @Before
