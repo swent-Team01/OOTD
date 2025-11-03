@@ -107,7 +107,7 @@ interface ItemsTest {
     val item1 =
         Item(
             itemUuid = "0",
-            postUuid = "post_123",
+            postUuids = listOf("post_123"),
             image = ImageData("0", "https://example.com/image1.jpg"),
             category = "Clothing",
             type = "t-shirt",
@@ -120,7 +120,7 @@ interface ItemsTest {
     val item2 =
         Item(
             itemUuid = "1",
-            postUuid = "post_123",
+            postUuids = listOf("post_123"),
             image = ImageData("2", "https://example.com/image1.jpg"),
             category = "shoes",
             type = "high heels",
@@ -133,7 +133,7 @@ interface ItemsTest {
     val item3 =
         Item(
             itemUuid = "2",
-            postUuid = "post_123",
+            postUuids = listOf("post_123"),
             image = ImageData("3", "https://example.com/image1.jpg"),
             category = "bags",
             type = "handbag",
@@ -146,7 +146,7 @@ interface ItemsTest {
     val item4 =
         Item(
             itemUuid = "4",
-            postUuid = "post_123",
+            postUuids = listOf("post_123"),
             image = ImageData("4", "https://example.com/image4.jpg"),
             category = "Clothing",
             type = "jacket",

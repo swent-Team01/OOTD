@@ -47,7 +47,7 @@ object FitCheckScreenTestTags {
 @Composable
 fun FitCheckScreen(
     fitCheckViewModel: FitCheckViewModel = viewModel(),
-    postUuid: String = "",
+    postUuid: String = "", // passed from previous screen if editing existing post
     onNextClick: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {}
 ) {

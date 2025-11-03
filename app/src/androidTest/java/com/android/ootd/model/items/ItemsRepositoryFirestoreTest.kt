@@ -31,7 +31,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item1 =
         Item(
             itemUuid = "0",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData(imageId = "0", imageUrl = "https://example.com/image1.jpg"),
             category = "clothes",
             type = "t-shirt",
@@ -44,7 +44,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item2 =
         Item(
             itemUuid = "1",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData("1", "https://example.com/image1.jpg"),
             category = "shoes",
             type = "high heels",
@@ -57,7 +57,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item3 =
         Item(
             itemUuid = "2",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData("2", "https://example.com/image1.jpg"),
             category = "bags",
             type = "handbag",
@@ -70,7 +70,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     item4 =
         Item(
             itemUuid = "3",
-            postUuid = "0",
+            postUuids = listOf("0"),
             image = ImageData("3", "https://example.com/image1.jpg"),
             category = "accessories",
             type = "sunglasses",
@@ -148,6 +148,203 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     assertEquals(1, countItems()) // the duplicate remains
     itemsRepository.deleteItem(dupId)
     assertEquals(0, countItems())
+    val allItems = itemsRepository.getAllItems()
+    assertEquals(0, allItems.size)
+  }
+
+  @Test
+  fun editItemById() = runBlocking {
+    itemsRepository.addItem(item1)
+    assertEquals(1, countItems())
+
+    val newItem =
+        item1.copy(
+            category = "clothing",
+            type = "shirt",
+            brand = "H&M",
+            price = 20.0,
+            material = listOf(Material(name = "Cotton", percentage = 100.0)),
+            link = "https://example.com/newlink")
+    itemsRepository.editItem(item1.itemUuid, newItem)
+    assertEquals(1, countItems())
+    val items = itemsRepository.getAllItems()
+    assertEquals(items.size, 1)
+
+    val retrieved = itemsRepository.getItemById(item1.itemUuid)
+    assertEquals(retrieved, newItem)
+    assertEquals(newItem, retrieved)
+    assertEquals("clothing", retrieved.category)
+    assertEquals("shirt", retrieved.type)
+    assertEquals("H&M", retrieved.brand)
+    assertEquals(20.0, retrieved.price)
+    assertEquals(1, retrieved.material.size)
+
+    // Editing an item that does not exist should throw
+    val nonExistingItem = item2.copy(itemUuid = "nonExisting")
+    var didThrow = false
+    try {
+      itemsRepository.editItem(nonExistingItem.itemUuid, nonExistingItem)
+    } catch (e: Exception) {
+      didThrow = true
+    }
+    assert(didThrow)
+    assertEquals(1, countItems())
+  }
+
+  @Test(expected = Exception::class)
+  fun getItemByIdThrowsWhenItemNotFound() =
+      runBlocking<Unit> { itemsRepository.getItemById("nonExistingId") }
+
+  @Test
+  fun getAllItemsSkipsInvalidDocuments() = runBlocking {
+    val db = FirebaseEmulator.firestore
+    val collection = db.collection(ITEMS_COLLECTION)
+
+    // Add an invalid Firestore document (missing required fields)
+    collection.document("invalid").set(mapOf("brand" to "Zara", "ownerId" to ownerId)).await()
+
+    // Add a valid one too
+    itemsRepository.addItem(item1)
+
+    val allItems = itemsRepository.getAllItems()
+
+    // Only valid items should be returned (invalid skipped)
+    assertEquals(1, allItems.size)
+    assertEquals(item1.itemUuid, allItems.first().itemUuid)
+  }
+
+  @Test
+  fun getAllItemsParsesPartiallyValidMaterialList() = runBlocking {
+    val partialMaterialData =
+        Item(
+            itemUuid = "mixedMat",
+            postUuids = listOf("simple_post"),
+            image = ImageData(imageId = "mixedMatImg", imageUrl = "https://example.com/image.jpg"),
+            category = "clothes",
+            type = "jacket",
+            brand = "Levi's",
+            price = 120.0,
+            link = "https://example.com/item",
+            material = listOf(Material(name = "Cotton", percentage = 60.0), null),
+            ownerId = ownerId)
+
+    itemsRepository.addItem(partialMaterialData)
+
+    val items = itemsRepository.getAllItems()
+    assertEquals(1, items.size)
+    val matList = items.first().material
+    assertEquals(1, matList.size)
+    assertEquals("Cotton", matList.first()?.name)
+    assertEquals(60.0, matList.first()?.percentage)
+  }
+
+  @Test
+  fun mapToItemCatchesExceptionForInvalidData() = runBlocking {
+    val db = FirebaseEmulator.firestore
+    val collection = db.collection(ITEMS_COLLECTION)
+
+    // Insert invalid data (image should be a string, but we give it a number)
+    val invalidData =
+        mapOf(
+            "uuid" to "badItem",
+            "image" to 12345, // <-- will cause ClassCastException during toUri()
+            "category" to "clothes",
+            "type" to "jacket",
+            "brand" to "Levi's",
+            "price" to 120.0,
+            "link" to "https://example.com/item",
+            "ownerId" to ownerId)
+
+    collection.document("badItem").set(invalidData).await()
+
+    // When repository tries to parse this, it should hit the catch block
+    val allItems = itemsRepository.getAllItems()
+
+    // It should skip the invalid item and not crash
+    assertEquals(true, allItems.isEmpty())
+  }
+
+  // ========== NEW COMPREHENSIVE TESTS ==========
+
+  @Test
+  fun addMultipleItemsConcurrentlyAndOverwritesExistingItem() = runBlocking {
+    val items = listOf(item1, item2, item3, item4)
+
+    // Add all items concurrently
+    items.forEach { itemsRepository.addItem(it) }
+
+    assertEquals(4, countItems())
+    val allItems = itemsRepository.getAllItems()
+    assertEquals(4, allItems.size)
+
+    // Verify all items were added correctly
+    items.forEach { expectedItem ->
+      val found = allItems.find { it.itemUuid == expectedItem.itemUuid }
+      assertEquals(expectedItem, found)
+    }
+
+    val updatedItem1 = item1.copy(price = 150.0)
+    itemsRepository.addItem(updatedItem1)
+
+    val retrieved = itemsRepository.getItemById(item1.itemUuid)
+    assertEquals(150.0, retrieved.price)
+  }
+
+  @Test
+  fun getItemByIdWithInvalidIdThrows() = runBlocking {
+    var exceptionThrown = false
+    try {
+      itemsRepository.getItemById("invalidId123")
+    } catch (e: Exception) {
+      exceptionThrown = true
+    }
+    assert(exceptionThrown)
+  }
+
+  @Test
+  fun editNonExistentItemThrowsException() = runBlocking {
+    var exceptionThrown = false
+    try {
+      itemsRepository.editItem("nonExistentId", item1)
+    } catch (e: Exception) {
+      exceptionThrown = true
+      assert(e.message?.contains("not found") == true)
+    }
+    assert(exceptionThrown)
+  }
+
+  @Test
+  fun addItemWithComplexMaterialList() = runBlocking {
+    val complexMaterials =
+        listOf(
+            Material(name = "Cotton", percentage = 45.5),
+            Material(name = "Polyester", percentage = 30.0),
+            Material(name = "Elastane", percentage = 15.5),
+            Material(name = "Silk", percentage = 9.0))
+    val itemWithComplexMaterials = item1.copy(material = complexMaterials)
+    itemsRepository.addItem(itemWithComplexMaterials)
+
+    val retrieved = itemsRepository.getItemById(itemWithComplexMaterials.itemUuid)
+    assertEquals(4, retrieved.material.size)
+    assertEquals(45.5, retrieved.material[0]?.percentage)
+    assertEquals("Silk", retrieved.material[3]?.name)
+  }
+
+  @Test
+  fun addItemWithSpecialCharactersInFields() = runBlocking {
+    val itemWithSpecialChars =
+        item1.copy(
+            brand = "H&M ™️ © Brand's \"New\" Collection",
+            type = "T-shirt / Tank-top (Unisex)",
+            link = "https://example.com/item?id=123&category=clothes&sort=price")
+
+    itemsRepository.addItem(itemWithSpecialChars)
+    val retrieved = itemsRepository.getItemById(itemWithSpecialChars.itemUuid)
+
+    assertEquals(itemWithSpecialChars.brand, retrieved.brand)
+    assertEquals(itemWithSpecialChars.type, retrieved.type)
+    assertEquals(itemWithSpecialChars.link, retrieved.link)
+  }
 
     // Invalid id throws
     var threw = false
@@ -165,9 +362,9 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val postUuid1 = "post_123"
     val postUuid2 = "post_456"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = postUuid2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(postUuid1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(postUuid1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(postUuid2))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -187,9 +384,9 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   fun deletePostItemsRemovesAllItemsForGivenPost() = runBlocking {
     val postUuid = "postToDelete"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid)
-    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid)
-    val itemC = item3.copy(itemUuid = "C", postUuid = "otherPost")
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(postUuid))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(postUuid))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf("otherPost"))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -223,10 +420,10 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val postUuid1 = "post-aaa"
     val postUuid2 = "post-bbb"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = postUuid1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = postUuid1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = postUuid2)
-    val itemD = item4.copy(itemUuid = "D", postUuid = postUuid2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(postUuid1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(postUuid1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(postUuid2))
+    val itemD = item4.copy(itemUuid = "D", postUuids = listOf(postUuid2))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -237,16 +434,16 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val associated2 = itemsRepository.getAssociatedItems(postUuid2)
 
     assertEquals(2, associated1.size)
-    assertTrue(associated1.all { it.postUuid == postUuid1 })
+    assertTrue(associated1.all { it.postUuids.contains(postUuid1) })
 
     assertEquals(2, associated2.size)
-    assertTrue(associated2.all { it.postUuid == postUuid2 })
+    assertTrue(associated2.all { it.postUuids.contains(postUuid2) })
   }
 
   @Test
   fun getAssociatedItemsReturnsEmptyListWhenNoneMatch() = runBlocking {
-    itemsRepository.addItem(item1.copy(postUuid = "some_post"))
-    itemsRepository.addItem(item2.copy(postUuid = "another_post"))
+    itemsRepository.addItem(item1.copy(postUuids = listOf("some_post")))
+    itemsRepository.addItem(item2.copy(postUuids = listOf("another_post")))
 
     val associated = itemsRepository.getAssociatedItems("unrelated_post")
     assertTrue(associated.isEmpty())
@@ -257,9 +454,9 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val post1 = "delete_me"
     val post2 = "keep_me"
 
-    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
-    val itemB = item2.copy(itemUuid = "B", postUuid = post1)
-    val itemC = item3.copy(itemUuid = "C", postUuid = post2)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(post1))
+    val itemB = item2.copy(itemUuid = "B", postUuids = listOf(post1))
+    val itemC = item3.copy(itemUuid = "C", postUuids = listOf(post2))
 
     itemsRepository.addItem(itemA)
     itemsRepository.addItem(itemB)
@@ -270,13 +467,13 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     val remaining = itemsRepository.getAllItems()
 
     assertEquals(1, remaining.size)
-    assertEquals(post2, remaining.first().postUuid)
+    assertEquals(post2, remaining.first().postUuids.first())
   }
 
   @Test
   fun deletePostItemsDoesNothingWhenNoMatch() = runBlocking {
     val post1 = "existing"
-    val itemA = item1.copy(itemUuid = "A", postUuid = post1)
+    val itemA = item1.copy(itemUuid = "A", postUuids = listOf(post1))
     itemsRepository.addItem(itemA)
     assertEquals(1, countItems())
 

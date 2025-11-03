@@ -9,7 +9,7 @@ import kotlinx.coroutines.tasks.await
 
 const val ITEMS_COLLECTION = "items"
 const val OWNER_ATTRIBUTE_NAME = "ownerId"
-const val POST_ATTRIBUTE_NAME = "postUuid"
+const val POST_ATTRIBUTE_NAME = "postUuids"
 const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged in."
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
@@ -30,7 +30,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val snapshot =
         db.collection(ITEMS_COLLECTION)
-            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
             .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
             .get()
             .await()
@@ -62,7 +62,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val snapshot =
         db.collection(ITEMS_COLLECTION)
-            .whereEqualTo(POST_ATTRIBUTE_NAME, postUuid)
+            .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
             .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
             .get()
             .await()
@@ -75,8 +75,42 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
 private fun mapToItem(doc: DocumentSnapshot): Item? {
   return try {
-    val data = doc.data ?: return null
-    ItemsMappers.parseItem(data)
+    val uuid = doc.getString("itemUuid") ?: return null
+    val postUuidList = doc[POST_ATTRIBUTE_NAME] as? List<*>
+    val postUuids = postUuidList?.mapNotNull { it as? String } ?: emptyList()
+    val imageMap = doc["image"] as? Map<*, *> ?: return null
+    val imageUri =
+        ImageData(
+            imageId = imageMap["imageId"] as? String ?: "",
+            imageUrl = imageMap["imageUrl"] as? String ?: "",
+        )
+    val category = doc.getString("category") ?: return null
+    val type = doc.getString("type") ?: return null
+    val brand = doc.getString("brand") ?: return null
+    val price = doc.getDouble("price") ?: return null
+    val link = doc.getString("link") ?: return null
+    val ownerId = doc.getString(OWNER_ATTRIBUTE_NAME) ?: return null
+    val materialList = doc.get("material") as? List<*>
+    val material =
+        materialList?.mapNotNull { item ->
+          (item as? Map<*, *>)?.let {
+            Material(
+                name = it["name"] as? String ?: "",
+                percentage = (it["percentage"] as? Number)?.toDouble() ?: 0.0)
+          }
+        } ?: emptyList()
+
+    Item(
+        itemUuid = uuid,
+        postUuids = postUuids,
+        image = imageUri,
+        category = category,
+        type = type,
+        brand = brand,
+        price = price,
+        material = material,
+        link = link,
+        ownerId = ownerId)
   } catch (e: Exception) {
     Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
     null

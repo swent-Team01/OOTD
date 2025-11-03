@@ -29,7 +29,7 @@ class FitCheckViewModelFirebaseTest : FirestoreTest() {
     val item =
         Item(
             itemUuid = itemsRepository.getNewItemId(),
-            postUuid = postUuid,
+            postUuids = listOf(postUuid),
             image = ImageData("test_img", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-Shirt",

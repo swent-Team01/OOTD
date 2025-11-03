@@ -45,7 +45,7 @@ class EditItemsScreenTest {
   private val testItem =
       Item(
           itemUuid = "test-item-1",
-          postUuid = "test_post2",
+          postUuids = listOf("test_post2"),
           image = ImageData("test-item-1-photo", "https://example.com/image.jpg"),
           category = "Clothing",
           type = "T-shirt",

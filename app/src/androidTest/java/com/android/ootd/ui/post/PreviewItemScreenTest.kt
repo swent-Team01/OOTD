@@ -35,7 +35,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   private val fakeItem =
       Item(
           itemUuid = "1",
-          postUuid = "post_3456",
+          postUuids = listOf("post_3456"),
           image = ImageData("Photo1", "https://example.com/image.jpg"),
           category = "Clothes",
           type = "T-Shirt",
@@ -47,7 +47,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   private val fakeItem2 =
       Item(
           itemUuid = "2",
-          postUuid = "post_3456",
+          postUuids = listOf("post_3456"),
           image = ImageData("Photo2", "https://example.com/image2.jpg"),
           category = "Shoes",
           type = "Sneakers",

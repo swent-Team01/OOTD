@@ -162,7 +162,7 @@ open class EditItemsViewModel(
       val updatedItem =
           Item(
               itemUuid = state.itemId,
-              postUuid = state.postUuid,
+              postUuids = listOf(state.postUuid),
               image = finalImage,
               category = state.category,
               type = state.type,
