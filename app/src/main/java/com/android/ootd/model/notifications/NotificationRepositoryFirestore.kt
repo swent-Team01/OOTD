@@ -12,7 +12,7 @@ import kotlinx.coroutines.tasks.await
 const val NOTIFICATION_COLLECTION_PATH = "notifications"
 
 @Keep
-private data class NotificationDto(
+data class NotificationDto(
     val uid: String = "",
     val senderId: String = "",
     val receiverId: String = "",
