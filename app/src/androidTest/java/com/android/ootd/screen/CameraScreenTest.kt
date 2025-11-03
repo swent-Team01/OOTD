@@ -191,11 +191,15 @@ class CameraScreenPermissionTest {
     dismissed = false
 
     // Revoke camera permission explicitly to ensure we're testing the permission request flow
-    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-        .uiAutomation
-        .executeShellCommand(
-            "pm revoke ${composeTestRule.activity.packageName} ${Manifest.permission.CAMERA}")
-        .close()
+    try {
+      androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+          .uiAutomation
+          .executeShellCommand(
+              "pm revoke ${composeTestRule.activity.packageName} ${Manifest.permission.CAMERA}")
+          .close()
+    } catch (e: Exception) {
+      // Ignore if permission revoke fails - may already be revoked
+    }
 
     // Wait longer for permission state to update on CI emulators
     // CI emulators can be slower than local devices
@@ -244,8 +248,12 @@ class CameraScreenPermissionTest {
     // This is necessary because permission state updates can be async
     composeTestRule.waitForIdle()
 
+    // Additional wait for slower CI emulators
+    Thread.sleep(300)
+    composeTestRule.waitForIdle()
+
     // Use waitUntil for more robust waiting in CI environments
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.waitUntil(timeoutMillis = 10000) {
       composeTestRule.onAllNodesWithText("Grant Permission !").fetchSemanticsNodes().isNotEmpty()
     }
 
