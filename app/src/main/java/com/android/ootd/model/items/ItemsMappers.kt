@@ -24,7 +24,7 @@ object ItemsMappers {
       val price = (data["price"] as? Number)?.toDouble() ?: return null
       val link = data["link"] as? String ?: return null
       val ownerId = data["ownerId"] as? String ?: return null
-      val postUuid = data["postUuid"] as? String ?: ""
+      val postUuids = (data["postUuids"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
 
       val materialList = data["material"] as? List<*>
       val material =
@@ -38,6 +38,7 @@ object ItemsMappers {
 
       Item(
           itemUuid = uuid,
+          postUuids = postUuids,
           image = image,
           category = category,
           type = type,
@@ -45,8 +46,7 @@ object ItemsMappers {
           price = price,
           material = material,
           link = link,
-          ownerId = ownerId,
-          postUuid = postUuid)
+          ownerId = ownerId)
     } catch (_: Exception) {
       null
     }

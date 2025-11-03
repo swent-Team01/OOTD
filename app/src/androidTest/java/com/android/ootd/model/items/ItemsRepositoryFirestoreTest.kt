@@ -346,16 +346,6 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     assertEquals(itemWithSpecialChars.link, retrieved.link)
   }
 
-    // Invalid id throws
-    var threw = false
-    try {
-      itemsRepository.getItemById("nonExistingId")
-    } catch (_: Exception) {
-      threw = true
-    }
-    assertTrue(threw)
-  }
-
   @Test
   fun getAssociatedItemsReturnsOnlyItemsForSpecificPost() = runBlocking {
     // Given multiple items with different postUuid values
