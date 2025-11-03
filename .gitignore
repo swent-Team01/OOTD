@@ -108,3 +108,5 @@ lint/generated/
 .vscode/
 
 app/google-services.json
+
+.github/copilot-instructions.md

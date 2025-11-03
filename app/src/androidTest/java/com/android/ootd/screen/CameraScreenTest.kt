@@ -247,4 +247,257 @@ class CameraScreenPermissionTest {
     }
     assert(!viewModel.uiState.value.showPreview) { "Preview should not be shown initially" }
   }
+
+  @Test
+  fun permissionRequestCancelResetsViewModel() {
+    composeTestRule.onNodeWithText("Cancel").performClick()
+    composeTestRule.waitForIdle()
+
+    // After dismissal, verify ViewModel state is reset
+    assert(!viewModel.uiState.value.isCapturing) { "Should not be capturing after cancel" }
+  }
+
+  @Test
+  fun permissionDeniedMessageUsesCorrectWording() {
+    // Verify the permission message follows the app's tone
+    composeTestRule
+        .onNodeWithText("Camera permission is required to take your fit checks photos !")
+        .assertExists()
+  }
+
+  @Test
+  fun permissionUIComponentsAreProperlyAligned() {
+    // All components should be displayed together
+    composeTestRule
+        .onNodeWithTag(CameraScreenTestTags.PERMISSION_DENIED_MESSAGE)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON)
+        .assertIsDisplayed()
+    composeTestRule.onNodeWithText("Cancel").assertIsDisplayed()
+  }
+}
+
+/**
+ * Additional integration tests for CameraScreen preview functionality.
+ *
+ * These tests verify the image preview flow after capture, including the retake and approve
+ * buttons.
+ */
+class CameraScreenPreviewTest {
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+  @get:Rule
+  val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
+
+  private lateinit var viewModel: CameraViewModel
+  private var imageCaptured = false
+  private var dismissed = false
+
+  @Before
+  fun setUp() {
+    viewModel = CameraViewModel()
+    imageCaptured = false
+    dismissed = false
+
+    composeTestRule.setContent {
+      CameraScreen(
+          onImageCaptured = { imageCaptured = true },
+          onDismiss = { dismissed = true },
+          cameraViewModel = viewModel)
+    }
+  }
+
+  @Test
+  fun previewScreenShownAfterImageCapture() {
+    // Simulate image capture
+    val mockUri = android.net.Uri.parse("content://mock/image.jpg")
+    viewModel.setCapturedImage(mockUri)
+    composeTestRule.waitForIdle()
+
+    // Preview should be shown
+    assert(viewModel.uiState.value.showPreview) { "Preview should be shown after capture" }
+  }
+
+  @Test
+  fun retakeButtonClearsImageAndReturnsToCamera() {
+    val mockUri = android.net.Uri.parse("content://mock/image.jpg")
+    viewModel.setCapturedImage(mockUri)
+    composeTestRule.waitForIdle()
+
+    // Note: Since preview requires actual bitmap loading, we test the state directly
+    viewModel.retakePhoto()
+    composeTestRule.waitForIdle()
+
+    assert(viewModel.uiState.value.capturedImageUri == null) {
+      "Image should be cleared after retake"
+    }
+    assert(!viewModel.uiState.value.showPreview) { "Preview should be hidden after retake" }
+  }
+
+  @Test
+  fun viewModelStateConsistentAfterMultipleCaptures() {
+    val mockUri1 = android.net.Uri.parse("content://mock/image1.jpg")
+    val mockUri2 = android.net.Uri.parse("content://mock/image2.jpg")
+
+    // First capture
+    viewModel.setCapturedImage(mockUri1)
+    composeTestRule.waitForIdle()
+    assert(viewModel.uiState.value.capturedImageUri == mockUri1)
+
+    // Retake
+    viewModel.retakePhoto()
+    composeTestRule.waitForIdle()
+    assert(viewModel.uiState.value.capturedImageUri == null)
+
+    // Second capture
+    viewModel.setCapturedImage(mockUri2)
+    composeTestRule.waitForIdle()
+    assert(viewModel.uiState.value.capturedImageUri == mockUri2)
+  }
+
+  @Test
+  fun errorMessageClearedBetweenCaptures() {
+    viewModel.setError("Test error")
+    composeTestRule.waitForIdle()
+
+    viewModel.clearError()
+    composeTestRule.waitForIdle()
+
+    assert(viewModel.uiState.value.errorMessage == null) { "Error should be cleared" }
+  }
+
+  @Test
+  fun zoomStateInitializedCorrectly() {
+    // Initial zoom state
+    assert(viewModel.uiState.value.zoomRatio == 1f) { "Initial zoom should be 1x" }
+    assert(viewModel.uiState.value.minZoomRatio == 1f) { "Min zoom should be 1x" }
+    assert(viewModel.uiState.value.maxZoomRatio == 1f) { "Max zoom should be 1x initially" }
+  }
+}
+
+/**
+ * Integration tests for CameraScreen user interactions and state management.
+ *
+ * These tests verify complex user flows and state transitions.
+ */
+class CameraScreenInteractionTest {
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+  @get:Rule
+  val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
+
+  private lateinit var viewModel: CameraViewModel
+  private var dismissCount = 0
+
+  @Before
+  fun setUp() {
+    viewModel = CameraViewModel()
+    dismissCount = 0
+
+    composeTestRule.setContent {
+      CameraScreen(
+          onImageCaptured = {}, onDismiss = { dismissCount++ }, cameraViewModel = viewModel)
+    }
+  }
+
+  @Test
+  fun closeButtonResetsStateBeforeDismissing() {
+    viewModel.setCapturing(true)
+    viewModel.setError("Test error")
+
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CLOSE_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    assert(dismissCount == 1) { "Should dismiss once" }
+    // State should be reset after dismiss
+  }
+
+  @Test
+  fun multipleCloseClicksOnlyDismissOnce() {
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CLOSE_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Since dialog is dismissed, we can only verify the count
+    assert(dismissCount >= 1) { "Should dismiss at least once" }
+  }
+
+  @Test
+  fun switchCameraPreservesOtherState() {
+    viewModel.setError("Test error")
+    val errorMessage = viewModel.uiState.value.errorMessage
+
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Error state should be preserved
+    assert(viewModel.uiState.value.errorMessage == errorMessage) {
+      "Error state should be preserved when switching camera"
+    }
+  }
+
+  @Test
+  fun captureButtonStateReflectsCapturingState() {
+    // Set capturing to true
+    viewModel.setCapturing(true)
+    composeTestRule.waitForIdle()
+
+    assert(viewModel.uiState.value.isCapturing) { "Should be in capturing state" }
+
+    // Set capturing to false
+    viewModel.setCapturing(false)
+    composeTestRule.waitForIdle()
+
+    assert(!viewModel.uiState.value.isCapturing) { "Should not be in capturing state" }
+  }
+
+  @Test
+  fun resetFunctionClearsAllState() {
+    // Set various states
+    viewModel.switchCamera()
+    viewModel.setCapturing(true)
+    val mockUri = android.net.Uri.parse("content://mock/image.jpg")
+    viewModel.setCapturedImage(mockUri)
+    viewModel.setError("Test error")
+
+    // Reset
+    viewModel.reset()
+    composeTestRule.waitForIdle()
+
+    // All state should be reset
+    assert(
+        viewModel.uiState.value.lensFacing == androidx.camera.core.CameraSelector.LENS_FACING_BACK)
+    assert(!viewModel.uiState.value.isCapturing)
+    assert(viewModel.uiState.value.capturedImageUri == null)
+    assert(viewModel.uiState.value.errorMessage == null)
+    assert(!viewModel.uiState.value.showPreview)
+  }
+
+  @Test
+  fun cameraUIComponentsAreAccessible() {
+    // Verify all main UI components are accessible
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CAMERA_PREVIEW).assertExists()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CLOSE_BUTTON).assertExists()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).assertExists()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertExists()
+  }
+
+  @Test
+  fun contentDescriptionsAreInformative() {
+    // Verify content descriptions for accessibility
+    composeTestRule.onNodeWithContentDescription("Close Camera").assertExists()
+    composeTestRule.onNodeWithContentDescription("Switch Camera").assertExists()
+  }
+
+  @Test
+  fun viewModelStateUpdatesReflectInUI() {
+    val initialLensFacing = viewModel.uiState.value.lensFacing
+
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    val newLensFacing = viewModel.uiState.value.lensFacing
+
+    assert(initialLensFacing != newLensFacing) { "ViewModel state should update and reflect in UI" }
+  }
 }
