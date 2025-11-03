@@ -16,7 +16,7 @@ jobs:
   # Job 1: Format Check (runs independently)
   format-check:
     name: Format Check
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     
     steps:
       - name: Checkout
@@ -53,7 +53,7 @@ jobs:
   # Job 2: Assemble and Lint (depends on format-check)
   assemble-and-lint:
     name: Assemble and Lint
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: format-check
     
     steps:
@@ -91,7 +91,7 @@ jobs:
   # Job 3: Compile Debug Classes (runs independently)
   compile-debug:
     name: Compile Debug Classes
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     
     steps:
       - name: Checkout
@@ -128,7 +128,7 @@ jobs:
   # Job 4: Android Instrumentation Tests (depends on compile-debug)
   android-instrumentation-tests:
     name: Android Instrumentation Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: compile-debug
     
     steps:
@@ -220,7 +220,7 @@ jobs:
   # Job 5: Unit Tests (depends on compile-debug)
   unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: compile-debug
     
     steps:
@@ -303,7 +303,7 @@ jobs:
   # Job 6: Coverage Report (depends on unit-tests)
   coverage-report:
     name: Coverage Report
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: unit-tests
     
     steps:
@@ -377,7 +377,7 @@ jobs:
   # This job depends on all other jobs and provides a single check for branch protection rules
   ci-status:
     name: CI
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [format-check, assemble-and-lint, compile-debug, android-instrumentation-tests, unit-tests, coverage-report]
     if: always()
     
