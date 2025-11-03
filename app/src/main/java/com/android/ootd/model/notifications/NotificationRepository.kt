@@ -11,7 +11,7 @@ interface NotificationRepository {
 
   suspend fun getNotificationsForSender(senderId: String): List<Notification>
 
-  suspend fun deleteNotification(notificationId: String)
+  suspend fun deleteNotification(notification: Notification)
 
   suspend fun notificationExists(notificationId: String): Boolean
 }

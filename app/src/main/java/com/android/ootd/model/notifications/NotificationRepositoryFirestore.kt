@@ -165,18 +165,22 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     }
   }
 
-  override suspend fun deleteNotification(notificationId: String) {
+  override suspend fun deleteNotification(notification: Notification) {
     try {
+      // At this point in time I consider that only receivers can delete notifications
+      // This is because for following this is all that is needed.
+      // Can be modified in future PRs.
       val documentList =
           db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("uid", notificationId)
+              .whereEqualTo("receiverId", notification.receiverId)
+              .whereEqualTo("uid", notification.uid)
               .get()
               .await()
 
       if (documentList.documents.isEmpty()) {
-        throw NoSuchElementException("Notification with ID $notificationId not found")
+        throw NoSuchElementException("Notification with ID ${notification.uid} not found")
       }
-
+      Log.d("NotificationRepositoryFirestore", "Successfully found the necessary document")
       db.collection(NOTIFICATION_COLLECTION_PATH)
           .document(documentList.documents[0].id)
           .delete()
@@ -184,7 +188,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
 
       Log.d(
           "NotificationRepositoryFirestore",
-          "Successfully deleted notification with UID: $notificationId")
+          "Successfully deleted notification with UID: ${notification.uid}")
     } catch (e: Exception) {
       Log.e("NotificationRepositoryFirestore", "Error deleting notification: ${e.message}", e)
       throw e

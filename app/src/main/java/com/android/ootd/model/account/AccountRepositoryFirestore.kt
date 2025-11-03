@@ -189,16 +189,28 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun removeFriend(userID: String, friendID: String) {
     try {
-      // Instead of reading the friend's account (which we can't do due to privacy),
-      // check if the friend exists in the public User collection
+      // Check if the friend exists in the public User collection
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
       if (!friendUserDoc.exists()) {
         throw NoSuchElementException("Friend with ID $friendID not found")
       }
 
+      // Remove friendID from userID's friend list
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
       userRef.update("friendUids", FieldValue.arrayRemove(friendID)).await()
+
+      // Remove userID from friendID's friend list (if they have us as a friend)
+      val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      try {
+        friendRef.update("friendUids", FieldValue.arrayRemove(userID)).await()
+      } catch (e: Exception) {
+        // If we can't update their account (maybe we're not in their friend list),
+        // log it but don't fail the entire operation
+        Log.w(
+            "AccountRepositoryFirestore",
+            "Could not remove $userID from $friendID's friend list: ${e.message}")
+      }
     } catch (e: Exception) {
       Log.e(
           "AccountRepositoryFirestore",
@@ -209,16 +221,18 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
-    val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+    try {
+      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID).get().await()
 
-    if (!document.exists()) {
-      throw NoSuchElementException("The authenticated user has not been added to the database")
+      if (!document.exists()) {
+        throw NoSuchElementException("The authenticated user has not been added to the database")
+      }
+      // I could access their account, I passed the firestore check.
+      return true
+    } catch (e: Exception) {
+      // I could not access their account, therefore I am not their friend.
+      return false
     }
-
-    val myAccount = transformAccountDocument(document)
-
-    return (myAccount?.friendUids?.isNotEmpty() == true &&
-        myAccount.friendUids.any { it == friendID })
   }
 
   override suspend fun togglePrivacy(userID: String): Boolean {
