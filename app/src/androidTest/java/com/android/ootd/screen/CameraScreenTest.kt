@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -192,19 +191,21 @@ class CameraScreenPermissionTest {
 
     // Revoke camera permission explicitly to ensure we're testing the permission request flow
     try {
-      androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-          .uiAutomation
-          .executeShellCommand(
-              "pm revoke ${composeTestRule.activity.packageName} ${Manifest.permission.CAMERA}")
-          .close()
+      val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+      val packageName = composeTestRule.activity.packageName
+
+      instrumentation.uiAutomation
+          .executeShellCommand("pm revoke $packageName ${Manifest.permission.CAMERA}")
+          ?.close()
+
+      // Wait for permission state to propagate
+      Thread.sleep(1000)
     } catch (e: Exception) {
       // Ignore if permission revoke fails - may already be revoked
+      android.util.Log.w("CameraScreenTest", "Failed to revoke permission: ${e.message}")
     }
 
-    // Wait longer for permission state to update on CI emulators
-    // CI emulators can be slower than local devices
-    Thread.sleep(500)
-
+    // Set content after permission is revoked
     composeTestRule.setContent {
       CameraScreen(
           onImageCaptured = {}, onDismiss = { dismissed = true }, cameraViewModel = viewModel)
@@ -215,7 +216,7 @@ class CameraScreenPermissionTest {
 
     // Additional wait to ensure permission denied UI is rendered
     // This is especially important on slower CI emulators
-    Thread.sleep(200)
+    Thread.sleep(500)
     composeTestRule.waitForIdle()
   }
 
@@ -248,15 +249,11 @@ class CameraScreenPermissionTest {
     // This is necessary because permission state updates can be async
     composeTestRule.waitForIdle()
 
-    // Additional wait for slower CI emulators
-    Thread.sleep(300)
+    // Additional wait for slower CI emulators - increased significantly
+    Thread.sleep(1000)
     composeTestRule.waitForIdle()
 
-    // Use waitUntil for more robust waiting in CI environments
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule.onAllNodesWithText("Grant Permission !").fetchSemanticsNodes().isNotEmpty()
-    }
-
+    // Simple assertion without waitUntil to avoid potential crashes
     composeTestRule.onNodeWithText("Grant Permission !").assertIsDisplayed()
   }
 
