@@ -11,8 +11,12 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.io.ByteArrayInputStream
 import java.io.InputStream
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -29,9 +33,11 @@ class ImageOrientationHelperTest {
   private lateinit var helper: ImageOrientationHelper
   private lateinit var mockContext: Context
   private lateinit var mockUri: Uri
+  private val testDispatcher = StandardTestDispatcher()
 
   @Before
   fun setup() {
+    Dispatchers.setMain(testDispatcher)
     helper = ImageOrientationHelper()
     mockContext = mockk(relaxed = true)
     mockUri = mockk(relaxed = true)
@@ -39,6 +45,7 @@ class ImageOrientationHelperTest {
 
   @After
   fun tearDown() {
+    Dispatchers.resetMain()
     unmockkAll()
   }
 
