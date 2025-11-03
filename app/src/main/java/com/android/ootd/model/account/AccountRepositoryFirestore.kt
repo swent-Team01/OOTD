@@ -165,13 +165,6 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addFriend(userID: String, friendID: String) {
     try {
-      // Instead of reading the friend's account (which we can't do due to privacy),
-      // check if the friend exists in the public User collection
-      val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
-
-      if (!friendUserDoc.exists()) {
-        throw NoSuchElementException("Friend with ID $friendID not found")
-      }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
 
@@ -179,7 +172,21 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
       // array section
 
+      // Add the friendID in your friend list
       userRef.update("friendUids", FieldValue.arrayUnion(friendID)).await()
+
+      // Add yourself to the friendID's friend list.
+      // This works because we have not deleted the follow notification yet.
+      val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      try {
+        friendRef.update("friendUids", FieldValue.arrayUnion(userID)).await()
+      } catch (e: Exception) {
+        // If we can't update their account (maybe we're not in their friend list),
+        // log it but don't fail the entire operation
+        Log.w(
+            "AccountRepositoryFirestore",
+            "Could not add $userID to $friendID's friend list: ${e.message}")
+      }
     } catch (e: Exception) {
       Log.e(
           "AccountRepositoryFirestore", "Error adding friend $friendID to $userID: ${e.message}", e)

@@ -13,5 +13,7 @@ interface NotificationRepository {
 
   suspend fun deleteNotification(notification: Notification)
 
+  fun getFollowNotificationId(senderId: String, receiverId: String): String
+
   suspend fun notificationExists(notificationId: String): Boolean
 }

@@ -152,7 +152,9 @@ class UserSearchViewModel(
           // Send a new follow request notification
           val notification =
               Notification(
-                  uid = notificationRepository.getNewUid(),
+                  uid =
+                      notificationRepository.getFollowNotificationId(
+                          senderId = myUID, receiverId = friendID),
                   senderId = myUID,
                   receiverId = friendID,
                   type = NOTIFICATION_TYPE_FOLLOW_REQUEST,

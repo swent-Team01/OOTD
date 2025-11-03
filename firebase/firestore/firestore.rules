@@ -18,6 +18,15 @@ service cloud.firestore {
         && (viewerUid in get(authorPath).data.friendUids);
     }
 
+    // This is used in the following way:
+    // When the authenticated user accepts the follow request,
+    // they need to add themselves to the friend list of who sent them the request.
+    // To do this, there needs to be a notification where the accountOwnerId wants to follow them.
+    function hasFollowNotification(accountOwnerId) {
+      let notificationId = accountOwnerId + '_follow_' + request.auth.uid;
+      return exists(/databases/$(database)/documents/notifications/$(notificationId));
+    }
+
     // Users: read any, write own
     match /users/{userId} {
       allow read: if true;
@@ -59,6 +68,14 @@ service cloud.firestore {
                      && request.auth.uid in resource.data.friendUids
                      && !(request.auth.uid in request.resource.data.friendUids)
                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friendUids']);
+
+      // Non-owner can update ONLY to add themselves to friendUids if there's a follow notification
+      allow update: if isAuthed()
+                   && request.auth.uid != accountId
+                   && !(request.auth.uid in resource.data.friendUids)
+                   && request.auth.uid in request.resource.data.friendUids
+                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friendUids'])
+                   && hasFollowNotification(accountId);
 
       allow delete: if isAuthed()
            && (resource == null || resource.data.ownerId == request.auth.uid);

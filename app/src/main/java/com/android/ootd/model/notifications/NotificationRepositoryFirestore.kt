@@ -79,6 +79,14 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     return UUID.randomUUID().toString()
   }
 
+  /**
+   * Generate a predictable follow notification ID Format: senderId_follow_receiverId This allows
+   * Firestore rules to check for notification existence
+   */
+  override fun getFollowNotificationId(senderId: String, receiverId: String): String {
+    return "${senderId}_follow_${receiverId}"
+  }
+
   override suspend fun addNotification(notification: Notification) {
     try {
       val existingDoc =
