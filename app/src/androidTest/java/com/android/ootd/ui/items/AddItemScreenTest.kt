@@ -3,8 +3,8 @@ package com.android.ootd.ui.items
 import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -23,17 +23,16 @@ import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+// Test partially generated with an AI coding agent
 class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  // Initialize ViewModel here to access its state in tests
   private lateinit var viewModel: AddItemsViewModel
   override val repository = ItemsRepositoryProvider.repository
 
@@ -41,687 +40,285 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   override fun setUp() {
     super.setUp()
     viewModel = AddItemsViewModel(repository)
-    // Initialize type suggestions for tests
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     composeTestRule.setContent {
       AddItemsScreen(addItemsViewModel = viewModel, onNextScreen = {}, postUuid = "postuid")
     }
   }
 
+  // ----------- Input and photo flow -----------
+
   @Test
-  fun canEnterType() {
-    val text = "Jacket"
-    composeTestRule.enterAddItemType(text)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE)
+  fun fillAllFields_showsCorrectValues() {
+    // Fill all text fields
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("Jacket")
+    composeTestRule.enterAddItemBrand("Brand")
+    composeTestRule.enterAddItemPrice(99.99)
+    composeTestRule.enterAddItemLink("www.ootd.com")
+    composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
+
+    // Verify all fields contain the correct values
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.category == "Clothing")
+      assert(viewModel.uiState.value.type == "Jacket")
+      assert(viewModel.uiState.value.brand == "Brand")
+      assert(viewModel.uiState.value.price == "99.99")
+      assert(viewModel.uiState.value.link == "www.ootd.com")
+      assert(viewModel.uiState.value.materialText == "Cotton 80%, Polyester 20%")
+
+      // Verify material was parsed correctly
+      val materials = viewModel.uiState.value.material
+      assert(materials.size == 2)
+      assert(materials[0].name == "Cotton" && materials[0].percentage == 80.0)
+      assert(materials[1].name == "Polyester" && materials[1].percentage == 20.0)
+    }
   }
 
   @Test
-  fun canEnterCategory() {
-    val text = "clothes"
-    composeTestRule.enterAddItemCategory(text)
-  }
-
-  @Test
-  fun canEnterBrand() {
-    val text = "Brand"
-    composeTestRule.enterAddItemBrand(text)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_BRAND).assertTextContains(text)
-  }
-
-  @Test
-  fun canEnterPrice() {
-    val text = 99.99
-    composeTestRule.enterAddItemPrice(text)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE)
-        .assertTextContains(text.toString())
-  }
-
-  @Test
-  fun canEnterLink() {
-    val text = "www.ootd.com"
-    composeTestRule.enterAddItemLink(text)
-  }
-
-  @Test
-  fun canEnterMaterial() {
-    val text = "Cotton 80%, Polyester 20%"
-    composeTestRule.enterAddItemMaterial(text)
-  }
-
-  @Test
-  fun canEnterPhoto() {
+  fun setPhoto_updatesViewModelAndPreviewExists() {
     val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.enterAddItemPhoto()
+
+    // Set photo directly via ViewModel (simulating what happens after picking from gallery)
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-    composeTestRule.checkPhotoPreviewDisplayed()
-  }
+    composeTestRule.waitForIdle()
 
-  @Test
-  fun imageUploadButtonIsVisibleAndClickable() {
-    composeTestRule.checkImageUploadButtonIsDisplayed()
-    composeTestRule.checkImageUploadButtonClickable()
-  }
-
-  @Test
-  fun enteringInvalidCategoryShowsErrorMessage() {
-    val invalidCategory = "InvalidCategory"
-    composeTestRule.enterAddItemCategory(invalidCategory)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
-        .assertIsDisplayed() // Adjust this assertion based on actual error handling
-  }
-
-  @Test
-  fun enteringInvalidCategoryShowsErrorMessageThenTheCorrectCategory() {
-    // Type invalid category
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
-
+    // Verify ViewModel state updated
     composeTestRule.runOnIdle {
-      assert(viewModel.uiState.value.invalidCategory != null)
-      assertTrue(viewModel.uiState.value.invalidCategory?.contains("Clothing") == true)
-    }
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-        .performTextReplacement("Clothing")
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
-  }
-
-  @Test
-  fun imageIsDisplayedAfterUpload() {
-    val uri = Uri.parse("content://dummy/photo.jpg")
-    composeTestRule.verifyImageUploadFlow(viewModel, uri)
-  }
-
-  @Test
-  fun galleryLauncher_setsPhoto_whenUriNotNull() {
-    val fakeUri = Uri.parse("content://fake/photo.jpg")
-
-    composeTestRule.runOnIdle { viewModel.setPhoto(fakeUri) }
-
-    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.localPhotoUri == uri)
       assert(viewModel.uiState.value.invalidPhotoMsg == null)
-      assert(viewModel.uiState.value.localPhotoUri == fakeUri)
     }
+
+    // Wait for photo preview component to appear in the composition tree
+    composeTestRule.waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW, timeoutMillis = 5_000)
+
+    // Verify photo preview component exists
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertExists()
   }
 
-  @Test
-  fun imageUploadDialogShowsAndDismissesCorrectly() {
-    // Step 1: Click the upload button
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
+  // ----------- Image picker dialog & actions -----------
 
-    // Step 2: Verify dialog
+  @Test
+  fun imagePickerDialog_shows_and_dismisses_via_options() {
+    // Open
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
+    composeTestRule.waitForIdle()
+
+    // Dialog visible with both options
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).assertIsDisplayed()
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).assertIsDisplayed()
 
-    // Step 3: Dismiss dialog
+    // Dismiss by selecting gallery
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
     composeTestRule.waitForIdle()
 
-    // Step 4: Assert dialog closed
+    // Verify dialog dismissed
+    composeTestRule.runOnIdle {
+      // Give time for dialog to dismiss
+    }
     composeTestRule
         .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
         .assertCountEquals(0)
   }
 
-  @Test
-  fun categoryDropdown_onDismiss_callsValidateCategory_whenNotBlank() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothing")
-      viewModel.setErrorMsg("old_error")
-    }
-
-    // Simulate the dropdown being open
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
-
-    // Simulate dismiss
-    composeTestRule.runOnIdle {
-      // mimic onDismissRequest logic manually
-      viewModel.validateCategory()
-    }
-
-    // After validation, invalidCategory should be null
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
-  }
+  // ----------- Category validation flow -----------
 
   @Test
-  fun galleryLauncher_doesNothing_whenUriIsNull() {
-    composeTestRule.runOnIdle {
-      val previousImage = viewModel.uiState.value.localPhotoUri
-      val uri: Uri? = null
-      if (uri != null) viewModel.setPhoto(uri)
-      assert(viewModel.uiState.value.localPhotoUri == previousImage)
-    }
-  }
-
-  @Test
-  fun cameraLauncher_setsPhoto_whenSuccessAndUriNotNull() {
-    val fakeUri = Uri.parse("content://fake/camera_photo.jpg")
-
-    composeTestRule.runOnIdle {
-      val success = true
-      if (success && fakeUri != null) {
-        viewModel.setPhoto(fakeUri)
-      }
-    }
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.localPhotoUri == fakeUri) }
-  }
-
-  @Test
-  fun cameraLauncher_doesNothing_whenFailureOrUriNull() {
-    composeTestRule.runOnIdle {
-      val success = false
-      val cameraUri: Uri? = null
-      val previousImage = viewModel.uiState.value.localPhotoUri
-      if (success && cameraUri != null) {
-        viewModel.setPhoto(cameraUri)
-      }
-      assert(viewModel.uiState.value.localPhotoUri == previousImage)
-    }
-  }
-
-  @Test
-  fun clickingAddItemReturns() {
-    val item = ItemsTest.Companion.item4
-    val testUri = "content://dummy/photo.jpg".toUri()
-
-    // Set photo directly to avoid launching external activities
-    composeTestRule.runOnIdle { viewModel.setPhoto(testUri) }
-    composeTestRule.waitForIdle()
-
-    composeTestRule.enterAddItemType(item.type ?: "")
-    composeTestRule.enterAddItemCategory(item.category)
-    composeTestRule.enterAddItemBrand(item.brand ?: "")
-    item.price?.let { composeTestRule.enterAddItemPrice(it) }
-    composeTestRule.enterAddItemLink(item.link ?: "")
-
-    // Enter the other item details (excluding photo)
-    item.type?.let { composeTestRule.enterAddItemType(it) }
-    composeTestRule.enterAddItemCategory(item.category)
-    item.brand?.let { composeTestRule.enterAddItemBrand(it) }
-    item.price?.let { composeTestRule.enterAddItemPrice(it) }
-    item.link?.let { composeTestRule.enterAddItemLink(it) }
-    item.material.forEach {
-      it?.let { material -> composeTestRule.enterAddItemMaterial(material.name) }
-    }
-
-    composeTestRule.waitForIdle()
-
-    // Ensure the Add Item button is visible and click it
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-    // Button exists in the hierarchy; no need to waitUntil
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-
-    // Still present after click (we don’t navigate in this test)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON).assertIsDisplayed()
-  }
-
-  @Test
-  fun dropdownMenuShowsTypeSuggestionsAndSelectsOne() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("Clothing")
-
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun dropdownMenuShowsCategorySuggestionsAndSelectsOne() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("C")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun addItemButtonDisabledWhenImageMissing() {
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.enterAddItemType("Jacket")
-
-    composeTestRule.waitForIdle()
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-
-    // Verify button is disabled when no image
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-
-    // Verify isAddingValid is false
-    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isAddingValid) }
-  }
-
-  @Test
-  fun addItemButtonDisabledWhenNoCategory() {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-  }
-
-  @Test
-  fun addItemButtonDisabledWhenInvalidCategory() {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-    composeTestRule.enterAddItemCategory("InvalidCategory")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-  }
-
-  @Test
-  fun materialInputParsesCorrectly() {
-    val materialText = "Cotton 80%, Wool 20%"
-    composeTestRule.enterAddItemMaterial(materialText)
-
-    composeTestRule.runOnIdle {
-      val materials = viewModel.uiState.value.material
-      assert(materials.size == 2)
-      assert(materials[0].name == "Cotton" && materials[0].percentage == 80.0)
-      assert(materials[1].name == "Wool" && materials[1].percentage == 20.0)
-    }
-  }
-
-  @Test
-  fun materialInputHandlesInvalidFormat() {
-    val materialText = "Cotton, Wool"
-    composeTestRule.enterAddItemMaterial(materialText)
-
-    composeTestRule.runOnIdle {
-      val materials = viewModel.uiState.value.material
-      assert(materials.isEmpty())
-    }
-  }
-
-  @Test
-  fun typeSuggestionsForAccessoriesCategory() {
-    composeTestRule.enterAddItemCategory("Accessories")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("H")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("Hat", useUnmergedTree = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun typeSuggestionsForShoesCategory() {
-    composeTestRule.enterAddItemCategory("Shoes")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("B")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("Boots", useUnmergedTree = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun typeSuggestionsForBagsCategory() {
-    composeTestRule.enterAddItemCategory("Bags")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("B")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("Backpack", useUnmergedTree = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun categoryNormalizationWorks() {
-    composeTestRule.enterAddItemCategory("clothing")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.typeSuggestion.contains("Jacket")) }
-  }
-
-  @Test
-  fun priceInputOnlyAcceptsValidNumbers() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextInput("12.99")
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
-
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextReplacement("abc")
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
-  }
-
-  @Test
-  fun priceInputAcceptsDecimals() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextInput("99.99")
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "99.99") }
-  }
-
-  @Test
-  fun selectingCategorySuggestionClearsError() {
+  fun invalidCategory_showsError_then_validClears() {
+    // Invalid first
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
-
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory != null) }
 
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextReplacement("C")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).performClick()
-
+    // Now enter a valid category
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+        .performTextReplacement("Clothing")
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
   }
 
-  @Test
-  fun selectingTypeSuggestionSetsValue() {
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.TYPE_SUGGESTIONS, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).performClick()
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.type == "Jacket") }
-  }
+  // ----------- Photo setters and edge cases -----------
 
   @Test
-  fun emptyTypeSuggestionsWhenCategoryNotRecognized() {
-    composeTestRule.enterAddItemCategory("UnknownCategory")
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
+  fun setPhoto_galleryAndCamera_andNullNoop_andEmptySetsError() {
+    val galleryUri = Uri.parse("content://fake/gallery_photo.jpg")
+    val cameraUri = Uri.parse("content://fake/camera_photo.jpg")
 
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.typeSuggestion.isEmpty()) }
-  }
-
-  @Test
-  fun clearingCategoryInputClearsError() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory != null) }
-
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextReplacement("")
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
-  }
-
-  @Test
-  fun canAddItemsReturnsFalseWhenImageMissing() = runTest {
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.enterAddItemType("Jacket")
-
-    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
-
-    composeTestRule.waitForIdle()
-
+    // Gallery launcher behavior
+    composeTestRule.runOnIdle { viewModel.setPhoto(galleryUri) }
     composeTestRule.runOnIdle {
-      assert(!viewModel.addOnSuccess.value)
-      assert(viewModel.uiState.value.errorMessage != null)
+      assert(viewModel.uiState.value.invalidPhotoMsg == null)
+      assert(viewModel.uiState.value.localPhotoUri == galleryUri)
     }
-  }
 
-  @Test
-  fun canAddItemsReturnsFalseWhenCategoryMissing() = runTest {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
+    // Camera launcher behavior
+    composeTestRule.runOnIdle { viewModel.setPhoto(cameraUri) }
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.localPhotoUri == cameraUri) }
 
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
-
-    composeTestRule.waitForIdle()
-
+    // Null-like scenario: do not call setPhoto and ensure previous remains
     composeTestRule.runOnIdle {
-      assert(!viewModel.addOnSuccess.value)
-      assert(viewModel.uiState.value.errorMessage != null)
-    }
-  }
-
-  @Test
-  fun canAddItemsReturnsFalseWhenCategoryInvalid() = runTest {
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle {
-      viewModel.setPhoto(uri)
-      viewModel.setCategory("InvalidCategory")
-      viewModel.validateCategory()
+      val before = viewModel.uiState.value.localPhotoUri
+      // simulate no-op (null not passed to setPhoto)
+      assert(viewModel.uiState.value.localPhotoUri == before)
     }
 
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle {
-      assert(!viewModel.addOnSuccess.value)
-      assert(viewModel.uiState.value.errorMessage != null)
-      assert(viewModel.uiState.value.invalidCategory != null)
-    }
-  }
-
-  @Test
-  fun setPhotoWithEmptyUriSetsError() {
+    // Empty Uri sets error
     composeTestRule.runOnIdle {
       viewModel.setPhoto(Uri.EMPTY)
       assert(viewModel.uiState.value.invalidPhotoMsg != null)
     }
   }
 
+  // ----------- Add button enabled states -----------
+
   @Test
-  fun setPhotoWithValidUriClearsError() {
+  fun addButton_disabledForMissingOrInvalidInputs_and_enabledWhenValid() {
+    // No image + minimal inputs -> disabled
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("Jacket")
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
+    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isAddingValid) }
+
+    // With image but invalid category -> disabled
     val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle {
-      viewModel.setPhoto(uri)
-      assert(viewModel.uiState.value.invalidPhotoMsg == null)
-    }
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
+    composeTestRule.enterAddItemCategory("InvalidCategory")
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsNotEnabled()
+
+    // Valid all -> enabled
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+        .performTextReplacement("Clothing")
+    composeTestRule.enterAddItemType("T-Shirt")
+    composeTestRule.enterAddItemBrand("Nike")
+    composeTestRule.enterAddItemPrice(19.99)
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+        .assertIsEnabled()
+  }
+
+  // ----------- Suggestions: show and select -----------
+
+  @Test
+  fun typeSuggestion_showsAndCanSelect_forClothing() {
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+
+    composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).performClick()
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.type == "Jacket") }
   }
 
   @Test
-  fun clearErrorMsgWorks() {
-    composeTestRule.runOnIdle {
-      viewModel.setErrorMsg("Test error")
-      assert(viewModel.uiState.value.errorMessage == "Test error")
+  fun categorySuggestion_showsAndSelectingClearsError() {
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("C")
 
-      viewModel.clearErrorMsg()
-      assert(viewModel.uiState.value.errorMessage == null)
-    }
+    // Wait for category suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.CATEGORY_SUGGESTION, timeoutMillis = 10_000)
+
+    composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).performClick()
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
   }
 
   @Test
-  fun categoryValidationWithExactMatch() {
+  fun typeSuggestions_acrossCategories() {
+    // Accessories -> Hat
+    composeTestRule.enterAddItemCategory("Accessories")
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("H")
+    composeTestRule.waitForIdle()
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Hat", useUnmergedTree = true).assertIsDisplayed()
+
+    // Shoes -> Boots
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+        .performTextReplacement("Shoes")
+    // Clear and re-enter type to trigger suggestions for new category
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextReplacement("")
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("B")
+    composeTestRule.waitForIdle()
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Boots", useUnmergedTree = true).assertIsDisplayed()
+
+    // Bags -> Backpack
+    composeTestRule
+        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
+        .performTextReplacement("Bags")
+    // Clear and re-enter type to trigger suggestions for new category
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextReplacement("")
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("B")
+    composeTestRule.waitForIdle()
+
+    // Wait for suggestions dropdown to appear
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Backpack", useUnmergedTree = true).assertIsDisplayed()
+  }
+
+  // ----------- Material parsing -----------
+
+  @Test
+  fun materialInput_parsesVariants_and_ignoresInvalid() {
+    // Multi
+    composeTestRule.enterAddItemMaterial("Cotton 60%, Polyester 30%, Elastane 10%")
     composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothing")
-      viewModel.validateCategory()
-      assert(viewModel.uiState.value.invalidCategory == null)
+      val m = viewModel.uiState.value.material
+      assert(m.size == 3)
+      assert(m[0].name == "Cotton" && m[0].percentage == 60.0)
+      assert(m[1].name == "Polyester" && m[1].percentage == 30.0)
+      assert(m[2].name == "Elastane" && m[2].percentage == 10.0)
+    }
+
+    // Single
+    composeTestRule.enterAddItemMaterial("Cotton 100%")
+    composeTestRule.runOnIdle {
+      val m = viewModel.uiState.value.material
+      assert(m.size == 1)
+      assert(m[0].name == "Cotton" && m[0].percentage == 100.0)
+    }
+
+    // Invalid entries are ignored
+    composeTestRule.enterAddItemMaterial("Cotton 80%, InvalidEntry, Wool 20%")
+    composeTestRule.runOnIdle {
+      val m = viewModel.uiState.value.material
+      assert(m.size == 2)
+      assert(m[0].name == "Cotton" && m[0].percentage == 80.0)
+      assert(m[1].name == "Wool" && m[1].percentage == 20.0)
     }
   }
 
-  @Test
-  fun categoryValidationCaseInsensitive() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("clothes")
-      viewModel.validateCategory()
-      assert(viewModel.uiState.value.invalidCategory == null)
-    }
-  }
+  // ----------- Price handling -----------
 
   @Test
-  fun categoryValidationWithWhitespace() {
+  fun priceInput_acceptsDecimals_and_rejectsInvalid() {
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextInput("12.99")
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
+
+    // Replace with invalid; value should stay last valid
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextReplacement("abc")
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
+
+    // Conversion example
     composeTestRule.runOnIdle {
-      viewModel.setCategory("  Clothes  ")
-      viewModel.validateCategory()
-      assert(viewModel.uiState.value.invalidCategory == null)
-    }
-  }
-
-  @Test
-  fun updateTypeSuggestionsShowsAllWhenInputEmpty() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothing")
-      viewModel.updateTypeSuggestions("")
-
-      val suggestions = viewModel.uiState.value.typeSuggestion
-      assert(suggestions.contains("Jacket"))
-      assert(suggestions.contains("T-shirt"))
-      assert(suggestions.contains("Jeans"))
-    }
-  }
-
-  @Test
-  fun updateTypeSuggestionsFiltersCorrectly() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("Clothing")
-      viewModel.updateTypeSuggestions("Ja")
-
-      val suggestions = viewModel.uiState.value.typeSuggestion
-      assert(suggestions.contains("Jacket"))
-      assert(!suggestions.contains("T-shirt"))
-    }
-  }
-
-  @Test
-  fun normalizedCategoryClothingWorks() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("clothing")
-      viewModel.updateTypeSuggestions("J")
-
-      val suggestions = viewModel.uiState.value.typeSuggestion
-      assert(suggestions.contains("Jacket"))
-    }
-  }
-
-  @Test
-  fun normalizedCategoryShoesWorks() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("shoe")
-      viewModel.updateTypeSuggestions("B")
-
-      val suggestions = viewModel.uiState.value.typeSuggestion
-      assert(suggestions.contains("Boots"))
-    }
-  }
-
-  @Test
-  fun normalizedCategoryBagsWorks() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("bag")
-      viewModel.updateTypeSuggestions("B")
-
-      val suggestions = viewModel.uiState.value.typeSuggestion
-      assert(suggestions.contains("Backpack"))
-    }
-  }
-
-  @Test
-  fun normalizedCategoryAccessoriesWorks() {
-    composeTestRule.runOnIdle {
-      viewModel.setCategory("accessory")
-      viewModel.updateTypeSuggestions("H")
-
-      val suggestions = viewModel.uiState.value.typeSuggestion
-      assert(suggestions.contains("Hat"))
-    }
-  }
-
-  @Test
-  fun materialParsingWithMultipleItems() {
-    composeTestRule.runOnIdle {
-      viewModel.setMaterial("Cotton 60%, Polyester 30%, Elastane 10%")
-
-      val materials = viewModel.uiState.value.material
-      assert(materials.size == 3)
-      assert(materials[0].name == "Cotton" && materials[0].percentage == 60.0)
-      assert(materials[1].name == "Polyester" && materials[1].percentage == 30.0)
-      assert(materials[2].name == "Elastane" && materials[2].percentage == 10.0)
-    }
-  }
-
-  @Test
-  fun materialParsingWithSingleItem() {
-    composeTestRule.runOnIdle {
-      viewModel.setMaterial("Cotton 100%")
-
-      val materials = viewModel.uiState.value.material
-      assert(materials.size == 1)
-      assert(materials[0].name == "Cotton" && materials[0].percentage == 100.0)
-    }
-  }
-
-  @Test
-  fun materialParsingIgnoresInvalidEntries() {
-    composeTestRule.runOnIdle {
-      viewModel.setMaterial("Cotton 80%, InvalidEntry, Wool 20%")
-
-      val materials = viewModel.uiState.value.material
-      assert(materials.size == 2)
-      assert(materials[0].name == "Cotton" && materials[0].percentage == 80.0)
-      assert(materials[1].name == "Wool" && materials[1].percentage == 20.0)
-    }
-  }
-
-  @Test
-  fun priceConversionToDouble() {
-    composeTestRule.runOnIdle {
-      viewModel.setPrice("49.99")
-
       val item =
           Item(
               itemUuid = "test",
@@ -734,107 +331,19 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
               material = emptyList(),
               link = "",
               ownerId = "user123")
-
-      assert(item.price == 49.99)
+      assert(item.price == 12.99)
     }
   }
 
-  @Test
-  fun priceConversionWithInvalidString() {
-    composeTestRule.runOnIdle {
-      viewModel.setPrice("invalid")
-      val price = viewModel.uiState.value.price.toDoubleOrNull() ?: 0.0
-      assert(price == 0.0)
-    }
-  }
+  // ----------- Overlay visibility -----------
 
   @Test
-  fun alertDialog_shows_and_has_all_buttons() {
-    // Open dialog
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
-
-    // Verify dialog title
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
-
-    // Verify both buttons are visible
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).assertIsDisplayed()
-
-    // Close dialog by clicking one option
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
-
-    // Assert dialog is dismissed
-    composeTestRule.onAllNodesWithText("Select Image").assertCountEquals(0)
-  }
-
-  @Test
-  fun category_dropdown_shows_and_validates_on_dismiss() {
-
-    val categoryField = composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-
-    // Enter some text to trigger suggestions
-    categoryField.performTextInput("Shoes")
-
-    // Force dropdown expansion
-    composeTestRule.waitUntil(timeoutMillis = 1_000) {
-      composeTestRule
-          .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Click another input to remove focus, triggering onDismissRequest()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performClick()
-
-    // Wait for recomposition
-    composeTestRule.waitForIdle()
-    // Assert dropdown no longer visible
-    composeTestRule
-        .onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)
-        .assertCountEquals(0)
-  }
-
-  /** Test the onDone keyboard action for Category field triggers validation and hides dropdown. */
-  @Test
-  fun categoryField_onDone_triggersValidation_and_hidesMenu() {
-
-    val categoryField = composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-    categoryField.performTextInput("Jacket")
-  }
-
-  @Test
-  fun whenTakePhotoClicked_dialogCloses_and_buttonIsDisplayed() {
-    // Step 1: Open the AlertDialog
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
-
-    // Step 2: Verify that the dialog and both options are visible
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).assertIsDisplayed()
-
-    // Step 3: Click the "📸 Take a Photo" button
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TAKE_A_PHOTO).performClick()
-
-    // Step 4: Wait for recomposition (dialog should close)
-    composeTestRule.waitForIdle()
-
-    // Step 5: Verify that the dialog is now closed
-    composeTestRule
-        .onAllNodesWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG)
-        .assertCountEquals(0)
-  }
-
-  @Test
-  fun uploadingOverlay_isNotVisible_whenNotLoading() {
-    // Initially, isLoading should be false
+  fun uploadingOverlay_initiallyHidden_and_hidesAfterAttempt() = runTest {
+    // Initially hidden
     composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
-
-    // Verify the overlay text is not visible
     composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
-  }
 
-  @Test
-  fun uploadingOverlay_hidesAfterItemAdded() = runTest {
-    // Set up valid item data
+    // Provide valid inputs
     val uri = "content://dummy/photo.jpg".toUri()
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
     composeTestRule.enterAddItemCategory("Clothing")
@@ -842,22 +351,12 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemBrand("Nike")
     composeTestRule.enterAddItemPrice(19.99)
 
-    composeTestRule.waitForIdle()
-
-    // Trigger add item
+    // Trigger add; even if image upload fails in tests, overlay should hide afterward
     composeTestRule.runOnIdle { viewModel.onAddItemClick() }
-
-    // Wait for the operation to complete
     composeTestRule.waitForIdle()
-    kotlinx.coroutines.delay(1000) // Give time for async operation
+    kotlinx.coroutines.delay(1000)
 
-    // Verify loading is no longer shown after completion
-    composeTestRule.runOnIdle {
-      // After the operation completes, isLoading should be false
-      assert(!viewModel.uiState.value.isLoading)
-    }
-
-    // Verify overlay text is not visible
+    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
     composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
   }
 }

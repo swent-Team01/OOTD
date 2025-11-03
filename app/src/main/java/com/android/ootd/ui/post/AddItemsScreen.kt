@@ -243,8 +243,8 @@ fun AddItemsScreen(
                               TextButton(
                                   onClick = {
                                     // Pick from gallery
-                                    galleryLauncher.launch("image/*")
                                     showDialog = false
+                                    galleryLauncher.launch("image/*")
                                   },
                                   modifier =
                                       Modifier.testTag(AddItemScreenTestTags.PICK_FROM_GALLERY)) {

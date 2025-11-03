@@ -92,9 +92,12 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
   fun updateTypeSuggestions(input: String) {
     val currentCategory = getCategory(_uiState.value)
 
-    val normalizedCategory = normalizeCategory(currentCategory)
+    val normalizedCategory = normalizeCategory(currentCategory).trim()
 
-    val allSuggestions = typeSuggestions[normalizedCategory] ?: emptyList()
+    val allSuggestions =
+        typeSuggestions.entries
+            .firstOrNull { it.key.equals(normalizedCategory, ignoreCase = true) }
+            ?.value ?: emptyList()
 
     val filtered =
         if (input.isBlank()) {
