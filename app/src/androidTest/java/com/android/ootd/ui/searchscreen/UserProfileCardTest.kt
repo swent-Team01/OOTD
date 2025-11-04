@@ -3,6 +3,7 @@ package com.android.ootd.ui.searchscreen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -30,38 +31,46 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
     }
   }
 
-  @Test
-  fun followButtonAlwaysAppears() {
-    composeTestRule.setContent {
-      UserProfileCard(
-          selectedUser = User(uid = uid, username = name),
-          modifier = Modifier.padding(16.dp),
-          isSelectedUserFollowed = false,
-          onFollowClick = {})
-    }
+  fun assertCardIsDisplayed(composeTestRule: ComposeContentTestRule) {
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
+  }
+
+  fun setCustomProfileCard(
+      composeTestRule: ComposeContentTestRule,
+      onFollowClick: () -> Unit,
+      selectedUser: User? = null
+  ) {
+    composeTestRule.setContent {
+      UserProfileCard(
+          selectedUser = selectedUser,
+          modifier = Modifier.padding(16.dp),
+          isSelectedUserFollowed = false,
+          hasRequestPending = false,
+          onErrorDismiss = {},
+          errorMessage = null,
+          onFollowClick = onFollowClick)
+    }
+  }
+
+  @Test
+  fun followButtonAlwaysAppears() {
+    setCustomProfileCard(composeTestRule, {}, User(uid = uid, username = name))
+    assertCardIsDisplayed(composeTestRule)
   }
 
   @Test
   fun seeCardPreview() {
     composeTestRule.setContent { UserProfileCardPreview() }
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
+    assertCardIsDisplayed(composeTestRule)
   }
 
   @Test
   fun onClickIsCalled() {
     var clickCount = 0
-    composeTestRule.setContent {
-      UserProfileCard(
-          selectedUser = User(uid = uid, username = name),
-          modifier = Modifier.padding(16.dp),
-          isSelectedUserFollowed = false,
-          onFollowClick = { clickCount = clickCount + 1 })
-    }
+    setCustomProfileCard(
+        composeTestRule, { clickCount = clickCount + 1 }, User(uid = uid, username = name))
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     assert(clickCount == 1)
   }
@@ -69,13 +78,7 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   @Test
   fun onClickIsNotCalledWhenUserIsNull() {
     var clickCount = 0
-    composeTestRule.setContent {
-      UserProfileCard(
-          selectedUser = null, // Pass null here
-          modifier = Modifier.padding(16.dp),
-          isSelectedUserFollowed = false,
-          onFollowClick = { clickCount++ })
-    }
+    setCustomProfileCard(composeTestRule, { clickCount++ }, null)
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     assert(clickCount == 0) // Should not be called when user is null
   }

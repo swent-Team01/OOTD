@@ -118,7 +118,7 @@ fun UserProfileCard(
                   Modifier.width(128.dp)
                       .height(48.dp)
                       .testTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON),
-              onClick = onFollowClick,
+              onClick = { selectedUser?.let { onFollowClick() } },
               enabled = !hasRequestPending || isSelectedUserFollowed,
               shape = RoundedCornerShape(12.dp),
               colors =

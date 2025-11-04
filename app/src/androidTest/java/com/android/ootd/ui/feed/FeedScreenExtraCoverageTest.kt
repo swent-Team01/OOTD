@@ -28,7 +28,7 @@ class FeedScreenExtraCoverageTest {
       FeedScreen(
           onAddPostClick = {},
           onSearchClick = { searchClicked = true },
-          onAccountIconClick = { profileClicked = true })
+          onNotificationIconClick = { profileClicked = true })
     }
 
     // Wait for the UI to fully compose, especially for AccountIcon which uses a ViewModel
