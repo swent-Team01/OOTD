@@ -2,7 +2,6 @@ package com.android.ootd.model.account
 
 import android.util.Log
 import com.android.ootd.model.map.Location
-import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
@@ -54,18 +53,18 @@ private fun DocumentSnapshot.toAccount(): Account {
                 "friendUids field is not a List but ${friendUidsRaw::class.simpleName}")
       }
 
-  // Parse location if present, otherwise use emptyLocation
+  // Parse location if present, otherwise throw MissingLocationException
   val locationRaw = get("location")
   val location =
       when {
-        locationRaw == null -> emptyLocation
+        locationRaw == null -> throw MissingLocationException()
         locationRaw is Map<*, *> -> {
           val lat = (locationRaw["latitude"] as? Number)?.toDouble() ?: 0.0
           val lon = (locationRaw["longitude"] as? Number)?.toDouble() ?: 0.0
           val name = locationRaw["name"] as? String ?: ""
           Location(lat, lon, name)
         }
-        else -> emptyLocation
+        else -> throw MissingLocationException()
       }
 
   val uid = id // document id is the user id

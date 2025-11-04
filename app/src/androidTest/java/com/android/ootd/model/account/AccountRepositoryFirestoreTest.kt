@@ -1,6 +1,5 @@
 package com.android.ootd.model.account
 
-import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
 import com.android.ootd.utils.FirebaseEmulator
@@ -419,7 +418,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun getAccount_handlesNullLocation() = runTest {
+  fun getAccount_throwsMissingLocationException() = runTest {
     // Create account without location field
     FirebaseEmulator.firestore
         .collection(ACCOUNT_COLLECTION_PATH)
@@ -435,36 +434,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
                 "ownerId" to account1.ownerId))
         .await()
 
-    val retrieved = accountRepository.getAccount(account1.uid)
-    assertEquals(0.0, retrieved.location.latitude, 0.0001)
-    assertEquals(0.0, retrieved.location.longitude, 0.0001)
-    assertEquals("", retrieved.location.name)
-  }
-
-  @Test
-  fun getAccount_handlesInvalidLocationFormat() = runTest {
-    val location = Location(46.5197, 6.6323, "Lausanne")
-    // Create account with invalid location type (string instead of map)
-    FirebaseEmulator.firestore
-        .collection(ACCOUNT_COLLECTION_PATH)
-        .document(account1.uid)
-        .set(
-            mapOf(
-                "username" to account1.username,
-                "birthday" to account1.birthday,
-                "googleAccountEmail" to account1.googleAccountEmail,
-                "profilePicture" to account1.profilePicture,
-                "friendUids" to account1.friendUids,
-                "isPrivate" to account1.isPrivate,
-                "ownerId" to account1.ownerId,
-                "location" to "Invalid location string"))
-        .await()
-
-    val retrieved = accountRepository.getAccount(account1.uid)
-    // Should fall back to emptyLocation
-    assertEquals(0.0, retrieved.location.latitude, 0.0001)
-    assertEquals(0.0, retrieved.location.longitude, 0.0001)
-    assertEquals("", retrieved.location.name)
+    expectThrows<IllegalStateException>("Failed to transform") {
+      accountRepository.getAccount(account1.uid)
+    }
   }
 
   @Test
