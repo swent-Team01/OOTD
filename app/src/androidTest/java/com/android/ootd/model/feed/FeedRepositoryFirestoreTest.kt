@@ -131,9 +131,15 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
         } catch (_: IllegalStateException) {
           FirebaseApp.initializeApp(context, default.options, appName)
         }
-    return FirebaseFirestore.getInstance(app).apply {
-      useEmulator(host, port)
-      firestoreSettings = firestoreSettings { isPersistenceEnabled = false }
+    val instance = FirebaseFirestore.getInstance(app)
+    val usedEmulator = runCatching { instance.useEmulator(host, port) }.isSuccess
+    instance.firestoreSettings = firestoreSettings {
+      isPersistenceEnabled = false
+      if (!usedEmulator) {
+        this.host = "$host:$port"
+        isSslEnabled = false
+      }
     }
+    return instance
   }
 }
