@@ -41,7 +41,7 @@ fun tabToScreen(tab: Tab): Screen = tab.destination
 
 @Composable
 fun BottomNavigationMenu(
-    selectedTab: Tab,
+    selectedTab: Tab?,
     onTabSelected: (Tab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -73,7 +73,7 @@ fun BottomNavigationBar(
     modifier: Modifier = Modifier
 ) {
   // Map current route string to a Tab; default to Feed
-  val selectedTab = tabs.find { it.destination.route == selectedRoute } ?: Tab.Feed
+  val selectedTab = tabs.find { it.destination.route == selectedRoute }
   BottomNavigationMenu(
       selectedTab = selectedTab,
       onTabSelected = { tab -> onTabSelected(tab.destination) },

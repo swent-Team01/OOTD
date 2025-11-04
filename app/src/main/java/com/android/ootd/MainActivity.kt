@@ -87,7 +87,8 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.Account.route)
+              Screen.Account.route,
+              Screen.NotificationsScreen.route)
 
   Scaffold(
       bottomBar = {
