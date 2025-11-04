@@ -2,6 +2,7 @@ package com.android.ootd.ui.notifications
 
 import NotificationRepository
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -50,7 +51,7 @@ class NotificationsScreenTest : FirestoreTest() {
             notificationRepository = notificationRepository,
             userRepository = userRepositoryInMemory,
             accountRepository = accountRepositoryInMemory,
-            overrideUser = false,
+            overrideUser = true,
             testUserId = currentUser.uid,
             overrideNotificationPopup = overrideNotificationPopup)
 
@@ -62,7 +63,9 @@ class NotificationsScreenTest : FirestoreTest() {
   @Test
   fun testNoRequestsDisplayed() = runTest {
     buildComposeTestRule(composeTestRule)
-    composeTestRule.onNodeWithTag(EMPTY_STATE_TEXT).assertIsDisplayed()
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onNodeWithTag(EMPTY_STATE_TEXT).isDisplayed()
+    }
   }
 
   @Test
