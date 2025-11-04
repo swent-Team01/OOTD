@@ -109,8 +109,12 @@ class UserSearchScreenTest : FirestoreTest() {
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .performClick()
 
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+
+    composeTestRule.waitForIdle()
+
     composeTestRule
         .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
         .assertTextContains("Request", substring = true, ignoreCase = true)
