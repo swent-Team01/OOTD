@@ -12,7 +12,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.camera.CameraRepository
-import com.android.ootd.model.camera.CameraRepositoryImpl
+import com.android.ootd.model.camera.CameraRepositoryImplementation
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +49,7 @@ data class CameraUIState(
  *
  * @property repository The camera repository for handling CameraX operations
  */
-class CameraViewModel(private val repository: CameraRepository = CameraRepositoryImpl()) :
+class CameraViewModel(private val repository: CameraRepository = CameraRepositoryImplementation()) :
     ViewModel() {
 
   companion object {
@@ -69,7 +69,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
   /** Called when the ViewModel is cleared. Cleans up resources to prevent memory leaks. */
   override fun onCleared() {
     super.onCleared()
-    Log.d(TAG, "Cleaning up ViewModel resources")
+    Log.i(TAG, "Cleaning up ViewModel resources")
 
     // Shutdown executor
     cameraExecutor.shutdown()
@@ -196,7 +196,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
 
       if (clampedRatio != _uiState.value.zoomRatio) {
         cam.cameraControl.setZoomRatio(clampedRatio)
-        Log.d(TAG, "Zoom ratio set to: $clampedRatio")
+        Log.i(TAG, "Zoom ratio set to: $clampedRatio")
       }
     } ?: Log.w(TAG, "Cannot set zoom ratio: camera is null")
   }
@@ -210,14 +210,14 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
    */
   fun capturePhoto(context: Context, imageCapture: ImageCapture, onSuccess: (Uri) -> Unit) {
     setCapturing(true)
-    Log.d(TAG, "Starting photo capture")
+    Log.i(TAG, "Starting photo capture")
 
     repository.capturePhoto(
         context = context,
         imageCapture = imageCapture,
         executor = cameraExecutor,
         onSuccess = { uri ->
-          Log.d(TAG, "Photo captured successfully: $uri")
+          Log.i(TAG, "Photo captured successfully: $uri")
           setCapturedImage(uri)
           onSuccess(uri)
         },

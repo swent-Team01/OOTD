@@ -9,7 +9,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import com.android.ootd.model.camera.CameraRepository
-import com.android.ootd.model.camera.CameraRepositoryImpl
+import com.android.ootd.model.camera.CameraRepositoryImplementation
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -33,7 +33,7 @@ class CameraRepositoryTest {
 
   @Before
   fun setup() {
-    repository = CameraRepositoryImpl()
+    repository = CameraRepositoryImplementation()
   }
 
   @Test
@@ -236,22 +236,6 @@ class CameraRepositoryTest {
   }
 
   @Test
-  fun `bindCamera creates Preview with correct surface provider`() {
-    val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
-    val mockPreviewView = mockk<PreviewView>(relaxed = true)
-    val mockLifecycleOwner = mockk<LifecycleOwner>()
-    val mockSurfaceProvider = mockk<Preview.SurfaceProvider>()
-
-    every { mockPreviewView.surfaceProvider } returns mockSurfaceProvider
-
-    repository.bindCamera(
-        mockCameraProvider, mockPreviewView, mockLifecycleOwner, CameraSelector.LENS_FACING_BACK)
-
-    // Verify that surfaceProvider was accessed (read)
-    verify { mockPreviewView.surfaceProvider }
-  }
-
-  @Test
   fun `bindCamera uses surface provider from PreviewView`() {
     val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
     val mockPreviewView = mockk<PreviewView>(relaxed = true)
@@ -290,10 +274,11 @@ class CameraRepositoryTest {
 
     repository.capturePhoto(mockContext, mockImageCapture, mockExecutor, {}, {})
 
-    // Verify takePicture was called with output options
+    // Verify takePicture was called with output options and file is in correct directory
     verify {
       mockImageCapture.takePicture(any<ImageCapture.OutputFileOptions>(), mockExecutor, any())
     }
+    verify { mockContext.cacheDir }
   }
 
   @Test
@@ -325,20 +310,6 @@ class CameraRepositoryTest {
 
     assertNotNull(errorMessage)
     assertTrue(errorMessage!!.contains("Photo capture failed"))
-  }
-
-  @Test
-  fun `capturePhoto creates file in correct directory`() {
-    val mockContext = mockk<Context>()
-    val mockImageCapture = mockk<ImageCapture>(relaxed = true)
-    val mockExecutor = mockk<ExecutorService>(relaxed = true)
-    val cacheDir = kotlin.io.path.createTempDirectory().toFile()
-
-    every { mockContext.cacheDir } returns cacheDir
-
-    repository.capturePhoto(mockContext, mockImageCapture, mockExecutor, {}, {})
-
-    verify { mockContext.cacheDir }
   }
 
   // ========== Error Handling Tests ==========
