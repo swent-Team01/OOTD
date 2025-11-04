@@ -1,10 +1,11 @@
+package com.android.ootd.ui.account
+
 import android.net.Uri
 import androidx.credentials.CredentialManager
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.user.UserRepository
-import com.android.ootd.ui.account.AccountViewModel
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -78,9 +80,38 @@ class AccountViewModelTest {
     clearAllMocks()
   }
 
+  // --- tiny helpers to shorten tests ---
+  private fun initVM(
+      accRepo: AccountRepository = accountRepository,
+      usrRepo: UserRepository = userRepository
+  ) {
+    viewModel = AccountViewModel(accountService, accRepo, usrRepo)
+  }
+
+  private fun mockUser(
+      uid: String = "test-uid",
+      email: String = "test@example.com",
+      photo: String? = null
+  ): FirebaseUser =
+      mockk(relaxed = true) {
+        every { this@mockk.uid } returns uid
+        every { this@mockk.email } returns email
+        every { this@mockk.photoUrl } returns photo?.let { Uri.parse(it) }
+      }
+
+  private fun TestScope.signInAs(user: FirebaseUser?) {
+    userFlow.value = user
+    advanceUntilIdle()
+  }
+
+  private fun stubAccount(uid: String, username: String = "testuser", picture: String = "") {
+    coEvery { accountRepository.getAccount(uid) } returns
+        Account(uid = uid, username = username, profilePicture = picture)
+  }
+
   @Test
   fun uiState_initializes_with_empty_values() {
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
     val state = viewModel.uiState.value
     assertEquals("", state.username)
@@ -93,10 +124,9 @@ class AccountViewModelTest {
 
   @Test
   fun observeAuthState_updates_uiState_when_user_is_signed_in() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    signInAs(mockFirebaseUser)
 
     val state = viewModel.uiState.value
     assertEquals("testuser", state.username)
@@ -106,28 +136,22 @@ class AccountViewModelTest {
 
   @Test
   fun uiState_prefers_Firestore_profile_picture_over_no_photo() = runTest {
-    val emptyPhotoUri = Uri.parse("")
-    val firestorePhotoUri = Uri.parse("https://firestore.com/photo.jpg")
+    val firestorePhotoUri = "https://firestore.com/photo.jpg"
 
-    every { mockFirebaseUser.photoUrl } returns emptyPhotoUri
-    coEvery { accountRepository.getAccount("test-uid") } returns
-        Account(
-            uid = "test-uid", username = "testuser", profilePicture = firestorePhotoUri.toString())
+    every { mockFirebaseUser.photoUrl } returns Uri.parse("")
+    stubAccount("test-uid", picture = firestorePhotoUri)
 
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
+    signInAs(mockFirebaseUser)
 
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
-
-    assertEquals(firestorePhotoUri.toString(), viewModel.uiState.value.profilePicture)
+    assertEquals(firestorePhotoUri, viewModel.uiState.value.profilePicture)
   }
 
   @Test
   fun observeAuthState_handles_null_user() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
-    userFlow.value = null
-    advanceUntilIdle()
+    signInAs(null)
 
     val state = viewModel.uiState.value
     assertEquals("", state.username)
@@ -139,9 +163,8 @@ class AccountViewModelTest {
   fun clearErrorMsg_clears_error_message() = runTest {
     coEvery { accountRepository.getAccount("test-uid") } throws Exception("Error")
 
-    viewModel = AccountViewModel(accountService, accountRepository)
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    initVM()
+    signInAs(mockFirebaseUser)
 
     assertNotNull(viewModel.uiState.value.errorMsg)
 
@@ -152,26 +175,15 @@ class AccountViewModelTest {
 
   @Test
   fun observeAuthState_reactively_updates_when_user_data_changes() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
-
-    // Verify initial state
+    signInAs(mockFirebaseUser)
     assertEquals("testuser", viewModel.uiState.value.username)
 
-    // Change to a different user to trigger observeAuthState() to reload
-    coEvery { accountRepository.getAccount("test-uid-2") } returns
-        Account(uid = "test-uid-2", username = "updateduser", profilePicture = "")
+    stubAccount("test-uid-2", username = "updateduser")
 
-    val updatedMockUser =
-        mockk<FirebaseUser> {
-          every { uid } returns "test-uid-2"
-          every { email } returns "updated@example.com"
-          every { photoUrl } returns null
-        }
-    userFlow.value = updatedMockUser
-    advanceUntilIdle()
+    val updatedMockUser = mockUser(uid = "test-uid-2", email = "updated@example.com")
+    signInAs(updatedMockUser)
 
     val state = viewModel.uiState.value
     assertEquals("updateduser", state.username)
@@ -180,9 +192,8 @@ class AccountViewModelTest {
 
   @Test
   fun editUser_updates_multiple_fields_successfully() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    initVM()
+    signInAs(mockFirebaseUser)
 
     val newUsername = "updateduser"
     val newDate = "15/05/1995"
@@ -200,15 +211,26 @@ class AccountViewModelTest {
   }
 
   @Test
+  fun editUser_does_not_call_userRepository_when_username_is_blank() = runTest {
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    viewModel.editUser(newUsername = "", newDate = "01/01/2000")
+    advanceUntilIdle()
+
+    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "") }
+    coVerify(exactly = 0) { userRepository.editUsername(any(), any()) }
+  }
+
+  @Test
   fun editUser_sets_error_message_when_accountOrUserRepository_fails() = runTest {
     coEvery { accountRepository.editAccount(any(), any(), any(), any()) } throws
         Exception("Failed to update account")
     coEvery { userRepository.editUser(any(), any(), any()) } throws
         Exception("Username already taken")
 
-    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    initVM()
+    signInAs(mockFirebaseUser)
 
     viewModel.editUser(newUsername = "newusername")
     advanceUntilIdle()
@@ -218,7 +240,6 @@ class AccountViewModelTest {
     assertFalse(viewModel.uiState.value.isLoading)
 
     viewModel.editUser(newUsername = "takenusername")
-
     advanceUntilIdle()
 
     assertNotNull(viewModel.uiState.value.errorMsg)
@@ -227,15 +248,11 @@ class AccountViewModelTest {
 
   @Test
   fun editUser_sets_isLoading_to_true_while_updating() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository, userRepository)
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    initVM()
+    signInAs(mockFirebaseUser)
 
     // Don't advance until idle to capture loading state
     viewModel.editUser(newUsername = "newusername")
-
-    // Check that loading is true before the coroutine completes
-    // Note: This might be flaky depending on timing, so we advance partially
     testScheduler.advanceTimeBy(1)
 
     // Now complete the operation
@@ -246,15 +263,13 @@ class AccountViewModelTest {
 
   @Test
   fun onTogglePrivacy_success_updatesStateWithRepositoryValue() = runTest {
-    coEvery { accountRepository.getAccount("test-uid") } returns
-        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = false)
+    stubAccount("test-uid", username = "testuser", picture = "")
     coEvery { accountRepository.togglePrivacy("test-uid") } returns true
 
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
     // Emit authenticated user and wait for load
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    signInAs(mockFirebaseUser)
 
     // Verify initial and post-toggle states
     assertFalse(viewModel.uiState.value.isPrivate)
@@ -272,25 +287,22 @@ class AccountViewModelTest {
         Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = true)
     coEvery { accountRepository.togglePrivacy("test-uid") } throws Exception("boom")
 
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
     // Emit authenticated user and wait for load
-    userFlow.value = mockFirebaseUser
-    advanceUntilIdle()
+    signInAs(mockFirebaseUser)
 
-    // Act
     assertTrue(viewModel.uiState.value.isPrivate)
     viewModel.onTogglePrivacy()
     advanceUntilIdle()
 
-    // Assert: reverted to original and error was set
     assertTrue(viewModel.uiState.value.isPrivate)
     assertNotNull(viewModel.uiState.value.errorMsg)
   }
 
   @Test
   fun privacyHelp_togglesAndDismisses() = runTest {
-    viewModel = AccountViewModel(accountService, accountRepository)
+    initVM()
 
     // Initially hidden
     assertFalse(viewModel.uiState.value.showPrivacyHelp)

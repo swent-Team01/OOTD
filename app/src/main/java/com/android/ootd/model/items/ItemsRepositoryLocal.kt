@@ -32,6 +32,15 @@ class ItemsRepositoryLocal : ItemsRepository {
   }
 
   /**
+   * Gets all items from the local storage that belong to a specific post.
+   *
+   * @param postUuid The unique identifier of the post to filter by.
+   */
+  override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+    return items.values.filter { it.postUuids.contains(postUuid) }
+  }
+
+  /**
    * Gets a specific item by its unique identifier.
    *
    * @param uuid The unique identifier of the item to retrieve.
@@ -77,6 +86,11 @@ class ItemsRepositoryLocal : ItemsRepository {
     }
     items.remove(uuid)
   }
+
+  override suspend fun deletePostItems(postUuid: String) {
+    items.values.removeIf { it.postUuids.contains(postUuid) }
+  }
+
   /** Clears all items from the local storage. Useful for resetting state between tests. */
   fun clearAll() {
     items.clear()

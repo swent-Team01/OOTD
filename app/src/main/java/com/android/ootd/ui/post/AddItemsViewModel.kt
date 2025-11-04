@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
  */
 data class AddItemsUIState(
     val image: ImageData = ImageData(imageId = "", imageUrl = ""),
+    val postUuid: String = "",
     val localPhotoUri: Uri? = null, // temporary local URI for photo before upload
     val category: String = "",
     val type: String = "",
@@ -122,6 +123,11 @@ open class AddItemsViewModel(
           invalidPhotoMsg = invalidPhotoMsg,
           errorMessage = null)
 
+  /** Initializes the ViewModel with the post UUID. */
+  fun initPostUuid(postUuid: String) {
+    _uiState.value = _uiState.value.copy(postUuid = postUuid)
+  }
+
   fun onAddItemClick() {
     val state = _uiState.value
     if (!state.isAddingValid) {
@@ -159,6 +165,9 @@ open class AddItemsViewModel(
         val item =
             Item(
                 itemUuid = itemUuid,
+                postUuids =
+                    listOf(
+                        state.postUuid), // Add to a list since an item can belong to multiple posts
                 image = uploadedImage,
                 category = state.category,
                 type = state.type,

@@ -52,6 +52,23 @@ service cloud.firestore {
 
     }
 
+    match /notifications/{notificationId} {
+      allow read: if isAuthed() && (resource == null ||
+        resource.data.receiverId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid);
+
+      allow create: if isAuthed() &&
+        request.resource.data.senderId == request.auth.uid;
+
+      allow update: if isAuthed() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid);
+
+      allow delete: if isAuthed() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid);
+    }
+
     match /items/{itemId} {
       allow read: if isAuthed() &&
                         (resource == null || resource.data.ownerId == request.auth.uid);
