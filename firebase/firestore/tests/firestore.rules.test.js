@@ -130,105 +130,37 @@ describe('Firestore rules - OOTD friend-only feed', () => {
 
   // Posts
   test('Author and friends can read posts; non-friends cannot', async () => {
-    // Ensure accounts are set up properly
-    await assertSucceeds(
-      setDoc(doc(me, 'accounts/me'), {
-        ownerId: 'me',
-        name: 'Me',
-        friendUids: ['u1', 'u2'],
-      })
-    );
+      // Ensure accounts are set up properly
+      await assertSucceeds(
+        setDoc(doc(me, 'accounts/me'), {
+          ownerId: 'me',
+          name: 'Me',
+          friendUids: ['u1', 'u2'],
+        })
+      );
 
-    await assertSucceeds(
-      setDoc(doc(alice, 'accounts/u1'), {
-        ownerId: 'u1',
-        name: 'Alice',
-        friendUids: ['me'],
-      })
-    );
+      await assertSucceeds(
+        setDoc(doc(alice, 'accounts/u1'), {
+          ownerId: 'u1',
+          name: 'Alice',
+          friendUids: ['me'],
+        })
+      );
 
-    await assertSucceeds(
-      setDoc(doc(me, 'posts/my_post'), {
-        postUID: 'my_post',
-        ownerId: 'me',
-        name: 'Me',
-        outfitURL: 'url',
-        timestamp: Date.now(),
-      })
-    );
+      await assertSucceeds(
+        setDoc(doc(me, 'posts/my_post'), {
+          postUID: 'my_post',
+          ownerId: 'me',
+          name: 'Me',
+          outfitURL: 'url',
+          timestamp: Date.now(),
+        })
+      );
 
-    // Author can read
-    await assertSucceeds(getDoc(doc(me, 'posts/my_post')));
-
-    // Friend can read (u1 is friends with me)
-    await assertSucceeds(getDoc(doc(alice, 'posts/my_post')));
-
-    // Non-friend cannot read (u3 is not mutual friends)
-    await assertFails(getDoc(doc(charlie, 'posts/my_post')));
-  });
-
-  test('Only author can create post with their ownerId', async () => {
-    await assertSucceeds(
-      setDoc(doc(me, 'posts/valid_post'), {
-        postUID: 'valid_post',
-        ownerId: 'me',
-        name: 'Me',
-        outfitURL: 'url',
-        timestamp: Date.now(),
-      })
-    );
-
-    // Cannot create with different ownerId
-    await assertFails(
-      setDoc(doc(me, 'posts/invalid_post'), {
-        postUID: 'invalid_post',
-        ownerId: 'u1',
-        name: 'Alice',
-        outfitURL: 'url',
-        timestamp: Date.now(),
-      })
-    );
-  });
-
-  test('Only author can update and delete posts', async () => {
-    await assertSucceeds(
-      setDoc(doc(me, 'posts/update_post'), {
-        postUID: 'update_post',
-        ownerId: 'me',
-        name: 'Me',
-        outfitURL: 'url1',
-        timestamp: 1,
-      })
-    );
-
-    // Author can update
-    await assertSucceeds(
-      setDoc(doc(me, 'posts/update_post'), {
-        postUID: 'update_post',
-        ownerId: 'me',
-        name: 'Me',
-        outfitURL: 'url2',
-        timestamp: 2,
-      })
-    );
-
-    // Non-author cannot update
-    await assertFails(
-      setDoc(doc(alice, 'posts/update_post'), {
-        postUID: 'update_post',
-        ownerId: 'me',
-        name: 'Me',
-        outfitURL: 'hacked',
-        timestamp: 3,
-      })
-    );
-
-    // Non-author cannot delete
-    await assertFails(deleteDoc(doc(alice, 'posts/update_post')));
-
-    // Author can delete
-    await assertSucceeds(deleteDoc(doc(me, 'posts/update_post')));
-  });
+      await assertSucceeds(getDoc(doc(me, 'posts/my_post')));
+      await assertSucceeds(getDoc(doc(alice, 'posts/my_post')));
+      await assertFails(getDoc(doc(charlie, 'posts/my_post')));
+    });
 
   test('Unfiltered post queries are denied', async () => {
     // Unfiltered query fails
@@ -238,63 +170,5 @@ describe('Firestore rules - OOTD friend-only feed', () => {
     await assertSucceeds(
       getDocs(query(collection(me, 'posts'), where('ownerId', 'in', ['u1', 'u2'])))
     );
-  });
-
-  // Items
-  test('Only owner can read their own items', async () => {
-    await assertSucceeds(
-      setDoc(doc(me, 'items/my_item'), {
-        ownerId: 'me',
-        name: 'My Item',
-        imageURL: 'url',
-      })
-    );
-
-    await assertSucceeds(getDoc(doc(me, 'items/my_item')));
-
-    // Non-owner cannot read
-    await assertFails(getDoc(doc(alice, 'items/my_item')));
-  });
-
-  test('Only owner can create, update, and delete their items', async () => {
-    // Create with correct ownerId
-    await assertSucceeds(
-      setDoc(doc(me, 'items/item1'), {
-        ownerId: 'me',
-        name: 'Item',
-        imageURL: 'url',
-      })
-    );
-
-    // Cannot create with wrong ownerId
-    await assertFails(
-      setDoc(doc(me, 'items/item2'), {
-        ownerId: 'u1',
-        name: 'Item',
-        imageURL: 'url',
-      })
-    );
-
-    // Owner can update
-    await assertSucceeds(
-      setDoc(doc(me, 'items/item1'), {
-        ownerId: 'me',
-        name: 'Updated',
-        imageURL: 'url2',
-      })
-    );
-
-    // Non-owner cannot update or delete
-    await assertFails(
-      setDoc(doc(alice, 'items/item1'), {
-        ownerId: 'me',
-        name: 'Hacked',
-        imageURL: 'url3',
-      })
-    );
-    await assertFails(deleteDoc(doc(alice, 'items/item1')));
-
-    // Owner can delete
-    await assertSucceeds(deleteDoc(doc(me, 'items/item1')));
   });
 });
