@@ -130,7 +130,9 @@ fun OOTDApp(
                   FeedScreen(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
-                      onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
+                      onNotificationIconClick = {
+                        /** TODO: Implement Notifications screen * */
+                      })
                 }
                 composable(Screen.SearchScreen.route) {
                   UserSearchScreen(onBack = { navigationActions.goBack() })
