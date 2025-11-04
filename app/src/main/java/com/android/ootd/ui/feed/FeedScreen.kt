@@ -81,7 +81,7 @@ fun FeedScreen(
               }
         }
       }) { paddingValues ->
-        // Use a single Box and overlay the locked message when needed.
+        // Overlay the locked message when needed
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
           // Renders the list of posts when user has posted.
           FeedList(isBlurred = !hasPostedToday, posts = posts)
