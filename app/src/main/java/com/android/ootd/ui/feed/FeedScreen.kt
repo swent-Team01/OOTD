@@ -1,5 +1,6 @@
 package com.android.ootd.ui.feed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,6 +38,10 @@ fun FeedScreen(
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
+
+  LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday) {
+    feedViewModel.refreshFeedFromFirestore()
+  }
 
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
@@ -79,15 +84,16 @@ fun FeedScreen(
         // Use a single Box and overlay the locked message when needed.
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
           // Renders the list of posts when user has posted.
-          FeedList(posts = posts)
+          FeedList(isBlurred = !hasPostedToday, posts = posts)
 
           if (!hasPostedToday) {
             Box(
-                modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center) {
                   Text(
                       "Do a fit check to unlock today’s feed",
-                      style = MaterialTheme.typography.titleMedium)
+                      style = MaterialTheme.typography.titleMedium,
+                      color = Color.White)
                 }
           }
         }
@@ -95,10 +101,14 @@ fun FeedScreen(
 }
 
 @Composable
-fun FeedList(posts: List<OutfitPost>, onSeeFitClick: (OutfitPost) -> Unit = {}) {
+fun FeedList(
+    posts: List<OutfitPost>,
+    isBlurred: Boolean,
+    onSeeFitClick: (OutfitPost) -> Unit = {}
+) {
   LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
     items(posts) { post ->
-      OutfitPostCard(post = post, isBlurred = false, onSeeFitClick = { onSeeFitClick(post) })
+      OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
   }
 }
