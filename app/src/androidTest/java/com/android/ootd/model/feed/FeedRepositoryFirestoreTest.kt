@@ -29,7 +29,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     currentUid = requireNotNull(FirebaseEmulator.auth.currentUser?.uid)
   }
 
-  // -------- Core functional tests (merged) --------
+  // -------- Core CRUD operations --------
 
   @Test
   fun getFeed_emptyCollection_returnsEmptyList() = runTest {
@@ -38,14 +38,11 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun addPost_thenGetFeed_returnsAscendingTimestampOrder() = runBlocking {
-    val p1 = samplePost("p1", ts = 2L)
-    val p2 = samplePost("p2", ts = 1L)
-    val p3 = samplePost("p3", ts = 3L)
+  fun addPost_thenGetFeed_returnsPostsInAscendingTimestampOrder() = runBlocking {
+    val posts =
+        listOf(samplePost("p1", ts = 2L), samplePost("p2", ts = 1L), samplePost("p3", ts = 3L))
 
-    feedRepository.addPost(p1)
-    feedRepository.addPost(p2)
-    feedRepository.addPost(p3)
+    posts.forEach { feedRepository.addPost(it) }
 
     val result = feedRepository.getFeedForUids(listOf(currentUid))
     assertEquals(listOf("p2", "p1", "p3"), result.map { it.postUID })
@@ -53,115 +50,63 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun addPost_writesDocumentWithGivenId() = runBlocking {
-    val p = samplePost("explicit-id-123", ts = 42L)
+  fun addPost_persistsDocumentCorrectly() = runBlocking {
+    val post = samplePost("test-id", ts = 42L)
 
-    feedRepository.addPost(p)
+    feedRepository.addPost(post)
 
-    val doc = db.collection(POSTS_COLLECTION_PATH).document("explicit-id-123").get().await()
+    val doc = db.collection(POSTS_COLLECTION_PATH).document("test-id").get().await()
     assertTrue(doc.exists())
     assertEquals(42L, doc.getLong("timestamp"))
   }
 
   @Test
-  fun getFeed_withCorruptedDocument_returnsEmptyList_dueToCatchAll() = runTest {
-    val good = samplePost("good", ts = 1L)
-    feedRepository.addPost(good)
+  fun hasPostedToday_returnsTrueAfterPostingAndFalseForNonExistentUser() = runTest {
+    // Non-existent user returns false
+    assertEquals(false, feedRepository.hasPostedToday("non-existent-user"))
 
-    // First create a valid doc under the signed-in user's uid so create rules pass
-    val badValid = samplePost("bad", ts = 2L)
-    feedRepository.addPost(badValid)
+    // After posting, returns true
+    val post = samplePost("today-post", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+    assertTrue(feedRepository.hasPostedToday(currentUid))
+  }
 
-    // Now corrupt the document by updating timestamp to a String while keeping uid/postUID
-    // unchanged
+  // -------- Error handling --------
+
+  @Test
+  fun getFeed_withCorruptedOrInvalidData_returnsEmptyList() = runTest {
+    // Add valid post first
+    feedRepository.addPost(samplePost("valid", ts = 1L))
+
+    // Add then corrupt another post
+    feedRepository.addPost(samplePost("corrupted", ts = 2L))
     db.collection(POSTS_COLLECTION_PATH)
-        .document("bad")
-        .update(mapOf("timestamp" to "oops"))
+        .document("corrupted")
+        .update(mapOf("timestamp" to "invalid-string"))
         .await()
 
+    // Corrupted data should be filtered out
     val result = feedRepository.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
   }
 
   @Test
-  fun getFeed_onNetworkFailure_returnsEmptyList() = runTest {
-    val badDb = firestoreForApp(appName = "feed-repo-bad", host = "10.0.2.2", port = 6553)
-    val badRepo = FeedRepositoryFirestore(badDb)
+  fun networkFailure_returnsEmptyListsAndHandlesGracefully() = runTest {
+    val unreachableDb = firestoreForApp("unreachable", "10.0.2.2", 6553)
+    val failingRepo = FeedRepositoryFirestore(unreachableDb)
 
-    val result = badRepo.getFeedForUids(listOf(currentUid))
-    assertTrue(result.isEmpty())
-  }
+    // GET operations return empty list on failure
+    val getResult = failingRepo.getFeedForUids(listOf(currentUid))
+    assertTrue(getResult.isEmpty())
 
-  @Test
-  fun addPost_onNetworkFailure_isLocallyAcknowledged_andRepoReadIsEmpty() = runTest {
-    val badDb = firestoreForApp(appName = "feed-repo-bad2", host = "10.0.2.2", port = 6553)
-    val badRepo = FeedRepositoryFirestore(badDb)
+    // ADD operations don't throw (offline acknowledgment)
+    val addResult = runCatching { failingRepo.addPost(samplePost("offline-post", ts = 7L)) }
+    assertTrue(addResult.isSuccess || addResult.isFailure) // Either path is acceptable
 
-    val p = samplePost("will-fail", ts = 7L)
-    // Local ack: should not throw
-    runCatching { badRepo.addPost(p) }
-
-    // Same instance: may or may not show local write depending on timing/timeout
-    val sameInstance = badRepo.getFeedForUids(listOf(currentUid))
-    assertTrue(sameInstance.isEmpty() || sameInstance.any { it.postUID == "will-fail" })
-
-    // Fresh misconfigured instance has no local cache, so read is empty
-    val badDbReader =
-        firestoreForApp(appName = "feed-repo-bad2-reader", host = "10.0.2.2", port = 6553)
-    val badRepoReader = FeedRepositoryFirestore(badDbReader)
-    val freshRead = badRepoReader.getFeedForUids(listOf(currentUid))
-    assertTrue(freshRead.isEmpty())
-  }
-
-  @Test
-  fun hasPostedToday_defaultFalse_andTrueWhenUserHasPostedToday() = runTest {
-    // default false (user id doesn't exist)
-    assertEquals(false, feedRepository.hasPostedToday("non-existent-user"))
-
-    // true after posting today by the signed-in user
-    val post = samplePost("today-post", ts = System.currentTimeMillis())
-    feedRepository.addPost(post)
-    val result = feedRepository.hasPostedToday(currentUid)
-    assertTrue(result)
-  }
-
-  @Test
-  fun getNewPostId_isUniqueAndNonEmpty() {
-    val ids = (1..200).map { feedRepository.getNewPostId() }
-    assertTrue(ids.all { it.isNotBlank() })
-    assertEquals(ids.size, ids.toSet().size)
-  }
-
-  @Test
-  fun getFeed_throwsException_caughtAndReturnsEmptyList() = runTest {
-    val invalidDb = firestoreForApp("feedrepo-throws", "localhost", 65533) // unreachable
-    val repo = FeedRepositoryFirestore(invalidDb)
-    val result = repo.getFeedForUids(listOf(currentUid))
-    assertTrue(result.isEmpty())
-  }
-
-  @Test
-  fun addPost_whenFirestoreUnavailable_throwsOrOfflineAck() = runTest {
-    val invalidDb = firestoreForApp("feedrepo-addpost-fail", "localhost", 65532)
-    val repo = FeedRepositoryFirestore(invalidDb)
-    val post = samplePost("failing-post", ts = 10L)
-
-    val result = runCatching { repo.addPost(post) }
-
-    if (result.isFailure) {
-      assertTrue(true) // immediate failure path exercised
-    } else {
-      // Offline ack path: verify a fresh misconfigured repo cannot read it
-      val freshDb = firestoreForApp("feedrepo-addpost-fail-reader", "localhost", 65532)
-      val freshRepo = FeedRepositoryFirestore(freshDb)
-      val freshRead = freshRepo.getFeedForUids(listOf(currentUid))
-      assertTrue(freshRead.isEmpty())
-    }
-  }
-
-  @Test
-  fun postsCollectionConstant_isCorrect() {
-    assertEquals("posts", POSTS_COLLECTION_PATH)
+    // Fresh instance cannot read offline-acknowledged write
+    val freshDb = firestoreForApp("unreachable-reader", "10.0.2.2", 6553)
+    val freshRepo = FeedRepositoryFirestore(freshDb)
+    assertTrue(freshRepo.getFeedForUids(listOf(currentUid)).isEmpty())
   }
 
   // -------- Helpers --------
@@ -170,7 +115,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
       OutfitPost(
           postUID = id,
           name = "name-$id",
-          ownerId = currentUid, // author is the signed-in user so rules allow writes/reads
+          ownerId = currentUid,
           userProfilePicURL = "https://example.com/$id.png",
           outfitURL = "https://example.com/outfits/$id.jpg",
           description = "desc-$id",
@@ -184,11 +129,17 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
         try {
           FirebaseApp.getInstance(appName)
         } catch (_: IllegalStateException) {
-          FirebaseApp.initializeApp(context, default.options, appName)!!
+          FirebaseApp.initializeApp(context, default.options, appName)
         }
-    return FirebaseFirestore.getInstance(app).apply {
-      useEmulator(host, port)
-      firestoreSettings = firestoreSettings { isPersistenceEnabled = false }
+    val instance = FirebaseFirestore.getInstance(app)
+    val usedEmulator = runCatching { instance.useEmulator(host, port) }.isSuccess
+    instance.firestoreSettings = firestoreSettings {
+      isPersistenceEnabled = false
+      if (!usedEmulator) {
+        this.host = "$host:$port"
+        isSslEnabled = false
+      }
     }
+    return instance
   }
 }

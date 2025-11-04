@@ -1,39 +1,65 @@
 package com.android.ootd.ui.feed
 
+import android.content.Context
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
+import com.android.ootd.model.feed.POSTS_COLLECTION_PATH
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.utils.FirebaseEmulator
+import com.android.ootd.utils.FirestoreTest
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestoreSettings
+import junit.framework.TestCase.assertEquals
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
-/**
- * Simple UI tests for FeedScreen - just checking that test tags exist. Works with the current
- * FeedScreen (with ViewModel).
- */
-class FeedScreenTest {
+/** Comprehensive tests for FeedScreen UI and repository. */
+@RunWith(AndroidJUnit4::class)
+class FeedScreenTest : FirestoreTest() {
 
   @get:Rule val composeTestRule = createComposeRule()
 
+  private val db = FirebaseEmulator.firestore
+  private lateinit var currentUid: String
+
+  @Before
+  override fun setUp() = runBlocking {
+    super.setUp()
+    currentUid = requireNotNull(FirebaseEmulator.auth.currentUser?.uid)
+  }
+
+  // ========================================================================
+  // UI Tests
+  // ========================================================================
+
   @Test
   fun feedList_rendersAllPosts() {
-    val fakePosts =
+    val posts =
         listOf(
             OutfitPost("1", "user1", "https://example.com/1.jpg"),
             OutfitPost("2", "user2", "https://example.com/2.jpg"))
 
-    composeTestRule.setContent {
-      FeedList(posts = fakePosts, onSeeFitClick = {}, isBlurred = false)
-    }
+    composeTestRule.setContent { FeedList(posts = posts, onSeeFitClick = {}) }
 
-    // Assert the list exists
     composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
   }
 
   @Test
-  fun feedScreen_showsLockedMessage_whenUserHasNotPostedToday() {
+  fun feedScreen_showsLockedMessage_whenUserHasNotPosted() {
     val fakeRepo =
         object : FeedRepository {
           override suspend fun hasPostedToday(userId: String) = false
@@ -42,116 +68,189 @@ class FeedScreenTest {
 
           override suspend fun addPost(post: OutfitPost) {}
 
-          override fun getNewPostId(): String = "fake-id"
+          override fun getNewPostId() = "fake-id"
         }
 
     FeedRepositoryProvider.repository = fakeRepo
     val viewModel =
         FeedViewModel().apply {
-          setCurrentAccount(Account(uid = "user1", username = "Tester", friendUids = emptyList()))
+          setCurrentAccount(Account(uid = "user1", username = "Test", friendUids = emptyList()))
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
 
-    composeTestRule
-        .onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE)
-        .assertExists()
-        .assertIsDisplayed()
-  }
-
-  @Test
-  fun feedScreen_showsFeedList_whenUserHasPostedToday() {
-    val fakePosts =
-        listOf(
-            OutfitPost(
-                postUID = "1", ownerId = "user1", outfitURL = "https://example.com/outfit.jpg"))
-
-    val fakeRepo =
-        object : FeedRepository {
-          override suspend fun hasPostedToday(userId: String) = true
-
-          override suspend fun getFeedForUids(uids: List<String>) =
-              fakePosts.filter { it.ownerId in uids }
-
-          override suspend fun addPost(post: OutfitPost) {}
-
-          override fun getNewPostId(): String = "fake-id"
-        }
-
-    FeedRepositoryProvider.repository = fakeRepo
-    val viewModel =
-        FeedViewModel().apply {
-          setCurrentAccount(Account(uid = "user1", username = "Tester", friendUids = emptyList()))
-        }
-
-    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
-
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists().assertIsDisplayed()
-  }
-
-  @Test
-  fun feedScreen_hasScreenTag() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
-
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertExists()
-  }
-
-  @Test
-  fun feedScreen_hasTopBarTag() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
-
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertExists()
-  }
-
-  @Test
-  fun feedScreen_hasLockedMessageOrFeedList() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
-
-    // Either locked message OR feed list should exist (depending on hasPostedToday)
     composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertExists()
   }
 
   @Test
-  fun feedScreen_hasFABOrNot() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
+  fun feedScreen_showsFeedList_whenUserHasPosted() {
+    val posts = listOf(OutfitPost("1", "user1", "https://example.com/1.jpg"))
+    val fakeRepo =
+        object : FeedRepository {
+          override suspend fun hasPostedToday(userId: String) = true
 
-    // FAB should exist if user hasn't posted (can't predict state, just check it renders)
-    // This test just ensures the screen renders without crashing
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertExists()
+          override suspend fun getFeedForUids(uids: List<String>) = posts
+
+          override suspend fun addPost(post: OutfitPost) {}
+
+          override fun getNewPostId() = "fake-id"
+        }
+
+    FeedRepositoryProvider.repository = fakeRepo
+    val viewModel =
+        FeedViewModel().apply {
+          setCurrentAccount(Account(uid = "user1", username = "Test", friendUids = emptyList()))
+        }
+
+    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
   }
 
   @Test
-  fun feedScreen_rendersWithoutCrashing() {
+  fun feedScreen_hasRequiredTags() {
     composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
 
-    // Just verify the screen renders
     composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertExists()
     composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertExists()
   }
 
   @Test
-  fun feedScreen_topBarAlwaysPresent() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
+  fun feedScreen_triggersTopBarButtons() {
+    var searchClicked = false
+    var notificationsClicked = false
 
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertExists().assertIsDisplayed()
-  }
-
-  @Test
-  fun feedScreen_screenTagIsDisplayed() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = {}) }
-
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
-  }
-
-  @Test
-  fun feedScreen_callbackDoesNotCrash() {
-    composeTestRule.setContent { FeedScreen(onAddPostClick = { /* click handled */}) }
-
-    // Try to find and click FAB if it exists
-    try {
-      composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    } catch (_: Exception) {
-      // FAB might not be there if user has posted - that's okay
+    composeTestRule.setContent {
+      FeedScreen(
+          onAddPostClick = {},
+          onSearchClick = { searchClicked = true },
+          onNotificationIconClick = { notificationsClicked = true })
     }
+
+    composeTestRule.waitForIdle()
+
+    Thread.sleep(100)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithContentDescription("Search").performClick()
+
+    composeTestRule
+        .onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
+        .assertExists()
+        .performClick()
+
+    assertTrue(searchClicked)
+    assertTrue(notificationsClicked)
+  }
+
+  @Test
+  fun outfitPostCard_renders() {
+    val post = OutfitPost("id", "user1", "https://example.com/img.jpg")
+
+    composeTestRule.setContent {
+      OutfitPostCard(post = post, isBlurred = false, onSeeFitClick = {})
+    }
+
+    composeTestRule.onRoot().assertExists()
+  }
+
+  // ========================================================================
+  // Repository Tests
+  // ========================================================================
+
+  @Test
+  fun getFeed_emptyCollection_returnsEmpty() = runTest {
+    val result = feedRepository.getFeedForUids(listOf(currentUid))
+    assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun addPost_thenGetFeed_returnsInOrder() = runBlocking {
+    val posts = listOf(samplePost("p1", 2L), samplePost("p2", 1L), samplePost("p3", 3L))
+
+    posts.forEach { feedRepository.addPost(it) }
+
+    val result = feedRepository.getFeedForUids(listOf(currentUid))
+    assertEquals(listOf("p2", "p1", "p3"), result.map { it.postUID })
+  }
+
+  @Test
+  fun addPost_persistsCorrectly() = runBlocking {
+    val post = samplePost("test-id", 42L)
+
+    feedRepository.addPost(post)
+
+    val doc = db.collection(POSTS_COLLECTION_PATH).document("test-id").get().await()
+    assertTrue(doc.exists())
+    assertEquals(42L, doc.getLong("timestamp"))
+  }
+
+  @Test
+  fun hasPostedToday_worksCorrectly() = runTest {
+    assertFalse(feedRepository.hasPostedToday("non-existent-user"))
+
+    val post = samplePost("today", System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    assertTrue(feedRepository.hasPostedToday(currentUid))
+  }
+
+  @Test
+  fun getFeed_withCorruptedData_returnsEmpty() = runTest {
+    feedRepository.addPost(samplePost("valid", 1L))
+    feedRepository.addPost(samplePost("corrupted", 2L))
+
+    db.collection(POSTS_COLLECTION_PATH)
+        .document("corrupted")
+        .update(mapOf("timestamp" to "invalid"))
+        .await()
+
+    val result = feedRepository.getFeedForUids(listOf(currentUid))
+    assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun networkFailure_handlesGracefully() = runTest {
+    val unreachableDb = firestoreForApp("unreachable", "10.0.2.2", 6553)
+    val failingRepo = FeedRepositoryFirestore(unreachableDb)
+
+    val result = failingRepo.getFeedForUids(listOf(currentUid))
+    assertTrue(result.isEmpty())
+  }
+
+  // ========================================================================
+  // Helpers
+  // ========================================================================
+
+  private fun samplePost(id: String, ts: Long) =
+      OutfitPost(
+          postUID = id,
+          name = "name-$id",
+          ownerId = currentUid,
+          userProfilePicURL = "https://example.com/$id.png",
+          outfitURL = "https://example.com/outfits/$id.jpg",
+          description = "desc-$id",
+          itemsID = listOf("i1-$id", "i2-$id"),
+          timestamp = ts)
+
+  private fun firestoreForApp(appName: String, host: String, port: Int): FirebaseFirestore {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val default = FirebaseApp.getApps(context).firstOrNull() ?: FirebaseApp.initializeApp(context)!!
+    val app =
+        try {
+          FirebaseApp.getInstance(appName)
+        } catch (_: IllegalStateException) {
+          FirebaseApp.initializeApp(context, default.options, appName)
+        }
+    val instance = FirebaseFirestore.getInstance(app)
+    val usedEmulator = runCatching { instance.useEmulator(host, port) }.isSuccess
+    instance.firestoreSettings = firestoreSettings {
+      isPersistenceEnabled = false
+      if (!usedEmulator) {
+        this.host = "$host:$port"
+        isSslEnabled = false
+      }
+    }
+    return instance
   }
 }

@@ -74,32 +74,57 @@ class AccountScreenTest {
     clearAllMocks()
   }
 
-  @Test
-  fun accountScreen_showsAllMainElements_withoutAvatar() {
-    userFlow.value = mockFirebaseUser
+  // --- Helpers ---
+  private fun signIn(user: FirebaseUser?) {
+    userFlow.value = user
+    composeTestRule.waitForIdle()
+  }
 
+  private fun setContent(onBack: (() -> Unit)? = null, onSignOut: (() -> Unit)? = null) {
     composeTestRule.setContent {
       OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
+        AccountScreen(
+            accountViewModel = viewModel,
+            credentialManager = mockCredentialManager,
+            onBack = onBack ?: {},
+            onSignOut = onSignOut ?: {})
       }
     }
-
     composeTestRule.waitForIdle()
+  }
 
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
+  private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
+
+  // --- Tests (fewer, but comprehensive) ---
+
+  @Test
+  fun rendersBasic_withoutAvatar_andShowsUserInfo_andReadOnlyState() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Core chrome
+    n(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
+    n(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
+    n(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+
+    // No photo -> letter avatar shown, image absent
+    n(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
+    n(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+
+    // Actions and fields
+    n(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    n(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed().assertTextContains("user1")
+    n(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed().assertTextContains("user1@google.com")
+    n(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
+
+    // Read-only (not editing)
+    n(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    n(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    n(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
 
   @Test
-  fun accountScreen_showsAvatarImage_whenProfilePictureExists() {
+  fun showsAvatarImage_whenProfilePictureExists() {
     val avatarUri = Uri.parse("https://example.com/avatar.jpg")
     every { mockFirebaseUser.photoUrl } returns avatarUri
     coEvery { mockAccountRepository.getAccount("test-uid") } returns
@@ -109,209 +134,71 @@ class AccountScreenTest {
             username = "user1",
             profilePicture = avatarUri.toString())
 
-    userFlow.value = mockFirebaseUser
+    signIn(mockFirebaseUser)
+    setContent()
 
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
+    n(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
   }
 
   @Test
-  fun accountScreen_displaysCorrectUserInfo() {
-    userFlow.value = mockFirebaseUser
+  fun usernameEdit_flow_saveWithoutChange_staysEditing_thenCancel_restores() {
+    signIn(mockFirebaseUser)
+    setContent()
 
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
+    // Open edit
+    n(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    n(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    n(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
-    composeTestRule.waitForIdle()
+    // Save without change -> stays editing (no-op)
+    n(UiTestTags.TAG_USERNAME_SAVE).performClick()
+    n(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
+    n(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    n(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
-    composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_GOOGLE_FIELD)
-        .assertTextContains("user1@google.com")
+    // Cancel -> back to normal, original name remains
+    n(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+    n(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    n(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
   }
 
   @Test
-  fun accountScreen_callsOnBack_whenBackButtonClicked() {
-    val onBack = mockk<() -> Unit>(relaxed = true)
-    userFlow.value = mockFirebaseUser
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(
-            accountViewModel = viewModel,
-            credentialManager = mockCredentialManager,
-            onBack = onBack)
-      }
-    }
-
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
-    verify { onBack() }
-  }
-
-  @Test
-  fun accountScreen_showsLoadingIndicator_whenLoading() {
-    userFlow.value = null
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_LOADING).assertDoesNotExist()
-  }
-
-  @Test
-  fun accountScreen_showsEditControls_whenUsernameEditButtonClickedAndBack() {
-    userFlow.value = mockFirebaseUser
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-
-    // Initially, edit controls should not be visible
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
-
-    // Click the edit button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
-
-    // Edit controls should now be visible
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
-
-    // Click cancel button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
-
-    // Should return to normal state
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
-  }
-
-  @Test
-  fun accountScreen_doesNothingIfUsernameDidNotChange() {
-    userFlow.value = mockFirebaseUser
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-
-    // Click edit button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
-
-    // Click save button (the field already contains the current username)
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
-
-    // Should return to normal state
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
-  }
-
-  @Test
-  fun accountScreen_displaysOriginalUsername_afterCancellingEdit() {
-    userFlow.value = mockFirebaseUser
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-
-    // Verify original username
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
-
-    // Click edit button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
-
-    // Click cancel
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
-
-    // Username should still be the original
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
-  }
-
-  @Test
-  fun accountScreen_usernameFieldIsReadOnly_whenNotEditing() {
-    userFlow.value = mockFirebaseUser
-
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    composeTestRule.waitForIdle()
-
-    // Username field should display current username
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
-
-    // Only edit button should be visible, not save/cancel
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
-  }
-
-  @Test
-  fun accountScreen_togglePrivacy_clickSwitch_updatesLabelAndCallsRepository() {
+  fun privacyToggle_click_updatesLabel_andCallsRepository() {
     coEvery { mockAccountRepository.togglePrivacy("test-uid") } returns true
 
-    userFlow.value = mockFirebaseUser
+    signIn(mockFirebaseUser)
+    setContent()
 
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
-
-    // Initially should show Public
+    // Initially Public
     composeTestRule.onNodeWithText("Public").assertIsDisplayed()
 
     val switchMatcher = isToggleable() and hasAnyAncestor(hasTestTag(UiTestTags.TAG_PRIVACY_TOGGLE))
     composeTestRule.onNode(switchMatcher).performClick()
 
-    // Assert: label updated and repository called
+    // Updated and repo called
     composeTestRule.onNodeWithText("Private").assertIsDisplayed()
     coVerify(exactly = 1) { mockAccountRepository.togglePrivacy("test-uid") }
   }
 
   @Test
-  fun accountScreen_helpIcon_showsAndDismissesPopup() {
-    userFlow.value = mockFirebaseUser
+  fun helpIcon_showsAndDismissesPopup() {
+    signIn(mockFirebaseUser)
+    setContent()
 
-    composeTestRule.setContent {
-      OOTDTheme {
-        AccountScreen(accountViewModel = viewModel, credentialManager = mockCredentialManager)
-      }
-    }
+    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    n(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
+    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
+    n(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
+    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+  }
 
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+  @Test
+  fun backButton_invokesCallback() {
+    val onBack = mockk<() -> Unit>(relaxed = true)
+    signIn(mockFirebaseUser)
+    setContent(onBack)
+
+    n(UiTestTags.TAG_ACCOUNT_BACK).performClick()
+    verify { onBack() }
   }
 }
