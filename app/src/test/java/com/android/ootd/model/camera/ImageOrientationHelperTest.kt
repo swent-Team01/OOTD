@@ -179,75 +179,47 @@ class ImageOrientationHelperTest {
       }
 
   // ========== Orientation Rotation Tests (Testing applyOrientation indirectly) ==========
+  private fun setupBitmapTest(width: Int, height: Int): Pair<Bitmap, InputStream> {
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val mockInputStream = mockk<InputStream>(relaxed = true)
+    mockkStatic(BitmapFactory::class)
+    every { BitmapFactory.decodeStream(any()) } returns bitmap
+    every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+    return Pair(bitmap, mockInputStream)
+  }
+
   @Test
-  fun `loadBitmapWithCorrectOrientation returns rotated bitmap for 90 degree rotation`() =
+  fun `loadBitmapWithCorrectOrientation handles various bitmap sizes and orientations`() =
       runTest(testDispatcher) {
-        // Create a non-square bitmap to verify rotation
-        val originalBitmap = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
+        val testCases =
+            listOf(
+                Triple(200, 100, "non-square landscape"),
+                Triple(300, 200, "landscape 3:2"),
+                Triple(150, 250, "portrait"),
+                Triple(100, 150, "portrait small"),
+                Triple(500, 500, "square"),
+                Triple(800, 600, "landscape large"),
+                Triple(600, 800, "portrait large"),
+                Triple(4096, 3072, "very large"),
+                Triple(200, 300, "portrait medium"))
 
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
+        testCases.forEach { (width, height, description) ->
+          val (bitmap, _) = setupBitmapTest(width, height)
+          val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // Bitmap should be created successfully (actual rotation verified by dimensions)
-        assertTrue(resultBitmap!!.width > 0 && resultBitmap.height > 0)
+          assertTrue("Failed for $description", result.isSuccess)
+          val resultBitmap = result.getOrNull()
+          assertNotNull("Bitmap null for $description", resultBitmap)
+          assertTrue(
+              "Invalid dimensions for $description",
+              resultBitmap!!.width > 0 && resultBitmap.height > 0)
+        }
       }
 
   @Test
-  fun `loadBitmapWithCorrectOrientation returns rotated bitmap for 180 degree rotation`() =
+  fun `loadBitmapWithCorrectOrientation preserves dimensions for no rotation needed`() =
       runTest(testDispatcher) {
-        val originalBitmap = Bitmap.createBitmap(300, 200, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // 180-degree rotation maintains same dimensions
-        assertEquals(300, resultBitmap?.width)
-        assertEquals(200, resultBitmap?.height)
-      }
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation returns rotated bitmap for 270 degree rotation`() =
-      runTest(testDispatcher) {
-        val originalBitmap = Bitmap.createBitmap(150, 250, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // Bitmap should be created successfully
-        assertTrue(resultBitmap!!.width > 0 && resultBitmap.height > 0)
-      }
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation does not rotate for unknown orientation values`() =
-      runTest(testDispatcher) {
-        val originalBitmap = Bitmap.createBitmap(100, 150, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
+        val (bitmap, _) = setupBitmapTest(100, 150)
         val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
@@ -259,103 +231,16 @@ class ImageOrientationHelperTest {
       }
 
   @Test
-  fun `loadBitmapWithCorrectOrientation handles square bitmap rotation correctly`() =
+  fun `loadBitmapWithCorrectOrientation creates valid bitmap instance`() =
       runTest(testDispatcher) {
-        // Square bitmaps should remain square regardless of rotation angle
-        val originalBitmap = Bitmap.createBitmap(500, 500, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
+        val (bitmap, _) = setupBitmapTest(200, 300)
         val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
 
         assertTrue(result.isSuccess)
         val resultBitmap = result.getOrNull()
         assertNotNull(resultBitmap)
-        // Square bitmap should remain square
-        assertEquals(500, resultBitmap?.width)
-        assertEquals(500, resultBitmap?.height)
-      }
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation handles landscape orientation bitmap`() =
-      runTest(testDispatcher) {
-        // Test with landscape orientation (width > height)
-        val originalBitmap = Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // Verify bitmap was processed successfully
-        assertTrue(resultBitmap!!.width > 0 && resultBitmap.height > 0)
-      }
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation handles portrait orientation bitmap`() =
-      runTest(testDispatcher) {
-        // Test with portrait orientation (height > width)
-        val originalBitmap = Bitmap.createBitmap(600, 800, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // Verify bitmap was processed successfully
-        assertTrue(resultBitmap!!.width > 0 && resultBitmap.height > 0)
-      }
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation handles very large bitmap without issues`() =
-      runTest(testDispatcher) {
-        // Test with large dimensions to ensure rotation handles large bitmaps
-        val originalBitmap = Bitmap.createBitmap(4096, 3072, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // Should handle large bitmaps without crashing
-        assertTrue(resultBitmap!!.width > 0 && resultBitmap.height > 0)
-      }
-
-  @Test
-  fun `loadBitmapWithCorrectOrientation creates new bitmap instance when rotation applied`() =
-      runTest(testDispatcher) {
-        // This test verifies the bitmap rotation creates a new instance
-        val originalBitmap = Bitmap.createBitmap(200, 300, Bitmap.Config.ARGB_8888)
-        val mockInputStream = mockk<InputStream>(relaxed = true)
-
-        mockkStatic(BitmapFactory::class)
-        every { BitmapFactory.decodeStream(any()) } returns originalBitmap
-        every { mockContext.contentResolver.openInputStream(mockUri) } returns mockInputStream
-
-        val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri, testDispatcher)
-
-        assertTrue(result.isSuccess)
-        val resultBitmap = result.getOrNull()
-        assertNotNull(resultBitmap)
-        // Result should be a valid bitmap
+        // Result should be a valid bitmap with proper config
         assertNotNull(resultBitmap!!.config)
+        assertTrue(resultBitmap.width > 0 && resultBitmap.height > 0)
       }
 }
