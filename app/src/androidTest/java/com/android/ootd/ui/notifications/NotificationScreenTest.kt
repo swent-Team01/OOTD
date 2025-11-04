@@ -7,12 +7,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.notifications.Notification
+import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.EMPTY_STATE_TEXT
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.REQUEST_PERMISSION_BUTTON
 import com.android.ootd.utils.FirestoreTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -26,15 +29,15 @@ class NotificationsScreenTest : FirestoreTest() {
   private lateinit var accountRepositoryInMemory: AccountRepositoryInMemory
 
   @Before
-  override fun setUp() {
+  override fun setUp() = runBlocking {
     super.setUp()
     notificationRepository = notificationsRepository
     userRepositoryInMemory = UserRepositoryInMemory()
     accountRepositoryInMemory = AccountRepositoryInMemory()
-    // userRepositoryInMemory.addUser(User(uid = currentUser.uid, username="stefanstefan",
-    // profilePicture = ""))
-    // accountRepositoryInMemory.addAccount(Account(uid = currentUser.uid, ownerId =
-    // currentUser.uid, username = "stefanstefan"))
+    userRepositoryInMemory.addUser(
+        User(uid = currentUser.uid, username = "stefanstefan", profilePicture = ""))
+    accountRepositoryInMemory.addAccount(
+        Account(uid = currentUser.uid, ownerId = currentUser.uid, username = "stefanstefan"))
   }
 
   private fun buildComposeTestRule(
