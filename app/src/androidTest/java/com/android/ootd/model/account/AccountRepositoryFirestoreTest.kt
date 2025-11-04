@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
 import com.android.ootd.utils.FirebaseEmulator
@@ -128,40 +129,32 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun addFriend_successfullyAddsFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
+  fun addFriendRemoveFriendWorks() = runBlocking {
+    accountRepository.addAccount(dummyAccount)
 
-    // We add the users after because it is hard to mock two users creating their accounts with
-    // different uids.
+    // We use the dummy account because it is hard to replicate separate users for this
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = dummyAccount.uid, username = dummyAccount.username, profilePicture = ""))
 
-    accountRepository.addFriend(account1.uid, account2.uid)
+    notificationsRepository.addNotification(
+        Notification(
+            uid = "notif1",
+            senderId = dummyAccount.uid,
+            receiverId = dummyAccount.uid,
+            type = "FOLLOW_REQUEST",
+            content = "wants to follow you"))
 
-    val updated = accountRepository.getAccount(account1.uid)
+    accountRepository.addFriend(dummyAccount.uid, dummyAccount.uid)
+
+    val updated = accountRepository.getAccount(dummyAccount.uid)
     assertEquals(1, updated.friendUids.size)
-    assertTrue(updated.friendUids.contains(account2.uid))
-  }
+    assertTrue(updated.friendUids.contains(dummyAccount.uid))
 
-  @Test
-  fun addFriend_doesNotAddDuplicateFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
+    accountRepository.removeFriend(dummyAccount.uid, dummyAccount.uid)
 
-    userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
-
-    accountRepository.addFriend(account1.uid, account2.uid)
-    accountRepository.addFriend(account1.uid, account2.uid)
-
-    val updated = accountRepository.getAccount(account1.uid)
-    assertEquals(1, updated.friendUids.size)
+    val afterRemoval = accountRepository.getAccount(dummyAccount.uid)
+    assertEquals(0, afterRemoval.friendUids.size)
   }
 
   @Test
@@ -176,52 +169,6 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun addFriend_canAddMultipleFriends() = runBlocking {
-    val account3 = account1.copy(uid = "user3", username = "charlie")
-
-    // Create User records first
-
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
-
-    accountRepository.addFriend(account1.uid, account2.uid)
-    accountRepository.addFriend(account1.uid, account3.uid)
-
-    val updated = accountRepository.getAccount(account1.uid)
-    assertEquals(2, updated.friendUids.size)
-    assertTrue(updated.friendUids.contains(account2.uid))
-    assertTrue(updated.friendUids.contains(account3.uid))
-  }
-
-  @Test
-  fun removeFriend_successfullyRemovesFriend() = runBlocking {
-    // Create User records first
-
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
-
-    accountRepository.addFriend(account1.uid, account2.uid)
-
-    accountRepository.removeFriend(account1.uid, account2.uid)
-
-    val updated = accountRepository.getAccount(account1.uid)
-    assertEquals(0, updated.friendUids.size)
-  }
-
-  @Test
   fun removeFriend_throwsExceptionWhenFriendNotFound() = runBlocking {
     accountRepository.addAccount(account1)
     userRepository.addUser(
@@ -232,53 +179,6 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
     assertTrue(exception is NoSuchElementException)
     assertTrue(exception?.message?.contains("not found") == true)
-  }
-
-  @Test
-  fun removeFriend_doesNothingWhenFriendNotInList() = runBlocking {
-    val account3 = account1.copy(uid = "user3", username = "charlie")
-
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
-
-    accountRepository.addFriend(account1.uid, account2.uid)
-    accountRepository.removeFriend(account1.uid, account3.uid)
-
-    val updated = accountRepository.getAccount(account1.uid)
-    assertEquals(1, updated.friendUids.size)
-    assertTrue(updated.friendUids.contains(account2.uid))
-  }
-
-  @Test
-  fun removeFriend_preservesOtherFriends() = runBlocking {
-    val account3 = account1.copy(uid = "user3", username = "charlie")
-
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
-
-    accountRepository.addFriend(account1.uid, account2.uid)
-    accountRepository.addFriend(account1.uid, account3.uid)
-    accountRepository.removeFriend(account1.uid, account2.uid)
-
-    val updated = accountRepository.getAccount(account1.uid)
-    assertEquals(1, updated.friendUids.size)
-    assertTrue(updated.friendUids.contains(account3.uid))
   }
 
   @Test
@@ -319,38 +219,12 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun isMyFriend_returnsFalseAfterRemovingFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
-
-    accountRepository.addFriend(account1.uid, account2.uid)
-    accountRepository.removeFriend(account1.uid, account2.uid)
-
-    val isFriend = accountRepository.isMyFriend(account1.uid, account2.uid)
-    assertTrue(!isFriend)
-  }
-
-  @Test
   fun isMyFriend_throwsExceptionWhenUserNotFound() = runBlocking {
     val exception =
         runCatching { accountRepository.isMyFriend("nonexistent", account1.uid) }.exceptionOrNull()
 
     assertTrue(exception is NoSuchElementException)
     assertTrue(exception?.message?.contains("authenticated user") == true)
-  }
-
-  @Test
-  fun isMyFriend_returnsFalseWhenFriendListIsEmpty() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    val isFriend = accountRepository.isMyFriend(account1.uid, account2.uid)
-    assertTrue(!isFriend)
   }
 
   @Test

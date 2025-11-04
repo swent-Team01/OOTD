@@ -6,6 +6,7 @@ import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.NoSuchElementException
 import kotlinx.coroutines.tasks.await
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
@@ -163,6 +164,12 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addFriend(userID: String, friendID: String) {
     try {
+      val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
+
+      if (!friendUserDoc.exists()) {
+        Log.e("AccountRepositoryFirestore", "The user with id ${friendID} not found")
+        throw NoSuchElementException("The user with id ${friendID} not found")
+      }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
 
@@ -226,18 +233,15 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
-    try {
-      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID).get().await()
+    val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
 
-      if (!document.exists()) {
-        throw NoSuchElementException("The authenticated user has not been added to the database")
-      }
-      // I could access their account, I passed the firestore check.
-      return true
-    } catch (e: Exception) {
-      // I could not access their account, therefore I am not their friend.
-      return false
+    if (!document.exists()) {
+      throw NoSuchElementException("The authenticated user has not been added to the database")
     }
+
+    val userData = transformAccountDocument(document)
+
+    return userData != null && userData.friendUids.contains(friendID)
   }
 
   override suspend fun togglePrivacy(userID: String): Boolean {

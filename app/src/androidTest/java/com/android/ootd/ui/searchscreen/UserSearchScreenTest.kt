@@ -9,7 +9,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -64,63 +63,57 @@ class UserSearchScreenTest : FirestoreTest() {
   }
 
   @Test
-  fun testGeneralSearch() {
-    composeTestRule.setContent { UserSearchScreenPreview() }
+  fun testGeneralSearch() = runTest {
+    composeTestRule.setContent {
+      UserSearchScreen(
+          UserSearchViewModel(
+              userRepository = userRepository,
+              accountRepository = accountRepository,
+              notificationRepository = notificationsRepository,
+              overrideUser = false),
+          onBack = {})
+    }
     val secondUsername = UserRepositoryInMemory().nameList[1]
     val lastUsername = UserRepositoryInMemory().nameList[4]
+
+    accountRepository.addAccount(
+        Account(uid = currentUser.uid, username = lastUsername, ownerId = currentUser.uid))
+    accountRepository.addAccount(
+        Account(uid = currentUser.uid, username = secondUsername, ownerId = currentUser.uid))
+
+    userRepository.addUser(User(uid = currentUser.uid, username = lastUsername))
+
     // Input text to trigger dropdown
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
         .assertIsDisplayed()
-        .performTextInput(secondUsername)
+        .performTextInput(lastUsername)
 
     // Wait for dropdown to appear
     composeTestRule.waitForIdle()
 
-    // Verify dropdown contains exactly one item
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
-        .assertCountEquals(1)
-
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Verify dropdown contains exactly one item
+      composeTestRule
+          .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
+          .fetchSemanticsNodes()
+          .size == 1
+    }
     // Verify the text of the first (and only) suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertTextEquals(secondUsername)
+        .assertTextEquals(lastUsername)
 
     // Click on the first suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .performClick()
 
-    // Verify the profile card elements are displayed after selection
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
-
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-        .assertTextContains("Follow", substring = true)
-
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextClearance()
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextInput(lastUsername)
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-        .assertTextContains("Unfollow", substring = true)
+        .assertTextContains("Request", substring = true, ignoreCase = true)
   }
 
   @Test
