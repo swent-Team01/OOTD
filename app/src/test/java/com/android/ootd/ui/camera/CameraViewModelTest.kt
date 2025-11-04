@@ -7,6 +7,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
 import com.android.ootd.model.camera.CameraRepository
 import io.mockk.coEvery
 import io.mockk.every
@@ -428,5 +429,166 @@ class CameraViewModelTest {
     viewModel.switchCamera()
     viewModel.reset()
     assertEquals(CameraSelector.LENS_FACING_BACK, viewModel.uiState.value.lensFacing)
+  }
+
+  // ========== Zoom State Observer Tests ==========
+  private fun setupCameraWithZoom(
+      initialZoom: Float = 1.0f,
+      minZoom: Float = 1.0f,
+      maxZoom: Float = 5.0f
+  ): Triple<ProcessCameraProvider, PreviewView, LifecycleOwner> {
+    val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
+    val mockPreviewView = mockk<PreviewView>(relaxed = true)
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+    val mockImageCapture = mockk<ImageCapture>()
+    val mockCameraInfo = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
+    val mockCameraControl = mockk<androidx.camera.core.CameraControl>(relaxed = true)
+    val mockZoomState =
+        mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
+    val mockZoomStateValue = mockk<androidx.camera.core.ZoomState>()
+
+    every { mockCamera.cameraControl } returns mockCameraControl
+    every { mockCamera.cameraInfo } returns mockCameraInfo
+    every { mockCameraInfo.zoomState } returns mockZoomState
+    every { mockZoomStateValue.zoomRatio } returns initialZoom
+    every { mockZoomStateValue.minZoomRatio } returns minZoom
+    every { mockZoomStateValue.maxZoomRatio } returns maxZoom
+
+    val observerSlot = slot<Observer<androidx.camera.core.ZoomState>>()
+    every { mockZoomState.observe(mockLifecycleOwner, capture(observerSlot)) } answers
+        {
+          observerSlot.captured.onChanged(mockZoomStateValue)
+        }
+
+    every {
+      mockRepository.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner, any())
+    } returns Result.success(Pair(mockCamera, mockImageCapture))
+
+    return Triple(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
+  }
+
+  @Test
+  fun `bindCamera sets up zoom state observer and updates UI state`() {
+    val (provider, preview, lifecycle) = setupCameraWithZoom(initialZoom = 2.5f, maxZoom = 8.0f)
+    viewModel.bindCamera(provider, preview, lifecycle)
+
+    // Verify zoom state was updated
+    assertEquals(2.5f, viewModel.uiState.value.zoomRatio)
+    assertEquals(1.0f, viewModel.uiState.value.minZoomRatio)
+    assertEquals(8.0f, viewModel.uiState.value.maxZoomRatio)
+  }
+
+  @Test
+  fun `bindCamera removes previous zoom observer before binding new camera`() {
+    val mockZoomState1 =
+        mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
+    val mockZoomState2 =
+        mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
+    val mockCamera1 = mockk<androidx.camera.core.Camera>(relaxed = true)
+    val mockCamera2 = mockk<androidx.camera.core.Camera>(relaxed = true)
+    val mockCameraInfo1 = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
+    val mockCameraInfo2 = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
+    val mockImageCapture = mockk<ImageCapture>()
+    val (provider, preview, lifecycle) = setupCameraWithZoom()
+
+    every { mockCamera1.cameraInfo } returns mockCameraInfo1
+    every { mockCamera2.cameraInfo } returns mockCameraInfo2
+    every { mockCameraInfo1.zoomState } returns mockZoomState1
+    every { mockCameraInfo2.zoomState } returns mockZoomState2
+
+    // First bind
+    every { mockRepository.bindCamera(provider, preview, lifecycle, any()) } returns
+        Result.success(Pair(mockCamera1, mockImageCapture))
+    viewModel.bindCamera(provider, preview, lifecycle)
+
+    // Second bind with different camera
+    every { mockRepository.bindCamera(provider, preview, lifecycle, any()) } returns
+        Result.success(Pair(mockCamera2, mockImageCapture))
+    viewModel.bindCamera(provider, preview, lifecycle)
+
+    // Verify old observer was removed
+    verify(atLeast = 1) { mockZoomState1.removeObserver(any()) }
+  }
+
+  // ========== Zoom Ratio Tests ==========
+  @Test
+  fun `setZoomRatio clamps to min and max correctly`() {
+    val (provider, preview, lifecycle) = setupCameraWithZoom(initialZoom = 2.0f, maxZoom = 5.0f)
+    val mockCamera = viewModel.bindCamera(provider, preview, lifecycle)!!
+    val mockControl = mockk<androidx.camera.core.CameraControl>(relaxed = true)
+
+    // Get the camera from the repository result and setup control
+    every { mockRepository.bindCamera(provider, preview, lifecycle, any()) } answers
+        {
+          val camera = mockk<androidx.camera.core.Camera>(relaxed = true)
+          val cameraInfo = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
+          val zoomState =
+              mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
+          every { camera.cameraControl } returns mockControl
+          every { camera.cameraInfo } returns cameraInfo
+          every { cameraInfo.zoomState } returns zoomState
+          Result.success(Pair(camera, mockCamera))
+        }
+    viewModel.bindCamera(provider, preview, lifecycle)
+
+    // Test clamping to min
+    viewModel.setZoomRatio(0.5f)
+    verify { mockControl.setZoomRatio(1.0f) }
+
+    // Test clamping to max
+    viewModel.setZoomRatio(10.0f)
+    verify { mockControl.setZoomRatio(5.0f) }
+
+    // Test valid value
+    viewModel.setZoomRatio(3.0f)
+    verify { mockControl.setZoomRatio(3.0f) }
+  }
+
+  @Test
+  fun `setZoomRatio does nothing when camera is null`() {
+    // Don't bind camera, so it remains null - should not throw exception
+    viewModel.setZoomRatio(2.0f)
+    assertTrue(true) // Test passes if no exception thrown
+  }
+
+  @Test
+  fun `reset clears zoom ratios to defaults`() {
+    val (provider, preview, lifecycle) = setupCameraWithZoom(initialZoom = 3.0f, maxZoom = 8.0f)
+    viewModel.bindCamera(provider, preview, lifecycle)
+
+    // Verify zoom values from camera
+    assertEquals(3.0f, viewModel.uiState.value.zoomRatio)
+    assertEquals(8.0f, viewModel.uiState.value.maxZoomRatio)
+
+    // Reset should clear to defaults
+    viewModel.reset()
+    assertEquals(1.0f, viewModel.uiState.value.zoomRatio)
+    assertEquals(1.0f, viewModel.uiState.value.minZoomRatio)
+    assertEquals(1.0f, viewModel.uiState.value.maxZoomRatio)
+  }
+
+  // ========== Camera Provider Caching Test ==========
+  @Test
+  fun `getCameraProvider caches and returns provider immediately on second call`() = runTest {
+    val mockContext = mockk<Context>()
+    val mockProvider = mockk<ProcessCameraProvider>()
+    var callCount = 0
+
+    coEvery { mockRepository.getCameraProvider(mockContext) } answers
+        {
+          callCount++
+          mockProvider
+        }
+
+    // First call
+    viewModel.getCameraProvider(mockContext, onSuccess = {}, onError = {})
+    advanceUntilIdle()
+
+    // Second call - should use cached provider
+    viewModel.getCameraProvider(mockContext, onSuccess = {}, onError = {})
+
+    // Repository should only be called once
+    assertEquals(1, callCount)
   }
 }
