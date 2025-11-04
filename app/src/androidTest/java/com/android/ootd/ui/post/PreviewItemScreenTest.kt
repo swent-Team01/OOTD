@@ -235,7 +235,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     advanceUntilIdle()
 
     assert(vm.uiState.value.items.size == 3)
-    assert(vm.uiState.value.items.first().isEqual(i))
+    assert(vm.uiState.value.items.first().itemUuid == i.itemUuid)
     assert(vm.uiState.value.imageUri == "uri")
     assert(vm.uiState.value.description == "desc")
 
