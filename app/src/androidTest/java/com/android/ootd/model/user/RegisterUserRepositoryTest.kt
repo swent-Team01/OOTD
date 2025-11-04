@@ -573,9 +573,7 @@ class RegisterViewModelTest {
   @Test
   fun setLocationQuery_withNonEmptyQuery_fetchesSuggestions() = runTest {
     val mockLocations =
-        listOf(
-            com.android.ootd.model.map.Location(48.8566, 2.3522, "Paris"),
-            com.android.ootd.model.map.Location(51.5074, -0.1278, "London"))
+        listOf(Location(48.8566, 2.3522, "Paris"), Location(51.5074, -0.1278, "London"))
     coEvery { locationRepository.search("Par") } returns mockLocations
 
     viewModel.setLocationQuery("Par")
@@ -587,7 +585,7 @@ class RegisterViewModelTest {
 
   @Test
   fun clearLocationSuggestions_clearsTheList() = runTest {
-    val mockLocations = listOf(com.android.ootd.model.map.Location(48.8566, 2.3522, "Paris"))
+    val mockLocations = listOf(Location(48.8566, 2.3522, "Paris"))
     viewModel.setLocationSuggestions(mockLocations)
 
     viewModel.clearLocationSuggestions()
