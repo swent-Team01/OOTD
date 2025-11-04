@@ -144,6 +144,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun editUser(userID: String, newUsername: String, profilePicture: String) {
     try {
+      if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
       val user = getUser(userID)
 
       val isNewUsername = user.username != newUsername && newUsername.isNotBlank()
