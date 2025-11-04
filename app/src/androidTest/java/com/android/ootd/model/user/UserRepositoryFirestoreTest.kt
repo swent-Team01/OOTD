@@ -18,11 +18,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   // --- tiny helpers ---
   private suspend fun expectCount(n: Int) = assertEquals(n, getUserCount())
 
-  private suspend fun put(uid: String, data: Map<String, Any?>) {
+  private suspend fun addUser(uid: String, data: Map<String, Any?>) {
     FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).document(uid).set(data).await()
   }
 
-  private suspend fun patch(uid: String, data: Map<String, Any?>) {
+  private suspend fun patchUser(uid: String, data: Map<String, Any?>) {
     FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).document(uid).update(data).await()
   }
 
@@ -132,21 +132,21 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     userRepository.addUser(user2)
 
     // Invalid/random doc should be ignored in listing
-    put("invalidDoc", mapOf("random" to "data"))
+    addUser("invalidDoc", mapOf("random" to "data"))
 
     // Blank and null names => userExists false
-    put("userWithBlankName", mapOf("uid" to "userWithBlankName", "username" to ""))
-    put("userWithNullName", mapOf("uid" to "userWithNullName"))
+    addUser("userWithBlankName", mapOf("uid" to "userWithBlankName", "username" to ""))
+    addUser("userWithNullName", mapOf("uid" to "userWithNullName"))
     assert(!userRepository.userExists("userWithBlankName"))
     assert(!userRepository.userExists("userWithNullName"))
 
     // Corrupt one existing user so it cannot deserialize properly
-    patch(user1.uid, mapOf("uid" to 12345)) // wrong type
+    patchUser(user1.uid, mapOf("uid" to 12345)) // wrong type
     val corruptedGet = runCatching { userRepository.getUser(user1.uid) }.exceptionOrNull()
     assert(corruptedGet != null)
 
     // Incomplete user doc should cause getUser to fail with IllegalStateException
-    put("invalidUser", mapOf("uid" to "invalidUser"))
+    addUser("invalidUser", mapOf("uid" to "invalidUser"))
     val incomplete = runCatching { userRepository.getUser("invalidUser") }.exceptionOrNull()
     assert(incomplete is IllegalStateException)
 
