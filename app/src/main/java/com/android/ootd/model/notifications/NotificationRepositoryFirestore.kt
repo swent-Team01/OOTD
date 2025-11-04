@@ -10,6 +10,8 @@ import java.util.UUID
 import kotlinx.coroutines.tasks.await
 
 const val NOTIFICATION_COLLECTION_PATH = "notifications"
+const val SENDER_ID = "senderId"
+const val RECEIVER_ID = "receiverId"
 
 @Keep
 data class NotificationDto(
@@ -91,7 +93,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     try {
       val existingDoc =
           db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("senderId", notification.senderId)
+              .whereEqualTo(SENDER_ID, notification.senderId)
               .whereEqualTo("uid", notification.uid)
               .get()
               .await()
@@ -114,7 +116,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     return try {
       val querySnapshot =
           db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("receiverId", receiverId)
+              .whereEqualTo(RECEIVER_ID, receiverId)
               .get()
               .await()
 
@@ -132,7 +134,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     return try {
       val querySnapshot =
           db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("senderId", senderId)
+              .whereEqualTo(SENDER_ID, senderId)
               .get()
               .await()
 
@@ -153,7 +155,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       // Can be modified in future PRs.
       val documentList =
           db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo("receiverId", notification.receiverId)
+              .whereEqualTo(RECEIVER_ID, notification.receiverId)
               .whereEqualTo("uid", notification.uid)
               .get()
               .await()
