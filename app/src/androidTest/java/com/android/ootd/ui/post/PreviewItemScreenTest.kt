@@ -23,7 +23,6 @@ import com.android.ootd.utils.ItemsTest.Companion.item1
 import com.android.ootd.utils.ItemsTest.Companion.item2
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -232,7 +231,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
     // Load items
     vm.initFromFitCheck("uri", "desc")
-    advanceUntilIdle()
+    composeTestRule.waitForIdle()
 
     assert(vm.uiState.value.items.size == 3)
     assert(vm.uiState.value.items.first().itemUuid == i.itemUuid)
@@ -318,7 +317,6 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     val stateFlow = field.get(vm) as MutableStateFlow<PreviewUIState>
     stateFlow.value = stateFlow.value.copy(successMessage = "Posted!", isPublished = true)
 
-    advanceUntilIdle()
     composeTestRule.waitForIdle()
 
     assert(onPostSuccessCalled)
