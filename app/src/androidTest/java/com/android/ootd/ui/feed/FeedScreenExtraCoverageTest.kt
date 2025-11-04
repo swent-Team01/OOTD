@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.account.UiTestTags
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -22,13 +21,13 @@ class FeedScreenExtraCoverageTest {
   @Test
   fun feedScreen_triggersTopBarButtons() {
     var searchClicked = false
-    var profileClicked = false
+    var notificationsClicked = false
 
     composeTestRule.setContent {
       FeedScreen(
           onAddPostClick = {},
           onSearchClick = { searchClicked = true },
-          onNotificationIconClick = { profileClicked = true })
+          onNotificationIconClick = { notificationsClicked = true })
     }
 
     // Wait for the UI to fully compose, especially for AccountIcon which uses a ViewModel
@@ -44,12 +43,12 @@ class FeedScreenExtraCoverageTest {
 
     // Use onNodeWithTag with assertion to ensure it exists before clicking
     composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER)
+        .onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
         .assertExists()
         .performClick()
 
     assertTrue(searchClicked)
-    assertTrue(profileClicked)
+    assertTrue(notificationsClicked)
   }
 
   @Test
