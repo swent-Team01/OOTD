@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
  */
 data class EditItemsUIState(
     val itemId: String = "",
+    val postUuid: String = "",
     val image: ImageData = ImageData("", ""),
     val localPhotoUri: Uri? = null,
     val category: String = "",
@@ -161,6 +162,7 @@ open class EditItemsViewModel(
       val updatedItem =
           Item(
               itemUuid = state.itemId,
+              postUuids = listOf(state.postUuid),
               image = finalImage,
               category = state.category,
               type = state.type,

@@ -13,63 +13,27 @@ on:
       - reopened
 
 jobs:
-  ci:
-    name: CI
-    # Execute the CI on the course's runners
-    runs-on: ubuntu-latest
-
+  # Job 1: Format Check (runs independently)
+  format-check:
+    name: Format Check
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    
     steps:
-      # First step : Checkout the repository on the runner
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of Sonar analysis (if we use Sonar Later)
+          fetch-depth: 0
 
-      - name: CI Banner
-        run: |
-          echo '   ___   ___ _____ ___     ___ ___ '
-          echo '  / _ \ / _ \_   _|   \   / __|_ _|'
-          echo ' | (_) | (_) || | | |) | | (__ | | '
-          echo '  \___/ \___/ |_| |___/   \___|___|'
-          echo '                                   '
-
-      # Setup all tools in parallel-friendly order
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
 
-      # Install NodeJS early for Firebase CLI
-      - name: Setup NodeJS
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      # Kernel-based Virtual Machine (KVM) is an open source virtualization technology built into Linux. Enabling it allows the Android emulator to run faster.
-      - name: Enable KVM group perms
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      # Caching is a very useful part of a CI, as a workflow is executed in a clean environment every time,
-      # this means that one would need to re-download and re-process gradle files for every run. Which is very time consuming.
-      #
-      # To avoid that, we cache the the gradle folder to reuse it later.
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # Cache SonarQube packages
-      - name: Cache SonarQube packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      # Load google-services.json from the secrets to initiate the FireBase
       - name: Decode secrets for FireBase
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
@@ -81,19 +45,135 @@ jobs:
           fi
 
       - name: Grant execute permission for gradlew
-        run: |
-          chmod +x ./gradlew
+        run: chmod +x ./gradlew
 
-      # Install Firebase CLI
+      - name: KTFmt Check
+        run: ./gradlew ktfmtCheck
+
+  # Job 2: Assemble and Lint (depends on format-check)
+  assemble-and-lint:
+    name: Assemble and Lint
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: format-check
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Assemble and Lint
+        run: ./gradlew assemble lint --parallel --build-cache
+
+  # Job 3: Compile Debug Classes (runs independently)
+  compile-debug:
+    name: Compile Debug Classes
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Compile Debug Classes
+        run: ./gradlew compileDebugSources --parallel --build-cache
+
+  # Job 4: Android Instrumentation Tests (depends on compile-debug)
+  android-instrumentation-tests:
+    name: Android Instrumentation Tests
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: compile-debug
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      # Check formatting FIRST - fail fast if code isn't formatted
-      - name: KTFmt Check
-        run: |
-          ./gradlew ktfmtCheck
-
-      # Start Firebase emulators in background while we build
       - name: Start Firebase emulators for testing
         run: |
           if [ -e "firebase.json" ] && jq -e '.emulators' firebase.json >/dev/null; then
@@ -105,41 +185,6 @@ jobs:
             echo "Firebase emulators not configured, skipping emulator startup..."
           fi
 
-      # Combine assemble and unit tests in single gradle invocation
-      - name: Build and Run Unit Tests
-        run: |
-          # To run the CI with debug information, add --info
-          ./gradlew assemble check lint --parallel --build-cache
-
-      # FireStore Security rules Test
-      - name: Firestore Security Rules tests
-        run: |
-          if [ ! -e "firebase.json" ]; then # Check if firebase.json exists
-            echo "Warning: 'firebase.json' file is missing. Check with the team to properly set up the Firebase"
-            exit 0
-          fi
-          jq -e '.emulators' firebase.json >/dev/null || { # Check if emulators are configured
-            echo "'firebase.json' is missing 'emulators'. Run 'firebase emulators:init'."
-            exit 1
-          }
-          for e in auth firestore; do # Check if auth and firestore emulators are configured
-            jq -e ".emulators.$e" firebase.json >/dev/null || {
-              echo "'firebase.json' is missing 'emulators.$e'. Run 'firebase emulators:init'."
-              exit 1
-            }
-          done
-          if [ -e "firebase/firestore/firestore.rules" ]; then # Check if firestore.rules exists
-            # Check if firestore.rules is referenced in firebase.json
-            jq -e '.firestore.rules' firebase.json >/dev/null || {
-              echo "'firebase.json' is missing 'firestore.rules'."
-              exit 1
-            }
-            (cd firebase/firestore/tests 2>/dev/null && npm install && npm test) || exit $?
-          else
-            echo "Warning: Firestore rules file not found in firebase/firestore"
-          fi
-         
-      # Cache the Emulator AFTER we know build succeeds, if the cache does not hit, create the emulator
       - name: AVD cache
         uses: actions/cache@v4
         id: avd-cache
@@ -149,7 +194,7 @@ jobs:
             ~/.android/adb*
           key: avd-35
 
-      - name: create AVD and generate snapshot for caching
+      - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -161,7 +206,6 @@ jobs:
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
-      # Run connected tests on the emulator
       - name: Run Instrumented Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -173,14 +217,214 @@ jobs:
           disable-animations: true
           script: ./gradlew connectedCheck --parallel --build-cache
 
-      # This step generates the coverage report which will be uploaded to sonar
-      - name: Generate Coverage Report
-        run: |
-          ./gradlew jacocoTestReport
+      - name: Upload Instrumentation Test Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: instrumentation-coverage
+          path: app/build/outputs/code_coverage/
+          retention-days: 1
 
-      # Upload the various reports to sonar
+  # Job 5: Unit Tests (depends on compile-debug)
+  unit-tests:
+    name: Unit Tests
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: compile-debug
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Start Firebase emulators for testing
+        run: |
+          if [ -e "firebase.json" ] && jq -e '.emulators' firebase.json >/dev/null; then
+            echo "Starting Firebase emulators for Firestore tests..."
+            firebase emulators:start --only auth,firestore,storage --project demo-project &
+            sleep 10  # Give emulators time to start
+            echo "Firebase emulators started"
+          else
+            echo "Firebase emulators not configured, skipping emulator startup..."
+          fi
+
+      - name: Run Unit Tests
+        run: ./gradlew check --parallel --build-cache
+
+      - name: Upload Unit Test Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-coverage
+          path: app/build/outputs/unit_test_code_coverage/
+          retention-days: 1
+
+      - name: Firestore Security Rules tests
+        run: |
+          if [ ! -e "firebase.json" ]; then
+            echo "Warning: 'firebase.json' file is missing. Check with the team to properly set up the Firebase"
+            exit 0
+          fi
+          jq -e '.emulators' firebase.json >/dev/null || {
+            echo "'firebase.json' is missing 'emulators'. Run 'firebase emulators:init'."
+            exit 1
+          }
+          for e in auth firestore; do
+            jq -e ".emulators.$e" firebase.json >/dev/null || {
+              echo "'firebase.json' is missing 'emulators.$e'. Run 'firebase emulators:init'."
+              exit 1
+            }
+          done
+          if [ -e "firebase/firestore/firestore.rules" ]; then
+            jq -e '.firestore.rules' firebase.json >/dev/null || {
+              echo "'firebase.json' is missing 'firestore.rules'."
+              exit 1
+            }
+            (cd firebase/firestore/tests 2>/dev/null && npm install && npm test) || exit $?
+          else
+            echo "Warning: Firestore rules file not found in firebase/firestore"
+          fi
+
+  # Job 6: Coverage Report (depends on both unit-tests and android-instrumentation-tests)
+  coverage-report:
+    name: Coverage Report
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [unit-tests, android-instrumentation-tests]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Decode secrets for FireBase
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set !"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Download Unit Test Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: app/build/outputs/unit_test_code_coverage/
+
+      - name: Download Instrumentation Test Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: instrumentation-coverage
+          path: app/build/outputs/code_coverage/
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Start Firebase emulators for testing
+        run: |
+          if [ -e "firebase.json" ] && jq -e '.emulators' firebase.json >/dev/null; then
+            echo "Starting Firebase emulators for Firestore tests..."
+            firebase emulators:start --only auth,firestore,storage --project demo-project &
+            sleep 10
+            echo "Firebase emulators started"
+          else
+            echo "Firebase emulators not configured, skipping emulator startup..."
+          fi
+
+      - name: Run tests for coverage
+        run: ./gradlew check --parallel --build-cache
+
+      - name: Generate Coverage Report
+        run: ./gradlew jacocoTestReport
+
       - name: Upload report to SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --parallel --build-cache
+
+  # Final job: CI Status Check (required for branch protection)
+  # This job depends on all other jobs and provides a single check for branch protection rules
+  ci-status:
+    name: CI
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [format-check, assemble-and-lint, compile-debug, android-instrumentation-tests, unit-tests, coverage-report]
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.format-check.result }}" != "success" || \
+                "${{ needs.assemble-and-lint.result }}" != "success" || \
+                "${{ needs.compile-debug.result }}" != "success" || \
+                "${{ needs.android-instrumentation-tests.result }}" != "success" || \
+                "${{ needs.unit-tests.result }}" != "success" || \
+                "${{ needs.coverage-report.result }}" != "success" ]]; then
+            echo "One or more jobs failed:"
+            echo "Format Check: ${{ needs.format-check.result }}"
+            echo "Assemble and Lint: ${{ needs.assemble-and-lint.result }}"
+            echo "Compile Debug: ${{ needs.compile-debug.result }}"
+            echo "Android Instrumentation Tests: ${{ needs.android-instrumentation-tests.result }}"
+            echo "Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "Coverage Report: ${{ needs.coverage-report.result }}"
+            exit 1
+          fi
+          echo "All CI jobs completed successfully!"

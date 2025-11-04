@@ -79,6 +79,7 @@ object EditItemsScreenTestTags {
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
   const val ALL_FIELDS = "allFields"
+  const val TYPE_SUGGESTIONS = "typeSuggestions"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -251,7 +252,9 @@ fun EditItemsScreen(
                           DropdownMenu(
                               expanded = expanded && itemsUIState.suggestions.isNotEmpty(),
                               onDismissRequest = { expanded = false },
-                              modifier = Modifier.fillMaxWidth()) {
+                              modifier =
+                                  Modifier.fillMaxWidth()
+                                      .testTag(EditItemsScreenTestTags.TYPE_SUGGESTIONS)) {
                                 itemsUIState.suggestions.forEach { suggestion ->
                                   DropdownMenuItem(
                                       text = { Text(suggestion) },

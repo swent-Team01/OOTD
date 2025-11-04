@@ -1,15 +1,11 @@
 package com.android.ootd.utils
 
-import android.net.Uri
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import com.android.ootd.model.items.ImageData
@@ -17,9 +13,9 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
-import com.android.ootd.ui.post.AddItemsViewModel
 import org.junit.Before
 
+// Test partially generated with an AI coding agent
 interface ItemsTest {
 
   fun createInitializedRepository(): ItemsRepository
@@ -31,16 +27,10 @@ interface ItemsTest {
     ItemsRepositoryProvider.setRepository(createInitializedRepository())
   }
 
-  // Robustly bring a tagged node into view across devices where the list may or may not be
-  // scrollable.
   fun ComposeTestRule.ensureVisible(tag: String) {
-    // Already displayed? Nothing to do.
     val alreadyVisible =
         runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess
     if (alreadyVisible) return
-
-    // 3) Fallback: manual swipes a few times (helps when semantics are quirky but visual scroll
-    // still works).
     repeat(5) {
       onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput {
         swipeUp(startY = bottom, endY = top)
@@ -49,27 +39,6 @@ interface ItemsTest {
       if (runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess)
           return
     }
-  }
-
-  // UI check for the button upload photo
-  fun ComposeTestRule.enterAddItemPhoto() {
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).assertIsDisplayed()
-  }
-
-  fun ComposeTestRule.checkImageUploadButtonIsDisplayed() {
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).assertIsDisplayed()
-  }
-
-  fun ComposeTestRule.checkImageUploadButtonClickable() {
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).assertIsDisplayed().performClick()
-  }
-
-  fun ComposeTestRule.checkPhotoPreviewDisplayed() {
-    ensureVisible(AddItemScreenTestTags.IMAGE_PICKER)
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
   }
 
   fun ComposeTestRule.enterAddItemType(type: String) {
@@ -105,7 +74,7 @@ interface ItemsTest {
     ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
 
     onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
-        .performTextInput(material)
+        .performTextReplacement(material)
   }
 
   /**
@@ -120,33 +89,6 @@ interface ItemsTest {
     waitUntil(timeoutMillis) {
       onAllNodesWithTag(tag, useUnmergedTree).fetchSemanticsNodes().isNotEmpty()
     }
-  }
-
-  fun ComposeTestRule.verifyImageUploadFlow(viewModel: AddItemsViewModel, uri: Uri) {
-    // Step 1: Verify placeholder icon visible initially
-    onNodeWithContentDescription("Placeholder icon").assertExists().assertIsDisplayed()
-
-    // Step 2: Simulate user tapping "Upload a picture"
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
-    waitForIdle()
-
-    // Step 3: Dialog should appear
-    onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG).assertIsDisplayed()
-
-    // Step 4: Simulate selecting "Choose from Gallery"
-    onNodeWithTag(AddItemScreenTestTags.PICK_FROM_GALLERY).performClick()
-
-    // Step 5: Simulate picking a photo (what the gallery launcher would do)
-    runOnIdle { viewModel.setPhoto(uri) }
-
-    // Step 6: Wait for recomposition
-    waitForIdle()
-
-    // Step 7: Check placeholder disappears
-    onAllNodesWithContentDescription("Placeholder icon").assertCountEquals(0)
-
-    // Step 8: Verify selected image preview is now displayed
-    // onNodeWithContentDescription("Selected photo").assertExists().assertIsDisplayed()
   }
 
   fun Item.isEqual(other: Item): Boolean {
@@ -165,6 +107,7 @@ interface ItemsTest {
     val item1 =
         Item(
             itemUuid = "0",
+            postUuids = listOf("post_123"),
             image = ImageData("0", "https://example.com/image1.jpg"),
             category = "Clothing",
             type = "t-shirt",
@@ -177,6 +120,7 @@ interface ItemsTest {
     val item2 =
         Item(
             itemUuid = "1",
+            postUuids = listOf("post_123"),
             image = ImageData("2", "https://example.com/image1.jpg"),
             category = "shoes",
             type = "high heels",
@@ -189,6 +133,7 @@ interface ItemsTest {
     val item3 =
         Item(
             itemUuid = "2",
+            postUuids = listOf("post_123"),
             image = ImageData("3", "https://example.com/image1.jpg"),
             category = "bags",
             type = "handbag",
@@ -201,6 +146,7 @@ interface ItemsTest {
     val item4 =
         Item(
             itemUuid = "4",
+            postUuids = listOf("post_123"),
             image = ImageData("4", "https://example.com/image4.jpg"),
             category = "Clothing",
             type = "jacket",
