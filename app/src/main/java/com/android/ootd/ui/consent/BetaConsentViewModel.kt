@@ -128,7 +128,7 @@ class BetaConsentViewModel(
 
         _hasConsented.value = true
         _consentSaved.value = true
-        Log.d(TAG, "Consent recorded successfully: $consentUuid")
+        Log.i(TAG, "Consent recorded successfully: $consentUuid")
       } catch (e: Exception) {
         Log.e(TAG, "Error recording consent: ${e.message}", e)
         _consentSaved.value = false
@@ -166,7 +166,7 @@ class BetaConsentViewModel(
         }
 
         _hasConsented.value = false
-        Log.d(TAG, "Consent cleared successfully")
+        Log.i(TAG, "Consent cleared successfully")
       } catch (e: Exception) {
         Log.e(TAG, "Error clearing consent: ${e.message}", e)
       } finally {
