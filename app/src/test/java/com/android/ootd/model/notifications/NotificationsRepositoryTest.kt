@@ -255,14 +255,25 @@ class NotificationRepositoryFirestoreTest {
 
     val mockDoc: DocumentSnapshot = mockk(relaxed = true)
     val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
+    val mockDocumentReference: DocumentReference = mockk(relaxed = true)
+
+    // Mock the document ID
+    every { mockDoc.id } returns "firebaseDocId123"
     every { mockQuerySnapshot.documents } returns listOf(mockDoc)
 
+    // Mock the query chain
     every { mockCollection.whereEqualTo("receiverId", notification.receiverId) } returns mockQuery
     every { mockQuery.whereEqualTo("uid", notification.uid) } returns mockQuery
     every { mockQuery.get() } returns Tasks.forResult(mockQuerySnapshot)
 
+    // Mock the delete operation
+    every { mockCollection.document("firebaseDocId123") } returns mockDocumentReference
+    every { mockDocumentReference.delete() } returns Tasks.forResult(null)
+
     repository.deleteNotification(notification)
 
     verify { mockQuery.get() }
+    verify { mockCollection.document("firebaseDocId123") }
+    verify { mockDocumentReference.delete() }
   }
 }

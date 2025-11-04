@@ -161,6 +161,11 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       if (documentList.documents.isEmpty()) {
         throw NoSuchElementException("Notification with ID ${notification.uid} not found")
       }
+
+      db.collection(NOTIFICATION_COLLECTION_PATH)
+          .document(documentList.documents[0].id)
+          .delete()
+          .await()
     } catch (e: Exception) {
       Log.e("NotificationRepositoryFirestore", "Error deleting notification: ${e.message}", e)
       throw e
