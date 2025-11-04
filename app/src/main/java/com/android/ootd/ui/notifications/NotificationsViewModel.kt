@@ -25,7 +25,8 @@ data class FollowRequestItem(val notification: Notification, val senderUser: Use
 data class NotificationsUIState(
     val followRequests: List<FollowRequestItem> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val overrideNotificationPopup: Boolean = false
 )
 
 class NotificationsViewModel(
@@ -34,10 +35,12 @@ class NotificationsViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val overrideUser: Boolean = false,
-    private val testUserId: String = "user1"
+    private val testUserId: String = "user1",
+    private val overrideNotificationPopup: Boolean = false
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(NotificationsUIState())
+  private val _uiState =
+      MutableStateFlow(NotificationsUIState(overrideNotificationPopup = overrideNotificationPopup))
   val uiState: StateFlow<NotificationsUIState> = _uiState.asStateFlow()
 
   init {
@@ -47,7 +50,6 @@ class NotificationsViewModel(
   fun loadFollowRequests() {
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
       try {
         val currentUserId = if (overrideUser) testUserId else (Firebase.auth.currentUser?.uid ?: "")
 

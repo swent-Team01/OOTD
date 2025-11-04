@@ -56,12 +56,14 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.notifications.NotificationsScreenTestTags.NOTIFICATION_LIST
 import com.android.ootd.ui.theme.OOTDTheme
 
 object NotificationsScreenTestTags {
   const val NOTIFICATIONS_SCREEN = "notificationsScreen"
   const val NOTIFICATIONS_TITLE = "notificationsTitle"
   const val NOTIFICATION_ITEM = "notificationItem"
+  const val NOTIFICATION_LIST = "notificationList"
   const val ACCEPT_BUTTON = "acceptButton"
   const val DELETE_BUTTON = "deleteButton"
   const val REQUEST_PERMISSION_BUTTON = "requestPermissionButton"
@@ -103,8 +105,7 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
       rememberLauncherForActivityResult(
           contract = ActivityResultContracts.RequestPermission(),
           onResult = { isGranted ->
-            hasNotificationPermission = isGranted
-            if (isGranted) {
+            if (isGranted || uiState.overrideNotificationPopup) {
               viewModel.loadFollowRequests()
             }
           })
@@ -128,7 +129,7 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (!hasNotificationPermission) {
+        if (!hasNotificationPermission && !uiState.overrideNotificationPopup) {
           // Permission not granted state
           Column(
               modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -203,7 +204,7 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
             }
             else -> {
               LazyColumn(
-                  modifier = Modifier.fillMaxSize(),
+                  modifier = Modifier.fillMaxSize().testTag(NOTIFICATION_LIST),
                   verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(items = uiState.followRequests, key = { it.notification.uid }) {
                         followRequestItem ->
