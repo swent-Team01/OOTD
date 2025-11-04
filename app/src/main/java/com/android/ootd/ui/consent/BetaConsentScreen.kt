@@ -113,7 +113,7 @@ fun BetaConsentScreen(
 
                           Text(
                               text =
-                                  "This app is created for the course CS-311 at EPFL, it's still in active developement so if you enconter any bugs or just want to share feedback with us, feel free to use the Send a feedback button in your account screen !",
+                                  "This app is created for the course CS-311 at EPFL, it's still in active developement so if you enconter any bugs or just want to share feedback with us, feel free to reach out to us !",
                               style = typography.bodyMedium,
                               color = colors.onSurfaceVariant)
 
@@ -141,7 +141,10 @@ fun BetaConsentScreen(
                               title = "Photos & Images",
                               description =
                                   "All photos you take or upload through the app, including outfit photos, clothing item images, and profile pictures. These images are stored on Firebase Storage and used to:",
-                              bulletPoints = listOf("...", "..."),
+                              bulletPoints =
+                                  listOf(
+                                      "Improved our compression algorithm",
+                                      "Better understand the items the user wear"),
                               modifier = Modifier.testTag(BetaConsentScreenTestTags.SECTION_PHOTOS))
 
                           Spacer(modifier = Modifier.height(16.dp))
@@ -149,28 +152,17 @@ fun BetaConsentScreen(
                           // Location Section
                           DataCollectionItem(
                               icon = "📍",
-                              title = "Location Data (When Posted)",
+                              title = "Location Data",
                               description =
-                                  "Your approximate location when you create and publish posts in the app. This data helps us:",
-                              bulletPoints = listOf("...", "..."),
-                              note =
-                                  "Location is only collected when you actively post content, not continuously in the background.",
-                              modifier =
-                                  Modifier.testTag(BetaConsentScreenTestTags.SECTION_LOCATION))
-
-                          Spacer(modifier = Modifier.height(16.dp))
-
-                          // Additional Data
-                          DataCollectionItem(
-                              icon = "ℹ️",
-                              title = "Additional Beta Data",
-                              description = "We also collect:",
+                                  "Your location is taken when you create your profile. And you can choose to add the location of the post you make. This data helps us:",
                               bulletPoints =
                                   listOf(
-                                      "App usage patterns and interaction data",
-                                      "Device information and app performance metrics",
-                                      "Error logs and crash reports",
-                                      "Feature usage statistics"))
+                                      "Make an algo that suggest friends that posts around you",
+                                      "Know were our user post from and when"),
+                              note =
+                                  "Location is only collected when you choose to, not continuously in the background.",
+                              modifier =
+                                  Modifier.testTag(BetaConsentScreenTestTags.SECTION_LOCATION))
 
                           Spacer(modifier = Modifier.height(20.dp))
 
