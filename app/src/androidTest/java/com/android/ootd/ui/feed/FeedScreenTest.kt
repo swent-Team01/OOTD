@@ -11,7 +11,6 @@ import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.feed.POSTS_COLLECTION_PATH
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.google.firebase.FirebaseApp
@@ -117,26 +116,31 @@ class FeedScreenTest : FirestoreTest() {
   }
 
   @Test
-  fun feedScreen_topBarButtonsWork() {
+  fun feedScreen_triggersTopBarButtons() {
     var searchClicked = false
-    var profileClicked = false
+    var notificationsClicked = false
 
     composeTestRule.setContent {
       FeedScreen(
           onAddPostClick = {},
           onSearchClick = { searchClicked = true },
-          onAccountIconClick = { profileClicked = true })
+          onNotificationIconClick = { notificationsClicked = true })
     }
 
     composeTestRule.waitForIdle()
+
     Thread.sleep(100)
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithContentDescription("Search").performClick()
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).performClick()
+
+    composeTestRule
+        .onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
+        .assertExists()
+        .performClick()
 
     assertTrue(searchClicked)
-    assertTrue(profileClicked)
+    assertTrue(notificationsClicked)
   }
 
   @Test
