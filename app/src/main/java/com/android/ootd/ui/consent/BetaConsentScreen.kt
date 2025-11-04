@@ -39,11 +39,13 @@ object BetaConsentScreenTestTags {
  *
  * @param onAgree Callback when user agrees to the beta terms
  * @param onDecline Callback when user declines the beta terms
+ * @param isLoading Whether the consent is being saved (shows loading indicator)
  */
 @Composable
 fun BetaConsentScreen(
     onAgree: () -> Unit = {},
     onDecline: () -> Unit = {},
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
   var hasAgreed by remember { mutableStateOf(false) }
@@ -194,7 +196,10 @@ fun BetaConsentScreen(
 
                           Spacer(modifier = Modifier.height(20.dp))
 
-                          Divider(color = colors.outline.copy(alpha = 0.3f))
+                          HorizontalDivider(
+                              Modifier,
+                              DividerDefaults.Thickness,
+                              color = colors.outline.copy(alpha = 0.3f))
 
                           Spacer(modifier = Modifier.height(20.dp))
 
@@ -291,16 +296,25 @@ fun BetaConsentScreen(
 
                     Button(
                         onClick = onAgree,
-                        enabled = hasAgreed,
+                        enabled = hasAgreed && !isLoading,
                         modifier =
                             Modifier.weight(1f).testTag(BetaConsentScreenTestTags.AGREE_BUTTON),
                         colors = ButtonDefaults.buttonColors(containerColor = colors.primary)) {
-                          Icon(
-                              imageVector = Icons.Default.Check,
-                              contentDescription = null,
-                              modifier = Modifier.size(20.dp))
+                          if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = colors.onPrimary,
+                                strokeWidth = 2.dp)
+                          } else {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp))
+                          }
                           Spacer(modifier = Modifier.width(8.dp))
-                          Text("Agree & Continue", style = typography.titleMedium)
+                          Text(
+                              if (isLoading) "Saving..." else "Agree & Continue",
+                              style = typography.titleMedium)
                         }
                   }
 

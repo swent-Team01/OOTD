@@ -10,6 +10,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -128,15 +131,24 @@ fun OOTDApp(
                       })
                 }
                 composable(Screen.BetaConsent.route) {
+                  val consentSaved by betaConsentViewModel.consentSaved.collectAsState()
+                  val isLoading by betaConsentViewModel.isLoading.collectAsState()
+
+                  // Navigate to Feed when consent is successfully saved
+                  LaunchedEffect(consentSaved) {
+                    if (consentSaved) {
+                      betaConsentViewModel.resetConsentSavedFlag()
+                      navigationActions.navigateTo(Screen.Feed)
+                    }
+                  }
+
                   BetaConsentScreen(
-                      onAgree = {
-                        betaConsentViewModel.recordConsent()
-                        navigationActions.navigateTo(Screen.Feed)
-                      },
+                      onAgree = { betaConsentViewModel.recordConsent() },
                       onDecline = {
                         // If user declines, sign them out and return to authentication
                         navigationActions.navigateTo(Screen.Authentication)
-                      })
+                      },
+                      isLoading = isLoading)
                 }
               }
 
