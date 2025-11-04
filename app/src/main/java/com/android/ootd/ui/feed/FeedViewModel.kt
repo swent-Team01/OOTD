@@ -11,7 +11,6 @@ import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,8 +31,6 @@ class FeedViewModel(
 
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
-
-  private var loadJob: Job? = null
 
   init {
     observeAuthAndLoadAccount()
@@ -67,7 +64,7 @@ class FeedViewModel(
         val effectiveHasPosted = _uiState.value.hasPostedToday || repoHasPosted
 
         // Always load the posts, they will be blurred if user has not posted today
-        val posts = repository.getFeedForUids(account.friendUids)
+        val posts = repository.getFeedForUids(account.friendUids + account.uid)
 
         _uiState.value = _uiState.value.copy(hasPostedToday = effectiveHasPosted, feedPosts = posts)
       }
@@ -76,31 +73,5 @@ class FeedViewModel(
 
   fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
-    viewModelScope.launch {
-      val repoHasPosted = repository.hasPostedToday(account.uid)
-      val effectiveHasPosted = _uiState.value.hasPostedToday || repoHasPosted
-      _uiState.value = _uiState.value.copy(hasPostedToday = effectiveHasPosted)
-
-      if (effectiveHasPosted) {
-        loadFriendFeedFor(account)
-      } else {
-        _uiState.value = _uiState.value.copy(feedPosts = emptyList())
-      }
-    }
-  }
-
-  private fun loadFriendFeedFor(account: Account) {
-    loadJob?.cancel()
-    loadJob =
-        viewModelScope.launch {
-          try {
-            // Fetch friends' posts
-            val posts = repository.getFeedForUids(account.friendUids + account.uid)
-            _uiState.value = _uiState.value.copy(feedPosts = posts)
-          } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to load test feed", e)
-            _uiState.value = _uiState.value.copy(feedPosts = emptyList())
-          }
-        }
   }
 }
