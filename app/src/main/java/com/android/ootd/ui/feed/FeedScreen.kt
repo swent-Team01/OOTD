@@ -94,21 +94,25 @@ fun FeedScreen(
         }
       }) { paddingValues ->
         // Overlay the locked message when needed
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-          // Renders the list of posts when user has posted.
-          FeedList(isBlurred = !hasPostedToday, posts = posts)
+        Box(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding())
+                    .background(MaterialTheme.colorScheme.background)) {
+              // Renders the list of posts when user has posted.
+              FeedList(isBlurred = !hasPostedToday, posts = posts)
 
-          if (!hasPostedToday) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center) {
-                  Text(
-                      "Do a fit check to unlock today’s feed",
-                      style = MaterialTheme.typography.titleMedium,
-                      color = Color.White)
-                }
-          }
-        }
+              if (!hasPostedToday) {
+                Box(
+                    modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
+                    contentAlignment = Alignment.Center) {
+                      Text(
+                          "Do a fit check to unlock today’s feed",
+                          style = MaterialTheme.typography.titleMedium,
+                          color = Color.White)
+                    }
+              }
+            }
       }
 }
 
