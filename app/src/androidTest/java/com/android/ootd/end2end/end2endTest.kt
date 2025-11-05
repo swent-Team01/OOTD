@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,6 +22,7 @@ import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
+import com.android.ootd.ui.consent.BetaConsentScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
@@ -96,8 +99,8 @@ class End2EndTest {
   }
 
   /**
-   * End-to-end test: Complete user journey from sign-in through registration, search, follow,
-   * attempting to post an outfit, and logout
+   * End-to-end test: Complete user journey from sign-in through registration, consent, search,
+   * follow, attempting to post an outfit, and logout
    *
    * This test validates the FULL application flow using the actual navigation system:
    * 1. App starts at Splash screen
@@ -107,20 +110,19 @@ class End2EndTest {
    * 5. App automatically navigates to Registration screen
    * 6. User enters username and date of birth
    * 7. User clicks Save button
-   * 8. App navigates to Feed screen (main app)
-   * 9. User clicks search icon to navigate to Search screen
-   * 10. User searches for "Greg" in the username field
-   * 11. User selects Greg from the suggestions
-   * 12. User clicks Follow button on Greg's profile
-   * 13. User clicks back button to return to Feed screen
-   * 14. User clicks "Do a Fit Check" button to start posting a new outfit
-   * 15. User reaches FitCheck screen and verifies "Add Fit Photo" button
-   * 16. Note: Photo selection with camera/gallery cannot be tested in automated UI tests because it
+   * 8. App navigates to Beta Consent screen
+   * 9. User checks the consent checkbox and clicks Agree button
+   * 10. App navigates to Feed screen (main app)
+   * 11. User clicks search icon to navigate to Search screen
+   * 12. User clicks back button to return to Feed screen
+   * 13. User clicks "Do a Fit Check" button to start posting a new outfit
+   * 14. User reaches FitCheck screen and verifies "Add Fit Photo" button
+   * 15. Note: Photo selection with camera/gallery cannot be tested in automated UI tests because it
    *     launches external Android activities that break the Compose hierarchy
-   * 17. User navigates back to Feed screen from FitCheck
-   * 18. User clicks profile icon to navigate to Account screen
-   * 19. User clicks Sign Out button
-   * 20. App navigates back to Authentication screen
+   * 16. User navigates back to Feed screen from FitCheck
+   * 17. User clicks profile icon to navigate to Account screen
+   * 18. User clicks Sign Out button
+   * 19. App navigates back to Authentication screen
    *
    * LIMITATIONS:
    * - Camera/Gallery intents cannot be tested in Compose UI tests without mocking
@@ -130,7 +132,7 @@ class End2EndTest {
    * - Uses the REAL OOTDApp composable with the full NavHost navigation graph
    * - Simulates actual user interactions across multiple screens
    * - Validates automatic navigation flows between screens
-   * - Tests the user lifecycle: sign-in → register → search → follow → partial outfit post →
+   * - Tests the user lifecycle: sign-in → register → consent → search → partial outfit post →
    *   sign-out
    * - Uses FakeCredentialManager and mocked Firebase to avoid network calls
    */
@@ -272,8 +274,42 @@ class End2EndTest {
           .assertIsEnabled()
       composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
 
-      // STEP 8: App automatically switches to feed screen
-      // Wait for navigation to Feed screen after successful registration
+      // STEP 8: Navigate to Beta Consent screen after successful registration
+      // Wait for navigation to Beta Consent screen
+      composeTestRule.waitForIdle()
+
+      composeTestRule.waitUntil(timeoutMillis = 10000) {
+        try {
+          composeTestRule
+              .onAllNodesWithTag(BetaConsentScreenTestTags.SCREEN)
+              .fetchSemanticsNodes()
+              .isNotEmpty()
+        } catch (_: Exception) {
+          false
+        }
+      }
+
+      // Verify we're on the Beta Consent screen
+      composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.SCREEN).assertIsDisplayed()
+      composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.TITLE).assertIsDisplayed()
+
+      composeTestRule.waitForIdle()
+
+      // STEP 9: Accept the beta consent terms
+      // Find and click the checkbox using the checkbox matcher
+      val checkboxMatcher = hasSetTextAction().not() and isToggleable()
+      composeTestRule.onNode(checkboxMatcher).performClick()
+
+      composeTestRule.waitForIdle()
+
+      // Click the agree button
+      composeTestRule
+          .onNodeWithTag(BetaConsentScreenTestTags.AGREE_BUTTON)
+          .assertIsEnabled()
+          .performClick()
+
+      // STEP 10: App automatically switches to feed screen after consent
+      // Wait for navigation to Feed screen after consent
       composeTestRule.waitForIdle()
 
       // More robust waiting with better error handling
@@ -295,7 +331,7 @@ class End2EndTest {
 
       composeTestRule.waitForIdle()
 
-      // STEP 9: Click on search icon to navigate to search screen
+      // STEP 11: Click on search icon to navigate to search screen
       composeTestRule.onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN).performClick()
       composeTestRule.waitForIdle()
 
@@ -347,7 +383,7 @@ class End2EndTest {
       //    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
       //    composeTestRule.waitForIdle()
 
-      // STEP 13: Click back button to return to Feed screen
+      // STEP 12: Click back button to return to Feed screen
       composeTestRule.onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON).performClick()
       composeTestRule.waitForIdle()
 
@@ -362,7 +398,7 @@ class End2EndTest {
       // Verify we're back on the Feed screen
       composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
 
-      // STEP 14: Click "Do a Fit Check" button to start posting a new outfit
+      // STEP 13: Click "Do a Fit Check" button to start posting a new outfit
       composeTestRule.waitUntil(timeoutMillis = 5000) {
         composeTestRule
             .onAllNodesWithTag(FeedScreenTestTags.ADD_POST_FAB)
@@ -389,21 +425,21 @@ class End2EndTest {
           .performScrollTo()
           .assertIsDisplayed()
 
-      // STEP 15: Verify the "Add Fit Photo" button is available
+      // STEP 14: Verify the "Add Fit Photo" button is available
       // Note: We cannot actually take a photo with the camera in an automated test because:
       // - Clicking "Take Photo" launches the native Android camera app as a separate activity
       // - This causes the Compose hierarchy to be lost (app goes to background)
       // - ComposeTestRule can only interact with Compose UI in the foreground
       //
       //
-      // STEP 16: Skip photo selection for testing purposes
+      // STEP 15: Skip photo selection for testing purposes
       // In a real-world scenario, the user would select a photo here
       // For automated testing, we'll proceed without it
       // (Need to ask the coaches what can we do)
 
       // Since the Next button requires a valid photo, we cannot proceed further
 
-      // STEP 17: Navigate back to Feed screen from FitCheck
+      // STEP 16: Navigate back to Feed screen from FitCheck
       composeTestRule.onNodeWithTag(FitCheckScreenTestTags.BACK_BUTTON).performClick()
       composeTestRule.waitForIdle()
 
@@ -418,7 +454,7 @@ class End2EndTest {
       // Verify we're back on the Feed screen
       composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
 
-      // STEP 18: User clicks profile Icon to navigate to Account screen
+      // STEP 17: User clicks profile Icon to navigate to Account screen
       // Wait for the AccountIcon to be fully initialized and visible
       composeTestRule.waitUntil(timeoutMillis = 5000) {
         composeTestRule
@@ -456,7 +492,7 @@ class End2EndTest {
 
       composeTestRule.waitForIdle()
 
-      // STEP 19: User clicks signout Button
+      // STEP 18: User clicks signout Button
       composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performScrollTo().performClick()
 
       composeTestRule.waitForIdle()

@@ -107,6 +107,10 @@ class ConsentRepositoryFirestoreTest : FirestoreTest() {
 
   @Test
   fun canGetAllConsents() = runTest {
+    // Get initial count to account for any existing data
+    val initialConsents = consentRepository.getAllConsents()
+    val initialCount = initialConsents.size
+
     val consent1 =
         Consent(
             consentUuid = consentRepository.getNewConsentId(),
@@ -117,7 +121,7 @@ class ConsentRepositoryFirestoreTest : FirestoreTest() {
     val consent2 =
         Consent(
             consentUuid = consentRepository.getNewConsentId(),
-            userId = "another-user",
+            userId = "another-user-${System.currentTimeMillis()}",
             timestamp = System.currentTimeMillis(),
             version = "1.0")
 
@@ -125,8 +129,10 @@ class ConsentRepositoryFirestoreTest : FirestoreTest() {
     consentRepository.addConsent(consent2)
 
     val allConsents = consentRepository.getAllConsents()
-    assertTrue(allConsents.size >= 2)
+    // Verify we have at least 2 more consents than we started with
+    assertTrue(allConsents.size >= initialCount + 2)
     assertTrue(allConsents.any { it.userId == testUserId })
+    assertTrue(allConsents.any { it.userId == consent2.userId })
   }
 
   @Test
