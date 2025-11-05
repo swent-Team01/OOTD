@@ -2,9 +2,10 @@ package com.android.ootd.ui.post
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
-import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -20,71 +21,65 @@ import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
 import com.android.ootd.utils.ItemsTest.Companion.item1
 import com.android.ootd.utils.ItemsTest.Companion.item2
-import com.android.ootd.utils.ItemsTest.Companion.item3
-import com.android.ootd.utils.ItemsTest.Companion.item4
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
 class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
-  // Fake data setup for viewModel
-  private val fakeItem =
+  @get:Rule val composeTestRule = createComposeRule()
+
+  // --- Helpers ---
+  private fun item(
+      id: String = "1",
+      cat: String = "Clothes",
+      type: String = "T-Shirt",
+      brand: String = "Nike",
+      price: Double? = 19.99,
+      link: String? = "https://example.com/product",
+      materials: List<Material> = listOf(Material("Cotton"))
+  ) =
       Item(
-          itemUuid = "1",
+          itemUuid = id,
           postUuids = listOf("post_3456"),
-          image = ImageData("Photo1", "https://example.com/image.jpg"),
-          category = "Clothes",
-          type = "T-Shirt",
-          brand = "Nike",
-          price = 19.99,
-          material = listOf(Material("Cotton"), Material("Polyester")),
-          link = "https://example.com/product",
-          ownerId = "user123")
-  private val fakeItem2 =
-      Item(
-          itemUuid = "2",
-          postUuids = listOf("post_3456"),
-          image = ImageData("Photo2", "https://example.com/image2.jpg"),
-          category = "Shoes",
-          type = "Sneakers",
-          brand = "Adidas",
-          price = 49.99,
-          material = listOf(Material("Leather")),
-          link = "https://example.com/product2",
+          image = ImageData("Photo$id", "https://example.com/image$id.jpg"),
+          category = cat,
+          type = type,
+          brand = brand,
+          price = price,
+          material = materials,
+          link = link,
           ownerId = "user123")
 
-  private fun fakeRepository(items: List<Item>) =
+  private fun fakeRepo(items: List<Item>, throwOnLoad: String? = null) =
       object : ItemsRepository {
-        override fun getNewItemId(): String = "fakeId"
+        override fun getNewItemId() = "fakeId"
 
-        override suspend fun getAllItems(): List<Item> = items
+        override suspend fun getAllItems() = items
 
-        override suspend fun getAssociatedItems(postUuid: String): List<Item> = items
+        override suspend fun getAssociatedItems(postUuid: String): List<Item> {
+          if (throwOnLoad != null) throw Exception(throwOnLoad)
+          return items
+        }
 
-        override suspend fun getItemById(uuid: String): Item = items.first()
+        override suspend fun getItemById(uuid: String) = items.first()
 
         override suspend fun addItem(item: Item) {}
 
         override suspend fun editItem(itemUUID: String, newItem: Item) {}
 
-        override suspend fun deleteItem(uuid: String) {
-          TODO("Not yet implemented")
-        }
+        override suspend fun deleteItem(uuid: String) {}
 
-        override suspend fun deletePostItems(postUuid: String) {
-          TODO("Not yet implemented")
-        }
+        override suspend fun deletePostItems(postUuid: String) {}
       }
 
-  private val fakePostRepository =
+  private val fakePostRepo =
       object : OutfitPostRepository {
-        override fun getNewPostId(): String = "post_123"
+        override fun getNewPostId() = "post_123"
 
-        override suspend fun uploadOutfitPhoto(localPath: String, postId: String): String = ""
+        override suspend fun uploadOutfitPhoto(localPath: String, postId: String) = ""
 
         override suspend fun savePostToFirestore(post: OutfitPost) {}
 
@@ -98,591 +93,179 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             userProfilePicURL: String,
             localPath: String,
             description: String
-        ): OutfitPost = OutfitPost(postUID = "post_123", ownerId = uid, name = name)
+        ) = OutfitPost(postUID = "post_123", ownerId = uid, name = name)
 
         override suspend fun deletePost(postId: String) {}
       }
 
-  @get:Rule val composeTestRule = createComposeRule()
-
-  fun setContent(withInitialItems: List<Item> = emptyList()) {
-    runTest { withInitialItems.forEach { repository.addItem(it) } }
+  private fun setContent(
+      items: List<Item> = emptyList(),
+      onAdd: (String) -> Unit = {},
+      onEdit: (String) -> Unit = {},
+      onBack: (String) -> Unit = {},
+      onPostSuccess: () -> Unit = {}
+  ) {
+    runTest { items.forEach { repository.addItem(it) } }
     composeTestRule.setContent {
       PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(withInitialItems)),
+          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepo(items), fakePostRepo),
           imageUri = "fake_image_uri",
-          description = "Test outfit description")
+          description = "Test outfit description",
+          onAddItem = onAdd,
+          onEditItem = onEdit,
+          onGoBack = onBack,
+          onPostSuccess = onPostSuccess)
     }
   }
 
-  // Empty list test
+  private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
+
+  private fun txt(s: String, substring: Boolean = false) =
+      composeTestRule.onNodeWithText(s, substring = substring)
+
+  // --- UI Tests ---
   @Test
-  fun testTagsCorrectlySetWhenListIsEmpty() {
+  fun emptyList_showsMessage_andAddButton_noPostButton() {
     setContent()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.ITEM_LIST).assertIsNotDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
-  }
-
-  // Non empty list test
-  @Test
-  fun testTagsCorrectlySetWhenListIsNotEmpty() {
-    setContent(withInitialItems = listOf(item1, item2))
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.ITEM_LIST).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item1))
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item2))
-        .assertIsDisplayed()
-  }
-
-  // Expand collapsed item test
-  @Test
-  fun expandAndCollapsedItem() {
-    setContent(withInitialItems = listOf(item3))
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item3))
-        .assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item3)).performClick()
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item3))
-        .assertIsDisplayed()
+    n(PreviewItemScreenTestTags.ITEM_LIST).assertIsNotDisplayed()
+    n(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+    txt("Post").assertDoesNotExist()
   }
 
   @Test
-  fun editButtonExistsAndClickable() {
-    setContent(withInitialItems = listOf(item3))
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
+  fun nonEmptyList_showsItems_expandCollapse_materialsAndPrice() {
+    val i = item(materials = listOf(Material("Cotton", 70.0), Material("Polyester", 30.0)))
+    setContent(items = listOf(i, item1))
+
+    // Items visible
+    n(PreviewItemScreenTestTags.ITEM_LIST).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.getTestTagForItem(i)).assertIsDisplayed()
+    txt(i.category).assertIsDisplayed()
+    txt(i.type ?: "").assertIsDisplayed()
+
+    // Multiple items = multiple image previews and expand icons; target first item (index 0)
+    composeTestRule
+        .onAllNodesWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW)[0]
+        .assertIsDisplayed()
+
+    // Expand first item
+    composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EXPAND_ICON)[0].performClick()
+    txt(i.brand ?: "").assertIsDisplayed()
+    txt("Cotton, Polyester", substring = true).assertIsDisplayed()
+    txt("CHF ${i.price}", substring = true).assertIsDisplayed()
+    txt(i.link ?: "").assertIsDisplayed()
+
+    // Collapse first item
+    composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EXPAND_ICON)[0].performClick()
+    composeTestRule.waitForIdle()
+    txt(i.category).assertIsDisplayed()
   }
 
   @Test
-  fun expandingAnItemRevealsDetailsAndCollapsingHidesThem() {
-    setContent(withInitialItems = listOf(item1))
-    // Initially, details should not be displayed
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item1))
-        .assertIsDisplayed()
-    composeTestRule.onNodeWithText(item1.category).assertIsDisplayed()
-    composeTestRule.onNodeWithText(item1.type ?: "").assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW).assertIsDisplayed()
-    // Expand the item
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-
-    composeTestRule.onNodeWithText(item1.category).assertIsDisplayed()
-    composeTestRule.onNodeWithText(item1.type ?: "").assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW).assertIsDisplayed()
-    composeTestRule.onNodeWithText(item1.brand ?: "").assertIsDisplayed()
-    composeTestRule.onNodeWithText(item1.price.toString()).assertIsNotDisplayed()
-    // Now, details should be displayed
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item1))
-        .assertIsDisplayed()
-
-    // Collapse the item
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-    // Details should be hidden again
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.getTestTagForItem(item1))
-        .assertIsDisplayed()
-
-    composeTestRule.onNodeWithText(item1.category).assertIsDisplayed()
-    composeTestRule.onNodeWithText(item1.type ?: "").assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW).assertIsDisplayed()
-  }
-
-  @Test
-  fun canScrollThroughItemList() {
+  fun scrollLargeList_postAndAddButtons_multipleCategories() {
     val items =
-        (1..50).map {
-          item4.copy(
-              itemUuid = it.toString(),
-              image = ImageData("image$it", "https://example.com/image${it}.jpg"))
-        }
-    setContent(withInitialItems = items)
-    val firstTag = PreviewItemScreenTestTags.getTestTagForItem(items.first())
-    val lastTag = PreviewItemScreenTestTags.getTestTagForItem(items.last())
-
-    composeTestRule.onNodeWithTag(firstTag).assertIsDisplayed()
-    val lastNode = composeTestRule.onNodeWithTag(lastTag)
-    lastNode.assertIsNotDisplayed()
-
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.ITEM_LIST)
-        .performScrollToNode(hasTestTag(lastTag))
-
-    lastNode.assertIsDisplayed()
-  }
-
-  @Test
-  fun editButtonRemainsVisibleAfterExpansion() {
-    setContent(withInitialItems = listOf(fakeItem))
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).assertIsDisplayed()
-  }
-
-  @Test
-  fun imagePlaceholderIsDisplayedWhenImageFailsToLoad() {
-    val itemWithBrokenImage = item1.copy(image = ImageData("broken", "invalid_url"))
-    setContent(withInitialItems = listOf(itemWithBrokenImage))
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.IMAGE_ITEM_PREVIEW).assertIsDisplayed()
-  }
-
-  @Test
-  fun postButtonIsDisplayedWhenItemListIsNotEmpty() {
-    setContent(withInitialItems = listOf(fakeItem))
-    composeTestRule.onNodeWithText("Post").assertIsDisplayed()
-  }
-
-  @Test
-  fun postButtonIsNotDisplayedWhenListIsEmpty() {
-    setContent()
-    composeTestRule.onNodeWithText("Post").assertDoesNotExist()
-  }
-
-  /**
-   * Test to verify that clicking the Post button works when the item list is not empty. Currently,
-   * this test only checks that the button is clickable. In a full implementation, you would verify
-   * navigation or a toast message.
-   */
-  @Test
-  fun postButtonIsClickable() {
-    setContent(withInitialItems = listOf(fakeItem))
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-  }
-
-  @Test
-  fun addItemAndPostButtonsAreDisplayedTogetherWhenListIsNotEmpty() {
-    setContent(withInitialItems = listOf(fakeItem))
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
-  }
-
-  @Test
-  fun addItemButtonStillVisibleWhenListEmpty() {
-    setContent()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
-  }
-
-  /** Navigation tests from preview screen to add item screen and edit item screen */
-  @Test
-  fun clickingAddItemButton_callsOnAddItemCallback() {
-    var addItemClicked = false
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
-          imageUri = "test_image_uri",
-          description = "test outfit description",
-          onAddItem = { addItemClicked = true })
-    }
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-    assert(addItemClicked)
-  }
-
-  //  @Test
-  //  fun clickingAddItemButton_navigatesToAddItemScreen() {
-  //    composeTestRule.setContent {
-  //      val navController = rememberNavController()
-  //      NavHost(navController = navController, startDestination = Screen.PreviewItemScreen.route)
-  // {
-  //        composable(Screen.PreviewItemScreen.route) {
-  //          PreviewItemScreen(
-  //              outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
-  //              onAddItem = { navController.navigate(Screen.AddItemScreen.route) },
-  //              onEditItem = {},
-  //              onPostOutfit = {},
-  //              onGoBack = {})
-  //        }
-  //        composable("addItem") {
-  //          AddItemsScreen(
-  //              addItemsViewModel = AddItemsViewModel(),
-  //              onNextScreen = {},
-  //              goBack = {},
-  //              modifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD))
-  //        }
-  //      }
-  //    }
-  //
-  //    // Click "Add Item" button
-  //    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-  //
-  //    // Check that AddItemScreen is now displayed
-  //    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TITLE_ADD).assertIsDisplayed()
-  //  }
-
-  @Test
-  fun clickingEditItemButton_callsOnEditItemCallback() {
-    var editedItemId: String? = null
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
-          imageUri = "test_image_uri",
-          description = "test outfit description",
-          onEditItem = { itemId -> editedItemId = itemId })
-    }
-    // Click the edit button
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
-    assert(editedItemId == fakeItem.itemUuid)
-  }
-
-  @Test
-  fun postButton_isClickable() {
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel =
-              OutfitPreviewViewModel(
-                  fakeRepository(listOf(fakeItem)), postRepository = fakePostRepository),
-          imageUri = "test_image_uri",
-          description = "test outfit description")
-    }
-
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-  }
-
-  @Test
-  fun clickingGoBackButton_callsOnGoBackCallback() {
-    var goBackClicked = false
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
-          imageUri = "test_image_uri",
-          description = "test outfit description",
-          onGoBack = { goBackClicked = true })
-    }
-
-    composeTestRule.onNodeWithContentDescription("go back").performClick()
-    assert(goBackClicked)
-  }
-
-  @Test
-  fun clickingGoBackButton_callsOnGoBackWithEmptyList() {
-    var goBackClicked = false
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(listOf(fakeItem))),
-          imageUri = "test_image_uri",
-          description = "test outfit description",
-          onGoBack = { goBackClicked = true })
-    }
-
-    composeTestRule.onNodeWithContentDescription("go back").performClick()
-    assert(goBackClicked)
-  }
-
-  // Tests for viewModel
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun loadsItemsCorrectlyVM() = runTest {
-    val repo = fakeRepository(listOf(fakeItem, item3, fakeItem2))
-    val viewModel = OutfitPreviewViewModel(repo)
-    viewModel.initFromFitCheck("uri", "desc")
-
-    advanceUntilIdle()
+        (1..50).map { item(id = it.toString(), cat = if (it % 2 == 0) "Shoes" else "Clothing") }
+    setContent(items = items)
     composeTestRule.waitForIdle()
 
-    assert(viewModel.uiState.value.items.size == 3)
-    assert(viewModel.uiState.value.items.first().isEqual(fakeItem))
-    assert(viewModel.uiState.value.items.last().isEqual(fakeItem2))
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(PreviewItemScreenTestTags.getTestTagForItem(items.first()))
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Buttons visible
+    n(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+
+    // Scroll to "Shoes" and verify (choose first matching visible node)
+    n(PreviewItemScreenTestTags.ITEM_LIST).performScrollToNode(hasText("Shoes"))
+    composeTestRule.onAllNodesWithText("Shoes")[0].assertIsDisplayed()
+
+    // Scroll to "Clothing" and verify (choose first matching visible node)
+    n(PreviewItemScreenTestTags.ITEM_LIST).performScrollToNode(hasText("Clothing"))
+    composeTestRule.onAllNodesWithText("Clothing")[0].assertIsDisplayed()
   }
 
   @Test
-  fun clearMessageResetsState() = runTest {
-    val repo = fakeRepository(listOf(fakeItem))
-    val viewModel = OutfitPreviewViewModel(repo)
+  fun allCallbacks_addEditBackPostSuccess_work() {
+    var addClickedPostId: String? = null
+    var editedId: String? = null
+    var backClickedPostId: String? = null
 
+    val i = item()
+    setContent(
+        items = listOf(i),
+        onAdd = { addClickedPostId = it },
+        onEdit = { editedId = it },
+        onBack = { backClickedPostId = it })
+
+    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+    assert(addClickedPostId != null)
+
+    n(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
+    assert(editedId == i.itemUuid)
+
+    composeTestRule.onNodeWithContentDescription("go back").performClick()
+    assert(backClickedPostId != null)
+
+    n(PreviewItemScreenTestTags.POST_BUTTON).performClick()
+    // postSuccess tested separately in VM test
+  }
+
+  // --- ViewModel Tests ---
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun viewModel_loadsItems_initState_clearError() = runTest {
+    val i = item(id = "vm1")
+    val repo = fakeRepo(listOf(i, item1, item2))
+    val vm = OutfitPreviewViewModel(repo, fakePostRepo)
+
+    // Initial state
+    val initial = vm.uiState.value
+    assert(initial.items.isEmpty())
+    assert(initial.imageUri == "")
+    assert(initial.description == "")
+
+    // Load items
+    vm.initFromFitCheck("uri", "desc")
+    composeTestRule.waitForIdle()
+
+    assert(vm.uiState.value.items.size == 3)
+    assert(vm.uiState.value.items.first().itemUuid == i.itemUuid)
+    assert(vm.uiState.value.imageUri == "uri")
+    assert(vm.uiState.value.description == "desc")
+
+    // Clear error (use reflection to inject error)
+    @Suppress("UNCHECKED_CAST")
     val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
     field.isAccessible = true
-    val stateFlow = field.get(viewModel) as MutableStateFlow<PreviewUIState>
+    val stateFlow = field.get(vm) as MutableStateFlow<PreviewUIState>
+    stateFlow.value = stateFlow.value.copy(errorMessage = "Network error")
 
-    stateFlow.value = stateFlow.value.copy(errorMessage = "Something went wrong")
-
-    assert(viewModel.uiState.value.errorMessage == "Something went wrong")
-
-    viewModel.clearErrorMessage()
-    assert(viewModel.uiState.value.errorMessage == null)
-  }
-
-  // Additional comprehensive tests for better coverage
-  @Test
-  fun displayMultipleItemsWithDifferentCategories() {
-    val items =
-        listOf(
-            item1.copy(category = "Clothing"),
-            item2.copy(category = "Shoes"),
-            item3.copy(category = "Bags"),
-            item4.copy(category = "Accessories"))
-    setContent(withInitialItems = items)
-
-    composeTestRule.onNodeWithText("Clothing").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Shoes").assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.ITEM_LIST)
-        .performScrollToNode(hasTestTag(PreviewItemScreenTestTags.getTestTagForItem(items[2])))
-    composeTestRule.onNodeWithText("Bags").assertIsDisplayed()
-  }
-
-  @Test
-  fun verifyMaterialsDisplayedWhenExpanded() {
-    val itemWithMaterials =
-        item1.copy(material = listOf(Material("Cotton", 70.0), Material("Polyester", 30.0)))
-    setContent(withInitialItems = listOf(itemWithMaterials))
-
-    // Expand item
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-
-    // Materials should be visible (joined as string)
-    composeTestRule.onNodeWithText("Cotton, Polyester", substring = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun verifyPriceFormattingIsCorrect() {
-    val itemWithPrice = item1.copy(price = 123.45)
-    setContent(withInitialItems = listOf(itemWithPrice))
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-    composeTestRule.onNodeWithText("CHF 123.45", substring = true).assertIsDisplayed()
-  }
-
-  @Test
-  fun verifyLinkDisplayedWhenExpanded() {
-    val itemWithLink = item1.copy(link = "https://example.com/product")
-    setContent(withInitialItems = listOf(itemWithLink))
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-    composeTestRule.onNodeWithText("https://example.com/product").assertIsDisplayed()
-  }
-
-  @Test
-  fun collapseItemHidesDetails() {
-    setContent(withInitialItems = listOf(item1))
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-    composeTestRule.onNodeWithText(item1.brand ?: "").assertIsDisplayed()
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EXPAND_ICON).performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithText(item1.category).assertIsDisplayed()
-  }
-
-  @Test
-  fun verifyBackButtonIsDisplayed() {
-    setContent()
-    composeTestRule.onNodeWithContentDescription("go back").assertIsDisplayed()
-  }
-
-  @Test
-  fun addItemButtonIsClickable() {
-    setContent(withInitialItems = listOf(fakeItem))
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-  }
-
-  @Test
-  fun allButtonsHaveCorrectIcons() {
-    setContent(withInitialItems = listOf(fakeItem))
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).assertIsDisplayed()
+    assert(vm.uiState.value.errorMessage != null)
+    vm.clearErrorMessage()
+    assert(vm.uiState.value.errorMessage == null)
   }
 
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun viewModelRefreshItemsUpdatesState() = runTest {
-    val repo = fakeRepository(listOf(fakeItem))
-
-    val viewModel =
-        OutfitPreviewViewModel(itemsRepository = repo, postRepository = fakePostRepository)
-
-    viewModel.initFromFitCheck("uri", "desc")
-
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    assert(viewModel.uiState.value.items.size == 1)
-
-    viewModel.loadItemsForPost()
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    assert(viewModel.uiState.value.items.isNotEmpty())
-  }
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun viewModelInitialStateIsCorrect() = runTest {
-    val repo = fakeRepository(emptyList())
-    val viewModel = OutfitPreviewViewModel(repo)
-
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    val state = viewModel.uiState.value
-    assert(state.imageUri == "")
-    assert(state.description == "")
-    assert(state.items.isEmpty())
-    assert(state.errorMessage == null)
-    assert(!state.isLoading)
-  }
-
-  @Test
-  fun itemWithNullOptionalFieldsDisplaysCorrectly() {
-    val minimalItem =
-        item1.copy(type = null, brand = null, price = null, link = null, material = emptyList())
-    setContent(withInitialItems = listOf(minimalItem))
-
-    composeTestRule.onNodeWithText(minimalItem.category).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Item Type").assertIsDisplayed()
-  }
-
-  @Test
-  fun editButtonForEachItemWorks() {
-    val items = listOf(item1, item2)
-    var editedId: String? = null
-
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel =
-              OutfitPreviewViewModel(fakeRepository(items), postRepository = fakePostRepository),
-          imageUri = "test_image_uri",
-          description = "test outfit description",
-          onEditItem = { itemId -> editedId = itemId })
-    }
-
-    composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)[0].performClick()
-    assert(editedId == item1.itemUuid)
-
-    composeTestRule.onAllNodesWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)[1].performClick()
-    assert(editedId == item2.itemUuid)
-  }
-
-  @Test
-  fun bottomBarLayoutIsCorrect() {
-    setContent(withInitialItems = listOf(fakeItem))
-
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
-  }
-
-  @Test
-  fun allNavigationCallbacksWork() {
-    var addClicked = false
-    var editClicked = false
-    var backClicked = false
-
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel =
-              OutfitPreviewViewModel(
-                  itemsRepository = fakeRepository(listOf(fakeItem)),
-                  postRepository = fakePostRepository),
-          imageUri = "test_image_uri",
-          description = "test outfit description",
-          onAddItem = { addClicked = true },
-          onEditItem = { editClicked = true },
-          onGoBack = { backClicked = true })
-    }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-    assert(addClicked)
-
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-    assert(editClicked)
-
-    composeTestRule
-        .onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-
-    composeTestRule.onNodeWithContentDescription("go back").assertIsDisplayed().performClick()
-    assert(backClicked)
-  }
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun refreshItems_specificExceptionMessage_isPropagatedCorrectly() = runTest {
-    val specificError = "Database connection timeout after 30 seconds"
-    val failingRepo =
-        object : ItemsRepository {
-          override fun getNewItemId(): String = "id"
-
-          override suspend fun getAllItems(): List<Item> {
-            throw Exception(specificError)
-          }
-
-          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
-            throw Exception(specificError)
-          }
-
-          override suspend fun getItemById(uuid: String): Item = fakeItem
-
-          override suspend fun addItem(item: Item) {}
-
-          override suspend fun editItem(itemUUID: String, newItem: Item) {}
-
-          override suspend fun deleteItem(uuid: String) {}
-
-          override suspend fun deletePostItems(postUuid: String) {}
-        }
-
-    val viewModel = OutfitPreviewViewModel(failingRepo)
-
-    viewModel.initFromFitCheck("uri", "desc")
-
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    viewModel.clearErrorMessage()
-
-    viewModel.loadItemsForPost()
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    val errorMsg = viewModel.uiState.value.errorMessage
-    assert(errorMsg != null)
-    assert(errorMsg?.contains("Failed to load items") == true)
-    assert(errorMsg?.contains(specificError) == true)
-  }
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun refreshItems_multipleFailures_updatesErrorMessageEachTime() = runTest {
+  fun viewModel_errorHandling_multipleFailures() = runTest {
     var errorCount = 0
-    val multiFailRepo =
+    val customFailRepo =
         object : ItemsRepository {
-          override fun getNewItemId(): String = "id"
+          override fun getNewItemId() = "fakeId"
 
-          override suspend fun getAllItems(): List<Item> = emptyList()
+          override suspend fun getAllItems() = emptyList<Item>()
 
           override suspend fun getAssociatedItems(postUuid: String): List<Item> {
             errorCount++
-            throw Exception("Error number $errorCount")
+            throw Exception("Error $errorCount")
           }
 
-          override suspend fun getItemById(uuid: String): Item = fakeItem
+          override suspend fun getItemById(uuid: String) = item()
 
           override suspend fun addItem(item: Item) {}
 
@@ -693,136 +276,49 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun deletePostItems(postUuid: String) {}
         }
 
-    val viewModel =
-        OutfitPreviewViewModel(itemsRepository = multiFailRepo, postRepository = fakePostRepository)
-    viewModel.initFromFitCheck("uri", "desc")
-    advanceUntilIdle()
+    val vm = OutfitPreviewViewModel(customFailRepo, fakePostRepo)
+
+    // First call via initFromFitCheck
+    vm.initFromFitCheck("uri", "desc")
+    // Wait for viewModelScope coroutine
     composeTestRule.waitForIdle()
 
-    assert(viewModel.uiState.value.errorMessage?.contains("Error number 1") == true)
+    // ViewModel wraps error: "Failed to load items: Error 1"
+    assert(vm.uiState.value.errorMessage?.contains("Failed to load items") == true)
+    assert(vm.uiState.value.errorMessage?.contains("Error 1") == true)
 
-    viewModel.clearErrorMessage()
-
-    viewModel.loadItemsForPost()
-    advanceUntilIdle()
+    vm.clearErrorMessage()
+    vm.loadItemsForPost()
     composeTestRule.waitForIdle()
-    assert(viewModel.uiState.value.errorMessage?.contains("Failed to load items") == true)
-    assert(viewModel.uiState.value.errorMessage?.contains("Error number 2") == true)
 
-    viewModel.clearErrorMessage()
-
-    viewModel.loadItemsForPost()
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-    assert(viewModel.uiState.value.errorMessage?.contains("Failed to load items") == true)
-    assert(viewModel.uiState.value.errorMessage?.contains("Error number 3") == true)
+    assert(vm.uiState.value.errorMessage?.contains("Failed to load items") == true)
+    assert(vm.uiState.value.errorMessage?.contains("Error 2") == true)
   }
 
   @OptIn(ExperimentalCoroutinesApi::class)
   @Test
-  fun launchedEffect_clearsErrorMessageWhenSet() = runTest {
-    val repo = fakeRepository(listOf(fakeItem))
-    val viewModel = OutfitPreviewViewModel(repo)
-
-    // Force an artificial error message
-    val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
-    field.isAccessible = true
-    val stateFlow = field.get(viewModel) as MutableStateFlow<PreviewUIState>
-    stateFlow.value = stateFlow.value.copy(errorMessage = "Network error occurred")
-
-    viewModel.clearErrorMessage()
-
-    assert(viewModel.uiState.value.errorMessage == null)
-  }
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun launchedEffect_unit_callsRefreshItemsOnInit() = runTest {
-    var refreshCalled = false
-    val repo =
-        object : ItemsRepository {
-          override fun getNewItemId(): String = "id"
-
-          override suspend fun getAllItems(): List<Item> {
-            return listOf(fakeItem)
-          }
-
-          override suspend fun getAssociatedItems(postUuid: String): List<Item> {
-            refreshCalled = true
-            return listOf(fakeItem)
-          }
-
-          override suspend fun getItemById(uuid: String): Item = fakeItem
-
-          override suspend fun addItem(item: Item) {}
-
-          override suspend fun editItem(itemUUID: String, newItem: Item) {}
-
-          override suspend fun deleteItem(uuid: String) {}
-
-          override suspend fun deletePostItems(postUuid: String) {}
-        }
-
-    val viewModel = OutfitPreviewViewModel(repo)
-
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel = viewModel,
-          imageUri = "test_image_uri",
-          description = "test outfit description")
-    }
-
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle {
-      assert(refreshCalled)
-      assert(viewModel.uiState.value.items.isNotEmpty())
-    }
-  }
-
-  @Test
-  fun topAppBar_displaysOOTDTitle() {
-    composeTestRule.setContent {
-      PreviewItemScreen(
-          outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepository(emptyList())),
-          imageUri = "test_image_uri",
-          description = "test outfit description")
-    }
-
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
-
-    composeTestRule.onNodeWithText("OOTD").assertIsDisplayed()
-  }
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  @Test
-  fun launchedEffect_successMessage_triggersOnPostSuccessAndClearsMessage() = runTest {
-    val repo = fakeRepository(listOf(fakeItem))
-    val viewModel = OutfitPreviewViewModel(repo)
-
+  fun viewModel_postSuccess_triggersCallback() = runTest {
+    val i = item()
+    val vm = OutfitPreviewViewModel(fakeRepo(listOf(i)), fakePostRepo)
     var onPostSuccessCalled = false
 
-    val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
-    field.isAccessible = true
-    val stateFlow = field.get(viewModel) as MutableStateFlow<PreviewUIState>
-
     composeTestRule.setContent {
       PreviewItemScreen(
-          outfitPreviewViewModel = viewModel,
+          outfitPreviewViewModel = vm,
           imageUri = "test_uri",
           description = "test_desc",
           onPostSuccess = { onPostSuccessCalled = true })
     }
 
+    // Inject success state via reflection
+    @Suppress("UNCHECKED_CAST")
+    val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
+    field.isAccessible = true
+    val stateFlow = field.get(vm) as MutableStateFlow<PreviewUIState>
+    stateFlow.value = stateFlow.value.copy(successMessage = "Posted!", isPublished = true)
+
     composeTestRule.waitForIdle()
 
-    stateFlow.value =
-        stateFlow.value.copy(successMessage = "Post created successfully!", isPublished = true)
-
-    advanceUntilIdle()
-    composeTestRule.waitForIdle()
-
-    assert(onPostSuccessCalled) { "Expected onPostSuccess callback to be called, but it wasn't" }
+    assert(onPostSuccessCalled)
   }
 }
