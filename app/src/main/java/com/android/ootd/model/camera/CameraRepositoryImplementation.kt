@@ -88,7 +88,14 @@ class CameraRepositoryImplementation : CameraRepository {
           override fun onError(exception: ImageCaptureException) {
             val errorMsg = "Photo capture failed: ${exception.message}"
             Log.e(TAG, errorMsg, exception)
-            runCatching { if (photoFile.exists()) photoFile.delete() }
+            runCatching {
+              if (photoFile.exists()) {
+                val deleted = photoFile.delete()
+                if (!deleted) {
+                  Log.w(TAG, "Failed to delete temporary photo file: ${photoFile.absolutePath}")
+                }
+              }
+            }
             onError(errorMsg)
           }
         })
