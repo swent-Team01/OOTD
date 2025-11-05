@@ -92,14 +92,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun getUser(userID: String): User {
     return try {
-      val documentList =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+      val userDoc =
+          db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
-      if (documentList.documents.isEmpty()) {
+      if (userDoc.exists()) {
         throw NoSuchElementException("User with ID $userID not found")
       }
 
-      transformUserDocument(documentList.documents[0])
+      transformUserDocument(userDoc)
           ?: throw IllegalStateException("Failed to transform document with ID $userID")
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error getting user $userID: ${e.message}", e)
@@ -110,13 +110,13 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun userExists(userID: String): Boolean {
     return try {
       val querySnapshot =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+          db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
-      if (querySnapshot.documents.isEmpty()) {
+      if (!querySnapshot.exists()) {
         false
       } else {
-        val username = querySnapshot.documents[0].getString("username")
-        !username.isNullOrBlank()
+        val uid = querySnapshot.getString("uid")
+        !uid.isNullOrBlank()
       }
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)
@@ -126,10 +126,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun addUser(user: User) {
     try {
-      val existingDoc =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", user.uid).get().await()
-
-      if (!existingDoc.documents.isEmpty()) {
+      if (!userExists(user.uid)) {
         throw IllegalArgumentException("User with UID ${user.uid} already exists")
       }
 
@@ -150,14 +147,13 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       }
       // Check if user exists
       val querySnapshot =
-          db.collection(USER_COLLECTION_PATH).whereEqualTo("uid", userID).get().await()
+          db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
-      if (querySnapshot.documents.isEmpty()) {
+      if (!querySnapshot.exists()) {
         throw NoSuchElementException("User with ID $userID not found")
       }
 
-      val userDocument = querySnapshot.documents[0]
-      val currentUsername = userDocument.getString("username")
+      val currentUsername = querySnapshot.getString("username")
 
       if (currentUsername == newUsername) {
         Log.d("UserRepositoryFirestore", "Username is already $newUsername for user $userID")
