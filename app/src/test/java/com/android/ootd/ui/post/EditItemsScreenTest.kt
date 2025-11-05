@@ -113,6 +113,7 @@ class EditItemsScreenTest {
     mockViewModel.loadItem(
         Item(
             itemUuid = "test-id",
+            postUuids = listOf("test_post_uuid"),
             image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = null,
@@ -208,6 +209,7 @@ class EditItemsScreenTest {
     val item =
         Item(
             itemUuid = "test-id",
+            postUuids = listOf("test_post_uuid"),
             image = ImageData("test-image-id", "https://example.com/test.jpg"),
             category = "Clothing",
             type = "T-shirt",

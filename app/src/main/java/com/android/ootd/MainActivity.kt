@@ -2,6 +2,7 @@ package com.android.ootd
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +34,7 @@ import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.consent.BetaConsentScreen
 import com.android.ootd.ui.consent.BetaConsentViewModel
 import com.android.ootd.ui.feed.FeedScreen
+import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -43,7 +45,16 @@ import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import okhttp3.OkHttpClient
 
+/**
+ * Provide an OkHttpClient client for network requests.
+ *
+ * Property `client` is mutable for testing purposes.
+ */
+object HttpClientProvider {
+  var client: OkHttpClient = OkHttpClient()
+}
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,7 +102,8 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.Account.route)
+              Screen.Account.route,
+              Screen.Map.route)
 
   Scaffold(
       bottomBar = {
@@ -168,11 +180,11 @@ fun OOTDApp(
               navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
                 composable(Screen.Feed.route) {
                   FeedScreen(
-                      onAddPostClick = {
-                        navigationActions.navigateTo(Screen.FitCheck)
-                      }, // this will go to AddItemScreen
+                      onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
-                      onAccountIconClick = { navigationActions.navigateTo(Screen.Account) })
+                      onNotificationIconClick = {
+                        /** TODO: Implement Notifications screen * */
+                      })
                 }
                 composable(Screen.SearchScreen.route) {
                   UserSearchScreen(onBack = { navigationActions.goBack() })
@@ -182,32 +194,76 @@ fun OOTDApp(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
+                composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
 
                 composable(Screen.InventoryScreen.route) { InventoryScreen() }
 
-                composable(Screen.FitCheck.route) {
-                  FitCheckScreen(
-                      onNextClick = { navigationActions.navigateTo(Screen.PreviewItemScreen) },
-                      onBackClick = { navigationActions.goBack() })
-                }
+                composable(
+                    route = Screen.FitCheck.route,
+                    arguments =
+                        listOf(
+                            navArgument("postUuid") {
+                              type = NavType.StringType
+                              defaultValue = ""
+                            })) { backStackEntry ->
+                      val postUuid = backStackEntry.arguments?.getString("postUuid") ?: ""
 
-                composable(Screen.PreviewItemScreen.route) {
-                  PreviewItemScreen(
-                      onEditItem = { itemUuid ->
-                        navigationActions.navigateTo(Screen.EditItem(itemUuid))
-                      },
-                      onAddItem = { navigationActions.navigateTo(Screen.AddItemScreen) },
-                      onPostOutfit = { navigationActions.popUpTo(Screen.Feed.route) },
-                      onGoBack = { navigationActions.goBack() },
-                  )
-                }
+                      FitCheckScreen(
+                          postUuid = postUuid,
+                          onNextClick = { imageUri, description ->
+                            navigationActions.navigateTo(
+                                Screen.PreviewItemScreen(imageUri, description))
+                          },
+                          onBackClick = {
+                            // later we'll use postUuid to delete items
+                            navigationActions.goBack()
+                          })
+                    }
 
-                composable(Screen.AddItemScreen.route) {
-                  AddItemsScreen(
-                      onNextScreen = { navigationActions.popUpTo(Screen.PreviewItemScreen.route) },
-                      goBack = { navigationActions.goBack() },
-                  )
-                }
+                composable(
+                    route = Screen.PreviewItemScreen.route,
+                    arguments =
+                        listOf(
+                            navArgument("imageUri") { type = NavType.StringType },
+                            navArgument("description") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val imageUri = backStackEntry.arguments?.getString("imageUri") ?: ""
+                      val description = backStackEntry.arguments?.getString("description") ?: ""
+
+                      PreviewItemScreen(
+                          imageUri = imageUri,
+                          description = description,
+                          onAddItem = { postUuid ->
+                            navController.navigate(Screen.AddItemScreen(postUuid).route)
+                          },
+                          onEditItem = { itemUuid ->
+                            navController.navigate(Screen.EditItem(itemUuid).route)
+                          },
+                          onPostSuccess = {
+                            Log.d("Navigation", "Post successful, navigating to Feed")
+                            navController.navigate(Screen.Feed.route) {
+                              popUpTo(Screen.Feed.route) { inclusive = true }
+                              launchSingleTop = true
+                            }
+                          },
+                          onGoBack = { postUuid ->
+                            navController.navigate(Screen.FitCheck(postUuid).route) {
+                              popUpTo(Screen.Feed.route) { inclusive = false }
+                              launchSingleTop = true
+                            }
+                          })
+                    }
+
+                composable(
+                    route = Screen.AddItemScreen.route,
+                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val postUuid = backStackEntry.arguments?.getString("postUuid") ?: ""
+                      AddItemsScreen(
+                          postUuid = postUuid,
+                          onNextScreen = { navController.popBackStack() },
+                          goBack = { navController.popBackStack() })
+                    }
 
                 /* TODO: add navigation to ProfileScreen*/
                 // Navigation to User Profile screen is not yet implemented

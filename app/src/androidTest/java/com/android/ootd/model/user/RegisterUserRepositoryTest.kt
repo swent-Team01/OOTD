@@ -2,6 +2,8 @@ package com.android.ootd.model.user
 
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.ui.register.RegisterViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -33,6 +35,8 @@ class RegisterViewModelTest {
   private lateinit var userRepository: UserRepository
   private lateinit var accountRepository: AccountRepository
   private lateinit var accountService: AccountService
+
+  private lateinit var locationRepository: LocationRepository
   private lateinit var auth: FirebaseAuth
   private lateinit var firebaseUser: FirebaseUser
   private lateinit var viewModel: RegisterViewModel
@@ -40,12 +44,16 @@ class RegisterViewModelTest {
   private val testUid = "test-uid-123"
   private val testEmail = "test@example.com"
 
+  private val EPFL_LOCATION =
+      Location(46.5191, 6.5668, "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
+
   @Before
   fun setUp() {
     Dispatchers.setMain(testDispatcher)
     userRepository = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
     accountService = mockk(relaxed = true)
+    locationRepository = mockk(relaxed = true)
     auth = mockk(relaxed = true)
     firebaseUser = mockk(relaxed = true)
 
@@ -54,7 +62,12 @@ class RegisterViewModelTest {
     every { firebaseUser.email } returns testEmail
     every { accountService.currentUser } returns flowOf(firebaseUser)
 
-    viewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+    viewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
+
+    // Set a default location for all tests to prevent MissingLocationException
+    viewModel.setLocation(EPFL_LOCATION)
   }
 
   @After
@@ -67,7 +80,7 @@ class RegisterViewModelTest {
     val username = "validUser123"
     val dateOfBirth = "01/01/2000"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -77,7 +90,7 @@ class RegisterViewModelTest {
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth)
+          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth, any())
     }
   }
 
@@ -85,7 +98,7 @@ class RegisterViewModelTest {
   fun registerUserWithValidUsername_setsRegisteredToTrueOnSuccess() = runTest {
     val username = "validUser123"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -166,14 +179,14 @@ class RegisterViewModelTest {
   fun registerUser_trimsWhitespaceBeforeValidation() = runTest {
     val username = "  validUser  "
     coEvery { userRepository.createUser("validUser", testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
     advanceUntilIdle()
 
     coVerify(exactly = 1) { userRepository.createUser("validUser", testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any(), any()) }
   }
 
   @Test
@@ -183,7 +196,7 @@ class RegisterViewModelTest {
         {
           kotlinx.coroutines.delay(100)
         }
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -212,7 +225,7 @@ class RegisterViewModelTest {
   fun markRegisteredHandled_resetsRegisteredFlag() = runTest {
     val username = "validUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -242,7 +255,7 @@ class RegisterViewModelTest {
   fun registerUserWithValidUsernameContainingUnderscores_succeeds() = runTest {
     val username = "valid_user_123"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -250,14 +263,14 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) }
   }
 
   @Test
   fun registerUserWithExactly3Characters_succeeds() = runTest {
     val username = "abc"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -265,14 +278,14 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any(), any()) }
   }
 
   @Test
   fun registerUserWithExactly20Characters_succeeds() = runTest {
     val username = "a".repeat(20)
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -280,7 +293,7 @@ class RegisterViewModelTest {
 
     assertTrue(viewModel.uiState.value.registered)
     coVerify(exactly = 1) { userRepository.createUser(username, testUid) }
-    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any()) }
+    coVerify(exactly = 1) { accountRepository.createAccount(any(), any(), any(), any()) }
   }
 
   @Test
@@ -293,7 +306,7 @@ class RegisterViewModelTest {
 
     val validUsername = "validUser"
     coEvery { userRepository.createUser(validUsername, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(validUsername)
     viewModel.registerUser()
@@ -315,7 +328,7 @@ class RegisterViewModelTest {
     val username = "testUser"
     val dateOfBirth = "15/03/1995"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -324,7 +337,7 @@ class RegisterViewModelTest {
 
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth)
+          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth, any())
     }
   }
 
@@ -332,7 +345,7 @@ class RegisterViewModelTest {
   fun registerUser_usesEmptyDateIfNotSet() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     // Don't set dateOfBirth - should use default empty string
@@ -341,7 +354,7 @@ class RegisterViewModelTest {
 
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, testEmail, "")
+          match { it.uid == testUid && it.username == username }, testEmail, "", any())
     }
   }
 
@@ -349,7 +362,7 @@ class RegisterViewModelTest {
   fun registerUser_accountCreationFailure_stopsLoading() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } throws
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } throws
         Exception("Account error")
 
     viewModel.setUsername(username)
@@ -365,7 +378,7 @@ class RegisterViewModelTest {
     val dateOfBirth = "01/01/2000"
     val callOrder = mutableListOf<String>()
 
-    coEvery { accountRepository.createAccount(any(), any(), any()) } coAnswers
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } coAnswers
         {
           callOrder.add("accountRepository")
         }
@@ -389,7 +402,7 @@ class RegisterViewModelTest {
     val username = "testUser"
     val dateOfBirth = "01/01/2000"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -405,7 +418,7 @@ class RegisterViewModelTest {
   fun registerUser_accountCreationFails_registeredRemainsFalse() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } throws
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } throws
         Exception("Account creation failed")
 
     viewModel.setUsername(username)
@@ -421,7 +434,7 @@ class RegisterViewModelTest {
   fun registerUser_bothOperationsSucceed_noErrorMessage() = runTest {
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -439,7 +452,7 @@ class RegisterViewModelTest {
           // Check state during operation
           assertFalse(viewModel.uiState.value.registered)
         }
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.registerUser()
@@ -459,7 +472,7 @@ class RegisterViewModelTest {
     val username = "testUser"
     val dateOfBirth = "01/01/2000"
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     viewModel.setUsername(username)
     viewModel.setDateOfBirth(dateOfBirth)
@@ -468,7 +481,7 @@ class RegisterViewModelTest {
 
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth)
+          match { it.uid == testUid && it.username == username }, testEmail, dateOfBirth, any())
     }
   }
 
@@ -485,10 +498,15 @@ class RegisterViewModelTest {
     every { accountService.currentUser } returns flowOf(differentFirebaseUser)
 
     // Create new viewModel with updated auth
-    val newViewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+    val newViewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
+
+    // Set location for the new viewModel instance
+    newViewModel.setLocation(EPFL_LOCATION)
 
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     newViewModel.setUsername(username)
     newViewModel.registerUser()
@@ -496,7 +514,7 @@ class RegisterViewModelTest {
 
     coVerify(exactly = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, differentEmail, "")
+          match { it.uid == testUid && it.username == username }, differentEmail, "", any())
     }
   }
 
@@ -512,10 +530,15 @@ class RegisterViewModelTest {
     every { accountService.currentUser } returns flowOf(customFirebaseUser)
     every { auth.currentUser } returns customFirebaseUser
 
-    val testViewModel = RegisterViewModel(userRepository, accountRepository, accountService, auth)
+    val testViewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
+
+    // Set location for the test viewModel instance
+    testViewModel.setLocation(EPFL_LOCATION)
 
     coEvery { userRepository.createUser(username, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
 
     testViewModel.setUsername(username)
     testViewModel.registerUser()
@@ -523,7 +546,69 @@ class RegisterViewModelTest {
 
     // Verify that the custom email is passed to createAccount
     coVerify(exactly = 1) {
-      accountRepository.createAccount(match { it.username == username }, customEmail, "")
+      accountRepository.createAccount(match { it.username == username }, customEmail, "", any())
     }
+  }
+
+  // Location functionality tests
+  @Test
+  fun setLocation_updatesSelectedLocationAndQuery() = runTest {
+    val location = com.android.ootd.model.map.Location(48.8566, 2.3522, "Paris")
+
+    viewModel.setLocation(location)
+
+    assertEquals(location, viewModel.uiState.value.selectedLocation)
+    assertEquals("Paris", viewModel.uiState.value.locationQuery)
+  }
+
+  @Test
+  fun setLocationQuery_withEmptyQuery_clearsSuggestions() = runTest {
+    viewModel.setLocationQuery("")
+    advanceUntilIdle()
+
+    assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun setLocationQuery_withNonEmptyQuery_fetchesSuggestions() = runTest {
+    val mockLocations =
+        listOf(Location(48.8566, 2.3522, "Paris"), Location(51.5074, -0.1278, "London"))
+    coEvery { locationRepository.search("Par") } returns mockLocations
+
+    viewModel.setLocationQuery("Par")
+    advanceUntilIdle()
+
+    assertEquals(mockLocations, viewModel.uiState.value.locationSuggestions)
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun clearLocationSuggestions_clearsTheList() = runTest {
+    val mockLocations = listOf(Location(48.8566, 2.3522, "Paris"))
+    viewModel.setLocationSuggestions(mockLocations)
+
+    viewModel.clearLocationSuggestions()
+
+    assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
+  }
+
+  @Test
+  fun registerUser_withMissingLocation_showsError() = runTest {
+    // Create a fresh viewModel without setting location
+    val freshViewModel =
+        RegisterViewModel(
+            userRepository, accountRepository, accountService, locationRepository, auth)
+
+    freshViewModel.setUsername("validUser123")
+    freshViewModel.setDateOfBirth("01/01/2000")
+    // Don't set location - should cause error
+
+    freshViewModel.registerUser()
+    advanceUntilIdle()
+
+    assertEquals(
+        "Please select a location before registering", freshViewModel.uiState.value.errorMsg)
+    assertFalse(freshViewModel.uiState.value.registered)
   }
 }

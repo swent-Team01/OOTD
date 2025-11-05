@@ -28,3 +28,10 @@ fun ComposeTestRule.enterDate(date: String) {
   onNodeWithText("Confirm").performClick()
   waitForIdle()
 }
+
+fun ComposeTestRule.enterLocation(text: String) {
+  onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION).performClick()
+  onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+      .performTextInput(text)
+  waitForIdle()
+}
