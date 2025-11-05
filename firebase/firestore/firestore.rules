@@ -21,7 +21,12 @@ service cloud.firestore {
     // Users: read any, write own
     match /users/{userId} {
       allow read: if true;
-      allow write: if true;
+      allow create: if isAuthed()
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthed()
+                       && resource.data.uid == request.auth.uid;
+      allow delete: if isAuthed()
+           && (resource == null || resource.data.uid == request.auth.uid);
     }
 
     // Accounts: only owner can read/update, authenticated users can create
@@ -31,7 +36,6 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid;
       allow update: if isAuthed()
                        && resource.data.ownerId == request.auth.uid;
-
       allow delete: if isAuthed()
            && (resource == null || resource.data.ownerId == request.auth.uid);
     }
