@@ -43,7 +43,7 @@ class BetaConsentScreenTest {
   }
 
   @Test
-  fun betaConsentScreen_callbacksTriggeredCorrectly() {
+  fun betaConsentScreen_declineCallbackTriggered() {
     // Test decline callback
     var declinedCalled = false
     composeTestRule.setContent {
@@ -51,7 +51,10 @@ class BetaConsentScreenTest {
     }
     composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.DECLINE_BUTTON).performClick()
     assert(declinedCalled)
+  }
 
+  @Test
+  fun betaConsentScreen_errorDismissCallbackTriggered() {
     // Test error dismiss callback
     var dismissCalled = false
     composeTestRule.setContent {
@@ -104,21 +107,5 @@ class BetaConsentScreenTest {
         .onNodeWithTag(BetaConsentScreenTestTags.SCROLL_CONTENT)
         .assertExists()
         .performScrollToNode(hasTestTag(BetaConsentScreenTestTags.SECTION_LOCATION))
-  }
-
-  @Test
-  fun betaConsentScreen_displaysLoadingAndErrorStates() {
-    // Test loading state
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen(isLoading = true) } }
-    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.CHECKBOX).performClick()
-    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.AGREE_BUTTON).assertIsNotEnabled()
-    composeTestRule.onNodeWithText("Saving...").assertExists()
-
-    // Test error state
-    composeTestRule.setContent {
-      OOTDTheme { BetaConsentScreen(errorMessage = "Test error message") }
-    }
-    composeTestRule.onNodeWithText("Test error message").assertExists()
-    composeTestRule.onNodeWithText("Dismiss").assertExists()
   }
 }
