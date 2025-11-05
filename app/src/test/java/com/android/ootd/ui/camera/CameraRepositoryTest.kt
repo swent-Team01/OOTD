@@ -232,7 +232,6 @@ class CameraRepositoryTest {
     assertTrue(result.isSuccess)
     val imageCapture = result.getOrNull()?.second
     assertNotNull(imageCapture)
-    // Verify ImageCapture was created (capture mode is an implementation detail)
   }
 
   @Test
@@ -281,6 +280,7 @@ class CameraRepositoryTest {
     verify { mockContext.cacheDir }
   }
 
+  // ========== Error Handling Tests ==========
   @Test
   fun `capturePhoto handles null error message gracefully`() {
     val mockContext = mockk<Context>(relaxed = true)
@@ -311,8 +311,6 @@ class CameraRepositoryTest {
     assertNotNull(errorMessage)
     assertTrue(errorMessage!!.contains("Photo capture failed"))
   }
-
-  // ========== Error Handling Tests ==========
 
   @Test
   fun `bindCamera handles lifecycle owner destruction gracefully`() {
