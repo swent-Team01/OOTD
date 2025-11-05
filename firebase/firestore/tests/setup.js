@@ -35,7 +35,8 @@ export async function setupFirestore(env, seed = {}) {
       const friendUids = (u.friendList ?? [])
         .filter(f => f && typeof f.uid === 'string' && f.uid.length > 0)
         .map(f => f.uid);
-      await db.collection('users').doc(u.uid).set({ ...u, friendUids });
+      // Ensure ownerId exists so security rules that check ownerId behave correctly
+      await db.collection('users').doc(u.uid).set({ ...u, friendUids, ownerId: u.uid });
     }
 
     // Posts
