@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  */
 data class EditItemsUIState(
     val itemId: String = "",
-    val postUuid: String = "",
+    val postUuids: List<String> = emptyList(),
     val image: ImageData = ImageData("", ""),
     val localPhotoUri: Uri? = null,
     val category: String = "",
@@ -91,7 +91,7 @@ open class EditItemsViewModel(
   override fun updateCategorySuggestionsState(
       state: EditItemsUIState,
       suggestions: List<String>
-  ): EditItemsUIState = state // Not used in EditItemsViewModel
+  ): EditItemsUIState = state
 
   override fun setPhotoState(
       state: EditItemsUIState,
@@ -112,6 +112,7 @@ open class EditItemsViewModel(
     _uiState.value =
         EditItemsUIState(
             itemId = item.itemUuid,
+            postUuids = item.postUuids,
             image = item.image,
             category = item.category,
             type = item.type ?: "",
@@ -162,7 +163,7 @@ open class EditItemsViewModel(
       val updatedItem =
           Item(
               itemUuid = state.itemId,
-              postUuids = listOf(state.postUuid),
+              postUuids = state.postUuids,
               image = finalImage,
               category = state.category,
               type = state.type,

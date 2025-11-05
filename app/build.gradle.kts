@@ -229,7 +229,7 @@ dependencies {
     implementation(libs.compose.material3)
 
     // Coil for image loading in Compose
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.coil.compose)
     implementation(libs.compose.activity)
     
     // CameraX
@@ -237,6 +237,9 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
+    
+    // ExifInterface for reading image orientation
+    implementation(libs.androidx.exifinterface)
     
     // Accompanist for permissions
     implementation(libs.accompanist.permissions)
