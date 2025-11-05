@@ -220,12 +220,12 @@ class AccountViewModel(
    * Upload an image to Firebase Storage.
    *
    * @param localPath the local path/URI of the image
-   * @param userId the user ID to use as the filename
    * @return the download URL of the uploaded image
    */
-  private suspend fun uploadImageToStorage(localPath: String, userId: String): String {
+  suspend fun uploadImageToStorage(localPath: String): String {
     if (localPath.isBlank()) return localPath
     return try {
+      val userId = authenticatedUserId
       val ref = storage.reference.child("profile_pictures/$userId.jpg")
       val fileUri = localPath.toUri()
       ref.putFile(fileUri).await()

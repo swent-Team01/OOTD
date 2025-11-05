@@ -86,8 +86,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     userRepository.addUser(user2)
 
     // Edit username: changing to existing username should fail (TakenUsernameException)
-    val taken =
-        runCatching { userRepository.editUser(user1.uid, user2.username) }.exceptionOrNull()
+    val taken = runCatching { userRepository.editUser(user1.uid, user2.username) }.exceptionOrNull()
     assert(taken is TakenUsernameException)
 
     // Edit username: changing to the same current username should no-op
@@ -104,10 +103,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     val blankId = runCatching { userRepository.editUser("", "newUsername") }.exceptionOrNull()
     assert(
         blankId is IllegalArgumentException && blankId.message?.contains("cannot be blank") == true)
-    val blankName = runCatching { userRepository.editUser(user1.uid, "") }.exceptionOrNull()
-    assert(
-        blankName is IllegalArgumentException &&
-            blankName.message?.contains("cannot be blank") == true)
+
     val editNf = runCatching { userRepository.editUser("missing", "new") }.exceptionOrNull()
     assert(editNf is NoSuchElementException)
 

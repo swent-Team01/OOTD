@@ -219,7 +219,7 @@ class AccountViewModelTest {
     advanceUntilIdle()
 
     coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "") }
-    coVerify(exactly = 0) { userRepository.editUsername(any(), any()) }
+    coVerify(exactly = 1) { userRepository.editUser(any(), "", "") }
   }
 
   @Test
