@@ -6,15 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
-import com.android.ootd.model.authentication.AccountService
-import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 
 data class FeedUiState(
@@ -25,7 +24,6 @@ data class FeedUiState(
 
 class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
-    private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {
 
@@ -37,41 +35,34 @@ class FeedViewModel(
   }
 
   private fun observeAuthAndLoadAccount() {
-    viewModelScope.launch {
-      accountService.currentUser
-          .distinctUntilChangedBy { it?.uid }
-          .collect { user ->
-            if (user == null) {
-              _uiState.value = FeedUiState()
-            } else {
-              try {
-                val acct = accountRepository.getAccount(user.uid)
-                setCurrentAccount(acct)
-              } catch (e: Exception) {
-                Log.e("FeedViewModel", "Failed to load account for uid=${user.uid}", e)
-                _uiState.value = _uiState.value.copy(currentAccount = null, feedPosts = emptyList())
-              }
-            }
+    Firebase.auth.addAuthStateListener { auth ->
+      val user = auth.currentUser
+      if (user == null) {
+        _uiState.value = FeedUiState()
+      } else {
+        viewModelScope.launch {
+          try {
+            val acct = accountRepository.getAccount(user.uid)
+            setCurrentAccount(acct)
+          } catch (e: Exception) {
+            Log.e("FeedViewModel", "Failed to load account", e)
+            _uiState.value = _uiState.value.copy(currentAccount = null, feedPosts = emptyList())
           }
-    }
-  }
-
-  fun refreshFeedFromFirestore() {
-    val account = _uiState.value.currentAccount
-    if (account != null) {
-      viewModelScope.launch {
-        val repoHasPosted = repository.hasPostedToday(account.uid)
-        val effectiveHasPosted = _uiState.value.hasPostedToday || repoHasPosted
-
-        // Always load the posts, they will be blurred if user has not posted today
-        val posts = repository.getFeedForUids(account.friendUids + account.uid)
-
-        _uiState.value = _uiState.value.copy(hasPostedToday = effectiveHasPosted, feedPosts = posts)
+        }
       }
     }
   }
 
-  fun setCurrentAccount(account: Account) {
+  fun refreshFeedFromFirestore() {
+    val account = _uiState.value.currentAccount ?: return
+    viewModelScope.launch {
+      val hasPosted = repository.hasPostedToday(account.uid)
+      val posts = repository.getFeedForUids(account.friendUids + account.uid)
+      _uiState.value = _uiState.value.copy(hasPostedToday = hasPosted, feedPosts = posts)
+    }
+  }
+
+  public fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
   }
 }
