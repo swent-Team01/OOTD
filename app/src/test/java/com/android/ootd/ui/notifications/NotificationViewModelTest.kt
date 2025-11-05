@@ -165,7 +165,7 @@ class NotificationsViewModelTest {
     coEvery { mockNotificationRepository.getNotificationsForReceiver("user1") } returns
         listOf(notification)
     coEvery { mockUserRepository.getUser("sender1") } returns user
-    coEvery { mockAccountRepository.addFriend("user1", "sender1") } returns Unit
+    coEvery { mockAccountRepository.addFriend("user1", "sender1") } returns true
     coEvery { mockNotificationRepository.deleteNotification(notification) } throws
         Exception("Delete failed")
 
