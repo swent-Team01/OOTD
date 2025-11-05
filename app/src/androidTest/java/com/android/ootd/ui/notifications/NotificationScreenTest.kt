@@ -69,6 +69,11 @@ class NotificationsScreenTest : FirestoreTest() {
   }
 
   @Test
+  fun testFollowRequestCardPreviewDisplayed() = runTest {
+    composeTestRule.setContent { FollowRequestCardPreview() }
+  }
+
+  @Test
   fun testEnableNotificationsDisplayed() = runTest {
     buildComposeTestRule(composeTestRule, overrideNotificationPopup = false)
     composeTestRule.onNodeWithTag(REQUEST_PERMISSION_BUTTON).assertIsDisplayed().performClick()
