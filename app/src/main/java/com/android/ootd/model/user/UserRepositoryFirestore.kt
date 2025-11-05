@@ -20,6 +20,8 @@ private data class UserDto(
     val profilePicture: String = ""
 )
 
+private val username_taken_exception = "Username already in use"
+
 private fun User.toDto(): UserDto {
   return UserDto(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
 }
@@ -65,8 +67,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun createUser(username: String, uid: String, profilePicture: String) {
 
     if (usernameExists(username)) {
-      Log.e("UserRepositoryFirestore", "Username already in use")
-      throw TakenUsernameException("Username already in use")
+      Log.e("UserRepositoryFirestore", username_taken_exception)
+      throw TakenUsernameException(username_taken_exception)
     }
 
     val newUser = User(uid, username, profilePicture)
@@ -166,7 +168,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       if (usernameExists(newUsername)) {
         Log.e("UserRepositoryFirestore", "Username $newUsername is already taken")
-        throw TakenUsernameException("Username already in use")
+        throw TakenUsernameException(username_taken_exception)
       }
 
       // Update the username
