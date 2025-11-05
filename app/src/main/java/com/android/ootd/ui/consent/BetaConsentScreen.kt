@@ -40,12 +40,16 @@ object BetaConsentScreenTestTags {
  * @param onAgree Callback when user agrees to the beta terms
  * @param onDecline Callback when user declines the beta terms
  * @param isLoading Whether the consent is being saved (shows loading indicator)
+ * @param errorMessage Error message to display, if any
+ * @param onErrorDismiss Callback when error message is dismissed
  */
 @Composable
 fun BetaConsentScreen(
     onAgree: () -> Unit = {},
     onDecline: () -> Unit = {},
     isLoading: Boolean = false,
+    errorMessage: String? = null,
+    onErrorDismiss: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
   var hasAgreed by remember { mutableStateOf(false) }
@@ -59,35 +63,35 @@ fun BetaConsentScreen(
               .background(colors.background)
               .testTag(BetaConsentScreenTestTags.SCREEN)) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
               // Header with icon
               Icon(
                   imageVector = Icons.Default.Info,
                   contentDescription = "Beta Program Info",
                   tint = colors.primary,
-                  modifier = Modifier.size(64.dp).padding(top = 32.dp))
+                  modifier = Modifier.size(48.dp).padding(top = 16.dp))
 
-              Spacer(modifier = Modifier.height(16.dp))
+              Spacer(modifier = Modifier.height(12.dp))
 
               // Title
               Text(
                   text = "OOTD Beta Program",
-                  style = typography.headlineLarge,
+                  style = typography.headlineMedium,
                   fontWeight = FontWeight.Bold,
                   color = colors.primary,
                   textAlign = TextAlign.Center,
                   modifier = Modifier.testTag(BetaConsentScreenTestTags.TITLE))
 
-              Spacer(modifier = Modifier.height(8.dp))
+              Spacer(modifier = Modifier.height(4.dp))
 
               Text(
                   text = "Data Collection & Usage Agreement",
-                  style = typography.titleMedium,
+                  style = typography.titleSmall,
                   color = colors.onSurfaceVariant,
                   textAlign = TextAlign.Center)
 
-              Spacer(modifier = Modifier.height(24.dp))
+              Spacer(modifier = Modifier.height(16.dp))
 
               // Scrollable content
               Card(
@@ -97,36 +101,38 @@ fun BetaConsentScreen(
                           .testTag(BetaConsentScreenTestTags.SCROLL_CONTENT),
                   colors = CardDefaults.cardColors(containerColor = Secondary)) {
                     Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
+                        modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
                           // Introduction
                           Text(
                               text = "Welcome to the OOTD Beta!",
-                              style = typography.titleLarge,
+                              style = typography.titleMedium,
                               fontWeight = FontWeight.Bold,
                               color = colors.onSurfaceVariant)
 
-                          Spacer(modifier = Modifier.height(12.dp))
+                          Spacer(modifier = Modifier.height(8.dp))
 
                           Text(
                               text =
                                   "Thank you for participating in our beta program. To help us improve OOTD and create the best outfit-sharing experience, we collect and analyze certain data during this testing phase.",
-                              style = typography.bodyMedium,
+                              style = typography.bodySmall,
                               color = colors.onSurfaceVariant)
+
+                          Spacer(modifier = Modifier.height(8.dp))
 
                           Text(
                               text =
-                                  "This app is created for the course CS-311 at EPFL, it's still in active developement so if you enconter any bugs or just want to share feedback with us, feel free to reach out to us !",
-                              style = typography.bodyMedium,
+                                  "This app is created for the course CS-311 at EPFL. It's still in active development, so if you encounter any bugs or just want to share feedback with us, feel free to reach out to us!",
+                              style = typography.bodySmall,
                               color = colors.onSurfaceVariant)
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(16.dp))
 
                           HorizontalDivider(
                               Modifier,
                               DividerDefaults.Thickness,
                               color = colors.outline.copy(alpha = 0.3f))
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           // Data Collection Section
                           SectionHeader(
@@ -135,7 +141,7 @@ fun BetaConsentScreen(
                                   Modifier.testTag(
                                       BetaConsentScreenTestTags.SECTION_DATA_COLLECTION))
 
-                          Spacer(modifier = Modifier.height(12.dp))
+                          Spacer(modifier = Modifier.height(8.dp))
 
                           // Photos Section
                           DataCollectionItem(
@@ -145,47 +151,47 @@ fun BetaConsentScreen(
                                   "All photos you take or upload through the app, including outfit photos, clothing item images, and profile pictures. These images are stored on Firebase Storage and used to:",
                               bulletPoints =
                                   listOf(
-                                      "Improved our compression algorithm",
-                                      "Better understand the items the user wear"),
+                                      "Improve our compression algorithm",
+                                      "Better understand the items users wear"),
                               modifier = Modifier.testTag(BetaConsentScreenTestTags.SECTION_PHOTOS))
 
-                          Spacer(modifier = Modifier.height(16.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           // Location Section
                           DataCollectionItem(
                               icon = "📍",
                               title = "Location Data",
                               description =
-                                  "Your location is taken when you create your profile. And you can choose to add the location of the post you make. This data helps us:",
+                                  "Your location is taken when you create your profile. You can also choose to add the location to posts you make. This data helps us:",
                               bulletPoints =
                                   listOf(
-                                      "Make an algo that suggest friends that posts around you",
-                                      "Know were our user post from and when"),
+                                      "Suggest friends who post around you with our algorithm",
+                                      "Understand where our users post from and when"),
                               note =
-                                  "Location is only collected when you choose to, not continuously in the background.",
+                                  "Location is only collected when you choose to share it, not continuously in the background.",
                               modifier =
                                   Modifier.testTag(BetaConsentScreenTestTags.SECTION_LOCATION))
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           HorizontalDivider(
                               Modifier,
                               DividerDefaults.Thickness,
                               color = colors.outline.copy(alpha = 0.3f))
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           // How We Use Data
                           SectionHeader(title = "How We Use Your Data")
 
-                          Spacer(modifier = Modifier.height(12.dp))
+                          Spacer(modifier = Modifier.height(8.dp))
 
                           Text(
                               text = "During the beta phase, your data is used exclusively to:",
-                              style = typography.bodyMedium,
+                              style = typography.bodySmall,
                               color = colors.onSurfaceVariant)
 
-                          Spacer(modifier = Modifier.height(8.dp))
+                          Spacer(modifier = Modifier.height(4.dp))
 
                           BulletPoint("Improve app functionality, performance, and user experience")
                           BulletPoint("Identify and fix bugs and technical issues")
@@ -194,29 +200,29 @@ fun BetaConsentScreen(
                               "Conduct internal analytics to understand user behavior and preferences")
                           BulletPoint("Enhance our AI and machine learning models")
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           HorizontalDivider(
                               Modifier,
                               DividerDefaults.Thickness,
                               color = colors.outline.copy(alpha = 0.3f))
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           // Your Rights
                           SectionHeader(title = "Your Rights & Privacy")
 
-                          Spacer(modifier = Modifier.height(12.dp))
+                          Spacer(modifier = Modifier.height(8.dp))
 
                           InfoBox(
                               text =
                                   "• Your data is never sold to third parties\n" +
-                                      "• We implement security measures to protect your information on the local device and on the databases\n" +
+                                      "• We implement security measures to protect your information on the local device and in the databases\n" +
                                       "• You can request deletion of your data at any time by contacting us\n" +
                                       "• You can withdraw from the beta program at any time\n" +
-                                      "• All data collection are used to improve the app in the context of this course")
+                                      "• All data collection is used to improve the app in the context of this course")
 
-                          Spacer(modifier = Modifier.height(20.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           // Beta Specific Notice
                           Card(
@@ -224,23 +230,23 @@ fun BetaConsentScreen(
                                   CardDefaults.cardColors(
                                       containerColor = colors.primaryContainer)) {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier.padding(8.dp),
                                     verticalAlignment = Alignment.CenterVertically) {
                                       Icon(
                                           imageVector = Icons.Default.Info,
                                           contentDescription = null,
                                           tint = colors.onPrimaryContainer,
-                                          modifier = Modifier.size(24.dp))
-                                      Spacer(modifier = Modifier.width(12.dp))
+                                          modifier = Modifier.size(20.dp))
+                                      Spacer(modifier = Modifier.width(8.dp))
                                       Text(
                                           text =
-                                              "This is a beta version. Data collection practices may change as we prepare for the official launch. You'll be notified of any significant changes. As you will to download a new APK",
+                                              "This is a beta version. Data collection practices may change as we prepare for the official launch. You'll be notified of any significant changes. You will need to download a new APK for updates.",
                                           style = typography.bodySmall,
                                           color = colors.onPrimaryContainer)
                                     }
                               }
 
-                          Spacer(modifier = Modifier.height(16.dp))
+                          Spacer(modifier = Modifier.height(12.dp))
 
                           Text(
                               text =
@@ -249,16 +255,16 @@ fun BetaConsentScreen(
                               color = colors.onSurfaceVariant,
                               fontWeight = FontWeight.Medium)
 
-                          Spacer(modifier = Modifier.height(8.dp))
+                          Spacer(modifier = Modifier.height(4.dp))
 
                           Text(
-                              text = "Last updated: November 1, 2025",
+                              text = "Last updated: November 5, 2025",
                               style = typography.bodySmall,
                               color = colors.onSurfaceVariant.copy(alpha = 0.6f))
                         }
                   }
 
-              Spacer(modifier = Modifier.height(24.dp))
+              Spacer(modifier = Modifier.height(16.dp))
 
               // Checkbox agreement
               Row(
@@ -274,11 +280,11 @@ fun BetaConsentScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "I agree to the data collection and usage terms described above",
-                        style = typography.bodyMedium,
+                        style = typography.bodySmall,
                         color = colors.onSurface)
                   }
 
-              Spacer(modifier = Modifier.height(24.dp))
+              Spacer(modifier = Modifier.height(12.dp))
 
               // Action buttons
               Row(
@@ -291,7 +297,7 @@ fun BetaConsentScreen(
                         colors =
                             ButtonDefaults.outlinedButtonColors(
                                 contentColor = colors.onSurfaceVariant)) {
-                          Text("Decline", style = typography.titleMedium)
+                          Text("Decline", style = typography.titleSmall)
                         }
 
                     Button(
@@ -302,24 +308,39 @@ fun BetaConsentScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = colors.primary)) {
                           if (isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(16.dp),
                                 color = colors.onPrimary,
                                 strokeWidth = 2.dp)
                           } else {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp))
+                                modifier = Modifier.size(16.dp))
                           }
-                          Spacer(modifier = Modifier.width(8.dp))
+                          Spacer(modifier = Modifier.width(6.dp))
                           Text(
                               if (isLoading) "Saving..." else "Agree & Continue",
-                              style = typography.titleMedium)
+                              style = typography.titleSmall)
                         }
                   }
 
-              Spacer(modifier = Modifier.height(16.dp))
+              Spacer(modifier = Modifier.height(8.dp))
             }
+
+        // Error Snackbar
+        if (errorMessage != null) {
+          Snackbar(
+              modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp),
+              action = {
+                TextButton(onClick = onErrorDismiss) {
+                  Text("Dismiss", style = MaterialTheme.typography.labelSmall)
+                }
+              },
+              containerColor = MaterialTheme.colorScheme.errorContainer,
+              contentColor = MaterialTheme.colorScheme.onErrorContainer) {
+                Text(errorMessage, style = MaterialTheme.typography.bodySmall)
+              }
+        }
       }
 }
 
@@ -327,7 +348,7 @@ fun BetaConsentScreen(
 private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
   Text(
       text = title,
-      style = MaterialTheme.typography.titleLarge,
+      style = MaterialTheme.typography.titleMedium,
       fontWeight = FontWeight.Bold,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       modifier = modifier)
@@ -344,31 +365,31 @@ private fun DataCollectionItem(
 ) {
   Column(modifier = modifier) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(text = icon, style = MaterialTheme.typography.headlineSmall)
-      Spacer(modifier = Modifier.width(12.dp))
+      Text(text = icon, style = MaterialTheme.typography.titleLarge)
+      Spacer(modifier = Modifier.width(8.dp))
       Text(
           text = title,
-          style = MaterialTheme.typography.titleMedium,
+          style = MaterialTheme.typography.titleSmall,
           fontWeight = FontWeight.SemiBold,
           color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(6.dp))
 
     Text(
         text = description,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(6.dp))
 
     bulletPoints.forEach { point ->
       BulletPoint(point)
-      Spacer(modifier = Modifier.height(4.dp))
+      Spacer(modifier = Modifier.height(2.dp))
     }
 
     if (note != null) {
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(6.dp))
       Card(
           colors =
               CardDefaults.cardColors(
@@ -377,7 +398,7 @@ private fun DataCollectionItem(
                 text = "Note: $note",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.padding(8.dp))
+                modifier = Modifier.padding(6.dp))
           }
     }
   }
@@ -388,11 +409,11 @@ private fun BulletPoint(text: String) {
   Row(modifier = Modifier.padding(start = 8.dp)) {
     Text(
         text = "• ",
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
   }
 }

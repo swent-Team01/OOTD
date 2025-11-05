@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.credentials.CredentialManager
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -33,6 +34,7 @@ import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.consent.BetaConsentScreen
 import com.android.ootd.ui.consent.BetaConsentViewModel
+import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
@@ -104,7 +106,9 @@ fun OOTDApp(
               Screen.Account.route,
               Screen.Map.route)
 
-  val betaConsentViewModel = remember { BetaConsentViewModel(context) }
+  // Create ViewModel using factory to properly inject SharedPreferences
+  val betaConsentViewModel: BetaConsentViewModel =
+      viewModel(factory = BetaConsentViewModelFactory(context))
 
   Scaffold(
       bottomBar = {
@@ -139,6 +143,7 @@ fun OOTDApp(
                 composable(Screen.BetaConsent.route) {
                   val consentSaved by betaConsentViewModel.consentSaved.collectAsState()
                   val isLoading by betaConsentViewModel.isLoading.collectAsState()
+                  val error by betaConsentViewModel.error.collectAsState()
 
                   // Navigate to Feed when consent is successfully saved
                   LaunchedEffect(consentSaved) {
@@ -154,7 +159,9 @@ fun OOTDApp(
                         // If user declines, sign them out and return to authentication
                         navigationActions.navigateTo(Screen.Authentication)
                       },
-                      isLoading = isLoading)
+                      isLoading = isLoading,
+                      errorMessage = error,
+                      onErrorDismiss = { betaConsentViewModel.clearError() })
                 }
               }
 
