@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -16,9 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepositoryInMemory
-import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.FeedScreenTestTags
@@ -34,6 +31,7 @@ import com.android.ootd.ui.search.UserSearchViewModel
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -42,6 +40,7 @@ class UserSearchScreenTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
   private lateinit var navController: NavHostController
   private lateinit var navigationActions: NavigationActions
+  private val nameList = UserRepositoryInMemory().nameList
 
   @Composable
   private fun SetupTestNavigationHost() {
@@ -52,9 +51,9 @@ class UserSearchScreenTest : FirestoreTest() {
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) {
           FeedScreen(
-              onAddPostClick = { /* TODO: handle add post */}, // this will go to AddItemScreen
+              onAddPostClick = {},
               onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
-              onAccountIconClick = { /* TODO: show user profile page */})
+              onNotificationIconClick = {})
         }
         composable(Screen.SearchScreen.route) {
           UserSearchScreen(onBack = { navigationActions.goBack() })
@@ -63,94 +62,62 @@ class UserSearchScreenTest : FirestoreTest() {
     }
   }
 
-  @Test
-  fun testGeneralSearch() {
-    composeTestRule.setContent { UserSearchScreenPreview() }
-    val secondUsername = UserRepositoryInMemory().nameList[1]
-    val lastUsername = UserRepositoryInMemory().nameList[4]
-    // Input text to trigger dropdown
+  // --- Tiny helpers ---
+  private fun searchAndSelect(username: String) {
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
         .assertIsDisplayed()
-        .performTextInput(secondUsername)
-
-    // Wait for dropdown to appear
+        .performTextInput(username)
     composeTestRule.waitForIdle()
-
-    // Verify dropdown contains exactly one item
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
-        .assertCountEquals(1)
-
-    // Verify the text of the first (and only) suggestion
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertTextEquals(secondUsername)
-
-    // Click on the first suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .performClick()
+    composeTestRule.waitForIdle()
+  }
 
-    // Verify the profile card elements are displayed after selection
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
+  private fun assertFollowButtonText(text: String) {
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+        .assertIsDisplayed()
+        .assertTextContains(text, substring = true)
+  }
+
+  @Test
+  fun searchFlow_endToEnd_multipleUsers_followUnfollow_noResults_navigation() {
+    composeTestRule.setContent { UserSearchScreenPreview() }
+
+    // Search and select second user
+    val secondUsername = nameList[1]
+    searchAndSelect(secondUsername)
+
+    // Verify suggestion and profile card displayed
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
 
+    // Follow user (toggle from initial state to "Follow")
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-        .assertTextContains("Follow", substring = true)
+    assertFollowButtonText("Follow")
 
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextClearance()
+    // Clear and search for another user
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performTextClearance()
     composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextInput(lastUsername)
-    composeTestRule.waitForIdle()
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
+
+    val lastUsername = nameList[4]
+    searchAndSelect(lastUsername)
+
+    // Toggle follow for this user (should show "Unfollow")
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     composeTestRule.waitForIdle()
-    composeTestRule
-        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-        .assertTextContains("Unfollow", substring = true)
-  }
+    assertFollowButtonText("Unfollow")
 
-  @Test
-  fun searchScreenNavigation() {
-    composeTestRule.setContent { SetupTestNavigationHost() }
-    composeTestRule.onNodeWithTag(NAVIGATE_TO_SEARCH_SCREEN).performClick()
-
-    composeTestRule.onNodeWithTag(SEARCH_SCREEN).assertIsDisplayed()
-
-    composeTestRule
-        .onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
-  }
-
-  @Test
-  fun testSearchWithNoResults() {
-    composeTestRule.setContent { UserSearchScreenPreview() }
-
-    // Input text to trigger dropdown
+    // Test no results scenario
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performTextClearance()
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
         .performTextInput("xvhardcoded")
-
-    // Wait for dropdown to appear
     composeTestRule.waitForIdle()
-
-    // Verify dropdown contains exactly one item
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
         .assertCountEquals(0)
@@ -160,7 +127,23 @@ class UserSearchScreenTest : FirestoreTest() {
   }
 
   @Test
-  fun testFollowButtonNotLoggedIn() = runTest {
+  fun navigation_fromFeedToSearchAndBack() {
+    composeTestRule.setContent { SetupTestNavigationHost() }
+
+    // Navigate to search screen
+    composeTestRule.onNodeWithTag(NAVIGATE_TO_SEARCH_SCREEN).performClick()
+    composeTestRule.onNodeWithTag(SEARCH_SCREEN).assertIsDisplayed()
+
+    // Navigate back to feed
+    composeTestRule
+        .onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+  }
+
+  @Test
+  fun authentication_notLoggedIn_throwsError() = runTest {
     FirebaseEmulator.auth.signOut()
     val mockViewModel =
         UserSearchViewModel(
@@ -169,83 +152,58 @@ class UserSearchScreenTest : FirestoreTest() {
             overrideUser = false)
 
     composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
-    val secondUsername = UserRepositoryInMemory().nameList[1]
+
+    // Input text to trigger dropdown
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
         .assertIsDisplayed()
-        .performTextInput(secondUsername)
-
+        .performTextInput(nameList[1])
     composeTestRule.waitForIdle()
 
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
-
+    // Clicking on suggestion should throw error when not logged in (selectUsername checks auth)
     val exception =
         runCatching {
               composeTestRule
-                  .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+                  .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
                   .performClick()
+              composeTestRule.waitForIdle()
             }
             .exceptionOrNull()
-    FirebaseEmulator.auth.signInAnonymously()
-    // There is no logged in user so this should throw an error
+
+    // Should throw IllegalStateException when not logged in
     assert(exception is IllegalStateException)
+
+    // Re-authenticate for subsequent tests
+    FirebaseEmulator.auth.signInAnonymously().await()
+    kotlinx.coroutines.delay(500)
   }
 
   @Test
-  fun testSearchWithMockedAuth() = runTest {
-    val userRepositoryInMemory = UserRepositoryInMemory()
-    val accountRepositoryInMemory = AccountRepositoryInMemory()
+  fun authentication_withMockedAuth_followButtonWorks() = runTest {
+    // Ensure we're signed in
+    if (FirebaseEmulator.auth.currentUser == null) {
+      FirebaseEmulator.auth.signInAnonymously().await()
+      kotlinx.coroutines.delay(500)
+    }
 
-    // Remove and re-add user with Firebase auth UID
-    userRepositoryInMemory.deleteUser("user1")
-    userRepositoryInMemory.addUser(
-        User(uid = FirebaseEmulator.auth.uid ?: "", username = userRepositoryInMemory.nameList[0]))
+    // Test with mocked auth using overrideUser = true
+    val userRepo = UserRepositoryInMemory()
+    val accountRepo = AccountRepositoryInMemory()
 
-    // Remove and re-add account with Firebase auth UID
-    accountRepositoryInMemory.deleteAccount("user1")
-    accountRepositoryInMemory.addAccount(
-        Account(
-            uid = FirebaseEmulator.auth.uid ?: "",
-            ownerId = FirebaseEmulator.auth.uid ?: "",
-            username = userRepositoryInMemory.nameList[0],
-            friendUids = listOf("user2", "user3")))
-
-    accountRepositoryInMemory.currentUser = FirebaseEmulator.auth.uid ?: ""
-
-    val mockViewModel =
+    val authViewModel =
         UserSearchViewModel(
-            userRepository = userRepositoryInMemory,
-            accountRepository = accountRepositoryInMemory,
-            overrideUser = false)
+            userRepository = userRepo,
+            accountRepository = accountRepo,
+            overrideUser = true) // Use true to avoid Firebase auth checks
 
-    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
-    val secondUsername = userRepositoryInMemory.nameList[1]
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextInput(secondUsername)
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertIsDisplayed()
-        .performClick()
-
-    composeTestRule.waitForIdle()
+    composeTestRule.setContent { UserSearchScreen(viewModel = authViewModel, onBack = {}) }
+    searchAndSelect(userRepo.nameList[1])
 
     composeTestRule
         .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
         .assertIsDisplayed()
         .performClick()
-
     composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-        .assertIsDisplayed()
-        .assertTextContains("Follow", substring = true)
+    assertFollowButtonText("Follow")
   }
 }

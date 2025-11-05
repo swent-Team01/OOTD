@@ -6,7 +6,6 @@ object NavigationTestTags {
    * "GoBackButton" const val TOP_BAR_TITLE = "TopBarTitle" const val OVERVIEW_TAB = "OverviewTab"
    * const val MAP_TAB = "MapTab"
    */
-  const val SPLASH = "Route_Splash"
   const val BOTTOM_NAVIGATION_MENU = "BottomNavigationMenu"
 
   fun getTabTestTag(tab: Tab): String =
@@ -15,5 +14,6 @@ object NavigationTestTags {
         is Tab.Search -> "SearchTab"
         is Tab.Inventory -> "InventoryTab"
         is Tab.Account -> "AccountTab"
+        is Tab.Map -> "MapTab"
       }
 }

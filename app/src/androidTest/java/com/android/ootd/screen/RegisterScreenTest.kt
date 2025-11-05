@@ -1,20 +1,28 @@
 package com.android.ootd.screen
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
+import io.mockk.coEvery
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -25,17 +33,21 @@ import org.junit.Test
  * Note: The main registration logic (checking if user exists in backend) is tested in
  * AuthenticationTest. These tests focus on UI component rendering, validation, and user
  * interactions with the registration form.
+ *
+ * Disclaimer: Parts of the code were done with AI
  */
 class RegisterScreenTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   private lateinit var viewModel: RegisterViewModel
   private lateinit var repository: UserRepository
+  private lateinit var locationRepository: LocationRepository
 
   @Before
   fun setUp() {
     repository = mockk(relaxed = true)
-    viewModel = RegisterViewModel(repository)
+    locationRepository = mockk(relaxed = true)
+    viewModel = RegisterViewModel(repository, locationRepository = locationRepository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
 
@@ -50,6 +62,8 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_DATE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()
@@ -180,17 +194,23 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun registerButton_enabled_whenBothFieldsValid() {
+  fun registerButton_enabled_whenAllFieldsValid() {
     composeTestRule.enterUsername("validUser")
     composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
         .performClick()
-
     composeTestRule.waitForIdle()
     composeTestRule.enterDate("10102020")
     composeTestRule.waitForIdle()
+
+    // Set a valid location
+    composeTestRule.runOnUiThread {
+      viewModel.setLocation(Location(47.0, 8.0, "Zürich, Switzerland"))
+    }
+    composeTestRule.waitForIdle()
+
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsEnabled()
   }
 
@@ -224,5 +244,196 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertDoesNotExist()
+  }
+
+  // ========== Location Selection Tests ==========
+
+  @Test
+  fun locationInput_showsMultipleSuggestions_and_closesAfterSelection() {
+    // Arrange: mock repository to return multiple suggestions
+    val suggestions =
+        listOf(
+            Location(47.3769, 8.5417, "Zürich, Switzerland"),
+            Location(46.2044, 6.1432, "Lausanne, Switzerland"),
+            Location(46.9481, 7.4474, "Bern, Switzerland"))
+
+    coEvery { locationRepository.search(any()) } returns suggestions
+
+    // Act: type to trigger dropdown
+    composeTestRule.enterLocation("Switz")
+    composeTestRule.waitForIdle()
+
+    // Assert: should show exactly 3 suggestions
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(3)
+
+    // Now select one suggestion to verify selection behavior and that the dropdown closes
+    // Arrange: mock repository to return a single suggestion for selection interaction
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    coEvery { locationRepository.search(any()) } returns listOf(testLocation)
+
+    // Act: type and click the first suggestion
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be selected and query updated
+    composeTestRule.runOnUiThread {
+      assertEquals(testLocation, viewModel.uiState.value.selectedLocation)
+      assertEquals(testLocation.name, viewModel.uiState.value.locationQuery)
+    }
+
+    // Assert: dropdown should be closed (suggestions cleared)
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationInput_clearsSelectedLocation_and_hidesWhenLosingFocus() {
+    // Arrange: set a location first
+    val initialLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocation(initialLocation) }
+    composeTestRule.waitForIdle()
+
+    // Mock repository for when user types new text
+    coEvery { locationRepository.search(any()) } returns emptyList()
+
+    // Act: type new text which should clear the selected location
+    composeTestRule.enterLocation("Lausanne")
+    composeTestRule.waitForIdle()
+
+    // Assert: selected location should be cleared
+    composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.selectedLocation) }
+
+    // Now show suggestions and then lose focus to ensure dropdown hides on blur
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Act: click another field to lose focus
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be hidden
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun registerButton_disabled_whenLocationError() {
+    composeTestRule.enterUsername("validUser")
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.enterDate("10102020")
+    composeTestRule.waitForIdle()
+
+    // Touch and leave location field without selecting
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Button should be disabled due to location error
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).assertIsNotEnabled()
+  }
+
+  @Test
+  fun errorMessage_triggersToast() {
+    // Set an error message directly in the viewModel
+    composeTestRule.runOnUiThread { viewModel.emitError("Test error message") }
+    composeTestRule.waitForIdle()
+
+    // The toast is displayed (we can't easily verify Toast content in tests,
+    // but we can verify the error was cleared after being shown)
+    composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.errorMsg) }
+  }
+
+  // ========== Dropdown Behavior Tests ==========
+
+  @Test
+  fun locationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused() {
+    // Arrange: focus the location field first
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+
+    // Mock repository to return suggestions
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+
+    // Act: type to trigger search
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should show suggestions automatically
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(1)
+  }
+
+  @Test
+  fun locationDropdown_hidesAutomatically_whenSuggestionsCleared() {
+    // Arrange: show suggestions first
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Act: clear suggestions via viewModel
+    composeTestRule.runOnUiThread { viewModel.clearLocationSuggestions() }
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be hidden
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationDropdown_hidesWhenLosingFocus() {
+    // Arrange: show suggestions
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { locationRepository.search(any()) } returns suggestions
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Act: click another field to lose focus
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should be hidden
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun locationDropdown_showsAgain_whenRefocusingWithExistingSuggestions() {
+    // Arrange: set suggestions and then blur the field
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(suggestions) }
+    composeTestRule.waitForIdle()
+
+    // Focus another field first
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
+    composeTestRule.waitForIdle()
+
+    // Act: refocus location field
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: dropdown should show again
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .assertCountEquals(1)
   }
 }

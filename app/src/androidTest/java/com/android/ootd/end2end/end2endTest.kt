@@ -9,11 +9,15 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
@@ -21,6 +25,9 @@ import com.android.ootd.screen.enterUsername
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
+import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
+import com.android.ootd.ui.navigation.NavigationTestTags
+import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags
@@ -62,6 +69,7 @@ class End2EndTest {
   private lateinit var mockAuthResult: AuthResult
   private lateinit var mockUserRepository: UserRepositoryFirestore
   private lateinit var mockAccountRepository: AccountRepositoryFirestore
+  private lateinit var mockLocationRepository: LocationRepository
   private lateinit var testUserId: String
   private lateinit var testUsername: String
 
@@ -73,10 +81,12 @@ class End2EndTest {
     mockAuthResult = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
+    mockLocationRepository = mockk(relaxed = true)
 
     // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
     AccountRepositoryProvider.repository = mockAccountRepository
+    LocationRepositoryProvider.repository = mockLocationRepository
 
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
@@ -93,6 +103,9 @@ class End2EndTest {
     // Restore the real repositories after test completes
     UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
     AccountRepositoryProvider.repository = AccountRepositoryFirestore(Firebase.firestore)
+    LocationRepositoryProvider.repository =
+        com.android.ootd.model.map.NominatimLocationRepository(
+            com.android.ootd.HttpClientProvider.client)
   }
 
   /**
@@ -118,9 +131,10 @@ class End2EndTest {
    * 16. Note: Photo selection with camera/gallery cannot be tested in automated UI tests because it
    *     launches external Android activities that break the Compose hierarchy
    * 17. User navigates back to Feed screen from FitCheck
-   * 18. User clicks profile icon to navigate to Account screen
-   * 19. User clicks Sign Out button
-   * 20. App navigates back to Authentication screen
+   * 18. User clicks notification icon
+   * 19. User goes on account page
+   * 20. User clicks Sign Out button
+   * 21. App navigates back to Authentication screen
    *
    * LIMITATIONS:
    * - Camera/Gallery intents cannot be tested in Compose UI tests without mocking
@@ -166,7 +180,7 @@ class End2EndTest {
       coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
 
       // Mock successful account creation
-      coEvery { mockAccountRepository.createAccount(any(), any(), any()) } returns Unit
+      coEvery { mockAccountRepository.createAccount(any(), any(), any(), any()) } returns Unit
       coEvery { mockAccountRepository.accountExists(any()) } returns false
 
       // STEP 1: Launch the full app
@@ -255,6 +269,40 @@ class End2EndTest {
 
       // Enter date and confirm
       composeTestRule.enterDate("10102020")
+      composeTestRule.waitForIdle()
+
+      // STEP 6b: Select a location
+      // Mock the location repository to return suggestions when user types "Zurich"
+      val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+      coEvery { mockLocationRepository.search(any()) } returns listOf(testLocation)
+
+      // Enter location text in the input field
+      composeTestRule
+          .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+          .performScrollTo()
+          .performClick()
+      composeTestRule.waitForIdle()
+
+      // Type "Zurich" to trigger location search
+      composeTestRule
+          .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+          .performTextInput("Zurich")
+      composeTestRule.waitForIdle()
+
+      // Wait for location suggestions to appear (now from mocked repository)
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(
+                com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
+      // Click the first location suggestion to select it
+      composeTestRule
+          .onAllNodesWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)[
+              0]
+          .performClick()
       composeTestRule.waitForIdle()
 
       // STEP 7: Save the registration
@@ -418,35 +466,30 @@ class End2EndTest {
       // Verify we're back on the Feed screen
       composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
 
-      // STEP 18: User clicks profile Icon to navigate to Account screen
-      // Wait for the AccountIcon to be fully initialized and visible
+      // STEP 18: User clicks notification Icon
+      // Wait for the Notification Icon to be fully initialized and visible
       composeTestRule.waitUntil(timeoutMillis = 5000) {
         composeTestRule
-            .onAllNodesWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER, useUnmergedTree = true)
+            .onAllNodesWithTag(
+                FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
             .fetchSemanticsNodes()
             .isNotEmpty()
       }
 
-      // Click on the account icon
+      // Click on the notifications icon
       composeTestRule
-          .onNodeWithTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER, useUnmergedTree = true)
+          .onNodeWithTag(
+              FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
           .performClick()
 
       composeTestRule.waitForIdle()
 
-      // Wait for Account screen to appear
-      composeTestRule.waitUntil(timeoutMillis = 5000) {
-        composeTestRule
-            .onAllNodesWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
-            .fetchSemanticsNodes()
-            .isNotEmpty()
-      }
+      // STEP 19: Go to account page
 
-      // Verify we're on the Account screen
       composeTestRule
-          .onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE)
-          .performScrollTo()
+          .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account))
           .assertIsDisplayed()
+          .performClick()
 
       // Scroll to Sign Out button
       composeTestRule
@@ -456,7 +499,7 @@ class End2EndTest {
 
       composeTestRule.waitForIdle()
 
-      // STEP 19: User clicks signout Button
+      // STEP 20: User clicks signout Button
       composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performScrollTo().performClick()
 
       composeTestRule.waitForIdle()

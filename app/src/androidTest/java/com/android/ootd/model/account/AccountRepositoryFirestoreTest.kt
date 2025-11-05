@@ -3,16 +3,44 @@ package com.android.ootd.model.account
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
 import com.android.ootd.utils.FirebaseEmulator
-import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
+  // Helpers to keep tests short
+  private suspend fun addAccAndUser(acc: Account) {
+    accountRepository.addAccount(acc)
+    userRepository.addUser(User(uid = acc.uid, username = acc.username, profilePicture = ""))
+  }
+
+  private suspend fun add(vararg accs: Account) {
+    accs.forEach { addAccAndUser(it) }
+  }
+
+  private suspend fun doc(uid: String) =
+      FirebaseEmulator.firestore.collection(ACCOUNT_COLLECTION_PATH).document(uid).get().await()
+
+  private suspend fun setDoc(uid: String, data: Map<String, Any?>) {
+    FirebaseEmulator.firestore.collection(ACCOUNT_COLLECTION_PATH).document(uid).set(data).await()
+  }
+
+  private suspend inline fun <reified T : Throwable> expectThrows(
+      messageContains: String? = null,
+      crossinline block: suspend () -> Unit
+  ): T {
+    val e = kotlin.runCatching { block() }.exceptionOrNull()
+    assertTrue(e is T)
+    if (messageContains != null) assertTrue(e?.message?.contains(messageContains) == true)
+    return e as T
+  }
+
   @Test
-  fun addAccount_successfullyAddsNewAccount() = runBlocking {
+  fun addAccount_successfullyAddsNewAccount() = runTest {
     accountRepository.addAccount(account1)
     assertEquals(1, getAccountCount())
 
@@ -22,26 +50,18 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun addAccount_throwsExceptionWhenAccountAlreadyExists() = runBlocking {
+  fun addAccount_throwsExceptionWhenAccountAlreadyExists() = runTest {
     accountRepository.addAccount(account1)
     userRepository.addUser(
         User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
 
-    val exception = runCatching { accountRepository.addAccount(account1) }.exceptionOrNull()
-
-    assertTrue(exception is TakenAccountException)
-    assertTrue(exception?.message?.contains("already exists") == true)
+    expectThrows<TakenAccountException>("already exists") { accountRepository.addAccount(account1) }
     assertEquals(1, getAccountCount())
   }
 
   @Test
-  fun getAccount_returnsCorrectAccount() = runBlocking {
-    accountRepository.addAccount(account1)
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    accountRepository.addAccount(account2)
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account2.ownerId, username = account2.username, profilePicture = ""))
+  fun getAccount_returnsCorrectAccount() = runTest {
+    add(account1, account2)
 
     val retrieved = accountRepository.getAccount(account2.uid)
     assertEquals(account2.uid, retrieved.uid)
@@ -50,54 +70,45 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun getAccount_throwsExceptionWhenAccountNotFound() = runBlocking {
-    val exception = runCatching { accountRepository.getAccount("nonexistent") }.exceptionOrNull()
-
-    assertTrue(exception is NoSuchElementException)
-    assertTrue(exception?.message?.contains("not found") == true)
+  fun getAccount_throwsExceptionWhenAccountNotFound() = runTest {
+    expectThrows<NoSuchElementException>("not found") {
+      accountRepository.getAccount("nonexistent")
+    }
   }
 
   @Test
-  fun accountExists_returnsTrueWhenAccountHasUsername() = runBlocking {
-    accountRepository.addAccount(account1)
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-
-    val exists = accountRepository.accountExists(account1.uid)
-    assertTrue(exists)
+  fun accountExists_returnsTrueWhenAccountHasUsername() = runTest {
+    add(account1)
+    assertTrue(accountRepository.accountExists(account1.uid))
   }
 
   @Test
-  fun accountExists_returnsFalseWhenAccountNotFound() = runBlocking {
-    val exists = accountRepository.accountExists("nonexistent")
-    assertTrue(!exists)
+  fun accountExists_returnsFalseWhenAccountNotFound() = runTest {
+    assertFalse(accountRepository.accountExists("nonexistent"))
   }
 
   @Test
-  fun accountExists_returnsFalseWhenUsernameIsBlank() = runBlocking {
-    val accountWithBlankUsername = account1.copy(username = "")
-    FirebaseEmulator.firestore
-        .collection(ACCOUNT_COLLECTION_PATH)
-        .document(accountWithBlankUsername.uid)
-        .set(
-            mapOf(
-                "username" to "",
-                "birthday" to accountWithBlankUsername.birthday,
-                "googleAccountEmail" to accountWithBlankUsername.googleAccountEmail,
-                "ownerId" to currentUser.uid,
-                "profilePicture" to accountWithBlankUsername.profilePicture,
-                "friendUids" to accountWithBlankUsername.friendUids))
-        .await()
+  fun accountExists_returnsFalseWhenUsernameIsBlank() = runTest {
+    val a = account1.copy(username = "")
+    setDoc(
+        a.uid,
+        mapOf(
+            "username" to "",
+            "birthday" to a.birthday,
+            "googleAccountEmail" to a.googleAccountEmail,
+            "ownerId" to currentUser.uid,
+            "profilePicture" to a.profilePicture,
+            "friendUids" to a.friendUids))
 
-    val exists = accountRepository.accountExists(accountWithBlankUsername.uid)
-    assertTrue(!exists)
+    assertFalse(accountRepository.accountExists(a.uid))
   }
 
   @Test
-  fun createAccount_successfullyCreatesNewAccount() = runBlocking {
-    val user = User(uid = currentUser.uid, ownerId = account1.ownerId, username = "charlie_brown", profilePicture = ":3")
+  fun createAccount_successfullyCreatesNewAccount() = runTest {
+    val user = User(uid = currentUser.uid, username = "charlie_brown", profilePicture = ":3")
 
-    accountRepository.createAccount(user, userEmail = testEmail, dateOfBirth = testDateOfBirth)
+    accountRepository.createAccount(
+        user, userEmail = testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     userRepository.addUser(
         User(uid = user.uid, ownerId = account1.ownerId, username = user.username, profilePicture = "Hello.jpg"))
 
@@ -105,40 +116,34 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertEquals(user.uid, account.uid)
     assertEquals(user.username, account.username)
     assertTrue(account.friendUids.isEmpty())
-    assertEquals(account.googleAccountEmail, testEmail)
+    assertEquals(testEmail, account.googleAccountEmail)
     assertEquals(user.profilePicture, account.profilePicture)
   }
 
   @Test
-  fun createAccount_throwsExceptionForDuplicateUser() = runBlocking {
+  fun createAccount_throwsExceptionForDuplicateUser() = runTest {
     val user1 = User(uid = "user3", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
     val user2 = User(uid = "user4", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
 
     userRepository.addUser(user1)
-
-    // Add user2 to users collection - this should be allowed since different uid
     userRepository.addUser(user2)
     // But createAccount should fail because username is already in use
     val exception =
-        runCatching { accountRepository.createAccount(user2, dateOfBirth = testDateOfBirth) }
+        runCatching {
+              accountRepository.createAccount(
+                  user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+            }
             .exceptionOrNull()
 
-    assertTrue(exception is TakenUserException)
-    assertTrue(exception?.message?.contains("already in use") == true)
+    expectThrows<TakenUserException>("already in use") {
+      accountRepository.createAccount(
+          user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+    }
   }
 
   @Test
-  fun addFriend_successfullyAddsFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    // We add the users after because it is hard to mock two users creating their accounts with
-    // different uids.
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
+  fun addFriend_successfullyAddsFriend() = runTest {
+    add(account1, account2)
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
@@ -148,14 +153,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun addFriend_doesNotAddDuplicateFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
+  fun addFriend_doesNotAddDuplicateFriend() = runTest {
+    add(account1, account2)
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.addFriend(account1.uid, account2.uid)
@@ -165,54 +164,31 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun addFriend_throwsExceptionWhenFriendNotFound() = runBlocking {
+  fun addFriend_throwsExceptionWhenFriendNotFound() = runTest {
     accountRepository.addAccount(account1)
 
-    val exception =
-        runCatching { accountRepository.addFriend(account1.uid, "nonexistent") }.exceptionOrNull()
-
-    assertTrue(exception is NoSuchElementException)
-    assertTrue(exception?.message?.contains("not found") == true)
+    expectThrows<NoSuchElementException>("not found") {
+      accountRepository.addFriend(account1.uid, "nonexistent")
+    }
   }
 
   @Test
-  fun addFriend_canAddMultipleFriends() = runBlocking {
+  fun addFriend_canAddMultipleFriends() = runTest {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
-    // Create User records first
-
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
+    add(account1, account2, account3)
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.addFriend(account1.uid, account3.uid)
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(2, updated.friendUids.size)
-    assertTrue(updated.friendUids.contains(account2.uid))
-    assertTrue(updated.friendUids.contains(account3.uid))
+    assertTrue(updated.friendUids.containsAll(listOf(account2.uid, account3.uid)))
   }
 
   @Test
-  fun removeFriend_successfullyRemovesFriend() = runBlocking {
-    // Create User records first
-
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
-
+  fun removeFriend_successfullyRemovesFriend() = runTest {
+    add(account1, account2)
     accountRepository.addFriend(account1.uid, account2.uid)
 
     accountRepository.removeFriend(account1.uid, account2.uid)
@@ -222,32 +198,19 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun removeFriend_throwsExceptionWhenFriendNotFound() = runBlocking {
-    accountRepository.addAccount(account1)
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId ,username = account1.username, profilePicture = ""))
-    val exception =
-        runCatching { accountRepository.removeFriend(account1.uid, "nonexistent") }
-            .exceptionOrNull()
+  fun removeFriend_throwsExceptionWhenFriendNotFound() = runTest {
+    add(account1)
 
-    assertTrue(exception is NoSuchElementException)
-    assertTrue(exception?.message?.contains("not found") == true)
+    expectThrows<NoSuchElementException>("not found") {
+      accountRepository.removeFriend(account1.uid, "nonexistent")
+    }
   }
 
   @Test
-  fun removeFriend_doesNothingWhenFriendNotInList() = runBlocking {
+  fun removeFriend_doesNothingWhenFriendNotInList() = runTest {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
+    add(account1, account2, account3)
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.removeFriend(account1.uid, account3.uid)
@@ -258,19 +221,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun removeFriend_preservesOtherFriends() = runBlocking {
+  fun removeFriend_preservesOtherFriends() = runTest {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
+    add(account1, account2, account3)
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.addFriend(account1.uid, account3.uid)
@@ -282,79 +236,51 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun isMyFriend_returnsTrueForExistingFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
+  fun isMyFriend_returnsTrueForExistingFriend() = runTest {
+    add(account1, account2)
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
-    val isFriend = accountRepository.isMyFriend(account1.uid, account2.uid)
-    assertTrue(isFriend)
+    assertTrue(accountRepository.isMyFriend(account1.uid, account2.uid))
   }
 
   @Test
-  fun isMyFriend_returnsFalseForNonFriend() = runBlocking {
+  fun isMyFriend_returnsFalseForNonFriend() = runTest {
     val account3 = account1.copy(uid = "user3", username = "charlie")
 
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(account3)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
+    add(account1, account2, account3)
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
-    val isFriend = accountRepository.isMyFriend(account1.uid, account3.uid)
-    assertTrue(!isFriend)
+    assertFalse(accountRepository.isMyFriend(account1.uid, account3.uid))
   }
 
   @Test
-  fun isMyFriend_returnsFalseAfterRemovingFriend() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-
-    userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
-    userRepository.addUser(
-        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
+  fun isMyFriend_returnsFalseAfterRemovingFriend() = runTest {
+    add(account1, account2)
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.removeFriend(account1.uid, account2.uid)
 
-    val isFriend = accountRepository.isMyFriend(account1.uid, account2.uid)
-    assertTrue(!isFriend)
+    assertFalse(accountRepository.isMyFriend(account1.uid, account2.uid))
   }
 
   @Test
-  fun isMyFriend_throwsExceptionWhenUserNotFound() = runBlocking {
-    val exception =
-        runCatching { accountRepository.isMyFriend("nonexistent", account1.uid) }.exceptionOrNull()
-
-    assertTrue(exception is NoSuchElementException)
-    assertTrue(exception?.message?.contains("authenticated user") == true)
+  fun isMyFriend_throwsExceptionWhenUserNotFound() = runTest {
+    expectThrows<NoSuchElementException>("authenticated user") {
+      accountRepository.isMyFriend("nonexistent", account1.uid)
+    }
   }
 
   @Test
-  fun isMyFriend_returnsFalseWhenFriendListIsEmpty() = runBlocking {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
+  fun isMyFriend_returnsFalseWhenFriendListIsEmpty() = runTest {
+    add(account1, account2)
 
-    val isFriend = accountRepository.isMyFriend(account1.uid, account2.uid)
-    assertTrue(!isFriend)
+    assertFalse(accountRepository.isMyFriend(account1.uid, account2.uid))
   }
 
   @Test
-  fun getAccount_handlesCorruptedDocumentGracefully() = runBlocking {
+  fun getAccount_handlesCorruptedDocumentGracefully() = runTest {
     accountRepository.addAccount(account1)
 
     // Corrupt the document
@@ -364,37 +290,30 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
         .update(mapOf("username" to 12345))
         .await()
 
-    val exception = runCatching { accountRepository.getAccount(account1.uid) }.exceptionOrNull()
-
-    assertTrue(exception != null)
+    val e = kotlin.runCatching { accountRepository.getAccount(account1.uid) }.exceptionOrNull()
+    assertTrue(e != null)
   }
 
   @Test
-  fun getAccount_throwsExceptionForInvalidData() = runBlocking {
-    val invalidAccountId = "invalid"
-    FirebaseEmulator.firestore
-        .collection(ACCOUNT_COLLECTION_PATH)
-        .document(invalidAccountId)
-        .set(
-            mapOf(
-                "username" to "test",
-                "birthday" to "2000-01-01",
-                "googleAccountEmail" to "test@test.com",
-                "profilePicture" to "",
-                "ownerId" to currentUser.uid,
-                "friendUids" to 12345 // Invalid type - not a List
-                ))
-        .await()
+  fun getAccount_throwsExceptionForInvalidData() = runTest {
+    val invalidId = "invalid"
+    setDoc(
+        invalidId,
+        mapOf(
+            "username" to "test",
+            "birthday" to "2000-01-01",
+            "googleAccountEmail" to "test@test.com",
+            "profilePicture" to "",
+            "ownerId" to currentUser.uid,
+            "friendUids" to 12345)) // Invalid type
 
-    val exception = runCatching { accountRepository.getAccount(invalidAccountId) }.exceptionOrNull()
-
-    assertTrue(exception is IllegalStateException)
-    assertTrue(exception?.message?.contains("Failed to transform") == true)
+    expectThrows<IllegalStateException>("Failed to transform") {
+      accountRepository.getAccount(invalidId)
+    }
   }
 
-  // New tests for edit and delete account
   @Test
-  fun editAccount_updatesUsernameAndBirthday() = runBlocking {
+  fun editAccount_updatesUsernameAndBirthday() = runTest {
     accountRepository.addAccount(account1)
 
     val newUsername = "new_username"
@@ -410,10 +329,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun editAccount_keepsValuesWhenBlank() = runBlocking {
+  fun editAccount_keepsValuesWhenBlank() = runTest {
     accountRepository.addAccount(account1)
 
-    // Pass blank values - should preserve existing data
     accountRepository.editAccount(account1.uid, username = "", birthDay = "", picture = "")
 
     val updated = accountRepository.getAccount(account1.uid)
@@ -423,53 +341,119 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun deleteAccount_successfullyDeletesAccount() = runBlocking {
+  fun deleteAccount_successfullyDeletesAccount() = runTest {
     accountRepository.addAccount(account1)
 
     accountRepository.deleteAccount(account1.uid)
 
-    val exception = runCatching { accountRepository.getAccount(account1.uid) }.exceptionOrNull()
-    assertTrue(exception is NoSuchElementException)
+    expectThrows<NoSuchElementException> { accountRepository.getAccount(account1.uid) }
   }
 
   @Test
-  fun deleteAccount_throwsWhenAccountNotFound() = runBlocking {
-    val exception = runCatching { accountRepository.deleteAccount("nonexistent") }.exceptionOrNull()
-    assertTrue(exception is UnknowUserID)
+  fun deleteAccount_throwsWhenAccountNotFound() = runTest {
+    expectThrows<UnknowUserID> { accountRepository.deleteAccount("nonexistent") }
   }
 
   @Test
-  fun togglePrivacy_togglesAndPersists() = runBlocking {
+  fun togglePrivacy_togglesAndPersists() = runTest {
     accountRepository.addAccount(account1)
 
     val first = accountRepository.togglePrivacy(account1.uid)
     assertTrue(first)
 
-    val doc1 =
-        FirebaseEmulator.firestore
-            .collection(ACCOUNT_COLLECTION_PATH)
-            .document(account1.uid)
-            .get()
-            .await()
+    val doc1 = doc(account1.uid)
     assertTrue(doc1.getBoolean("isPrivate") == true)
 
     val second = accountRepository.togglePrivacy(account1.uid)
-    assertTrue(!second)
+    assertFalse(second)
 
-    val doc2 =
-        FirebaseEmulator.firestore
-            .collection(ACCOUNT_COLLECTION_PATH)
-            .document(account1.uid)
-            .get()
-            .await()
+    val doc2 = doc(account1.uid)
     assertTrue(doc2.getBoolean("isPrivate") == false)
   }
 
   @Test
-  fun togglePrivacy_throwsWhenAccountMissing() = runBlocking {
-    val exception = runCatching { accountRepository.togglePrivacy("nonexistent") }.exceptionOrNull()
+  fun togglePrivacy_throwsWhenAccountMissing() = runTest {
+    expectThrows<NoSuchElementException>("authenticated user") {
+      accountRepository.togglePrivacy("nonexistent")
+    }
+  }
 
-    assertTrue(exception is NoSuchElementException)
-    assertTrue(exception?.message?.contains("authenticated user") == true)
+  @Test
+  fun createAccount_persistsLocationToFirestore() = runTest {
+    val user = User(uid = currentUser.uid, username = "test_location_user", profilePicture = "")
+
+    accountRepository.createAccount(user, testEmail, testDateOfBirth, EPFL_LOCATION)
+
+    val retrieved = accountRepository.getAccount(currentUser.uid)
+    assertEquals(EPFL_LOCATION.latitude, retrieved.location.latitude, 0.0001)
+    assertEquals(EPFL_LOCATION.longitude, retrieved.location.longitude, 0.0001)
+    assertEquals(EPFL_LOCATION.name, retrieved.location.name)
+  }
+
+  @Test
+  fun getAccount_parsesLocationFromMap() = runTest {
+    // Manually create a document with location as a Map
+    val locationMap =
+        mapOf("latitude" to 47.3769, "longitude" to 8.5417, "name" to "Zürich, Switzerland")
+
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId,
+                "location" to locationMap))
+        .await()
+
+    val retrieved = accountRepository.getAccount(account1.uid)
+    assertEquals(47.3769, retrieved.location.latitude, 0.0001)
+    assertEquals(8.5417, retrieved.location.longitude, 0.0001)
+    assertEquals("Zürich, Switzerland", retrieved.location.name)
+  }
+
+  @Test
+  fun getAccount_throwsMissingLocationException() = runTest {
+    // Create account without location field
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId))
+        .await()
+
+    expectThrows<IllegalStateException>("Failed to transform") {
+      accountRepository.getAccount(account1.uid)
+    }
+  }
+
+  @Test
+  fun editAccount_logsSuccessMessage() = runTest {
+    accountRepository.addAccount(account1)
+
+    val newUsername = "updated_user"
+    val newBirthday = "1995-12-25"
+    val newPicture = "new_pic.jpg"
+
+    // This test verifies the method executes successfully and logs the success message
+    accountRepository.editAccount(
+        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newPicture, updated.profilePicture)
   }
 }

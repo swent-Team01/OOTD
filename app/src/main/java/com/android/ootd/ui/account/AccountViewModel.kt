@@ -196,6 +196,7 @@ class AccountViewModel(
         val currentUserId = accountService.currentUserId
 
         accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
+
         if (newUsername.isNotBlank()) userRepository.editUsername(currentUserId, newUsername)
         // Update UI state with new values
         val updatedState = _uiState.value.copy(isLoading = false, errorMsg = null)
