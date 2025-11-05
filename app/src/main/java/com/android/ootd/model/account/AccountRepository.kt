@@ -34,9 +34,11 @@ interface AccountRepository {
   /**
    * Add [friendID] to the friend list of [userID].
    *
+   * Return true if the operation added both users to each other's friend list.
+   *
    * @throws NoSuchElementException if either user is not found
    */
-  suspend fun addFriend(userID: String, friendID: String)
+  suspend fun addFriend(userID: String, friendID: String): Boolean
 
   /**
    * Remove [friendID] from the friend list of [userID].

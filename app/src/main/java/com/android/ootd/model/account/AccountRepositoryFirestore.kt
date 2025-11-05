@@ -188,7 +188,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun addFriend(userID: String, friendID: String) {
+  override suspend fun addFriend(userID: String, friendID: String): Boolean {
     try {
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
@@ -211,12 +211,14 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
       try {
         friendRef.update("friendUids", FieldValue.arrayUnion(userID)).await()
+        return true
       } catch (e: Exception) {
         // If we can't update their account (maybe we're not in their friend list),
         // log it but don't fail the entire operation
         Log.w(
             "AccountRepositoryFirestore",
             "Could not add $userID to $friendID's friend list: ${e.message}")
+        return false
       }
     } catch (e: Exception) {
       Log.e(

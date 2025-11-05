@@ -104,8 +104,16 @@ class NotificationsViewModel(
         }
 
         // Add the sender as a friend
-        accountRepository.addFriend(currentUserId, followRequestItem.notification.senderId)
+        val wasAddedToBoth =
+            accountRepository.addFriend(currentUserId, followRequestItem.notification.senderId)
 
+        // If I could not update both friend lists
+        // I throw an exception such that the notification does not disappear.
+        // This will also help with offline mode
+
+        if (!wasAddedToBoth) {
+          throw IllegalStateException("Could not update both friend lists")
+        }
         // Delete the notification
         notificationRepository.deleteNotification(followRequestItem.notification)
 
