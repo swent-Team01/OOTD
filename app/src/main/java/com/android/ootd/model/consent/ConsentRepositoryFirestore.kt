@@ -9,6 +9,7 @@ import kotlinx.coroutines.tasks.await
 
 const val CONSENT_COLLECTION_PATH = "consents"
 const val USER_ID_FIELD = "userId"
+const val CONSENT_TAG = "ConsentRepositoryFirestore"
 
 /**
  * Data Transfer Object for Firestore serialization/deserialization.
@@ -46,7 +47,7 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
   /** Helper method to validate consent data */
   private fun checkConsentData(consent: Consent): Consent? {
     if (consent.consentUuid.isBlank() || consent.userId.isBlank()) {
-      Log.e("ConsentRepositoryFirestore", "Invalid consent data: UUID or userId is blank")
+      Log.e(CONSENT_TAG, "Invalid consent data: UUID or userId is blank")
       return null
     }
     return consent
@@ -58,17 +59,14 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
       val consentDto = document.toObject<ConsentDto>()
       if (consentDto == null) {
         Log.e(
-            "ConsentRepositoryFirestore",
+            CONSENT_TAG,
             "Failed to deserialize document ${document.id} to Consent object. Data: ${document.data}")
         return null
       }
       val consent = consentDto.toDomain()
       checkConsentData(consent)
     } catch (e: Exception) {
-      Log.e(
-          "ConsentRepositoryFirestore",
-          "Error transforming document ${document.id}: ${e.message}",
-          e)
+      Log.e(CONSENT_TAG, "Error transforming document ${document.id}: ${e.message}", e)
       return null
     }
   }
@@ -80,7 +78,7 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
   override suspend fun addConsent(consent: Consent) {
     val validConsent = checkConsentData(consent)
     if (validConsent == null) {
-      Log.e("ConsentRepositoryFirestore", "Cannot add invalid consent")
+      Log.e(CONSENT_TAG, "Cannot add invalid consent")
       return
     }
 
@@ -89,16 +87,15 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
           .document(consent.consentUuid)
           .set(consent.toDto())
           .await()
-      Log.d("ConsentRepositoryFirestore", "Consent added successfully: ${consent.consentUuid}")
     } catch (e: Exception) {
-      Log.e("ConsentRepositoryFirestore", "Error adding consent: ${e.message}", e)
+      Log.e(CONSENT_TAG, "Error adding consent: ${e.message}", e)
       throw e
     }
   }
 
   override suspend fun getConsentByUserId(userId: String): Consent? {
     if (userId.isBlank()) {
-      Log.e("ConsentRepositoryFirestore", "Cannot query with blank userId")
+      Log.e(CONSENT_TAG, "Cannot query with blank userId")
       return null
     }
 
@@ -111,23 +108,19 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
               .await()
 
       if (snapshot.documents.isEmpty()) {
-        Log.d("ConsentRepositoryFirestore", "No consent found for userId: $userId")
         null
       } else {
         transformConsentDocument(snapshot.documents.first())
       }
     } catch (e: Exception) {
-      Log.e(
-          "ConsentRepositoryFirestore",
-          "Error fetching consent for userId $userId: ${e.message}",
-          e)
+      Log.e(CONSENT_TAG, "Error fetching consent for userId $userId: ${e.message}", e)
       null
     }
   }
 
   override suspend fun getConsentById(consentUuid: String): Consent? {
     if (consentUuid.isBlank()) {
-      Log.e("ConsentRepositoryFirestore", "Cannot query with blank consentUuid")
+      Log.e(CONSENT_TAG, "Cannot query with blank consentUuid")
       return null
     }
 
@@ -135,13 +128,12 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
       val document = db.collection(CONSENT_COLLECTION_PATH).document(consentUuid).get().await()
 
       if (!document.exists()) {
-        Log.d("ConsentRepositoryFirestore", "No consent found with UUID: $consentUuid")
         null
       } else {
         transformConsentDocument(document)
       }
     } catch (e: Exception) {
-      Log.e("ConsentRepositoryFirestore", "Error fetching consent $consentUuid: ${e.message}", e)
+      Log.e(CONSENT_TAG, "Error fetching consent $consentUuid: ${e.message}", e)
       null
     }
   }
@@ -152,10 +144,9 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
 
   override suspend fun deleteConsentByUserId(userId: String) {
     if (userId.isBlank()) {
-      Log.e("ConsentRepositoryFirestore", "Cannot delete with blank userId")
+      Log.e(CONSENT_TAG, "Cannot delete with blank userId")
       return
     }
-
     try {
       val snapshot =
           db.collection(CONSENT_COLLECTION_PATH).whereEqualTo(USER_ID_FIELD, userId).get().await()
@@ -163,15 +154,8 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
       val batch = db.batch()
       snapshot.documents.forEach { batch.delete(it.reference) }
       batch.commit().await()
-
-      Log.d(
-          "ConsentRepositoryFirestore",
-          "Deleted ${snapshot.size()} consent record(s) for userId: $userId")
     } catch (e: Exception) {
-      Log.e(
-          "ConsentRepositoryFirestore",
-          "Error deleting consent for userId $userId: ${e.message}",
-          e)
+      Log.e(CONSENT_TAG, "Error deleting consent for userId $userId: ${e.message}", e)
       throw e
     }
   }
@@ -181,7 +165,7 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
       val snapshot = db.collection(CONSENT_COLLECTION_PATH).get().await()
       snapshot.documents.mapNotNull { transformConsentDocument(it) }
     } catch (e: Exception) {
-      Log.e("ConsentRepositoryFirestore", "Error fetching all consents: ${e.message}", e)
+      Log.e(CONSENT_TAG, "Error fetching all consents: ${e.message}", e)
       emptyList()
     }
   }

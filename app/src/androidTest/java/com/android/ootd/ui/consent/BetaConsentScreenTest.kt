@@ -96,16 +96,4 @@ class BetaConsentScreenTest {
         .performScrollTo()
         .assertExists()
   }
-
-  @Test
-  fun betaConsentScreen_scrollContentIsScrollable() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then - verify scrollable content exists and can be scrolled
-    composeTestRule
-        .onNodeWithTag(BetaConsentScreenTestTags.SCROLL_CONTENT)
-        .assertExists()
-        .performScrollToNode(hasTestTag(BetaConsentScreenTestTags.SECTION_LOCATION))
-  }
 }

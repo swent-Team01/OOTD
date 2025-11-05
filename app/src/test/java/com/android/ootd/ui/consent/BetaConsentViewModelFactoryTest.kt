@@ -34,83 +34,41 @@ class BetaConsentViewModelFactoryTest {
   }
 
   @Test
-  fun `factory creates BetaConsentViewModel successfully`() {
-    // Given
-    factory = BetaConsentViewModelFactory(mockContext, mockRepository)
-
+  fun `factory creates ViewModel and uses application context with correct preferences`() {
     // When
+    factory = BetaConsentViewModelFactory(mockContext, mockRepository)
     val viewModel = factory.create(BetaConsentViewModel::class.java)
 
     // Then
     assertNotNull(viewModel)
-  }
-
-  @Test
-  fun `factory uses application context for SharedPreferences`() {
-    // When
-    factory = BetaConsentViewModelFactory(mockContext, mockRepository)
-
-    // Then
     verify { mockContext.applicationContext }
-    verify {
-      mockContext.getSharedPreferences(BetaConsentViewModel.PREFS_NAME, Context.MODE_PRIVATE)
-    }
-  }
-
-  @Test(expected = IllegalArgumentException::class)
-  fun `factory throws exception for unknown ViewModel class`() {
-    // Given
-    factory = BetaConsentViewModelFactory(mockContext, mockRepository)
-
-    class UnknownViewModel : ViewModel()
-
-    // When
-    factory.create(UnknownViewModel::class.java)
-
-    // Then - exception is thrown
-  }
-
-  @Test
-  fun `factory uses provided repository`() {
-    // Given
-    val customRepository: ConsentRepository = mockk(relaxed = true)
-    factory = BetaConsentViewModelFactory(mockContext, customRepository)
-
-    // When
-    val viewModel = factory.create(BetaConsentViewModel::class.java)
-
-    // Then
-    assertNotNull(viewModel)
-    // The viewModel should use the custom repository (verified through behavior)
-  }
-
-  @Test
-  fun `factory creates ViewModels with correct SharedPreferences name`() {
-    // Given
-    factory = BetaConsentViewModelFactory(mockContext, mockRepository)
-
-    // When
-    factory.create(BetaConsentViewModel::class.java)
-
-    // Then
     verify {
       mockContext.getSharedPreferences(
           eq(BetaConsentViewModel.PREFS_NAME), eq(Context.MODE_PRIVATE))
     }
   }
 
-  @Test
-  fun `factory can create multiple ViewModel instances`() {
-    // Given
+  @Test(expected = IllegalArgumentException::class)
+  fun `factory throws exception for unknown ViewModel class`() {
     factory = BetaConsentViewModelFactory(mockContext, mockRepository)
+    class UnknownViewModel : ViewModel()
+    factory.create(UnknownViewModel::class.java)
+  }
 
-    // When
+  @Test
+  fun `factory uses provided repository and creates multiple instances`() {
+    // Test with custom repository
+    val customRepository: ConsentRepository = mockk(relaxed = true)
+    factory = BetaConsentViewModelFactory(mockContext, customRepository)
+    val viewModel = factory.create(BetaConsentViewModel::class.java)
+    assertNotNull(viewModel)
+
+    // Test creating multiple instances
+    factory = BetaConsentViewModelFactory(mockContext, mockRepository)
     val viewModel1 = factory.create(BetaConsentViewModel::class.java)
     val viewModel2 = factory.create(BetaConsentViewModel::class.java)
-
-    // Then
     assertNotNull(viewModel1)
     assertNotNull(viewModel2)
-    assertNotSame(viewModel1, viewModel2) // Different instances
+    assertNotSame(viewModel1, viewModel2)
   }
 }

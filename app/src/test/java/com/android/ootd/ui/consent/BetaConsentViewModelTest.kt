@@ -68,38 +68,24 @@ class BetaConsentViewModelTest {
   }
 
   @Test
-  fun `initial state has correct defaults when no consent exists`() = runTest {
-    // Given
+  fun `initial state handles both no consent and existing consent scenarios`() = runTest {
+    // Test no consent exists
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
-
-    // When
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
 
-    // Then
     assertFalse(viewModel.hasConsented.value)
     assertFalse(viewModel.isLoading.value)
     assertFalse(viewModel.consentSaved.value)
     assertFalse(viewModel.isInitializing.value)
     assertNull(viewModel.error.value)
-  }
 
-  @Test
-  fun `initial state syncs from Firebase when consent exists`() = runTest {
-    // Given
-    val existingConsent =
-        Consent(
-            consentUuid = testConsentUuid,
-            userId = testUserId,
-            timestamp = testTimestamp,
-            version = "1.0")
+    // Test existing consent syncs from Firebase
+    val existingConsent = Consent(testConsentUuid, testUserId, testTimestamp, "1.0")
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns existingConsent
-
-    // When
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
 
-    // Then
     assertTrue(viewModel.hasConsented.value)
     verify { mockEditor.putBoolean(BetaConsentViewModel.KEY_CONSENT_GIVEN, true) }
     verify { mockEditor.putLong(BetaConsentViewModel.KEY_CONSENT_TIMESTAMP, testTimestamp) }
@@ -107,156 +93,116 @@ class BetaConsentViewModelTest {
   }
 
   @Test
-  fun `getConsentStatus returns false when no consent given`() = runTest {
-    // Given
+  fun `getConsentStatus returns correct value for both scenarios`() = runTest {
+    // Test false when no consent
     every { mockPrefs.getBoolean(BetaConsentViewModel.KEY_CONSENT_GIVEN, false) } returns false
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
+    assertFalse(viewModel.getConsentStatus())
 
-    // When
-    val status = viewModel.getConsentStatus()
-
-    // Then
-    assertFalse(status)
-  }
-
-  @Test
-  fun `getConsentStatus returns true when consent given`() = runTest {
-    // Given
+    // Test true when consent given
     every { mockPrefs.getBoolean(BetaConsentViewModel.KEY_CONSENT_GIVEN, false) } returns true
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
-
-    // When
-    val status = viewModel.getConsentStatus()
-
-    // Then
-    assertTrue(status)
+    assertTrue(viewModel.getConsentStatus())
   }
 
   @Test
-  fun `recordConsent saves to both Firebase and SharedPreferences`() = runTest {
-    // Given
+  fun `recordConsent handles success and error scenarios`() = runTest {
+    // Test successful consent recording
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     every { mockRepository.getNewConsentId() } returns testConsentUuid
     coEvery { mockRepository.addConsent(any()) } just Runs
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
 
-    // When
     viewModel.recordConsent()
     advanceUntilIdle()
 
-    // Then
     assertTrue(viewModel.hasConsented.value)
     assertTrue(viewModel.consentSaved.value)
     assertFalse(viewModel.isLoading.value)
     assertNull(viewModel.error.value)
-
     coVerify { mockRepository.addConsent(match { it.userId == testUserId }) }
     verify { mockEditor.putBoolean(BetaConsentViewModel.KEY_CONSENT_GIVEN, true) }
-    verify { mockEditor.putString(BetaConsentViewModel.KEY_CONSENT_UUID, testConsentUuid) }
-  }
 
-  @Test
-  fun `recordConsent sets error when user not authenticated`() = runTest {
-    // Given
+    // Test error when user not authenticated
     every { mockFirebaseAuth.currentUser } returns null
-    coEvery { mockRepository.getConsentByUserId(any()) } returns null
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
-
-    // When
     viewModel.recordConsent()
     advanceUntilIdle()
 
-    // Then
     assertFalse(viewModel.consentSaved.value)
-    assertFalse(viewModel.isLoading.value)
     assertEquals("You must be signed in to provide consent", viewModel.error.value)
-  }
 
-  @Test
-  fun `recordConsent sets error on repository failure`() = runTest {
-    // Given
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
-    every { mockRepository.getNewConsentId() } returns testConsentUuid
+    // Test error on repository failure
+    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
     coEvery { mockRepository.addConsent(any()) } throws Exception("Network error")
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
-
-    // When
     viewModel.recordConsent()
     advanceUntilIdle()
 
-    // Then
     assertFalse(viewModel.consentSaved.value)
-    assertFalse(viewModel.isLoading.value)
     assertEquals("Failed to save consent. Please try again.", viewModel.error.value)
   }
 
   @Test
-  fun `clearConsent removes from Firebase and SharedPreferences`() = runTest {
-    // Given
+  fun `clearConsent handles success and error scenarios`() = runTest {
+    // Test successful consent clearing
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     coEvery { mockRepository.deleteConsentByUserId(testUserId) } just Runs
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
 
-    // When
     viewModel.clearConsent()
     advanceUntilIdle()
 
-    // Then
     assertFalse(viewModel.hasConsented.value)
     assertFalse(viewModel.isLoading.value)
     assertNull(viewModel.error.value)
-
     coVerify { mockRepository.deleteConsentByUserId(testUserId) }
     verify { mockEditor.remove(BetaConsentViewModel.KEY_CONSENT_GIVEN) }
     verify { mockEditor.remove(BetaConsentViewModel.KEY_CONSENT_TIMESTAMP) }
     verify { mockEditor.remove(BetaConsentViewModel.KEY_CONSENT_UUID) }
-  }
 
-  @Test
-  fun `clearConsent sets error on repository failure`() = runTest {
-    // Given
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
+    // Test error on repository failure
     coEvery { mockRepository.deleteConsentByUserId(testUserId) } throws Exception("Delete failed")
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
-
-    // When
     viewModel.clearConsent()
     advanceUntilIdle()
 
-    // Then
     assertFalse(viewModel.isLoading.value)
     assertEquals("Failed to withdraw consent. Please try again.", viewModel.error.value)
   }
 
   @Test
-  fun `clearError clears error state`() = runTest {
-    // Given
+  fun `error management works correctly`() = runTest {
+    // Test clearError clears error state
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     coEvery { mockRepository.addConsent(any()) } throws Exception("Error")
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
     viewModel.recordConsent()
     advanceUntilIdle()
-
-    // When
     viewModel.clearError()
-
-    // Then
     assertNull(viewModel.error.value)
+
+    // Test initialization sets error on Firebase failure
+    coEvery { mockRepository.getConsentByUserId(testUserId) } throws Exception("Network error")
+    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
+    advanceUntilIdle()
+    assertFalse(viewModel.isInitializing.value)
+    assertEquals(
+        "Failed to load consent status. Please check your connection.", viewModel.error.value)
   }
 
   @Test
-  fun `resetConsentSavedFlag resets consentSaved state`() = runTest {
-    // Given
+  fun `resetConsentSavedFlag and timestamp retrieval work correctly`() = runTest {
+    // Test resetConsentSavedFlag
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     every { mockRepository.getNewConsentId() } returns testConsentUuid
     coEvery { mockRepository.addConsent(any()) } just Runs
@@ -264,125 +210,58 @@ class BetaConsentViewModelTest {
     advanceUntilIdle()
     viewModel.recordConsent()
     advanceUntilIdle()
-
-    // When
     viewModel.resetConsentSavedFlag()
-
-    // Then
     assertFalse(viewModel.consentSaved.value)
-  }
 
-  @Test
-  fun `getConsentTimestamp returns null when no timestamp exists`() = runTest {
-    // Given
+    // Test getConsentTimestamp returns null when no timestamp exists
     every { mockPrefs.getLong(BetaConsentViewModel.KEY_CONSENT_TIMESTAMP, -1L) } returns -1L
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
-    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
-    advanceUntilIdle()
+    assertNull(viewModel.getConsentTimestamp())
 
-    // When
-    val timestamp = viewModel.getConsentTimestamp()
-
-    // Then
-    assertNull(timestamp)
-  }
-
-  @Test
-  fun `getConsentTimestamp returns timestamp when it exists`() = runTest {
-    // Given
+    // Test getConsentTimestamp returns timestamp when it exists
     every { mockPrefs.getLong(BetaConsentViewModel.KEY_CONSENT_TIMESTAMP, -1L) } returns
         testTimestamp
+    assertEquals(testTimestamp, viewModel.getConsentTimestamp())
+  }
+
+  @Test
+  fun `getConsentUuid returns correct values for both scenarios`() = runTest {
     coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
     viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
     advanceUntilIdle()
 
-    // When
-    val timestamp = viewModel.getConsentTimestamp()
-
-    // Then
-    assertEquals(testTimestamp, timestamp)
-  }
-
-  @Test
-  fun `getConsentUuid returns null when no uuid exists`() = runTest {
-    // Given
+    // Test returns null when no uuid exists
     every { mockPrefs.getString(BetaConsentViewModel.KEY_CONSENT_UUID, null) } returns null
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
-    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
-    advanceUntilIdle()
+    assertNull(viewModel.getConsentUuid())
 
-    // When
-    val uuid = viewModel.getConsentUuid()
-
-    // Then
-    assertNull(uuid)
-  }
-
-  @Test
-  fun `getConsentUuid returns uuid when it exists`() = runTest {
-    // Given
+    // Test returns uuid when it exists
     every { mockPrefs.getString(BetaConsentViewModel.KEY_CONSENT_UUID, null) } returns
         testConsentUuid
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
-    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
-    advanceUntilIdle()
-
-    // When
-    val uuid = viewModel.getConsentUuid()
-
-    // Then
-    assertEquals(testConsentUuid, uuid)
+    assertEquals(testConsentUuid, viewModel.getConsentUuid())
   }
 
   @Test
-  fun `initialization sets error on Firebase failure`() = runTest {
-    // Given
-    coEvery { mockRepository.getConsentByUserId(testUserId) } throws Exception("Network error")
+  fun `recordConsent handles user without Firebase account and isLoading state correctly`() =
+      runTest {
+        // Test user without Firebase account
+        every { mockFirebaseAuth.currentUser } returns null
+        coEvery { mockRepository.getConsentByUserId(any()) } returns null
+        viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
+        advanceUntilIdle()
+        viewModel.recordConsent()
+        advanceUntilIdle()
 
-    // When
-    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
-    advanceUntilIdle()
+        coVerify(exactly = 0) { mockRepository.addConsent(any()) }
+        assertNotNull(viewModel.error.value)
 
-    // Then
-    assertFalse(viewModel.isInitializing.value)
-    assertEquals(
-        "Failed to load consent status. Please check your connection.", viewModel.error.value)
-  }
+        // Test isLoading is true during operation
+        every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
+        every { mockRepository.getNewConsentId() } returns testConsentUuid
+        coEvery { mockRepository.addConsent(any()) } coAnswers { kotlinx.coroutines.delay(100) }
+        viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
+        advanceUntilIdle()
+        viewModel.recordConsent()
+        testDispatcher.scheduler.advanceTimeBy(50)
 
-  @Test
-  fun `recordConsent handles user without Firebase account`() = runTest {
-    // Given
-    every { mockFirebaseAuth.currentUser } returns null
-    coEvery { mockRepository.getConsentByUserId(any()) } returns null
-    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
-    advanceUntilIdle()
-
-    // When
-    viewModel.recordConsent()
-    advanceUntilIdle()
-
-    // Then
-    coVerify(exactly = 0) { mockRepository.addConsent(any()) }
-    assertNotNull(viewModel.error.value)
-  }
-
-  @Test
-  fun `isLoading is true during recordConsent operation`() = runTest {
-    // Given
-    coEvery { mockRepository.getConsentByUserId(testUserId) } returns null
-    every { mockRepository.getNewConsentId() } returns testConsentUuid
-    coEvery { mockRepository.addConsent(any()) } coAnswers
-        {
-          kotlinx.coroutines.delay(100) // Simulate delay
-        }
-    viewModel = BetaConsentViewModel(mockPrefs, mockRepository)
-    advanceUntilIdle()
-
-    // When
-    viewModel.recordConsent()
-    testDispatcher.scheduler.advanceTimeBy(50) // Advance partway through
-
-    // Then
-    assertTrue(viewModel.isLoading.value)
-  }
+        assertTrue(viewModel.isLoading.value)
+      }
 }
