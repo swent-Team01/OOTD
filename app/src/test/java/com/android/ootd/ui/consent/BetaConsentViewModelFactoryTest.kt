@@ -43,7 +43,6 @@ class BetaConsentViewModelFactoryTest {
 
     // Then
     assertNotNull(viewModel)
-    assertTrue(viewModel is BetaConsentViewModel)
   }
 
   @Test
