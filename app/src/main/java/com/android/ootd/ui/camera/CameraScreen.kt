@@ -196,7 +196,6 @@ private fun CameraView(
                         cameraViewModel.capturePhoto(
                             context = context,
                             imageCapture = capture,
-                            executor = cameraExecutor,
                             onSuccess = { uri ->
                               onImageCaptured(uri)
                               onClose()

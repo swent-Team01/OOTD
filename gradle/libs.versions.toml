@@ -1,5 +1,7 @@
 [versions]
 agp = "8.13.0"
+coilCompose = "2.7.0"
+exifinterface = "1.4.1"
 firebaseBom = "34.3.0"
 kotlin = "2.1.10"
 coreKtx = "1.12.0"
@@ -47,17 +49,20 @@ accompanist = "0.34.0"
 # Guava (for CameraX ListenableFuture)
 guava = "33.5.0-android"
 
+
 # Testing Unit
 junit = "4.13.2"
 mockitoCore = "5.13.0"
 mockitoKotlin = "5.4.0"
-mockk = "1.13.13"
-mockkAgent = "1.13.13"
+mockk = "1.14.6"
+mockkAgent = "1.14.6"
 datastoreCore = "1.1.7"
 firebaseStorageKtx = "22.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-storage = { module = "com.google.firebase:firebase-storage" }
 firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx", version.ref = "firebaseStorage" }

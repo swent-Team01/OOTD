@@ -196,10 +196,9 @@ class AccountViewModel(
 
       try {
         val currentUserId = accountService.currentUserId
-        val imageUrl = uploadImageToStorage(profilePicture, currentUserId)
 
-        accountRepository.editAccount(currentUserId, newUsername, newDate, imageUrl)
-        userRepository.editUser(currentUserId, newUsername, imageUrl)
+        accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
+        userRepository.editUser(currentUserId, newUsername, profilePicture)
         // Update UI state with new values
         val updatedState = _uiState.value.copy(isLoading = false, errorMsg = null)
         _uiState.update {

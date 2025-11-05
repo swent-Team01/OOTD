@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
 //    jacoco
     alias(libs.plugins.androidApplication)
@@ -21,6 +24,15 @@ android {
     namespace = "com.android.ootd"
     compileSdk = 35
 
+    // Load the API key from local.properties
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(FileInputStream(localPropertiesFile))
+    }
+
+    val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: ""
+
     defaultConfig {
         applicationId = "com.android.ootd"
         minSdk = 28
@@ -32,6 +44,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     signingConfigs {
@@ -216,7 +229,7 @@ dependencies {
     implementation(libs.compose.material3)
 
     // Coil for image loading in Compose
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.coil.compose)
     implementation(libs.compose.activity)
     
     // CameraX
@@ -224,6 +237,9 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
+    
+    // ExifInterface for reading image orientation
+    implementation(libs.androidx.exifinterface)
     
     // Accompanist for permissions
     implementation(libs.accompanist.permissions)

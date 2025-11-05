@@ -107,7 +107,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun createAccount_successfullyCreatesNewAccount() = runTest {
     val user = User(uid = currentUser.uid, username = "charlie_brown", profilePicture = ":3")
 
-    accountRepository.createAccount(user, userEmail = testEmail, dateOfBirth = testDateOfBirth)
+    accountRepository.createAccount(
+        user, userEmail = testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     userRepository.addUser(
         User(uid = user.uid, username = user.username, profilePicture = "Hello.jpg"))
 
@@ -126,9 +127,17 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
     userRepository.addUser(user1)
     userRepository.addUser(user2)
+    // But createAccount should fail because username is already in use
+    val exception =
+        runCatching {
+              accountRepository.createAccount(
+                  user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
+            }
+            .exceptionOrNull()
 
     expectThrows<TakenUserException>("already in use") {
-      accountRepository.createAccount(user2, dateOfBirth = testDateOfBirth)
+      accountRepository.createAccount(
+          user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     }
   }
 
@@ -367,5 +376,84 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     expectThrows<NoSuchElementException>("authenticated user") {
       accountRepository.togglePrivacy("nonexistent")
     }
+  }
+
+  @Test
+  fun createAccount_persistsLocationToFirestore() = runTest {
+    val user = User(uid = currentUser.uid, username = "test_location_user", profilePicture = "")
+
+    accountRepository.createAccount(user, testEmail, testDateOfBirth, EPFL_LOCATION)
+
+    val retrieved = accountRepository.getAccount(currentUser.uid)
+    assertEquals(EPFL_LOCATION.latitude, retrieved.location.latitude, 0.0001)
+    assertEquals(EPFL_LOCATION.longitude, retrieved.location.longitude, 0.0001)
+    assertEquals(EPFL_LOCATION.name, retrieved.location.name)
+  }
+
+  @Test
+  fun getAccount_parsesLocationFromMap() = runTest {
+    // Manually create a document with location as a Map
+    val locationMap =
+        mapOf("latitude" to 47.3769, "longitude" to 8.5417, "name" to "Zürich, Switzerland")
+
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId,
+                "location" to locationMap))
+        .await()
+
+    val retrieved = accountRepository.getAccount(account1.uid)
+    assertEquals(47.3769, retrieved.location.latitude, 0.0001)
+    assertEquals(8.5417, retrieved.location.longitude, 0.0001)
+    assertEquals("Zürich, Switzerland", retrieved.location.name)
+  }
+
+  @Test
+  fun getAccount_throwsMissingLocationException() = runTest {
+    // Create account without location field
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId))
+        .await()
+
+    expectThrows<IllegalStateException>("Failed to transform") {
+      accountRepository.getAccount(account1.uid)
+    }
+  }
+
+  @Test
+  fun editAccount_logsSuccessMessage() = runTest {
+    accountRepository.addAccount(account1)
+
+    val newUsername = "updated_user"
+    val newBirthday = "1995-12-25"
+    val newPicture = "new_pic.jpg"
+
+    // This test verifies the method executes successfully and logs the success message
+    accountRepository.editAccount(
+        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
+
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals(newUsername, updated.username)
+    assertEquals(newBirthday, updated.birthday)
+    assertEquals(newPicture, updated.profilePicture)
   }
 }
