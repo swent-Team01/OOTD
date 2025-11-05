@@ -28,120 +28,68 @@ class BetaConsentScreenTest {
   }
 
   @Test
-  fun betaConsentScreen_titleDisplaysCorrectText() {
+  fun betaConsentScreen_displaysCorrectInitialState() {
     // When
     composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
 
-    // Then
+    // Then - verify title, button states, and text content
     composeTestRule
         .onNodeWithTag(BetaConsentScreenTestTags.TITLE)
         .assertTextEquals("OOTD Beta Program")
-  }
-
-  @Test
-  fun betaConsentScreen_agreeButtonDisabledInitially() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
     composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.AGREE_BUTTON).assertIsNotEnabled()
-  }
-
-  @Test
-  fun betaConsentScreen_declineButtonAlwaysEnabled() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
     composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.DECLINE_BUTTON).assertIsEnabled()
+    composeTestRule.onNodeWithText("Welcome to the OOTD Beta!").assertExists()
+    composeTestRule.onNodeWithText("Decline").assertExists()
   }
 
   @Test
-  fun betaConsentScreen_onDeclineCallbackTriggered() {
-    // Given
+  fun betaConsentScreen_callbacksTriggeredCorrectly() {
+    // Test decline callback
     var declinedCalled = false
     composeTestRule.setContent {
       OOTDTheme { BetaConsentScreen(onDecline = { declinedCalled = true }) }
     }
-
-    // When
     composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.DECLINE_BUTTON).performClick()
-
-    // Then
     assert(declinedCalled)
-  }
 
-  @Test
-  fun betaConsentScreen_showsLoadingStateWhenLoading() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen(isLoading = true) } }
-
-    // Then
-    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.CHECKBOX).performClick()
-    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.AGREE_BUTTON).assertIsNotEnabled()
-  }
-
-  @Test
-  fun betaConsentScreen_displaysErrorMessage() {
-    // When
-    composeTestRule.setContent {
-      OOTDTheme { BetaConsentScreen(errorMessage = "Test error message") }
-    }
-
-    // Then
-    composeTestRule.onNodeWithText("Test error message").assertExists()
-    composeTestRule.onNodeWithText("Dismiss").assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_errorMessageDismissCallbackTriggered() {
-    // Given
+    // Test error dismiss callback
     var dismissCalled = false
     composeTestRule.setContent {
       OOTDTheme {
         BetaConsentScreen(errorMessage = "Test error", onErrorDismiss = { dismissCalled = true })
       }
     }
-
-    // When
     composeTestRule.onNodeWithText("Dismiss").performClick()
-
-    // Then
     assert(dismissCalled)
   }
 
   @Test
-  fun betaConsentScreen_displaysDataCollectionSection() {
+  fun betaConsentScreen_displaysAllContentSections() {
     // When
     composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
 
-    // Then
+    // Then - verify all sections are present
     composeTestRule
         .onNodeWithTag(BetaConsentScreenTestTags.SECTION_DATA_COLLECTION)
         .performScrollTo()
         .assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_displaysPhotosSection() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
     composeTestRule
         .onNodeWithTag(BetaConsentScreenTestTags.SECTION_PHOTOS)
         .performScrollTo()
         .assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_displaysLocationSection() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
     composeTestRule
         .onNodeWithTag(BetaConsentScreenTestTags.SECTION_LOCATION)
+        .performScrollTo()
+        .assertExists()
+    composeTestRule
+        .onNode(
+            hasText(
+                "This app is created for the course CS-311 at EPFL. It's still in active development, so if you encounter any bugs or just want to share feedback with us, feel free to reach out to us!",
+                substring = true))
+        .performScrollTo()
+        .assertExists()
+    composeTestRule
+        .onNode(hasText("Last updated: November 5, 2025"))
         .performScrollTo()
         .assertExists()
   }
@@ -159,70 +107,18 @@ class BetaConsentScreenTest {
   }
 
   @Test
-  fun betaConsentScreen_displaysCorrectButtonText() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
-    composeTestRule.onNodeWithText("Decline").assertExists()
-    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.AGREE_BUTTON).assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_showsSavingTextWhenLoading() {
-    // When
+  fun betaConsentScreen_displaysLoadingAndErrorStates() {
+    // Test loading state
     composeTestRule.setContent { OOTDTheme { BetaConsentScreen(isLoading = true) } }
-
-    // Then
+    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.CHECKBOX).performClick()
+    composeTestRule.onNodeWithTag(BetaConsentScreenTestTags.AGREE_BUTTON).assertIsNotEnabled()
     composeTestRule.onNodeWithText("Saving...").assertExists()
-  }
 
-  @Test
-  fun betaConsentScreen_displaysWelcomeText() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
-    composeTestRule.onNodeWithText("Welcome to the OOTD Beta!").assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_displaysCS311Reference() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
-    composeTestRule
-        .onNode(
-            hasText(
-                "This app is created for the course CS-311 at EPFL. It's still in active development, so if you encounter any bugs or just want to share feedback with us, feel free to reach out to us!",
-                substring = true))
-        .performScrollTo()
-        .assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_displaysLastUpdatedDate() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
-    composeTestRule
-        .onNode(hasText("Last updated: November 5, 2025"))
-        .performScrollTo()
-        .assertExists()
-  }
-
-  @Test
-  fun betaConsentScreen_displaysCheckboxAgreementText() {
-    // When
-    composeTestRule.setContent { OOTDTheme { BetaConsentScreen() } }
-
-    // Then
-    composeTestRule
-        .onNode(
-            hasText(
-                "I agree to the data collection and usage terms described above", substring = true))
-        .assertExists()
+    // Test error state
+    composeTestRule.setContent {
+      OOTDTheme { BetaConsentScreen(errorMessage = "Test error message") }
+    }
+    composeTestRule.onNodeWithText("Test error message").assertExists()
+    composeTestRule.onNodeWithText("Dismiss").assertExists()
   }
 }
