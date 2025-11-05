@@ -2,6 +2,7 @@ package com.android.ootd.utils
 
 import com.android.ootd.model.account.ACCOUNT_COLLECTION_PATH
 import com.android.ootd.model.account.Account
+import com.android.ootd.model.map.Location
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -13,6 +14,9 @@ open class AccountFirestoreTest : FirestoreTest() {
   val testDateOfBirth = "2000-01-01"
 
   val testEmail = "123@example.com"
+
+  val EPFL_LOCATION =
+      Location(46.5191, 6.5668, "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
   lateinit var account1: Account
   lateinit var account2: Account
   lateinit var dummyAccount: Account

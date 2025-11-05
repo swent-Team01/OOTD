@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,9 +31,11 @@ sealed class Tab(val name: String, val icon: ImageVector, val destination: Scree
   object Inventory : Tab("Inventory", Icons.AutoMirrored.Outlined.List, Screen.InventoryScreen)
 
   object Account : Tab("Account", Icons.Outlined.Person, Screen.Account)
+
+  object Map : Tab("Map", Icons.Outlined.Place, Screen.Map)
 }
 
-private val tabs = listOf(Tab.Feed, Tab.Search, Tab.Inventory, Tab.Account)
+private val tabs = listOf(Tab.Feed, Tab.Search, Tab.Inventory, Tab.Account, Tab.Map)
 
 /** Helpers for unit tests */
 fun routeToTab(route: String): Tab = tabs.find { it.destination.route == route } ?: Tab.Feed

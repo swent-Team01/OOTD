@@ -53,6 +53,9 @@ class BottomNavigationBarTest {
             NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Inventory))
         .assertIsDisplayed()
     composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Map))
+        .assertIsDisplayed()
+    composeRule
         .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Account))
         .assertIsDisplayed()
   }
@@ -96,5 +99,23 @@ class BottomNavigationBarTest {
     composeRule.runOnIdle { navController.navigate(Screen.FitCheck.route) }
     composeRule.waitForIdle()
     composeRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertDoesNotExist()
+  }
+
+  @Test
+  fun bottomBar_clickMap_navigatesToMapScreen_andRouteUpdates() {
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Map))
+        .performClick()
+    composeRule.waitForIdle()
+    composeRule.runOnIdle {
+      assertEquals(Screen.Map.route, navController.currentDestination?.route)
+    }
+  }
+
+  @Test
+  fun bottomBar_isVisibleOnMap() {
+    composeRule.runOnIdle { navController.navigate(Screen.Map.route) }
+    composeRule.waitForIdle()
+    composeRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
   }
 }

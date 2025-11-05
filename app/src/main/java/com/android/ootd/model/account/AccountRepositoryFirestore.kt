@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import android.util.Log
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
@@ -28,7 +29,11 @@ private fun Account.toFirestoreMap(): Map<String, Any> =
         "friendUids" to friendUids,
         "isPrivate" to isPrivate,
         "ownerId" to ownerId,
-        "friendUids" to friendUids)
+        "location" to
+            mapOf(
+                "latitude" to location.latitude,
+                "longitude" to location.longitude,
+                "name" to location.name))
 
 /** Convert Firestore DocumentSnapshot to domain Account (uses document id as uid) */
 private fun DocumentSnapshot.toAccount(): Account {
@@ -49,6 +54,20 @@ private fun DocumentSnapshot.toAccount(): Account {
                 "friendUids field is not a List but ${friendUidsRaw::class.simpleName}")
       }
 
+  // Parse location if present, otherwise throw MissingLocationException
+  val locationRaw = get("location")
+  val location =
+      when {
+        locationRaw == null -> throw MissingLocationException()
+        locationRaw is Map<*, *> -> {
+          val lat = (locationRaw["latitude"] as? Number)?.toDouble() ?: 0.0
+          val lon = (locationRaw["longitude"] as? Number)?.toDouble() ?: 0.0
+          val name = locationRaw["name"] as? String ?: ""
+          Location(lat, lon, name)
+        }
+        else -> throw MissingLocationException()
+      }
+
   val uid = id // document id is the user id
 
   return Account(
@@ -59,6 +78,7 @@ private fun DocumentSnapshot.toAccount(): Account {
       googleAccountEmail = email,
       profilePicture = picture,
       friendUids = friends,
+      location = location,
       isPrivate = isPrivate)
 }
 
@@ -87,7 +107,12 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun createAccount(user: User, userEmail: String, dateOfBirth: String) {
+  override suspend fun createAccount(
+      user: User,
+      userEmail: String,
+      dateOfBirth: String,
+      location: Location
+  ) {
     if (userExists(user)) {
       Log.e("AccountRepositoryFirestore", "Username already in use")
       throw TakenUserException("Username already in use")
@@ -100,7 +125,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
-            profilePicture = user.profilePicture)
+            profilePicture = user.profilePicture,
+            location = location)
     try {
       addAccount(newAccount)
     } catch (e: Exception) {
@@ -308,7 +334,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
               mapOf(
                   "username" to newUsername,
                   "birthday" to newBirthDate,
-                  "profilePicture" to newProfilePic))
+                  "profilePicture" to newProfilePic,
+              ))
           .await()
 
       Log.d(
