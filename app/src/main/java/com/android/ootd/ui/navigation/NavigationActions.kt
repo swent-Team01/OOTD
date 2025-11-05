@@ -63,6 +63,9 @@ sealed class Screen(
     }
   }
 
+  object BetaConsent :
+      Screen(route = "betaConsent", name = "BetaConsent", isTopLevelDestination = true)
+
   object Map : Screen(route = "map", name = "Map", isTopLevelDestination = false)
 
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
