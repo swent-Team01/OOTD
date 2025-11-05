@@ -20,39 +20,34 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
+/**
+ * Unit tests for FeedViewModel using a fake repository. Tests ViewModel state management and
+ * business logic without Firebase dependencies.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedViewModelTest {
 
   @get:Rule val mainRule = MainDispatcherRule()
 
-  private fun account(uid: String, friendUids: List<String>) =
-      Account(uid = uid, ownerId = uid, username = "U-$uid", friendUids = friendUids)
-
-  private fun post(id: String, uid: String, ts: Long) =
-      OutfitPost(
-          postUID = id,
-          name = "N",
-          ownerId = uid,
-          userProfilePicURL = "",
-          outfitURL = "url_$id",
-          description = "",
-          itemsID = emptyList(),
-          timestamp = ts)
+  // -------- Initial state --------
 
   @Test
-  fun default_state_is_empty() = runTest {
+  fun initialState_isEmpty() = runTest {
     val vm = FeedViewModel(FakeFeedRepository())
+
     assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
     assertEquals(false, vm.uiState.value.hasPostedToday)
     assertEquals(null, vm.uiState.value.currentAccount)
   }
 
+  // -------- Account setup scenarios --------
+
   @Test
-  fun setCurrentUser_not_posted_keeps_feed_empty() = runTest {
-    val repo = FakeFeedRepository().apply { setHasPostedToday("me", false) }
+  fun setAccount_notPostedToday_feedRemainsEmpty() = runTest {
+    val repo = FakeFeedRepository(hasPosted = false)
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentAccount(account("me", listOf("me")))
+    vm.setCurrentAccount(account("me", friends = listOf("me")))
     advanceUntilIdle()
 
     assertEquals(false, vm.uiState.value.hasPostedToday)
@@ -60,11 +55,11 @@ class FeedViewModelTest {
   }
 
   @Test
-  fun setCurrentUser_posted_no_friends_results_empty_feed() = runTest {
-    val repo = FakeFeedRepository().apply { setHasPostedToday("me", true) }
+  fun setAccount_postedButNoFriends_feedIsEmpty() = runTest {
+    val repo = FakeFeedRepository(hasPosted = true)
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentAccount(account("me", emptyList()))
+    vm.setCurrentAccount(account("me", friends = emptyList()))
     advanceUntilIdle()
 
     assertTrue(vm.uiState.value.hasPostedToday)
@@ -72,39 +67,39 @@ class FeedViewModelTest {
   }
 
   @Test
-  fun loads_posts_for_distinct_and_nonblank_friends_when_has_posted() = runTest {
+  fun setAccount_postedWithFriends_loadsFeedAndDeduplicates() = runTest {
     val repo =
-        FakeFeedRepository().apply {
-          setHasPostedToday("me", true)
-          addPost(post("p1", "me", 1))
-          addPost(post("p2", "me", 2))
-        }
+        FakeFeedRepository(
+            hasPosted = true,
+            posts = listOf(post("p1", uid = "me", ts = 1), post("p2", uid = "me", ts = 2)))
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentAccount(account("me", listOf("me", "  me  ", "")))
+    // Friends list has duplicates and blanks - should be cleaned up
+    vm.setCurrentAccount(account("me", friends = listOf("me", "  me  ", "")))
     advanceUntilIdle()
 
     assertEquals(listOf("p1", "p2"), vm.uiState.value.feedPosts.map { it.postUID })
+    assertTrue(vm.uiState.value.hasPostedToday)
   }
 
+  // -------- Error handling --------
+
   @Test
-  fun on_repo_error_feed_becomes_empty_no_crash() = runTest {
-    val repo =
-        FakeFeedRepository().apply {
-          setHasPostedToday("me", true)
-          throwOnGet = true
-        }
+  fun repositoryError_feedBecomesEmpty_noException() = runTest {
+    val repo = FakeFeedRepository(hasPosted = true, throwOnGet = true)
     val vm = FeedViewModel(repo)
 
-    vm.setCurrentAccount(account("me", listOf("me")))
+    vm.setCurrentAccount(account("me", friends = listOf("me")))
     advanceUntilIdle()
 
     assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
     assertTrue(vm.uiState.value.hasPostedToday)
   }
 
+  // -------- Post upload callback --------
+
   @Test
-  fun onPostUploaded_without_current_user_sets_flag_and_clears_feed() = runTest {
+  fun onPostUploaded_setsFlagAndClearsFeed() = runTest {
     val vm = FeedViewModel(FakeFeedRepository())
 
     vm.onPostUploaded()
@@ -114,7 +109,21 @@ class FeedViewModelTest {
     assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
   }
 
-  // ------------ inline test helpers ------------
+  // -------- Test helpers --------
+
+  private fun account(uid: String, friends: List<String>) =
+      Account(uid = uid, ownerId = uid, username = "User-$uid", friendUids = friends)
+
+  private fun post(id: String, uid: String, ts: Long) =
+      OutfitPost(
+          postUID = id,
+          name = "Post $id",
+          ownerId = uid,
+          userProfilePicURL = "https://example.com/$uid.jpg",
+          outfitURL = "https://example.com/outfit_$id.jpg",
+          description = "Description for $id",
+          itemsID = emptyList(),
+          timestamp = ts)
 
   @OptIn(ExperimentalCoroutinesApi::class)
   class MainDispatcherRule(private val dispatcher: TestDispatcher = StandardTestDispatcher()) :
@@ -133,35 +142,32 @@ class FeedViewModelTest {
     }
   }
 
-  private class FakeFeedRepository : FeedRepository {
-    private val postsByUid = mutableMapOf<String, MutableList<OutfitPost>>()
-    private val hasPosted = mutableMapOf<String, Boolean>()
-    private var idSeq = 0
-    var throwOnGet: Boolean = false
+  /** Fake repository for testing ViewModel logic without Firebase dependencies */
+  private class FakeFeedRepository(
+      private val hasPosted: Boolean = false,
+      private val posts: List<OutfitPost> = emptyList(),
+      val throwOnGet: Boolean = false
+  ) : FeedRepository {
+
+    private val allPosts = posts.toMutableList()
+    private var idCounter = 0
 
     override suspend fun addPost(p: OutfitPost) {
-      postsByUid.getOrPut(p.ownerId) { mutableListOf() }.add(p)
+      allPosts.add(p)
     }
 
-    override fun getNewPostId(): String = "test-${idSeq++}"
+    override fun getNewPostId(): String = "test-post-${idCounter++}"
 
-    fun setHasPostedToday(uid: String, value: Boolean) {
-      hasPosted[uid] = value
-    }
-
-    override suspend fun hasPostedToday(userId: String): Boolean {
-      return hasPosted[userId] ?: false
-    }
+    override suspend fun hasPostedToday(userId: String): Boolean = hasPosted
 
     override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
-      if (throwOnGet) throw IllegalStateException("Injected failure")
-      // tiny async to exercise coroutine scheduling deterministically
-      delay(1)
-      return uids
-          .asSequence()
-          .flatMap { (postsByUid[it] ?: emptyList()).asSequence() }
+      if (throwOnGet) throw IllegalStateException("Simulated repository failure")
+
+      delay(1) // Simulate async operation for coroutine testing
+
+      return allPosts
+          .filter { it.ownerId in uids }
           .sortedWith(compareBy<OutfitPost> { it.timestamp }.thenBy { it.postUID })
-          .toList()
     }
   }
 }
