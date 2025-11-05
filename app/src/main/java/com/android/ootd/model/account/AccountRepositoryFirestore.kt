@@ -95,7 +95,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     val newAccount =
         Account(
             uid = user.uid,
-            ownerId = user.uid,
+            ownerId = user.ownerId,
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,

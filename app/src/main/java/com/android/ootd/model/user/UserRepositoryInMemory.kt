@@ -9,12 +9,22 @@ class UserRepositoryInMemory : UserRepository {
           "alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
   private val users =
       mutableMapOf(
-          "user1" to User(uid = "user1", username = nameList[0], profilePicture = "1"),
-          "user2" to User(uid = "user2", username = nameList[1], profilePicture = "2"),
-          "user3" to User(uid = "user3", username = nameList[2], profilePicture = "3"),
-          "user4" to User(uid = "user4", username = nameList[3], profilePicture = "4"),
-          "user5" to User(uid = "user5", username = nameList[4], profilePicture = "5"),
-          "nonRegisterUser" to User(uid = "nonRegisterUser", username = "", profilePicture = "0"))
+          "user1" to
+              User(uid = "user1", ownerId = "user1", username = nameList[0], profilePicture = "1"),
+          "user2" to
+              User(uid = "user2", ownerId = "user2", username = nameList[1], profilePicture = "2"),
+          "user3" to
+              User(uid = "user3", ownerId = "user3", username = nameList[2], profilePicture = "3"),
+          "user4" to
+              User(uid = "user4", ownerId = "user4", username = nameList[3], profilePicture = "4"),
+          "user5" to
+              User(uid = "user5", ownerId = "user5", username = nameList[4], profilePicture = "5"),
+          "nonRegisterUser" to
+              User(
+                  uid = "nonRegisterUser",
+                  ownerId = "nonRegisterUser",
+                  username = "",
+                  profilePicture = "0"))
 
   override fun getNewUid(): String {
     return UUID.randomUUID().toString()
@@ -42,13 +52,18 @@ class UserRepositoryInMemory : UserRepository {
     return username.isNotBlank()
   }
 
-  override suspend fun createUser(username: String, uid: String, profilePicture: String) {
+  override suspend fun createUser(
+      username: String,
+      uid: String,
+      ownerId: String,
+      profilePicture: String
+  ) {
     // Check if username already exists
     if (users.values.any { it.username == username }) {
       throw TakenUsernameException("Username already in use")
     }
 
-    val newUser = User(uid, username, profilePicture)
+    val newUser = User(uid, ownerId, username, profilePicture)
     addUser(newUser)
   }
 

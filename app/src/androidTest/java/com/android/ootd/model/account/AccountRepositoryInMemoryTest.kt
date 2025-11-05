@@ -218,7 +218,7 @@ class AccountRepositoryInMemoryTest {
   @Test
   fun createAccount_successfullyCreatesNewAccount() = runTest {
     val user =
-        User(uid = "user6", username = "george_washington", profilePicture = testProfilePicture)
+        User(uid = "user6", ownerId = "user6", username = "george_washington", profilePicture = testProfilePicture)
 
     repository.createAccount(user, testEmail, dateOfBirth = testDateOfBirth)
     val account = repository.getAccount("user6")

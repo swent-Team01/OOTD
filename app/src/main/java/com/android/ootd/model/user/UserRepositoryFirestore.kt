@@ -16,16 +16,25 @@ class TakenUsernameException(message: String) : Exception(message)
 @Keep
 private data class UserDto(
     val uid: String = "",
+    val ownerId: String = "",
     val username: String = "",
     val profilePicture: String = ""
 )
 
 private fun User.toDto(): UserDto {
-  return UserDto(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
+  return UserDto(
+      uid = this.uid,
+      ownerId = this.ownerId,
+      username = this.username,
+      profilePicture = this.profilePicture)
 }
 
 private fun UserDto.toDomain(): User {
-  return User(uid = this.uid, username = this.username, profilePicture = this.profilePicture)
+  return User(
+      uid = this.uid,
+      ownerId = this.ownerId,
+      username = this.username,
+      profilePicture = this.profilePicture)
 }
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
@@ -62,14 +71,19 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     return UUID.randomUUID().toString()
   }
 
-  override suspend fun createUser(username: String, uid: String, profilePicture: String) {
+  override suspend fun createUser(
+      username: String,
+      uid: String,
+      ownerId: String,
+      profilePicture: String
+  ) {
 
     if (usernameExists(username)) {
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
     }
 
-    val newUser = User(uid, username, profilePicture)
+    val newUser = User(uid, ownerId, username, profilePicture)
     try {
       addUser(newUser)
     } catch (e: Exception) {
@@ -115,8 +129,8 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       if (!querySnapshot.exists()) {
         false
       } else {
-        val uid = querySnapshot.getString("uid")
-        !uid.isNullOrBlank()
+        val username = querySnapshot.getString("usename")
+        !username.isNullOrBlank()
       }
     } catch (e: Exception) {
       Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)
@@ -126,7 +140,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun addUser(user: User) {
     try {
-      if (!userExists(user.uid)) {
+      if (userExists(user.uid)) {
         throw IllegalArgumentException("User with UID ${user.uid} already exists")
       }
 

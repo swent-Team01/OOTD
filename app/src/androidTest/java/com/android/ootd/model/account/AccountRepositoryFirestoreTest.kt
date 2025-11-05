@@ -25,7 +25,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun addAccount_throwsExceptionWhenAccountAlreadyExists() = runBlocking {
     accountRepository.addAccount(account1)
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
 
     val exception = runCatching { accountRepository.addAccount(account1) }.exceptionOrNull()
 
@@ -38,10 +38,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun getAccount_returnsCorrectAccount() = runBlocking {
     accountRepository.addAccount(account1)
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     accountRepository.addAccount(account2)
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account2.ownerId, username = account2.username, profilePicture = ""))
 
     val retrieved = accountRepository.getAccount(account2.uid)
     assertEquals(account2.uid, retrieved.uid)
@@ -61,7 +61,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun accountExists_returnsTrueWhenAccountHasUsername() = runBlocking {
     accountRepository.addAccount(account1)
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
 
     val exists = accountRepository.accountExists(account1.uid)
     assertTrue(exists)
@@ -95,11 +95,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun createAccount_successfullyCreatesNewAccount() = runBlocking {
-    val user = User(uid = currentUser.uid, username = "charlie_brown", profilePicture = ":3")
+    val user = User(uid = currentUser.uid, ownerId = account1.ownerId, username = "charlie_brown", profilePicture = ":3")
 
     accountRepository.createAccount(user, userEmail = testEmail, dateOfBirth = testDateOfBirth)
     userRepository.addUser(
-        User(uid = user.uid, username = user.username, profilePicture = "Hello.jpg"))
+        User(uid = user.uid, ownerId = account1.ownerId, username = user.username, profilePicture = "Hello.jpg"))
 
     val account = accountRepository.getAccount(user.uid)
     assertEquals(user.uid, account.uid)
@@ -111,8 +111,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun createAccount_throwsExceptionForDuplicateUser() = runBlocking {
-    val user1 = User(uid = "user3", username = "duplicate", profilePicture = "")
-    val user2 = User(uid = "user4", username = "duplicate", profilePicture = "")
+    val user1 = User(uid = "user3", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
+    val user2 = User(uid = "user4", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
 
     userRepository.addUser(user1)
 
@@ -136,9 +136,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     // different uids.
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
@@ -153,9 +153,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account2)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.addFriend(account1.uid, account2.uid)
@@ -186,11 +186,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account3)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
+        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.addFriend(account1.uid, account3.uid)
@@ -209,9 +209,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account2)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
@@ -225,7 +225,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun removeFriend_throwsExceptionWhenFriendNotFound() = runBlocking {
     accountRepository.addAccount(account1)
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId ,username = account1.username, profilePicture = ""))
     val exception =
         runCatching { accountRepository.removeFriend(account1.uid, "nonexistent") }
             .exceptionOrNull()
@@ -243,11 +243,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account3)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
+        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.removeFriend(account1.uid, account3.uid)
@@ -266,11 +266,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account3)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
+        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.addFriend(account1.uid, account3.uid)
@@ -287,9 +287,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account2)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
@@ -306,11 +306,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account3)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account3.uid, username = account3.username, profilePicture = ""))
+        User(uid = account3.uid, ownerId = account1.ownerId, username = account3.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
 
@@ -324,9 +324,9 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account2)
 
     userRepository.addUser(
-        User(uid = account1.uid, username = account1.username, profilePicture = ""))
+        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
     userRepository.addUser(
-        User(uid = account2.uid, username = account2.username, profilePicture = ""))
+        User(uid = account2.uid, ownerId = account1.ownerId, username = account2.username, profilePicture = ""))
 
     accountRepository.addFriend(account1.uid, account2.uid)
     accountRepository.removeFriend(account1.uid, account2.uid)

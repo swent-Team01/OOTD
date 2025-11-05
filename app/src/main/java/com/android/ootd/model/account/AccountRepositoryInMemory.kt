@@ -61,7 +61,7 @@ class AccountRepositoryInMemory : AccountRepository {
     val newAccount =
         Account(
             uid = user.uid,
-            ownerId = user.uid,
+            ownerId = user.ownerId,
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
