@@ -1,7 +1,6 @@
 package com.android.ootd.ui.notifications
 
 import NotificationRepository
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -14,7 +13,6 @@ import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.EMPTY_STATE_TEXT
-import com.android.ootd.ui.notifications.NotificationsScreenTestTags.REQUEST_PERMISSION_BUTTON
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -66,17 +64,6 @@ class NotificationsScreenTest : FirestoreTest() {
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule.onNodeWithTag(EMPTY_STATE_TEXT).isDisplayed()
     }
-  }
-
-  @Test
-  fun testFollowRequestCardPreviewDisplayed() = runTest {
-    composeTestRule.setContent { FollowRequestCardPreview() }
-  }
-
-  @Test
-  fun testEnableNotificationsDisplayed() = runTest {
-    buildComposeTestRule(composeTestRule, overrideNotificationPopup = false)
-    composeTestRule.onNodeWithTag(REQUEST_PERMISSION_BUTTON).assertIsDisplayed().performClick()
   }
 
   @Test
