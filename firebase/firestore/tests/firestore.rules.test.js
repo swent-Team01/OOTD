@@ -41,15 +41,15 @@ describe('Firestore rules - OOTD friend-only feed (intended rules)', () => {
   });
 
   // /users rules
-  test('Authenticated users can read any user doc and write (current rules)', async () => {
+  test('Authenticated users can read any user doc but not write', async () => {
     await assertSucceeds(getDoc(doc(me, 'users/me')));
     await assertSucceeds(getDoc(doc(me, 'users/u1')));
 
     await assertSucceeds(
       setDoc(doc(me, 'users/me'), { uid: 'me', name: 'Me', friendList: [] }, { merge: true })
     );
-    // Writes to other users are allowed by current rules
-    await assertSucceeds(
+    // Writes to other users are not allowed
+    await assertFails(
       setDoc(doc(alice, 'users/me'), { uid: 'me', touchedBy: 'u1' }, { merge: true })
     );
   });
