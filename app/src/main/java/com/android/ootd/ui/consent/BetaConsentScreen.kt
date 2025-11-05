@@ -95,13 +95,13 @@ fun BetaConsentScreen(
 
               // Scrollable content
               Card(
-                  modifier =
-                      Modifier.weight(1f)
-                          .fillMaxWidth()
-                          .testTag(BetaConsentScreenTestTags.SCROLL_CONTENT),
+                  modifier = Modifier.weight(1f).fillMaxWidth(),
                   colors = CardDefaults.cardColors(containerColor = Secondary)) {
                     Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
+                        modifier =
+                            Modifier.verticalScroll(rememberScrollState())
+                                .padding(12.dp)
+                                .testTag(BetaConsentScreenTestTags.SCROLL_CONTENT)) {
                           // Introduction
                           Text(
                               text = "Welcome to the OOTD Beta!",
