@@ -52,6 +52,21 @@ fun UserProfileCardPreview() {
   }
 }
 
+@Preview
+@Composable
+fun UserProfileCardWithErrorPreview() {
+  OOTDTheme {
+    UserProfileCard(
+        selectedUser = User(uid = "Bob", username = "TestUser"),
+        modifier = Modifier.padding(16.dp),
+        isSelectedUserFollowed = false,
+        hasRequestPending = false,
+        errorMessage = "Something went wrong. Please check your connection and try again.",
+        onFollowClick = {},
+        onErrorDismiss = {})
+  }
+}
+
 @Composable
 fun UserProfileCard(
     modifier: Modifier,

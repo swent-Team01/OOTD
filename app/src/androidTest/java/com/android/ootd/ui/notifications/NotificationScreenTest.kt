@@ -13,6 +13,7 @@ import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.EMPTY_STATE_TEXT
+import com.android.ootd.ui.notifications.NotificationsScreenTestTags.ERROR_MESSAGE
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -41,7 +42,8 @@ class NotificationsScreenTest : FirestoreTest() {
 
   private fun buildComposeTestRule(
       composeTestRule: ComposeContentTestRule,
-      overrideNotificationPopup: Boolean = true
+      overrideNotificationPopup: Boolean = true,
+      addError: Boolean = false
   ) {
 
     val mockViewModel =
@@ -53,6 +55,13 @@ class NotificationsScreenTest : FirestoreTest() {
             testUserId = currentUser.uid,
             overrideNotificationPopup = overrideNotificationPopup)
 
+    if (addError) {
+      mockViewModel.deleteFollowRequest(
+          FollowRequestItem(
+              notification =
+                  Notification(uid = "", senderId = "", receiverId = "", type = "", content = ""),
+              User()))
+    }
     composeTestRule.setContent { NotificationsScreen(viewModel = mockViewModel) }
 
     composeTestRule.waitForIdle()
@@ -63,6 +72,14 @@ class NotificationsScreenTest : FirestoreTest() {
     buildComposeTestRule(composeTestRule)
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule.onNodeWithTag(EMPTY_STATE_TEXT).isDisplayed()
+    }
+  }
+
+  @Test
+  fun testErrorDisplayed() = runTest {
+    buildComposeTestRule(composeTestRule, addError = true)
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onNodeWithTag(ERROR_MESSAGE).isDisplayed()
     }
   }
 
