@@ -125,7 +125,11 @@ class AccountRepositoryInMemoryTest {
   @Test
   fun createAccount_variants() = runTest {
     val user =
-        User(uid = "user6", ownerId = "user6", username = "george_washington", profilePicture = testProfilePicture)
+        User(
+            uid = "user6",
+            ownerId = "user6",
+            username = "george_washington",
+            profilePicture = testProfilePicture)
     repository.createAccount(user, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     val acc = repository.getAccount("user6")
     assertEquals(user.uid, acc.uid)
@@ -135,7 +139,12 @@ class AccountRepositoryInMemoryTest {
     assertTrue(acc.friendUids.isEmpty())
 
     // Use a different user with different username for second test
-    val user7 = User(uid = "user7", ownerId = "user7", username = "john_adams", profilePicture = testProfilePicture)
+    val user7 =
+        User(
+            uid = "user7",
+            ownerId = "user7",
+            username = "john_adams",
+            profilePicture = testProfilePicture)
     repository.createAccount(
         user7, testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     val account = repository.getAccount("user7")
@@ -150,8 +159,18 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun createAccount_throwsExceptionForDuplicateUsername() {
-    val user1 = User(uid = "newUser1", ownerId = "newUser1", username = "duplicate_user", profilePicture = "")
-    val user2 = User(uid = "newUser2", ownerId = "newUser2", username = "duplicate_user", profilePicture = "")
+    val user1 =
+        User(
+            uid = "newUser1",
+            ownerId = "newUser1",
+            username = "duplicate_user",
+            profilePicture = "")
+    val user2 =
+        User(
+            uid = "newUser2",
+            ownerId = "newUser2",
+            username = "duplicate_user",
+            profilePicture = "")
 
     val exception =
         assertThrows(TakenUserException::class.java) {
@@ -187,8 +206,18 @@ class AccountRepositoryInMemoryTest {
     assertEquals("", repository.getAccount("tempUser2").username)
 
     // Test that duplicate non-blank usernames throw exception
-    val u1 = User(uid = "newUser1", ownerId = "newUser1", username = "duplicate_user", profilePicture = "")
-    val u2 = User(uid = "newUser2", ownerId = "newUser2",username = "duplicate_user", profilePicture = "")
+    val u1 =
+        User(
+            uid = "newUser1",
+            ownerId = "newUser1",
+            username = "duplicate_user",
+            profilePicture = "")
+    val u2 =
+        User(
+            uid = "newUser2",
+            ownerId = "newUser2",
+            username = "duplicate_user",
+            profilePicture = "")
     expectThrows<TakenUserException>("Username already in use") {
       repository.createAccount(u1, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
       repository.createAccount(u2, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
@@ -246,7 +275,8 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun createAccount_emailEdgeCases() = runTest {
-    val user = User(uid = "user8", ownerId = "user8", username = "empty_email_user", profilePicture = "")
+    val user =
+        User(uid = "user8", ownerId = "user8", username = "empty_email_user", profilePicture = "")
     val emptyEmail = ""
     repository.createAccount(user, emptyEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     val account = repository.getAccount("user8")
@@ -265,7 +295,8 @@ class AccountRepositoryInMemoryTest {
   @Test
   fun createAccount_allowsSameEmailForDifferentUsers() = runTest {
     val user1 = User(uid = "user9", ownerId = "user9", username = "first_user", profilePicture = "")
-    val user2 = User(uid = "user10", ownerId = "user10", username = "second_user", profilePicture = "")
+    val user2 =
+        User(uid = "user10", ownerId = "user10", username = "second_user", profilePicture = "")
     val sharedEmail = "shared@example.com"
 
     repository.createAccount(

@@ -15,7 +15,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   // Helpers to keep tests short
   private suspend fun addAccAndUser(acc: Account) {
     accountRepository.addAccount(acc)
-    userRepository.addUser(User(uid = acc.uid, username = acc.username, profilePicture = ""))
+    userRepository.addUser(
+        User(uid = acc.uid, ownerId = acc.ownerId, username = acc.username, profilePicture = ""))
   }
 
   private suspend fun add(vararg accs: Account) {
@@ -53,7 +54,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun addAccount_throwsExceptionWhenAccountAlreadyExists() = runTest {
     accountRepository.addAccount(account1)
     userRepository.addUser(
-        User(uid = account1.uid, ownerId = account1.ownerId, username = account1.username, profilePicture = ""))
+        User(
+            uid = account1.uid,
+            ownerId = account1.ownerId,
+            username = account1.username,
+            profilePicture = ""))
 
     expectThrows<TakenAccountException>("already exists") { accountRepository.addAccount(account1) }
     assertEquals(1, getAccountCount())
@@ -105,12 +110,21 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun createAccount_successfullyCreatesNewAccount() = runTest {
-    val user = User(uid = currentUser.uid, username = "charlie_brown", profilePicture = ":3")
+    val user =
+        User(
+            uid = currentUser.uid,
+            ownerId = currentUser.uid,
+            username = "charlie_brown",
+            profilePicture = ":3")
 
     accountRepository.createAccount(
         user, userEmail = testEmail, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
     userRepository.addUser(
-        User(uid = user.uid, ownerId = account1.ownerId, username = user.username, profilePicture = "Hello.jpg"))
+        User(
+            uid = user.uid,
+            ownerId = account1.ownerId,
+            username = user.username,
+            profilePicture = "Hello.jpg"))
 
     val account = accountRepository.getAccount(user.uid)
     assertEquals(user.uid, account.uid)
@@ -122,8 +136,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun createAccount_throwsExceptionForDuplicateUser() = runTest {
-    val user1 = User(uid = "user3", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
-    val user2 = User(uid = "user4", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
+    val user1 =
+        User(uid = "user3", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
+    val user2 =
+        User(uid = "user4", ownerId = account1.ownerId, username = "duplicate", profilePicture = "")
 
     userRepository.addUser(user1)
     userRepository.addUser(user2)
@@ -380,7 +396,12 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun createAccount_persistsLocationToFirestore() = runTest {
-    val user = User(uid = currentUser.uid, username = "test_location_user", profilePicture = "")
+    val user =
+        User(
+            uid = currentUser.uid,
+            ownerId = currentUser.uid,
+            username = "test_location_user",
+            profilePicture = "")
 
     accountRepository.createAccount(user, testEmail, testDateOfBirth, EPFL_LOCATION)
 

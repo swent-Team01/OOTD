@@ -82,8 +82,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
     }
-
-    val newUser = User(uid, ownerId, username, profilePicture)
+    val newUser = User(uid, ownerId.takeIf { it.isNotBlank() } ?: uid, username, profilePicture)
     try {
       addUser(newUser)
     } catch (e: Exception) {
@@ -106,10 +105,9 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun getUser(userID: String): User {
     return try {
-      val userDoc =
-          db.collection(USER_COLLECTION_PATH).document(userID).get().await()
+      val userDoc = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
-      if (userDoc.exists()) {
+      if (!userDoc.exists()) {
         throw NoSuchElementException("User with ID $userID not found")
       }
 
@@ -123,13 +121,12 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun userExists(userID: String): Boolean {
     return try {
-      val querySnapshot =
-          db.collection(USER_COLLECTION_PATH).document(userID).get().await()
+      val querySnapshot = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!querySnapshot.exists()) {
         false
       } else {
-        val username = querySnapshot.getString("usename")
+        val username = querySnapshot.getString("username")
         !username.isNullOrBlank()
       }
     } catch (e: Exception) {
@@ -160,8 +157,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
         throw IllegalArgumentException("User ID and username cannot be blank")
       }
       // Check if user exists
-      val querySnapshot =
-          db.collection(USER_COLLECTION_PATH).document(userID).get().await()
+      val querySnapshot = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!querySnapshot.exists()) {
         throw NoSuchElementException("User with ID $userID not found")

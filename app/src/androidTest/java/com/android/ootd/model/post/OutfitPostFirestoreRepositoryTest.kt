@@ -29,7 +29,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     FirebaseEmulator.firestore
         .collection("users")
         .document(id)
-        .set(mapOf("uid" to id, "username" to username, "friendUids" to friends))
+        .set(mapOf("uid" to id, "ownerId" to id, "username" to username, "friendUids" to friends))
         .await()
   }
 

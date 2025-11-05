@@ -31,8 +31,9 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     // Create two via createUser (covers getNewUid + creation + profile pic handling)
     val uid1 = userRepository.getNewUid()
     val uid2 = userRepository.getNewUid()
-    userRepository.createUser(user1.username, uid1, profilePicture = "profile1.jpg")
-    userRepository.createUser(user2.username, uid2, profilePicture = "")
+    userRepository.createUser(
+        user1.username, uid1, currentUser.uid, profilePicture = "profile1.jpg")
+    userRepository.createUser(user2.username, uid2, currentUser.uid, profilePicture = "")
 
     expectCount(2)
 
@@ -55,7 +56,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assertEquals("updatedUser2", userRepository.getUser(uid2).username)
 
     // Add another via addUser (covers add with fixed uid)
-    val user3 = user1.copy(uid = "user3", username = "user3name")
+    val user3 = user1.copy(uid = "user3", ownerId = currentUser.uid, username = "user3name")
     userRepository.addUser(user3)
     expectCount(3)
     assertEquals(user3, userRepository.getUser("user3"))
@@ -70,6 +71,8 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun constraints_validation_and_errors() = runTest {
     // Duplicate uid rejected
+    val user1 =
+        User(uid = "0", ownerId = currentUser.uid, username = "Hank", profilePicture = "Hank.jpg")
     userRepository.addUser(user1)
     val dupUid = runCatching { userRepository.addUser(user1) }.exceptionOrNull()
     assert(dupUid is IllegalArgumentException)
@@ -82,6 +85,8 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
             .exceptionOrNull()
     assert(sameName != null)
 
+    val user2 =
+        User(uid = "1", ownerId = currentUser.uid, username = "John", profilePicture = "John.jpg")
     // Add a second distinct user to test editUsername branches
     userRepository.addUser(user2)
 
@@ -128,15 +133,21 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun invalidData_handling_filtersList_and_failsGet() = runTest {
     // Seed valid users
+    val user1 =
+        User(uid = "0", ownerId = currentUser.uid, username = "Hank", profilePicture = "Hank.jpg")
+    val user2 =
+        User(uid = "1", ownerId = currentUser.uid, username = "John", profilePicture = "John.jpg")
     userRepository.addUser(user1)
     userRepository.addUser(user2)
 
     // Invalid/random doc should be ignored in listing
-    addUser("invalidDoc", mapOf("random" to "data"))
+    addUser("invalidDoc", mapOf("ownerId" to currentUser.uid, "random" to "data"))
 
     // Blank and null names => userExists false
-    addUser("userWithBlankName", mapOf("uid" to "userWithBlankName", "username" to ""))
-    addUser("userWithNullName", mapOf("uid" to "userWithNullName"))
+    addUser(
+        "userWithBlankName",
+        mapOf("ownerId" to currentUser.uid, "uid" to "userWithBlankName", "username" to ""))
+    addUser("userWithNullName", mapOf("ownerId" to currentUser.uid, "uid" to "userWithNullName"))
     assert(!userRepository.userExists("userWithBlankName"))
     assert(!userRepository.userExists("userWithNullName"))
 
@@ -146,7 +157,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assert(corruptedGet != null)
 
     // Incomplete user doc should cause getUser to fail with IllegalStateException
-    addUser("invalidUser", mapOf("uid" to "invalidUser"))
+    addUser("invalidUser", mapOf("ownerId" to currentUser.uid, "uid" to "invalidUser"))
     val incomplete = runCatching { userRepository.getUser("invalidUser") }.exceptionOrNull()
     assert(incomplete is IllegalStateException)
 
