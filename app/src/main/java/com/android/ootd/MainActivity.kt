@@ -29,6 +29,7 @@ import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
+import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -39,7 +40,16 @@ import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import okhttp3.OkHttpClient
 
+/**
+ * Provide an OkHttpClient client for network requests.
+ *
+ * Property `client` is mutable for testing purposes.
+ */
+object HttpClientProvider {
+  var client: OkHttpClient = OkHttpClient()
+}
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,7 +96,8 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.Account.route)
+              Screen.Account.route,
+              Screen.Map.route)
 
   Scaffold(
       bottomBar = {
@@ -142,6 +153,7 @@ fun OOTDApp(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
+                composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
 
                 composable(Screen.InventoryScreen.route) { InventoryScreen() }
 
