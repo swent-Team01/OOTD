@@ -111,6 +111,14 @@ class UserSearchScreenTest : FirestoreTest() {
 
     composeTestRule.waitForIdle()
 
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      // Verify dropdown contains exactly one item
+      composeTestRule
+          .onAllNodesWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+          .fetchSemanticsNodes()
+          .size == 1
+    }
+
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
   }
 

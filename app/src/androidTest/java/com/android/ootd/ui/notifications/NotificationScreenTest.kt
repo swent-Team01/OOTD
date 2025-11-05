@@ -136,6 +136,20 @@ class NotificationsScreenTest : FirestoreTest() {
     }
 
     composeTestRule.onAllNodesWithTag(NotificationsScreenTestTags.ACCEPT_BUTTON)[0].performClick()
+
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(NotificationsScreenTestTags.NOTIFICATION_ITEM)
+          .fetchSemanticsNodes()
+          .size == 1
+    }
     composeTestRule.onAllNodesWithTag(NotificationsScreenTestTags.DELETE_BUTTON)[0].performClick()
+
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(NotificationsScreenTestTags.NOTIFICATION_ITEM)
+          .fetchSemanticsNodes()
+          .isEmpty()
+    }
   }
 }
