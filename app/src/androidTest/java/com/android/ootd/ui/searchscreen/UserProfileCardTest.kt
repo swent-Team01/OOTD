@@ -11,9 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.search.UserProfileCard
 import com.android.ootd.ui.search.UserProfileCardPreview
-import com.android.ootd.ui.search.UserProfileCardRequestSentPreview
 import com.android.ootd.ui.search.UserProfileCardTestTags
-import com.android.ootd.ui.search.UserProfileCardWithErrorPreview
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -65,18 +63,6 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   @Test
   fun seeCardPreview() {
     composeTestRule.setContent { UserProfileCardPreview() }
-    assertCardIsDisplayed(composeTestRule)
-  }
-
-  @Test
-  fun seeErrorCardPreview() {
-    composeTestRule.setContent { UserProfileCardWithErrorPreview() }
-    assertCardIsDisplayed(composeTestRule)
-  }
-
-  @Test
-  fun seeRequestCardPreview() {
-    composeTestRule.setContent { UserProfileCardRequestSentPreview() }
     assertCardIsDisplayed(composeTestRule)
   }
 
