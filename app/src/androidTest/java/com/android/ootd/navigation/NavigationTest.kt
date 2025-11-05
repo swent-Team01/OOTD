@@ -2,11 +2,15 @@ package com.android.ootd.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import org.junit.Assert.assertEquals
@@ -48,6 +52,7 @@ class NavigationTest {
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */}
         composable(Screen.Account.route) { /* minimal screen */}
+        composable(Screen.Map.route) { MapScreen(onBack = { navigation.goBack() }) }
         composable(Screen.FitCheck.route) { /* minimal screen */}
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
         composable(Screen.AddItemScreen.route) { /* minimal screen */}
@@ -1070,5 +1075,64 @@ class NavigationTest {
       navigation.goBack()
       assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
+  }
+
+  // Map Screen Navigation Tests
+
+  @Test
+  fun navigationActions_navigateToMap_shouldUpdateRoute() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_mapToFeedFlow_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_mapScreen_navigateToAuthentication_shouldClearStack() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Sign out navigates to Authentication (top-level)
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+
+      // Going back should return to Splash (start destination)
+      navigation.goBack()
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_backButton_triggersNavigationGoBack() {
+    // Navigate to Feed then Map
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map)
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+
+    composeRule.waitForIdle()
+
+    // Click the back button on MapScreen
+    composeRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).performClick()
+    composeRule.waitForIdle()
+
+    // Verify we navigated back to Feed
+    composeRule.runOnIdle { assertEquals(Screen.Feed.route, navigation.currentRoute()) }
   }
 }
