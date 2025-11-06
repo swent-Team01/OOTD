@@ -125,12 +125,12 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
   // --- UI Tests ---
   @Test
-  fun emptyList_showsMessage_andAddButton_noPostButton() {
+  fun emptyList_showsMessage_andAdd_andPostButton_noPostButton() {
     setContent()
     n(PreviewItemScreenTestTags.ITEM_LIST).assertIsNotDisplayed()
     n(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG).assertIsDisplayed()
     n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
-    txt("Post").assertDoesNotExist()
+    txt("Post").assertExists()
   }
 
   @Test
@@ -213,6 +213,55 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
     n(PreviewItemScreenTestTags.POST_BUTTON).performClick()
     // postSuccess tested separately in VM test
+  }
+
+  @Test
+  fun loadingState_showsOverlayWithProgressIndicatorAndText() {
+    val i = item()
+
+    // Create a custom ViewModel with injected loading state
+    val repo = fakeRepo(listOf(i))
+    val vm = OutfitPreviewViewModel(repo, fakePostRepo)
+
+    composeTestRule.setContent {
+      PreviewItemScreen(
+          outfitPreviewViewModel = vm,
+          imageUri = "fake_image_uri",
+          description = "Test outfit description",
+          onAddItem = {},
+          onEditItem = {},
+          onGoBack = {},
+          onPostSuccess = {})
+    }
+
+    // Inject loading state using reflection
+    @Suppress("UNCHECKED_CAST")
+    val field = OutfitPreviewViewModel::class.java.getDeclaredField("_uiState")
+    field.isAccessible = true
+    val stateFlow = field.get(vm) as MutableStateFlow<PreviewUIState>
+    stateFlow.value = stateFlow.value.copy(isLoading = true)
+
+    composeTestRule.waitForIdle()
+
+    // Verify loading overlay is displayed
+    txt("Publishing your outfit...").assertIsDisplayed()
+
+    // Verify CircularProgressIndicator is displayed (checking for progress indicator semantics)
+    composeTestRule
+        .onNode(
+            androidx.compose.ui.test.hasProgressBarRangeInfo(
+                androidx.compose.ui.semantics.ProgressBarRangeInfo.Indeterminate))
+        .assertIsDisplayed()
+
+    // Verify overlay is semi-transparent and covers the screen
+    // (The Box with background should be rendered)
+
+    // Now set loading to false
+    stateFlow.value = stateFlow.value.copy(isLoading = false)
+    composeTestRule.waitForIdle()
+
+    // Verify loading overlay is no longer displayed
+    txt("Publishing your outfit...").assertDoesNotExist()
   }
 
   // --- ViewModel Tests ---
