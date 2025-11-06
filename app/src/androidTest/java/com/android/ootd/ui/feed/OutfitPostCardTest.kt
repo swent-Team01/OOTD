@@ -44,11 +44,17 @@ class OutfitPostCardTest {
   }
 
   @Test
-  fun hidesDescription_whenEmpty() {
+  fun rendersDescriptionLine_whenEmpty() {
     setCard(post(name = "Minimalist", description = ""))
 
+    // The username still shows as before
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("Minimalist")
-    n(OutfitPostCardTestTags.POST_DESCRIPTION).assertDoesNotExist()
+
+    // The description node should still exist
+    n(OutfitPostCardTestTags.POST_DESCRIPTION).assertIsDisplayed()
+
+    // And it should show only the name (no colon or extra space)
+    n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("Minimalist")
   }
 
   @Test
