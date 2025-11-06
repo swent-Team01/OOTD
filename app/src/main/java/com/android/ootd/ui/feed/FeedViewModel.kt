@@ -16,12 +16,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * UI state for the FeedScreen.
+ *
+ * This state holds the data needed to display the feed of outfit posts.
+ */
 data class FeedUiState(
     val feedPosts: List<OutfitPost> = emptyList(),
     val currentAccount: Account? = null,
     val hasPostedToday: Boolean = false
 )
 
+/**
+ * ViewModel for the FeedScreen.
+ *
+ * Responsible for managing the state by fetching and providing data for feed posts from the
+ * [FeedRepository] and account data from the [AccountRepository].
+ */
 class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
@@ -34,6 +45,7 @@ class FeedViewModel(
     observeAuthAndLoadAccount()
   }
 
+  /** Observes Firebase Auth state changes and loads the current account accordingly. */
   private fun observeAuthAndLoadAccount() {
     Firebase.auth.addAuthStateListener { auth ->
       val user = auth.currentUser
@@ -53,6 +65,7 @@ class FeedViewModel(
     }
   }
 
+  /** Refreshes the feed posts from Firestore for the current account. */
   fun refreshFeedFromFirestore() {
     val account = _uiState.value.currentAccount ?: return
     viewModelScope.launch {
@@ -62,7 +75,12 @@ class FeedViewModel(
     }
   }
 
-  public fun setCurrentAccount(account: Account) {
+  /**
+   * Sets the current account in the UI state.
+   *
+   * @param account The account to set as the current account.
+   */
+  fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
   }
 }
