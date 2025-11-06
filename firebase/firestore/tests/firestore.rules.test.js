@@ -271,13 +271,13 @@ describe('Firestore rules - OOTD friend-only feed', () => {
 
   test('User cannot delete another user consent record', async () => {
     await assertSucceeds(
-      setDoc(doc(bob, 'consents/consent_bob_delete'), {
-        consentUuid: 'consent_bob_delete',
+      setDoc(doc(charlie, 'consents/consent_charlie_delete'), {
+        consentUuid: 'consent_charlie_delete',
         userId: 'u3',
         timestamp: Date.now(),
         version: '1.0',
       })
     );
-    await assertFails(deleteDoc(doc(me, 'consents/consent_bob_delete')));
+    await assertFails(deleteDoc(doc(me, 'consents/consent_charlie_delete')));
   });
 });
