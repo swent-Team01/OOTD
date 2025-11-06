@@ -45,12 +45,6 @@ class ImageOrientationHelperTest {
   // ========== Initialization Tests ==========
 
   @Test
-  fun `ImageOrientationHelper can be instantiated`() {
-    val newHelper = ImageOrientationHelper()
-    assertNotNull(newHelper)
-  }
-
-  @Test
   fun `ImageOrientationHelper can be instantiated multiple times`() {
     val helper1 = ImageOrientationHelper()
     val helper2 = ImageOrientationHelper()

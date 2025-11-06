@@ -349,58 +349,25 @@ class ImageOrientationHelperConnectedTest {
   // ========== Rotation Tests ==========
 
   @Test
-  fun loadBitmapWithCorrectOrientation_handlesRotate90() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_90)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
-  }
+  fun loadBitmapWithCorrectOrientation_handlesAllExifOrientations() {
+    // Test all EXIF orientation values in a single test to avoid repetition
+    val orientations =
+        listOf(
+            ExifInterface.ORIENTATION_ROTATE_90,
+            ExifInterface.ORIENTATION_ROTATE_180,
+            ExifInterface.ORIENTATION_ROTATE_270,
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL,
+            ExifInterface.ORIENTATION_FLIP_VERTICAL,
+            ExifInterface.ORIENTATION_TRANSPOSE,
+            ExifInterface.ORIENTATION_TRANSVERSE,
+            ExifInterface.ORIENTATION_UNDEFINED,
+            ExifInterface.ORIENTATION_NORMAL)
 
-  @Test
-  fun loadBitmapWithCorrectOrientation_handlesRotate180() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_180)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
-  }
-
-  @Test
-  fun loadBitmapWithCorrectOrientation_handlesRotate270() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_270)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
-  }
-
-  @Test
-  fun loadBitmapWithCorrectOrientation_handlesFlipHorizontal() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_FLIP_HORIZONTAL)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
-  }
-
-  @Test
-  fun loadBitmapWithCorrectOrientation_handlesFlipVertical() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_FLIP_VERTICAL)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
-  }
-
-  @Test
-  fun loadBitmapWithCorrectOrientation_handlesTranspose() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_TRANSPOSE)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
-  }
-
-  @Test
-  fun loadBitmapWithCorrectOrientation_handlesTransverse() {
-    val file = createImageWithOrientation(ExifInterface.ORIENTATION_TRANSVERSE)
-    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    Assert.assertTrue(result.isSuccess)
-    result.getOrNull()?.recycle()
+    orientations.forEach { orientation ->
+      val file = createImageWithOrientation(orientation)
+      val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+      Assert.assertTrue("Orientation $orientation should be handled successfully", result.isSuccess)
+      result.getOrNull()?.recycle()
+    }
   }
 }

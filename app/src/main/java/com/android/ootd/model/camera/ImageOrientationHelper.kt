@@ -63,8 +63,16 @@ class ImageOrientationHelper {
       val exif = ExifInterface(inputStream)
       inputStream.close()
 
-      exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-    } catch (e: IOException) {
+      val orientation =
+          exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+
+      // Map ORIENTATION_UNDEFINED to ORIENTATION_NORMAL for proper handling
+      if (orientation == ExifInterface.ORIENTATION_UNDEFINED) {
+        ExifInterface.ORIENTATION_NORMAL
+      } else {
+        orientation
+      }
+    } catch (_: IOException) {
       ExifInterface.ORIENTATION_NORMAL
     }
   }
@@ -93,7 +101,9 @@ class ImageOrientationHelper {
         matrix.postRotate(-90f)
         matrix.postScale(-1f, 1f)
       }
-      else -> return bitmap // No rotation needed
+      ExifInterface.ORIENTATION_UNDEFINED,
+      ExifInterface.ORIENTATION_NORMAL -> return bitmap // No rotation needed
+      else -> return bitmap // No rotation needed for unknown orientations
     }
 
     return try {
@@ -106,7 +116,7 @@ class ImageOrientationHelper {
       }
 
       rotatedBitmap
-    } catch (e: OutOfMemoryError) {
+    } catch (_: OutOfMemoryError) {
       // If we run out of memory, return the original bitmap
       bitmap
     }
