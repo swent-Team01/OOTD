@@ -180,4 +180,15 @@ class ImageOrientationHelperTest {
     assertTrue(result.isFailure)
     assertEquals(errorMessage, result.exceptionOrNull()?.message)
   }
+
+  @Test
+  fun `loadBitmapWithCorrectOrientation handles bitmap decode failure`() {
+    val inputStream = mockk<java.io.InputStream>(relaxed = true)
+    every { mockContentResolver.openInputStream(mockUri) } returns inputStream
+
+    val result = helper.loadBitmapWithCorrectOrientation(mockContext, mockUri)
+
+    // Should fail when BitmapFactory.decodeStream returns null in unit test environment
+    assertTrue(result.isFailure)
+  }
 }

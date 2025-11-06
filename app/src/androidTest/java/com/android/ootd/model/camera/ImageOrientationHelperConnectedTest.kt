@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.exifinterface.media.ExifInterface
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
@@ -78,6 +79,21 @@ class ImageOrientationHelperConnectedTest {
    */
   private fun createReadableUri(file: File): Uri {
     return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+  }
+
+  /**
+   * Creates a temp image with specific EXIF orientation.
+   *
+   * @param orientation EXIF orientation constant
+   * @return The created file with EXIF data
+   */
+  private fun createImageWithOrientation(orientation: Int): File {
+    val file = createTempImageFile(50, 100)
+    ExifInterface(file.absolutePath).apply {
+      setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
+      saveAttributes()
+    }
+    return file
   }
 
   // ========== Success Cases ==========
@@ -325,5 +341,63 @@ class ImageOrientationHelperConnectedTest {
 
     // If we got here without OutOfMemoryError, the test passes
     assertTrue("Should not leak memory", true)
+  }
+
+  // ========== Rotation Tests ==========
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesRotate90() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_90)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
+  }
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesRotate180() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_180)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
+  }
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesRotate270() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_270)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
+  }
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesFlipHorizontal() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_FLIP_HORIZONTAL)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
+  }
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesFlipVertical() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_FLIP_VERTICAL)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
+  }
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesTranspose() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_TRANSPOSE)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
+  }
+
+  @Test
+  fun loadBitmapWithCorrectOrientation_handlesTransverse() {
+    val file = createImageWithOrientation(ExifInterface.ORIENTATION_TRANSVERSE)
+    val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
+    assertTrue(result.isSuccess)
+    result.getOrNull()?.recycle()
   }
 }
