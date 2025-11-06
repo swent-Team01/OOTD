@@ -120,22 +120,25 @@ class CameraScreenTest {
 
   @Test
   fun zoomSlider_displaysWhenZoomIsSupported() {
-    // Wait for camera to initialize
+    // Switch to front camera as it often has zoom capabilities in emulators
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).performClick()
     composeTestRule.waitForIdle()
-    Thread.sleep(1000) // Give camera time to bind and update zoom state
+
+    // Wait for camera to fully initialize and bind with front camera
+    Thread.sleep(1500) // Give camera time to bind and update zoom state
 
     val uiState = viewModel.uiState.value
 
-    // Check if device supports zoom (maxZoom > minZoom)
-    if (uiState.maxZoomRatio > uiState.minZoomRatio) {
-      // Device supports zoom - slider should be visible
-      composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertExists()
-      composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertIsDisplayed()
-    } else {
-      // Device doesn't support zoom - slider should not exist
-      // This is expected on many emulators
-      composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertDoesNotExist()
-    }
+    // Log zoom capabilities for debugging
+    android.util.Log.d(
+        "CameraScreenTest",
+        "Front camera zoom capabilities - min: ${uiState.minZoomRatio}, max: ${uiState.maxZoomRatio}")
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertExists()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertIsDisplayed()
+
+    // Verify the zoom text displays current ratio
+    val expectedText = String.format("%.1f", uiState.zoomRatio) + "x"
+    composeTestRule.onNodeWithText(expectedText).assertExists()
   }
 }
 
