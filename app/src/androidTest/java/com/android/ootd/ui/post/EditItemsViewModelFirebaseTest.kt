@@ -12,6 +12,7 @@ import java.io.File
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -145,6 +146,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.onSaveItemClick()
     kotlinx.coroutines.delay(500)
     assertNotNull(viewModel.uiState.first().errorMessage)
+    assertFalse(viewModel.uiState.first().isSaveSuccessful)
     assertTrue(viewModel.uiState.first().errorMessage!!.contains("valid URL"))
 
     // Case 3: missing category -> validation fails with required fields message
@@ -153,6 +155,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.onSaveItemClick()
     kotlinx.coroutines.delay(500)
     assertNotNull(viewModel.uiState.first().errorMessage)
+    assertFalse(viewModel.uiState.first().isSaveSuccessful)
     assertTrue(viewModel.uiState.first().errorMessage!!.contains("required fields"))
   }
 
@@ -238,6 +241,13 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
 
     assertNotNull(viewModel.uiState.first().errorMessage)
     assertTrue(viewModel.uiState.first().errorMessage!!.contains("No item"))
+
+    val existingItem = createTestItem()
+    val itemWithNoImage = existingItem.copy(image = ImageData("", ""))
+    viewModel.loadItem(itemWithNoImage)
+    viewModel.deleteItem()
+    kotlinx.coroutines.delay(500)
+    assertNull(viewModel.uiState.first().errorMessage)
   }
 
   @Test

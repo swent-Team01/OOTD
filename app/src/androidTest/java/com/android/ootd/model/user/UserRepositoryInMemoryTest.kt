@@ -158,46 +158,51 @@ class UserRepositoryInMemoryTest {
   }
 
   @Test
-  fun editUsernameSuccessfullyUpdatesUsername() = runTest {
+  fun editUserSuccessfullyUpdatesUser() = runTest {
     val newUsername = "new_alice_wonder"
+    val picture = "image.img"
 
-    repository.editUsername("user1", newUsername)
+    repository.editUser("user1", newUsername, picture)
 
     val updatedUser = repository.getUser("user1")
     assertEquals(newUsername, updatedUser.username)
     assertEquals("user1", updatedUser.uid)
+    assertEquals(picture, updatedUser.profilePicture)
   }
 
   @Test
-  fun editUsernameThrowsExceptionWhenUserIdOrUsernameIsBlank() = runTest {
-    val exception1 = runCatching { repository.editUsername("", "newUsername") }.exceptionOrNull()
-    assertTrue(exception1 is IllegalArgumentException)
-    assertTrue(exception1?.message?.contains("cannot be blank") == true)
+  fun editUserThrowsExceptionWhenUserIdBlankOrUsernameTaken() = runTest {
+    val exception1 = runCatching { repository.editUser("", "newUsername") }.exceptionOrNull()
+    assertTrue(exception1 is NoSuchElementException)
+    assertTrue(exception1?.message?.contains("not found") == true)
 
-    val exception2 = runCatching { repository.editUsername("user1", "") }.exceptionOrNull()
-    assertTrue(exception2 is IllegalArgumentException)
-    assertTrue(exception2?.message?.contains("cannot be blank") == true)
+    val exception2 = runCatching { repository.editUser("user1", "bob_builder") }.exceptionOrNull()
+    assertTrue(exception2 is TakenUsernameException)
+    assertTrue(exception2?.message?.contains("already in use") == true)
   }
 
   @Test
-  fun editUsernameThrowsExceptionWhenUsernameAlreadyTaken() = runTest {
-    val exception =
-        runCatching { repository.editUsername("user1", "bob_builder") }.exceptionOrNull()
-
-    assertTrue(exception is TakenUsernameException)
-    assertTrue(exception?.message?.contains("already in use") == true)
+  fun editUserDoesNothingIfFieldsAreBlank() = runTest {
+    val user = repository.getUser("user1")
+    repository.editUser(user.uid, "", "")
+    val unchangedUser = repository.getUser(user.uid)
+    assertEquals(user.uid, unchangedUser.uid)
+    assertEquals(user.username, unchangedUser.username)
+    assertEquals(user.profilePicture, unchangedUser.profilePicture)
   }
 
   @Test
-  fun editUsernameAllowsUpdatingToSameUsername() = runTest {
-    repository.editUsername("user1", "updated_alice")
-    repository.editUsername("user2", "updated_bob")
+  fun editUserAllowsUpdatingToSameUsernameAndProfilePicture() = runTest {
+    repository.editUser("user1", "updated_alice", "Picture1.jpg")
+    repository.editUser("user2", "updated_bob", "Picture2.jpg")
 
     val user1 = repository.getUser("user1")
     val user2 = repository.getUser("user2")
 
     assertEquals("updated_alice", user1.username)
     assertEquals("updated_bob", user2.username)
+    assertEquals("Picture1.jpg", user1.profilePicture)
+    assertEquals("Picture2.jpg", user2.profilePicture)
   }
 
   @Test

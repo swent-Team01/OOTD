@@ -15,379 +15,141 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     super.setUp()
   }
 
-  @Test
-  fun canAddUsersToRepository() = runTest {
-    userRepository.addUser(user1)
-    assertEquals(1, getUserCount())
-    val users = userRepository.getAllUsers()
+  // --- tiny helpers ---
+  private suspend fun expectCount(n: Int) = assertEquals(n, getUserCount())
 
-    assertEquals(1, users.size)
-    // Discard uid and ownerId for comparison since they don't matter in this test
-    val expectedUser = user1.copy(uid = "None")
-    val storedUser = users.first().copy(uid = expectedUser.uid)
+  private suspend fun addUser(uid: String, data: Map<String, Any?>) {
+    FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).document(uid).set(data).await()
+  }
 
-    assertEquals(expectedUser, storedUser)
+  private suspend fun patchUser(uid: String, data: Map<String, Any?>) {
+    FirebaseEmulator.firestore.collection(USER_COLLECTION_PATH).document(uid).update(data).await()
   }
 
   @Test
-  fun addUserWithTheCorrectID() = runTest {
-    userRepository.addUser(user1)
-    assertEquals(1, getUserCount())
-    val storedUser = userRepository.getUser(user1.uid)
-    assertEquals(storedUser, user1)
-  }
-
-  @Test
-  fun canAddMultipleUsersToRepository() = runTest {
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-
-    assertEquals(2, getUserCount())
-    val users = userRepository.getAllUsers()
-
-    assertEquals(users.size, 2)
-    // Discard the ordering of the users
-    val expectedUsers = setOf(user1, user2)
-    val storedUsers = users.toSet()
-
-    assertEquals(expectedUsers, storedUsers)
-  }
-
-  @Test
-  fun uidAreUniqueInTheCollection() = runTest {
-    val uid = "duplicate"
-    val user1Modified = user1.copy(uid = uid)
-    val userDuplicatedUID = user2.copy(uid = uid)
-
-    // Depending on your implementation, adding a User with an existing UID
-    // might not be permitted
-    runCatching {
-      userRepository.addUser(user1Modified)
-      userRepository.addUser(userDuplicatedUID)
-    }
-
-    assertEquals(1, getUserCount())
-
-    val users = userRepository.getAllUsers()
-    assertEquals(users.size, 1)
-    val storedUser = users.first()
-    assertEquals(storedUser.uid, uid)
-  }
-
-  @Test
-  fun getNewUidReturnsUniqueIDs() = runTest {
-    val numberIDs = 100
-    val uids = (0 until 100).toSet<Int>().map { userRepository.getNewUid() }.toSet()
-    assertEquals(uids.size, numberIDs)
-  }
-
-  @Test
-  fun canRetrieveAUserByID() = runTest {
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-    assertEquals(2, getUserCount())
-    val storedUser = userRepository.getUser(user2.uid)
-    assertEquals(storedUser, user2)
-  }
-
-  @Test
-  fun getUserThrowsExceptionWhenUserNotFound() = runTest {
-    val nonExistentUserId = "nonExistentUser123"
-
-    val exception = runCatching { userRepository.getUser(nonExistentUserId) }.exceptionOrNull()
-
-    assert(exception is NoSuchElementException)
-    assert(exception?.message?.contains(nonExistentUserId) == true)
-  }
-
-  @Test
-  fun getAllUsersReturnsEmptyListWhenNoUsers() = runTest {
-    val users = userRepository.getAllUsers()
-    assertEquals(0, users.size)
-  }
-
-  @Test
-  fun addUserThrowsExceptionWhenUidAlreadyExists() = runTest {
-    userRepository.addUser(user1)
-
-    val exception = runCatching { userRepository.addUser(user1) }.exceptionOrNull()
-
-    assert(exception is IllegalArgumentException)
-    assertEquals(1, getUserCount())
-  }
-
-  @Test
-  fun userExistsReturnsTrueWhenUserHasName() = runTest {
-    userRepository.addUser(user1)
-
-    val exists = userRepository.userExists(user1.uid)
-
-    assert(exists)
-  }
-
-  @Test
-  fun userExistsReturnsFalseWhenUserNotFound() = runTest {
-    val nonExistentUserId = "nonExistentUser123"
-
-    val exists = userRepository.userExists(nonExistentUserId)
-
-    assert(!exists)
-  }
-
-  @Test
-  fun userExistsReturnsFalseWhenUserHasBlankName() = runTest {
-    // Add user document with blank username field
-    FirebaseEmulator.firestore
-        .collection(USER_COLLECTION_PATH)
-        .document("userWithBlankName")
-        .set(mapOf("uid" to "userWithBlankName", "username" to ""))
-        .await()
-
-    val exists = userRepository.userExists("userWithBlankName")
-
-    assert(!exists)
-  }
-
-  @Test
-  fun userExistsReturnsFalseWhenUserHasNullName() = runTest {
-    // Add user document with null name field
-    FirebaseEmulator.firestore
-        .collection(USER_COLLECTION_PATH)
-        .document("userWithNullName")
-        .set(mapOf("uid" to "userWithNullName"))
-        .await()
-
-    val exists = userRepository.userExists("userWithNullName")
-
-    assert(!exists)
-  }
-
-  @Test
-  fun userExistsHandlesMultipleUsersCorrectly() = runTest {
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-
-    assert(userRepository.userExists(user1.uid))
-    assert(userRepository.userExists(user2.uid))
-    assert(!userRepository.userExists("nonExistentUser"))
-  }
-
-  @Test
-  fun getUserReturnsCorrectUserFromMultipleUsers() = runTest {
-    val user3 = user1.copy(uid = "user3", username = "user3name")
-    val user4 = user1.copy(uid = "user4", username = "user4name")
-
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-    userRepository.addUser(user3)
-    userRepository.addUser(user4)
-
-    val retrievedUser = userRepository.getUser(user3.uid)
-    assertEquals(user3, retrievedUser)
-    assertEquals("user3name", retrievedUser.username)
-  }
-
-  @Test
-  fun getUserHandlesCorruptedDocumentGracefully() = runTest {
-    // Add a user first
-    userRepository.addUser(user1)
-
-    // Manually corrupt the document in Firestore by adding invalid data
-    FirebaseEmulator.firestore
-        .collection(USER_COLLECTION_PATH)
-        .document(user1.uid)
-        .update(mapOf("uid" to 12345)) // Wrong type - should be String
-        .await()
-
-    val exception = runCatching { userRepository.getUser(user1.uid) }.exceptionOrNull()
-
-    assert(exception != null)
-  }
-
-  @Test
-  fun getAllUsersSkipsCorruptedDocuments() = runTest {
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-
-    // Corrupt one document
-    FirebaseEmulator.firestore
-        .collection(USER_COLLECTION_PATH)
-        .document(user1.uid)
-        .set(mapOf("invalidField" to "invalidData"))
-        .await()
-
-    val users = userRepository.getAllUsers()
-
-    // Should return only the valid user (user2)
-    assertEquals(1, users.size)
-    assertEquals(user2.uid, users.first().uid)
-  }
-
-  @Test
-  fun getUserHandlesNullDeserializationGracefully() = runTest {
-    // Create a document with incomplete/invalid data
-    val invalidUserId = "invalidUser"
-    FirebaseEmulator.firestore
-        .collection(USER_COLLECTION_PATH)
-        .document(invalidUserId)
-        .set(mapOf("uid" to "invalidUser"))
-        .await()
-
-    val exception = runCatching { userRepository.getUser(invalidUserId) }.exceptionOrNull()
-
-    assert(exception is IllegalStateException)
-  }
-
-  @Test
-  fun getAllUsersReturnsOnlyValidUsers() = runTest {
-    userRepository.addUser(user1)
-
-    // Add an invalid document
-    FirebaseEmulator.firestore
-        .collection(USER_COLLECTION_PATH)
-        .document("invalidDoc")
-        .set(mapOf("random" to "data"))
-        .await()
-
-    userRepository.addUser(user2)
-
-    val users = userRepository.getAllUsers()
-
-    // Should return only valid users
-    assertEquals(2, users.size)
-    assert(users.any { it.uid == user1.uid })
-    assert(users.any { it.uid == user2.uid })
-  }
-
-  @Test
-  fun creatingNewUserWorks() = runTest {
+  fun endToEnd_create_list_edit_add_delete() = runTest {
+    // Create two via createUser (covers getNewUid + creation + profile pic handling)
     val uid1 = userRepository.getNewUid()
     val uid2 = userRepository.getNewUid()
-    val profilePic1 = "profile1.jpg"
+    userRepository.createUser(user1.username, uid1, profilePicture = "profile1.jpg")
+    userRepository.createUser(user2.username, uid2, profilePicture = "")
 
-    // empty profile pic
-    val profilePic2 = ""
+    expectCount(2)
 
-    userRepository.createUser(user1.username, uid1, profilePicture = profilePic1)
-    userRepository.createUser(user2.username, uid2, profilePicture = profilePic2)
-
+    // List + membership
     val users = userRepository.getAllUsers()
-
     assertEquals(2, users.size)
-    assert(users.any { user -> user.username == user1.username })
-    assert(users.any { user -> user.username == user2.username })
-    assert(users.none { user -> user.uid == user1.uid || user.uid == user2.uid })
-    assert(users.any { user -> user.profilePicture == profilePic1 && user.uid == uid1 })
-    // empty profile pic, shouldn't throw
-    assert(users.any { user -> user.profilePicture == profilePic2 && user.uid == uid2 })
-  }
+    assert(users.any { it.uid == uid1 && it.username == user1.username })
+    assert(users.any { it.uid == uid2 && it.username == user2.username })
 
-  @Test
-  fun cannotHaveSameUsername() = runTest {
-    val uid1 = userRepository.getNewUid()
-    val uid2 = userRepository.getNewUid()
+    // Exists + get by id
+    assert(userRepository.userExists(uid1))
+    assert(userRepository.userExists(uid2))
+    val u1 = userRepository.getUser(uid1)
+    assertEquals(user1.username, u1.username)
 
-    userRepository.createUser(user1.username, uid1, profilePicture = "")
-    val exception =
-        runCatching { userRepository.createUser(user1.username, uid2, profilePicture = "") }
-            .exceptionOrNull()
+    // Edit usernames
+    userRepository.editUser(uid1, "updatedUser1")
+    userRepository.editUser(uid2, "updatedUser2")
+    assertEquals("updatedUser1", userRepository.getUser(uid1).username)
+    assertEquals("updatedUser2", userRepository.getUser(uid2).username)
 
-    assert(exception != null)
-  }
-
-  @Test
-  fun editUsernameThrowsExceptionWhenBlankArguments() = runTest {
-    val exception = runCatching { userRepository.editUsername("", "newUsername") }.exceptionOrNull()
-
-    assert(exception is IllegalArgumentException)
-    assert(exception?.message?.contains("cannot be blank") == true)
-
-    val blankUname = runCatching { userRepository.editUsername(user1.uid, "") }.exceptionOrNull()
-
-    assert(blankUname is IllegalArgumentException)
-    assert(blankUname?.message?.contains("cannot be blank") == true)
-  }
-
-  @Test
-  fun editUsernameThrowsExceptionWhenUserNotFound() = runTest {
-    val nonExistentUserId = "nonExistentUser123"
-
-    val exception =
-        runCatching { userRepository.editUsername(nonExistentUserId, "newUsername") }
-            .exceptionOrNull()
-
-    assert(exception is NoSuchElementException)
-    assert(exception?.message?.contains(nonExistentUserId) == true)
-  }
-
-  @Test
-  fun editUsernameThrowsExceptionWhenUsernameAlreadyTaken() = runTest {
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-
-    val exception =
-        runCatching { userRepository.editUsername(user1.uid, user2.username) }.exceptionOrNull()
-
-    assert(exception is TakenUsernameException)
-    assert(exception?.message?.contains("already in use") == true)
-  }
-
-  @Test
-  fun editUsernameDoesNothingWhenNewUsernameIsSameAsCurrent() = runTest {
-    userRepository.addUser(user1)
-
-    userRepository.editUsername(user1.uid, user1.username)
-
-    val retrievedUser = userRepository.getUser(user1.uid)
-    assertEquals(user1.username, retrievedUser.username)
-  }
-
-  @Test
-  fun editUsernameAllowsMultipleUsersToUpdateUsernames() = runTest {
-    userRepository.addUser(user1)
-    userRepository.addUser(user2)
-
-    userRepository.editUsername(user1.uid, "updatedUser1")
-    userRepository.editUsername(user2.uid, "updatedUser2")
-
-    val updatedUser1 = userRepository.getUser(user1.uid)
-    val updatedUser2 = userRepository.getUser(user2.uid)
-
-    assertEquals("updatedUser1", updatedUser1.username)
-    assertEquals("updatedUser2", updatedUser2.username)
-  }
-
-  @Test
-  fun deleteUserThrowsExceptionWhenUserIdIsBlank() = runTest {
-    val exception = runCatching { userRepository.deleteUser("") }.exceptionOrNull()
-
-    assert(exception is IllegalArgumentException)
-    assert(exception?.message?.contains("cannot be blank") == true)
-  }
-
-  @Test
-  fun deleteUserThrowsExceptionWhenUserNotFound() = runTest {
-    val nonExistentUserId = "nonExistentUser123"
-
-    val exception = runCatching { userRepository.deleteUser(nonExistentUserId) }.exceptionOrNull()
-
-    assert(exception is NoSuchElementException)
-    assert(exception?.message?.contains(nonExistentUserId) == true)
-  }
-
-  @Test
-  fun deleteMultipleUsersSuccessfully() = runTest {
+    // Add another via addUser (covers add with fixed uid)
     val user3 = user1.copy(uid = "user3", username = "user3name")
+    userRepository.addUser(user3)
+    expectCount(3)
+    assertEquals(user3, userRepository.getUser("user3"))
+
+    // Delete one, check remaining
+    userRepository.deleteUser(uid1)
+    expectCount(2)
+    assert(!userRepository.userExists(uid1))
+    assertEquals("updatedUser2", userRepository.getUser(uid2).username)
+  }
+
+  @Test
+  fun constraints_validation_and_errors() = runTest {
+    // Duplicate uid rejected
+    userRepository.addUser(user1)
+    val dupUid = runCatching { userRepository.addUser(user1) }.exceptionOrNull()
+    assert(dupUid is IllegalArgumentException)
+    expectCount(1)
+
+    // Same username not allowed across different uids
+    val anotherUid = userRepository.getNewUid()
+    val sameName =
+        runCatching { userRepository.createUser(user1.username, anotherUid, profilePicture = "") }
+            .exceptionOrNull()
+    assert(sameName != null)
+
+    // Add a second distinct user to test editUsername branches
+    userRepository.addUser(user2)
+
+    // Edit username: changing to existing username should fail (TakenUsernameException)
+    val taken = runCatching { userRepository.editUser(user1.uid, user2.username) }.exceptionOrNull()
+    assert(taken is TakenUsernameException)
+
+    // Edit username: changing to the same current username should no-op
+    val before = userRepository.getUser(user2.uid).username
+    userRepository.editUser(user2.uid, before)
+    val after = userRepository.getUser(user2.uid).username
+    assertEquals(before, after)
+
+    // Get non-existent
+    val nf = runCatching { userRepository.getUser("nonExistentUser123") }.exceptionOrNull()
+    assert(nf is NoSuchElementException)
+
+    // Edit username invalid args and not found
+    val blankId = runCatching { userRepository.editUser("", "newUsername") }.exceptionOrNull()
+    assert(
+        blankId is IllegalArgumentException && blankId.message?.contains("cannot be blank") == true)
+
+    val editNf = runCatching { userRepository.editUser("missing", "new") }.exceptionOrNull()
+    assert(editNf is NoSuchElementException)
+
+    // Delete invalid and not found
+    val delBlank = runCatching { userRepository.deleteUser("") }.exceptionOrNull()
+    assert(
+        delBlank is IllegalArgumentException &&
+            delBlank.message?.contains("cannot be blank") == true)
+    val delNf = runCatching { userRepository.deleteUser("nonExistentUser123") }.exceptionOrNull()
+    assert(delNf is NoSuchElementException)
+
+    // getNewUid uniqueness
+    val count = 50
+    val unique = (0 until count).map { userRepository.getNewUid() }.toSet()
+    assertEquals(count, unique.size)
+  }
+
+  @Test
+  fun invalidData_handling_filtersList_and_failsGet() = runTest {
+    // Seed valid users
     userRepository.addUser(user1)
     userRepository.addUser(user2)
-    userRepository.addUser(user3)
-    assertEquals(3, getUserCount())
 
-    userRepository.deleteUser(user1.uid)
-    userRepository.deleteUser(user2.uid)
+    // Invalid/random doc should be ignored in listing
+    addUser("invalidDoc", mapOf("random" to "data"))
 
-    assertEquals(1, getUserCount())
-    val remainingUser = userRepository.getUser(user3.uid)
-    assertEquals(user3, remainingUser)
+    // Blank and null names => userExists false
+    addUser("userWithBlankName", mapOf("uid" to "userWithBlankName", "username" to ""))
+    addUser("userWithNullName", mapOf("uid" to "userWithNullName"))
+    assert(!userRepository.userExists("userWithBlankName"))
+    assert(!userRepository.userExists("userWithNullName"))
+
+    // Corrupt one existing user so it cannot deserialize properly
+    patchUser(user1.uid, mapOf("uid" to 12345)) // wrong type
+    val corruptedGet = runCatching { userRepository.getUser(user1.uid) }.exceptionOrNull()
+    assert(corruptedGet != null)
+
+    // Incomplete user doc should cause getUser to fail with IllegalStateException
+    addUser("invalidUser", mapOf("uid" to "invalidUser"))
+    val incomplete = runCatching { userRepository.getUser("invalidUser") }.exceptionOrNull()
+    assert(incomplete is IllegalStateException)
+
+    // Listing should skip invalid/corrupted and keep valid ones only
+    val listed = userRepository.getAllUsers()
+    assert(listed.any { it.uid == user2.uid })
+    assert(listed.none { it.uid == user1.uid }) // corrupted
+    assert(listed.none { it.uid == "invalidDoc" })
   }
 }

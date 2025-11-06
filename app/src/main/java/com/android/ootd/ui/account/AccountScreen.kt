@@ -53,11 +53,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import kotlinx.coroutines.launch
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -155,8 +157,11 @@ private fun AccountScreenContent(
           contract = ActivityResultContracts.PickVisualMedia(),
           onResult = { uri ->
             uri?.let {
-              accountViewModel.uploadProfilePicture(it.toString())
-              Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+              accountViewModel.viewModelScope.launch {
+                val parsedImage = accountViewModel.uploadImageToStorage(it.toString())
+                accountViewModel.editUser(profilePicture = parsedImage)
+                Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+              }
             }
           })
 
