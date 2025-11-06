@@ -8,8 +8,6 @@ import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.google.firebase.auth.FirebaseAuth
 import junit.framework.TestCase.*
-import kotlin.text.get
-import kotlin.text.set
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -36,7 +34,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     accountRepo = AccountRepositoryFirestore(FirebaseEmulator.firestore)
     feedRepo = FeedRepositoryFirestore(FirebaseEmulator.firestore)
 
-    runBlocking { auth.signInAnonymously().await() }
+    runBlocking { auth.signInAnonymously() }
 
     viewModel = FeedViewModel(feedRepo, accountRepo)
   }
