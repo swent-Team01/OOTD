@@ -81,7 +81,7 @@ class UserSearchScreenTest : FirestoreTest() {
     accountRepository.addAccount(
         Account(uid = currentUser.uid, username = secondUsername, ownerId = currentUser.uid))
 
-    userRepository.addUser(User(uid = currentUser.uid, username = lastUsername))
+    userRepository.addUser(User(uid = currentUser.uid, ownerId = currentUser.uid,username = lastUsername))
 
     // Input text to trigger dropdown
     composeTestRule
