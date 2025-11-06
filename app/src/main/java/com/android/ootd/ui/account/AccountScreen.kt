@@ -247,7 +247,7 @@ private fun AccountScreenContent(
               if (avatarUri.isNotBlank()) {
                 Button(
                     onClick = {
-                      // TODO: Call to
+                      accountViewModel.deleteProfilePicture()
                       Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
                     },
                     shape = CircleShape,

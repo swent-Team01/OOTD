@@ -236,8 +236,22 @@ class AccountViewModel(
     }
   }
 
-  suspend fun deleteProfilePicture(userID: String) {
-    // TODO: Call db to delete profile picture
+  fun deleteProfilePicture() {
+    viewModelScope.launch {
+      try {
+        val userID = accountService.currentUserId
+        accountRepository.deleteProfilePicture(userID)
+        userRepository.deleteProfilePicture(userID)
+        _uiState.update { it.copy(profilePicture = "") }
+      } catch (e: Exception) {
+        Log.e("AccountViewModel", "Deleting profilePicture failed: ${e.message}", e)
+        _uiState.update {
+          it.copy(
+              errorMsg = e.localizedMessage ?: "Failed to delete profile picture",
+              isLoading = false)
+        }
+      }
+    }
   }
 
   // --- Help popup intents ---
