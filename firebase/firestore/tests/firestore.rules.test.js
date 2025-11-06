@@ -185,4 +185,113 @@ describe('Firestore rules - OOTD friend-only feed', () => {
       getDocs(query(collection(me, 'posts'), where('ownerId', 'in', ['u1', 'u2'])))
     );
   });
+
+  // /consents rules
+  test('User can create their own consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(me, 'consents/consent_me'), {
+        consentUuid: 'consent_me',
+        userId: 'me',
+        timestamp: Date.now(),
+        version: '1.0',
+      })
+    );
+  });
+
+  test('User cannot create consent record for another user', async () => {
+    await assertFails(
+      setDoc(doc(me, 'consents/consent_alice'), {
+        consentUuid: 'consent_alice',
+        userId: 'u1',
+        timestamp: Date.now(),
+        version: '1.0',
+      })
+    );
+  });
+
+  test('User can read their own consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(me, 'consents/consent_me_read'), {
+        consentUuid: 'consent_me_read',
+        userId: 'me',
+        timestamp: Date.now(),
+        version: '1.0',
+      })
+    );
+    await assertSucceeds(getDoc(doc(me, 'consents/consent_me_read')));
+  });
+
+  test('User cannot read another user consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(alice, 'consents/consent_alice_private'), {
+        consentUuid: 'consent_alice_private',
+        userId: 'u1',
+        timestamp: Date.now(),
+        version: '1.0',
+      })
+    );
+    await assertFails(getDoc(doc(me, 'consents/consent_alice_private')));
+  });
+
+  test('User can update their own consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(me, 'consents/consent_me_update'), {
+        consentUuid: 'consent_me_update',
+        userId: 'me',
+        timestamp: 1000,
+        version: '1.0',
+      })
+    );
+    await assertSucceeds(
+      setDoc(doc(me, 'consents/consent_me_update'), {
+        consentUuid: 'consent_me_update',
+        userId: 'me',
+        timestamp: 2000,
+        version: '1.1',
+      })
+    );
+  });
+
+  test('User cannot update another user consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(alice, 'consents/consent_alice_update'), {
+        consentUuid: 'consent_alice_update',
+        userId: 'u1',
+        timestamp: 1000,
+        version: '1.0',
+      })
+    );
+    await assertFails(
+      setDoc(doc(me, 'consents/consent_alice_update'), {
+        consentUuid: 'consent_alice_update',
+        userId: 'u1',
+        timestamp: 2000,
+        version: '1.1',
+      })
+    );
+  });
+
+  test('User can delete their own consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(me, 'consents/consent_me_delete'), {
+        consentUuid: 'consent_me_delete',
+        userId: 'me',
+        timestamp: Date.now(),
+        version: '1.0',
+      })
+    );
+    await assertSucceeds(deleteDoc(doc(me, 'consents/consent_me_delete')));
+  });
+
+  test('User cannot delete another user consent record', async () => {
+    await assertSucceeds(
+      setDoc(doc(charlie, 'consents/consent_charlie_delete'), {
+        consentUuid: 'consent_charlie_delete',
+        userId: 'u3',
+        timestamp: Date.now(),
+        version: '1.0',
+      })
+    );
+    await assertFails(deleteDoc(doc(me, 'consents/consent_charlie_delete')));
+  });
 });
