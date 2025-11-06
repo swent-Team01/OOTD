@@ -70,6 +70,9 @@ sealed class Screen(
   object InventoryScreen :
       Screen(route = "inventory", name = "Inventory", isTopLevelDestination = false)
 
+  object NotificationsScreen :
+      Screen(route = "notifications", name = "Notifications", isTopLevelDestination = false)
+
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {
     companion object {

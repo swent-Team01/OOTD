@@ -18,6 +18,8 @@ import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
+import com.android.ootd.model.notifications.NotificationRepositoryFirestore
+import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
@@ -69,6 +71,7 @@ class End2EndTest {
   private lateinit var mockAuthResult: AuthResult
   private lateinit var mockUserRepository: UserRepositoryFirestore
   private lateinit var mockAccountRepository: AccountRepositoryFirestore
+  private lateinit var mockNotificationRepository: NotificationRepositoryFirestore
   private lateinit var mockLocationRepository: LocationRepository
   private lateinit var testUserId: String
   private lateinit var testUsername: String
@@ -83,9 +86,11 @@ class End2EndTest {
     mockAccountRepository = mockk(relaxed = true)
     mockLocationRepository = mockk(relaxed = true)
 
+    mockNotificationRepository = mockk(relaxed = true)
     // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
     AccountRepositoryProvider.repository = mockAccountRepository
+    NotificationRepositoryProvider.repository = mockNotificationRepository
     LocationRepositoryProvider.repository = mockLocationRepository
 
     // Generate unique identifiers for each test run to avoid conflicts

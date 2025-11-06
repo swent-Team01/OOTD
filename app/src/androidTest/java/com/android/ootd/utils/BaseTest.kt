@@ -1,5 +1,6 @@
 package com.android.ootd.utils
 
+import NotificationRepository
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepository
@@ -7,6 +8,7 @@ import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.model.notifications.NotificationRepositoryFirestore
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
@@ -37,6 +39,7 @@ abstract class BaseTest() {
     get() = FeedRepositoryProvider.repository
 
   lateinit var accountRepository: AccountRepository
+  lateinit var notificationsRepository: NotificationRepository
   val outfitPostRepository: OutfitPostRepository
     get() = com.android.ootd.model.post.OutfitPostRepositoryProvider.repository
 
@@ -56,6 +59,7 @@ abstract class BaseTest() {
   @Before
   open fun setUp() {
     accountRepository = AccountRepositoryFirestore(db = FirebaseEmulator.firestore)
+    notificationsRepository = NotificationRepositoryFirestore(db = FirebaseEmulator.firestore)
     UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
     FeedRepositoryProvider.repository = FeedRepositoryFirestore(FirebaseEmulator.firestore)
     OutfitPostRepositoryProvider.repository =
