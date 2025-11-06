@@ -1,6 +1,9 @@
 package com.android.ootd.ui.camera
 
 import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
@@ -13,7 +16,12 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.core.content.FileProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import java.io.File
+import java.io.FileOutputStream
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,6 +41,18 @@ class CameraScreenPreviewTest {
   private lateinit var viewModel: CameraViewModel
   private var capturedUri: Uri? = null
   private var dismissed = false
+  private val testFiles = mutableListOf<File>()
+
+  @After
+  fun tearDown() {
+    // Clean up test files
+    testFiles.forEach { file ->
+      if (file.exists()) {
+        file.delete()
+      }
+    }
+    testFiles.clear()
+  }
 
   @Before
   fun setUp() {
@@ -242,5 +262,39 @@ class CameraScreenPreviewTest {
     // Should show preview for second image
     composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertIsDisplayed()
     assert(viewModel.uiState.value.capturedImageUri == testUri2)
+  }
+
+  // ========== Image Display Tests ==========
+
+  @Test
+  fun imagePreview_displaysLoadedBitmap() {
+    // Create a real test image file
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val testFile = File(context.cacheDir, "test_preview_image_${System.currentTimeMillis()}.jpg")
+    testFiles.add(testFile)
+
+    // Create a simple bitmap and save it as JPEG
+    val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(Color.BLUE)
+
+    FileOutputStream(testFile).use { outputStream ->
+      bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+    }
+    bitmap.recycle()
+
+    // Create a proper URI using FileProvider
+    val testUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", testFile)
+
+    // Set the captured image
+    viewModel.setCapturedImage(testUri)
+
+    composeTestRule.waitForIdle()
+
+    // Wait a bit for bitmap to load
+    Thread.sleep(1500)
+
+    // Verify the image preview is displayed (bitmap != null branch)
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.IMAGE_PREVIEW).assertExists()
   }
 }
