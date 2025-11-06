@@ -19,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
@@ -40,6 +41,7 @@ class AccountScreenTest {
 
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
+  private lateinit var mockUserRepository: UserRepository
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
@@ -50,6 +52,7 @@ class AccountScreenTest {
   fun setup() {
     mockAccountService = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
+    mockUserRepository = mockk(relaxed = true)
     mockCredentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -66,7 +69,7 @@ class AccountScreenTest {
             profilePicture = "",
             isPrivate = false)
 
-    viewModel = AccountViewModel(mockAccountService, mockAccountRepository)
+    viewModel = AccountViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
   }
 
   @After
@@ -200,5 +203,46 @@ class AccountScreenTest {
 
     n(UiTestTags.TAG_ACCOUNT_BACK).performClick()
     verify { onBack() }
+  }
+
+  @Test
+  fun deleteProfilePicture_buttonAppearsOnlyWithPicture_andCallsViewModel() {
+    // Setup account with profile picture
+    val avatarUri = "https://example.com/avatar.jpg"
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = avatarUri,
+            isPrivate = false)
+
+    every { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockAccountRepository.deleteProfilePicture("test-uid") } returns Unit
+    coEvery { mockUserRepository.deleteProfilePicture("test-uid") } returns Unit
+
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Delete button should be visible when there's a profile picture
+    n(UiTestTags.TAG_ACCOUNT_DELETE).assertIsDisplayed()
+
+    // Click delete button
+    n(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify both repositories were called
+    coVerify(exactly = 1) { mockAccountRepository.deleteProfilePicture("test-uid") }
+    coVerify(exactly = 1) { mockUserRepository.deleteProfilePicture("test-uid") }
+  }
+
+  @Test
+  fun deleteProfilePicture_buttonHiddenWhenNoProfilePicture() {
+    // Account without profile picture (default setup)
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Delete button should not exist when there's no profile picture
+    n(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
   }
 }
