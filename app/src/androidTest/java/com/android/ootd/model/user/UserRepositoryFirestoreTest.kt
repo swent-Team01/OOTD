@@ -50,8 +50,8 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assertEquals(user1.username, u1.username)
 
     // Edit usernames
-    userRepository.editUsername(uid1, "updatedUser1")
-    userRepository.editUsername(uid2, "updatedUser2")
+    userRepository.editUser(uid1, "updatedUser1")
+    userRepository.editUser(uid2, "updatedUser2")
     assertEquals("updatedUser1", userRepository.getUser(uid1).username)
     assertEquals("updatedUser2", userRepository.getUser(uid2).username)
 
@@ -91,13 +91,12 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     userRepository.addUser(user2)
 
     // Edit username: changing to existing username should fail (TakenUsernameException)
-    val taken =
-        runCatching { userRepository.editUsername(user1.uid, user2.username) }.exceptionOrNull()
+    val taken = runCatching { userRepository.editUser(user1.uid, user2.username) }.exceptionOrNull()
     assert(taken is TakenUsernameException)
 
     // Edit username: changing to the same current username should no-op
     val before = userRepository.getUser(user2.uid).username
-    userRepository.editUsername(user2.uid, before)
+    userRepository.editUser(user2.uid, before)
     val after = userRepository.getUser(user2.uid).username
     assertEquals(before, after)
 
@@ -106,14 +105,11 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assert(nf is NoSuchElementException)
 
     // Edit username invalid args and not found
-    val blankId = runCatching { userRepository.editUsername("", "newUsername") }.exceptionOrNull()
+    val blankId = runCatching { userRepository.editUser("", "newUsername") }.exceptionOrNull()
     assert(
         blankId is IllegalArgumentException && blankId.message?.contains("cannot be blank") == true)
-    val blankName = runCatching { userRepository.editUsername(user1.uid, "") }.exceptionOrNull()
-    assert(
-        blankName is IllegalArgumentException &&
-            blankName.message?.contains("cannot be blank") == true)
-    val editNf = runCatching { userRepository.editUsername("missing", "new") }.exceptionOrNull()
+
+    val editNf = runCatching { userRepository.editUser("missing", "new") }.exceptionOrNull()
     assert(editNf is NoSuchElementException)
 
     // Delete invalid and not found

@@ -54,16 +54,17 @@ interface UserRepository {
   suspend fun userExists(userID: String): Boolean
 
   /**
-   * Edits the user's username.
+   * Edits the user in the database.
    *
    * @param userID The user's ID
    * @param newUsername The new username to set
-   * @throws IllegalArgumentException if userID or newUsername is blank
+   * @param profilePicture The users profile picture
+   * @throws IllegalArgumentException if userID is blank
    * @throws NoSuchElementException if the user with the given ID is not found
    * @throws TakenUsernameException if the new username is already taken by another user
    * @throws Exception for other Firestore-related errors
    */
-  suspend fun editUsername(userID: String, newUsername: String)
+  suspend fun editUser(userID: String, newUsername: String = "", profilePicture: String = "")
 
   /**
    * Deletes the user from the database.

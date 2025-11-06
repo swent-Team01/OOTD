@@ -67,17 +67,20 @@ class UserRepositoryInMemory : UserRepository {
     addUser(newUser)
   }
 
-  override suspend fun editUsername(userID: String, newUsername: String) {
-    if (userID.isBlank() || newUsername.isBlank())
-        throw IllegalArgumentException("UserID and Username cannot be blank")
+  override suspend fun editUser(userID: String, newUsername: String, profilePicture: String) {
 
     val currentUser = getUser(userID)
+    val newUname = newUsername.takeIf { it.isNotBlank() } ?: currentUser.username
+    val newPicture = profilePicture.takeIf { it.isNotBlank() } ?: currentUser.profilePicture
 
-    if (users.values.any { it.username == newUsername && it.uid != userID }) {
-      throw TakenUsernameException("Username already in use")
+    // Only check for taken username if we're actually changing to a new non-blank username
+    if (newUsername.isNotBlank() && newUsername != currentUser.username) {
+      if (users.values.any { it.username == newUsername && it.uid != userID }) {
+        throw TakenUsernameException("Username already in use")
+      }
     }
 
-    users[userID] = currentUser.copy(username = newUsername)
+    users[userID] = currentUser.copy(username = newUname, profilePicture = newPicture)
   }
 
   // replaces old "removeUser"
