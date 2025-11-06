@@ -42,7 +42,10 @@ fun UserProfileCardPreview() {
   OOTDTheme {
     UserProfileCard(
         selectedUser =
-            User(uid = "Bob", username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople"),
+            User(
+                uid = "Bob",
+                ownerId = "Bob",
+                username = "TheMostSuperNameofTheWorldTheThirdKingOfPeople"),
         modifier = Modifier.padding(16.dp),
         isSelectedUserFollowed = false,
         hasRequestPending = false,

@@ -1,3 +1,4 @@
+// javascript
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +34,16 @@ export async function setupFirestore(env, seed = {}) {
     const accounts = seed.accounts ?? defaultAccounts();
     for (const account of accounts) {
       await db.collection('accounts').doc(account.ownerId).set(account);
+    }
+
+    // Users: derive friendUids from friendList and ensure ownerId exists
+    const users = seed.users ?? [];
+    for (const u of users) {
+      const friendUids = (u.friendList ?? [])
+        .filter(f => f && typeof f.uid === 'string' && f.uid.length > 0)
+        .map(f => f.uid);
+      // Ensure ownerId exists so security rules that check ownerId behave correctly
+      await db.collection('users').doc(u.uid).set({ ...u, friendUids, ownerId: u.uid });
     }
 
     // Posts

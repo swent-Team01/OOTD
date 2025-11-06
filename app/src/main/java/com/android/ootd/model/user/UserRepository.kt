@@ -11,9 +11,15 @@ interface UserRepository {
    *
    * @param username The chosen username
    * @param uid the user's ID
+   * @param ownerId the unique identifier of the account owner for consistency across the app
    * @param profilePicture the URL path to the user's profile picture. Blank by default
    */
-  suspend fun createUser(username: String, uid: String, profilePicture: String = "")
+  suspend fun createUser(
+      username: String,
+      uid: String,
+      ownerId: String = "",
+      profilePicture: String = ""
+  )
 
   /**
    * Retrieves all Users from the repository.

@@ -47,6 +47,20 @@ describe('Firestore rules - OOTD friend-only feed', () => {
     await assertFails(getDoc(doc(me, 'accounts/u3')));
   });
 
+    // users rules
+  test('Authenticated users can read any user doc but not write', async () => {
+    await assertSucceeds(getDoc(doc(me, 'users/me')));
+    await assertSucceeds(getDoc(doc(me, 'users/u1')));
+
+    await assertSucceeds(
+      setDoc(doc(me, 'users/me'), { uid: 'me', ownerId: 'me', name: 'Me', friendList: [] }, { merge: true })
+    );
+    // Writes to other users are not allowed
+    await assertFails(
+      setDoc(doc(alice, 'users/me'), { uid: 'me', touchedBy: 'u1' }, { merge: true })
+    );
+  });
+
   test('User can remove themselves from friendUids', async () => {
     await assertSucceeds(
       setDoc(doc(me, 'accounts/me'), {
