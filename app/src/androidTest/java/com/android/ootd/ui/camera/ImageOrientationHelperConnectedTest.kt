@@ -1,16 +1,19 @@
-package com.android.ootd.model.camera
+package com.android.ootd.ui.camera
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.ootd.model.camera.ImageOrientationHelper
 import java.io.File
 import java.io.FileOutputStream
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,8 +63,8 @@ class ImageOrientationHelperConnectedTest {
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
     // Fill with a color so it's not empty
-    val canvas = android.graphics.Canvas(bitmap)
-    canvas.drawColor(android.graphics.Color.BLUE)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(Color.BLUE)
 
     FileOutputStream(file).use { outputStream ->
       bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
@@ -105,8 +108,8 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue("Should successfully load bitmap", result.isSuccess)
-    assertNotNull("Bitmap should not be null", result.getOrNull())
+    Assert.assertTrue("Should successfully load bitmap", result.isSuccess)
+    Assert.assertNotNull("Bitmap should not be null", result.getOrNull())
     result.getOrNull()?.recycle()
   }
 
@@ -119,13 +122,13 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
+    Assert.assertNotNull(bitmap)
 
     // Note: JPEG compression may slightly alter dimensions, so we check they're close
-    assertEquals("Width should match", expectedWidth, bitmap?.width)
-    assertEquals("Height should match", expectedHeight, bitmap?.height)
+    Assert.assertEquals("Width should match", expectedWidth, bitmap?.width)
+    Assert.assertEquals("Height should match", expectedHeight, bitmap?.height)
 
     bitmap?.recycle()
   }
@@ -137,11 +140,11 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
-    assertEquals(10, bitmap?.width)
-    assertEquals(10, bitmap?.height)
+    Assert.assertNotNull(bitmap)
+    Assert.assertEquals(10, bitmap?.width)
+    Assert.assertEquals(10, bitmap?.height)
 
     bitmap?.recycle()
   }
@@ -153,9 +156,9 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
+    Assert.assertNotNull(bitmap)
 
     bitmap?.recycle()
   }
@@ -167,10 +170,10 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
-    assertEquals("Square image should have equal dimensions", bitmap?.width, bitmap?.height)
+    Assert.assertNotNull(bitmap)
+    Assert.assertEquals("Square image should have equal dimensions", bitmap?.width, bitmap?.height)
 
     bitmap?.recycle()
   }
@@ -183,8 +186,8 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, invalidUri)
 
-    assertTrue("Should fail with invalid URI", result.isFailure)
-    assertNotNull("Should have exception", result.exceptionOrNull())
+    Assert.assertTrue("Should fail with invalid URI", result.isFailure)
+    Assert.assertNotNull("Should have exception", result.exceptionOrNull())
   }
 
   @Test
@@ -200,10 +203,10 @@ class ImageOrientationHelperConnectedTest {
       val uri = createReadableUri(nonExistentFile)
       val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-      assertTrue("Should fail with non-existent file", result.isFailure)
+      Assert.assertTrue("Should fail with non-existent file", result.isFailure)
     } catch (e: IllegalArgumentException) {
       // FileProvider may throw this if file doesn't exist
-      assertTrue("Expected IllegalArgumentException for non-existent file", true)
+      Assert.assertTrue("Expected IllegalArgumentException for non-existent file", true)
     }
   }
 
@@ -220,7 +223,7 @@ class ImageOrientationHelperConnectedTest {
     val uri = createReadableUri(file)
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue("Should fail with corrupted file", result.isFailure)
+    Assert.assertTrue("Should fail with corrupted file", result.isFailure)
   }
 
   // ========== Multiple Operations ==========
@@ -235,8 +238,8 @@ class ImageOrientationHelperConnectedTest {
     val result1 = helper.loadBitmapWithCorrectOrientation(context, uri1)
     val result2 = helper.loadBitmapWithCorrectOrientation(context, uri2)
 
-    assertTrue(result1.isSuccess)
-    assertTrue(result2.isSuccess)
+    Assert.assertTrue(result1.isSuccess)
+    Assert.assertTrue(result2.isSuccess)
 
     result1.getOrNull()?.recycle()
     result2.getOrNull()?.recycle()
@@ -251,9 +254,9 @@ class ImageOrientationHelperConnectedTest {
     val result2 = helper.loadBitmapWithCorrectOrientation(context, uri)
     val result3 = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result1.isSuccess)
-    assertTrue(result2.isSuccess)
-    assertTrue(result3.isSuccess)
+    Assert.assertTrue(result1.isSuccess)
+    Assert.assertTrue(result2.isSuccess)
+    Assert.assertTrue(result3.isSuccess)
 
     result1.getOrNull()?.recycle()
     result2.getOrNull()?.recycle()
@@ -269,11 +272,11 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull("Bitmap should not be null", bitmap)
-    assertTrue("Bitmap width should be positive", (bitmap?.width ?: 0) > 0)
-    assertTrue("Bitmap height should be positive", (bitmap?.height ?: 0) > 0)
+    Assert.assertNotNull("Bitmap should not be null", bitmap)
+    Assert.assertTrue("Bitmap width should be positive", (bitmap?.width ?: 0) > 0)
+    Assert.assertTrue("Bitmap height should be positive", (bitmap?.height ?: 0) > 0)
 
     bitmap?.recycle()
   }
@@ -285,10 +288,10 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
-    assertFalse("Bitmap should not be recycled", bitmap?.isRecycled == true)
+    Assert.assertNotNull(bitmap)
+    Assert.assertFalse("Bitmap should not be recycled", bitmap?.isRecycled == true)
 
     bitmap?.recycle()
   }
@@ -302,9 +305,9 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
+    Assert.assertNotNull(bitmap)
 
     bitmap?.recycle()
   }
@@ -316,9 +319,9 @@ class ImageOrientationHelperConnectedTest {
 
     val result = helper.loadBitmapWithCorrectOrientation(context, uri)
 
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     val bitmap = result.getOrNull()
-    assertNotNull(bitmap)
+    Assert.assertNotNull(bitmap)
 
     bitmap?.recycle()
   }
@@ -340,7 +343,7 @@ class ImageOrientationHelperConnectedTest {
     }
 
     // If we got here without OutOfMemoryError, the test passes
-    assertTrue("Should not leak memory", true)
+    Assert.assertTrue("Should not leak memory", true)
   }
 
   // ========== Rotation Tests ==========
@@ -349,7 +352,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesRotate90() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_90)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 
@@ -357,7 +360,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesRotate180() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_180)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 
@@ -365,7 +368,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesRotate270() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_ROTATE_270)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 
@@ -373,7 +376,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesFlipHorizontal() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_FLIP_HORIZONTAL)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 
@@ -381,7 +384,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesFlipVertical() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_FLIP_VERTICAL)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 
@@ -389,7 +392,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesTranspose() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_TRANSPOSE)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 
@@ -397,7 +400,7 @@ class ImageOrientationHelperConnectedTest {
   fun loadBitmapWithCorrectOrientation_handlesTransverse() {
     val file = createImageWithOrientation(ExifInterface.ORIENTATION_TRANSVERSE)
     val result = helper.loadBitmapWithCorrectOrientation(context, createReadableUri(file))
-    assertTrue(result.isSuccess)
+    Assert.assertTrue(result.isSuccess)
     result.getOrNull()?.recycle()
   }
 }

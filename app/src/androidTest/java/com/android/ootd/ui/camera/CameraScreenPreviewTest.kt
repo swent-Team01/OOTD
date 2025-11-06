@@ -1,14 +1,19 @@
-package com.android.ootd.screen
+package com.android.ootd.ui.camera
 
 import android.Manifest
 import android.net.Uri
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.rule.GrantPermissionRule
-import com.android.ootd.ui.camera.CameraScreen
-import com.android.ootd.ui.camera.CameraScreenTestTags
-import com.android.ootd.ui.camera.CameraViewModel
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -46,74 +51,42 @@ class CameraScreenPreviewTest {
   // ========== Preview Display Tests ==========
 
   @Test
-  fun previewScreen_displaysAfterCapture() {
+  fun previewScreen_displaysAllComponentsAfterCapture() {
     // Simulate image capture by setting captured image URI
     val testUri = Uri.parse("content://test/image.jpg")
     viewModel.setCapturedImage(testUri)
 
     composeTestRule.waitForIdle()
 
-    // Should show preview buttons
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.RETAKE_BUTTON).assertExists()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.CROP_BUTTON).assertExists()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertExists()
-  }
+    // Verify all preview buttons exist and are displayed
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.RETAKE_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CROP_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertIsDisplayed()
 
-  @Test
-  fun previewScreen_displaysCloseButton() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
+    // Verify close button
     composeTestRule
         .onAllNodesWithTag(CameraScreenTestTags.CLOSE_BUTTON)
         .assertCountEquals(1)
         .onFirst()
         .assertIsDisplayed()
-  }
 
-  @Test
-  fun previewScreen_displaysAllActionButtons() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.RETAKE_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.CROP_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertIsDisplayed()
+    // Verify camera controls are not shown
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertDoesNotExist()
   }
 
   // ========== Button Interaction Tests ==========
 
   @Test
-  fun retakeButton_isClickable() {
+  fun previewButtons_areAllClickable() {
     val testUri = Uri.parse("content://test/image.jpg")
     viewModel.setCapturedImage(testUri)
 
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(CameraScreenTestTags.RETAKE_BUTTON).assertIsEnabled()
-  }
-
-  @Test
-  fun cropButton_isClickable() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CROP_BUTTON).assertIsEnabled()
-  }
-
-  @Test
-  fun approveButton_isClickable() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertIsEnabled()
   }
 
@@ -186,91 +159,38 @@ class CameraScreenPreviewTest {
   // ========== Button Content Tests ==========
 
   @Test
-  fun retakeButton_hasCorrectText() {
+  fun previewButtons_haveCorrectTextAndContentDescriptions() {
     val testUri = Uri.parse("content://test/image.jpg")
     viewModel.setCapturedImage(testUri)
 
     composeTestRule.waitForIdle()
 
+    // Verify button text
     composeTestRule.onNodeWithText("Retake").assertIsDisplayed()
-  }
-
-  @Test
-  fun cropButton_hasCorrectText() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithText("Crop").assertIsDisplayed()
-  }
-
-  @Test
-  fun approveButton_hasCorrectText() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithText("Approve").assertIsDisplayed()
-  }
 
-  @Test
-  fun retakeButton_hasCorrectContentDescription() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
+    // Verify content descriptions
     composeTestRule.onNodeWithContentDescription("Retake").assertExists()
-  }
-
-  @Test
-  fun approveButton_hasCorrectContentDescription() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
     composeTestRule.onNodeWithContentDescription("Approve").assertExists()
   }
 
   // ========== State Management Tests ==========
 
   @Test
-  fun previewScreen_doesNotShowCameraControls() {
+  fun viewModel_managesPreviewStateCorrectly() {
     val testUri = Uri.parse("content://test/image.jpg")
     viewModel.setCapturedImage(testUri)
 
     composeTestRule.waitForIdle()
 
-    // Camera controls should not be visible
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertDoesNotExist()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertDoesNotExist()
-  }
-
-  @Test
-  fun viewModel_showPreview_isTrue_whenImageCaptured() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
+    // Verify initial preview state
     assert(viewModel.uiState.value.showPreview) {
       "showPreview should be true when image is captured"
     }
     assert(viewModel.uiState.value.capturedImageUri == testUri) { "capturedImageUri should match" }
-  }
 
-  @Test
-  fun viewModel_showPreview_isFalse_afterRetake() {
-    val testUri = Uri.parse("content://test/image.jpg")
-    viewModel.setCapturedImage(testUri)
-
-    composeTestRule.waitForIdle()
-
-    // Retake photo
+    // Retake photo and verify state reset
     viewModel.retakePhoto()
 
     composeTestRule.waitForIdle()
@@ -282,7 +202,7 @@ class CameraScreenPreviewTest {
   }
 
   @Test
-  fun viewModel_resetsState_afterApprove() {
+  fun viewModel_resetsStateAfterApprove() {
     val testUri = Uri.parse("content://test/image.jpg")
     viewModel.setCapturedImage(testUri)
 
