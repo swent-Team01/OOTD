@@ -19,6 +19,7 @@ open class AccountFirestoreTest : FirestoreTest() {
       Location(46.5191, 6.5668, "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
   lateinit var account1: Account
   lateinit var account2: Account
+  lateinit var dummyAccount: Account
 
   @Before
   override fun setUp() {
@@ -26,7 +27,7 @@ open class AccountFirestoreTest : FirestoreTest() {
 
     account1 =
         Account(
-            uid = "user1",
+            uid = currentUser.uid,
             ownerId = currentUser.uid,
             username = "alice_wonder",
             birthday = "1990-01-01",
@@ -39,6 +40,15 @@ open class AccountFirestoreTest : FirestoreTest() {
             uid = "user2",
             ownerId = currentUser.uid,
             username = "bob_builder",
+            birthday = "1992-05-15",
+            googleAccountEmail = "bob@example.com",
+            profilePicture = "",
+            friendUids = emptyList())
+    dummyAccount =
+        Account(
+            uid = currentUser.uid,
+            ownerId = currentUser.uid,
+            username = "dummyAccount",
             birthday = "1992-05-15",
             googleAccountEmail = "bob@example.com",
             profilePicture = "",

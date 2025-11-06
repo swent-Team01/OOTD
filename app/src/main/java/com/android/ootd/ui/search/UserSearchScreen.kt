@@ -77,7 +77,10 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), onBack: () ->
               modifier = Modifier.fillMaxWidth().weight(1f),
               selectedUser = uiState.selectedUser,
               isSelectedUserFollowed = uiState.isSelectedUserFollowed,
-              onFollowClick = { viewModel.pressFollowButton() })
+              hasRequestPending = uiState.hasRequestPending,
+              errorMessage = uiState.errorMessage,
+              onFollowClick = { viewModel.pressFollowButton() },
+              onErrorDismiss = { viewModel.clearError() })
         }
       }
 }
