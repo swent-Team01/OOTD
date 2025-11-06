@@ -4,70 +4,83 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.Account
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import kotlinx.coroutines.Job
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * UI state for the FeedScreen.
+ *
+ * This state holds the data needed to display the feed of outfit posts.
+ */
 data class FeedUiState(
     val feedPosts: List<OutfitPost> = emptyList(),
     val currentAccount: Account? = null,
     val hasPostedToday: Boolean = false
 )
 
-class FeedViewModel(private val repository: FeedRepository = FeedRepositoryProvider.repository) :
-    ViewModel() {
+/**
+ * ViewModel for the FeedScreen.
+ *
+ * Responsible for managing the state by fetching and providing data for feed posts from the
+ * [FeedRepository] and account data from the [AccountRepository].
+ */
+class FeedViewModel(
+    private val repository: FeedRepository = FeedRepositoryProvider.repository,
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
+) : ViewModel() {
 
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
-  private var loadJob: Job? = null
-
-  fun onPostUploaded() {
-    _uiState.value = _uiState.value.copy(hasPostedToday = true)
-    // Refresh for the current account if present
-    _uiState.value.currentAccount?.let { loadFriendFeedFor(it) }
-        ?: run { _uiState.value = _uiState.value.copy(feedPosts = emptyList()) }
+  init {
+    observeAuthAndLoadAccount()
   }
 
-  /** Called after the authenticated user's account is available. */
-  fun setCurrentAccount(account: Account) {
-    _uiState.value = _uiState.value.copy(currentAccount = account)
-    viewModelScope.launch {
-      val repoHasPosted = repository.hasPostedToday(account.uid)
-      val effectiveHasPosted = _uiState.value.hasPostedToday || repoHasPosted
-      _uiState.value = _uiState.value.copy(hasPostedToday = effectiveHasPosted)
-
-      if (effectiveHasPosted) {
-        loadFriendFeedFor(account)
+  /** Observes Firebase Auth state changes and loads the current account accordingly. */
+  private fun observeAuthAndLoadAccount() {
+    Firebase.auth.addAuthStateListener { auth ->
+      val user = auth.currentUser
+      if (user == null) {
+        _uiState.value = FeedUiState()
       } else {
-        _uiState.value = _uiState.value.copy(feedPosts = emptyList())
+        viewModelScope.launch {
+          try {
+            val acct = accountRepository.getAccount(user.uid)
+            setCurrentAccount(acct)
+          } catch (e: Exception) {
+            Log.e("FeedViewModel", "Failed to load account", e)
+            _uiState.value = _uiState.value.copy(currentAccount = null, feedPosts = emptyList())
+          }
+        }
       }
     }
   }
 
-  private fun loadFriendFeedFor(account: Account) {
-    loadJob?.cancel()
-    loadJob =
-        viewModelScope.launch {
-          val friendUids = account.friendUids
-          if (friendUids.isEmpty()) {
-            _uiState.value = _uiState.value.copy(feedPosts = emptyList())
-            return@launch
-          }
-          try {
-            val posts = repository.getFeedForUids(friendUids)
-            if (posts != _uiState.value.feedPosts) {
-              _uiState.value = _uiState.value.copy(feedPosts = posts)
-            }
-          } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to load friend feed", e)
-            _uiState.value = _uiState.value.copy(feedPosts = emptyList())
-          }
-        }
+  /** Refreshes the feed posts from Firestore for the current account. */
+  fun refreshFeedFromFirestore() {
+    val account = _uiState.value.currentAccount ?: return
+    viewModelScope.launch {
+      val hasPosted = repository.hasPostedToday(account.uid)
+      val posts = repository.getFeedForUids(account.friendUids + account.uid)
+      _uiState.value = _uiState.value.copy(hasPostedToday = hasPosted, feedPosts = posts)
+    }
+  }
+
+  /**
+   * Sets the current account in the UI state.
+   *
+   * @param account The account to set as the current account.
+   */
+  fun setCurrentAccount(account: Account) {
+    _uiState.value = _uiState.value.copy(currentAccount = account)
   }
 }
