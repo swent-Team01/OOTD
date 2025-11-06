@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -89,7 +90,10 @@ fun FeedScreen(
               colors =
                   ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
               modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB)) {
-                Text("Do a Fit Check", color = Color.White)
+                Text(
+                    "Do a Fit Check",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge)
               }
         }
       }) { paddingValues ->
@@ -108,8 +112,10 @@ fun FeedScreen(
                     contentAlignment = Alignment.Center) {
                       Text(
                           "Do a fit check to unlock today’s feed",
-                          style = MaterialTheme.typography.titleMedium,
-                          color = Color.White)
+                          style =
+                              MaterialTheme.typography.titleLarge.copy(
+                                  fontWeight = FontWeight.ExtraBold),
+                          color = MaterialTheme.colorScheme.primary)
                     }
               }
             }
