@@ -42,6 +42,8 @@ import com.android.ootd.ui.theme.Tertiary
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object CameraScreenTestTags {
   const val CAMERA_PREVIEW = "cameraPreview"
@@ -303,7 +305,6 @@ private fun ImagePreviewScreen(
     onClose: () -> Unit
 ) {
   val context = LocalContext.current
-  val imageHelper = remember { ImageOrientationHelper() }
 
   var isCropping by remember { mutableStateOf(false) }
   var croppedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -317,17 +318,25 @@ private fun ImagePreviewScreen(
     isLoading = true
     errorMessage = null
 
-    imageHelper
-        .loadBitmapWithCorrectOrientation(context, currentImageUri)
-        .onSuccess { loadedBitmap ->
-          bitmap?.recycle() // Recycle old bitmap if exists
-          bitmap = loadedBitmap
-          isLoading = false
-        }
-        .onFailure { error ->
-          errorMessage = "Failed to load image: ${error.message}"
-          isLoading = false
-        }
+    // Load bitmap on IO dispatcher to avoid blocking main thread
+    withContext(Dispatchers.IO) {
+      val helper = ImageOrientationHelper()
+      helper
+          .loadBitmapWithCorrectOrientation(context, currentImageUri)
+          .onSuccess { loadedBitmap ->
+            withContext(Dispatchers.Main) {
+              bitmap?.recycle() // Recycle old bitmap if exists
+              bitmap = loadedBitmap
+              isLoading = false
+            }
+          }
+          .onFailure { error ->
+            withContext(Dispatchers.Main) {
+              errorMessage = "Failed to load image: ${error.message}"
+              isLoading = false
+            }
+          }
+    }
   }
 
   // Clean up bitmap when composable leaves composition
@@ -344,93 +353,92 @@ private fun ImagePreviewScreen(
     } else {
       // Preview mode
       Box(modifier = Modifier.fillMaxSize()) {
+        // Image content area with padding for bottom controls
         Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
-          Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
-            when {
-              isLoading -> {
-                // Show loading indicator
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center), color = Tertiary)
-              }
-              errorMessage != null -> {
-                // Show error message
-                Text(
-                    text = errorMessage ?: "Unknown error",
-                    color = White,
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge)
-              }
-              bitmap != null -> {
-                // Show the loaded bitmap
-                Image(
-                    bitmap = bitmap!!.asImageBitmap(),
-                    contentDescription = "Captured Image",
-                    modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.IMAGE_PREVIEW),
-                    contentScale = ContentScale.Fit)
-              }
+          when {
+            isLoading -> {
+              // Show loading indicator
+              CircularProgressIndicator(
+                  modifier = Modifier.align(Alignment.Center), color = Tertiary)
+            }
+            errorMessage != null -> {
+              // Show error message
+              Text(
+                  text = errorMessage ?: "Unknown error",
+                  color = White,
+                  modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                  style = MaterialTheme.typography.bodyLarge)
+            }
+            bitmap != null -> {
+              // Show the loaded bitmap
+              Image(
+                  bitmap = bitmap!!.asImageBitmap(),
+                  contentDescription = "Captured Image",
+                  modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.IMAGE_PREVIEW),
+                  contentScale = ContentScale.Fit)
             }
           }
-
-          // Close button
-          IconButton(
-              onClick = onClose,
-              modifier =
-                  Modifier.align(Alignment.TopStart)
-                      .padding(16.dp)
-                      .background(Primary.copy(alpha = 0.5f), CircleShape)
-                      .testTag(CameraScreenTestTags.CLOSE_BUTTON)) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close Preview",
-                    tint = White,
-                    modifier = Modifier.size(36.dp))
-              }
-
-          // Bottom action buttons
-          Row(
-              modifier =
-                  Modifier.align(Alignment.BottomCenter)
-                      .fillMaxWidth()
-                      .background(Primary.copy(alpha = 0.8f))
-                      .padding(vertical = 20.dp, horizontal = 16.dp),
-              horizontalArrangement = Arrangement.SpaceEvenly,
-              verticalAlignment = Alignment.CenterVertically) {
-                // Retake button
-                Button(
-                    onClick = onRetake,
-                    modifier = Modifier.testTag(CameraScreenTestTags.RETAKE_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                      Icon(
-                          imageVector = Icons.Default.Refresh,
-                          contentDescription = "Retake",
-                          modifier = Modifier.size(24.dp))
-                      Spacer(modifier = Modifier.width(8.dp))
-                      Text("Retake")
-                    }
-
-                // Crop button
-                Button(
-                    onClick = { isCropping = true },
-                    modifier = Modifier.testTag(CameraScreenTestTags.CROP_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                      Spacer(modifier = Modifier.width(8.dp))
-                      Text("Crop")
-                    }
-
-                // Approve button
-                Button(
-                    onClick = { onApprove(currentImageUri) },
-                    modifier = Modifier.testTag(CameraScreenTestTags.APPROVE_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                      Icon(
-                          imageVector = Icons.Default.Check,
-                          contentDescription = "Approve",
-                          modifier = Modifier.size(24.dp))
-                      Spacer(modifier = Modifier.width(8.dp))
-                      Text("Approve")
-                    }
-              }
         }
+
+        // Close button
+        IconButton(
+            onClick = onClose,
+            modifier =
+                Modifier.align(Alignment.TopStart)
+                    .padding(16.dp)
+                    .background(Primary.copy(alpha = 0.5f), CircleShape)
+                    .testTag(CameraScreenTestTags.CLOSE_BUTTON)) {
+              Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "Close Preview",
+                  tint = White,
+                  modifier = Modifier.size(36.dp))
+            }
+
+        // Bottom action buttons
+        Row(
+            modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Primary.copy(alpha = 0.8f))
+                    .padding(vertical = 20.dp, horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically) {
+              // Retake button
+              Button(
+                  onClick = onRetake,
+                  modifier = Modifier.testTag(CameraScreenTestTags.RETAKE_BUTTON),
+                  colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Retake",
+                        modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Retake")
+                  }
+
+              // Crop button
+              Button(
+                  onClick = { isCropping = true },
+                  modifier = Modifier.testTag(CameraScreenTestTags.CROP_BUTTON),
+                  colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Crop")
+                  }
+
+              // Approve button
+              Button(
+                  onClick = { onApprove(currentImageUri) },
+                  modifier = Modifier.testTag(CameraScreenTestTags.APPROVE_BUTTON),
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Approve",
+                        modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Approve")
+                  }
+            }
       }
     }
   }
