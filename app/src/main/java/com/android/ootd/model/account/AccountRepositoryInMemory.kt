@@ -159,6 +159,11 @@ class AccountRepositoryInMemory : AccountRepository {
             profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
   }
 
+  override suspend fun deleteProfilePicture(userID: String) {
+    val user = getAccount(userID)
+    accounts[userID] = user.copy(profilePicture = "")
+  }
+
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)

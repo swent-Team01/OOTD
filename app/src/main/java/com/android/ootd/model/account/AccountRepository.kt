@@ -82,4 +82,15 @@ interface AccountRepository {
    * @throws IllegalStateException The userID does not match the users ID
    */
   suspend fun editAccount(userID: String, username: String, birthDay: String, picture: String)
+
+  /**
+   * Delete the profile picture of the account corresponding to [userID].
+   *
+   * Sets the profile picture to an empty string. If the account has no profile picture, this
+   * operation completes successfully without any changes.
+   *
+   * @param userID The ID of the user whose profile picture should be deleted
+   * @throws NoSuchElementException if account is not found
+   */
+  suspend fun deleteProfilePicture(userID: String)
 }

@@ -357,6 +357,36 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
+  fun deleteProfilePicture_works() = runTest {
+    accountRepository.addAccount(account1)
+    accountRepository.addAccount(account2)
+    accountRepository.addAccount(dummyAccount) // No pfp
+    val dummyPfp = dummyAccount.profilePicture
+
+    assert(account1.profilePicture.isNotBlank())
+    assert(account2.profilePicture.isNotBlank())
+    assert(dummyPfp.isBlank())
+
+    accountRepository.deleteProfilePicture(account1.uid)
+    accountRepository.deleteProfilePicture(account2.uid)
+    accountRepository.deleteProfilePicture(dummyAccount.uid)
+
+    val updated1 = accountRepository.getAccount(account1.uid)
+    val updated2 = accountRepository.getAccount(account2.uid)
+    val updatedDummy = accountRepository.getAccount(dummyAccount.uid)
+    assertEquals(updated1.profilePicture, "")
+    assertEquals(updated2.profilePicture, "")
+    assertEquals(updatedDummy.profilePicture, dummyPfp) // should do nothing
+  }
+
+  @Test
+  fun deleteProfilePicture_throwsIfInvalidUserID() = runTest {
+    expectThrows<IllegalArgumentException> { accountRepository.deleteProfilePicture("") }
+    accountRepository.addAccount(account1)
+    expectThrows<UnknowUserID> { accountRepository.deleteProfilePicture(account2.uid) } // Wrong uid
+  }
+
+  @Test
   fun deleteAccount_successfullyDeletesAccount() = runTest {
     accountRepository.addAccount(account1)
 
