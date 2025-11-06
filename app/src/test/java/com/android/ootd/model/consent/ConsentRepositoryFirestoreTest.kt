@@ -46,6 +46,15 @@ class ConsentRepositoryFirestoreTest {
   @Test
   fun addConsentSuccessfullyAddsValidConsent() = runTest {
     val consent = Consent("uuid-123", "user-456", 1234567890L, "1.0")
+    val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
+
+    // Mock getConsentByUserId to return null (no existing consent)
+    every { mockQuerySnapshot.documents } returns emptyList()
+    every { mockCollection.whereEqualTo(USER_ID_FIELD, consent.userId) } returns mockQuery
+    every { mockQuery.limit(1) } returns mockQuery
+    every { mockQuery.get() } returns Tasks.forResult(mockQuerySnapshot)
+
+    // Mock the actual set operation
     every { mockCollection.document(consent.consentUuid) } returns mockDocumentRef
     every { mockDocumentRef.set(any()) } returns Tasks.forResult(null)
 
@@ -63,6 +72,38 @@ class ConsentRepositoryFirestoreTest {
 
     invalidConsents.forEach { consent -> repository.addConsent(consent) }
 
+    verify(exactly = 0) { mockDocumentRef.set(any()) }
+  }
+
+  @Test
+  fun addConsentSkipsIfConsentAlreadyExistsForUser() = runTest {
+    val userId = "user-456"
+    val newConsent = Consent("new-uuid", userId, 9999999999L, "1.0")
+
+    val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
+    val mockDocumentSnapshot: DocumentSnapshot = mockk(relaxed = true)
+
+    // Mock that an existing consent is found for this user
+    // The repository will call getConsentByUserId which should return a non-null Consent
+    every { mockDocumentSnapshot.exists() } returns true
+    every { mockDocumentSnapshot.id } returns "existing-uuid"
+    every { mockDocumentSnapshot.data } returns
+        mapOf(
+            "consentUuid" to "existing-uuid",
+            "userId" to userId,
+            "timestamp" to 1234567890L,
+            "version" to "1.0")
+
+    // Create a spy on the repository to allow partial mocking
+    val spyRepository = spyk(repository)
+
+    // Mock getConsentByUserId to return an existing consent
+    coEvery { spyRepository.getConsentByUserId(userId) } returns
+        Consent("existing-uuid", userId, 1234567890L, "1.0")
+
+    spyRepository.addConsent(newConsent)
+
+    // Verify that set was never called because consent already exists
     verify(exactly = 0) { mockDocumentRef.set(any()) }
   }
 

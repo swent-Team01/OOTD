@@ -83,6 +83,15 @@ class ConsentRepositoryFirestore(private val db: FirebaseFirestore) : ConsentRep
     }
 
     try {
+      // Check if consent already exists for this userId to prevent overwriting original timestamp
+      val existingConsent = getConsentByUserId(consent.userId)
+      if (existingConsent != null) {
+        Log.w(
+            CONSENT_TAG,
+            "Consent already exists for userId ${consent.userId}. Skipping to preserve original timestamp.")
+        return
+      }
+
       db.collection(CONSENT_COLLECTION_PATH)
           .document(consent.consentUuid)
           .set(consent.toDto())
