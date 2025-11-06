@@ -353,30 +353,27 @@ private fun ImagePreviewScreen(
     } else {
       // Preview mode
       Box(modifier = Modifier.fillMaxSize()) {
-        // Image content area with padding for bottom controls
-        Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
-          when {
-            isLoading -> {
-              // Show loading indicator
-              CircularProgressIndicator(
-                  modifier = Modifier.align(Alignment.Center), color = Tertiary)
-            }
-            errorMessage != null -> {
-              // Show error message
-              Text(
-                  text = errorMessage ?: "Unknown error",
-                  color = White,
-                  modifier = Modifier.align(Alignment.Center).padding(16.dp),
-                  style = MaterialTheme.typography.bodyLarge)
-            }
-            bitmap != null -> {
-              // Show the loaded bitmap
-              Image(
-                  bitmap = bitmap!!.asImageBitmap(),
-                  contentDescription = "Captured Image",
-                  modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.IMAGE_PREVIEW),
-                  contentScale = ContentScale.Fit)
-            }
+        // Image content area
+        when {
+          isLoading -> {
+            // Show loading indicator
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Tertiary)
+          }
+          errorMessage != null -> {
+            // Show error message
+            Text(
+                text = errorMessage ?: "Unknown error",
+                color = White,
+                modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                style = MaterialTheme.typography.bodyLarge)
+          }
+          bitmap != null -> {
+            // Show the loaded bitmap
+            Image(
+                bitmap = bitmap!!.asImageBitmap(),
+                contentDescription = "Captured Image",
+                modifier = Modifier.fillMaxSize().testTag(CameraScreenTestTags.IMAGE_PREVIEW),
+                contentScale = ContentScale.Fit)
           }
         }
 
@@ -396,47 +393,50 @@ private fun ImagePreviewScreen(
             }
 
         // Bottom action buttons
-        Row(
+        Box(
             modifier =
-                Modifier.align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Primary.copy(alpha = 0.8f))
-                    .padding(vertical = 20.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically) {
-              // Retake button
-              Button(
-                  onClick = onRetake,
-                  modifier = Modifier.testTag(CameraScreenTestTags.RETAKE_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Retake",
-                        modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Retake")
-                  }
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 60.dp)) {
+              Row(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .background(Primary.copy(alpha = 0.8f))
+                          .padding(vertical = 20.dp, horizontal = 16.dp),
+                  horizontalArrangement = Arrangement.SpaceEvenly,
+                  verticalAlignment = Alignment.CenterVertically) {
+                    // Retake button
+                    Button(
+                        onClick = onRetake,
+                        modifier = Modifier.testTag(CameraScreenTestTags.RETAKE_BUTTON),
+                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
+                          Icon(
+                              imageVector = Icons.Default.Refresh,
+                              contentDescription = "Retake",
+                              modifier = Modifier.size(24.dp))
+                          Spacer(modifier = Modifier.width(8.dp))
+                          Text("Retake")
+                        }
 
-              // Crop button
-              Button(
-                  onClick = { isCropping = true },
-                  modifier = Modifier.testTag(CameraScreenTestTags.CROP_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Crop")
-                  }
+                    // Crop button
+                    Button(
+                        onClick = { isCropping = true },
+                        modifier = Modifier.testTag(CameraScreenTestTags.CROP_BUTTON),
+                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
+                          Spacer(modifier = Modifier.width(8.dp))
+                          Text("Crop")
+                        }
 
-              // Approve button
-              Button(
-                  onClick = { onApprove(currentImageUri) },
-                  modifier = Modifier.testTag(CameraScreenTestTags.APPROVE_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Approve",
-                        modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Approve")
+                    // Approve button
+                    Button(
+                        onClick = { onApprove(currentImageUri) },
+                        modifier = Modifier.testTag(CameraScreenTestTags.APPROVE_BUTTON),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                          Icon(
+                              imageVector = Icons.Default.Check,
+                              contentDescription = "Approve",
+                              modifier = Modifier.size(24.dp))
+                          Spacer(modifier = Modifier.width(8.dp))
+                          Text("Approve")
+                        }
                   }
             }
       }
