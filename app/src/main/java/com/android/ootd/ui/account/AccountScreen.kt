@@ -69,6 +69,7 @@ object UiTestTags {
   const val TAG_ACCOUNT_AVATAR_IMAGE = "account_avatar_image"
   const val TAG_ACCOUNT_AVATAR_LETTER = "account_avatar_letter"
   const val TAG_ACCOUNT_EDIT = "account_edit_button"
+  const val TAG_ACCOUNT_DELETE = "account_delete_button"
   const val TAG_USERNAME_FIELD = "account_username_field"
   const val TAG_USERNAME_EDIT = "account_username_edit"
   const val TAG_USERNAME_CANCEL = "account_username_cancel"
@@ -224,19 +225,38 @@ private fun AccountScreenContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Edit button under avatar
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          Button(
-              onClick = {
-                imagePickerLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-              },
-              shape = CircleShape,
-              colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
-                Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
+        // Edit and Delete buttons under avatar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically) {
+              Button(
+                  onClick = {
+                    imagePickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                  },
+                  shape = CircleShape,
+                  colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+                  modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
+                    Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
+                  }
+
+              Spacer(modifier = Modifier.width(16.dp))
+
+              // Delete button - only show if user has a profile picture
+              if (avatarUri.isNotBlank()) {
+                Button(
+                    onClick = {
+                      // TODO: Call to
+                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
+                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
+                      Text(text = "Delete", color = colors.onError, style = typography.titleLarge)
+                    }
               }
-        }
+            }
 
         Spacer(modifier = Modifier.height(28.dp))
 

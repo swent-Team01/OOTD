@@ -236,6 +236,10 @@ class AccountViewModel(
     }
   }
 
+  suspend fun deleteProfilePicture(userID: String) {
+    // TODO: Call db to delete profile picture
+  }
+
   // --- Help popup intents ---
   fun onPrivacyHelpClick() {
     _uiState.update { it.copy(showPrivacyHelp = !it.showPrivacyHelp) }
