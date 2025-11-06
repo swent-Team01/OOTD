@@ -187,6 +187,20 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
     }
   }
 
+  override suspend fun deleteProfilePicture(userID: String) {
+    if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
+    try {
+      getUser(userID)
+      db.collection(USER_COLLECTION_PATH).document(userID).update(mapOf("profilePicture" to ""))
+    } catch (e: NoSuchElementException) {
+      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      throw e
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error deleting users profilepicture: ${e.message}", e)
+      throw e
+    }
+  }
+
   override suspend fun deleteUser(userID: String) {
     try {
       // Validate input
