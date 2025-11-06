@@ -37,7 +37,7 @@ export async function setupFirestore(env, seed = {}) {
     }
 
     // Users: derive friendUids from friendList and ensure ownerId exists
-    const users = seed.users ?? defaultUsers();
+    const users = seed.users ?? [];
     for (const u of users) {
       const friendUids = (u.friendList ?? [])
         .filter(f => f && typeof f.uid === 'string' && f.uid.length > 0)
