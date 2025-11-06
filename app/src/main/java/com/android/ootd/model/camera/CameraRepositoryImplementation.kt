@@ -119,4 +119,48 @@ class CameraRepositoryImplementation : CameraRepository {
               ContextCompat.getMainExecutor(context))
         }
       }
+
+  override fun cleanupOldCachedImages(context: Context, olderThanHours: Int) {
+    val cutoffTime = System.currentTimeMillis() - (olderThanHours * 60 * 60 * 1000L)
+
+    context.cacheDir
+        .listFiles()
+        ?.filter { file ->
+          file.name.startsWith(IMAGE_FILE_PREFIX) &&
+              file.name.endsWith(IMAGE_FILE_EXTENSION) &&
+              file.lastModified() < cutoffTime
+        }
+        ?.forEach { file ->
+          val deleted = file.delete()
+          if (deleted) {
+            Log.i(TAG, "Cleaned up old cache file: ${file.name}")
+          } else {
+            Log.w(TAG, "Failed to delete old cache file: ${file.name}")
+          }
+        }
+  }
+
+  override fun deleteCachedImage(context: Context, imageUri: Uri): Boolean {
+    return try {
+      val file = java.io.File(imageUri.path ?: return false)
+      // Only delete if it's in the cache directory and has our prefix
+      if (file.parent == context.cacheDir.path &&
+          file.name.startsWith(IMAGE_FILE_PREFIX) &&
+          file.name.endsWith(IMAGE_FILE_EXTENSION)) {
+        val deleted = file.delete()
+        if (deleted) {
+          Log.i(TAG, "Deleted cached image: ${file.name}")
+        } else {
+          Log.w(TAG, "Failed to delete cached image: ${file.name}")
+        }
+        deleted
+      } else {
+        Log.w(TAG, "Attempted to delete non-cache file: ${imageUri.path}")
+        false
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "Error deleting cached image", e)
+      false
+    }
+  }
 }

@@ -17,6 +17,7 @@ import io.mockk.verify
 import java.util.concurrent.ExecutorService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -378,5 +379,120 @@ class CameraRepositoryTest {
         onError = {})
 
     assertNotNull(receivedUri)
+  }
+
+  // ========== deleteCachedImage Tests ==========
+
+  @Test
+  fun `deleteCachedImage successfully deletes valid cached image file`() {
+    val mockContext = mockk<Context>(relaxed = true)
+    val cacheDir = kotlin.io.path.createTempDirectory().toFile()
+    val testFile = java.io.File(cacheDir, "OOTD_test123.jpg")
+    testFile.createNewFile()
+    every { mockContext.cacheDir } returns cacheDir
+
+    val result = repository.deleteCachedImage(mockContext, android.net.Uri.fromFile(testFile))
+
+    assertTrue(result)
+    assertFalse(testFile.exists())
+  }
+
+  @Test
+  fun `deleteCachedImage returns false for invalid files`() {
+    val mockContext = mockk<Context>(relaxed = true)
+    val cacheDir = kotlin.io.path.createTempDirectory().toFile()
+    every { mockContext.cacheDir } returns cacheDir
+
+    // Non-existent file
+    assertFalse(
+        repository.deleteCachedImage(
+            mockContext, android.net.Uri.fromFile(java.io.File(cacheDir, "OOTD_nonexistent.jpg"))))
+
+    // Wrong prefix
+    val wrongPrefix = java.io.File(cacheDir, "NotOOTD_test.jpg")
+    wrongPrefix.createNewFile()
+    assertFalse(repository.deleteCachedImage(mockContext, android.net.Uri.fromFile(wrongPrefix)))
+    assertTrue(wrongPrefix.exists())
+    wrongPrefix.delete()
+
+    // Wrong extension
+    val wrongExt = java.io.File(cacheDir, "OOTD_test.png")
+    wrongExt.createNewFile()
+    assertFalse(repository.deleteCachedImage(mockContext, android.net.Uri.fromFile(wrongExt)))
+    wrongExt.delete()
+
+    // Outside cache directory
+    val otherDir = kotlin.io.path.createTempDirectory().toFile()
+    val outsideFile = java.io.File(otherDir, "OOTD_test.jpg")
+    outsideFile.createNewFile()
+    assertFalse(repository.deleteCachedImage(mockContext, android.net.Uri.fromFile(outsideFile)))
+    outsideFile.delete()
+    otherDir.delete()
+
+    // Null path
+    val mockUri = mockk<android.net.Uri>()
+    every { mockUri.path } returns null
+    assertFalse(repository.deleteCachedImage(mockContext, mockUri))
+
+    // Exception handling
+    every { mockUri.path } throws RuntimeException("Test exception")
+    assertFalse(repository.deleteCachedImage(mockContext, mockUri))
+  }
+
+  // ========== cleanupOldCachedImages Tests ==========
+
+  @Test
+  fun `cleanupOldCachedImages deletes only old OOTD jpg files`() {
+    val mockContext = mockk<Context>(relaxed = true)
+    val cacheDir = kotlin.io.path.createTempDirectory().toFile()
+    every { mockContext.cacheDir } returns cacheDir
+
+    // Old OOTD file - should be deleted
+    val oldFile = java.io.File(cacheDir, "OOTD_old.jpg")
+    oldFile.createNewFile()
+    oldFile.setLastModified(System.currentTimeMillis() - (25 * 60 * 60 * 1000L))
+
+    // Recent OOTD file - should NOT be deleted
+    val recentFile = java.io.File(cacheDir, "OOTD_recent.jpg")
+    recentFile.createNewFile()
+
+    // Old non-OOTD file - should NOT be deleted
+    val otherFile = java.io.File(cacheDir, "other_old.jpg")
+    otherFile.createNewFile()
+    otherFile.setLastModified(System.currentTimeMillis() - (25 * 60 * 60 * 1000L))
+
+    // Old OOTD PNG file - should NOT be deleted
+    val pngFile = java.io.File(cacheDir, "OOTD_old.png")
+    pngFile.createNewFile()
+    pngFile.setLastModified(System.currentTimeMillis() - (25 * 60 * 60 * 1000L))
+
+    repository.cleanupOldCachedImages(mockContext, olderThanHours = 24)
+
+    assertFalse(oldFile.exists())
+    assertTrue(recentFile.exists())
+    assertTrue(otherFile.exists())
+    assertTrue(pngFile.exists())
+
+    // Cleanup
+    recentFile.delete()
+    otherFile.delete()
+    pngFile.delete()
+  }
+
+  @Test
+  fun `cleanupOldCachedImages handles edge cases`() {
+    val mockContext = mockk<Context>(relaxed = true)
+    val cacheDir = kotlin.io.path.createTempDirectory().toFile()
+    every { mockContext.cacheDir } returns cacheDir
+
+    // Empty directory - should not throw
+    repository.cleanupOldCachedImages(mockContext, olderThanHours = 24)
+
+    // Custom time threshold
+    val file = java.io.File(cacheDir, "OOTD_test.jpg")
+    file.createNewFile()
+    file.setLastModified(System.currentTimeMillis() - (10 * 60 * 60 * 1000L))
+    repository.cleanupOldCachedImages(mockContext, olderThanHours = 8)
+    assertFalse(file.exists())
   }
 }

@@ -1,7 +1,8 @@
-package com.android.ootd.screen
+package com.android.ootd.ui.camera
 
 import android.Manifest
 import androidx.activity.ComponentActivity
+import androidx.camera.core.CameraSelector
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -10,9 +11,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.rule.GrantPermissionRule
-import com.android.ootd.ui.camera.CameraScreen
-import com.android.ootd.ui.camera.CameraScreenTestTags
-import com.android.ootd.ui.camera.CameraViewModel
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -50,25 +48,16 @@ class CameraScreenTest {
   // ========== Component Display Tests ==========
 
   @Test
-  fun displayAllCameraComponents() {
+  fun displayAllCameraComponentsAndVerifyEnabled() {
+    // Verify all components are displayed
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CAMERA_PREVIEW).assertIsDisplayed()
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CLOSE_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertIsDisplayed()
-  }
 
-  @Test
-  fun closeButtonIsClickable() {
+    // Verify buttons are enabled
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CLOSE_BUTTON).assertIsEnabled()
-  }
-
-  @Test
-  fun switchCameraButtonIsClickable() {
     composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).assertIsEnabled()
-  }
-
-  @Test
-  fun captureButtonIsEnabledByDefault() {
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertIsEnabled()
   }
 
@@ -83,8 +72,11 @@ class CameraScreenTest {
   }
 
   @Test
-  fun clickingSwitchCameraButtonTogglesCamera() {
+  fun switchCameraButtonTogglesLensAndContentDescription() {
     val initialLensFacing = viewModel.uiState.value.lensFacing
+
+    // Verify content description before click
+    composeTestRule.onNodeWithContentDescription("Switch Camera").assertIsDisplayed()
 
     composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).performClick()
     composeTestRule.waitForIdle()
@@ -103,16 +95,9 @@ class CameraScreenTest {
     composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertIsEnabled()
   }
 
-  // ========== Content Description Tests ==========
-
   @Test
   fun closeButtonHasCorrectContentDescription() {
     composeTestRule.onNodeWithContentDescription("Close Camera").assertIsDisplayed()
-  }
-
-  @Test
-  fun switchCameraButtonHasCorrectContentDescription() {
-    composeTestRule.onNodeWithContentDescription("Switch Camera").assertIsDisplayed()
   }
 
   // ========== State Tests ==========
@@ -120,21 +105,37 @@ class CameraScreenTest {
   @Test
   fun viewModelStateUpdatesCorrectly() {
     // Initially should be back camera
-    assert(
-        viewModel.uiState.value.lensFacing ==
-            androidx.camera.core.CameraSelector.LENS_FACING_BACK) {
-          "Initial camera should be back-facing"
-        }
+    assert(viewModel.uiState.value.lensFacing == CameraSelector.LENS_FACING_BACK) {
+      "Initial camera should be back-facing"
+    }
 
     // Switch camera
     composeTestRule.onNodeWithTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    assert(
-        viewModel.uiState.value.lensFacing ==
-            androidx.camera.core.CameraSelector.LENS_FACING_FRONT) {
-          "Camera should switch to front-facing"
-        }
+    assert(viewModel.uiState.value.lensFacing == CameraSelector.LENS_FACING_FRONT) {
+      "Camera should switch to front-facing"
+    }
+  }
+
+  @Test
+  fun zoomSlider_displaysWhenZoomIsSupported() {
+    // Wait for camera to initialize
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000) // Give camera time to bind and update zoom state
+
+    val uiState = viewModel.uiState.value
+
+    // Check if device supports zoom (maxZoom > minZoom)
+    if (uiState.maxZoomRatio > uiState.minZoomRatio) {
+      // Device supports zoom - slider should be visible
+      composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertExists()
+      composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertIsDisplayed()
+    } else {
+      // Device doesn't support zoom - slider should not exist
+      // This is expected on many emulators
+      composeTestRule.onNodeWithTag(CameraScreenTestTags.ZOOM_SLIDER).assertDoesNotExist()
+    }
   }
 }
 
@@ -162,29 +163,21 @@ class CameraScreenPermissionTest {
   }
 
   @Test
-  fun displayPermissionRequestWhenNotGranted() {
+  fun displayPermissionRequestWithAllComponents() {
+    // Verify all permission UI components are displayed
     composeTestRule
         .onNodeWithTag(CameraScreenTestTags.PERMISSION_DENIED_MESSAGE)
         .assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON)
         .assertIsDisplayed()
-  }
+        .assertIsEnabled()
 
-  @Test
-  fun permissionMessageDisplaysCorrectText() {
+    // Verify text content
     composeTestRule
         .onNodeWithText("Camera permission is required to take your fit checks photos !")
         .assertIsDisplayed()
-  }
-
-  @Test
-  fun grantPermissionButtonDisplayed() {
     composeTestRule.onNodeWithText("Grant Permission !").assertIsDisplayed()
-  }
-
-  @Test
-  fun cancelButtonDisplayedInPermissionRequest() {
     composeTestRule.onNodeWithText("Cancel").assertIsDisplayed()
   }
 
@@ -194,10 +187,5 @@ class CameraScreenPermissionTest {
     composeTestRule.waitForIdle()
 
     assert(dismissed) { "onDismiss should be called when cancel is clicked" }
-  }
-
-  @Test
-  fun grantPermissionButtonIsClickable() {
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON).assertIsEnabled()
   }
 }
