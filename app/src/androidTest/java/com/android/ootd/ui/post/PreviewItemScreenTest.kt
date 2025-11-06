@@ -125,7 +125,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
   // --- UI Tests ---
   @Test
-  fun emptyList_showsMessage_andAdd_andPostButton_noPostButton() {
+  fun emptyList_showsMessage_andAdd_andPostButton() {
     setContent()
     n(PreviewItemScreenTestTags.ITEM_LIST).assertIsNotDisplayed()
     n(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG).assertIsDisplayed()
