@@ -40,7 +40,9 @@ object TypeSuggestionsLoader {
 
         when {
           // Empty line or comment -> skip
-          trimmedLine.isEmpty() || trimmedLine.startsWith("#") -> {}
+          trimmedLine.isEmpty() || trimmedLine.startsWith("#") -> {
+            // Intentionally ignore blank or comment lines (no action required)
+          }
 
           // Category line
           trimmedLine.endsWith(":") -> {
