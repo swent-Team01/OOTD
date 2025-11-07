@@ -21,7 +21,11 @@ private data class UserDto(
     val profilePicture: String = ""
 )
 
-private val username_taken_exception = "Username already in use"
+private const val username_taken_exception = "Username already in use"
+private const val TAG = "UserRepositoryFirestore"
+private const val FIELD_USERNAME = "username"
+private const val FIELD_PROFILE_PICTURE = "profilePicture"
+private const val ERROR_USER_ID_BLANK = "UserID cannot be blank"
 
 private fun User.toDto(): UserDto {
   return UserDto(
@@ -44,7 +48,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   /** Helper method to check user data as firestore might add the default values */
   private fun checkUserData(user: User): User? {
     if (user.uid.isBlank() || user.username.isBlank()) {
-      Log.e("UserRepositoryFirestore", "Invalid user data in user: uid is blank")
+      Log.e(TAG, "Invalid user data in user: uid is blank")
       return null
     }
     return user
@@ -57,14 +61,13 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       val userDto = document.toObject<UserDto>()
       if (userDto == null) {
         Log.e(
-            "UserRepositoryFirestore",
+            TAG,
             "Failed to deserialize document ${document.id} to User object. Data: ${document.data}")
         return null
       }
       checkUserData(userDto.toDomain())
     } catch (e: Exception) {
-      Log.e(
-          "UserRepositoryFirestore", "Error transforming document ${document.id}: ${e.message}", e)
+      Log.e(TAG, "Error transforming document ${document.id}: ${e.message}", e)
       return null
     }
   }
@@ -81,14 +84,14 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   ) {
 
     if (usernameExists(username)) {
-      Log.e("UserRepositoryFirestore", username_taken_exception)
+      Log.e(TAG, username_taken_exception)
       throw TakenUsernameException(username_taken_exception)
     }
     val newUser = User(uid, ownerId.takeIf { it.isNotBlank() } ?: uid, username, profilePicture)
     try {
       addUser(newUser)
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error while creating user : ${e.message}", e)
+      Log.e(TAG, "Error while creating user : ${e.message}", e)
       throw e
     }
   }
@@ -100,7 +103,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       querySnapshot.documents.mapNotNull { document -> transformUserDocument(document) }
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error getting users: ${e.message}", e)
+      Log.e(TAG, "Error getting users: ${e.message}", e)
       throw e
     }
   }
@@ -116,7 +119,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       transformUserDocument(userDoc)
           ?: throw IllegalStateException("Failed to transform document with ID $userID")
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error getting user $userID: ${e.message}", e)
+      Log.e(TAG, "Error getting user $userID: ${e.message}", e)
       throw e
     }
   }
@@ -128,11 +131,11 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       if (!querySnapshot.exists()) {
         false
       } else {
-        val username = querySnapshot.getString("username")
+        val username = querySnapshot.getString(FIELD_USERNAME)
         !username.isNullOrBlank()
       }
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error checking user existence: ${e.message}", e)
+      Log.e(TAG, "Error checking user existence: ${e.message}", e)
       throw e
     }
   }
@@ -145,16 +148,16 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       db.collection(USER_COLLECTION_PATH).document(user.uid).set(user.toDto()).await()
 
-      Log.d("UserRepositoryFirestore", "Successfully added user with UID: ${user.uid}")
+      Log.d(TAG, "Successfully added user with UID: ${user.uid}")
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error adding user: ${e.message}", e)
+      Log.e(TAG, "Error adding user: ${e.message}", e)
       throw e
     }
   }
 
   override suspend fun editUser(userID: String, newUsername: String, profilePicture: String) {
     try {
-      if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
+      if (userID.isBlank()) throw IllegalArgumentException(ERROR_USER_ID_BLANK)
       val user = getUser(userID)
 
       val isNewUsername = user.username != newUsername && newUsername.isNotBlank()
@@ -168,23 +171,21 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       db.collection(USER_COLLECTION_PATH)
           .document(userID)
-          .update(mapOf("profilePicture" to newPicture, "username" to newUname))
+          .update(mapOf(FIELD_PROFILE_PICTURE to newPicture, FIELD_USERNAME to newUname))
           .await()
 
-      Log.d(
-          "UserRepositoryFirestore",
-          "Successfully updated username for user $userID to $newUsername")
+      Log.d(TAG, "Successfully updated username for user $userID to $newUsername")
     } catch (e: TakenUsernameException) {
-      Log.e("UserRepositoryFirestore", "Username already taken: ${e.message}", e)
+      Log.e(TAG, "Username already taken: ${e.message}", e)
       throw e
     } catch (e: NoSuchElementException) {
-      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      Log.e(TAG, "User not found: ${e.message}", e)
       throw e
     } catch (e: IllegalArgumentException) {
-      Log.e("UserRepositoryFirestore", "Invalid argument: ${e.message}", e)
+      Log.e(TAG, "Invalid argument: ${e.message}", e)
       throw e
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error updating username: ${e.message}", e)
+      Log.e(TAG, "Error updating username: ${e.message}", e)
       throw e
     }
   }
@@ -192,26 +193,26 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun deleteUser(userID: String) {
     try {
       // Validate input
-      if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
+      if (userID.isBlank()) throw IllegalArgumentException(ERROR_USER_ID_BLANK)
       getUser(userID)
       db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
 
-      Log.d("UserRepositoryFirestore", "Successfully deleted user with ID: $userID")
+      Log.d(TAG, "Successfully deleted user with ID: $userID")
     } catch (e: NoSuchElementException) {
-      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      Log.e(TAG, "User not found: ${e.message}", e)
       throw e
     } catch (e: IllegalArgumentException) {
-      Log.e("UserRepositoryFirestore", "Invalid argument: ${e.message}", e)
+      Log.e(TAG, "Invalid argument: ${e.message}", e)
       throw e
     } catch (e: Exception) {
-      Log.e("UserRepositoryFirestore", "Error deleting user: ${e.message}", e)
+      Log.e(TAG, "Error deleting user: ${e.message}", e)
       throw e
     }
   }
 
   private suspend fun usernameExists(username: String): Boolean {
     val querySnapshot =
-        db.collection(USER_COLLECTION_PATH).whereEqualTo("username", username).get().await()
+        db.collection(USER_COLLECTION_PATH).whereEqualTo(FIELD_USERNAME, username).get().await()
     return querySnapshot.documents.isNotEmpty()
   }
 }
