@@ -90,7 +90,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
     val price = doc.getDouble("price") ?: return null
     val link = doc.getString("link") ?: return null
     val ownerId = doc.getString(OWNER_ATTRIBUTE_NAME) ?: return null
-    val materialList = doc.get("material") as? List<*>
+    val materialList = doc["material"] as? List<*>
     val material =
         materialList?.mapNotNull { item ->
           (item as? Map<*, *>)?.let {
