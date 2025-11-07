@@ -1,173 +1,165 @@
-package com.android.ootd.model.feed
+package com.android.ootd.ui.feed
 
 import com.android.ootd.model.account.Account
+import com.android.ootd.model.account.AccountRepositoryFirestore
+import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.feed.FeedViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.android.ootd.utils.FirebaseEmulator
+import com.android.ootd.utils.FirestoreTest
+import com.google.firebase.auth.FirebaseAuth
+import junit.framework.TestCase.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Rule
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
+import org.junit.Before
 import org.junit.Test
-import org.junit.rules.TestRule
-import org.junit.runner.Description
-import org.junit.runners.model.Statement
 
 /**
- * Unit tests for FeedViewModel using a fake repository. Tests ViewModel state management and
- * business logic without Firebase dependencies.
+ * Connected (emulator-backed) tests for FeedViewModel.
+ *
+ * These use the Firebase emulator to verify correct Firestore and Auth behavior.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
-class FeedViewModelTest {
+class FeedViewModelFirebaseTest : FirestoreTest() {
 
-  @get:Rule val mainRule = MainDispatcherRule()
+  private lateinit var viewModel: FeedViewModel
+  private lateinit var auth: FirebaseAuth
+  private lateinit var accountRepo: AccountRepositoryFirestore
+  private lateinit var feedRepo: FeedRepositoryFirestore
 
-  // -------- Initial state --------
+  @Before
+  override fun setUp() {
+    super.setUp()
+    auth = FirebaseEmulator.auth
+    accountRepo = AccountRepositoryFirestore(FirebaseEmulator.firestore)
+    feedRepo = FeedRepositoryFirestore(FirebaseEmulator.firestore)
 
-  @Test
-  fun initialState_isEmpty() = runTest {
-    val vm = FeedViewModel(FakeFeedRepository())
+    runBlocking { auth.signInAnonymously() }
 
-    assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
-    assertEquals(false, vm.uiState.value.hasPostedToday)
-    assertEquals(null, vm.uiState.value.currentAccount)
-  }
-
-  // -------- Account setup scenarios --------
-
-  @Test
-  fun setAccount_notPostedToday_feedRemainsEmpty() = runTest {
-    val repo = FakeFeedRepository(hasPosted = false)
-    val vm = FeedViewModel(repo)
-
-    vm.setCurrentAccount(account("me", friends = listOf("me")))
-    advanceUntilIdle()
-
-    assertEquals(false, vm.uiState.value.hasPostedToday)
-    assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
+    viewModel = FeedViewModel(feedRepo, accountRepo)
   }
 
   @Test
-  fun setAccount_postedButNoFriends_feedIsEmpty() = runTest {
-    val repo = FakeFeedRepository(hasPosted = true)
-    val vm = FeedViewModel(repo)
+  fun feedLoadsAccountAndEmptyPostsInitially() = runBlocking {
+    val uid = auth.currentUser!!.uid
+    val account = Account(uid, uid, "bob", friendUids = emptyList())
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    vm.setCurrentAccount(account("me", friends = emptyList()))
-    advanceUntilIdle()
+    // Give the listener a moment to propagate
+    delay(500)
 
-    assertTrue(vm.uiState.value.hasPostedToday)
-    assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
+    viewModel.refreshFeedFromFirestore()
+    delay(500)
+
+    val state = viewModel.uiState.first()
+    assertNotNull(state.currentAccount)
+    assertEquals("bob", state.currentAccount?.username)
+    assertTrue(state.feedPosts.isEmpty())
   }
 
   @Test
-  fun setAccount_postedWithFriends_loadsFeedAndDeduplicates() = runTest {
-    val repo =
-        FakeFeedRepository(
-            hasPosted = true,
-            posts = listOf(post("p1", uid = "me", ts = 1), post("p2", uid = "me", ts = 2)))
-    val vm = FeedViewModel(repo)
+  fun refreshFeed_populatesPostsFromFriends() = runBlocking {
+    val uid = auth.currentUser!!.uid
 
-    // Friends list has duplicates and blanks - should be cleaned up
-    vm.setCurrentAccount(account("me", friends = listOf("me", "  me  ", "")))
-    advanceUntilIdle()
+    // Create account with one friend (self or other)
+    val account = Account(uid, uid, "bob", friendUids = listOf(uid))
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    assertEquals(listOf("p1", "p2"), vm.uiState.value.feedPosts.map { it.postUID })
-    assertTrue(vm.uiState.value.hasPostedToday)
+    // Create a post visible to this user
+    val post =
+        OutfitPost(
+            postUID = "p1",
+            ownerId = uid,
+            name = "bob",
+            description = "today’s outfit",
+            outfitURL = "https://example.com/fake.jpg",
+            timestamp = System.currentTimeMillis())
+    FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
+
+    viewModel.refreshFeedFromFirestore()
+    delay(1000)
+
+    val state = viewModel.uiState.first()
+    assertTrue(state.feedPosts.isNotEmpty())
+    assertEquals("today’s outfit", state.feedPosts.first().description)
+    assertEquals(uid, state.feedPosts.first().ownerId)
   }
-
-  // -------- Error handling --------
 
   @Test
-  fun repositoryError_feedBecomesEmpty_noException() = runTest {
-    val repo = FakeFeedRepository(hasPosted = true, throwOnGet = true)
-    val vm = FeedViewModel(repo)
+  fun feedClearsWhenUserLogsOut() = runBlocking {
+    val uid = auth.currentUser!!.uid
+    FirebaseEmulator.firestore
+        .collection("accounts")
+        .document(uid)
+        .set(Account(uid, uid, "bob"))
+        .await()
 
-    vm.setCurrentAccount(account("me", friends = listOf("me")))
-    advanceUntilIdle()
+    delay(500)
+    auth.signOut()
+    delay(500)
 
-    assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
-    assertTrue(vm.uiState.value.hasPostedToday)
+    val state = viewModel.uiState.first()
+    assertNull(state.currentAccount)
+    assertTrue(state.feedPosts.isEmpty())
   }
-
-  // -------- Post upload callback --------
 
   @Test
-  fun onPostUploaded_setsFlagAndClearsFeed() = runTest {
-    val vm = FeedViewModel(FakeFeedRepository())
+  fun refresh_setsHasPostedToday_whenUserPostedToday() = runBlocking {
+    val uid = auth.currentUser!!.uid
+    val account = Account(uid, uid, "bob", friendUids = emptyList())
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    vm.onPostUploaded()
-    advanceUntilIdle()
+    val post =
+        OutfitPost(
+            postUID = "p_today",
+            ownerId = uid,
+            name = "bob",
+            description = "today’s outfit",
+            outfitURL = "https://example.com/fake.jpg",
+            timestamp = System.currentTimeMillis())
+    FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
 
-    assertTrue(vm.uiState.value.hasPostedToday)
-    assertEquals(emptyList<OutfitPost>(), vm.uiState.value.feedPosts)
+    // allow listeners/emulator to settle
+    delay(700)
+    viewModel.refreshFeedFromFirestore()
+    delay(1000)
+
+    val state = viewModel.uiState.first()
+    assertTrue(state.hasPostedToday)
+    assertTrue(state.feedPosts.any { it.postUID == post.postUID })
   }
 
-  // -------- Test helpers --------
+  @Test
+  fun refresh_noop_whenNoCurrentAccount() = runBlocking {
+    // sign out to clear currentAccount
+    auth.signOut()
+    delay(500)
 
-  private fun account(uid: String, friends: List<String>) =
-      Account(uid = uid, ownerId = uid, username = "User-$uid", friendUids = friends)
+    // should not throw and should remain cleared
+    viewModel.refreshFeedFromFirestore()
+    delay(500)
 
-  private fun post(id: String, uid: String, ts: Long) =
-      OutfitPost(
-          postUID = id,
-          name = "Post $id",
-          ownerId = uid,
-          userProfilePicURL = "https://example.com/$uid.jpg",
-          outfitURL = "https://example.com/outfit_$id.jpg",
-          description = "Description for $id",
-          itemsID = emptyList(),
-          timestamp = ts)
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  class MainDispatcherRule(private val dispatcher: TestDispatcher = StandardTestDispatcher()) :
-      TestRule {
-    override fun apply(base: Statement, description: Description): Statement {
-      return object : Statement() {
-        override fun evaluate() {
-          Dispatchers.setMain(dispatcher)
-          try {
-            base.evaluate()
-          } finally {
-            Dispatchers.resetMain()
-          }
-        }
-      }
-    }
+    val state = viewModel.uiState.first()
+    assertNull(state.currentAccount)
+    assertTrue(state.feedPosts.isEmpty())
   }
 
-  /** Fake repository for testing ViewModel logic without Firebase dependencies */
-  private class FakeFeedRepository(
-      private val hasPosted: Boolean = false,
-      private val posts: List<OutfitPost> = emptyList(),
-      val throwOnGet: Boolean = false
-  ) : FeedRepository {
+  @Test
+  fun observeAuth_loadsAccountOnSignIn() = runBlocking {
+    // sign out then sign in again to trigger auth listener
+    auth.signOut()
+    delay(500)
+    auth.signInAnonymously().await()
 
-    private val allPosts = posts.toMutableList()
-    private var idCounter = 0
+    val uid = auth.currentUser!!.uid
+    val account = Account(uid, uid, "carol", friendUids = emptyList())
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    override suspend fun addPost(p: OutfitPost) {
-      allPosts.add(p)
-    }
+    // allow listener to pick up the account
+    delay(700)
 
-    override fun getNewPostId(): String = "test-post-${idCounter++}"
-
-    override suspend fun hasPostedToday(userId: String): Boolean = hasPosted
-
-    override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
-      if (throwOnGet) throw IllegalStateException("Simulated repository failure")
-
-      delay(1) // Simulate async operation for coroutine testing
-
-      return allPosts
-          .filter { it.ownerId in uids }
-          .sortedWith(compareBy<OutfitPost> { it.timestamp }.thenBy { it.postUID })
-    }
+    val state = viewModel.uiState.first()
+    assertNotNull(state.currentAccount)
+    assertEquals("carol", state.currentAccount?.username)
   }
 }

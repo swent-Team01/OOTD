@@ -11,11 +11,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.credentials.CredentialManager
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -28,11 +32,15 @@ import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
+import com.android.ootd.ui.consent.BetaConsentScreen
+import com.android.ootd.ui.consent.BetaConsentViewModel
+import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.notifications.NotificationsScreen
 import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
@@ -97,7 +105,12 @@ fun OOTDApp(
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
               Screen.Account.route,
-              Screen.Map.route)
+              Screen.Map.route,
+              Screen.NotificationsScreen.route)
+
+  // Create ViewModel using factory to properly inject SharedPreferences
+  val betaConsentViewModel: BetaConsentViewModel =
+      viewModel(factory = BetaConsentViewModelFactory(context))
 
   Scaffold(
       bottomBar = {
@@ -119,7 +132,38 @@ fun OOTDApp(
                       onNotSignedIn = { navigationActions.navigateTo(Screen.Authentication) })
                 }
                 composable(Screen.RegisterUsername.route) {
-                  RegisterScreen(onRegister = { navigationActions.navigateTo(Screen.Feed) })
+                  RegisterScreen(
+                      onRegister = {
+                        // After registration, show beta consent if not already given
+                        if (betaConsentViewModel.getConsentStatus()) {
+                          navigationActions.navigateTo(Screen.Feed)
+                        } else {
+                          navigationActions.navigateTo(Screen.BetaConsent)
+                        }
+                      })
+                }
+                composable(Screen.BetaConsent.route) {
+                  val consentSaved by betaConsentViewModel.consentSaved.collectAsState()
+                  val isLoading by betaConsentViewModel.isLoading.collectAsState()
+                  val error by betaConsentViewModel.error.collectAsState()
+
+                  // Navigate to Feed when consent is successfully saved
+                  LaunchedEffect(consentSaved) {
+                    if (consentSaved) {
+                      betaConsentViewModel.resetConsentSavedFlag()
+                      navigationActions.navigateTo(Screen.Feed)
+                    }
+                  }
+
+                  BetaConsentScreen(
+                      onAgree = { betaConsentViewModel.recordConsent() },
+                      onDecline = {
+                        // If user declines, sign them out and return to authentication
+                        navigationActions.navigateTo(Screen.Authentication)
+                      },
+                      isLoading = isLoading,
+                      errorMessage = error,
+                      onErrorDismiss = { betaConsentViewModel.clearError() })
                 }
               }
 
@@ -142,7 +186,7 @@ fun OOTDApp(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onNotificationIconClick = {
-                        /** TODO: Implement Notifications screen * */
+                        navigationActions.navigateTo(Screen.NotificationsScreen)
                       })
                 }
                 composable(Screen.SearchScreen.route) {
@@ -237,6 +281,7 @@ fun OOTDApp(
                         EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
                       }
                     }
+                composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }
               }
             }
       }

@@ -93,7 +93,7 @@ class RegisterViewModelTest {
     // Empty username
     register("")
     assertEquals("Username cannot be empty.", viewModel.uiState.value.errorMsg)
-    coVerify(exactly = 0) { userRepository.createUser(any(), any()) }
+    coVerify(exactly = 0) { userRepository.createUser(any(), any(), any()) }
 
     // Blank username
     register("   ")
@@ -124,7 +124,7 @@ class RegisterViewModelTest {
     // Whitespace trimming - valid after trim
     stubSuccess()
     register("  validUser  ")
-    coVerify(exactly = 1) { userRepository.createUser("validUser", testUid) }
+    coVerify(exactly = 1) { userRepository.createUser("validUser", testUid, testUid) }
     assertTrue(viewModel.uiState.value.registered)
   }
 
@@ -145,7 +145,7 @@ class RegisterViewModelTest {
     assertNull(viewModel.uiState.value.errorMsg)
 
     // Verify first registration
-    coVerify(atLeast = 1) { userRepository.createUser(username, testUid) }
+    coVerify(atLeast = 1) { userRepository.createUser(username, testUid, ownerId = testUid) }
     coVerify(atLeast = 1) {
       accountRepository.createAccount(
           match { it.uid == testUid && it.username == username }, testEmail, dob, any())
@@ -177,7 +177,7 @@ class RegisterViewModelTest {
           callOrder.add("account")
           Unit
         }
-    coEvery { userRepository.createUser(any(), any()) } coAnswers
+    coEvery { userRepository.createUser(any(), any(), any()) } coAnswers
         {
           callOrder.add("user")
           Unit
@@ -217,7 +217,7 @@ class RegisterViewModelTest {
     // Exactly 3 characters (minimum)
     register("abc")
     assertTrue(viewModel.uiState.value.registered)
-    coVerify(atLeast = 1) { userRepository.createUser("abc", testUid) }
+    coVerify(atLeast = 1) { userRepository.createUser("abc", testUid, testUid) }
 
     // Exactly 20 characters (maximum)
     register("a".repeat(20))
@@ -228,7 +228,10 @@ class RegisterViewModelTest {
     assertTrue(viewModel.uiState.value.registered)
 
     // Loading state transitions correctly
-    coEvery { userRepository.createUser(any(), any()) } coAnswers { kotlinx.coroutines.delay(100) }
+    coEvery { userRepository.createUser(any(), any(), any()) } coAnswers
+        {
+          kotlinx.coroutines.delay(100)
+        }
     viewModel.setUsername("slowUser")
     viewModel.registerUser()
     assertTrue(viewModel.uiState.value.isLoading)

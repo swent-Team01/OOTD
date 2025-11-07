@@ -1,3 +1,4 @@
+// javascript
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,62 +26,143 @@ export async function setup() {
 }
 
 export async function setupFirestore(env, seed = {}) {
-  // Seed baseline users and posts with rules disabled
+  // Seed baseline accounts, posts, and notifications with rules disabled
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
 
-    // Users: derive friendUids from friendList so rules can perform membership checks
-    const users = seed.users ?? defaultUsers();
+    // Accounts: use the new structure with ownerId and friendUids
+    const accounts = seed.accounts ?? defaultAccounts();
+    for (const account of accounts) {
+      await db.collection('accounts').doc(account.ownerId).set(account);
+    }
+
+    // Users: derive friendUids from friendList and ensure ownerId exists
+    const users = seed.users ?? [];
     for (const u of users) {
       const friendUids = (u.friendList ?? [])
         .filter(f => f && typeof f.uid === 'string' && f.uid.length > 0)
         .map(f => f.uid);
-      await db.collection('users').doc(u.uid).set({ ...u, friendUids });
+      // Ensure ownerId exists so security rules that check ownerId behave correctly
+      await db.collection('users').doc(u.uid).set({ ...u, friendUids, ownerId: u.uid });
     }
 
     // Posts
     const posts = seed.posts ?? defaultPosts();
-    for (const p of posts) {
-      await db.collection('posts').doc(p.postUID).set(p);
+    for (const post of posts) {
+      await db.collection('posts').doc(post.postUID).set(post);
+    }
+
+    // Notifications (optional seed)
+    const notifications = seed.notifications ?? [];
+    for (const notif of notifications) {
+      const notifId = notif.id || `${notif.senderId}_${notif.type}_${notif.receiverId}`;
+      await db.collection('notifications').doc(notifId).set(notif);
+    }
+
+    // Items (optional seed)
+    const items = seed.items ?? [];
+    for (const item of items) {
+      await db.collection('items').doc(item.itemId).set(item);
     }
   });
 }
 
-export function defaultUsers() {
+export function defaultAccounts() {
   return [
     {
-      uid: 'me',
+      ownerId: 'me',
       name: 'Me',
-      friendList: [ { uid: 'u1', name: 'Alice' }, { uid: 'u2', name: 'Bob' } ]
+      email: 'me@example.com',
+      friendUids: ['u1', 'u2'] // mutual friends with u1 and u2
     },
     {
-      uid: 'u1',
+      ownerId: 'u1',
       name: 'Alice',
-      friendList: [ { uid: 'me', name: 'Me' } ] // mutual with me
+      email: 'alice@example.com',
+      friendUids: ['me'] // mutual with me
     },
     {
-      uid: 'u2',
+      ownerId: 'u2',
       name: 'Bob',
-      friendList: [ { uid: 'me', name: 'Me' } ] // mutual with me
+      email: 'bob@example.com',
+      friendUids: ['me'] // mutual with me
     },
     {
-      uid: 'u3',
+      ownerId: 'u3',
       name: 'Carol',
-      friendList: [ { uid: 'me', name: 'Me' } ] // one-way: me does NOT list u3
+      email: 'carol@example.com',
+      friendUids: []
     },
     {
-      uid: 'u9',
+      ownerId: 'u9',
       name: 'Mallory',
-      friendList: []
+      email: 'mallory@example.com',
+      friendUids: [] // no friends
     }
   ];
 }
 
 export function defaultPosts() {
   return [
-    { postUID: 'p1', ownerId: 'u1', name: 'Alice', outfitURL: 'url_p1', timestamp: 1 },
-    { postUID: 'p2', ownerId: 'u2', name: 'Bob',   outfitURL: 'url_p2', timestamp: 2 },
-    { postUID: 'p3', ownerId: 'u3', name: 'Carol', outfitURL: 'url_p3', timestamp: 3 },
-    { postUID: 'p9', ownerId: 'u9', name: 'Mallory', outfitURL: 'url_p9', timestamp: 9 }
+    {
+      postUID: 'p1',
+      ownerId: 'u1',
+      name: 'Alice',
+      outfitURL: 'url_p1',
+      timestamp: 1
+    },
+    {
+      postUID: 'p2',
+      ownerId: 'u2',
+      name: 'Bob',
+      outfitURL: 'url_p2',
+      timestamp: 2
+    },
+    {
+      postUID: 'p3',
+      ownerId: 'u3',
+      name: 'Carol',
+      outfitURL: 'url_p3',
+      timestamp: 3
+    },
+    {
+      postUID: 'p9',
+      ownerId: 'u9',
+      name: 'Mallory',
+      outfitURL: 'url_p9',
+      timestamp: 9
+    }
+  ];
+}
+
+export function defaultNotifications() {
+  return [
+    {
+      id: 'u1_follow_me',
+      senderId: 'u1',
+      receiverId: 'me',
+      type: 'follow',
+      timestamp: Date.now(),
+      read: false
+    }
+  ];
+}
+
+export function defaultItems() {
+  return [
+    {
+      itemId: 'item1',
+      ownerId: 'me',
+      name: 'Denim Jacket',
+      imageURL: 'url_item1',
+      category: 'outerwear'
+    },
+    {
+      itemId: 'item2',
+      ownerId: 'u1',
+      name: 'White Sneakers',
+      imageURL: 'url_item2',
+      category: 'shoes'
+    }
   ];
 }

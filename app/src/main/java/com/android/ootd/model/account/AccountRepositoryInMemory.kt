@@ -66,7 +66,7 @@ class AccountRepositoryInMemory : AccountRepository {
     val newAccount =
         Account(
             uid = user.uid,
-            ownerId = user.uid,
+            ownerId = user.ownerId,
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
@@ -95,7 +95,7 @@ class AccountRepositoryInMemory : AccountRepository {
     return username.isNotBlank()
   }
 
-  override suspend fun addFriend(userID: String, friendID: String) {
+  override suspend fun addFriend(userID: String, friendID: String): Boolean {
     val account = getAccount(userID)
 
     if (!accounts.containsKey(friendID)) {
@@ -104,11 +104,12 @@ class AccountRepositoryInMemory : AccountRepository {
 
     // Check if friend already exists in the list
     if (account.friendUids.any { it == friendID }) {
-      return // Already friends, do nothing (mimics arrayUnion behavior)
+      return true // Already friends, do nothing (mimics arrayUnion behavior)
     }
 
     val updatedFriendUids = account.friendUids + friendID
     accounts[userID] = account.copy(friendUids = updatedFriendUids)
+    return true
   }
 
   override suspend fun removeFriend(userID: String, friendID: String) {

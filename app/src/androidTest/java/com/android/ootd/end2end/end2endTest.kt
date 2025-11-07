@@ -15,9 +15,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.consent.Consent
+import com.android.ootd.model.consent.ConsentRepository
+import com.android.ootd.model.consent.ConsentRepositoryFirestore
+import com.android.ootd.model.consent.ConsentRepositoryProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
+import com.android.ootd.model.notifications.NotificationRepositoryFirestore
+import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
@@ -69,7 +75,9 @@ class End2EndTest {
   private lateinit var mockAuthResult: AuthResult
   private lateinit var mockUserRepository: UserRepositoryFirestore
   private lateinit var mockAccountRepository: AccountRepositoryFirestore
+  private lateinit var mockNotificationRepository: NotificationRepositoryFirestore
   private lateinit var mockLocationRepository: LocationRepository
+  private lateinit var mockConsentRepository: ConsentRepository
   private lateinit var testUserId: String
   private lateinit var testUsername: String
 
@@ -82,16 +90,29 @@ class End2EndTest {
     mockUserRepository = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockLocationRepository = mockk(relaxed = true)
+    mockConsentRepository = mockk(relaxed = true)
 
+    mockNotificationRepository = mockk(relaxed = true)
     // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
     AccountRepositoryProvider.repository = mockAccountRepository
+    NotificationRepositoryProvider.repository = mockNotificationRepository
     LocationRepositoryProvider.repository = mockLocationRepository
+    ConsentRepositoryProvider.repository = mockConsentRepository
 
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
     testUserId = "test_user_$timestamp"
     testUsername = "user$timestamp"
+
+    // Pre-populate SharedPreferences with consent data to skip consent screen
+    val consentPrefs = context.getSharedPreferences("ootd_beta_consent", Context.MODE_PRIVATE)
+    consentPrefs.edit().apply {
+      putBoolean("ootd_consent_given", true)
+      putLong("ootd_consent_timestamp", timestamp)
+      putString("ootd_consent_uuid", "test_consent_uuid_$timestamp")
+      apply()
+    }
 
     // Ensure clean state
     FirebaseAuth.getInstance().signOut()
@@ -100,12 +121,18 @@ class End2EndTest {
   @After
   fun tearDown() {
     unmockkAll()
+
+    // Clean up SharedPreferences
+    val consentPrefs = context.getSharedPreferences("ootd_beta_consent", Context.MODE_PRIVATE)
+    consentPrefs.edit().clear().apply()
+
     // Restore the real repositories after test completes
     UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
     AccountRepositoryProvider.repository = AccountRepositoryFirestore(Firebase.firestore)
     LocationRepositoryProvider.repository =
         com.android.ootd.model.map.NominatimLocationRepository(
             com.android.ootd.HttpClientProvider.client)
+    ConsentRepositoryProvider.repository = ConsentRepositoryFirestore(Firebase.firestore)
   }
 
   /**
@@ -120,7 +147,7 @@ class End2EndTest {
    * 5. App automatically navigates to Registration screen
    * 6. User enters username and date of birth
    * 7. User clicks Save button
-   * 8. App navigates to Feed screen (main app)
+   * 8. App navigates directly to Feed screen (consent already given via mock)
    * 9. User clicks search icon to navigate to Search screen
    * 10. User searches for "Greg" in the username field
    * 11. User selects Greg from the suggestions
@@ -147,6 +174,7 @@ class End2EndTest {
    * - Tests the user lifecycle: sign-in → register → search → follow → partial outfit post →
    *   sign-out
    * - Uses FakeCredentialManager and mocked Firebase to avoid network calls
+   * - Mocks consent as already given to skip the consent screen
    */
   @Test
   fun fullAppFlow_newUser_signInAndCompleteRegistration() {
@@ -182,6 +210,15 @@ class End2EndTest {
       // Mock successful account creation
       coEvery { mockAccountRepository.createAccount(any(), any(), any(), any()) } returns Unit
       coEvery { mockAccountRepository.accountExists(any()) } returns false
+
+      // Mock consent as already given (user has consented, so consent screen will be skipped)
+      val mockConsent =
+          Consent(
+              consentUuid = "mock_consent_uuid",
+              userId = testUserId,
+              timestamp = System.currentTimeMillis(),
+              version = "1.0")
+      coEvery { mockConsentRepository.getConsentByUserId(any()) } returns mockConsent
 
       // STEP 1: Launch the full app
       composeTestRule.setContent {
@@ -320,8 +357,7 @@ class End2EndTest {
           .assertIsEnabled()
       composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
 
-      // STEP 8: App automatically switches to feed screen
-      // Wait for navigation to Feed screen after successful registration
+      // STEP 8: App automatically navigates to Feed screen (consent is mocked as already given)
       composeTestRule.waitForIdle()
 
       // More robust waiting with better error handling
@@ -358,7 +394,7 @@ class End2EndTest {
       // Verify we're on the Search screen
       composeTestRule.onNodeWithTag(SearchScreenTestTags.SEARCH_SCREEN).assertIsDisplayed()
 
-      // This step don't work as we are on a local FireBase
+      // This step doesn't work as we are on a local FireBase
       //    // STEP 10: Search for "Greg" in the username field
       //    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performClick()
       //    composeTestRule.waitForIdle()

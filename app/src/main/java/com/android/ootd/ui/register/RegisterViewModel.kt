@@ -175,14 +175,16 @@ class RegisterViewModel(
   private fun loadUser(username: String) {
     viewModelScope.launch {
       try {
-        val user = User(uid = auth.currentUser!!.uid, username = username)
+        val userId = auth.currentUser!!.uid
+        val user = User(uid = userId, ownerId = userId, username = username)
         val email = auth.currentUser!!.email.orEmpty()
         val location = uiState.value.selectedLocation ?: emptyLocation
         if (location == emptyLocation) throw MissingLocationException()
         accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
         userRepository.createUser(
             username,
-            auth.currentUser!!.uid,
+            userId,
+            ownerId = userId,
             profilePicture =
                 user.profilePicture) // TODO: Add profile picture to register (empty string for now)
         _uiState.value = _uiState.value.copy(registered = true, username = username)

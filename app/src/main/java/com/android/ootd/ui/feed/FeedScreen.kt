@@ -1,5 +1,6 @@
 package com.android.ootd.ui.feed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +42,10 @@ fun FeedScreen(
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
+
+  LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday) {
+    feedViewModel.refreshFeedFromFirestore()
+  }
 
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
@@ -84,33 +90,47 @@ fun FeedScreen(
               colors =
                   ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
               modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB)) {
-                Text("Do a Fit Check", color = Color.White)
+                Text(
+                    "Do a Fit Check",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge)
               }
         }
       }) { paddingValues ->
-        // Use a single Box and overlay the locked message when needed.
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-          // Renders the list of posts when user has posted.
-          FeedList(posts = posts)
+        // Overlay the locked message when needed
+        Box(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding())
+                    .background(MaterialTheme.colorScheme.background)) {
+              // Renders the list of posts when user has posted.
+              FeedList(isBlurred = !hasPostedToday, posts = posts)
 
-          if (!hasPostedToday) {
-            Box(
-                modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
-                contentAlignment = Alignment.Center) {
-                  Text(
-                      "Do a fit check to unlock today’s feed",
-                      style = MaterialTheme.typography.titleMedium)
-                }
-          }
-        }
+              if (!hasPostedToday) {
+                Box(
+                    modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
+                    contentAlignment = Alignment.Center) {
+                      Text(
+                          "Do a fit check to unlock today’s feed",
+                          style =
+                              MaterialTheme.typography.titleLarge.copy(
+                                  fontWeight = FontWeight.ExtraBold),
+                          color = MaterialTheme.colorScheme.primary)
+                    }
+              }
+            }
       }
 }
 
 @Composable
-fun FeedList(posts: List<OutfitPost>, onSeeFitClick: (OutfitPost) -> Unit = {}) {
+fun FeedList(
+    posts: List<OutfitPost>,
+    isBlurred: Boolean,
+    onSeeFitClick: (OutfitPost) -> Unit = {}
+) {
   LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
     items(posts) { post ->
-      OutfitPostCard(post = post, isBlurred = false, onSeeFitClick = { onSeeFitClick(post) })
+      OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
   }
 }

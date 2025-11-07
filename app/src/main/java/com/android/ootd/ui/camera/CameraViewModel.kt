@@ -151,10 +151,17 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
       lifecycleOwner: LifecycleOwner
   ): ImageCapture? {
 
-    // This removes previous observer if exists so that we can use our own camera zoom
-    camera?.let { cam ->
-      zoomStateObserver?.let { observer -> cam.cameraInfo.zoomState.removeObserver(observer) }
+    // Remove observer from OLD camera first to prevent race conditions
+    val oldCamera = camera
+    val oldObserver = zoomStateObserver
+
+    oldCamera?.let { cam ->
+      oldObserver?.let { observer -> cam.cameraInfo.zoomState.removeObserver(observer) }
     }
+
+    // Clear references before binding new camera
+    camera = null
+    zoomStateObserver = null
 
     val result =
         repository.bindCamera(
@@ -166,18 +173,22 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
           null
         }
         ?.let { (cameraInstance, imageCapture) ->
+          // Create new observer BEFORE setting camera reference
+          val newObserver =
+              Observer<androidx.camera.core.ZoomState> { zoomState ->
+                _uiState.value =
+                    _uiState.value.copy(
+                        zoomRatio = zoomState.zoomRatio,
+                        minZoomRatio = zoomState.minZoomRatio,
+                        maxZoomRatio = zoomState.maxZoomRatio)
+              }
+
+          // Observe zoom state changes first
+          cameraInstance.cameraInfo.zoomState.observe(lifecycleOwner, newObserver)
+
+          // THEN update references atomically to prevent race conditions
           camera = cameraInstance
-
-          // Observe zoom state changes on our camera
-          zoomStateObserver = Observer { zoomState ->
-            _uiState.value =
-                _uiState.value.copy(
-                    zoomRatio = zoomState.zoomRatio,
-                    minZoomRatio = zoomState.minZoomRatio,
-                    maxZoomRatio = zoomState.maxZoomRatio)
-          }
-
-          cameraInstance.cameraInfo.zoomState.observe(lifecycleOwner, zoomStateObserver!!)
+          zoomStateObserver = newObserver
 
           imageCapture
         }
@@ -247,6 +258,11 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
 
     viewModelScope.launch {
       try {
+        // Clean up old cached images before getting camera provider
+        launch(kotlinx.coroutines.Dispatchers.IO) {
+          repository.cleanupOldCachedImages(context, olderThanHours = 24)
+        }
+
         val provider = repository.getCameraProvider(context)
         cameraProvider = provider // Cache the provider for later use
         onSuccess(provider)

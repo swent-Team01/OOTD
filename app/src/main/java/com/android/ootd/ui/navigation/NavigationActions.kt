@@ -63,12 +63,18 @@ sealed class Screen(
     }
   }
 
+  object BetaConsent :
+      Screen(route = "betaConsent", name = "BetaConsent", isTopLevelDestination = true)
+
   object Map : Screen(route = "map", name = "Map", isTopLevelDestination = false)
 
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
   object InventoryScreen :
       Screen(route = "inventory", name = "Inventory", isTopLevelDestination = false)
+
+  object NotificationsScreen :
+      Screen(route = "notifications", name = "Notifications", isTopLevelDestination = false)
 
   data class EditItem(val itemUid: String) :
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {

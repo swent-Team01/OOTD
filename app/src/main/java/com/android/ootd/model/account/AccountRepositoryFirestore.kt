@@ -7,6 +7,7 @@ import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.NoSuchElementException
 import kotlinx.coroutines.tasks.await
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
@@ -120,7 +121,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     val newAccount =
         Account(
             uid = user.uid,
-            ownerId = user.uid,
+            ownerId = user.ownerId,
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
@@ -181,22 +182,19 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           .document(account.uid)
           .set(account.toFirestoreMap())
           .await()
-
-      Log.d("AccountRepositoryFirestore", "Successfully added account with UID: ${account.uid}")
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error adding account: ${e.message}", e)
       throw e
     }
   }
 
-  override suspend fun addFriend(userID: String, friendID: String) {
+  override suspend fun addFriend(userID: String, friendID: String): Boolean {
     try {
-      // Instead of reading the friend's account (which we can't do due to privacy),
-      // check if the friend exists in the public User collection
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
       if (!friendUserDoc.exists()) {
-        throw NoSuchElementException("Friend with ID $friendID not found")
+        Log.e("AccountRepositoryFirestore", "The user with id ${friendID} not found")
+        throw NoSuchElementException("The user with id ${friendID} not found")
       }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
@@ -205,7 +203,23 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
       // array section
 
+      // Add the friendID in your friend list
       userRef.update("friendUids", FieldValue.arrayUnion(friendID)).await()
+
+      // Add yourself to the friendID's friend list.
+      // This works because we have not deleted the follow notification yet.
+      val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      try {
+        friendRef.update("friendUids", FieldValue.arrayUnion(userID)).await()
+        return true
+      } catch (e: Exception) {
+        // If we can't update their account (maybe we're not in their friend list),
+        // log it but don't fail the entire operation
+        Log.w(
+            "AccountRepositoryFirestore",
+            "Could not add $userID to $friendID's friend list: ${e.message}")
+        return false
+      }
     } catch (e: Exception) {
       Log.e(
           "AccountRepositoryFirestore", "Error adding friend $friendID to $userID: ${e.message}", e)
@@ -215,16 +229,28 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun removeFriend(userID: String, friendID: String) {
     try {
-      // Instead of reading the friend's account (which we can't do due to privacy),
-      // check if the friend exists in the public User collection
+      // Check if the friend exists in the public User collection
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
       if (!friendUserDoc.exists()) {
         throw NoSuchElementException("Friend with ID $friendID not found")
       }
 
+      // Remove friendID from userID's friend list
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
       userRef.update("friendUids", FieldValue.arrayRemove(friendID)).await()
+
+      // Remove userID from friendID's friend list (if they have us as a friend)
+      val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      try {
+        friendRef.update("friendUids", FieldValue.arrayRemove(userID)).await()
+      } catch (e: Exception) {
+        // If we can't update their account (maybe we're not in their friend list),
+        // log it but don't fail the entire operation
+        Log.w(
+            "AccountRepositoryFirestore",
+            "Could not remove $userID from $friendID's friend list: ${e.message}")
+      }
     } catch (e: Exception) {
       Log.e(
           "AccountRepositoryFirestore",
@@ -241,10 +267,9 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       throw NoSuchElementException("The authenticated user has not been added to the database")
     }
 
-    val myAccount = transformAccountDocument(document)
+    val userData = transformAccountDocument(document)
 
-    return (myAccount?.friendUids?.isNotEmpty() == true &&
-        myAccount.friendUids.any { it == friendID })
+    return userData != null && userData.friendUids.contains(friendID)
   }
 
   override suspend fun togglePrivacy(userID: String): Boolean {
