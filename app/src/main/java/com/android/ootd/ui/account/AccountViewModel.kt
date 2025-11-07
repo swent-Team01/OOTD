@@ -220,19 +220,39 @@ class AccountViewModel(
    * Upload an image to Firebase Storage.
    *
    * @param localPath the local path/URI of the image
-   * @return the download URL of the uploaded image
+   * @param onResult invoked with the download URL upon success (or the original path if blank)
+   * @param onError invoked with the error that occurred
    */
-  suspend fun uploadImageToStorage(localPath: String): String {
-    if (localPath.isBlank()) return localPath
-    return try {
-      val userId = authenticatedUserId
-      val ref = storage.reference.child("profile_pictures/$userId.jpg")
-      val fileUri = localPath.toUri()
-      ref.putFile(fileUri).await()
-      ref.downloadUrl.await().toString()
-    } catch (e: Exception) {
-      Log.e("AccountViewModel", "Upload failed: ${e.message}", e)
-      throw e
+  fun uploadImageToStorage(
+      localPath: String,
+      onResult: (String) -> Unit,
+      onError: (Throwable) -> Unit = {}
+  ) {
+    if (localPath.isBlank()) {
+      onResult(localPath)
+      return
+    }
+
+    val userId = authenticatedUserId
+    if (userId == null) {
+      val ex = IllegalStateException("No authenticated user")
+      _uiState.update { it.copy(errorMsg = ex.localizedMessage) }
+      onError(ex)
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        val ref = storage.reference.child("profile_pictures/$userId.jpg")
+        val fileUri = localPath.toUri()
+        ref.putFile(fileUri).await()
+        val downloadUrl = ref.downloadUrl.await().toString()
+        onResult(downloadUrl)
+      } catch (e: Exception) {
+        Log.e("AccountViewModel", "Upload failed: ${e.message}", e)
+        _uiState.update { it.copy(errorMsg = e.localizedMessage ?: "Failed to upload image") }
+        onError(e)
+      }
     }
   }
 
