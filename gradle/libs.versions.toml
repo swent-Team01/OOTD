@@ -18,7 +18,7 @@ kaspresso = "1.5.5"
 robolectric = "4.11.1"
 sonar = "5.1.0.4882"
 gms = "4.4.2"
-navigationCompose = "2.8.5"
+navigationCompose = "2.9.6"
 
 # Firebase
 firebaseAuth = "23.0.0"
