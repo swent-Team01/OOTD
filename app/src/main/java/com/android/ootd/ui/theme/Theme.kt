@@ -20,7 +20,8 @@ val DarkColorScheme =
         tertiary = Tertiary,
         background = Background,
         onBackground = Last,
-        onSecondaryContainer = OnSecondaryContainer)
+        onSecondaryContainer = OnSecondaryContainer,
+        tertiaryContainer = tertiaryContainer)
 
 val LightColorScheme =
     lightColorScheme(
@@ -29,7 +30,8 @@ val LightColorScheme =
         tertiary = Tertiary,
         background = Background,
         onBackground = Last,
-        onSecondaryContainer = OnSecondaryContainer)
+        onSecondaryContainer = OnSecondaryContainer,
+        tertiaryContainer = tertiaryContainer)
 
 @Composable
 fun OOTDTheme(
