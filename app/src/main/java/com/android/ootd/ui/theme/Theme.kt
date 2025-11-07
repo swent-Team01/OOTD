@@ -1,27 +1,14 @@
 package com.android.ootd.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-
-val DarkColorScheme =
-    darkColorScheme(
-        primary = Primary,
-        secondary = Secondary,
-        tertiary = Tertiary,
-        background = Background,
-        onBackground = Last,
-        onSecondaryContainer = OnSecondaryContainer,
-        tertiaryContainer = tertiaryContainer)
 
 val LightColorScheme =
     lightColorScheme(
@@ -31,7 +18,10 @@ val LightColorScheme =
         background = Background,
         onBackground = Last,
         onSecondaryContainer = OnSecondaryContainer,
-        tertiaryContainer = tertiaryContainer)
+        tertiaryContainer = TertiaryContainer,
+        onSurfaceVariant = OnSurfaceVariant,
+        onPrimaryContainer = OnPrimaryContainer,
+        onSurface = OnSurface)
 
 @Composable
 fun OOTDTheme(
@@ -40,15 +30,9 @@ fun OOTDTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-  val colorScheme =
-      when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-          val context = LocalContext.current
-          if (darkTheme) DarkColorScheme else LightColorScheme
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-      }
+  // Remove dark color scheme so we do not have to define default values
+
+  val colorScheme = LightColorScheme
   val view = LocalView.current
   if (!view.isInEditMode) {
     SideEffect {
