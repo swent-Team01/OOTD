@@ -17,7 +17,7 @@ lifecycleRuntimeKtx = "2.7.0"
 kaspresso = "1.5.5"
 robolectric = "4.11.1"
 sonar = "5.1.0.4882"
-gms = "4.4.2"
+gms = "4.4.4"
 navigationCompose = "2.8.5"
 
 # Firebase

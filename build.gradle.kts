@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.1.10" apply false
     alias(libs.plugins.compose.compiler) apply false
     // Add the dependency for the Google services Gradle plugin
-    id("com.google.gms.google-services") version "4.4.3" apply false
+    id("com.google.gms.google-services") version "4.4.4" apply false
     id("org.sonarqube") version "5.1.0.4882" apply false
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
