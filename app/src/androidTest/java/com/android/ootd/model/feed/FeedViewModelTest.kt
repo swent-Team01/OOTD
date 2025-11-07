@@ -60,27 +60,36 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
   @Test
   fun refreshFeed_populatesPostsFromFriends() = runBlocking {
     val uid = auth.currentUser!!.uid
+    val timestamp = System.currentTimeMillis()
 
-    // Create account with one friend (self or other)
-    val account = Account(uid, uid, "bob", friendUids = listOf(uid))
+    val account = Account(uid, uid, "bob_$timestamp", friendUids = listOf(uid))
     FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    // Create a post visible to this user
     val post =
         OutfitPost(
-            postUID = "p1",
+            postUID = "p_$timestamp",
             ownerId = uid,
-            name = "bob",
+            name = "bob_$timestamp",
             description = "today’s outfit",
             outfitURL = "https://example.com/fake.jpg",
             timestamp = System.currentTimeMillis())
     FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
 
-    viewModel.refreshFeedFromFirestore()
-    delay(1000)
+    // Force ViewModel to know about this account (avoid auth race)
+    viewModel.setCurrentAccount(account)
 
-    val state = viewModel.uiState.first()
-    assertTrue(state.feedPosts.isNotEmpty())
+    // Trigger refresh
+    viewModel.refreshFeedFromFirestore()
+    val start = System.currentTimeMillis()
+    var state: FeedUiState
+    do {
+      delay(100)
+      state = viewModel.uiState.value
+      if (state.feedPosts.isNotEmpty()) break
+    } while (System.currentTimeMillis() - start < 5000)
+
+    assertTrue(
+        "Feed did not populate within timeout. Current state: $state", state.feedPosts.isNotEmpty())
     assertEquals("today’s outfit", state.feedPosts.first().description)
     assertEquals(uid, state.feedPosts.first().ownerId)
   }
