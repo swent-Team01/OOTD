@@ -62,7 +62,14 @@ class AccountViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
+    // Uploader returns the download URL. Parameters: userId, localPath.
+    private val uploader: suspend (String, String, FirebaseStorage) -> String = { uid, local, st ->
+      val ref = st.reference.child("profile_pictures/$uid.jpg")
+      val fileUri = local.toUri()
+      ref.putFile(fileUri).await()
+      ref.downloadUrl.await().toString()
+    }
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(AccountViewState())
@@ -244,10 +251,7 @@ class AccountViewModel(
 
     viewModelScope.launch {
       try {
-        val ref = storage.reference.child("profile_pictures/$userId.jpg")
-        val fileUri = localPath.toUri()
-        ref.putFile(fileUri).await()
-        val downloadUrl = ref.downloadUrl.await().toString()
+        val downloadUrl = uploader(userId, localPath, storage)
         onResult(downloadUrl)
       } catch (e: Exception) {
         Log.e("AccountViewModel", "Upload failed: ${e.message}", e)
