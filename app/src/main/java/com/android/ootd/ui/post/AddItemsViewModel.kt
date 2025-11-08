@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * UI state for the AddItems screen. This state holds the data needed to create a new Clothing item.
+ */
 data class AddItemsUIState(
     val image: ImageData = ImageData(imageId = "", imageUrl = ""),
     val postUuid: String = "",
@@ -58,6 +61,10 @@ data class AddItemsUIState(
   }
 }
 
+/**
+ * ViewModel for the AddItems screen. This ViewModel manages the state of input fields for the
+ * AddItems screen.
+ */
 open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
 ) : BaseItemViewModel<AddItemsUIState>() {

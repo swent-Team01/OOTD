@@ -10,6 +10,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * Base ViewModel for item-related screens.
+ *
+ * Contains shared functionality for managing item data, including type suggestions, error messages,
+ * and field setters. Uses a generic type parameter to work with different UI state types.
+ *
+ * @param T The type of UI state this ViewModel manages.
+ */
 abstract class BaseItemViewModel<T : Any> : ViewModel() {
 
   protected var typeSuggestions: Map<String, List<String>> = emptyMap()

@@ -12,6 +12,10 @@ import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
 import kotlinx.coroutines.launch
 
+/**
+ * UI state for the EditItems screen. This state holds the data needed to edit an existing Clothing
+ * item.
+ */
 data class EditItemsUIState(
     val itemId: String = "",
     val postUuids: List<String> = emptyList(),
@@ -41,6 +45,14 @@ data class EditItemsUIState(
             category.isNotEmpty()
 }
 
+/**
+ * ViewModel for the EditItems screen.
+ *
+ * Manages the state and business logic for editing, saving, and deleting items. Handles input
+ * validation and provides type suggestions based on category.
+ *
+ * @property repository The repository used for item operations.
+ */
 open class EditItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository
 ) : BaseItemViewModel<EditItemsUIState>() {
