@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -96,7 +98,9 @@ fun OutfitPostCard(
                           model = post.outfitURL.ifBlank { null },
                           contentDescription = "Outfit image",
                           modifier =
-                              Modifier.fillMaxSize().testTag(OutfitPostCardTestTags.POST_IMAGE),
+                              Modifier.fillMaxSize()
+                                  .testTag(OutfitPostCardTestTags.POST_IMAGE)
+                                  .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
                           contentScale = ContentScale.Crop,
                           placeholder =
                               rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
@@ -143,12 +147,27 @@ fun OutfitPostCard(
                     }
               }
             }
-
-        // ---- Overlay for blur + blue tint ----
+        // ---- Overlay for blur + message ----
         if (isBlurred) {
-          Box(
-              modifier =
-                  Modifier.matchParentSize().blur(8.dp).background(Color.Gray.copy(alpha = 0.9f)))
+          Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center) {
+                  Icon(
+                      imageVector = Icons.Default.PhotoCamera,
+                      contentDescription = "Photo icon",
+                      tint = Color.White,
+                      modifier = Modifier.size(48.dp))
+
+                  Spacer(modifier = Modifier.height(8.dp))
+
+                  Text(
+                      text = "Do a fit check to unlock today's feed",
+                      style = MaterialTheme.typography.titleLarge,
+                      color = Color.White,
+                      modifier = Modifier.padding(horizontal = 16.dp))
+                }
+          }
         }
       }
 }
