@@ -4,9 +4,11 @@ import android.util.Log
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import kotlin.NoSuchElementException
 import kotlinx.coroutines.tasks.await
 
@@ -33,7 +35,8 @@ private fun Account.toFirestoreMap(): Map<String, Any> =
             mapOf(
                 "latitude" to location.latitude,
                 "longitude" to location.longitude,
-                "name" to location.name))
+                "name" to location.name),
+        "itemsUids" to itemsUids)
 
 /** Convert Firestore DocumentSnapshot to domain Account (uses document id as uid) */
 private fun DocumentSnapshot.toAccount(): Account {
@@ -68,6 +71,15 @@ private fun DocumentSnapshot.toAccount(): Account {
         else -> throw MissingLocationException()
       }
 
+  // Parse itemsUids if present
+  val itemsUidsRaw = get("itemsUids")
+  val itemsUids =
+      when {
+        itemsUidsRaw == null -> emptyList()
+        itemsUidsRaw is List<*> -> itemsUidsRaw.filterIsInstance<String>()
+        else -> emptyList()
+      }
+
   val uid = id // document id is the user id
 
   return Account(
@@ -79,7 +91,8 @@ private fun DocumentSnapshot.toAccount(): Account {
       profilePicture = picture,
       friendUids = friends,
       location = location,
-      isPrivate = isPrivate)
+      isPrivate = isPrivate,
+      itemsUids = itemsUids)
 }
 
 class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRepository {
@@ -348,6 +361,52 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error updating account: ${e.message}", e)
       throw e
+    }
+  }
+
+  override suspend fun getItemsList(userID: String): List<String> {
+    return try {
+      val account = getAccount(userID)
+      account.itemsUids
+    } catch (e: Exception) {
+      Log.e("AccountRepositoryFirestore", "Error getting items list for $userID: ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun addItem(itemUid: String): Boolean {
+    return try {
+      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+
+      val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
+
+      // Use arrayUnion to avoid duplicates
+      userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
+
+      Log.d("AccountRepositoryFirestore", "Successfully added item $itemUid to user $currentUserId")
+      true
+    } catch (e: Exception) {
+      Log.e("AccountRepositoryFirestore", "Error adding item: ${e.message}", e)
+      false
+    }
+  }
+
+  override suspend fun removeItem(itemUid: String): Boolean {
+    return try {
+      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+
+      val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
+
+      // Use arrayRemove to remove the item
+      userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await()
+
+      Log.d(
+          "AccountRepositoryFirestore",
+          "Successfully removed item $itemUid from user $currentUserId")
+      true
+    } catch (e: Exception) {
+      Log.e("AccountRepositoryFirestore", "Error removing item: ${e.message}", e)
+      false
     }
   }
 

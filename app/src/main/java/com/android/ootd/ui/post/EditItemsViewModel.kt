@@ -4,6 +4,8 @@ import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -55,9 +57,11 @@ data class EditItemsUIState(
  * validation and provides type suggestions based on category.
  *
  * @property repository The repository used for item operations.
+ * @property accountRepository The repository used for account operations.
  */
 open class EditItemsViewModel(
-    private val repository: ItemsRepository = ItemsRepositoryProvider.repository
+    private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : BaseItemViewModel<EditItemsUIState>() {
 
   override val _uiState = MutableStateFlow(EditItemsUIState())
@@ -196,6 +200,13 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         repository.deleteItem(state.itemId)
+
+        // Remove item from user's inventory
+        val removedFromInventory = accountRepository.removeItem(state.itemId)
+        if (!removedFromInventory) {
+          Log.w("EditItemsViewModel", "Item deleted but not removed from inventory.")
+        }
+
         val deleted = FirebaseImageUploader.deleteImage(state.image.imageId)
         if (!deleted) {
           Log.w("EditItemsViewModel", "Image deletion failed or image not found.")

@@ -15,6 +15,7 @@ import com.android.ootd.model.map.emptyLocation
  * @property friendUids list of friend user IDs
  * @property isPrivate whether the account is private or not
  * @property location user's location
+ * @property itemsUids list of items IDs in the user inventory
  */
 data class Account(
     val uid: String = "",
@@ -25,7 +26,8 @@ data class Account(
     val profilePicture: String = "",
     val friendUids: List<String> = emptyList(),
     val isPrivate: Boolean = false,
-    val location: Location = emptyLocation
+    val location: Location = emptyLocation,
+    val itemsUids: List<String> = emptyList()
 )
 
 /** Exception thrown when a required location is missing. */
