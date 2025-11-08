@@ -242,7 +242,7 @@ dependencies {
   // UI Tests
   globalTestImplementation(libs.compose.test.junit)
   debugImplementation(libs.compose.test.manifest)
-    implementation("androidx.compose.material:material-icons-extended")
+  implementation("androidx.compose.material:material-icons-extended")
 
     // Coil for image loading in Compose
     implementation(libs.coil.compose)
