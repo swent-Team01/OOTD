@@ -136,16 +136,7 @@ private fun AccountScreenContent(
     onHelpDismiss: () -> Unit,
 ) {
   val context = LocalContext.current
-
   val scrollState = rememberScrollState()
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
-  val username = uiState.username
-  val email = uiState.googleAccountName
-  val avatarUri = uiState.profilePicture
-  val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
-
-  val dateOfBirth = uiState.dateOfBirth
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
@@ -170,167 +161,46 @@ private fun AccountScreenContent(
           Modifier.fillMaxSize()
               .verticalScroll(scrollState)
               .padding(horizontal = 24.dp, vertical = 16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-          IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = colors.onBackground,
-                modifier = Modifier.size(48.dp))
-          }
-        }
+        BackButton(onBack = onBack)
 
-        Text(
-            text = "My Account",
-            style = typography.displayLarge,
-            color = colors.primary,
-            textAlign = TextAlign.Center,
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 20.dp)
-                    .testTag(UiTestTags.TAG_ACCOUNT_TITLE))
+        AccountTitle()
 
-        // Avatar area
-        Box(
-            modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER),
-            contentAlignment = Alignment.Center) {
-              if (avatarUri.isNotBlank()) {
-                AsyncImage(
-                    model = avatarUri,
-                    contentDescription = "Avatar",
-                    placeholder = defaultAvatarPainter,
-                    error = defaultAvatarPainter,
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier.size(180.dp)
-                            .clip(CircleShape)
-                            .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
-              } else {
-                Box(
-                    modifier =
-                        Modifier.size(180.dp)
-                            .clip(CircleShape)
-                            .background(Primary)
-                            .pointerHoverIcon(icon = PointerIcon.Hand),
-                    contentAlignment = Alignment.Center) {
-                      Text(
-                          text = username.firstOrNull()?.uppercase() ?: "",
-                          style = typography.headlineLarge,
-                          color = Secondary,
-                          modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
-                    }
-              }
-            }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Edit button under avatar
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          Button(
-              onClick = {
-                imagePickerLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-              },
-              shape = CircleShape,
-              colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
-                Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
-              }
-        }
+        AvatarSection(
+            avatarUri = uiState.profilePicture,
+            username = uiState.username,
+            onEditClick = {
+              imagePickerLauncher.launch(
+                  PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            })
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Username field (outlined) with colored rounded label
-        OutlinedTextField(
-            value = if (isEditingUsername) editedUsername else username,
+        UsernameField(
+            username = uiState.username,
+            isEditing = isEditingUsername,
+            editedValue = editedUsername,
             onValueChange = { editedUsername = it },
-            label = {
-              Box(
-                  modifier =
-                      Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
-                          .padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    Text(text = "Username", style = typography.bodySmall, color = colors.tertiary)
-                  }
+            onEditClick = {
+              isEditingUsername = true
+              editedUsername = uiState.username
             },
-            readOnly = !isEditingUsername,
-            textStyle = typography.bodyLarge,
-            trailingIcon = {
-              if (isEditingUsername) {
-                Row {
-                  IconButton(
-                      onClick = {
-                        isEditingUsername = false
-                        editedUsername = ""
-                      },
-                      modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CANCEL)) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel",
-                            tint = colors.error)
-                      }
-                  IconButton(
-                      onClick = {
-                        if (editedUsername.isNotBlank() && editedUsername != username) {
-                          accountViewModel.editUser(newUsername = editedUsername)
-                          isEditingUsername = false
-                        }
-                      },
-                      modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_SAVE)) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Save",
-                            tint = colors.primary)
-                      }
-                }
-              } else {
-                IconButton(
-                    onClick = {
-                      isEditingUsername = true
-                      editedUsername = username
-                    },
-                    modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_EDIT)) {
-                      Icon(
-                          imageVector = Icons.Default.Edit,
-                          contentDescription = "Edit username",
-                          tint = colors.onSurface.copy(alpha = 0.7f))
-                    }
+            onCancelClick = {
+              isEditingUsername = false
+              editedUsername = ""
+            },
+            onSaveClick = {
+              if (editedUsername.isNotBlank() && editedUsername != uiState.username) {
+                accountViewModel.editUser(newUsername = editedUsername)
+                isEditingUsername = false
               }
-            },
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = colors.primary,
-                    unfocusedTextColor = colors.primary,
-                ),
-            modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_USERNAME_FIELD))
+            })
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Google Account field (outlined)
-        OutlinedTextField(
-            value = email,
-            onValueChange = {},
-            label = {
-              Box(
-                  modifier =
-                      Modifier.background(colors.secondary, RoundedCornerShape(6.dp))
-                          .padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    Text(
-                        text = "Google Account",
-                        style = typography.bodySmall,
-                        color = colors.tertiary)
-                  }
-            },
-            readOnly = true,
-            textStyle = typography.bodyLarge,
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = colors.primary,
-                    unfocusedTextColor = colors.primary,
-                ),
-            modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_GOOGLE_FIELD))
+        GoogleAccountField(email = uiState.googleAccountName)
+
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Privacy toggle
         PrivacyToggleRow(
             isPrivate = uiState.isPrivate,
             onToggle = onToggle,
@@ -342,28 +212,213 @@ private fun AccountScreenContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Sign out button at bottom center
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-            contentAlignment = Alignment.Center) {
-              Button(
-                  onClick = onSignOutClick,
-                  shape = CircleShape,
-                  colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-                  modifier = Modifier.testTag(UiTestTags.TAG_SIGNOUT_BUTTON)) {
-                    Text(text = "Sign Out", color = colors.onPrimary, style = typography.titleLarge)
-                  }
-            }
+        SignOutButton(onClick = onSignOutClick)
       }
 
   if (uiState.isLoading) {
-    Box(
-        modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
-        contentAlignment = Alignment.Center) {
-          CircularProgressIndicator(
-              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
+    LoadingOverlay()
+  }
+}
+
+@Composable
+private fun BackButton(onBack: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+    IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
+      Icon(
+          imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+          contentDescription = "Back",
+          tint = colors.onBackground,
+          modifier = Modifier.size(48.dp))
+    }
+  }
+}
+
+@Composable
+private fun AccountTitle() {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+  Text(
+      text = "My Account",
+      style = typography.displayLarge,
+      color = colors.primary,
+      textAlign = TextAlign.Center,
+      modifier =
+          Modifier.fillMaxWidth()
+              .padding(top = 4.dp, bottom = 20.dp)
+              .testTag(UiTestTags.TAG_ACCOUNT_TITLE))
+}
+
+@Composable
+private fun AvatarSection(avatarUri: String, username: String, onEditClick: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+  val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
+
+  Box(
+      modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER),
+      contentAlignment = Alignment.Center) {
+        if (avatarUri.isNotBlank()) {
+          AsyncImage(
+              model = avatarUri,
+              contentDescription = "Avatar",
+              placeholder = defaultAvatarPainter,
+              error = defaultAvatarPainter,
+              contentScale = ContentScale.Crop,
+              modifier =
+                  Modifier.size(180.dp)
+                      .clip(CircleShape)
+                      .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
+        } else {
+          Box(
+              modifier =
+                  Modifier.size(180.dp)
+                      .clip(CircleShape)
+                      .background(Primary)
+                      .pointerHoverIcon(icon = PointerIcon.Hand),
+              contentAlignment = Alignment.Center) {
+                Text(
+                    text = username.firstOrNull()?.uppercase() ?: "",
+                    style = typography.headlineLarge,
+                    color = Secondary,
+                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
+              }
+        }
+      }
+
+  Spacer(modifier = Modifier.height(12.dp))
+
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Button(
+        onClick = onEditClick,
+        shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+        modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
+          Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
         }
   }
+}
+
+@Composable
+private fun UsernameField(
+    username: String,
+    isEditing: Boolean,
+    editedValue: String,
+    onValueChange: (String) -> Unit,
+    onEditClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    onSaveClick: () -> Unit
+) {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+
+  OutlinedTextField(
+      value = if (isEditing) editedValue else username,
+      onValueChange = onValueChange,
+      label = {
+        Box(
+            modifier =
+                Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)) {
+              Text(text = "Username", style = typography.bodySmall, color = colors.tertiary)
+            }
+      },
+      readOnly = !isEditing,
+      textStyle = typography.bodyLarge,
+      trailingIcon = {
+        if (isEditing) {
+          UsernameEditActions(onCancelClick = onCancelClick, onSaveClick = onSaveClick)
+        } else {
+          UsernameEditButton(onClick = onEditClick)
+        }
+      },
+      colors =
+          OutlinedTextFieldDefaults.colors(
+              focusedTextColor = colors.primary,
+              unfocusedTextColor = colors.primary,
+          ),
+      modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_USERNAME_FIELD))
+}
+
+@Composable
+private fun UsernameEditActions(onCancelClick: () -> Unit, onSaveClick: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  Row {
+    IconButton(
+        onClick = onCancelClick, modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CANCEL)) {
+          Icon(
+              imageVector = Icons.Default.Close, contentDescription = "Cancel", tint = colors.error)
+        }
+    IconButton(onClick = onSaveClick, modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_SAVE)) {
+      Icon(imageVector = Icons.Default.Check, contentDescription = "Save", tint = colors.primary)
+    }
+  }
+}
+
+@Composable
+private fun UsernameEditButton(onClick: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  IconButton(onClick = onClick, modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_EDIT)) {
+    Icon(
+        imageVector = Icons.Default.Edit,
+        contentDescription = "Edit username",
+        tint = colors.onSurface.copy(alpha = 0.7f))
+  }
+}
+
+@Composable
+private fun GoogleAccountField(email: String) {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+
+  OutlinedTextField(
+      value = email,
+      onValueChange = {},
+      label = {
+        Box(
+            modifier =
+                Modifier.background(colors.secondary, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)) {
+              Text(text = "Google Account", style = typography.bodySmall, color = colors.tertiary)
+            }
+      },
+      readOnly = true,
+      textStyle = typography.bodyLarge,
+      colors =
+          OutlinedTextFieldDefaults.colors(
+              focusedTextColor = colors.primary,
+              unfocusedTextColor = colors.primary,
+          ),
+      modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_GOOGLE_FIELD))
+}
+
+@Composable
+private fun SignOutButton(onClick: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  val typography = MaterialTheme.typography
+
+  Box(
+      modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+      contentAlignment = Alignment.Center) {
+        Button(
+            onClick = onClick,
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+            modifier = Modifier.testTag(UiTestTags.TAG_SIGNOUT_BUTTON)) {
+              Text(text = "Sign Out", color = colors.onPrimary, style = typography.titleLarge)
+            }
+      }
+}
+
+@Composable
+private fun LoadingOverlay() {
+  val colors = MaterialTheme.colorScheme
+  Box(
+      modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
+      contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(
+            modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
+      }
 }
 
 @Composable
