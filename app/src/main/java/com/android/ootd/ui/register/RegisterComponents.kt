@@ -216,7 +216,7 @@ internal fun LocationField(
       isLoadingLocation = registerUiState.isLoadingLocations,
       onLocationQueryChange = viewModel::setLocationQuery,
       onLocationSelect = viewModel::setLocation,
-      onGPSClick = { /* TODO: Implement GPS functionality */},
+      onGPSClick = { /* TODO: Implement GPS functionality */ },
       onClearSuggestions = viewModel::clearLocationSuggestions,
       textColor = fieldState.textColor.value,
       isError = isError && !fieldState.focused.value,

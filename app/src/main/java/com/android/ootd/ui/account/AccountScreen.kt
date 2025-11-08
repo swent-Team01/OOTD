@@ -1,4 +1,5 @@
 package com.android.ootd.ui.account
+
 /*
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
@@ -80,6 +81,7 @@ object UiTestTags {
   const val TAG_PRIVACY_HELP_ICON = "account_privacy_help_icon"
   const val TAG_PRIVACY_HELP_MENU = "account_privacy_help_menu"
 }
+
 /**
  * Account screen UI.
  *

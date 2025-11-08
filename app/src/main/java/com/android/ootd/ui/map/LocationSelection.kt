@@ -165,7 +165,7 @@ fun LocationSelectionSection(
             if (suggestions.size > 3) {
               DropdownMenuItem(
                   text = { Text("More...", fontFamily = Bodoni) },
-                  onClick = { /* Optionally show more results */},
+                  onClick = { /* Optionally show more results */ },
                   modifier =
                       Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
             }
