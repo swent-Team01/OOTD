@@ -244,33 +244,33 @@ dependencies {
   debugImplementation(libs.compose.test.manifest)
   implementation("androidx.compose.material:material-icons-extended")
 
-    // Coil for image loading in Compose
-    implementation(libs.coil.compose)
-    implementation(libs.compose.activity)
+  // Coil for image loading in Compose
+  implementation(libs.coil.compose)
+  implementation(libs.compose.activity)
 
-    // CameraX
-    implementation(libs.camerax.core)
-    implementation(libs.camerax.camera2)
-    implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
+  // CameraX
+  implementation(libs.camerax.core)
+  implementation(libs.camerax.camera2)
+  implementation(libs.camerax.lifecycle)
+  implementation(libs.camerax.view)
 
-    // ExifInterface for reading image orientation
-    implementation(libs.androidx.exifinterface)
+  // ExifInterface for reading image orientation
+  implementation(libs.androidx.exifinterface)
 
-    // Accompanist for permissions
-    implementation(libs.accompanist.permissions)
+  // Accompanist for permissions
+  implementation(libs.accompanist.permissions)
 
-    // Guava for CameraX ListenableFuture
-    implementation(libs.guava)
+  // Guava for CameraX ListenableFuture
+  implementation(libs.guava)
 
-    // Integration with ViewModels
-    implementation(libs.compose.viewmodel)
-    // Android Studio Preview support
-    implementation(libs.compose.preview)
-    debugImplementation(libs.compose.tooling)
-    // UI Tests
-    globalTestImplementation(libs.compose.test.junit)
-    debugImplementation(libs.compose.test.manifest)
+  // Integration with ViewModels
+  implementation(libs.compose.viewmodel)
+  // Android Studio Preview support
+  implementation(libs.compose.preview)
+  debugImplementation(libs.compose.tooling)
+  // UI Tests
+  globalTestImplementation(libs.compose.test.junit)
+  debugImplementation(libs.compose.test.manifest)
 
   // --------- Kaspresso test framework ----------
   globalTestImplementation(libs.kaspresso)
