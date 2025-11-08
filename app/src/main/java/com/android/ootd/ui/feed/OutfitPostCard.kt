@@ -2,6 +2,7 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -48,11 +49,40 @@ fun OutfitPostCard(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
               Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                Text(
-                    text = post.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 4.dp)) {
+                      if (post.userProfilePicURL.isNotBlank()) {
+                        AsyncImage(
+                            model = post.userProfilePicURL,
+                            contentDescription = "Profile picture",
+                            contentScale = ContentScale.Crop,
+                            modifier =
+                                Modifier.size(36.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(MaterialTheme.colorScheme.surface))
+                      } else {
+                        Box(
+                            modifier =
+                                Modifier.size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center) {
+                              Text(
+                                  text = post.name.firstOrNull()?.uppercase() ?: "",
+                                  style = MaterialTheme.typography.titleMedium,
+                                  color = MaterialTheme.colorScheme.onPrimary)
+                            }
+                      }
+
+                      Spacer(modifier = Modifier.width(8.dp))
+
+                      Text(
+                          text = post.name,
+                          style = MaterialTheme.typography.titleLarge,
+                          color = MaterialTheme.colorScheme.primary,
+                          modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
+                    }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
