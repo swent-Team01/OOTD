@@ -79,7 +79,6 @@ fun SignInScreen(
   }
 
   LaunchedEffect(uiState.user?.uid) {
-    val user = uiState.user ?: return@LaunchedEffect
     Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
     authViewModel.routeAfterGoogleSignIn(
         onSignedIn = onSignedIn,
