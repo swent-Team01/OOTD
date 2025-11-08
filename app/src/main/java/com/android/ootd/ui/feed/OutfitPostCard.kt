@@ -29,6 +29,9 @@ object OutfitPostCardTestTags {
   const val POST_IMAGE = "postImage"
   const val POST_DESCRIPTION = "postDescription"
   const val SEE_FIT_BUTTON = "seeFitButton"
+  const val PROFILE_PIC = "profilePic"
+  const val PROFILE_INITIAL = "profileInitial"
+  const val BLUR_OVERLAY = "blurOverlay"
 }
 
 @Composable
@@ -62,13 +65,15 @@ fun OutfitPostCard(
                             modifier =
                                 Modifier.size(36.dp)
                                     .clip(RoundedCornerShape(50))
-                                    .background(MaterialTheme.colorScheme.surface))
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .testTag(OutfitPostCardTestTags.PROFILE_PIC))
                       } else {
                         Box(
                             modifier =
                                 Modifier.size(36.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
+                                    .background(MaterialTheme.colorScheme.primary)
+                                    .testTag(OutfitPostCardTestTags.PROFILE_INITIAL),
                             contentAlignment = Alignment.Center) {
                               Text(
                                   text = post.name.firstOrNull()?.uppercase() ?: "",
@@ -149,25 +154,27 @@ fun OutfitPostCard(
             }
         // ---- Overlay for blur + message ----
         if (isBlurred) {
-          Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center) {
-                  Icon(
-                      imageVector = Icons.Default.PhotoCamera,
-                      contentDescription = "Photo icon",
-                      tint = Color.White,
-                      modifier = Modifier.size(48.dp))
+          Box(
+              modifier = Modifier.matchParentSize().testTag(OutfitPostCardTestTags.BLUR_OVERLAY),
+              contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center) {
+                      Icon(
+                          imageVector = Icons.Default.PhotoCamera,
+                          contentDescription = "Photo icon",
+                          tint = Color.White,
+                          modifier = Modifier.size(48.dp))
 
-                  Spacer(modifier = Modifier.height(8.dp))
+                      Spacer(modifier = Modifier.height(8.dp))
 
-                  Text(
-                      text = "Do a fit check to unlock today's feed",
-                      style = MaterialTheme.typography.titleLarge,
-                      color = Color.White,
-                      modifier = Modifier.padding(horizontal = 16.dp))
-                }
-          }
+                      Text(
+                          text = "Do a fit check to unlock today's feed",
+                          style = MaterialTheme.typography.titleLarge,
+                          color = Color.White,
+                          modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+              }
         }
       }
 }
