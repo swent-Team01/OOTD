@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
@@ -34,13 +35,15 @@ class EditItemsScreenTest {
 
   private lateinit var mockViewModel: EditItemsViewModel
   private lateinit var mockRepository: ItemsRepository
+  private lateinit var mockAccountRepository: AccountRepository
   private lateinit var context: Context
 
   @Before
   fun setup() {
     context = ApplicationProvider.getApplicationContext()
     mockRepository = mockk(relaxed = true)
-    mockViewModel = EditItemsViewModel(mockRepository)
+    mockAccountRepository = mockk(relaxed = true)
+    mockViewModel = EditItemsViewModel(mockRepository, mockAccountRepository)
   }
 
   @Test

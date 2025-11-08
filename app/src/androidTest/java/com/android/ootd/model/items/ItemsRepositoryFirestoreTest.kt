@@ -470,4 +470,80 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     itemsRepository.deletePostItems("non_existing_post")
     assertEquals(1, countItems())
   }
+
+  @Test
+  fun getItemsByIdsReturnsCorrectItems() = runBlocking {
+    itemsRepository.addItem(item1)
+    itemsRepository.addItem(item2)
+    itemsRepository.addItem(item3)
+
+    val itemIds = listOf(item1.itemUuid, item2.itemUuid)
+    val retrievedItems = itemsRepository.getItemsByIds(itemIds)
+
+    assertEquals(2, retrievedItems.size)
+    val retrievedIds = retrievedItems.map { it.itemUuid }.toSet()
+    assertTrue(retrievedIds.contains(item1.itemUuid))
+    assertTrue(retrievedIds.contains(item2.itemUuid))
+    assertTrue(!retrievedIds.contains(item3.itemUuid))
+  }
+
+  @Test
+  fun getItemsByIdsReturnsEmptyForEmptyList() = runBlocking {
+    itemsRepository.addItem(item1)
+
+    val retrievedItems = itemsRepository.getItemsByIds(emptyList())
+
+    assertTrue(retrievedItems.isEmpty())
+  }
+
+  @Test
+  fun getItemsByIdsHandlesNonExistentIds() = runBlocking {
+    itemsRepository.addItem(item1)
+
+    val itemIds = listOf(item1.itemUuid, "nonexistent1", "nonexistent2")
+    val retrievedItems = itemsRepository.getItemsByIds(itemIds)
+
+    assertEquals(1, retrievedItems.size)
+    assertEquals(item1.itemUuid, retrievedItems.first().itemUuid)
+  }
+
+  @Test
+  fun getItemsByIdsHandlesMoreThan10Items() = runBlocking {
+    val manyItems =
+        (0 until 15).map {
+          item1.copy(itemUuid = "item_$it", postUuids = listOf("post_$it"), brand = "Brand$it")
+        }
+
+    manyItems.forEach { itemsRepository.addItem(it) }
+
+    val itemIds = manyItems.map { it.itemUuid }
+    val retrievedItems = itemsRepository.getItemsByIds(itemIds)
+
+    assertEquals(15, retrievedItems.size)
+    val retrievedIds = retrievedItems.map { it.itemUuid }.toSet()
+    manyItems.forEach { assertTrue(retrievedIds.contains(it.itemUuid)) }
+  }
+
+  @Test
+  fun getItemsByIdsOnlyReturnsOwnersItems() = runBlocking {
+    val otherOwnerId = "otherUser"
+
+    itemsRepository.addItem(item1)
+    itemsRepository.addItem(item2)
+
+    // Manually add item belonging to another owner
+    val db = FirebaseEmulator.firestore
+    val otherItem = item3.copy(itemUuid = "otherItem", ownerId = otherOwnerId)
+    db.collection(ITEMS_COLLECTION).document(otherItem.itemUuid).set(otherItem).await()
+
+    val itemIds = listOf(item1.itemUuid, item2.itemUuid, "otherItem")
+    val retrievedItems = itemsRepository.getItemsByIds(itemIds)
+
+    // Should only return item1 and item2, not the other owner's item
+    assertEquals(2, retrievedItems.size)
+    val retrievedIds = retrievedItems.map { it.itemUuid }.toSet()
+    assertTrue(retrievedIds.contains(item1.itemUuid))
+    assertTrue(retrievedIds.contains(item2.itemUuid))
+    assertTrue(!retrievedIds.contains("otherItem"))
+  }
 }
