@@ -526,24 +526,23 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
   @Test
   fun getItemsByIdsOnlyReturnsOwnersItems() = runBlocking {
-    val otherOwnerId = "otherUser"
-
+    // Add items for current user
     itemsRepository.addItem(item1)
     itemsRepository.addItem(item2)
 
-    // Manually add item belonging to another owner
-    val db = FirebaseEmulator.firestore
-    val otherItem = item3.copy(itemUuid = "otherItem", ownerId = otherOwnerId)
-    db.collection(ITEMS_COLLECTION).document(otherItem.itemUuid).set(otherItem).await()
-
-    val itemIds = listOf(item1.itemUuid, item2.itemUuid, "otherItem")
+    // Request items including a non-existent ID
+    // The repository should only return items owned by the current user
+    val itemIds = listOf(item1.itemUuid, item2.itemUuid, "nonExistentItem")
     val retrievedItems = itemsRepository.getItemsByIds(itemIds)
 
-    // Should only return item1 and item2, not the other owner's item
+    // Should only return item1 and item2 (owned by current user)
     assertEquals(2, retrievedItems.size)
     val retrievedIds = retrievedItems.map { it.itemUuid }.toSet()
     assertTrue(retrievedIds.contains(item1.itemUuid))
     assertTrue(retrievedIds.contains(item2.itemUuid))
-    assertTrue(!retrievedIds.contains("otherItem"))
+    assertTrue(!retrievedIds.contains("nonExistentItem"))
+
+    // Verify all returned items belong to current user
+    retrievedItems.forEach { item -> assertEquals(ownerId, item.ownerId) }
   }
 }

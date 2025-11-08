@@ -379,11 +379,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-
-      // Use arrayUnion to avoid duplicates
       userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
 
-      Log.d("AccountRepositoryFirestore", "Successfully added item $itemUid to user $currentUserId")
       true
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error adding item: ${e.message}", e)
@@ -397,12 +394,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      // Use arrayRemove to remove the item
       userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await()
 
-      Log.d(
-          "AccountRepositoryFirestore",
-          "Successfully removed item $itemUid from user $currentUserId")
       true
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error removing item: ${e.message}", e)
