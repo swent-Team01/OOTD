@@ -1,22 +1,13 @@
 package com.android.ootd.ui.register
 
-import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,20 +15,11 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.R
-import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
@@ -92,11 +74,11 @@ private val SPACER = 16.dp
 /**
  * Register screen composable that allows users to create a new account.
  *
- * This screen displays a username input field and a save button. It validates the username by
- * checking if it's blank only after the user has interacted with the field and left it. The screen
- * shows loading state during registration and navigates to the next screen upon success.
+ * This screen displays username, date of birth, and location input fields with validation. It
+ * validates fields only after the user has interacted with them and left focus. The screen shows
+ * loading state during registration and navigates to the next screen upon success.
  *
- * @param modelView The ViewModel that manages the registration state and logic. Defaults to a new
+ * @param viewModel The ViewModel that manages the registration state and logic. Defaults to a new
  *   instance.
  * @param onRegister Callback invoked when registration is successful. Defaults to an empty lambda.
  */
@@ -104,74 +86,28 @@ private val SPACER = 16.dp
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
   val registerUiState by viewModel.uiState.collectAsState()
-  val errorMsg = registerUiState.errorMsg
-  val context = LocalContext.current
 
-  var touchedUserName by remember { mutableStateOf(false) }
-  var leftUsername by remember { mutableStateOf(false) }
-  var textColorUname by remember { mutableStateOf(Tertiary) }
-  var focusUname by remember { mutableStateOf(false) }
-
-  var touchedDate by remember { mutableStateOf(false) }
-  var leftDate by remember { mutableStateOf(false) }
+  val usernameField = rememberFieldState()
+  val dateField = rememberFieldState()
+  val locationField = rememberFieldState()
   var showDatePicker by remember { mutableStateOf(false) }
-  var textColorDate by remember { mutableStateOf(Tertiary) }
-  var focusDate by remember { mutableStateOf(false) }
 
-  var touchedLocation by remember { mutableStateOf(false) }
-  var leftLocation by remember { mutableStateOf(false) }
-  var textColorLocation by remember { mutableStateOf(Tertiary) }
-  var focusLocation by remember { mutableStateOf(false) }
+  val usernameError = usernameField.left.value && registerUiState.username.isBlank()
+  val dateError = dateField.left.value && registerUiState.dateOfBirth.isBlank()
+  val locationError = locationField.left.value && registerUiState.selectedLocation == null
 
-  val disabledLabelColor = if (registerUiState.isLoading) Secondary else Tertiary
+  HandleRegistrationEffects(
+      errorMsg = registerUiState.errorMsg,
+      registered = registerUiState.registered,
+      isLoading = registerUiState.isLoading,
+      onClearError = viewModel::clearErrorMsg,
+      onRegisteredHandled = viewModel::markRegisteredHandled,
+      onRegister = onRegister,
+      onHideDatePicker = { showDatePicker = false })
 
-  val usernameError = leftUsername && registerUiState.username.isBlank()
-  val dateError = leftDate && registerUiState.dateOfBirth.isBlank()
-  val locationError = leftLocation && registerUiState.selectedLocation == null
-  val anyError = usernameError || dateError || locationError
-
-  LaunchedEffect(errorMsg) {
-    if (errorMsg != null) {
-      Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-      viewModel.clearErrorMsg()
-    }
-  }
-
-  LaunchedEffect(registerUiState.registered) {
-    if (registerUiState.registered) {
-      viewModel.markRegisteredHandled()
-      onRegister()
-    }
-  }
-  LaunchedEffect(focusUname) {
-    textColorUname =
-        when {
-          usernameError && !focusUname -> Color.Red
-          touchedUserName -> Primary
-          else -> Tertiary
-        }
-  }
-
-  LaunchedEffect(focusDate) {
-    textColorDate =
-        when {
-          dateError && !focusDate -> Color.Red
-          touchedDate -> Primary
-          else -> Tertiary
-        }
-  }
-
-  LaunchedEffect(focusLocation) {
-    textColorLocation =
-        when {
-          locationError && !focusLocation -> Color.Red
-          touchedLocation -> Primary
-          else -> Tertiary
-        }
-  }
-  LaunchedEffect(registerUiState.isLoading) {
-    if (registerUiState.isLoading) showDatePicker = false
-  }
+  UpdateFieldColors(usernameField, usernameError)
+  UpdateFieldColors(dateField, dateError)
+  UpdateFieldColors(locationField, locationError)
 
   Scaffold { innerPadding ->
     Column(
@@ -182,95 +118,27 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
-          Image(
-              painter = painterResource(id = R.drawable.app_logo),
-              contentDescription = "Logo",
-              contentScale = ContentScale.FillBounds,
-              modifier =
-                  Modifier.width(237.dp).height(237.dp).testTag(RegisterScreenTestTags.APP_LOGO))
-
-          Text(
-              text = "Welcome\nTime to drop a fit.",
-              fontFamily = Bodoni,
-              color = Primary,
-              fontSize = 20.sp,
-              textAlign = TextAlign.Center,
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .padding(bottom = 16.dp)
-                      .testTag(RegisterScreenTestTags.WELCOME_TITLE))
+          RegisterHeader()
 
           Spacer(modifier = Modifier.height(SPACER))
 
-          OutlinedTextField(
+          UsernameField(
               value = registerUiState.username,
-              onValueChange = { viewModel.setUsername(it) },
-              label = { Text(text = "Username", color = textColorUname, fontFamily = Bodoni) },
-              placeholder = {
-                Text(text = "Enter your username", color = textColorUname, fontFamily = Bodoni)
-              },
-              singleLine = true,
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .testTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
-                      .onFocusChanged { focusState ->
-                        focusUname = focusState.isFocused
-                        if (focusUname) {
-                          touchedUserName = true
-                        } else {
-                          if (touchedUserName) leftUsername = true
-                        }
-                      },
-              isError = usernameError && !focusUname,
-              enabled = !registerUiState.isLoading)
-
-          if (usernameError && !focusUname) {
-            Text(
-                text = "Please enter a valid username",
-                color = Color.Red,
-                fontFamily = Bodoni,
-                modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
-          }
+              onValueChange = viewModel::setUsername,
+              fieldState = usernameField,
+              isError = usernameError,
+              isLoading = registerUiState.isLoading)
 
           Spacer(modifier = Modifier.height(SPACER))
 
-          OutlinedTextField(
+          DateOfBirthField(
               value = registerUiState.dateOfBirth,
-              onValueChange = {},
-              label = { Text(text = "Date of Birth", color = textColorDate, fontFamily = Bodoni) },
-              placeholder = {
-                Text(text = "DD/MM/YYYY", color = textColorDate, fontFamily = Bodoni)
-              },
-              readOnly = true,
-              singleLine = true,
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .testTag(RegisterScreenTestTags.INPUT_REGISTER_DATE)
-                      .onFocusChanged { focusState ->
-                        focusDate = focusState.isFocused
-                        if (focusDate) {
-                          showDatePicker = true
-                          touchedDate = true
-                        } else {
-                          if (touchedDate) leftDate = true
-                        }
-                      },
-              isError = dateError && !focusDate,
-              enabled = !registerUiState.isLoading,
-              trailingIcon = {
-                IconButton(
-                    onClick = {
-                      if (!registerUiState.isLoading) {
-                        showDatePicker = true
-                        touchedDate = true
-                      }
-                    },
-                ) {
-                  Icon(
-                      Icons.Default.DateRange,
-                      contentDescription = "Select date",
-                      modifier = Modifier.testTag(RegisterScreenTestTags.DATE_PICKER_ICON))
-                }
+              fieldState = dateField,
+              isError = dateError,
+              isLoading = registerUiState.isLoading,
+              onShowDatePicker = {
+                showDatePicker = true
+                dateField.touched.value = true
               })
 
           if (showDatePicker) {
@@ -281,91 +149,28 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                 onDismiss = { showDatePicker = false },
                 onLeaveDate = {
                   showDatePicker = false
-                  leftDate = true
+                  dateField.left.value = true
                 },
-                disabledLabelColor = disabledLabelColor)
-          }
-          if (dateError && !focusDate) {
-            Text(
-                text = "Please enter a valid date",
-                color = Color.Red,
-                fontFamily = Bodoni,
-                modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
+                disabledLabelColor = if (registerUiState.isLoading) Secondary else Tertiary)
           }
 
-          // LocationSelection wired to RegisterViewModel's location fields
-          LocationSelectionSection(
-              locationQuery = registerUiState.locationQuery,
-              selectedLocation = registerUiState.selectedLocation,
-              suggestions = registerUiState.locationSuggestions,
-              isLoadingLocation = registerUiState.isLoadingLocations,
-              onLocationQueryChange = { query -> viewModel.setLocationQuery(query) },
-              onLocationSelect = { location -> viewModel.setLocation(location) },
-              onGPSClick = { /* TODO: Implement GPS functionality */ },
-              onClearSuggestions = { viewModel.clearLocationSuggestions() },
-              textColor = textColorLocation,
-              isError = locationError && !focusLocation,
-              onFocusChanged = { isFocused ->
-                focusLocation = isFocused
-                if (focusLocation) {
-                  touchedLocation = true
-                } else {
-                  if (touchedLocation) leftLocation = true
-                }
-              },
-              modifier =
-                  Modifier.padding(vertical = 8.dp)
-                      .testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
-
-          if (locationError && !focusLocation) {
-            Text(
-                text = "Please select a valid location",
-                color = Color.Red,
-                fontFamily = Bodoni,
-                modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
-          }
+          LocationField(
+              registerUiState = registerUiState,
+              viewModel = viewModel,
+              fieldState = locationField,
+              isError = locationError)
 
           Spacer(modifier = Modifier.height(SPACER))
 
-          Text(
-              text = "Outfit Of The Day,\n Inspire Drip",
-              fontFamily = Bodoni,
-              fontSize = 18.sp,
-              color = Primary,
-              fontWeight = FontWeight(400),
-              textAlign = TextAlign.Center,
-              modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_APP_SLOGAN))
-
-          Spacer(modifier = Modifier.height(SPACER))
-
-          Button(
-              onClick = { viewModel.registerUser() },
-              modifier = Modifier.fillMaxWidth().testTag(RegisterScreenTestTags.REGISTER_SAVE),
-              enabled =
+          RegisterFooter(
+              isLoading = registerUiState.isLoading,
+              isEnabled =
                   !registerUiState.isLoading &&
                       registerUiState.dateOfBirth.isNotBlank() &&
                       registerUiState.username.isNotBlank() &&
                       registerUiState.selectedLocation != null &&
-                      !anyError,
-              colors =
-                  ButtonDefaults.buttonColors(
-                      containerColor = Primary, disabledContentColor = disabledLabelColor)) {
-                if (registerUiState.isLoading) {
-                  Row(
-                      verticalAlignment = Alignment.CenterVertically,
-                      horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularProgressIndicator(
-                            modifier =
-                                Modifier.size(18.dp)
-                                    .testTag(RegisterScreenTestTags.REGISTER_LOADING),
-                            strokeWidth = 2.dp,
-                            color = Primary)
-                        Text(text = "Saving…", color = Primary)
-                      }
-                } else {
-                  Text("Save")
-                }
-              }
+                      !(usernameError || dateError || locationError),
+              onRegisterClick = viewModel::registerUser)
         }
   }
 }
