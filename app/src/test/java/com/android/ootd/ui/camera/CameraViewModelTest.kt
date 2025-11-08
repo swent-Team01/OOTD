@@ -375,7 +375,7 @@ class CameraViewModelTest {
     val mockContext = mockk<Context>()
     val mockImageCapture = mockk<ImageCapture>()
     every { mockRepository.capturePhoto(mockContext, mockImageCapture, any(), any(), any()) }
-        .answers { /* Do nothing */}
+        .answers { /* Do nothing */ }
     viewModel.capturePhoto(mockContext, mockImageCapture) {}
     // Initially should be true (set by capturePhoto)
     // Then will be false after completion
