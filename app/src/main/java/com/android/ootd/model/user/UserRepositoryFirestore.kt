@@ -157,7 +157,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun editUser(userID: String, newUsername: String, profilePicture: String) {
     try {
-      if (userID.isBlank()) throw IllegalArgumentException(ERROR_USER_ID_BLANK)
+      require(!(userID.isBlank())) { ERROR_USER_ID_BLANK }
       val user = getUser(userID)
 
       val isNewUsername = user.username != newUsername && newUsername.isNotBlank()
@@ -193,7 +193,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun deleteUser(userID: String) {
     try {
       // Validate input
-      if (userID.isBlank()) throw IllegalArgumentException(ERROR_USER_ID_BLANK)
+      require(!(userID.isBlank())) { ERROR_USER_ID_BLANK }
       getUser(userID)
       db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
 

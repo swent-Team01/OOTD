@@ -40,23 +40,23 @@ class NavigationTest {
     NavHost(navController = navController, startDestination = Screen.Splash.route) {
       // Match MainActivity structure with navigation() instead of composable()
       navigation(startDestination = Screen.Splash.route, route = Screen.Splash.name) {
-        composable(Screen.Splash.route) { /* minimal screen */}
-        composable(Screen.RegisterUsername.route) { /* minimal screen */}
+        composable(Screen.Splash.route) { /* minimal screen */ }
+        composable(Screen.RegisterUsername.route) { /* minimal screen */ }
       }
 
       navigation(
           startDestination = Screen.Authentication.route, route = Screen.Authentication.name) {
-            composable(Screen.Authentication.route) { /* minimal screen */}
+            composable(Screen.Authentication.route) { /* minimal screen */ }
           }
 
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
-        composable(Screen.Feed.route) { /* minimal screen */}
-        composable(Screen.Account.route) { /* minimal screen */}
+        composable(Screen.Feed.route) { /* minimal screen */ }
+        composable(Screen.Account.route) { /* minimal screen */ }
         composable(Screen.Map.route) { MapScreen(onBack = { navigation.goBack() }) }
-        composable(Screen.FitCheck.route) { /* minimal screen */}
-        composable(Screen.PreviewItemScreen.route) { /* minimal screen */}
-        composable(Screen.AddItemScreen.route) { /* minimal screen */}
-        composable(Screen.EditItem.route) { /* minimal screen */}
+        composable(Screen.FitCheck.route) { /* minimal screen */ }
+        composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
+        composable(Screen.AddItemScreen.route) { /* minimal screen */ }
+        composable(Screen.EditItem.route) { /* minimal screen */ }
       }
     }
   }
