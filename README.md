@@ -90,3 +90,8 @@ cd OOTD
 | Meric  Julien        | [@j-meric](https://github.com/j-meric)           |
 | Pitu  Bianca         | [@bbianca2004](https://github.com/bbianca2004)   |
 | Ünlüer Aslı          | [@asunluer](https://github.com/asunluer)         |
+
+## Our Sponsors
+
+# <img src="img/blacksmith-logo.svg" alt="Blacksmith Logo" width="408" height="96">
+Thank you to [Blacksmith](https://www.blacksmith.sh) for providing us with faster CPUs to run our CI.
