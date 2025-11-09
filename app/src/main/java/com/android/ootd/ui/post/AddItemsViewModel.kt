@@ -185,9 +185,11 @@ open class AddItemsViewModel(
         // Add item to user's inventory
         val addedToInventory = accountRepository.addItem(itemUuid)
         if (!addedToInventory) {
-          // Log warning but don't fail the operation
-          // The item was created successfully, just not added to inventory
-          setErrorMsg("Item created but not added to inventory !")
+          repository.deleteItem(itemUuid)
+          FirebaseImageUploader.deleteImage(uploadedImage.imageId)
+          setErrorMsg("Failed to add item to inventory. Please try again.")
+          _addOnSuccess.value = false
+          return@launch
         }
 
         _addOnSuccess.value = true

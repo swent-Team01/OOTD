@@ -199,13 +199,14 @@ open class EditItemsViewModel(
 
     viewModelScope.launch {
       try {
-        repository.deleteItem(state.itemId)
-
         // Remove item from user's inventory
         val removedFromInventory = accountRepository.removeItem(state.itemId)
         if (!removedFromInventory) {
-          Log.w("EditItemsViewModel", "Item deleted but not removed from inventory.")
+          setErrorMsg("Failed to remove item from inventory. Please try again.")
+          return@launch
         }
+
+        repository.deleteItem(state.itemId)
 
         val deleted = FirebaseImageUploader.deleteImage(state.image.imageId)
         if (!deleted) {
