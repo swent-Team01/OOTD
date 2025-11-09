@@ -93,5 +93,5 @@ cd OOTD
 
 ## Our Sponsors
 
-# <img src="blacksmith-logo.svg" alt="Blacksmith Logo" width="408" height="96">
-Thank you to [Blacksmith](https://www.blacksmith.sh) to provide us with faster CPUs to run the CIs
+# <img src="img/blacksmith-logo.svg" alt="Blacksmith Logo" width="408" height="96">
+Thank you to [Blacksmith](https://www.blacksmith.sh) for providing us with faster CPUs to run our CI.
