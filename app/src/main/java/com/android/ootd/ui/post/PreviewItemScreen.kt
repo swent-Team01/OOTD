@@ -155,19 +155,17 @@ fun PreviewItemScreen(
               modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
               horizontalArrangement = Arrangement.SpaceEvenly,
               verticalAlignment = Alignment.CenterVertically) {
-                if (itemsList.isNotEmpty()) {
-                  Button(
-                      onClick = { outfitPreviewViewModel.publishPost() },
-                      modifier =
-                          Modifier.height(47.dp)
-                              .width(140.dp)
-                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                        Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Post", color = White)
-                      }
-                }
+                Button(
+                    onClick = { outfitPreviewViewModel.publishPost() },
+                    modifier =
+                        Modifier.height(47.dp)
+                            .width(140.dp)
+                            .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                      Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                      Spacer(Modifier.width(8.dp))
+                      Text("Post", color = White)
+                    }
 
                 Button(
                     onClick = { onAddItem(uiState.postUuid) },

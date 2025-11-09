@@ -58,4 +58,21 @@ interface CameraRepository {
    *   seconds
    */
   suspend fun getCameraProvider(context: Context): ProcessCameraProvider
+
+  /**
+   * Cleans up old cached images from the cache directory.
+   *
+   * @param context The context for accessing the cache directory
+   * @param olderThanHours Maximum age of files to keep in hours (default: 24 hours)
+   */
+  fun cleanupOldCachedImages(context: Context, olderThanHours: Int = 24)
+
+  /**
+   * Deletes a specific cached image file.
+   *
+   * @param context The context for accessing the file system
+   * @param imageUri The URI of the image to delete
+   * @return true if the file was successfully deleted, false otherwise
+   */
+  fun deleteCachedImage(context: Context, imageUri: Uri): Boolean
 }

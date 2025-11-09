@@ -5,7 +5,7 @@ exifinterface = "1.4.1"
 firebaseBom = "34.3.0"
 kotlin = "2.1.10"
 coreKtx = "1.12.0"
-ktfmt = "0.17.0"
+ktfmt = "0.25.0"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
@@ -41,7 +41,7 @@ mapsComposeUtils = "4.3.0"
 okhttp = "4.12.0"
 
 # CameraX
-camerax = "1.4.0"
+camerax = "1.5.1"
 
 # Accompanist (for permissions)
 accompanist = "0.34.0"
