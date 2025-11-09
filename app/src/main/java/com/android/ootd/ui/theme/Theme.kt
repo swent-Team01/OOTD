@@ -27,7 +27,6 @@ val LightColorScheme =
 fun OOTDTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
   // Remove dark color scheme so we do not have to define default values
