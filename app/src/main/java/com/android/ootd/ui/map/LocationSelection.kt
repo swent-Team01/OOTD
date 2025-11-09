@@ -135,7 +135,8 @@ fun LocationSelectionSection(
                     }
                   },
           singleLine = true,
-          isError = isError)
+          isError = isError,
+          readOnly = selectedLocation != null && selectedLocation.name.isNotEmpty())
 
       // Dropdown menu for location suggestions
       DropdownMenu(
