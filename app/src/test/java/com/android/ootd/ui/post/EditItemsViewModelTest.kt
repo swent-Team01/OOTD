@@ -451,6 +451,7 @@ class EditItemsViewModelTest {
 
   @Test
   fun `deleteItem handles exception`() = runTest {
+    coEvery { mockAccountRepository.removeItem(any()) } returns true
     coEvery { mockRepository.deleteItem(any()) } throws Exception("Delete failed")
 
     viewModel.loadItem(
@@ -473,6 +474,34 @@ class EditItemsViewModelTest {
     assertEquals("Failed to delete item: Delete failed", state.errorMessage)
     assertFalse(state.isDeleteSuccessful)
     assertNotNull(state.errorMessage)
+  }
+
+  @Test
+  fun `deleteItem fails when removing from inventory fails`() = runTest {
+    coEvery { mockAccountRepository.removeItem(any()) } returns false
+
+    viewModel.loadItem(
+        Item(
+            itemUuid = "test-id",
+            postUuids = listOf("test_post_uuid"),
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
+            category = "Clothing",
+            type = null,
+            brand = null,
+            price = null,
+            material = emptyList(),
+            link = null,
+            ownerId = "ownerId"))
+
+    viewModel.deleteItem()
+
+    advanceUntilIdle()
+
+    // Verify the operation failed and didn't proceed to delete the item
+    val state = viewModel.uiState.value
+    assertEquals("Failed to remove item from inventory. Please try again.", state.errorMessage)
+    assertFalse(state.isDeleteSuccessful)
+    coVerify(exactly = 0) { mockRepository.deleteItem(any()) }
   }
 
   @Test

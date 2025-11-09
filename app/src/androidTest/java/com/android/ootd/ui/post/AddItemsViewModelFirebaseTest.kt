@@ -3,9 +3,12 @@ package com.android.ootd.ui.post
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ItemsRepositoryFirestore
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
+import io.mockk.coEvery
+import io.mockk.mockk
 import java.io.File
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
@@ -20,12 +23,16 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   private lateinit var viewModel: AddItemsViewModel
   private lateinit var repository: ItemsRepositoryFirestore
+  private lateinit var mockAccountRepository: AccountRepository
 
   @Before
   override fun setUp() {
     super.setUp()
     repository = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
-    viewModel = AddItemsViewModel(repository)
+    mockAccountRepository = mockk(relaxed = true)
+    // Mock successful inventory operations by default
+    coEvery { mockAccountRepository.addItem(any()) } returns true
+    viewModel = AddItemsViewModel(repository, mockAccountRepository)
   }
 
   private fun createTempImageFile(): File {
