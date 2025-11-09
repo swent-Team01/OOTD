@@ -3,14 +3,16 @@ package com.android.ootd.ui.post
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.android.ootd.model.user.UserRepository
+import com.android.ootd.model.user.UserRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +44,9 @@ data class PreviewUIState(
  */
 class OutfitPreviewViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
-    private val postRepository: OutfitPostRepository = OutfitPostRepositoryProvider.repository
+    private val postRepository: OutfitPostRepository = OutfitPostRepositoryProvider.repository,
+    private val userRepository: UserRepository = UserRepositoryProvider.repository,
+    private val accountService: AccountService = AccountServiceFirebase()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(PreviewUIState())
@@ -98,7 +102,10 @@ class OutfitPreviewViewModel(
     viewModelScope.launch {
       _uiState.value = state.copy(isLoading = true)
       try {
-        val user = Firebase.auth.currentUser ?: throw Exception("User not logged in")
+        // Fetch current user id
+        val currentUserId = accountService.currentUserId
+        // Fetch user data
+        val user = userRepository.getUser(currentUserId)
 
         // Upload main outfit image
         val outfitPhotoUrl =
@@ -113,8 +120,8 @@ class OutfitPreviewViewModel(
             OutfitPost(
                 postUID = state.postUuid,
                 ownerId = user.uid,
-                name = user.displayName ?: "",
-                userProfilePicURL = user.photoUrl?.toString() ?: "",
+                name = user.username,
+                userProfilePicURL = user.profilePicture,
                 outfitURL = outfitPhotoUrl,
                 description = state.description,
                 itemsID = itemIds,

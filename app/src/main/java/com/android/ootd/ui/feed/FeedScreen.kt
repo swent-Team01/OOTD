@@ -106,7 +106,7 @@ fun FeedScreen(
               // Renders the list of posts when user has posted.
               FeedList(isBlurred = !hasPostedToday, posts = posts)
 
-              if (!hasPostedToday) {
+              if (!hasPostedToday && posts.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
                     contentAlignment = Alignment.Center) {
