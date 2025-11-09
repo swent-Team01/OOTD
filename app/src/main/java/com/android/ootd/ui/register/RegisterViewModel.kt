@@ -290,4 +290,25 @@ class RegisterViewModel(
   fun isLoadingLocations(): Boolean {
     return uiState.value.locationSuggestions.isEmpty() && uiState.value.locationQuery.isNotEmpty()
   }
+
+  /**
+   * Called when location permission is granted by the user. This can be used to trigger GPS
+   * location retrieval.
+   */
+  fun onLocationPermissionGranted() {
+    // TODO: Implement GPS location retrieval
+    // For now, just log that permission was granted
+    Log.d("RegisterViewModel", "Location permission granted")
+  }
+
+  /**
+   * Called when location permission is denied by the user. Shows an error message to inform the
+   * user they need to search manually.
+   */
+  fun onLocationPermissionDenied() {
+    Log.d("RegisterViewModel", "Location permission denied")
+    emitError(
+        "Location permission denied. Please search for your location manually if you want" +
+            "to add your location.")
+  }
 }

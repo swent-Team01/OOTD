@@ -1,5 +1,8 @@
 package com.android.ootd.ui.register
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -86,11 +90,23 @@ private val SPACER = 16.dp
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
   val registerUiState by viewModel.uiState.collectAsState()
+  val context = LocalContext.current
 
   val usernameField = rememberFieldState()
   val dateField = rememberFieldState()
   val locationField = rememberFieldState()
   var showDatePicker by remember { mutableStateOf(false) }
+
+  val locationPermissionLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.RequestPermission(),
+          onResult = { isGranted ->
+            if (isGranted) {
+              viewModel.onLocationPermissionGranted()
+            } else {
+              viewModel.onLocationPermissionDenied()
+            }
+          })
 
   val usernameError = usernameField.left.value && registerUiState.username.isBlank()
   val dateError = dateField.left.value && registerUiState.dateOfBirth.isBlank()
@@ -158,7 +174,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               registerUiState = registerUiState,
               viewModel = viewModel,
               fieldState = locationField,
-              isError = locationError)
+              isError = locationError,
+              onGPSClick = {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+              })
 
           Spacer(modifier = Modifier.height(SPACER))
 
