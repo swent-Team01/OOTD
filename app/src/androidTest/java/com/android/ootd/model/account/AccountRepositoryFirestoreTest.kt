@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
 import com.android.ootd.utils.FirebaseEmulator
@@ -381,7 +382,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun deleteProfilePicture_throwsIfInvalidUserID() = runTest {
-    expectThrows<IllegalArgumentException> { accountRepository.deleteProfilePicture("") }
+    expectThrows<BlankUserID> { accountRepository.deleteProfilePicture("") }
     accountRepository.addAccount(account1)
     expectThrows<UnknowUserID> { accountRepository.deleteProfilePicture(account2.uid) } // Wrong uid
   }

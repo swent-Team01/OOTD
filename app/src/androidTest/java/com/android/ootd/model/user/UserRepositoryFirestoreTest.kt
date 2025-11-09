@@ -181,7 +181,7 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
   @Test
   fun deleteProfilePicture_throwsOnInvalidInput() = runTest {
     val blankId = runCatching { userRepository.deleteProfilePicture("") }.exceptionOrNull()
-    assert(blankId is IllegalArgumentException)
+    assert(blankId is BlankUserID)
 
     val notFound =
         runCatching { userRepository.deleteProfilePicture("nonExistent") }.exceptionOrNull()

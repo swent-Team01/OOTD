@@ -83,7 +83,7 @@ interface UserRepository {
    * operation completes successfully without any changes.
    *
    * @param userID The ID of the user whose profile picture should be deleted
-   * @throws NoSuchElementException if account is not found
+   * @throws BlankUserID if the userID is blank
    */
   suspend fun deleteProfilePicture(userID: String)
 }
