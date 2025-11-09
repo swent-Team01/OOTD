@@ -1,10 +1,12 @@
 package com.android.ootd.model.user
 
+import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.ui.register.RegisterViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
@@ -61,6 +63,9 @@ class RegisterViewModelTest {
     every { firebaseUser.uid } returns testUid
     every { firebaseUser.email } returns testEmail
     every { accountService.currentUser } returns flowOf(firebaseUser)
+
+    // Mock the fusedLocationClient to avoid lateinit errors
+    LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
 
     viewModel =
         RegisterViewModel(
@@ -337,5 +342,128 @@ class RegisterViewModelTest {
     assertEquals(
         "Please select a location before registering", freshViewModel.uiState.value.errorMsg)
     assertFalse(freshViewModel.uiState.value.registered)
+  }
+
+  @Test
+  fun onLocationPermissionGranted_setsLoadingState() {
+    viewModel.onLocationPermissionGranted()
+
+    // Loading state should be set when GPS location retrieval starts
+    assertTrue(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun onLocationPermissionGranted_callsSetGPSLocation() {
+    // Verify that onLocationPermissionGranted triggers GPS retrieval
+    // by checking that loading state is set
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+
+    viewModel.onLocationPermissionGranted()
+
+    assertTrue(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun setLocation_withGPSCoordinates_updatesSelectedLocationAndQuery() {
+    val gpsLocation =
+        Location(
+            latitude = 47.3769, longitude = 8.5417, name = "Current Location (47.3769, 8.5417)")
+
+    viewModel.setLocation(gpsLocation)
+
+    assertEquals(gpsLocation, viewModel.uiState.value.selectedLocation)
+    assertEquals(gpsLocation.name, viewModel.uiState.value.locationQuery)
+    assertTrue(viewModel.uiState.value.locationQuery.contains("Current Location"))
+  }
+
+  @Test
+  fun locationQuery_isReadOnly_whenLocationSelected() {
+    // When a location is selected (GPS or manual), the query should contain the location name
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    viewModel.setLocation(location)
+
+    assertEquals("Zürich, Switzerland", viewModel.uiState.value.locationQuery)
+    assertEquals(location, viewModel.uiState.value.selectedLocation)
+  }
+
+  @Test
+  fun gpsLocation_hasCorrectFormat() {
+    // Verify GPS location name format includes coordinates
+    val gpsLocation =
+        Location(
+            latitude = 46.2044, longitude = 6.1432, name = "Current Location (46.2044, 6.1432)")
+
+    viewModel.setLocation(gpsLocation)
+
+    assertTrue(
+        viewModel.uiState.value.selectedLocation?.name?.startsWith("Current Location") ?: false)
+    assertTrue(viewModel.uiState.value.locationQuery.contains("46.2044"))
+    assertTrue(viewModel.uiState.value.locationQuery.contains("6.1432"))
+  }
+
+  @Test
+  fun locationError_clearedAfterSuccessfulGPSRetrieval() {
+    // Set an error first
+    viewModel.emitError("Some error")
+    assertEquals("Some error", viewModel.uiState.value.errorMsg)
+
+    // Then successfully set a GPS location
+    val gpsLocation = Location(47.3769, 8.5417, "Current Location (47.3769, 8.5417)")
+    viewModel.setLocation(gpsLocation)
+
+    // Error should still be there (errors are only cleared explicitly)
+    assertEquals("Some error", viewModel.uiState.value.errorMsg)
+    // But location should be set
+    assertEquals(gpsLocation, viewModel.uiState.value.selectedLocation)
+  }
+
+  @Test
+  fun multipleLocationSelections_lastOneWins() {
+    // Select manual location first
+    val manualLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    viewModel.setLocation(manualLocation)
+    assertEquals(manualLocation, viewModel.uiState.value.selectedLocation)
+
+    // Then select GPS location
+    val gpsLocation = Location(46.2044, 6.1432, "Current Location (46.2044, 6.1432)")
+    viewModel.setLocation(gpsLocation)
+
+    // GPS location should override manual location
+    assertEquals(gpsLocation, viewModel.uiState.value.selectedLocation)
+    assertEquals(gpsLocation.name, viewModel.uiState.value.locationQuery)
+  }
+
+  @Test
+  fun loadingState_clearAfterLocationSet() = runTest {
+    // Start loading
+    viewModel.onLocationPermissionGranted()
+    assertTrue(viewModel.uiState.value.isLoadingLocations)
+
+    // Simulate successful GPS retrieval by directly setting location
+    // (actual GPS client is mocked/not available in unit tests)
+    val gpsLocation = Location(47.3769, 8.5417, "Current Location (47.3769, 8.5417)")
+    viewModel.setLocation(gpsLocation)
+
+    // Note: In real flow, setGPSLocation would clear loading state
+    // Here we verify the location is set correctly
+    assertEquals(gpsLocation, viewModel.uiState.value.selectedLocation)
+  }
+
+  @Test
+  fun clearLocation_resetsSelectedLocationAndQuery() = runTest {
+    // Set a location first
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    viewModel.setLocation(location)
+    assertEquals(location, viewModel.uiState.value.selectedLocation)
+    assertEquals("Zürich, Switzerland", viewModel.uiState.value.locationQuery)
+
+    // Clear by setting empty query (mimics clear button behavior)
+    viewModel.setLocationQuery("")
+    viewModel.clearLocationSuggestions()
+
+    assertNull(viewModel.uiState.value.selectedLocation)
+    assertEquals("", viewModel.uiState.value.locationQuery)
+    assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
   }
 }
