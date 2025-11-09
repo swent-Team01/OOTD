@@ -12,7 +12,6 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
-import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.theme.OOTDTheme

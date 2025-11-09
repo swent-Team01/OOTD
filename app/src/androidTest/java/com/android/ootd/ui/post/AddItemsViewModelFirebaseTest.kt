@@ -209,7 +209,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
     // Reset and add second item
     viewModel.resetAddSuccess()
-    val viewModel2 = AddItemsViewModel(repository)
+    val viewModel2 = AddItemsViewModel(repository, mockAccountRepository)
     viewModel2.initTypeSuggestions(context)
 
     val uri2 = createReadableUri()
