@@ -58,6 +58,7 @@ mockk = "1.14.6"
 mockkAgent = "1.14.6"
 datastoreCore = "1.1.7"
 firebaseStorageKtx = "22.0.1"
+playServicesLocation = "21.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -128,6 +129,7 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
 google-firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
@@ -48,6 +49,8 @@ import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import okhttp3.OkHttpClient
 
 /**
@@ -59,9 +62,19 @@ object HttpClientProvider {
   var client: OkHttpClient = OkHttpClient()
 }
 
+/**
+ * Provide a FusedLocationProviderClient for location services.
+ *
+ * Property `fusedLocationClient` is mutable for testing purposes.
+ */
+object LocationProvider {
+  lateinit var fusedLocationClient: FusedLocationProviderClient
+}
+
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     super.onCreate(savedInstanceState)
     setContent {
       OOTDTheme {
