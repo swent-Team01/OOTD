@@ -51,7 +51,7 @@ class SeeFitViewModelTest {
   private val testItem2 =
       Item(
           itemUuid = "item2",
-          postUuids = listOf("post1"),
+          postUuids = listOf("post1", "post2"),
           image = ImageData("img2", "https://example.com/img2.jpg"),
           category = "Shoes",
           type = "Sneakers",
