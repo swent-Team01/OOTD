@@ -40,14 +40,6 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Decode signing and optional files
-        shell: bash
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          bash .github/scripts/setup-android-signing.sh
-          echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/.ci-secrets/release.keystore" >> $GITHUB_ENV
-
       - name: Decode secrets for FireBase
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
