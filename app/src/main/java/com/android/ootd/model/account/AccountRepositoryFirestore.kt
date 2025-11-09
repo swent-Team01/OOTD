@@ -2,6 +2,7 @@ package com.android.ootd.model.account
 
 import android.util.Log
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
 import com.google.firebase.firestore.DocumentSnapshot
@@ -135,26 +136,28 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
-  override suspend fun getAccount(userId: String): Account {
+  override suspend fun getAccount(userID: String): Account {
     return try {
-      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
+      if (userID.isBlank()) throw BlankUserID()
+      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
 
       if (!document.exists()) {
-        throw NoSuchElementException("Account with ID $userId not found")
+        throw NoSuchElementException("Account with ID $userID not found")
       }
 
       transformAccountDocument(document)
-          ?: throw IllegalStateException("Failed to transform document with ID $userId")
+          ?: throw IllegalStateException("Failed to transform document with ID $userID")
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error getting account $userId: ${e.message}", e)
+      Log.e("AccountRepositoryFirestore", "Error getting account $userID: ${e.message}", e)
       throw e
     }
   }
 
-  override suspend fun accountExists(userId: String): Boolean {
+  override suspend fun accountExists(userID: String): Boolean {
     return try {
+      if (userID.isBlank()) throw BlankUserID()
       // Here we need to check with the user collection where we look
-      val accountDocument = db.collection(USER_COLLECTION_PATH).document(userId).get().await()
+      val accountDocument = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!accountDocument.exists()) {
         false
@@ -190,6 +193,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addFriend(userID: String, friendID: String): Boolean {
     try {
+      if (userID.isBlank()) throw BlankUserID()
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
       if (!friendUserDoc.exists()) {
@@ -229,6 +233,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun removeFriend(userID: String, friendID: String) {
     try {
+      if (userID.isBlank()) throw BlankUserID()
       // Check if the friend exists in the public User collection
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
@@ -261,6 +266,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
+    if (userID.isBlank()) throw BlankUserID()
     val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
 
     if (!document.exists()) {
@@ -273,6 +279,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   }
 
   override suspend fun togglePrivacy(userID: String): Boolean {
+    if (userID.isBlank()) throw BlankUserID()
     val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
 
     if (!document.exists()) {
@@ -294,6 +301,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun deleteAccount(userID: String) {
     try {
+      if (userID.isBlank()) throw BlankUserID()
       getAccount(userID)
 
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
@@ -313,6 +321,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       picture: String
   ) {
     try {
+      if (userID.isBlank()) throw BlankUserID()
       val user = getAccount(userID)
 
       val isNewUsername = username != user.username && username.isNotBlank()
@@ -353,7 +362,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun deleteProfilePicture(userID: String) {
     try {
-      if (userID.isBlank()) throw IllegalArgumentException("Invalid userId")
+      if (userID.isBlank()) throw BlankUserID()
       getAccount(userID)
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).update(mapOf("profilePicture" to ""))
     } catch (e: NoSuchElementException) {

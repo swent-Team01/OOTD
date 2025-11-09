@@ -13,6 +13,8 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
+class BlankUserID : Exception("UserID cannot be blank")
+
 @Keep
 private data class UserDto(
     val uid: String = "",
@@ -78,6 +80,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       profilePicture: String
   ) {
 
+    if (uid.isBlank()) throw BlankUserID()
     if (usernameExists(username)) {
       Log.e("UserRepositoryFirestore", "Username already in use")
       throw TakenUsernameException("Username already in use")
@@ -105,6 +108,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun getUser(userID: String): User {
     return try {
+      if (userID.isBlank()) throw BlankUserID()
       val userDoc = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!userDoc.exists()) {
@@ -121,6 +125,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun userExists(userID: String): Boolean {
     return try {
+      if (userID.isBlank()) throw BlankUserID()
       val querySnapshot = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!querySnapshot.exists()) {
@@ -152,7 +157,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun editUser(userID: String, newUsername: String, profilePicture: String) {
     try {
-      if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
+      if (userID.isBlank()) throw BlankUserID()
       val user = getUser(userID)
 
       val isNewUsername = user.username != newUsername && newUsername.isNotBlank()
@@ -188,7 +193,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   }
 
   override suspend fun deleteProfilePicture(userID: String) {
-    if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
+    if (userID.isBlank()) throw BlankUserID()
     try {
       getUser(userID)
       db.collection(USER_COLLECTION_PATH).document(userID).update(mapOf("profilePicture" to ""))
@@ -204,7 +209,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
   override suspend fun deleteUser(userID: String) {
     try {
       // Validate input
-      if (userID.isBlank()) throw IllegalArgumentException("UserID cannot be blank")
+      if (userID.isBlank()) throw BlankUserID()
       getUser(userID)
       db.collection(USER_COLLECTION_PATH).document(userID).delete().await()
 

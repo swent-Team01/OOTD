@@ -26,10 +26,10 @@ interface AccountRepository {
    *
    * @throws NoSuchElementException if account is not found
    */
-  suspend fun getAccount(userId: String): Account
+  suspend fun getAccount(userID: String): Account
 
-  /** Returns true if an account with [userId] exists and has a non-blank username. */
-  suspend fun accountExists(userId: String): Boolean
+  /** Returns true if an account with [userID] exists and has a non-blank username. */
+  suspend fun accountExists(userID: String): Boolean
 
   /**
    * Add [friendID] to the friend list of [userID].
