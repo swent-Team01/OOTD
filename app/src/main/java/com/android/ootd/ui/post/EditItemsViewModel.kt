@@ -192,6 +192,11 @@ open class EditItemsViewModel(
     }
   }
 
+  /**
+   * Sets the category in the UI state.
+   *
+   * @param category The category name.
+   */
   fun setCategory(category: String) {
     _uiState.value =
         _uiState.value.copy(
@@ -199,6 +204,11 @@ open class EditItemsViewModel(
             invalidCategory = if (category.isEmpty()) "Please select a category." else null)
   }
 
+  /**
+   * Sets the price in the UI state.
+   *
+   * @param price The price value.
+   */
   fun setPrice(price: Double) {
     _uiState.value = _uiState.value.copy(price = price)
   }
