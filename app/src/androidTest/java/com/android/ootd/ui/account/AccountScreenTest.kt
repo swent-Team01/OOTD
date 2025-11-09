@@ -96,7 +96,7 @@ class AccountScreenTest {
     composeTestRule.waitForIdle()
   }
 
-  private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
+  private fun selectTestTag(tag: String) = composeTestRule.onNodeWithTag(tag)
 
   // --- Tests (fewer, but comprehensive) ---
 
@@ -106,24 +106,26 @@ class AccountScreenTest {
     setContent()
 
     // Core chrome
-    n(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
-    n(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
 
     // No photo -> letter avatar shown, image absent
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
 
     // Actions and fields
-    n(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed().assertTextContains("user1")
-    n(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed().assertTextContains("user1@google.com")
-    n(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed().assertTextContains("user1")
+    selectTestTag(UiTestTags.TAG_GOOGLE_FIELD)
+        .assertIsDisplayed()
+        .assertTextContains("user1@google.com")
+    selectTestTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
 
     // Read-only (not editing)
-    n(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    n(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
 
   @Test
@@ -140,7 +142,7 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
   }
 
   @Test
@@ -149,20 +151,20 @@ class AccountScreenTest {
     setContent()
 
     // Open edit
-    n(UiTestTags.TAG_USERNAME_EDIT).performClick()
-    n(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
     // Save without change -> stays editing (no-op)
-    n(UiTestTags.TAG_USERNAME_SAVE).performClick()
-    n(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
-    n(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
     // Cancel -> back to normal, original name remains
-    n(UiTestTags.TAG_USERNAME_CANCEL).performClick()
-    n(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
   }
 
   @Test
@@ -188,11 +190,11 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
-    n(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
   }
 
   @Test
@@ -201,7 +203,7 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent(onBack)
 
-    n(UiTestTags.TAG_ACCOUNT_BACK).performClick()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
     verify { onBack() }
   }
 
@@ -225,10 +227,12 @@ class AccountScreenTest {
     setContent()
 
     // Delete button should be visible when there's a profile picture
-    n(UiTestTags.TAG_ACCOUNT_DELETE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Edit").assertIsDisplayed()
 
     // Click delete button
-    n(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
     composeTestRule.waitForIdle()
 
     // Verify both repositories were called
@@ -237,12 +241,14 @@ class AccountScreenTest {
   }
 
   @Test
-  fun deleteProfilePicture_buttonHiddenWhenNoProfilePicture() {
+  fun deleteProfilePicture_buttonHiddenWhenNoProfilePictureAndShowsUpload() {
     // Account without profile picture (default setup)
     signIn(mockFirebaseUser)
     setContent()
 
     // Delete button should not exist when there's no profile picture
-    n(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
+    // Upload button should be shown instead of Edit
+    composeTestRule.onNodeWithText("Upload").assertIsDisplayed()
   }
 }

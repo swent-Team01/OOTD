@@ -151,6 +151,7 @@ private fun AccountScreenContent(
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
   var editedUsername by remember { mutableStateOf("") }
+  val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
 
   // Image picker launcher
   val imagePickerLauncher =
@@ -238,7 +239,10 @@ private fun AccountScreenContent(
                   shape = CircleShape,
                   colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
                   modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
-                    Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
+                    Text(
+                        text = editProfilePicture,
+                        color = colors.onPrimary,
+                        style = typography.titleLarge)
                   }
 
               Spacer(modifier = Modifier.width(16.dp))
