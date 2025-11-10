@@ -30,7 +30,7 @@ sealed class Tab(val name: String, val icon: ImageVector, val destination: Scree
 
   object Inventory : Tab("Inventory", Icons.AutoMirrored.Outlined.List, Screen.InventoryScreen)
 
-  object Account : Tab("Account", Icons.Outlined.Person, Screen.Account)
+  object Account : Tab("Account", Icons.Outlined.Person, Screen.ViewAcount)
 
   object Map : Tab("Map", Icons.Outlined.Place, Screen.Map)
 }

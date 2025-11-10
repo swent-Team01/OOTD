@@ -39,6 +39,9 @@ sealed class Screen(
 
   object Account : Screen(route = "account", name = "Account", isTopLevelDestination = false)
 
+  object ViewAcount :
+      Screen(route = "viewAccount", name = "View Account", isTopLevelDestination = true)
+
   data class FitCheck(val postUuid: String = "") :
       Screen(route = "fitCheck?postUuid=$postUuid", name = "FitCheck") {
     companion object {

@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
@@ -105,7 +106,7 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.Account.route,
+              Screen.ViewAcount.route,
               Screen.Map.route,
               Screen.NotificationsScreen.route)
 
@@ -192,6 +193,9 @@ fun OOTDApp(
                 }
                 composable(Screen.SearchScreen.route) {
                   UserSearchScreen(onBack = { navigationActions.goBack() })
+                }
+                composable(Screen.ViewAcount.route) {
+                  AccountPage(onEditAccount = { navigationActions.navigateTo(Screen.Account) })
                 }
                 composable(Screen.Account.route) {
                   AccountScreen(
