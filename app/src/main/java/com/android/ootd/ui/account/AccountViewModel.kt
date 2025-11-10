@@ -4,7 +4,9 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
+import android.Manifest
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.core.net.toUri
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -21,6 +23,7 @@ import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.android.ootd.utils.LocationUtils
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -367,6 +370,49 @@ class AccountViewModel(
   fun onLocationFieldFocusChanged(isFocused: Boolean) {
     if (!isFocused && _uiState.value.locationFieldTouched) {
       _uiState.update { it.copy(locationFieldLeft = true) }
+    }
+  }
+
+  /**
+   * Called when location permission is granted by the user. Initiates GPS location retrieval and
+   * updates the selected location.
+   */
+  @Suppress("MissingPermission") // Permission is checked by the caller (permission launcher)
+  fun onLocationPermissionGranted() {
+    Log.d("AccountViewModel", "Location permission granted")
+    setGPSLocation()
+  }
+
+  /**
+   * Retrieves the current GPS location and sets it as the selected location.
+   *
+   * Uses FusedLocationProviderClient to get the device's current location with balanced power
+   * accuracy. Handles both success and failure cases with appropriate user feedback.
+   */
+  @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+  private fun setGPSLocation() {
+    _uiState.update { it.copy(isLoadingLocations = true) }
+
+    LocationUtils.getCurrentGPSLocation(
+        onSuccess = { location ->
+          setLocation(location)
+          _uiState.update { it.copy(isLoadingLocations = false) }
+        },
+        onFailure = { errorMessage ->
+          _uiState.update { it.copy(errorMsg = errorMessage, isLoadingLocations = false) }
+        })
+  }
+
+  /**
+   * Called when location permission is denied by the user. Shows an error message to inform the
+   * user they need to search manually.
+   */
+  fun onLocationPermissionDenied() {
+    Log.d("AccountViewModel", "Location permission denied")
+    _uiState.update {
+      it.copy(
+          errorMsg =
+              "Location permission denied. Please search for your location manually if you want to add your location.")
     }
   }
 }

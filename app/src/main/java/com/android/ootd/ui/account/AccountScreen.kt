@@ -4,6 +4,7 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
+import android.Manifest
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -64,6 +65,7 @@ import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.LocationUtils
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -149,6 +151,18 @@ private fun AccountScreenContent(
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
+  // Location permission launcher
+  val locationPermissionLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.RequestPermission(),
+          onResult = { isGranted ->
+            if (isGranted) {
+              accountViewModel.onLocationPermissionGranted()
+            } else {
+              accountViewModel.onLocationPermissionDenied()
+            }
+          })
+
   var editedUsername by remember { mutableStateOf("") }
 
   // Image picker launcher
@@ -218,7 +232,16 @@ private fun AccountScreenContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         Box(modifier = contentModifier) {
-          LocationField(uiState = uiState, viewModel = accountViewModel)
+          LocationField(
+              uiState = uiState,
+              viewModel = accountViewModel,
+              onGPSClick = {
+                if (LocationUtils.hasLocationPermission(context)) {
+                  accountViewModel.onLocationPermissionGranted()
+                } else {
+                  locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                }
+              })
         }
 
         Box(modifier = contentModifier) {
@@ -247,7 +270,11 @@ private fun AccountScreenContent(
 }
 
 @Composable
-private fun LocationField(uiState: AccountViewState, viewModel: AccountViewModel) {
+private fun LocationField(
+    uiState: AccountViewState,
+    viewModel: AccountViewModel,
+    onGPSClick: () -> Unit = {}
+) {
   val hasLocationError =
       uiState.locationFieldTouched &&
           uiState.locationFieldLeft &&
@@ -263,7 +290,7 @@ private fun LocationField(uiState: AccountViewState, viewModel: AccountViewModel
       isLoadingLocation = uiState.isLoadingLocations,
       onLocationQueryChange = viewModel::setLocationQuery,
       onLocationSelect = viewModel::setLocation,
-      onGPSClick = { /* TODO: Implement GPS functionality */ },
+      onGPSClick = onGPSClick,
       onClearSuggestions = viewModel::clearLocationSuggestions,
       isError = hasLocationError,
       onFocusChanged = viewModel::onLocationFieldFocusChanged,
@@ -520,15 +547,19 @@ private fun PrivacyToggleRow(
   Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
-          text = "Account Privacy",
-          style = typography.titleLarge,
+          text = "Privacy",
+          style = typography.titleMedium,
           color = colors.primary,
-          modifier = Modifier.padding(start = 8.dp))
-      Spacer(modifier = Modifier.width(6.dp))
+          modifier = Modifier.padding(start = 4.dp))
+      Spacer(modifier = Modifier.width(2.dp))
       Box {
         IconButton(
-            onClick = onHelpClick, modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_ICON)) {
-              Icon(imageVector = Icons.Outlined.Info, contentDescription = "Privacy help")
+            onClick = onHelpClick,
+            modifier = Modifier.size(32.dp).testTag(UiTestTags.TAG_PRIVACY_HELP_ICON)) {
+              Icon(
+                  imageVector = Icons.Outlined.Info,
+                  contentDescription = "Privacy help",
+                  modifier = Modifier.size(20.dp))
             }
         DropdownMenu(expanded = showPrivacyHelp, onDismissRequest = onHelpDismiss) {
           DropdownMenuItem(
@@ -546,21 +577,24 @@ private fun PrivacyToggleRow(
 
     Spacer(modifier = Modifier.weight(1f))
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Text(
-          text = if (isPrivate) "Private" else "Public",
-          style = typography.bodySmall,
-          color = colors.onSurface.copy(alpha = 0.65f))
-      Switch(
-          checked = isPrivate,
-          onCheckedChange = { onToggle() },
-          colors =
-              SwitchDefaults.colors(
-                  checkedThumbColor = colors.onPrimary,
-                  checkedTrackColor = colors.primary,
-                  uncheckedThumbColor = colors.onPrimary,
-                  uncheckedTrackColor = colors.outlineVariant))
-    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+          Text(
+              text = if (isPrivate) "Private" else "Public",
+              style = typography.bodyMedium,
+              color = colors.onSurface)
+          Switch(
+              checked = isPrivate,
+              onCheckedChange = { onToggle() },
+              modifier = Modifier.height(32.dp),
+              colors =
+                  SwitchDefaults.colors(
+                      checkedThumbColor = colors.onPrimary,
+                      checkedTrackColor = colors.primary,
+                      uncheckedThumbColor = colors.onPrimary,
+                      uncheckedTrackColor = colors.outlineVariant))
+        }
   }
 }
 
