@@ -58,6 +58,7 @@ import okhttp3.OkHttpClient
 object HttpClientProvider {
   var client: OkHttpClient = OkHttpClient()
 }
+
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {

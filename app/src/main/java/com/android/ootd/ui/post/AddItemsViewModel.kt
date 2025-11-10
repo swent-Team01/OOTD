@@ -12,10 +12,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-// import com.google.firebase.storage.FirebaseStorage
 
 /**
  * UI state for the AddItems screen. This state holds the data needed to create a new Clothing item.
@@ -23,19 +20,19 @@ import kotlinx.coroutines.launch
 data class AddItemsUIState(
     val image: ImageData = ImageData(imageId = "", imageUrl = ""),
     val postUuid: String = "",
-    val localPhotoUri: Uri? = null, // temporary local URI for photo before upload
+    val localPhotoUri: Uri? = null,
     val category: String = "",
     val type: String = "",
     val brand: String = "",
     val price: String = "",
-    val material: List<Material> = emptyList(), // parsed user input for material field
+    val material: List<Material> = emptyList(),
     val link: String = "",
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
     val invalidCategory: String? = null,
     val typeSuggestion: List<String> = emptyList(),
     val categorySuggestion: List<String> = emptyList(),
-    val materialText: String = "", // raw user input for material field
+    val materialText: String = "",
     val isLoading: Boolean = false,
 ) {
   val isAddingValid: Boolean
@@ -72,8 +69,9 @@ open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
 ) : BaseItemViewModel<AddItemsUIState>() {
 
-  override val _uiState = MutableStateFlow(AddItemsUIState())
-  override val uiState: StateFlow<AddItemsUIState> = _uiState.asStateFlow()
+  // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
+  override fun initialState() = AddItemsUIState()
+
   private val _addOnSuccess = MutableStateFlow(false)
   val addOnSuccess: StateFlow<Boolean> = _addOnSuccess
 
@@ -81,42 +79,35 @@ open class AddItemsViewModel(
     _addOnSuccess.value = false
   }
 
-  override fun updateType(state: AddItemsUIState, type: String): AddItemsUIState =
-      state.copy(type = type)
+  override fun updateType(state: AddItemsUIState, type: String) = state.copy(type = type)
 
-  override fun updateBrand(state: AddItemsUIState, brand: String): AddItemsUIState =
-      state.copy(brand = brand)
+  override fun updateBrand(state: AddItemsUIState, brand: String) = state.copy(brand = brand)
 
-  override fun updateLink(state: AddItemsUIState, link: String): AddItemsUIState =
-      state.copy(link = link)
+  override fun updateLink(state: AddItemsUIState, link: String) = state.copy(link = link)
 
   override fun updateMaterial(
       state: AddItemsUIState,
       materialText: String,
       materials: List<Material>
-  ): AddItemsUIState = state.copy(materialText = materialText, material = materials)
+  ) = state.copy(materialText = materialText, material = materials)
 
-  override fun getCategory(state: AddItemsUIState): String = state.category
+  override fun getCategory(state: AddItemsUIState) = state.category
 
-  override fun setErrorMessage(state: AddItemsUIState, message: String?): AddItemsUIState =
+  override fun setErrorMessage(state: AddItemsUIState, message: String?) =
       state.copy(errorMessage = message)
 
-  override fun updateTypeSuggestionsState(
-      state: AddItemsUIState,
-      suggestions: List<String>
-  ): AddItemsUIState = state.copy(typeSuggestion = suggestions)
+  override fun updateTypeSuggestionsState(state: AddItemsUIState, suggestions: List<String>) =
+      state.copy(typeSuggestion = suggestions)
 
-  override fun updateCategorySuggestionsState(
-      state: AddItemsUIState,
-      suggestions: List<String>
-  ): AddItemsUIState = state.copy(categorySuggestion = suggestions)
+  override fun updateCategorySuggestionsState(state: AddItemsUIState, suggestions: List<String>) =
+      state.copy(categorySuggestion = suggestions)
 
   override fun setPhotoState(
       state: AddItemsUIState,
       uri: Uri?,
       image: ImageData,
       invalidPhotoMsg: String?
-  ): AddItemsUIState =
+  ) =
       state.copy(
           localPhotoUri = uri,
           image = image,
@@ -139,11 +130,11 @@ open class AddItemsViewModel(
             state.invalidCategory != null -> "Please select a valid category."
             else -> "Some required fields are missing."
           }
-
       setErrorMsg(error)
       _addOnSuccess.value = false
       return
     }
+
     val ownerId = Firebase.auth.currentUser?.uid ?: ""
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
@@ -153,9 +144,8 @@ open class AddItemsViewModel(
         val uploadedImage =
             if (localUri != null) {
               FirebaseImageUploader.uploadImage(localUri, itemUuid)
-            } else {
-              ImageData("", "")
-            }
+            } else ImageData("", "")
+
         if (uploadedImage.imageUrl.isEmpty()) {
           setErrorMsg("Image upload failed. Please try again.")
           _addOnSuccess.value = false
@@ -165,9 +155,7 @@ open class AddItemsViewModel(
         val item =
             Item(
                 itemUuid = itemUuid,
-                postUuids =
-                    listOf(
-                        state.postUuid), // Add to a list since an item can belong to multiple posts
+                postUuids = listOf(state.postUuid),
                 image = uploadedImage,
                 category = state.category,
                 type = state.type,
@@ -202,8 +190,6 @@ open class AddItemsViewModel(
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()
     val trimmedCategory = category.trim()
-
-    // Normalize category for validation
     val normalized =
         when (trimmedCategory.lowercase()) {
           "clothes",
@@ -216,7 +202,6 @@ open class AddItemsViewModel(
           "accessory" -> "Accessories"
           else -> trimmedCategory
         }
-
     val isExactMatch = categories.any { it.equals(normalized, ignoreCase = true) }
     val isPotentialMatch = categories.any { it.lowercase().startsWith(trimmedCategory.lowercase()) }
 
@@ -240,8 +225,6 @@ open class AddItemsViewModel(
     val state = _uiState.value
     val categories = typeSuggestions.keys.toList()
     val trimmedCategory = state.category.trim()
-
-    // Normalize category for validation
     val normalized =
         when (trimmedCategory.lowercase()) {
           "clothes",
@@ -254,7 +237,6 @@ open class AddItemsViewModel(
           "accessory" -> "Accessories"
           else -> trimmedCategory
         }
-
     val error =
         when {
           trimmedCategory.isEmpty() -> null
@@ -262,7 +244,6 @@ open class AddItemsViewModel(
               "Please enter one of: Clothing, Accessories, Shoes, or Bags."
           else -> null
         }
-
     _uiState.value = state.copy(invalidCategory = error)
   }
 }

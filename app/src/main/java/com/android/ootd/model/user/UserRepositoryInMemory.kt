@@ -5,8 +5,7 @@ import java.util.UUID
 class UserRepositoryInMemory : UserRepository {
   var currentUser = "user1"
   val nameList =
-      listOf<String>(
-          "alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
+      listOf("alice_wonder", "bob_builder", "charlie_brown", "diana_prince", "edward_scissorhands")
   private val users =
       mutableMapOf(
           "user1" to
@@ -74,10 +73,10 @@ class UserRepositoryInMemory : UserRepository {
     val newPicture = profilePicture.takeIf { it.isNotBlank() } ?: currentUser.profilePicture
 
     // Only check for taken username if we're actually changing to a new non-blank username
-    if (newUsername.isNotBlank() && newUsername != currentUser.username) {
-      if (users.values.any { it.username == newUsername && it.uid != userID }) {
-        throw TakenUsernameException("Username already in use")
-      }
+    if (newUsername.isNotBlank() &&
+        newUsername != currentUser.username &&
+        users.values.any { it.username == newUsername && it.uid != userID }) {
+      throw TakenUsernameException("Username already in use")
     }
 
     users[userID] = currentUser.copy(username = newUname, profilePicture = newPicture)
@@ -85,7 +84,7 @@ class UserRepositoryInMemory : UserRepository {
 
   // replaces old "removeUser"
   override suspend fun deleteUser(userID: String) {
-    if (userID.isBlank()) throw IllegalArgumentException("User ID cannot be blank")
+    require(!(userID.isBlank())) { "User ID cannot be blank" }
     users.remove(userID)
   }
 }

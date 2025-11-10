@@ -45,12 +45,12 @@ object BetaConsentScreenTestTags {
  */
 @Composable
 fun BetaConsentScreen(
+    modifier: Modifier = Modifier,
     onAgree: () -> Unit = {},
     onDecline: () -> Unit = {},
     isLoading: Boolean = false,
     errorMessage: String? = null,
-    onErrorDismiss: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onErrorDismiss: () -> Unit = {}
 ) {
   var hasAgreed by remember { mutableStateOf(false) }
   val colors = MaterialTheme.colorScheme
@@ -356,12 +356,12 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun DataCollectionItem(
+    modifier: Modifier = Modifier,
     icon: String,
     title: String,
     description: String,
     bulletPoints: List<String>,
-    note: String? = null,
-    modifier: Modifier = Modifier
+    note: String? = null
 ) {
   Column(modifier = modifier) {
     Row(verticalAlignment = Alignment.CenterVertically) {
