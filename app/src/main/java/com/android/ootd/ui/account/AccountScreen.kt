@@ -198,7 +198,7 @@ private fun AccountScreenContent(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
               },
               accountViewModel,
-              context)
+              context = context)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -289,8 +289,8 @@ private fun AvatarSection(
     username: String,
     onEditClick: () -> Unit,
     accountViewModel: AccountViewModel,
-    context: Context = LocalContext.current,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    context: Context = LocalContext.current
 ) {
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
