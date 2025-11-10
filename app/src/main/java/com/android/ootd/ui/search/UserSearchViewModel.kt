@@ -39,6 +39,7 @@ class UserSearchViewModel(
         NotificationRepositoryProvider.repository,
     private val overrideUser: Boolean = false
 ) : ViewModel() {
+
   private val _uiState = MutableStateFlow(SearchUserUIState())
   val uiState: StateFlow<SearchUserUIState> = _uiState.asStateFlow()
 
@@ -59,6 +60,7 @@ class UserSearchViewModel(
             allUsers
                 .filter { it.username.startsWith(query, ignoreCase = true) }
                 .take(MAX_NUMBER_SUGGESTIONS)
+
         _uiState.value =
             _uiState.value.copy(
                 userSuggestions = suggestions, suggestionsExpanded = true, errorMessage = null)
@@ -71,10 +73,9 @@ class UserSearchViewModel(
   }
 
   fun selectUsername(user: User) {
-    val myUID = if (overrideUser) testingUsername else (Firebase.auth.currentUser?.uid ?: "")
-    if (myUID == "") {
-      throw IllegalStateException("The user is not authenticated")
-    }
+    val myUID = testingUsername.takeIf { overrideUser } ?: (Firebase.auth.currentUser?.uid ?: "")
+    check(myUID.isNotEmpty()) { "The user is not authenticated" }
+
     viewModelScope.launch {
       try {
         val isFollowed = accountRepository.isMyFriend(userID = myUID, friendID = user.uid)
@@ -128,42 +129,38 @@ class UserSearchViewModel(
     viewModelScope.launch {
       try {
         // OverrideUser is only used for the preview screen for easier testing
-        val myUID = if (overrideUser) testingUsername else (Firebase.auth.currentUser?.uid ?: "")
+        val myUID =
+            testingUsername.takeIf { overrideUser } ?: (Firebase.auth.currentUser?.uid ?: "")
+        check(myUID.isNotEmpty()) { "The user is not authenticated" }
 
-        if (myUID == "") {
-          throw IllegalStateException("The user is not authenticated")
-        }
-
-        if (_uiState.value.selectedUser == null) {
-          // This will not happen, there is already a check when building the UserProfileCard
-          // However, it is required by SonarCloud.
-          throw IllegalStateException("There is no selected user")
-        }
-
-        val friendID = _uiState.value.selectedUser?.uid ?: ""
+        val selected = checkNotNull(_uiState.value.selectedUser) { "There is no selected user" }
+        val friendID = selected.uid
 
         if (_uiState.value.isSelectedUserFollowed) {
-          // User is already followed, so unfollow
+          // Already followed → unfollow
           accountRepository.removeFriend(myUID, friendID)
           _uiState.value = _uiState.value.copy(isSelectedUserFollowed = false, errorMessage = null)
-        } else if (_uiState.value.hasRequestPending) {
-          // Request already sent do nothing.
-        } else {
-          // Send a new follow request notification
-          val notification =
-              Notification(
-                  uid =
-                      notificationRepository.getFollowNotificationId(
-                          senderId = myUID, receiverId = friendID),
-                  senderId = myUID,
-                  receiverId = friendID,
-                  type = NOTIFICATION_TYPE_FOLLOW_REQUEST,
-                  content = "wants to follow you")
-
-          notificationRepository.addNotification(notification)
-
-          _uiState.value = _uiState.value.copy(hasRequestPending = true, errorMessage = null)
+          return@launch
         }
+
+        if (_uiState.value.hasRequestPending) {
+          // Request already sent → no-op
+          return@launch
+        }
+
+        // Send a new follow request notification
+        val notification =
+            Notification(
+                uid =
+                    notificationRepository.getFollowNotificationId(
+                        senderId = myUID, receiverId = friendID),
+                senderId = myUID,
+                receiverId = friendID,
+                type = NOTIFICATION_TYPE_FOLLOW_REQUEST,
+                content = "wants to follow you")
+
+        notificationRepository.addNotification(notification)
+        _uiState.value = _uiState.value.copy(hasRequestPending = true, errorMessage = null)
       } catch (e: Exception) {
         Log.e("UserSearchViewModel", "Error in pressFollowButton: ${e.message}", e)
         _uiState.value =

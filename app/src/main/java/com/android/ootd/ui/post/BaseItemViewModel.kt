@@ -8,6 +8,7 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.utils.TypeSuggestionsLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Base ViewModel for item-related screens.
@@ -21,11 +22,14 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
 
   protected var typeSuggestions: Map<String, List<String>> = emptyMap()
 
-  /** The mutable state flow that subclasses should initialize. */
-  protected abstract val _uiState: MutableStateFlow<T>
+  /** Subclasses provide the initial UI state. */
+  protected abstract fun initialState(): T
 
-  /** The public state flow that exposes the UI state. */
-  abstract val uiState: StateFlow<T>
+  /** Mutable flow is internal; NOT exposed. */
+  protected val _uiState: MutableStateFlow<T> by lazy { MutableStateFlow(initialState()) }
+
+  /** Public read-only state. */
+  val uiState: StateFlow<T> = _uiState.asStateFlow()
 
   /**
    * Initializes the type suggestions from a YAML file.
@@ -43,27 +47,21 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    *
    * @param type The type name.
    */
-  fun setType(type: String) {
-    updateState { updateType(it, type) }
-  }
+  fun setType(type: String) = updateState { updateType(it, type) }
 
   /**
    * Sets the brand in the UI state.
    *
    * @param brand The brand name.
    */
-  fun setBrand(brand: String) {
-    updateState { updateBrand(it, brand) }
-  }
+  fun setBrand(brand: String) = updateState { updateBrand(it, brand) }
 
   /**
    * Sets the link in the UI state.
    *
    * @param link The URL link.
    */
-  fun setLink(link: String) {
-    updateState { updateLink(it, link) }
-  }
+  fun setLink(link: String) = updateState { updateLink(it, link) }
 
   /**
    * Parses material text input and updates the UI state.
@@ -71,14 +69,11 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    * @param material The material text (e.g., "Cotton 80%, Wool 20%").
    */
   fun setMaterial(material: String) {
-    // Parse text like "Cotton 80%, Wool 20%"
     val materials =
         material.split(",").mapNotNull { entry ->
           val parts = entry.trim().split(" ")
           if (parts.size == 2 && parts[1].endsWith("%")) {
-            val name = parts[0]
-            val percentage = parts[1].removeSuffix("%").toDoubleOrNull()
-            if (percentage != null) Material(name, percentage) else null
+            parts[1].removeSuffix("%").toDoubleOrNull()?.let { pct -> Material(parts[0], pct) }
           } else null
         }
     updateState { updateMaterial(it, material, materials) }
@@ -91,20 +86,16 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    */
   fun updateTypeSuggestions(input: String) {
     val currentCategory = getCategory(_uiState.value)
-
     val normalizedCategory = normalizeCategory(currentCategory).trim()
-
     val allSuggestions =
         typeSuggestions.entries
             .firstOrNull { it.key.equals(normalizedCategory, ignoreCase = true) }
-            ?.value ?: emptyList()
+            ?.value
+            .orEmpty()
 
     val filtered =
-        if (input.isBlank()) {
-          allSuggestions
-        } else {
-          allSuggestions.filter { it.startsWith(input, ignoreCase = true) }
-        }
+        if (input.isBlank()) allSuggestions
+        else allSuggestions.filter { it.startsWith(input, ignoreCase = true) }
 
     updateState { updateTypeSuggestionsState(it, filtered) }
   }
@@ -117,12 +108,8 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
   fun updateCategorySuggestions(input: String) {
     val categories = typeSuggestions.keys.toList()
     val filtered =
-        if (input.isBlank()) {
-          categories
-        } else {
-          categories.filter { it.startsWith(input, ignoreCase = true) }
-        }
-
+        if (input.isBlank()) categories
+        else categories.filter { it.startsWith(input, ignoreCase = true) }
     updateState { updateCategorySuggestionsState(it, filtered) }
   }
 
@@ -132,33 +119,27 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    * @param category The category to normalize.
    * @return The normalized category name.
    */
-  protected fun normalizeCategory(category: String): String {
-    return when (category.trim().lowercase()) {
-      "clothes",
-      "clothing" -> "Clothing"
-      "shoe",
-      "shoes" -> "Shoes"
-      "bag",
-      "bags" -> "Bags"
-      "accessory",
-      "accessories" -> "Accessories"
-      else -> category
-    }
-  }
+  protected fun normalizeCategory(category: String): String =
+      when (category.trim().lowercase()) {
+        "clothes",
+        "clothing" -> "Clothing"
+        "shoe",
+        "shoes" -> "Shoes"
+        "bag",
+        "bags" -> "Bags"
+        "accessory",
+        "accessories" -> "Accessories"
+        else -> category
+      }
 
-  /** Clears the error message in the UI state. */
-  fun clearErrorMsg() {
-    updateState { setErrorMessage(it, null) }
-  }
+  fun clearErrorMsg() = updateState { setErrorMessage(it, null) }
 
   /**
    * Sets the error message in the UI state.
    *
    * @param msg The error message to display.
    */
-  fun setErrorMsg(msg: String) {
-    updateState { setErrorMessage(it, msg) }
-  }
+  fun setErrorMsg(msg: String) = updateState { setErrorMessage(it, msg) }
 
   /**
    * Updates the UI state using a transformation function.

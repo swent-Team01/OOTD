@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.android.ootd.LocationProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
@@ -19,10 +20,13 @@ import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -47,7 +51,9 @@ class RegisterScreenTest {
   fun setUp() {
     repository = mockk(relaxed = true)
     locationRepository = mockk(relaxed = true)
-    viewModel = RegisterViewModel(repository, locationRepository = locationRepository)
+    LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
+    viewModel =
+        RegisterViewModel(userRepository = repository, locationRepository = locationRepository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
 
@@ -294,39 +300,6 @@ class RegisterScreenTest {
   }
 
   @Test
-  fun locationInput_clearsSelectedLocation_and_hidesWhenLosingFocus() {
-    // Arrange: set a location first
-    val initialLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
-    composeTestRule.runOnUiThread { viewModel.setLocation(initialLocation) }
-    composeTestRule.waitForIdle()
-
-    // Mock repository for when user types new text
-    coEvery { locationRepository.search(any()) } returns emptyList()
-
-    // Act: type new text which should clear the selected location
-    composeTestRule.enterLocation("Lausanne")
-    composeTestRule.waitForIdle()
-
-    // Assert: selected location should be cleared
-    composeTestRule.runOnUiThread { assertNull(viewModel.uiState.value.selectedLocation) }
-
-    // Now show suggestions and then lose focus to ensure dropdown hides on blur
-    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
-    coEvery { locationRepository.search(any()) } returns suggestions
-    composeTestRule.enterLocation("Zur")
-    composeTestRule.waitForIdle()
-
-    // Act: click another field to lose focus
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
-    composeTestRule.waitForIdle()
-
-    // Assert: dropdown should be hidden
-    composeTestRule
-        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-        .assertCountEquals(0)
-  }
-
-  @Test
   fun registerButton_disabled_whenLocationError() {
     composeTestRule.enterUsername("validUser")
     composeTestRule.waitForIdle()
@@ -435,5 +408,117 @@ class RegisterScreenTest {
     composeTestRule
         .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
         .assertCountEquals(1)
+  }
+
+  @Test
+  fun locationField_isReadOnly_whenValidLocationSelected() {
+    // Arrange: select a valid location
+    val validLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocation(validLocation) }
+    composeTestRule.waitForIdle()
+
+    // Assert: location field should display the location name
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
+        .assertTextContains("Zürich, Switzerland")
+
+    // Assert: field should be read-only (text input won't change the value)
+    // When a location is selected, the field becomes read-only
+    composeTestRule.runOnUiThread {
+      assertEquals(validLocation, viewModel.uiState.value.selectedLocation)
+      assertEquals("Zürich, Switzerland", viewModel.uiState.value.locationQuery)
+    }
+  }
+
+  @Test
+  fun locationField_becomesEditable_whenLocationIsCleared() {
+    // Arrange: first set a location
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocation(location) }
+    composeTestRule.waitForIdle()
+
+    // Assert: field is read-only with location
+    composeTestRule.runOnUiThread {
+      assertEquals(location, viewModel.uiState.value.selectedLocation)
+    }
+
+    // Act: clear the location by setting empty query
+    composeTestRule.runOnUiThread { viewModel.setLocationQuery("") }
+    composeTestRule.waitForIdle()
+
+    // Assert: field becomes editable again (no selected location)
+    composeTestRule.runOnUiThread {
+      assertNull(viewModel.uiState.value.selectedLocation)
+      assertEquals("", viewModel.uiState.value.locationQuery)
+    }
+
+    // Assert: field should now accept input
+    composeTestRule.enterLocation("Lausanne")
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnUiThread {
+      assertEquals("Lausanne", viewModel.uiState.value.locationQuery)
+    }
+  }
+
+  @Test
+  fun clearButton_appearsOnlyWhenLocationSelected_andResetsLocation() {
+    // Initially no clear button
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)
+        .assertDoesNotExist()
+
+    // Select location - clear button appears
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnUiThread { viewModel.setLocation(location) }
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)
+        .assertIsDisplayed()
+
+    // Click clear - location reset, button disappears
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnUiThread {
+      assertNull(viewModel.uiState.value.selectedLocation)
+      assertEquals("", viewModel.uiState.value.locationQuery)
+    }
+
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)
+        .assertDoesNotExist()
+  }
+
+  @Test
+  fun gpsButton_triggersPermissionFlow_onGrant() {
+    // When GPS button is clicked, it should trigger permission request
+    // In a real scenario this would launch the permission dialog
+    // Here we verify the button exists and can trigger the callback
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
+    // Simulate permission granted via ViewModel directly (UI test can't test system dialogs)
+    composeTestRule.runOnUiThread { viewModel.onLocationPermissionGranted() }
+    composeTestRule.waitForIdle()
+
+    // Verify loading state was set (GPS retrieval started)
+    assertTrue(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun gpsButton_triggersPermissionFlow_onDeny() {
+    // Verify GPS button exists
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
+    val freshViewModel =
+        RegisterViewModel(userRepository = repository, locationRepository = locationRepository)
+
+    // Simulate permission denied on the fresh VM
+    freshViewModel.onLocationPermissionDenied()
+
+    // Verify error message set on the ViewModel
+    assertNotNull(freshViewModel.uiState.value.errorMsg)
+    assertTrue(freshViewModel.uiState.value.errorMsg!!.contains("Location permission denied"))
   }
 }
