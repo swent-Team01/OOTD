@@ -244,6 +244,8 @@ private fun AccountScreenContent(
               })
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
         Box(modifier = contentModifier) {
           PrivacyToggleRow(
               isPrivate = uiState.isPrivate,

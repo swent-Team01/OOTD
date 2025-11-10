@@ -19,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -124,7 +125,9 @@ fun LocationSelectionSection(
               showDropdown = true
             }
           },
-          textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = Bodoni),
+          textStyle =
+              MaterialTheme.typography.bodyLarge.copy(
+                  fontFamily = Bodoni, color = MaterialTheme.colorScheme.primary),
           label = {
             Box(
                 modifier =
@@ -140,6 +143,11 @@ fun LocationSelectionSection(
           placeholder = {
             Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
           },
+          colors =
+              OutlinedTextFieldDefaults.colors(
+                  focusedTextColor = MaterialTheme.colorScheme.primary,
+                  unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                  cursorColor = MaterialTheme.colorScheme.primary),
           trailingIcon = {
             when {
               isLoadingLocation -> {
