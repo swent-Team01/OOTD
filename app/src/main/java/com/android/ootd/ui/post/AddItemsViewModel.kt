@@ -2,6 +2,8 @@ package com.android.ootd.ui.post
 
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -67,6 +69,7 @@ data class AddItemsUIState(
  */
 open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : BaseItemViewModel<AddItemsUIState>() {
 
   // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
@@ -165,8 +168,19 @@ open class AddItemsViewModel(
                 link = state.link,
                 ownerId = ownerId)
 
-        _addOnSuccess.value = true
         repository.addItem(item)
+
+        // Add item to user's inventory
+        val addedToInventory = accountRepository.addItem(itemUuid)
+        if (!addedToInventory) {
+          repository.deleteItem(itemUuid)
+          FirebaseImageUploader.deleteImage(uploadedImage.imageId)
+          setErrorMsg("Failed to add item to inventory. Please try again.")
+          _addOnSuccess.value = false
+          return@launch
+        }
+
+        _addOnSuccess.value = true
         clearErrorMsg()
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")

@@ -66,6 +66,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
         override suspend fun getItemById(uuid: String) = items.first()
 
+        override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+          return emptyList()
+        }
+
         override suspend fun addItem(item: Item) {}
 
         override suspend fun editItem(itemUUID: String, newItem: Item) {}
@@ -315,6 +319,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           }
 
           override suspend fun getItemById(uuid: String) = item()
+
+          override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+            return emptyList()
+          }
 
           override suspend fun addItem(item: Item) {}
 

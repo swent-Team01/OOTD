@@ -28,8 +28,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountScreen
-import com.android.ootd.ui.account.InventoryScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.consent.BetaConsentScreen
@@ -200,7 +200,9 @@ fun OOTDApp(
                 }
                 composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
 
-                composable(Screen.InventoryScreen.route) { InventoryScreen() }
+                composable(Screen.InventoryScreen.route) {
+                  InventoryScreen(navigationActions = navigationActions)
+                }
 
                 composable(
                     route = Screen.FitCheck.route,

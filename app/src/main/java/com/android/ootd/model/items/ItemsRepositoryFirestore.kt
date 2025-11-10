@@ -43,6 +43,25 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     return mapToItem(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
   }
 
+  override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+    if (uuids.isEmpty()) return emptyList()
+
+    val ownerId = Firebase.auth.currentUser?.uid ?: throw Exception(NOT_LOGGED_IN_EXCEPTION)
+
+    // Batch of 10 item for each querries
+    val items = mutableListOf<Item>()
+    uuids.chunked(10).forEach { batch ->
+      val snapshot =
+          db.collection(ITEMS_COLLECTION)
+              .whereIn("itemUuid", batch)
+              .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
+              .get()
+              .await()
+      items.addAll(snapshot.mapNotNull { mapToItem(it) })
+    }
+    return items
+  }
+
   override suspend fun addItem(item: Item) {
     db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
   }

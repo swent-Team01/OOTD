@@ -477,4 +477,95 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertEquals(newBirthday, updated.birthday)
     assertEquals(newPicture, updated.profilePicture)
   }
+
+  @Test
+  fun getItemsList_returnsEmptyListForNewAccount() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+
+    assertTrue(itemsList.isEmpty())
+  }
+
+  @Test
+  fun addItem_addsItemToInventory() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUid = "item123"
+    val result = accountRepository.addItem(itemUid)
+
+    assertTrue(result)
+    val itemsList = accountRepository.getItemsList(account1.uid)
+    assertEquals(1, itemsList.size)
+    assertTrue(itemsList.contains(itemUid))
+  }
+
+  @Test
+  fun addItem_preventsDuplicates() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUid = "item123"
+    accountRepository.addItem(itemUid)
+    accountRepository.addItem(itemUid) // Add same item again
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+    assertEquals(1, itemsList.size)
+  }
+
+  @Test
+  fun addItem_addsMultipleItems() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUids = listOf("item1", "item2", "item3")
+    itemUids.forEach { accountRepository.addItem(it) }
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+    assertEquals(3, itemsList.size)
+    itemUids.forEach { assertTrue(itemsList.contains(it)) }
+  }
+
+  @Test
+  fun removeItem_removesItemFromInventory() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUid = "item123"
+    accountRepository.addItem(itemUid)
+    assertEquals(1, accountRepository.getItemsList(account1.uid).size)
+
+    val result = accountRepository.removeItem(itemUid)
+
+    assertTrue(result)
+    val itemsList = accountRepository.getItemsList(account1.uid)
+    assertTrue(itemsList.isEmpty())
+  }
+
+  @Test
+  fun removeItem_handlesNonExistentItem() = runTest {
+    accountRepository.addAccount(account1)
+
+    val result = accountRepository.removeItem("nonExistent")
+
+    assertTrue(result) // Should return true even if item doesn't exist
+    assertTrue(accountRepository.getItemsList(account1.uid).isEmpty())
+  }
+
+  @Test
+  fun removeItem_removesOnlySpecifiedItem() = runTest {
+    accountRepository.addAccount(account1)
+
+    val item1 = "item1"
+    val item2 = "item2"
+    val item3 = "item3"
+    accountRepository.addItem(item1)
+    accountRepository.addItem(item2)
+    accountRepository.addItem(item3)
+
+    accountRepository.removeItem(item2)
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+    assertEquals(2, itemsList.size)
+    assertTrue(itemsList.contains(item1))
+    assertFalse(itemsList.contains(item2))
+    assertTrue(itemsList.contains(item3))
+  }
 }
