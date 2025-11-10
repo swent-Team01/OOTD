@@ -78,10 +78,17 @@ interface AccountRepository {
    * @param username Users new username, blank by default
    * @param birthDay Users updated date of birth, blank by default
    * @param picture Users profile picture URL, blank by default
+   * @param location Users updated location
    * @throws TakenUserException If the username already exists
    * @throws IllegalStateException The userID does not match the users ID
    */
-  suspend fun editAccount(userID: String, username: String, birthDay: String, picture: String)
+  suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String,
+      location: Location
+  )
 
   /**
    * Allow the user to retrieve his items list for his inventory

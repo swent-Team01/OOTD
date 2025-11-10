@@ -2,6 +2,7 @@ package com.android.ootd.model.account
 
 import android.util.Log
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
 import com.google.firebase.auth.ktx.auth
@@ -323,7 +324,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       userID: String,
       username: String,
       birthDay: String,
-      picture: String
+      picture: String,
+      location: Location
   ) {
     try {
       val user = getAccount(userID)
@@ -333,6 +335,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val newUsername = username.takeIf { isNewUsername } ?: user.username
       val newBirthDate = birthDay.takeIf { it.isNotBlank() } ?: user.birthday
       val newProfilePic = picture.takeIf { it.isNotBlank() } ?: user.profilePicture
+      val newLocation = location.takeIf { isValidLocation(it) } ?: user.location
 
       if (isNewUsername) {
         val querySnapshot =
@@ -350,12 +353,17 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
                   "username" to newUsername,
                   "birthday" to newBirthDate,
                   "profilePicture" to newProfilePic,
-              ))
+                  "location" to
+                      mapOf(
+                          "latitude" to newLocation.latitude,
+                          "longitude" to newLocation.longitude,
+                          "name" to newLocation.name)))
           .await()
 
       Log.d(
           "AccountRepositoryFirestore",
-          "Successfully updated account with UID: $userID, new username $newUsername, birthdate $birthDay, profilePic $newProfilePic")
+          "Successfully updated account with UID: $userID, new username $newUsername, " +
+              "birthdate $newBirthDate, profilePic $newProfilePic, location $newLocation")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
