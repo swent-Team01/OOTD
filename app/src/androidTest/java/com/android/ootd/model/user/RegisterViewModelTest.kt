@@ -13,6 +13,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -491,5 +492,101 @@ class RegisterViewModelTest {
     assertTrue(
         viewModel.uiState.value.errorMsg!!.contains("Location permission denied") ||
             viewModel.uiState.value.errorMsg!!.contains("search for your location manually"))
+  }
+
+  // ========== GPS Callback Coverage Tests ==========
+
+  @Test
+  fun gpsCallback_successWithValidLocation_setsFormattedLocation() {
+    // Test: androidLocation != null path and Double.format() extension
+    val mockAndroidLocation = mockk<android.location.Location>(relaxed = true)
+    every { mockAndroidLocation.latitude } returns 47.376912345
+    every { mockAndroidLocation.longitude } returns 8.541678901
+
+    val mockLocationTask =
+        mockk<com.google.android.gms.tasks.Task<android.location.Location>>(relaxed = true)
+    val successListenerSlot =
+        slot<com.google.android.gms.tasks.OnSuccessListener<android.location.Location>>()
+    every { mockLocationTask.addOnSuccessListener(capture(successListenerSlot)) } answers
+        {
+          mockLocationTask
+        }
+    every {
+      mockLocationTask.addOnFailureListener(any<com.google.android.gms.tasks.OnFailureListener>())
+    } returns mockLocationTask
+    every {
+      LocationProvider.fusedLocationClient.getCurrentLocation(
+          any<Int>(), any<com.google.android.gms.tasks.CancellationToken>())
+    } returns mockLocationTask
+
+    viewModel.onLocationPermissionGranted()
+    successListenerSlot.captured.onSuccess(mockAndroidLocation)
+
+    // Verify coordinates formatted to 4 decimal places
+    val location = viewModel.uiState.value.selectedLocation
+    assertNotNull(location)
+    assertTrue(location!!.name.contains("47.3769"))
+    assertTrue(location.name.contains("8.5417"))
+    assertFalse(location.name.contains("47.37691"))
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun gpsCallback_successWithNullLocation_showsError() {
+    // Test: androidLocation == null else branch
+    val mockLocationTask =
+        mockk<com.google.android.gms.tasks.Task<android.location.Location>>(relaxed = true)
+    val successListenerSlot =
+        slot<com.google.android.gms.tasks.OnSuccessListener<android.location.Location>>()
+    every { mockLocationTask.addOnSuccessListener(capture(successListenerSlot)) } answers
+        {
+          mockLocationTask
+        }
+    every {
+      mockLocationTask.addOnFailureListener(any<com.google.android.gms.tasks.OnFailureListener>())
+    } returns mockLocationTask
+    every {
+      LocationProvider.fusedLocationClient.getCurrentLocation(
+          any<Int>(), any<com.google.android.gms.tasks.CancellationToken>())
+    } returns mockLocationTask
+
+    viewModel.onLocationPermissionGranted()
+    successListenerSlot.captured.onSuccess(null)
+
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.errorMsg!!.contains("Unable to get current location"))
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun gpsCallback_failure_showsErrorMessage() {
+    // Test: addOnFailureListener path and exception message handling
+    val mockLocationTask =
+        mockk<com.google.android.gms.tasks.Task<android.location.Location>>(relaxed = true)
+    val failureListenerSlot = slot<com.google.android.gms.tasks.OnFailureListener>()
+    every {
+      mockLocationTask.addOnSuccessListener(
+          any<com.google.android.gms.tasks.OnSuccessListener<android.location.Location>>())
+    } returns mockLocationTask
+    every { mockLocationTask.addOnFailureListener(capture(failureListenerSlot)) } answers
+        {
+          mockLocationTask
+        }
+    every {
+      LocationProvider.fusedLocationClient.getCurrentLocation(
+          any<Int>(), any<com.google.android.gms.tasks.CancellationToken>())
+    } returns mockLocationTask
+
+    viewModel.onLocationPermissionGranted()
+
+    // Test with exception message
+    failureListenerSlot.captured.onFailure(Exception("GPS unavailable"))
+    assertTrue(viewModel.uiState.value.errorMsg!!.contains("GPS unavailable"))
+
+    // Test without exception message (Unknown error path)
+    viewModel.clearErrorMsg()
+    viewModel.onLocationPermissionGranted()
+    failureListenerSlot.captured.onFailure(Exception())
+    assertTrue(viewModel.uiState.value.errorMsg!!.contains("Unknown error"))
   }
 }
