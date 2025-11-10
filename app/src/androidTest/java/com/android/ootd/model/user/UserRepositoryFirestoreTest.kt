@@ -163,4 +163,28 @@ class UserRepositoryFirestoreTest : FirestoreTest() {
     assert(listed.none { it.uid == user1.uid }) // corrupted
     assert(listed.none { it.uid == "invalidDoc" })
   }
+
+  @Test
+  fun deleteProfilePicture_deletesSuccessfully() = runTest {
+    val uid = userRepository.getNewUid()
+    userRepository.createUser("testUser", uid, currentUser.uid, profilePicture = "picture.jpg")
+
+    val userBefore = userRepository.getUser(uid)
+    assertEquals("picture.jpg", userBefore.profilePicture)
+
+    userRepository.deleteProfilePicture(uid)
+
+    val userAfter = userRepository.getUser(uid)
+    assertEquals("", userAfter.profilePicture)
+  }
+
+  @Test
+  fun deleteProfilePicture_throwsOnInvalidInput() = runTest {
+    val blankId = runCatching { userRepository.deleteProfilePicture("") }.exceptionOrNull()
+    assert(blankId is BlankUserID)
+
+    val notFound =
+        runCatching { userRepository.deleteProfilePicture("nonExistent") }.exceptionOrNull()
+    assert(notFound is NoSuchElementException)
+  }
 }

@@ -32,7 +32,7 @@ open class AccountFirestoreTest : FirestoreTest() {
             username = "alice_wonder",
             birthday = "1990-01-01",
             googleAccountEmail = "alice@example.com",
-            profilePicture = "",
+            profilePicture = "alice.profilePic",
             friendUids = emptyList())
 
     account2 =
@@ -42,7 +42,7 @@ open class AccountFirestoreTest : FirestoreTest() {
             username = "bob_builder",
             birthday = "1992-05-15",
             googleAccountEmail = "bob@example.com",
-            profilePicture = "",
+            profilePicture = "bob.profilePic",
             friendUids = emptyList())
     dummyAccount =
         Account(

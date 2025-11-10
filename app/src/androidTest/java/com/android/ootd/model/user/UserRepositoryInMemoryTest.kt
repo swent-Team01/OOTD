@@ -264,4 +264,24 @@ class UserRepositoryInMemoryTest {
     val exception3 = runCatching { repository.getUser("user3") }.exceptionOrNull()
     assertTrue(exception3 is NoSuchElementException)
   }
+
+  @Test
+  fun deleteProfilePicture_deletesSuccessfully() = runTest {
+    val userBefore = repository.getUser("user1")
+    assertEquals("1", userBefore.profilePicture)
+
+    repository.deleteProfilePicture("user1")
+
+    val userAfter = repository.getUser("user1")
+    assertEquals("", userAfter.profilePicture)
+  }
+
+  @Test
+  fun deleteProfilePicture_throwsOnInvalidInput() = runTest {
+    val blankId = runCatching { repository.deleteProfilePicture("") }.exceptionOrNull()
+    assertTrue(blankId is IllegalArgumentException)
+
+    val notFound = runCatching { repository.deleteProfilePicture("nonExistent") }.exceptionOrNull()
+    assertTrue(notFound is NoSuchElementException)
+  }
 }
