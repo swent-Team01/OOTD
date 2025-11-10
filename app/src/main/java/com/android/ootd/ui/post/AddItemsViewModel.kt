@@ -158,7 +158,8 @@ open class AddItemsViewModel(
         val item =
             Item(
                 itemUuid = itemUuid,
-                postUuids = listOf(state.postUuid),
+                postUuids =
+                    if (state.postUuid.isNotEmpty()) listOf(state.postUuid) else emptyList(),
                 image = uploadedImage,
                 category = state.category,
                 type = state.type,

@@ -3,9 +3,13 @@ package com.android.ootd.ui.Inventory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -37,6 +41,7 @@ object InventoryScreenTestTags {
   const val EMPTY_STATE = "inventoryEmptyState"
   const val ITEMS_GRID = "inventoryItemsGrid"
   const val ITEM_CARD = "inventoryItemCard"
+  const val ADD_ITEM_FAB = "inventoryAddItemFab"
 }
 
 /**
@@ -80,6 +85,17 @@ fun InventoryScreen(
                           fontWeight = FontWeight.Bold, color = Primary),
                   modifier = Modifier.testTag(InventoryScreenTestTags.TITLE))
             })
+      },
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = { navigationActions?.navigateTo(Screen.AddItemScreen("")) },
+            containerColor = Primary,
+            modifier = Modifier.testTag(InventoryScreenTestTags.ADD_ITEM_FAB)) {
+              Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = "Add Item",
+                  tint = MaterialTheme.colorScheme.onPrimary)
+            }
       },
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
