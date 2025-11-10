@@ -106,13 +106,13 @@ object AddItemScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddItemsScreen(
-    addItemsViewModel: AddItemsViewModel = viewModel(),
-    onNextScreen: () -> Unit = {},
-    goBack: () -> Unit = {},
     postUuid: String, // will be received from navigation
     modifier: Modifier = Modifier,
+    addItemsViewModel: AddItemsViewModel = viewModel(),
     maxImageSize: Dp = 250.dp,
-    minImageSize: Dp = 100.dp
+    minImageSize: Dp = 100.dp,
+    onNextScreen: () -> Unit = {},
+    goBack: () -> Unit = {},
 ) {
   val context = LocalContext.current
   val itemsUIState by addItemsViewModel.uiState.collectAsState()

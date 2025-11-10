@@ -1,8 +1,11 @@
 package com.android.ootd.ui.register
 
+import android.Manifest
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.MissingLocationException
@@ -289,5 +292,71 @@ class RegisterViewModel(
 
   fun isLoadingLocations(): Boolean {
     return uiState.value.locationSuggestions.isEmpty() && uiState.value.locationQuery.isNotEmpty()
+  }
+
+  /**
+   * Called when location permission is granted by the user. Initiates GPS location retrieval and
+   * updates the selected location.
+   */
+  @Suppress("MissingPermission") // Permission is checked by the caller (permission launcher)
+  fun onLocationPermissionGranted() {
+    Log.d("RegisterViewModel", "Location permission granted")
+    setGPSLocation()
+  }
+
+  /**
+   * Retrieves the current GPS location and sets it as the selected location.
+   *
+   * Uses FusedLocationProviderClient to get the device's current location with balanced power
+   * accuracy. Handles both success and failure cases with appropriate user feedback.
+   */
+  @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+  private fun setGPSLocation() {
+    _uiState.value = _uiState.value.copy(isLoadingLocations = true)
+
+    val cancellationTokenSource = com.google.android.gms.tasks.CancellationTokenSource()
+
+    fusedLocationClient
+        .getCurrentLocation(
+            com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+            cancellationTokenSource.token)
+        .addOnSuccessListener { androidLocation: android.location.Location? ->
+          if (androidLocation != null) {
+            // Convert Android Location to our app's Location model
+            val appLocation =
+                Location(
+                    latitude = androidLocation.latitude,
+                    longitude = androidLocation.longitude,
+                    name =
+                        "Current Location (${androidLocation.latitude.format()}, ${androidLocation.longitude.format()})")
+            setLocation(appLocation)
+          } else {
+            Log.w("RegisterViewModel", "getCurrentLocation returned null")
+            emitError(
+                "Unable to get current location. Please enable location services or search manually.")
+          }
+          _uiState.value = _uiState.value.copy(isLoadingLocations = false)
+          cancellationTokenSource.cancel()
+        }
+        .addOnFailureListener { exception ->
+          Log.e("RegisterViewModel", "Failed to get current location", exception)
+          emitError("Failed to get current location: ${exception.message ?: "Unknown error"}")
+          _uiState.value = _uiState.value.copy(isLoadingLocations = false)
+          cancellationTokenSource.cancel()
+        }
+  }
+
+  /** Formats a Double coordinate to 4 decimal places for display. */
+  private fun Double.format(): String = "%.4f".format(this)
+
+  /**
+   * Called when location permission is denied by the user. Shows an error message to inform the
+   * user they need to search manually.
+   */
+  fun onLocationPermissionDenied() {
+    Log.d("RegisterViewModel", "Location permission denied")
+    emitError(
+        "Location permission denied. Please search for your location manually if you want" +
+            "to add your location.")
   }
 }

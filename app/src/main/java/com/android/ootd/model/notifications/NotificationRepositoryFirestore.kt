@@ -98,8 +98,8 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
               .get()
               .await()
 
-      if (!existingDoc.documents.isEmpty()) {
-        throw IllegalArgumentException("Notification with UID ${notification.uid} already exists")
+      require(existingDoc.documents.isEmpty()) {
+        "Notification with UID ${notification.uid} already exists"
       }
 
       db.collection(NOTIFICATION_COLLECTION_PATH)

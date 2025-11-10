@@ -3,6 +3,7 @@ package com.android.ootd.ui.post
 import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -39,13 +40,15 @@ class EditItemsViewModelTest {
 
   private lateinit var viewModel: EditItemsViewModel
   private lateinit var mockRepository: ItemsRepository
+  private lateinit var mockAccountRepository: AccountRepository
   private val testDispatcher = StandardTestDispatcher()
 
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
     mockRepository = mockk(relaxed = true)
-    viewModel = EditItemsViewModel(mockRepository)
+    mockAccountRepository = mockk(relaxed = true)
+    viewModel = EditItemsViewModel(mockRepository, mockAccountRepository)
   }
 
   @After
@@ -410,6 +413,7 @@ class EditItemsViewModelTest {
   fun `deleteItem calls repository when itemId is not empty`() = runTest {
     mockkObject(FirebaseImageUploader)
     coEvery { FirebaseImageUploader.deleteImage(any()) } returns true
+    coEvery { mockAccountRepository.removeItem(any()) } returns true
 
     viewModel.loadItem(
         Item(
@@ -428,6 +432,7 @@ class EditItemsViewModelTest {
     advanceUntilIdle()
 
     coVerify { mockRepository.deleteItem("test-id") }
+    coVerify { mockAccountRepository.removeItem("test-id") }
     val state = viewModel.uiState.value
     assertTrue(state.isDeleteSuccessful)
     assertNull(state.errorMessage)
@@ -446,6 +451,7 @@ class EditItemsViewModelTest {
 
   @Test
   fun `deleteItem handles exception`() = runTest {
+    coEvery { mockAccountRepository.removeItem(any()) } returns true
     coEvery { mockRepository.deleteItem(any()) } throws Exception("Delete failed")
 
     viewModel.loadItem(
@@ -471,11 +477,40 @@ class EditItemsViewModelTest {
   }
 
   @Test
+  fun `deleteItem fails when removing from inventory fails`() = runTest {
+    coEvery { mockAccountRepository.removeItem(any()) } returns false
+
+    viewModel.loadItem(
+        Item(
+            itemUuid = "test-id",
+            postUuids = listOf("test_post_uuid"),
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
+            category = "Clothing",
+            type = null,
+            brand = null,
+            price = null,
+            material = emptyList(),
+            link = null,
+            ownerId = "ownerId"))
+
+    viewModel.deleteItem()
+
+    advanceUntilIdle()
+
+    // Verify the operation failed and didn't proceed to delete the item
+    val state = viewModel.uiState.value
+    assertEquals("Failed to remove item from inventory. Please try again.", state.errorMessage)
+    assertFalse(state.isDeleteSuccessful)
+    coVerify(exactly = 0) { mockRepository.deleteItem(any()) }
+  }
+
+  @Test
   fun `deleteItem logs warning when image deletion fails`() = runTest {
     mockkObject(FirebaseImageUploader)
 
     // Mock successful repository deletion but failed image deletion
     coEvery { mockRepository.deleteItem(any()) } returns Unit
+    coEvery { mockAccountRepository.removeItem(any()) } returns true
     coEvery { FirebaseImageUploader.deleteImage(any()) } returns false
 
     viewModel.loadItem(

@@ -313,4 +313,83 @@ class AccountViewModelTest {
     viewModel.onPrivacyHelpDismiss()
     assertFalse(viewModel.uiState.value.showPrivacyHelp)
   }
+
+  @Test
+  fun uploadImageToStorage_coversBlankSuccessErrorAndNoAuth() = runTest {
+    // 1) Blank path: should return input immediately and not call uploader
+    run {
+      val vm =
+          AccountViewModel(
+              accountService = accountService,
+              accountRepository = accountRepository,
+              userRepository = userRepository,
+              uploader = { _, _, _ -> error("uploader should not be called for blank path") })
+
+      var result: String? = null
+      vm.uploadImageToStorage("", onResult = { result = it })
+      assertEquals("", result)
+    }
+
+    // Ensure signed-in for upload-dependent cases
+    signInAs(mockFirebaseUser)
+
+    // 2) Success path: uploader returns URL, onResult receives it, no error set
+    run {
+      val vm =
+          AccountViewModel(
+              accountService = accountService,
+              accountRepository = accountRepository,
+              userRepository = userRepository,
+              uploader = { uid, local, _ ->
+                "https://cdn.test/$uid/${local.substringAfterLast('/')}"
+              })
+
+      advanceUntilIdle()
+
+      var result: String? = null
+      vm.uploadImageToStorage("/tmp/pic.jpg", onResult = { result = it })
+      advanceUntilIdle()
+
+      assertEquals("https://cdn.test/test-uid/pic.jpg", result)
+      assertNull(vm.uiState.value.errorMsg)
+    }
+
+    // 3) Error path: uploader throws, onError called, errorMsg set
+    run {
+      val vm =
+          AccountViewModel(
+              accountService = accountService,
+              accountRepository = accountRepository,
+              userRepository = userRepository,
+              uploader = { _, _, _ -> throw IllegalStateException("upload failed") })
+
+      advanceUntilIdle()
+
+      var caught: Throwable? = null
+      vm.uploadImageToStorage("/tmp/pic.jpg", onResult = {}, onError = { caught = it })
+      advanceUntilIdle()
+
+      assertTrue(caught is IllegalStateException)
+      assertEquals("upload failed", vm.uiState.value.errorMsg)
+    }
+
+    // 4) No-auth path: do not sign in, should set error and call onError
+    run {
+      // Clear sign-in
+      signInAs(null)
+
+      val vm =
+          AccountViewModel(
+              accountService = accountService,
+              accountRepository = accountRepository,
+              userRepository = userRepository,
+              uploader = { _, _, _ -> "never" })
+
+      var caught: Throwable? = null
+      vm.uploadImageToStorage("/tmp/pic.jpg", onResult = {}, onError = { caught = it })
+
+      assertTrue(caught is IllegalStateException)
+      assertEquals("No authenticated user", vm.uiState.value.errorMsg)
+    }
+  }
 }
