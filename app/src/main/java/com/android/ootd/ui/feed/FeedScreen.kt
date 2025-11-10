@@ -1,5 +1,7 @@
 package com.android.ootd.ui.feed
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
@@ -83,7 +86,7 @@ fun FeedScreen(
                     containerColor = MaterialTheme.colorScheme.background))
       },
       floatingActionButton = {
-        if (!hasPostedToday) {
+        if (!uiState.isLoading && !hasPostedToday) {
           Button(
               onClick = onAddPostClick,
               colors =
@@ -105,7 +108,12 @@ fun FeedScreen(
               // Renders the list of posts when user has posted.
               FeedList(isBlurred = !hasPostedToday, posts = posts)
 
-              if (!hasPostedToday && posts.isEmpty()) {
+              // Loading overlay
+              if (uiState.isLoading) {
+                AnimatedVisibility(visible = uiState.isLoading) { FeedLoadingOverlay() }
+              }
+
+              if (!uiState.isLoading && !hasPostedToday && posts.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
                     contentAlignment = Alignment.Center) {
@@ -132,4 +140,22 @@ fun FeedList(
       OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
   }
+}
+
+@Composable
+fun FeedLoadingOverlay() {
+  Box(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f)),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Image(
+              painter = painterResource(id = R.drawable.hanger),
+              contentDescription = "Loading feed",
+              modifier = Modifier.size(72.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+          CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+      }
 }

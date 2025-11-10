@@ -17,6 +17,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestoreSettings
 import junit.framework.TestCase.assertEquals
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
@@ -66,6 +67,9 @@ class FeedScreenTest : FirestoreTest() {
 
           override suspend fun getFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
 
+          override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> =
+              emptyList<OutfitPost>()
+
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId() = "fake-id"
@@ -78,7 +82,7 @@ class FeedScreenTest : FirestoreTest() {
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
-
+    composeTestRule.waitUntil(timeoutMillis = 2_000) { !viewModel.uiState.value.isLoading }
     composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertExists()
   }
 
@@ -91,6 +95,8 @@ class FeedScreenTest : FirestoreTest() {
 
           override suspend fun getFeedForUids(uids: List<String>) = posts
 
+          override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> = posts
+
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId() = "fake-id"
@@ -103,6 +109,8 @@ class FeedScreenTest : FirestoreTest() {
         }
 
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    composeTestRule.waitUntil(timeoutMillis = 2_000) { !viewModel.uiState.value.isLoading }
 
     composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
   }
@@ -207,6 +215,37 @@ class FeedScreenTest : FirestoreTest() {
 
     val result = feedRepository.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun feedScreen_showsLoadingOverlay_whenLoading() {
+    val fakeRepo =
+        object : FeedRepository {
+          override suspend fun hasPostedToday(userId: String) = false
+
+          override suspend fun getFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
+
+          override suspend fun getRecentFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
+
+          override suspend fun addPost(post: OutfitPost) {}
+
+          override fun getNewPostId() = "fake-id"
+        }
+
+    FeedRepositoryProvider.repository = fakeRepo
+    val viewModel =
+        FeedViewModel().apply {
+          setCurrentAccount(Account(uid = "user1", username = "Test", friendUids = emptyList()))
+        }
+
+    val stateField = FeedViewModel::class.java.getDeclaredField("_uiState")
+    stateField.isAccessible = true
+    val flow = stateField.get(viewModel) as MutableStateFlow<FeedUiState>
+    flow.value = flow.value.copy(hasPostedToday = false, isLoading = false)
+
+    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertExists()
   }
 
   @Test
