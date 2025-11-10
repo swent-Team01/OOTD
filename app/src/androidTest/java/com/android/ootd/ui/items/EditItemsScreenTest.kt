@@ -108,7 +108,7 @@ class EditItemsScreenTest {
 
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .assertTextEquals("Category", "Clothing")
+        .assertTextContains("Clothing")
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .assertTextEquals("Type", "T-shirt")

@@ -230,13 +230,13 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun categorySuggestion_showsAndSelectingClearsError() {
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("C")
+    // Click to open the category dropdown
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
 
-    // Wait for category suggestions dropdown to appear
-    composeTestRule.waitForNodeWithTag(
-        AddItemScreenTestTags.CATEGORY_SUGGESTION, timeoutMillis = 10_000)
-
+    // Wait for dropdown menu to appear and select "Clothing"
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("Clothing", useUnmergedTree = true).performClick()
+
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
   }
 
@@ -253,9 +253,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.onNodeWithText("Hat", useUnmergedTree = true).assertIsDisplayed()
 
     // Shoes -> Boots
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-        .performTextReplacement("Shoes")
+    // Click to open category dropdown and select "Shoes"
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
+    composeTestRule.onNodeWithText("Shoes").performClick()
+
     // Clear and re-enter type to trigger suggestions for new category
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextReplacement("")
     composeTestRule.waitForIdle()
@@ -268,9 +269,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.onNodeWithText("Boots", useUnmergedTree = true).assertIsDisplayed()
 
     // Bags -> Backpack
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-        .performTextReplacement("Bags")
+    // Click to open category dropdown and select "Bags"
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
+    composeTestRule.onNodeWithText("Bags").performClick()
+
     // Clear and re-enter type to trigger suggestions for new category
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextReplacement("")
     composeTestRule.waitForIdle()

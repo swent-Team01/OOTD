@@ -272,7 +272,8 @@ class EditItemsScreenTest {
   fun `all input fields have proper labels`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Category").assertExists()
+    // Category is now a dropdown, so check it exists with different assertion
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
     composeTestRule.onNodeWithText("Price").assertExists()
