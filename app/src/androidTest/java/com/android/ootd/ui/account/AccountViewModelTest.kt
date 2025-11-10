@@ -5,6 +5,7 @@ import androidx.credentials.CredentialManager
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.UserRepository
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
@@ -69,7 +70,7 @@ class AccountViewModelTest {
     coEvery { accountRepository.getAccount("test-uid") } returns
         Account(uid = "test-uid", username = "testuser", profilePicture = "")
 
-    coEvery { accountRepository.editAccount(any(), any(), any(), any()) } just Runs
+    coEvery { accountRepository.editAccount(any(), any(), any(), any(), any()) } just Runs
     coEvery { userRepository.editUser(any(), any(), any()) } just Runs
     coEvery { credentialManager.clearCredentialState(any()) } just Runs
   }
@@ -202,7 +203,7 @@ class AccountViewModelTest {
     viewModel.editUser(newUsername = newUsername, newDate = newDate, profilePicture = newPicture)
     advanceUntilIdle()
 
-    coVerify { accountRepository.editAccount("test-uid", newUsername, newDate, newPicture) }
+    coVerify { accountRepository.editAccount("test-uid", newUsername, newDate, newPicture, any()) }
     coVerify { userRepository.editUser("test-uid", newUsername, newPicture) }
     assertEquals(newUsername, viewModel.uiState.value.username)
     assertEquals(newPicture, viewModel.uiState.value.profilePicture)
@@ -218,13 +219,13 @@ class AccountViewModelTest {
     viewModel.editUser(newUsername = "", newDate = "01/01/2000")
     advanceUntilIdle()
 
-    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "") }
+    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "", any()) }
     coVerify(exactly = 1) { userRepository.editUser(any(), "", "") }
   }
 
   @Test
   fun editUser_sets_error_message_when_accountOrUserRepository_fails() = runTest {
-    coEvery { accountRepository.editAccount(any(), any(), any(), any()) } throws
+    coEvery { accountRepository.editAccount(any(), any(), any(), any(), any()) } throws
         Exception("Failed to update account")
     coEvery { userRepository.editUser(any(), any(), any()) } throws
         Exception("Username already taken")
@@ -431,5 +432,19 @@ class AccountViewModelTest {
       assertTrue(caught is IllegalStateException)
       assertEquals("No authenticated user", vm.uiState.value.errorMsg)
     }
+  }
+
+  @Test
+  fun editUser_updates_location_successfully() = runTest {
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    val newLocation = Location(46.0, 7.0, "Test Location")
+
+    viewModel.editUser(newLocation = newLocation)
+    advanceUntilIdle()
+
+    coVerify { accountRepository.editAccount("test-uid", any(), any(), any(), newLocation) }
+    assertEquals(newLocation, viewModel.uiState.value.location)
   }
 }

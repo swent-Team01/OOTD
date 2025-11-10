@@ -14,6 +14,9 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.firebase.storage.FirebaseStorage
@@ -40,6 +43,7 @@ data class AccountViewState(
     val googleAccountName: String = "",
     val profilePicture: String = "",
     val dateOfBirth: String = "",
+    val location: Location = emptyLocation,
     val errorMsg: String? = null,
     val signedOut: Boolean = false,
     val isLoading: Boolean = false,
@@ -123,6 +127,7 @@ class AccountViewModel(
             isPrivate = currentAccount.isPrivate,
             profilePicture = currentAccount.profilePicture,
             dateOfBirth = currentAccount.birthday,
+            location = currentAccount.location,
             errorMsg = null,
             isLoading = false)
       }
@@ -197,15 +202,22 @@ class AccountViewModel(
    * @param newUsername the new username to set, blank by default
    * @param newDate the new date to set, blank by default
    * @param profilePicture the new profile picture to set, blank by default
+   * @param newLocation the new location to set, emptyLocation by default
    */
-  fun editUser(newUsername: String = "", newDate: String = "", profilePicture: String = "") {
+  fun editUser(
+      newUsername: String = "",
+      newDate: String = "",
+      profilePicture: String = "",
+      newLocation: Location = emptyLocation
+  ) {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoading = true) }
 
       try {
         val currentUserId = accountService.currentUserId
 
-        accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
+        accountRepository.editAccount(
+            currentUserId, newUsername, newDate, profilePicture, newLocation)
         userRepository.editUser(currentUserId, newUsername, profilePicture)
         // Update UI state with new values
         val updatedState = _uiState.value.copy(isLoading = false, errorMsg = null)
@@ -213,7 +225,8 @@ class AccountViewModel(
           updatedState.copy(
               username = newUsername.ifBlank { it.username },
               dateOfBirth = newDate.ifBlank { it.dateOfBirth },
-              profilePicture = profilePicture.ifBlank { it.profilePicture })
+              profilePicture = profilePicture.ifBlank { it.profilePicture },
+              location = if (isValidLocation(newLocation)) newLocation else it.location)
         }
       } catch (e: Exception) {
         _uiState.update {
