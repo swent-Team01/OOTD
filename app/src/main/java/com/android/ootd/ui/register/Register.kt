@@ -30,6 +30,7 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.LocationUtils
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -176,7 +177,11 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               fieldState = locationField,
               isError = locationError,
               onGPSClick = {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                if (LocationUtils.hasLocationPermission(context)) {
+                  viewModel.onLocationPermissionGranted()
+                } else {
+                  locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                }
               })
 
           Spacer(modifier = Modifier.height(SPACER))
