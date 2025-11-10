@@ -201,7 +201,7 @@ private fun AccountScreenContent(
               context)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Box(modifier = contentModifier) {
           UsernameField(
@@ -253,10 +253,7 @@ private fun AccountScreenContent(
               showPrivacyHelp = uiState.showPrivacyHelp,
               onHelpClick = onHelpClick,
               onHelpDismiss = onHelpDismiss,
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .padding(top = 4.dp)
-                      .testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+              modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -516,8 +513,7 @@ private fun LocationField(
       onClearSuggestions = viewModel::clearLocationSuggestions,
       isError = hasLocationError,
       onFocusChanged = viewModel::onLocationFieldFocusChanged,
-      modifier =
-          Modifier.padding(vertical = 8.dp).testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
+      modifier = Modifier.testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
 }
 
 @Composable
