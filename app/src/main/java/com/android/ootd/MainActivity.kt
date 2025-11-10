@@ -1,6 +1,5 @@
 package com.android.ootd
 
-import SeeFitScreen
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -38,6 +37,7 @@ import com.android.ootd.ui.consent.BetaConsentScreen
 import com.android.ootd.ui.consent.BetaConsentViewModel
 import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
+import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions

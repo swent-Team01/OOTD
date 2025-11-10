@@ -1,3 +1,5 @@
+package com.android.ootd.ui.feed
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -9,7 +11,7 @@ import androidx.compose.ui.platform.testTag
 @Composable
 fun SeeFitScreen(postUuid: String = "", goBack: () -> Unit = {}) {
   Box(
-      modifier = Modifier.fillMaxSize().testTag("inventoryScreen"),
+      modifier = Modifier.fillMaxSize().testTag("seeFitScreen"),
       contentAlignment = Alignment.Center) {
         Text("See Fit (placeholder)")
       }
