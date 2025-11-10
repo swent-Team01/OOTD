@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.test.core.app.ApplicationProvider
@@ -40,6 +41,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -227,6 +229,9 @@ class AccountScreenTest {
   fun helpIcon_showsAndDismissesPopup() {
     signIn(mockFirebaseUser)
     setContent()
+
+    // Scroll to privacy toggle to make help icon visible on smaller screens
+    selectTestTag(UiTestTags.TAG_PRIVACY_TOGGLE).performScrollTo()
 
     selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
     selectTestTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
@@ -421,5 +426,54 @@ class AccountScreenTest {
     // GPS button should be visible
     selectTestTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithText("Update Location (GPS)").assertIsDisplayed()
+  }
+
+  // --- EPFL Default Location tests ---
+
+  @Test
+  fun defaultEpflLocationButton_isDisplayed() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Wait for the EPFL button to exist in the semantics tree
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithText("or select default location (EPFL)", substring = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
+        .performScrollTo()
+        .assertIsDisplayed()
+        .assertTextContains("or select default location (EPFL)")
+  }
+
+  @Test
+  fun defaultEpflLocationButton_setsLocationToEpfl() {
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Wait for the EPFL button to exist in the semantics tree
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithText("or select default location (EPFL)", substring = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Scroll to make the button visible on smaller screens
+    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL).performScrollTo().performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be set to EPFL
+    composeTestRule.runOnUiThread {
+      val selectedLocation = viewModel.uiState.value.location
+      assertEquals(46.5191, selectedLocation.latitude, 0.0001)
+      assertEquals(6.5668, selectedLocation.longitude, 0.0001)
+      assertTrue(selectedLocation.name.contains("EPFL"))
+      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
+    }
   }
 }
