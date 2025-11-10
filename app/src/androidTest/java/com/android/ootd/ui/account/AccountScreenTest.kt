@@ -13,6 +13,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -198,12 +199,24 @@ class AccountScreenTest {
 
     signIn(mockFirebaseUser)
     setContent()
+    waitForLoadingToComplete()
+
+    // Wait for the privacy toggle to be displayed
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Public").fetchSemanticsNodes().isNotEmpty()
+    }
 
     // Initially Public
     composeTestRule.onNodeWithText("Public").assertIsDisplayed()
 
     val switchMatcher = isToggleable() and hasAnyAncestor(hasTestTag(UiTestTags.TAG_PRIVACY_TOGGLE))
     composeTestRule.onNode(switchMatcher).performClick()
+    composeTestRule.waitForIdle()
+
+    // Wait for the text to update to Private
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Private").fetchSemanticsNodes().isNotEmpty()
+    }
 
     // Updated and repo called
     composeTestRule.onNodeWithText("Private").assertIsDisplayed()
