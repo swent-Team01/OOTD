@@ -10,6 +10,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
+import com.android.ootd.utils.CategoryNormalizer
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,20 +47,7 @@ data class AddItemsUIState(
             isCategoryValid()
 
   private fun isCategoryValid(): Boolean {
-    val normalized =
-        when (category.trim().lowercase()) {
-          "clothes",
-          "clothing" -> "Clothing"
-          "shoes",
-          "shoe" -> "Shoes"
-          "bags",
-          "bag" -> "Bags"
-          "accessories",
-          "accessory" -> "Accessories"
-          else -> category.trim()
-        }
-    val categories = listOf("Clothing", "Accessories", "Shoes", "Bags")
-    return categories.any { it.equals(normalized, ignoreCase = true) }
+    return CategoryNormalizer.isValid(category)
   }
 }
 

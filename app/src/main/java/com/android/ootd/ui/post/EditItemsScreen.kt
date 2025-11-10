@@ -30,6 +30,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +67,7 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.CategoryNormalizer
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -277,14 +280,41 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
   }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryField(category: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = category,
-      onValueChange = onChange,
-      label = { Text("Category") },
-      placeholder = { Text("e.g., Clothes") },
-      modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY))
+  var expanded by remember { mutableStateOf(false) }
+  val categories = CategoryNormalizer.VALID_CATEGORIES
+
+  ExposedDropdownMenuBox(
+      expanded = expanded,
+      onExpandedChange = { expanded = it },
+      modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = category,
+            onValueChange = {}, // Read-only, selection only
+            readOnly = true,
+            label = { Text("Category *") },
+            placeholder = { Text("Select a category") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier =
+                Modifier.fillMaxWidth()
+                    .menuAnchor()
+                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY),
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
+
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+          categories.forEach { categoryOption ->
+            DropdownMenuItem(
+                text = { Text(categoryOption) },
+                onClick = {
+                  onChange(categoryOption)
+                  expanded = false
+                },
+                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding)
+          }
+        }
+      }
 }
 
 @Composable

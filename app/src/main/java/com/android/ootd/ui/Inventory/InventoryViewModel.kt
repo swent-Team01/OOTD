@@ -7,6 +7,7 @@ import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.utils.CategoryNormalizer
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,37 +75,11 @@ class InventoryViewModel(
   }
 
   /**
-   * Sorts items by category in the order: Clothing, Shoes, Accessories, Bags. Items with unknown
+   * Sorts items by category in the order: Clothing → Shoes → Accessories → Bags. Items with unknown
    * categories are placed at the end.
    */
   private fun sortItemsByCategory(items: List<Item>): List<Item> {
-    val categoryOrder = listOf("Clothing", "Shoes", "Accessories", "Bags")
-
-    return items.sortedWith(
-        compareBy { item ->
-          val normalizedCategory = normalizeCategoryName(item.category)
-          val index =
-              categoryOrder.indexOfFirst { it.equals(normalizedCategory, ignoreCase = true) }
-          if (index >= 0) index else categoryOrder.size
-        })
-  }
-
-  /**
-   * Normalizes category names to handle variations. E.g., "clothes" -> "Clothing", "shoe" ->
-   * "Shoes"
-   */
-  private fun normalizeCategoryName(category: String): String {
-    return when (category.trim().lowercase()) {
-      "clothes",
-      "clothing" -> "Clothing"
-      "shoes",
-      "shoe" -> "Shoes"
-      "bags",
-      "bag" -> "Bags"
-      "accessories",
-      "accessory" -> "Accessories"
-      else -> category.trim()
-    }
+    return items.sortedBy { item -> CategoryNormalizer.getSortOrder(item.category) }
   }
 
   /** Clears the error message. */

@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -33,6 +31,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,18 +51,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -75,6 +72,7 @@ import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.CategoryNormalizer
 
 object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"
@@ -186,11 +184,7 @@ fun AddItemsScreen(
                 // category
                 category = itemsUIState.category,
                 invalidCategory = itemsUIState.invalidCategory,
-                categorySuggestions = itemsUIState.categorySuggestion,
-                onCategoryChange = {
-                  addItemsViewModel.setCategory(it)
-                  addItemsViewModel.updateCategorySuggestions(it)
-                },
+                onCategoryChange = { addItemsViewModel.setCategory(it) },
                 onCategoryValidate = { addItemsViewModel.validateCategory() },
                 // type
                 type = itemsUIState.type,
@@ -264,7 +258,6 @@ private fun FieldsList(
     onPickFromGallery: () -> Unit,
     category: String,
     invalidCategory: String?,
-    categorySuggestions: List<String>,
     onCategoryChange: (String) -> Unit,
     onCategoryValidate: () -> Unit,
     type: String,
@@ -295,7 +288,6 @@ private fun FieldsList(
       CategoryField(
           category = category,
           invalidCategory = invalidCategory,
-          suggestions = categorySuggestions,
           onChange = onCategoryChange,
           onValidate = onCategoryValidate)
     }
@@ -363,73 +355,57 @@ private fun ImagePickerRow(
   }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryField(
     category: String,
     invalidCategory: String?,
-    suggestions: List<String>,
     onChange: (String) -> Unit,
     onValidate: () -> Unit,
 ) {
-  val focusManager = LocalFocusManager.current
   var expanded by remember { mutableStateOf(false) }
+  val categories = CategoryNormalizer.VALID_CATEGORIES
 
-  Box(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
-        value = category,
-        onValueChange = {
-          onChange(it)
-          expanded = it.isNotBlank()
-        },
-        label = { Text("Category") },
-        placeholder = { Text("Enter a category") },
-        isError = invalidCategory != null,
-        supportingText = {
-          invalidCategory?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.testTag(AddItemScreenTestTags.ERROR_MESSAGE))
-          }
-        },
-        modifier =
-            Modifier.fillMaxWidth()
-                .onFocusChanged { focusState ->
-                  if (!focusState.isFocused && category.isNotBlank()) {
-                    onValidate()
-                    expanded = false
-                  }
-                }
-                .testTag(AddItemScreenTestTags.INPUT_CATEGORY),
-        singleLine = true,
-        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-        keyboardActions =
-            KeyboardActions(
-                onDone = {
-                  if (category.isNotBlank()) onValidate()
-                  expanded = false
-                  focusManager.clearFocus()
-                }))
+  ExposedDropdownMenuBox(
+      expanded = expanded,
+      onExpandedChange = { expanded = it },
+      modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = category,
+            onValueChange = {}, // Read-only, selection only
+            readOnly = true,
+            label = { Text("Category *") },
+            placeholder = { Text("Select a category") },
+            isError = invalidCategory != null,
+            supportingText = {
+              invalidCategory?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag(AddItemScreenTestTags.ERROR_MESSAGE))
+              }
+            },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier =
+                Modifier.fillMaxWidth().menuAnchor().testTag(AddItemScreenTestTags.INPUT_CATEGORY),
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
 
-    DropdownMenu(
-        expanded = expanded && suggestions.isNotEmpty(),
-        onDismissRequest = {
-          expanded = false
-          if (category.isNotBlank()) onValidate()
-        },
-        modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.CATEGORY_SUGGESTION),
-        properties = PopupProperties(focusable = false)) {
-          suggestions.forEach { suggestion ->
-            DropdownMenuItem(
-                text = { Text(suggestion) },
-                onClick = {
-                  onChange(suggestion)
-                  onValidate()
-                  expanded = false
-                })
-          }
-        }
-  }
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.testTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)) {
+              categories.forEach { categoryOption ->
+                DropdownMenuItem(
+                    text = { Text(categoryOption) },
+                    onClick = {
+                      onChange(categoryOption)
+                      onValidate()
+                      expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding)
+              }
+            }
+      }
 }
 
 @Composable

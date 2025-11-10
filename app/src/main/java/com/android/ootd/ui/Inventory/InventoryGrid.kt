@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.CategoryNormalizer
 
 /**
  * Grid layout displaying inventory items grouped by category.
@@ -28,8 +29,8 @@ import com.android.ootd.ui.theme.Primary
  */
 @Composable
 fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modifier = Modifier) {
-  // Group items by normalized category
-  val groupedItems = items.groupBy { normalizeCategoryName(it.category) }
+  // Group items by category
+  val groupedItems = items.groupBy { it.category }
 
   LazyVerticalGrid(
       columns = GridCells.Fixed(3),
@@ -39,8 +40,7 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
         // Iterate through categories in order
-        val categoryOrder = listOf("Clothing", "Shoes", "Accessories", "Bags")
-        categoryOrder.forEach { category ->
+        CategoryNormalizer.VALID_CATEGORIES.forEach { category ->
           val categoryItems = groupedItems[category]
           if (!categoryItems.isNullOrEmpty()) {
             // Category header spanning full width
@@ -64,7 +64,8 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
         }
 
         // Handle items with unknown categories
-        val unknownItems = groupedItems.filterKeys { it !in categoryOrder }.values.flatten()
+        val unknownItems =
+            groupedItems.filterKeys { it !in CategoryNormalizer.VALID_CATEGORIES }.values.flatten()
         if (unknownItems.isNotEmpty()) {
           item(span = { GridItemSpan(3) }) {
             Text(
@@ -83,21 +84,4 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
           }
         }
       }
-}
-
-/**
- * Normalizes category names to handle variations. E.g., "clothes" -> "Clothing", "shoe" -> "Shoes"
- */
-private fun normalizeCategoryName(category: String): String {
-  return when (category.trim().lowercase()) {
-    "clothes",
-    "clothing" -> "Clothing"
-    "shoes",
-    "shoe" -> "Shoes"
-    "bags",
-    "bag" -> "Bags"
-    "accessories",
-    "accessory" -> "Accessories"
-    else -> category.trim()
-  }
 }
