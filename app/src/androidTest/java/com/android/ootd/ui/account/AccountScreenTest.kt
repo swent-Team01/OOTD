@@ -462,7 +462,6 @@ class AccountScreenTest {
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
-
     // Scroll to make the button visible on smaller screens
     selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL).performScrollTo().performClick()
     composeTestRule.waitForIdle()
