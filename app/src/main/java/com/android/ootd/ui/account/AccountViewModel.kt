@@ -5,6 +5,7 @@ package com.android.ootd.ui.account
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
 import android.util.Log
+import androidx.annotation.Keep
 import androidx.core.net.toUri
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+@Keep
 /**
  * UI state for the Account screen.
  *

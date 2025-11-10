@@ -28,9 +28,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.ui.Inventory.InventoryScreen
+import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
