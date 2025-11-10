@@ -16,14 +16,20 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -47,6 +53,7 @@ class AccountScreenTest {
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
   private lateinit var mockUserRepository: UserRepository
+  private lateinit var mockLocationRepository: LocationRepository
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
@@ -58,6 +65,7 @@ class AccountScreenTest {
     mockAccountService = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
+    mockLocationRepository = mockk(relaxed = true)
     mockCredentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -74,7 +82,14 @@ class AccountScreenTest {
             profilePicture = "",
             isPrivate = false)
 
-    viewModel = AccountViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
+    coEvery { mockLocationRepository.search(any()) } returns emptyList()
+
+    // Mock the fusedLocationClient to avoid lateinit errors
+    LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
+
+    viewModel =
+        AccountViewModel(
+            mockAccountService, mockAccountRepository, mockUserRepository, mockLocationRepository)
   }
 
   @After
@@ -85,6 +100,11 @@ class AccountScreenTest {
   // --- Helpers ---
   private fun signIn(user: FirebaseUser?) {
     userFlow.value = user
+    composeTestRule.waitForIdle()
+  }
+
+  private fun waitForLoadingToComplete() {
+    composeTestRule.waitUntil(timeoutMillis = 5000) { !viewModel.uiState.value.isLoading }
     composeTestRule.waitForIdle()
   }
 
@@ -321,5 +341,72 @@ class AccountScreenTest {
       assertFalse(uploadInvoked)
       assertFalse(editedCalled)
     }
+  }
+
+  // --- Location field tests ---
+
+  @Test
+  fun locationField_displaysSavedLocation_whenAccountHasLocation() {
+    // Setup account with saved location
+    val savedLocation = Location(46.5191, 6.5668, "EPFL, Lausanne")
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = "",
+            isPrivate = false,
+            location = savedLocation)
+
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Location field should display the saved location - use the correct test tag
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION)
+        .assertIsDisplayed()
+        .assertTextContains("EPFL, Lausanne")
+  }
+
+  @Test
+  fun locationField_clearButton_makesFieldEditable() {
+    // Setup account with saved location
+    val savedLocation = Location(46.5191, 6.5668, "EPFL, Lausanne")
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = "",
+            isPrivate = false,
+            location = savedLocation)
+
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Verify location is displayed - use the correct test tag
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION).assertTextContains("EPFL, Lausanne")
+
+    // Click clear button
+    selectTestTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Field should now be editable (text cleared)
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION).performTextInput("Zurich")
+    composeTestRule.waitForIdle()
+
+    // Verify text was entered (field is editable)
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION).assertTextContains("Zurich")
+  }
+
+  @Test
+  fun locationField_gpsButton_exists() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // GPS button should be visible
+    selectTestTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Update Location (GPS)").assertIsDisplayed()
   }
 }
