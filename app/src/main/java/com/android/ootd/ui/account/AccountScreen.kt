@@ -234,7 +234,7 @@ private fun AccountScreenContent(
                       .testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
           SignOutButton(onClick = onSignOutClick)
@@ -248,8 +248,6 @@ private fun AccountScreenContent(
 
 @Composable
 private fun LocationField(uiState: AccountViewState, viewModel: AccountViewModel) {
-  // Determine if there's an error: user has typed, left the field, and query doesn't match the
-  // selected location
   val hasLocationError =
       uiState.locationFieldTouched &&
           uiState.locationFieldLeft &&
