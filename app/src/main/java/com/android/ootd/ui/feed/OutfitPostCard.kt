@@ -21,12 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.theme.OOTDTheme
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
@@ -229,20 +227,4 @@ fun OutfitPostCard(
               }
         }
       }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFEFFFE)
-@Composable
-fun OutfitPostCardPreview() {
-  OOTDTheme {
-    OutfitPostCard(
-        post =
-            OutfitPost(
-                postUID = "1",
-                name = "Pit",
-                ownerId = "user123",
-                description = "Casual monochrome fit for fall 🍂",
-                outfitURL = "https://via.placeholder.com/600x400"),
-        isBlurred = true)
-  }
 }
