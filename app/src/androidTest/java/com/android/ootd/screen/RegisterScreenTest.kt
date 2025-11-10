@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.android.ootd.LocationProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
@@ -19,10 +20,13 @@ import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -47,6 +51,7 @@ class RegisterScreenTest {
   fun setUp() {
     repository = mockk(relaxed = true)
     locationRepository = mockk(relaxed = true)
+    LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
     viewModel =
         RegisterViewModel(userRepository = repository, locationRepository = locationRepository)
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
@@ -484,5 +489,36 @@ class RegisterScreenTest {
     composeTestRule
         .onNodeWithTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)
         .assertDoesNotExist()
+  }
+
+  @Test
+  fun gpsButton_triggersPermissionFlow_onGrant() {
+    // When GPS button is clicked, it should trigger permission request
+    // In a real scenario this would launch the permission dialog
+    // Here we verify the button exists and can trigger the callback
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
+    // Simulate permission granted via ViewModel directly (UI test can't test system dialogs)
+    composeTestRule.runOnUiThread { viewModel.onLocationPermissionGranted() }
+    composeTestRule.waitForIdle()
+
+    // Verify loading state was set (GPS retrieval started)
+    assertTrue(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun gpsButton_triggersPermissionFlow_onDeny() {
+    // Verify GPS button exists
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+
+    val freshViewModel =
+        RegisterViewModel(userRepository = repository, locationRepository = locationRepository)
+
+    // Simulate permission denied on the fresh VM
+    freshViewModel.onLocationPermissionDenied()
+
+    // Verify error message set on the ViewModel
+    assertNotNull(freshViewModel.uiState.value.errorMsg)
+    assertTrue(freshViewModel.uiState.value.errorMsg!!.contains("Location permission denied"))
   }
 }

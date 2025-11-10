@@ -466,4 +466,30 @@ class RegisterViewModelTest {
     assertEquals("", viewModel.uiState.value.locationQuery)
     assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
   }
+
+  @Test
+  fun setLocationQuery_whenRepositoryThrows_clearsLoadingAndSuggestions() = runTest {
+    // Arrange: mock repository to throw exception
+    coEvery { locationRepository.search(any()) } throws Exception("Network error")
+
+    // Act: trigger search
+    viewModel.setLocationQuery("Paris")
+    advanceUntilIdle()
+
+    // Assert: loading cleared, suggestions empty
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+    assertTrue(viewModel.uiState.value.locationSuggestions.isEmpty())
+  }
+
+  @Test
+  fun onLocationPermissionDenied_emitsErrorMessage() {
+    // Act: simulate permission denial
+    viewModel.onLocationPermissionDenied()
+
+    // Assert: error message set
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertTrue(
+        viewModel.uiState.value.errorMsg!!.contains("Location permission denied") ||
+            viewModel.uiState.value.errorMsg!!.contains("search for your location manually"))
+  }
 }
