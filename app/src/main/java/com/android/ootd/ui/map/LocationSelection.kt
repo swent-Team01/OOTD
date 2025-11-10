@@ -1,10 +1,12 @@
 package com.android.ootd.ui.map
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
@@ -44,13 +46,12 @@ object LocationSelectionTestTags {
   const val LOCATION_MORE = "locationMore"
   const val LOCATION_GPS_BUTTON = "locationGpsButton"
   const val LOCATION_CLEAR_BUTTON = "locationClearButton"
-  const val NO_LOCATION_RESULTS = "noLocationResults"
 }
 
 /**
  * Location selection UI with a GPS button, text input and suggestion dropdown.
  *
- * @param textGPSbutton label for the GPS button
+ * @param textGPSButton label for the GPS button
  * @param textLocationField label for the location input field
  * @param locationQuery current text value of the location input
  * @param selectedLocation currently selected Location, or null
@@ -67,7 +68,7 @@ object LocationSelectionTestTags {
  */
 @Composable
 fun LocationSelectionSection(
-    textGPSbutton: String,
+    textGPSButton: String,
     textLocationField: String,
     locationQuery: String,
     selectedLocation: Location?,
@@ -109,7 +110,7 @@ fun LocationSelectionSection(
               imageVector = Icons.Default.LocationOn,
               contentDescription = "GPS",
               modifier = Modifier.padding(end = 8.dp))
-          Text(textGPSbutton, fontFamily = Bodoni)
+          Text(textGPSButton, fontFamily = Bodoni)
         }
 
     // Manual Input Field with custom dropdown
@@ -124,7 +125,18 @@ fun LocationSelectionSection(
             }
           },
           textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = Bodoni),
-          label = { Text(textLocationField, color = textColor, fontFamily = Bodoni) },
+          label = {
+            Box(
+                modifier =
+                    Modifier.background(
+                            MaterialTheme.colorScheme.secondary, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)) {
+                  Text(
+                      text = textLocationField,
+                      style = MaterialTheme.typography.bodySmall,
+                      color = MaterialTheme.colorScheme.tertiary)
+                }
+          },
           placeholder = {
             Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
           },
@@ -133,7 +145,8 @@ fun LocationSelectionSection(
               isLoadingLocation -> {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
               }
-              selectedLocation != null && selectedLocation.name.isNotEmpty() -> {
+              // Show clear button when user typed anything (so they can clear invalid query)
+              locationQuery.isNotEmpty() -> {
                 IconButton(
                     onClick = {
                       onLocationQueryChange("")
@@ -212,7 +225,7 @@ fun LocationSelectionSection(
 private fun LocationSelectionSectionPreview() {
   OOTDTheme {
     LocationSelectionSection(
-        textGPSbutton = "Use GPS Location",
+        textGPSButton = "Use GPS Location",
         textLocationField = "Enter Location",
         locationQuery = "Zurich",
         selectedLocation = Location(47.3769, 8.5417, "Zürich, Switzerland"),
