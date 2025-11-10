@@ -521,4 +521,31 @@ class RegisterScreenTest {
     assertNotNull(freshViewModel.uiState.value.errorMsg)
     assertTrue(freshViewModel.uiState.value.errorMsg!!.contains("Location permission denied"))
   }
+
+  // ========== EPFL Default Location Tests ==========
+
+  @Test
+  fun defaultEpflLocationButton_isDisplayed() {
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
+        .assertIsDisplayed()
+        .assertTextContains("or select default location (EPFL)")
+  }
+
+  @Test
+  fun defaultEpflLocationButton_setsLocationToEpfl() {
+    // Act: click the default EPFL location button
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be set to EPFL
+    composeTestRule.runOnUiThread {
+      val selectedLocation = viewModel.uiState.value.selectedLocation
+      assertNotNull(selectedLocation)
+      assertEquals(46.5191, selectedLocation!!.latitude, 0.0001)
+      assertEquals(6.5668, selectedLocation.longitude, 0.0001)
+      assertTrue(selectedLocation.name.contains("EPFL"))
+      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
+    }
+  }
 }

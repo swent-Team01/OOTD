@@ -40,6 +40,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -421,5 +422,37 @@ class AccountScreenTest {
     // GPS button should be visible
     selectTestTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithText("Update Location (GPS)").assertIsDisplayed()
+  }
+
+  // --- EPFL Default Location tests ---
+
+  @Test
+  fun defaultEpflLocationButton_isDisplayed() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
+        .assertIsDisplayed()
+        .assertTextContains("or select default location (EPFL)")
+  }
+
+  @Test
+  fun defaultEpflLocationButton_setsLocationToEpfl() {
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Act: click the default EPFL location button
+    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL).performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be set to EPFL
+    composeTestRule.runOnUiThread {
+      val selectedLocation = viewModel.uiState.value.location
+      assertEquals(46.5191, selectedLocation.latitude, 0.0001)
+      assertEquals(6.5668, selectedLocation.longitude, 0.0001)
+      assertTrue(selectedLocation.name.contains("EPFL"))
+      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
+    }
   }
 }
