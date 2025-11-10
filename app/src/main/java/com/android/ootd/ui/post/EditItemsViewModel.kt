@@ -10,9 +10,6 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -60,52 +57,40 @@ open class EditItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository
 ) : BaseItemViewModel<EditItemsUIState>() {
 
-  override val _uiState = MutableStateFlow(EditItemsUIState())
-  override val uiState: StateFlow<EditItemsUIState> = _uiState.asStateFlow()
+  // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
+  override fun initialState() = EditItemsUIState()
 
-  override fun updateType(state: EditItemsUIState, type: String): EditItemsUIState =
-      state.copy(type = type)
+  override fun updateType(state: EditItemsUIState, type: String) = state.copy(type = type)
 
-  override fun updateBrand(state: EditItemsUIState, brand: String): EditItemsUIState =
-      state.copy(brand = brand)
+  override fun updateBrand(state: EditItemsUIState, brand: String) = state.copy(brand = brand)
 
-  override fun updateLink(state: EditItemsUIState, link: String): EditItemsUIState =
-      state.copy(link = link)
+  override fun updateLink(state: EditItemsUIState, link: String) = state.copy(link = link)
 
   override fun updateMaterial(
       state: EditItemsUIState,
       materialText: String,
       materials: List<Material>
-  ): EditItemsUIState = state.copy(materialText = materialText, material = materials)
+  ) = state.copy(materialText = materialText, material = materials)
 
-  override fun getCategory(state: EditItemsUIState): String = state.category
+  override fun getCategory(state: EditItemsUIState) = state.category
 
-  override fun setErrorMessage(state: EditItemsUIState, message: String?): EditItemsUIState =
+  override fun setErrorMessage(state: EditItemsUIState, message: String?) =
       state.copy(errorMessage = message)
 
-  override fun updateTypeSuggestionsState(
-      state: EditItemsUIState,
-      suggestions: List<String>
-  ): EditItemsUIState = state.copy(suggestions = suggestions)
+  override fun updateTypeSuggestionsState(state: EditItemsUIState, suggestions: List<String>) =
+      state.copy(suggestions = suggestions)
 
-  override fun updateCategorySuggestionsState(
-      state: EditItemsUIState,
-      suggestions: List<String>
-  ): EditItemsUIState = state
+  override fun updateCategorySuggestionsState(state: EditItemsUIState, suggestions: List<String>) =
+      state // no-op for categories in this screen
 
   override fun setPhotoState(
       state: EditItemsUIState,
       uri: Uri?,
       image: ImageData,
       invalidPhotoMsg: String?
-  ): EditItemsUIState =
-      state.copy(localPhotoUri = uri, image = image, invalidPhotoMsg = invalidPhotoMsg)
+  ) = state.copy(localPhotoUri = uri, image = image, invalidPhotoMsg = invalidPhotoMsg)
 
-  /**
-   * Loads an existing item into the UI state for editing.
-   *
-   * @param item The item to load.
-   */
+  /** Loads an existing item into the UI state for editing. */
   fun loadItem(item: Item) {
     val materialText =
         item.material.filterNotNull().joinToString(", ") { "${it.name} ${it.percentage}%" }
@@ -143,7 +128,6 @@ open class EditItemsViewModel(
       setErrorMsg("Please enter a valid URL.")
       return
     }
-
     if (!state.isEditValid) {
       setErrorMsg("Please fill in all required fields.")
       return
@@ -155,11 +139,14 @@ open class EditItemsViewModel(
           if (state.localPhotoUri != null)
               FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
           else state.image
+
       if (finalImage.imageUrl.isEmpty()) {
         setErrorMsg("Please select a photo.")
         _uiState.value = _uiState.value.copy(isSaveSuccessful = false)
+        _uiState.value = _uiState.value.copy(isLoading = false)
         return@launch
       }
+
       val updatedItem =
           Item(
               itemUuid = state.itemId,
@@ -185,7 +172,7 @@ open class EditItemsViewModel(
     }
   }
 
-  /** Deletes the current item from the repository. Shows an error if no item is selected. */
+  /** Deletes the current item from the repository. */
   fun deleteItem() {
     val state = _uiState.value
     if (state.itemId.isEmpty()) {
@@ -197,9 +184,7 @@ open class EditItemsViewModel(
       try {
         repository.deleteItem(state.itemId)
         val deleted = FirebaseImageUploader.deleteImage(state.image.imageId)
-        if (!deleted) {
-          Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
-        }
+        if (!deleted) Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
         _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
       } catch (e: Exception) {
         setErrorMsg("Failed to delete item: ${e.message}")
