@@ -159,12 +159,11 @@ class EditItemsScreenTest {
     composeTestRule.waitForIdle()
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .performTextClearance()
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .performTextInput("Shoes")
+    // Click to open dropdown
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).performClick()
+    // Select an option from dropdown
+    composeTestRule.onNodeWithText("Shoes").performClick()
+    // Verify selection
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
         .assertTextContains("Shoes")

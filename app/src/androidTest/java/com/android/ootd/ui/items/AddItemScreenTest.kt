@@ -122,19 +122,29 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
         .assertCountEquals(0)
   }
 
-  // ----------- Category validation flow -----------
+  // ----------- Category dropdown selection -----------
 
   @Test
-  fun invalidCategory_showsError_then_validClears() {
-    // Invalid first
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performTextInput("random")
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory != null) }
+  fun categoryDropdown_showsValidOptions_andSelectionWorks() {
+    // Click dropdown to open it
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
+    composeTestRule.waitForIdle()
 
-    // Now enter a valid category
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-        .performTextReplacement("Clothing")
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.invalidCategory == null) }
+    // Verify all valid categories are shown
+    composeTestRule.onNodeWithText("Clothing").assertExists()
+    composeTestRule.onNodeWithText("Shoes").assertExists()
+    composeTestRule.onNodeWithText("Accessories").assertExists()
+    composeTestRule.onNodeWithText("Bags").assertExists()
+
+    // Select "Clothing"
+    composeTestRule.onNodeWithText("Clothing").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify selection
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.category == "Clothing")
+      assert(viewModel.uiState.value.invalidCategory == null)
+    }
   }
 
   // ----------- Photo setters and edge cases -----------
@@ -172,7 +182,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   // ----------- Add button enabled states -----------
 
   @Test
-  fun addButton_disabledForMissingOrInvalidInputs_and_enabledWhenValid() {
+  fun addButton_disabledForMissingInputs_and_enabledWhenValid() {
     // No image + minimal inputs -> disabled
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("Jacket")
@@ -182,19 +192,18 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
         .assertIsNotEnabled()
     composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isAddingValid) }
 
-    // With image but invalid category -> disabled
+    // With image but no category -> disabled
     val uri = "content://dummy/photo.jpg".toUri()
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-    composeTestRule.enterAddItemCategory("InvalidCategory")
+    // Reset category by setting to empty
+    composeTestRule.runOnIdle { viewModel.setCategory("") }
     composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
     composeTestRule
         .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
         .assertIsNotEnabled()
 
-    // Valid all -> enabled
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
-        .performTextReplacement("Clothing")
+    // Valid all (image + category selected from dropdown) -> enabled
+    composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("T-Shirt")
     composeTestRule.enterAddItemBrand("Nike")
     composeTestRule.enterAddItemPrice(19.99)

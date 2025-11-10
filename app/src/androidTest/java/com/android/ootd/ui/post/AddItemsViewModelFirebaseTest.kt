@@ -257,14 +257,14 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
   }
 
   @Test
-  fun onAddItemClick_normalizesCategoryNames() = runBlocking {
+  fun onAddItemClick_withExactCategoryFromDropdown_addsSuccessfully() = runBlocking {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val uri = createReadableUri()
 
     viewModel.setPhoto(uri)
-    viewModel.setCategory("clothes") // lowercase variant
+    viewModel.setCategory("Clothing") // Exact match from dropdown (no longer accepts "clothes")
     viewModel.setType("Pants")
     viewModel.setBrand("Levi's")
     viewModel.setPrice("60.00")
@@ -277,7 +277,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
     val items = repository.getAllItems()
     assertEquals(1, items.size)
-    // Should accept "clothes" as valid (normalized to "Clothing")
-    assertEquals("clothes", items[0].category)
+    // Category should be exactly as selected from dropdown
+    assertEquals("Clothing", items[0].category)
   }
 }

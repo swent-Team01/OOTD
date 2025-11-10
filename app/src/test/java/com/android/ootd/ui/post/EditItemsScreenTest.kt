@@ -132,13 +132,16 @@ class EditItemsScreenTest {
   }
 
   @Test
-  fun `category field accepts text input`() {
+  fun `category dropdown shows and selects option`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .performTextInput("Clothing")
+    // Click to open dropdown
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).performClick()
 
+    // Select an option
+    composeTestRule.onNodeWithText("Clothing").performClick()
+
+    // Verify selection
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
         .assertTextContains("Clothing")
