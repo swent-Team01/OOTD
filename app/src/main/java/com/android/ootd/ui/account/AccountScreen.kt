@@ -270,49 +270,6 @@ private fun AccountScreenContent(
 }
 
 @Composable
-private fun LocationField(
-    uiState: AccountViewState,
-    viewModel: AccountViewModel,
-    onGPSClick: () -> Unit = {}
-) {
-  val hasLocationError =
-      uiState.locationFieldTouched &&
-          uiState.locationFieldLeft &&
-          uiState.locationQuery.isNotEmpty() &&
-          (uiState.location.name != uiState.locationQuery || uiState.location == emptyLocation)
-
-  LocationSelectionSection(
-      textGPSButton = "Update Location (GPS)",
-      textLocationField = "Location",
-      locationQuery = uiState.locationQuery,
-      selectedLocation = uiState.location,
-      suggestions = uiState.locationSuggestions,
-      isLoadingLocation = uiState.isLoadingLocations,
-      onLocationQueryChange = viewModel::setLocationQuery,
-      onLocationSelect = viewModel::setLocation,
-      onGPSClick = onGPSClick,
-      onClearSuggestions = viewModel::clearLocationSuggestions,
-      isError = hasLocationError,
-      onFocusChanged = viewModel::onLocationFieldFocusChanged,
-      modifier =
-          Modifier.padding(vertical = 8.dp).testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
-}
-
-@Composable
-private fun BackButton(onBack: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
-  Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-    IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
-      Icon(
-          imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-          contentDescription = "Back",
-          tint = colors.onBackground,
-          modifier = Modifier.size(48.dp))
-    }
-  }
-}
-
-@Composable
 private fun AccountTitle() {
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
@@ -530,6 +487,49 @@ private fun LoadingOverlay() {
         CircularProgressIndicator(
             modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
       }
+}
+
+@Composable
+private fun LocationField(
+    uiState: AccountViewState,
+    viewModel: AccountViewModel,
+    onGPSClick: () -> Unit = {}
+) {
+  val hasLocationError =
+      uiState.locationFieldTouched &&
+          uiState.locationFieldLeft &&
+          uiState.locationQuery.isNotEmpty() &&
+          (uiState.location.name != uiState.locationQuery || uiState.location == emptyLocation)
+
+  LocationSelectionSection(
+      textGPSButton = "Update Location (GPS)",
+      textLocationField = "Location",
+      locationQuery = uiState.locationQuery,
+      selectedLocation = uiState.location,
+      suggestions = uiState.locationSuggestions,
+      isLoadingLocation = uiState.isLoadingLocations,
+      onLocationQueryChange = viewModel::setLocationQuery,
+      onLocationSelect = viewModel::setLocation,
+      onGPSClick = onGPSClick,
+      onClearSuggestions = viewModel::clearLocationSuggestions,
+      isError = hasLocationError,
+      onFocusChanged = viewModel::onLocationFieldFocusChanged,
+      modifier =
+          Modifier.padding(vertical = 8.dp).testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
+}
+
+@Composable
+private fun BackButton(onBack: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+    IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
+      Icon(
+          imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+          contentDescription = "Back",
+          tint = colors.onBackground,
+          modifier = Modifier.size(48.dp))
+    }
+  }
 }
 
 @Composable
