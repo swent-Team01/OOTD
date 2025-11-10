@@ -4,8 +4,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,12 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,12 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -63,16 +52,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Tertiary
-import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.CategoryNormalizer
 
 object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"
@@ -210,11 +194,17 @@ fun AddItemsScreen(
             // top image preview overlays the list
             ItemsImagePreview(
                 localUri = itemsUIState.localPhotoUri,
-                uploadURL = itemsUIState.image.imageUrl,
+                remoteUrl = itemsUIState.image.imageUrl,
                 maxImageSize = maxImageSize,
                 imageScale = imageScaleState.floatValue,
                 currentSize = currentImageSizeState.value,
-            )
+                testTag = AddItemScreenTestTags.IMAGE_PREVIEW,
+                placeholderIcon = {
+                  Icon(
+                      painter = painterResource(R.drawable.ic_photo_placeholder),
+                      contentDescription = "Placeholder icon",
+                      modifier = Modifier.size(80.dp))
+                })
           }
         })
 
@@ -287,16 +277,36 @@ private fun FieldsList(
     item {
       CategoryField(
           category = category,
-          invalidCategory = invalidCategory,
           onChange = onCategoryChange,
-          onValidate = onCategoryValidate)
+          testTag = AddItemScreenTestTags.INPUT_CATEGORY,
+          invalidCategory = invalidCategory,
+          onValidate = onCategoryValidate,
+          dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
     }
 
-    item { TypeField(type = type, suggestions = typeSuggestions, onChange = onTypeChange) }
-    item { BrandField(brand = brand, onChange = onBrandChange) }
+    item {
+      TypeField(
+          type = type,
+          suggestions = typeSuggestions,
+          onChange = onTypeChange,
+          testTag = AddItemScreenTestTags.INPUT_TYPE,
+          dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
+          expandOnChange = true)
+    }
+    item {
+      BrandField(
+          brand = brand, onChange = onBrandChange, testTag = AddItemScreenTestTags.INPUT_BRAND)
+    }
     item { PriceField(price = price, onChange = onPriceChange) }
-    item { LinkField(link = link, onChange = onLinkChange) }
-    item { MaterialField(materialText = material, onChange = onMaterialChange) }
+    item {
+      LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
+    }
+    item {
+      MaterialField(
+          materialText = material,
+          onChange = onMaterialChange,
+          testTag = AddItemScreenTestTags.INPUT_MATERIAL)
+    }
 
     item {
       Spacer(modifier = Modifier.height(24.dp))
@@ -355,102 +365,6 @@ private fun ImagePickerRow(
   }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryField(
-    category: String,
-    invalidCategory: String?,
-    onChange: (String) -> Unit,
-    onValidate: () -> Unit,
-) {
-  var expanded by remember { mutableStateOf(false) }
-  val categories = CategoryNormalizer.VALID_CATEGORIES
-
-  ExposedDropdownMenuBox(
-      expanded = expanded,
-      onExpandedChange = { expanded = it },
-      modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = category,
-            onValueChange = {}, // Read-only, selection only
-            readOnly = true,
-            label = { Text("Category *") },
-            placeholder = { Text("Select a category") },
-            isError = invalidCategory != null,
-            supportingText = {
-              invalidCategory?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag(AddItemScreenTestTags.ERROR_MESSAGE))
-              }
-            },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier =
-                Modifier.fillMaxWidth().menuAnchor().testTag(AddItemScreenTestTags.INPUT_CATEGORY),
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.testTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)) {
-              categories.forEach { categoryOption ->
-                DropdownMenuItem(
-                    text = { Text(categoryOption) },
-                    onClick = {
-                      onChange(categoryOption)
-                      onValidate()
-                      expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding)
-              }
-            }
-      }
-}
-
-@Composable
-private fun TypeField(type: String, suggestions: List<String>, onChange: (String) -> Unit) {
-  var expanded by remember { mutableStateOf(false) }
-
-  Box(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
-        value = type,
-        onValueChange = {
-          onChange(it)
-          expanded = it.isNotBlank()
-        },
-        label = { Text("Type") },
-        placeholder = { Text("Enter a type") },
-        modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_TYPE),
-        singleLine = true)
-
-    DropdownMenu(
-        expanded = expanded && suggestions.isNotEmpty(),
-        onDismissRequest = { expanded = false },
-        modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.TYPE_SUGGESTIONS),
-        properties = PopupProperties(focusable = false)) {
-          suggestions.forEach { suggestion ->
-            DropdownMenuItem(
-                text = { Text(suggestion) },
-                onClick = {
-                  onChange(suggestion)
-                  expanded = false
-                })
-          }
-        }
-  }
-}
-
-@Composable
-private fun BrandField(brand: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = brand,
-      onValueChange = onChange,
-      label = { Text("Brand") },
-      placeholder = { Text("Enter a brand") },
-      modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_BRAND))
-}
-
 @Composable
 private fun PriceField(price: String, onChange: (String) -> Unit) {
   OutlinedTextField(
@@ -459,26 +373,6 @@ private fun PriceField(price: String, onChange: (String) -> Unit) {
       label = { Text("Price") },
       placeholder = { Text("Enter a price") },
       modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_PRICE))
-}
-
-@Composable
-private fun LinkField(link: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = link,
-      onValueChange = onChange,
-      label = { Text("Link") },
-      placeholder = { Text("Enter a link") },
-      modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_LINK))
-}
-
-@Composable
-private fun MaterialField(materialText: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = materialText,
-      onValueChange = onChange,
-      label = { Text("Material") },
-      placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
-      modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_MATERIAL))
 }
 
 @Composable
@@ -500,62 +394,5 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
               Spacer(Modifier.width(8.dp))
               Text(text = "Add Item", modifier = Modifier.align(Alignment.CenterVertically))
             }
-      }
-}
-
-@Composable
-private fun LoadingOverlay(visible: Boolean) {
-  if (!visible) return
-  Box(
-      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          CircularProgressIndicator(color = Primary)
-          Spacer(modifier = Modifier.height(12.dp))
-          Text("Uploading item...", color = White, style = Typography.bodyLarge)
-        }
-      }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
-    localUri: Uri?,
-    uploadURL: String,
-    maxImageSize: Dp,
-    imageScale: Float,
-    currentSize: Dp,
-) {
-  Box(
-      modifier =
-          Modifier.size(maxImageSize)
-              .align(Alignment.TopCenter)
-              .graphicsLayer {
-                scaleX = imageScale
-                scaleY = imageScale
-                translationY = -((maxImageSize.toPx() - currentSize.toPx()) / 2f)
-              }
-              .clip(RoundedCornerShape(16.dp))
-              .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
-              .testTag(AddItemScreenTestTags.IMAGE_PREVIEW),
-      contentAlignment = Alignment.Center) {
-        when {
-          localUri != null ->
-              AsyncImage(
-                  model = localUri,
-                  contentDescription = "Selected photo",
-                  modifier = Modifier.matchParentSize(),
-                  contentScale = ContentScale.Crop)
-          uploadURL.isEmpty() ->
-              Icon(
-                  painter = painterResource(R.drawable.ic_photo_placeholder),
-                  contentDescription = "Placeholder icon",
-                  modifier = Modifier.size(80.dp))
-          else ->
-              AsyncImage(
-                  model = uploadURL,
-                  contentDescription = "Uploaded photo",
-                  modifier = Modifier.matchParentSize(),
-                  contentScale = ContentScale.Crop)
-        }
       }
 }

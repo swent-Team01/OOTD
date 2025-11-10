@@ -4,8 +4,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -26,12 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,12 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -61,13 +48,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
-import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.CategoryNormalizer
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -184,7 +167,18 @@ fun EditItemsScreen(
                     maxImageSize = maxImageSize,
                     imageScale = imageScaleState.floatValue,
                     currentSize = currentImageSizeState.value,
-                )
+                    testTag = EditItemsScreenTestTags.PLACEHOLDER_PICTURE,
+                    placeholderIcon = {
+                      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add photo",
+                            tint = Tertiary,
+                            modifier = Modifier.size(48.dp))
+                        Spacer(Modifier.height(8.dp))
+                        Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
+                      }
+                    })
               }
         })
 
@@ -242,15 +236,38 @@ private fun FieldsList(
 ) {
   LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
     item { ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera) }
-    item { CategoryField(category = category, onChange = onCategoryChange) }
+    item {
+      CategoryField(
+          category = category,
+          onChange = onCategoryChange,
+          testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
+    }
     item {
       TypeField(
-          type = type, suggestions = suggestions, onChange = onTypeChange, onFocus = onTypeFocus)
+          type = type,
+          suggestions = suggestions,
+          onChange = onTypeChange,
+          testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
+          dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
+          onFocus = onTypeFocus)
     }
-    item { BrandField(brand = brand, onChange = onBrandChange) }
+    item {
+      BrandField(
+          brand = brand,
+          onChange = onBrandChange,
+          testTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND)
+    }
     item { PriceField(price = price, onChange = onPriceChange) }
-    item { MaterialField(materialText = material, onChange = onMaterialChange) }
-    item { LinkField(link = link, onChange = onLinkChange) }
+    item {
+      MaterialField(
+          materialText = material,
+          onChange = onMaterialChange,
+          testTag = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+    }
+    item {
+      LinkField(
+          link = link, onChange = onLinkChange, testTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+    }
     item {
       SaveDeleteRow(
           isDeleteEnabled = isDeleteEnabled,
@@ -280,93 +297,6 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
   }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryField(category: String, onChange: (String) -> Unit) {
-  var expanded by remember { mutableStateOf(false) }
-  val categories = CategoryNormalizer.VALID_CATEGORIES
-
-  ExposedDropdownMenuBox(
-      expanded = expanded,
-      onExpandedChange = { expanded = it },
-      modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = category,
-            onValueChange = {}, // Read-only, selection only
-            readOnly = true,
-            label = { Text("Category *") },
-            placeholder = { Text("Select a category") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier =
-                Modifier.fillMaxWidth()
-                    .menuAnchor()
-                    .testTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY),
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
-
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-          categories.forEach { categoryOption ->
-            DropdownMenuItem(
-                text = { Text(categoryOption) },
-                onClick = {
-                  onChange(categoryOption)
-                  expanded = false
-                },
-                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding)
-          }
-        }
-      }
-}
-
-@Composable
-private fun TypeField(
-    type: String,
-    suggestions: List<String>,
-    onChange: (String) -> Unit,
-    onFocus: () -> Unit,
-) {
-  var expanded by remember { mutableStateOf(false) }
-  Box {
-    OutlinedTextField(
-        value = type,
-        onValueChange = {
-          onChange(it)
-          expanded = true
-        },
-        label = { Text("Type") },
-        modifier =
-            Modifier.fillMaxWidth()
-                .testTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
-                .onFocusChanged { focusState ->
-                  if (focusState.isFocused) {
-                    onFocus()
-                    expanded = true
-                  }
-                })
-    DropdownMenu(
-        expanded = expanded && suggestions.isNotEmpty(),
-        onDismissRequest = { expanded = false },
-        modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.TYPE_SUGGESTIONS)) {
-          suggestions.forEach { suggestion ->
-            DropdownMenuItem(
-                text = { Text(suggestion) },
-                onClick = {
-                  onChange(suggestion)
-                  expanded = false
-                })
-          }
-        }
-  }
-}
-
-@Composable
-private fun BrandField(brand: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = brand,
-      onValueChange = onChange,
-      label = { Text("Brand") },
-      modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND))
-}
-
 @Composable
 private fun PriceField(price: Double, onChange: (Double) -> Unit) {
   val text = if (price == 0.0) "" else price.toString()
@@ -376,26 +306,6 @@ private fun PriceField(price: Double, onChange: (Double) -> Unit) {
       label = { Text("Price") },
       placeholder = { Text("e.g., 49.99") },
       modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
-}
-
-@Composable
-private fun MaterialField(materialText: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = materialText,
-      onValueChange = onChange,
-      label = { Text("Material") },
-      placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
-      modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL))
-}
-
-@Composable
-private fun LinkField(link: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = link,
-      onValueChange = onChange,
-      label = { Text("Link") },
-      placeholder = { Text("e.g., https://example.com") },
-      modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_LINK))
 }
 
 @Composable
@@ -434,67 +344,4 @@ private fun SaveDeleteRow(
           Text("Save Changes")
         }
   }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
-    localUri: Uri?,
-    remoteUrl: String,
-    maxImageSize: Dp,
-    imageScale: Float,
-    currentSize: Dp,
-) {
-  Box(
-      modifier =
-          Modifier.size(maxImageSize)
-              .align(Alignment.TopCenter)
-              .graphicsLayer {
-                scaleX = imageScale
-                scaleY = imageScale
-                translationY = -((maxImageSize.toPx() - currentSize.toPx()) / 2f)
-              }
-              .clip(RoundedCornerShape(16.dp))
-              .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
-              .background(Secondary)
-              .testTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE),
-      contentAlignment = Alignment.Center) {
-        when {
-          localUri != null ->
-              AsyncImage(
-                  model = localUri,
-                  contentDescription = "Selected image",
-                  modifier = Modifier.fillMaxSize(),
-                  contentScale = ContentScale.Crop)
-          remoteUrl.isNotEmpty() ->
-              AsyncImage(
-                  model = remoteUrl,
-                  contentDescription = "Uploaded image",
-                  modifier = Modifier.fillMaxSize(),
-                  contentScale = ContentScale.Crop)
-          else ->
-              Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add photo",
-                    tint = Tertiary,
-                    modifier = Modifier.size(48.dp))
-                Spacer(Modifier.height(8.dp))
-                Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
-              }
-        }
-      }
-}
-
-@Composable
-private fun LoadingOverlay(visible: Boolean) {
-  if (!visible) return
-  Box(
-      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          CircularProgressIndicator(color = Primary)
-          Spacer(modifier = Modifier.height(12.dp))
-          Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
-        }
-      }
 }
