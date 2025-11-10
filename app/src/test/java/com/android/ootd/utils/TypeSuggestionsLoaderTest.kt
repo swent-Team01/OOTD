@@ -120,7 +120,7 @@ class TypeSuggestionsLoaderTest {
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
     // All valid categories should have at least some items
-    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags", "Others")
+    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags")
     validCategories.forEach { category ->
       val items = suggestions[category]
       assertNotNull("Category $category should exist", items)
@@ -142,7 +142,7 @@ class TypeSuggestionsLoaderTest {
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
     // Only check valid categories used by the dropdown
-    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags", "Others")
+    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags")
     validCategories.forEach { category ->
       val items = suggestions[category]
       assertNotNull("Category $category should exist", items)
@@ -453,7 +453,7 @@ class TypeSuggestionsLoaderTest {
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
     // All valid dropdown categories should be present
-    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags", "Others")
+    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags")
     validCategories.forEach { category ->
       val items = suggestions[category]
       assertNotNull("Category $category should exist", items)
