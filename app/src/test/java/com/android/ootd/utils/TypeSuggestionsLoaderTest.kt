@@ -119,8 +119,13 @@ class TypeSuggestionsLoaderTest {
     // This test verifies the structure of default suggestions
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
-    // All categories should have at least some items
-    suggestions.values.forEach { items -> assertTrue(items.isNotEmpty()) }
+    // All valid categories should have at least some items
+    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags")
+    validCategories.forEach { category ->
+      val items = suggestions[category]
+      assertNotNull("Category $category should exist", items)
+      assertTrue("Category $category should have items", items!!.isNotEmpty())
+    }
   }
 
   @Test
@@ -136,8 +141,12 @@ class TypeSuggestionsLoaderTest {
   fun `all categories have non-empty item lists`() {
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
-    suggestions.forEach { (category, items) ->
-      assertFalse("Category $category should have items", items.isEmpty())
+    // Only check valid categories used by the dropdown
+    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags")
+    validCategories.forEach { category ->
+      val items = suggestions[category]
+      assertNotNull("Category $category should exist", items)
+      assertFalse("Category $category should have items", items!!.isEmpty())
     }
   }
 
@@ -443,13 +452,12 @@ class TypeSuggestionsLoaderTest {
     // we verify that the fallback data structure is valid
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
-    // All fallback categories should be present
-    val categoryCount = suggestions.keys.size
-    assertTrue("Should have at least 4 categories for fallback", categoryCount >= 4)
-
-    // Each category should have items
-    suggestions.values.forEach { items ->
-      assertTrue("Each fallback category should have items", items.isNotEmpty())
+    // All valid dropdown categories should be present
+    val validCategories = listOf("Clothing", "Shoes", "Accessories", "Bags")
+    validCategories.forEach { category ->
+      val items = suggestions[category]
+      assertNotNull("Category $category should exist", items)
+      assertTrue("Category $category should have items", items!!.isNotEmpty())
     }
   }
 
