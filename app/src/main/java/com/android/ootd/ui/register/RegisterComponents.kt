@@ -207,7 +207,8 @@ internal fun LocationField(
     registerUiState: RegisterUserViewModel,
     viewModel: RegisterViewModel,
     fieldState: FieldState,
-    isError: Boolean
+    isError: Boolean,
+    onGPSClick: () -> Unit = {}
 ) {
   LocationSelectionSection(
       textGPSbutton = "Use current location (GPS)",
@@ -218,7 +219,7 @@ internal fun LocationField(
       isLoadingLocation = registerUiState.isLoadingLocations,
       onLocationQueryChange = viewModel::setLocationQuery,
       onLocationSelect = viewModel::setLocation,
-      onGPSClick = { /* TODO: Implement GPS functionality */ },
+      onGPSClick = onGPSClick,
       onClearSuggestions = viewModel::clearLocationSuggestions,
       textColor = fieldState.textColor.value,
       isError = isError && !fieldState.focused.value,

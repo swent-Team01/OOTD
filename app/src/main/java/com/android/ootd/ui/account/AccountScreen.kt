@@ -4,6 +4,7 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
+import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -69,6 +70,7 @@ object UiTestTags {
   const val TAG_ACCOUNT_AVATAR_IMAGE = "account_avatar_image"
   const val TAG_ACCOUNT_AVATAR_LETTER = "account_avatar_letter"
   const val TAG_ACCOUNT_EDIT = "account_edit_button"
+  const val TAG_ACCOUNT_DELETE = "account_delete_button"
   const val TAG_USERNAME_FIELD = "account_username_field"
   const val TAG_USERNAME_EDIT = "account_username_edit"
   const val TAG_USERNAME_CANCEL = "account_username_cancel"
@@ -172,7 +174,9 @@ private fun AccountScreenContent(
             onEditClick = {
               imagePickerLauncher.launch(
                   PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            })
+            },
+            accountViewModel,
+            context)
 
         Spacer(modifier = Modifier.height(28.dp))
 
@@ -251,7 +255,13 @@ private fun AccountTitle() {
 }
 
 @Composable
-private fun AvatarSection(avatarUri: String, username: String, onEditClick: () -> Unit) {
+private fun AvatarSection(
+    avatarUri: String,
+    username: String,
+    onEditClick: () -> Unit,
+    accountViewModel: AccountViewModel,
+    context: Context = LocalContext.current
+) {
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
@@ -289,15 +299,40 @@ private fun AvatarSection(avatarUri: String, username: String, onEditClick: () -
 
   Spacer(modifier = Modifier.height(12.dp))
 
-  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    Button(
-        onClick = onEditClick,
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-        modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
-          Text(text = "Edit", color = colors.onPrimary, style = typography.titleLarge)
+  val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
+
+  // Edit and Delete buttons under avatar
+  Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically) {
+        Button(
+            onClick = onEditClick,
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+            modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
+              Text(
+                  text = editProfilePicture,
+                  color = colors.onPrimary,
+                  style = typography.titleLarge)
+            }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Delete button - only show if user has a profile picture
+        if (avatarUri.isNotBlank()) {
+          Button(
+              onClick = {
+                accountViewModel.deleteProfilePicture()
+                Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+              },
+              shape = CircleShape,
+              colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
+              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
+                Text(text = "Delete", color = colors.onError, style = typography.titleLarge)
+              }
         }
-  }
+      }
 }
 
 @Composable

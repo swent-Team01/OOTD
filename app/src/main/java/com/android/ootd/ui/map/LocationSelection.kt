@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,6 +43,8 @@ object LocationSelectionTestTags {
   const val LOCATION_SUGGESTION = "locationSuggestion"
   const val LOCATION_MORE = "locationMore"
   const val LOCATION_GPS_BUTTON = "locationGpsButton"
+  const val LOCATION_CLEAR_BUTTON = "locationClearButton"
+  const val NO_LOCATION_RESULTS = "noLocationResults"
 }
 
 /**
@@ -125,8 +129,23 @@ fun LocationSelectionSection(
             Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
           },
           trailingIcon = {
-            if (isLoadingLocation) {
-              CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            when {
+              isLoadingLocation -> {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+              }
+              selectedLocation != null && selectedLocation.name.isNotEmpty() -> {
+                IconButton(
+                    onClick = {
+                      onLocationQueryChange("")
+                      onClearSuggestions()
+                    },
+                    modifier = Modifier.testTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Clear,
+                          contentDescription = "Clear location",
+                          tint = Primary)
+                    }
+              }
             }
           },
           modifier =
@@ -147,7 +166,8 @@ fun LocationSelectionSection(
                     }
                   },
           singleLine = true,
-          isError = isError)
+          isError = isError,
+          readOnly = selectedLocation != null && selectedLocation.name.isNotEmpty())
 
       // Dropdown menu for location suggestions
       DropdownMenu(

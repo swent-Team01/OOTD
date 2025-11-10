@@ -276,6 +276,49 @@ class AccountRepositoryInMemoryTest {
   }
 
   @Test
+  fun deleteProfilePicture_successfullyDeletesProfilePicture() = runTest {
+    // Create account with profile picture
+    val user1 =
+        User(
+            uid = "user6",
+            ownerId = "user6",
+            username = "test_user",
+            profilePicture = testProfilePicture)
+    val user2 =
+        User(uid = "user7", ownerId = "user7", username = "no_pic_user", profilePicture = "")
+    repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user2, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+
+    // Verify profile picture exists
+    val accountBefore = repository.getAccount("user6")
+    assertEquals(testProfilePicture, accountBefore.profilePicture)
+    assertTrue(accountBefore.profilePicture.isNotBlank())
+
+    // Delete profile picture
+    repository.deleteProfilePicture("user6")
+
+    // Verify profile picture is deleted
+    val accountAfter = repository.getAccount("user6")
+    assertEquals("", accountAfter.profilePicture)
+
+    val accountBefore2 = repository.getAccount("user7")
+    assertEquals("", accountBefore2.profilePicture)
+
+    // Delete profile picture (should do nothing but not fail)
+    repository.deleteProfilePicture("user7")
+
+    val accountAfter2 = repository.getAccount("user7")
+    assertEquals("", accountAfter2.profilePicture)
+  }
+
+  @Test
+  fun deleteProfilePicture_throwsWhenAccountNotFound() = runTest {
+    expectThrows<NoSuchElementException>("Account with ID nonexistent not found") {
+      repository.deleteProfilePicture("nonexistent")
+    }
+  }
+
+  @Test
   fun togglePrivacy_variants() = runTest {
     val initial = repository.getAccount("user1").isPrivate
     assertEquals(!initial, repository.togglePrivacy("user1"))

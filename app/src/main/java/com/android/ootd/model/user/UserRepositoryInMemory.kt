@@ -82,6 +82,12 @@ class UserRepositoryInMemory : UserRepository {
     users[userID] = currentUser.copy(username = newUname, profilePicture = newPicture)
   }
 
+  override suspend fun deleteProfilePicture(userID: String) {
+    require(!(userID.isBlank())) { "User ID cannot be blank" }
+    val user = getUser(userID)
+    users[userID] = user.copy(profilePicture = "")
+  }
+
   // replaces old "removeUser"
   override suspend fun deleteUser(userID: String) {
     require(!(userID.isBlank())) { "User ID cannot be blank" }

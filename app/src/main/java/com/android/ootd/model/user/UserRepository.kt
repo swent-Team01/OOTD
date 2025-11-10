@@ -75,4 +75,15 @@ interface UserRepository {
    * @throws Exception for other Firestore-related errors
    */
   suspend fun deleteUser(userID: String)
+
+  /**
+   * Delete the profile picture of the account corresponding to [userID].
+   *
+   * Sets the profile picture to an empty string. If the account has no profile picture, this
+   * operation completes successfully without any changes.
+   *
+   * @param userID The ID of the user whose profile picture should be deleted
+   * @throws BlankUserID if the userID is blank
+   */
+  suspend fun deleteProfilePicture(userID: String)
 }

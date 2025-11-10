@@ -173,6 +173,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(platform(libs.compose.bom))
   implementation(libs.androidx.datastore.core)
+  implementation(libs.play.services.location)
 
   // Firebase
   // Use Firebase BOM from version catalog for maintainability
