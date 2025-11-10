@@ -90,7 +90,6 @@ android {
   }
 
   kotlinOptions { jvmTarget = "17" }
-
   packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 
   testOptions {
@@ -214,6 +213,35 @@ dependencies {
   implementation(libs.compose.ui.graphics)
   // Material Design 3
   implementation(libs.compose.material3)
+
+  // Coil for image loading in Compose
+  implementation(libs.coil.compose)
+  implementation(libs.compose.activity)
+
+  // CameraX
+  implementation(libs.camerax.core)
+  implementation(libs.camerax.camera2)
+  implementation(libs.camerax.lifecycle)
+  implementation(libs.camerax.view)
+
+  // ExifInterface for reading image orientation
+  implementation(libs.androidx.exifinterface)
+
+  // Accompanist for permissions
+  implementation(libs.accompanist.permissions)
+
+  // Guava for CameraX ListenableFuture
+  implementation(libs.guava)
+
+  // Integration with ViewModels
+  implementation(libs.compose.viewmodel)
+  // Android Studio Preview support
+  implementation(libs.compose.preview)
+  debugImplementation(libs.compose.tooling)
+  // UI Tests
+  globalTestImplementation(libs.compose.test.junit)
+  debugImplementation(libs.compose.test.manifest)
+  implementation(libs.compose.material.icons.extended)
 
   // Coil for image loading in Compose
   implementation(libs.coil.compose)

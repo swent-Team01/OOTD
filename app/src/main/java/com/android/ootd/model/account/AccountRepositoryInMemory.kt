@@ -170,4 +170,41 @@ class AccountRepositoryInMemory : AccountRepository {
     accounts[userID] = updatedAccount
     return updatedAccount.isPrivate
   }
+
+  override suspend fun getItemsList(userID: String): List<String> {
+    val account = getAccount(userID)
+    return account.itemsUids
+  }
+
+  override suspend fun addItem(itemUid: String): Boolean {
+    return try {
+      val account = getAccount(currentUser)
+
+      if (account.itemsUids.contains(itemUid)) {
+        return true
+      }
+
+      val updatedItemsUids = account.itemsUids + itemUid
+      accounts[currentUser] = account.copy(itemsUids = updatedItemsUids)
+      true
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  override suspend fun removeItem(itemUid: String): Boolean {
+    return try {
+      val account = getAccount(currentUser)
+
+      if (!account.itemsUids.contains(itemUid)) {
+        return true
+      }
+
+      val updatedItemsUids = account.itemsUids - itemUid
+      accounts[currentUser] = account.copy(itemsUids = updatedItemsUids)
+      true
+    } catch (_: Exception) {
+      false
+    }
+  }
 }

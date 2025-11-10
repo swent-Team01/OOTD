@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -55,13 +56,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
-import kotlinx.coroutines.launch
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -152,11 +151,11 @@ private fun AccountScreenContent(
           contract = ActivityResultContracts.PickVisualMedia(),
           onResult = { uri ->
             uri?.let {
-              accountViewModel.viewModelScope.launch {
-                val parsedImage = accountViewModel.uploadImageToStorage(it.toString())
-                accountViewModel.editUser(profilePicture = parsedImage)
-                Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
-              }
+              handlePickedProfileImage(
+                  it.toString(),
+                  upload = accountViewModel::uploadImageToStorage,
+                  editProfilePicture = { accountViewModel.editUser(profilePicture = it) },
+                  context = context)
             }
           })
 
@@ -537,4 +536,33 @@ private fun AccountScreenPreview() {
         onHelpDismiss = {},
     )
   }
+}
+
+/**
+ * Helper function to handle the result of the image picker.
+ *
+ * @param localPath The local file path of the picked image.
+ * @param upload The upload function to call with the image path.
+ * @param editProfilePicture The function to call to update the profile picture URL.
+ * @param context The context to use for showing Toast messages.
+ */
+@VisibleForTesting
+internal fun handlePickedProfileImage(
+    localPath: String,
+    upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit,
+    editProfilePicture: (String) -> Unit,
+    context: android.content.Context
+) {
+  if (localPath.isBlank()) return
+  upload(
+      localPath,
+      { downloadedUrl ->
+        editProfilePicture(downloadedUrl)
+        Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+      },
+      { error ->
+        Toast.makeText(
+                context, error.localizedMessage ?: "Failed to upload image", Toast.LENGTH_SHORT)
+            .show()
+      })
 }

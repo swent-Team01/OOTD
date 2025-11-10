@@ -123,7 +123,7 @@ class OutfitPostRepositoryFirestore(
     return try {
       // Safely cast the 'itemsID' field to a list of Strings
       // Firestore stores lists as List<*>, so this would filter out any non-string values
-      val rawItemsList = doc.get("itemsID") as? List<*> ?: emptyList<Any>()
+      val rawItemsList = doc["itemsID"] as? List<*> ?: emptyList<Any>()
       val itemsID = rawItemsList.mapNotNull { it as? String }
 
       OutfitPost(

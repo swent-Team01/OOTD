@@ -52,6 +52,16 @@ class ItemsRepositoryLocal : ItemsRepository {
   }
 
   /**
+   * Gets multiple items by their unique identifiers.
+   *
+   * @param uuids The list of unique identifiers of items to retrieve.
+   * @return A list of found items (may be smaller than uuids if some don't exist).
+   */
+  override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+    return uuids.mapNotNull { items[it] }
+  }
+
+  /**
    * Adds a new item to the local storage.
    *
    * @param item The item to add.

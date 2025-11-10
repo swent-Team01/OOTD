@@ -4,6 +4,7 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developers.
  */
+import android.content.Context
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
@@ -16,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.credentials.CredentialManager
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
@@ -31,6 +33,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -251,5 +255,71 @@ class AccountScreenTest {
     selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
     // Upload button should be shown instead of Edit
     composeTestRule.onNodeWithText("Upload").assertIsDisplayed()
+  }
+
+  @Test
+  fun handlePickedProfileImage_coversSuccessErrorAndBlank() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+
+    // Success: edit is called with expected URL
+    run {
+      var editedCalled = false
+      var editedUrl: String? = null
+      val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, onSuccess, _ ->
+        onSuccess("https://cdn.example.com/avatar.jpg")
+      }
+
+      composeTestRule.runOnUiThread {
+        handlePickedProfileImage(
+            localPath = "/local/path.jpg",
+            upload = upload,
+            editProfilePicture = {
+              editedCalled = true
+              editedUrl = it
+            },
+            context = ctx)
+      }
+
+      assertTrue(editedCalled)
+      assertTrue(editedUrl == "https://cdn.example.com/avatar.jpg")
+    }
+
+    // Error: edit is not called
+    run {
+      var editedCalled = false
+      val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, onError ->
+        onError(IllegalStateException("upload failed"))
+      }
+
+      composeTestRule.runOnUiThread {
+        handlePickedProfileImage(
+            localPath = "/local/path.jpg",
+            upload = upload,
+            editProfilePicture = { editedCalled = true },
+            context = ctx)
+      }
+
+      assertFalse(editedCalled)
+    }
+
+    // Blank path: no-op (upload not invoked, edit not called)
+    run {
+      var uploadInvoked = false
+      var editedCalled = false
+      val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ ->
+        uploadInvoked = true
+      }
+
+      composeTestRule.runOnUiThread {
+        handlePickedProfileImage(
+            localPath = "",
+            upload = upload,
+            editProfilePicture = { editedCalled = true },
+            context = ctx)
+      }
+
+      assertFalse(uploadInvoked)
+      assertFalse(editedCalled)
+    }
   }
 }

@@ -93,4 +93,28 @@ interface AccountRepository {
    * @throws NoSuchElementException if account is not found
    */
   suspend fun deleteProfilePicture(userID: String)
+
+  /**
+   * Allow the user to retrieve his items list for his inventory
+   *
+   * @param userID Said user ID
+   * @return The said list of item of the user
+   */
+  suspend fun getItemsList(userID: String): List<String>
+
+  /**
+   * Allow the user to add a new item from his inventory
+   *
+   * @param itemUid Uid of the item he wants to add to his inventory
+   * @return True if the item was added successfully, false otherwise
+   */
+  suspend fun addItem(itemUid: String): Boolean
+
+  /**
+   * Allow the user to remove an item from his inventory
+   *
+   * @param itemUid Uid of the item he wants to remove from his inventory
+   * @return True if the item was removed successfully, false otherwise
+   */
+  suspend fun removeItem(itemUid: String): Boolean
 }

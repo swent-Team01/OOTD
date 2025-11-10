@@ -358,4 +358,33 @@ class AccountRepositoryInMemoryTest {
     assertEquals("first_user", account1.username)
     assertEquals("second_user", account2.username)
   }
+
+  @Test
+  fun getItemsList_returnsEmptyAndPopulated() = runTest {
+    assertTrue(repository.getItemsList("user1").isEmpty())
+    repository.addItem("item1")
+    assertEquals(listOf("item1"), repository.getItemsList("user1"))
+  }
+
+  @Test
+  fun addItem_variants() = runTest {
+    assertTrue(repository.addItem("item1"))
+    assertEquals(1, repository.getAccount("user1").itemsUids.size)
+    assertTrue(repository.addItem("item1")) // duplicate
+    assertEquals(1, repository.getAccount("user1").itemsUids.size)
+    repository.addItem("item2")
+    val items = repository.getAccount("user1").itemsUids
+    assertEquals(2, items.size)
+    assertTrue("item1" in items && "item2" in items)
+  }
+
+  @Test
+  fun removeItem_variants() = runTest {
+    repository.addItem("item1")
+    repository.addItem("item2")
+    assertTrue(repository.removeItem("item1"))
+    assertTrue("item1" !in repository.getAccount("user1").itemsUids)
+    assertTrue(repository.removeItem("item1")) // no-op
+    assertEquals(1, repository.getAccount("user1").itemsUids.size)
+  }
 }

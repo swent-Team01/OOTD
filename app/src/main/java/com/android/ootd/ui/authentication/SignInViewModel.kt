@@ -1,10 +1,10 @@
 package com.android.ootd.ui.authentication
 
 import android.content.Context
-import android.credentials.GetCredentialException
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.R
@@ -97,10 +97,19 @@ class SignInViewModel(
                 user = null)
           }
         }
-      } catch (e: GetCredentialCancellationException) {
+      } catch (_: GetCredentialCancellationException) {
         // User cancelled the sign-in flow
         _uiState.update {
           it.copy(isLoading = false, errorMsg = "Sign-in cancelled", signedOut = true, user = null)
+        }
+      } catch (_: NoCredentialException) {
+        // No saved credentials available on device; prompt user to choose a method in UI
+        _uiState.update {
+          it.copy(
+              isLoading = false,
+              errorMsg = "No saved credentials found",
+              signedOut = true,
+              user = null)
         }
       } catch (e: androidx.credentials.exceptions.GetCredentialException) {
         // Other credential errors
