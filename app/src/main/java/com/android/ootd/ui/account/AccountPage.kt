@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ object AccountPageTestTags {
   const val AVATAR_LETTER = "accountPageAvatarLetter"
   const val USERNAME_TEXT = "accountPageUsernameText"
   const val FRIEND_COUNT_TEXT = "accountPageFriendCountText"
+  const val LOADING = "accountPageLoading"
 }
 
 @Composable
@@ -169,6 +171,10 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
 
         DisplayUsersPosts(posts = posts)
       }
+
+  if (uiState.isLoading) {
+    LoadingOverlay()
+  }
 }
 
 @Composable
@@ -195,5 +201,16 @@ fun DisplayUsersPosts(posts: List<OutfitPost>) {
                       .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                       .background(colors.surfaceVariant))
         }
+      }
+}
+
+@Composable
+private fun LoadingOverlay() {
+  val colors = MaterialTheme.colorScheme
+  Box(
+      modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
+      contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(
+            modifier = Modifier.testTag(AccountPageTestTags.LOADING), color = colors.primary)
       }
 }
