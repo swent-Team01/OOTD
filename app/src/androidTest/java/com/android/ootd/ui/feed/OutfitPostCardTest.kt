@@ -20,7 +20,11 @@ class OutfitPostCardTest {
 
   private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
 
-  private fun post(name: String = "Test User", description: String = "Test description") =
+  private fun post(
+      name: String = "Test User",
+      description: String = "Test description",
+      profilePic: String = ""
+  ) =
       OutfitPost(
           postUID = "id",
           ownerId = "owner",
@@ -28,7 +32,7 @@ class OutfitPostCardTest {
           description = description,
           timestamp = 0L,
           outfitURL = "",
-          userProfilePicURL = "",
+          userProfilePicURL = profilePic,
           itemsID = emptyList())
 
   // Tests
@@ -72,5 +76,22 @@ class OutfitPostCardTest {
     setCard(post(name = "Blurred", description = "x"), blurred = true)
 
     n(OutfitPostCardTestTags.OUTFIT_POST_CARD).assertIsDisplayed()
+  }
+
+  @Test
+  fun showsInitial_whenNoProfilePicture() {
+    setCard(post(name = "Alex", description = "No pic", profilePic = ""))
+
+    n(OutfitPostCardTestTags.PROFILE_INITIAL).assertIsDisplayed()
+    n(OutfitPostCardTestTags.PROFILE_PIC).assertDoesNotExist()
+  }
+
+  @Test
+  fun showsProfileImage_whenUrlProvided() {
+    setCard(
+        post(name = "Sophie", description = "With pic", profilePic = "https://example.com/pic.jpg"))
+
+    n(OutfitPostCardTestTags.PROFILE_PIC).assertIsDisplayed()
+    n(OutfitPostCardTestTags.PROFILE_INITIAL).assertDoesNotExist()
   }
 }
