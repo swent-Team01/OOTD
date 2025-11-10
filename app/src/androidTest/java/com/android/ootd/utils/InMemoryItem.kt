@@ -43,6 +43,10 @@ object InMemoryItem : ItemsTest {
       return itemList.first { it.itemUuid == uuid }
     }
 
+    override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+      return emptyList()
+    }
+
     override suspend fun deletePostItems(postUuid: String) {
       itemList.removeIf { it.postUuids.contains(postUuid) }
     }
