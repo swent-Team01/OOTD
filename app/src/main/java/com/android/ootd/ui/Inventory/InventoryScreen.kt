@@ -16,6 +16,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,6 +28,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -64,6 +68,18 @@ fun InventoryScreen(
 ) {
   val uiState by inventoryViewModel.uiState.collectAsState()
   val snackbarHostState = remember { SnackbarHostState() }
+  val lifecycleOwner = LocalLifecycleOwner.current
+
+  // Reload inventory when screen is resumed (e.g., coming back from AddItem screen)
+  DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_RESUME) {
+        inventoryViewModel.loadInventory()
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
 
   // Show error message if present
   LaunchedEffect(uiState.errorMessage) {
@@ -110,11 +126,10 @@ fun InventoryScreen(
               }
             }
             uiState.items.isEmpty() -> {
-              // Empty state
-              // ON A FUTURE PR YOU WILL BE ABLE TO ADD ITEMS FROM HERE
               Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "No items in your inventory yet.\nAdd items from the fit check screen!",
+                    text =
+                        "No items in your inventory yet.\n Add new items to your inventory and you will see them here!",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
