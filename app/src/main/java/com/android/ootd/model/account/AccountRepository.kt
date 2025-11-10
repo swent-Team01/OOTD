@@ -72,7 +72,8 @@ interface AccountRepository {
   suspend fun deleteAccount(userID: String)
 
   /**
-   * Allows the user to edit his username or date of birth
+   * Allows the user to edit his attributes, ie. username, date of birth, profile picture and
+   * location
    *
    * @param userID Said users ID
    * @param username Users new username, blank by default
