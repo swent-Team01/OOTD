@@ -52,7 +52,7 @@ sealed class Tab(
   object Map : Tab("Map", Icons.Outlined.Place, Icons.Filled.Place, Screen.Map)
 }
 
-private val tabs = listOf(Tab.Feed, Tab.Search, Tab.Inventory, Tab.Account, Tab.Map)
+private val tabs = listOf(Tab.Map, Tab.Search, Tab.Feed, Tab.Inventory, Tab.Account)
 
 /** Helpers for unit tests */
 fun routeToTab(route: String): Tab = tabs.find { it.destination.route == route } ?: Tab.Feed
