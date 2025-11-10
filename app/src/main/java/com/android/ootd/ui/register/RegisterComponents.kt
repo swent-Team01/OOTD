@@ -210,6 +210,8 @@ internal fun LocationField(
     isError: Boolean
 ) {
   LocationSelectionSection(
+      textGPSbutton = "Use current location (GPS)",
+      textLocationField = "Search Location",
       locationQuery = registerUiState.locationQuery,
       selectedLocation = registerUiState.selectedLocation,
       suggestions = registerUiState.locationSuggestions,

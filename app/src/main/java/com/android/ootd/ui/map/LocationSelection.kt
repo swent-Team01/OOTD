@@ -41,18 +41,30 @@ object LocationSelectionTestTags {
   const val LOCATION_SUGGESTION = "locationSuggestion"
   const val LOCATION_MORE = "locationMore"
   const val LOCATION_GPS_BUTTON = "locationGpsButton"
-  const val NO_LOCATION_RESULTS = "noLocationResults"
 }
 
 /**
- * A small composable that provides a location search and selection UI.
- * - Shows a title, an input for manual search, a GPS button, autocomplete suggestions and an
- *   optional selected location card.
- * - Styling is aligned with the Register screen: uses the Bodoni font and Primary/Tertiary colors
- *   for headings and controls without changing the app theme.
+ * Location selection UI with a GPS button, text input and suggestion dropdown.
+ *
+ * @param textGPSbutton label for the GPS button
+ * @param textLocationField label for the location input field
+ * @param locationQuery current text value of the location input
+ * @param selectedLocation currently selected Location, or null
+ * @param suggestions list of location suggestions shown in the dropdown
+ * @param isLoadingLocation whether a location lookup is in progress
+ * @param onLocationQueryChange callback invoked when the input text changes
+ * @param onLocationSelect callback invoked when a suggestion is selected
+ * @param onGPSClick callback invoked when the GPS button is clicked
+ * @param onClearSuggestions callback to clear the suggestion list
+ * @param modifier optional Compose modifier for the section
+ * @param textColor color used for labels and placeholders
+ * @param isError whether the input should show an error state
+ * @param onFocusChanged callback invoked when the input focus changes
  */
 @Composable
 fun LocationSelectionSection(
+    textGPSbutton: String,
+    textLocationField: String,
     locationQuery: String,
     selectedLocation: Location?,
     suggestions: List<Location>,
@@ -93,7 +105,7 @@ fun LocationSelectionSection(
               imageVector = Icons.Default.LocationOn,
               contentDescription = "GPS",
               modifier = Modifier.padding(end = 8.dp))
-          Text("Use Current Location (GPS)", fontFamily = Bodoni)
+          Text(textGPSbutton, fontFamily = Bodoni)
         }
 
     // Manual Input Field with custom dropdown
@@ -108,7 +120,7 @@ fun LocationSelectionSection(
             }
           },
           textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = Bodoni),
-          label = { Text("Search location", color = textColor, fontFamily = Bodoni) },
+          label = { Text(textLocationField, color = textColor, fontFamily = Bodoni) },
           placeholder = {
             Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
           },
@@ -142,7 +154,7 @@ fun LocationSelectionSection(
           expanded = showDropdown && suggestions.isNotEmpty() && isFocused,
           onDismissRequest = { showDropdown = false },
           modifier = Modifier.fillMaxWidth()) {
-            suggestions.filterNotNull().take(3).forEach { location ->
+            suggestions.take(3).forEach { location ->
               DropdownMenuItem(
                   text = {
                     Text(
@@ -180,6 +192,8 @@ fun LocationSelectionSection(
 private fun LocationSelectionSectionPreview() {
   OOTDTheme {
     LocationSelectionSection(
+        textGPSbutton = "Use GPS Location",
+        textLocationField = "Enter Location",
         locationQuery = "Zurich",
         selectedLocation = Location(47.3769, 8.5417, "Zürich, Switzerland"),
         suggestions =
