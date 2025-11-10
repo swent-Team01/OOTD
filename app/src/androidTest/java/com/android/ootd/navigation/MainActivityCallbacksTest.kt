@@ -17,6 +17,14 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Integration tests for navigation callbacks in MainActivity and various screens.
+ *
+ * These tests verify that navigation actions triggered by UI interactions correctly change the
+ * current screen as expected.
+ *
+ * DISCLAIMER: These tests are partially created by AI and verified by humans.
+ */
 class MainActivityCallbacksTest {
 
   @get:Rule val composeRule = createComposeRule()
@@ -30,18 +38,6 @@ class MainActivityCallbacksTest {
       OOTDApp(testNavController = navController, testStartDestination = Screen.Feed.route)
     }
     composeRule.waitForIdle()
-  }
-
-  @Test
-  fun feedScreen_callbacks_executeNavigationLambdas() {
-    // launchAppAt(Screen.Feed.route)
-
-    composeRule.runOnIdle { navigation.navigateTo(Screen.Feed) }
-
-    composeRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    composeRule.waitForIdle()
-
-    composeRule.runOnIdle { assertEquals(Screen.FitCheck.route, navigation.currentRoute()) }
   }
 
   @Test
@@ -69,9 +65,19 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun navigate_feedToFitCheckToPreview_shouldWork() {
+  fun feedScreen_callbacks_executeNavigationLambdas() {
     // launchAppAt(Screen.Feed.route)
 
+    composeRule.runOnIdle { navigation.navigateTo(Screen.Feed) }
+
+    composeRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
+    composeRule.waitForIdle()
+
+    composeRule.runOnIdle { assertEquals(Screen.FitCheck.route, navigation.currentRoute()) }
+  }
+
+  @Test
+  fun navigate_feedToFitCheckToPreview_shouldWork() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
@@ -541,6 +547,83 @@ class MainActivityCallbacksTest {
       // To Account
       navigation.navigateTo(Screen.Account)
       assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.goBack()
+
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "test_id"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Should be back at Feed
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun seeFitScreen_multipleBackNavigations_maintainsStack() {
+    composeRule.runOnIdle {
+      // Build navigation stack
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.SearchScreen)
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "post-xyz"))
+
+      // Verify we're on SeeFitScreen
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+
+      // Go back to Search
+      navigation.goBack()
+      assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun seeFitScreen_receivesCorrectPostUuid() {
+    composeRule.runOnIdle {
+      val testPostUuid = "test-post-123"
+
+      // Navigate to SeeFitScreen with specific postUuid
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = testPostUuid))
+
+      // Verify we're on SeeFitScreen
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun seeFitScreen_goBack_returnsToFeed() {
+    composeRule.runOnIdle {
+      // Start from Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to SeeFitScreen
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "some-post-id"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+
+      // Simulate goBack callback
+      navigation.goBack()
+
+      // Should return to Feed
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun seeFitScreen_fromFeedWithDifferentPostUuids_handlesCorrectly() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+
+      // Navigate to first post
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "post-1"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Navigate to second post
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "post-2"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
       navigation.goBack()
 
       // Should be back at Feed

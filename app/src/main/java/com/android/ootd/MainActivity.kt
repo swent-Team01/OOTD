@@ -1,5 +1,6 @@
 package com.android.ootd
 
+import SeeFitScreen
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -188,8 +189,12 @@ fun OOTDApp(
                       onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onNotificationIconClick = {
                         navigationActions.navigateTo(Screen.NotificationsScreen)
+                      },
+                      onSeeFitClick = { postUuid ->
+                        navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
                       })
                 }
+
                 composable(Screen.SearchScreen.route) {
                   UserSearchScreen(onBack = { navigationActions.goBack() })
                 }
@@ -222,6 +227,16 @@ fun OOTDApp(
                             // later we'll use postUuid to delete items
                             navigationActions.goBack()
                           })
+                    }
+
+                composable(
+                    route = Screen.SeeFitScreen.route,
+                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+                        navBackStackEntry ->
+                      val postUuid = navBackStackEntry.arguments?.getString("postUuid") ?: ""
+
+                      // Placeholder for SeeFitScreen
+                      SeeFitScreen(postUuid = postUuid, goBack = { navigationActions.goBack() })
                     }
 
                 composable(
@@ -268,7 +283,6 @@ fun OOTDApp(
                           onNextScreen = { navController.popBackStack() },
                           goBack = { navController.popBackStack() })
                     }
-
                 /* TODO: add navigation to ProfileScreen*/
                 // Navigation to User Profile screen is not yet implemented
 
