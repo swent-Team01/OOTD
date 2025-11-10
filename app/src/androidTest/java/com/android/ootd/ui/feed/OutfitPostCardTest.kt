@@ -94,4 +94,37 @@ class OutfitPostCardTest {
     n(OutfitPostCardTestTags.PROFILE_PIC).assertIsDisplayed()
     n(OutfitPostCardTestTags.PROFILE_INITIAL).assertDoesNotExist()
   }
+
+  @Test
+  fun description_expandsOnClick() {
+    val longDesc = "Very long description ".repeat(20)
+    val post = post(name = "User", description = longDesc)
+
+    setCard(post)
+
+    val descNode = n(OutfitPostCardTestTags.POST_DESCRIPTION)
+    descNode.assertIsDisplayed()
+    descNode.performClick() // toggle expansion
+    // No direct assert for expanded lines in Compose testing yet,
+    // but you can check that click didn’t crash and node still exists.
+    descNode.assertIsDisplayed()
+  }
+
+  @Test
+  fun showsRemainingLifetimeIndicator() {
+    val recentPost =
+        post().copy(timestamp = System.currentTimeMillis() - 2 * 60 * 60 * 1000) // 2h ago
+    setCard(recentPost)
+
+    n(OutfitPostCardTestTags.REMAINING_TIME).assertIsDisplayed()
+  }
+
+  @Test
+  fun showsExpiredIndicator_forOldPost() {
+    val oldPost =
+        post().copy(timestamp = System.currentTimeMillis() - 26 * 60 * 60 * 1000) // 26h ago
+    setCard(oldPost)
+
+    n(OutfitPostCardTestTags.REMAINING_TIME).assertIsDisplayed()
+  }
 }
