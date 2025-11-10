@@ -15,6 +15,8 @@ import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.UserRepository
@@ -44,11 +46,16 @@ data class AccountViewState(
     val profilePicture: String = "",
     val dateOfBirth: String = "",
     val location: Location = emptyLocation,
+    val locationQuery: String = "",
+    val locationSuggestions: List<Location> = emptyList(),
+    val isLoadingLocations: Boolean = false,
     val errorMsg: String? = null,
     val signedOut: Boolean = false,
     val isLoading: Boolean = false,
     val isPrivate: Boolean = false,
     val showPrivacyHelp: Boolean = false,
+    val locationFieldTouched: Boolean = false,
+    val locationFieldLeft: Boolean = false,
 )
 
 /**
@@ -66,6 +73,7 @@ class AccountViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
+    private val locationRepository: LocationRepository = LocationRepositoryProvider.repository,
     private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
     // Uploader returns the download URL. Parameters: userId, localPath.
     private val uploader: suspend (String, String, FirebaseStorage) -> String = { uid, local, st ->
@@ -299,5 +307,62 @@ class AccountViewModel(
 
   fun onPrivacyHelpDismiss() {
     _uiState.update { it.copy(showPrivacyHelp = false) }
+  }
+
+  // ----------------- Location-related helpers -----------------
+  /**
+   * Selects a location and updates the UI state.
+   *
+   * @param location The chosen Location; also sets the location query to the location's name.
+   */
+  fun setLocation(location: Location) {
+    _uiState.update {
+      it.copy(
+          location = location,
+          locationQuery = location.name,
+          locationFieldTouched = false,
+          locationFieldLeft = false)
+    }
+    // Automatically save the location to the account
+    editUser(newLocation = location)
+  }
+
+  /**
+   * Updates the location search query and fetches suggestions.
+   *
+   * If the query is non-empty a background search is started and the resulting suggestions are
+   * stored in the UI state; otherwise suggestions are cleared.
+   *
+   * @param query The new location query string.
+   */
+  fun setLocationQuery(query: String) {
+    _uiState.update { it.copy(locationQuery = query, locationFieldTouched = true) }
+
+    if (query.isNotEmpty()) {
+      _uiState.update { it.copy(isLoadingLocations = true) }
+      viewModelScope.launch {
+        try {
+          val results = locationRepository.search(query)
+          _uiState.update { it.copy(locationSuggestions = results, isLoadingLocations = false) }
+        } catch (e: Exception) {
+          Log.e("AccountViewModel", "Error fetching location suggestions", e)
+          _uiState.update { it.copy(locationSuggestions = emptyList(), isLoadingLocations = false) }
+        }
+      }
+    } else {
+      _uiState.update { it.copy(locationSuggestions = emptyList(), isLoadingLocations = false) }
+    }
+  }
+
+  /** Clears the location suggestions from the UI state. */
+  fun clearLocationSuggestions() {
+    _uiState.update { it.copy(locationSuggestions = emptyList()) }
+  }
+
+  /** Called when the location field focus changes. */
+  fun onLocationFieldFocusChanged(isFocused: Boolean) {
+    if (!isFocused && _uiState.value.locationFieldTouched) {
+      _uiState.update { it.copy(locationFieldLeft = true) }
+    }
   }
 }
