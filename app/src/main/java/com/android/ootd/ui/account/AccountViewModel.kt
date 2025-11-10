@@ -136,6 +136,7 @@ class AccountViewModel(
             profilePicture = currentAccount.profilePicture,
             dateOfBirth = currentAccount.birthday,
             location = currentAccount.location,
+            locationQuery = currentAccount.location.name,
             errorMsg = null,
             isLoading = false)
       }
