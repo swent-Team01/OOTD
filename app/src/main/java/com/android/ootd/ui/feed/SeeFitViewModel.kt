@@ -42,6 +42,7 @@ class SeeFitViewModel(
    */
   fun getItemsForPost(postUuid: String) {
     if (postUuid.isEmpty()) {
+      setErrorMessage("Unable to load this fit please try again later.")
       Log.w("SeeFitViewModel", "Post UUID is empty. Cannot fetch items.")
       return
     }
@@ -51,7 +52,6 @@ class SeeFitViewModel(
         val items = itemsRepository.getAssociatedItems(postUuid)
         _uiState.value = _uiState.value.copy(items = items, isLoading = false, errorMessage = null)
       } catch (e: Exception) {
-        setErrorMessage("Could not load items.")
         _uiState.value =
             _uiState.value.copy(
                 isLoading = false, errorMessage = "Failed to load items: ${e.message}")

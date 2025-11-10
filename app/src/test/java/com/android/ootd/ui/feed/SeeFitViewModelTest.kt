@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -102,7 +103,7 @@ class SeeFitViewModelTest {
     val state = viewModel.uiState.value
     assertTrue(state.items.isEmpty())
     assertFalse(state.isLoading)
-    assertNull(state.errorMessage)
+    assertNotNull(state.errorMessage)
   }
 
   @Test
