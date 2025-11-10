@@ -36,7 +36,7 @@ data class FeedUiState(
  * Responsible for managing the state by fetching and providing data for feed posts from the
  * [FeedRepository] and account data from the [AccountRepository].
  */
-class FeedViewModel(
+open class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {

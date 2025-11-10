@@ -43,6 +43,15 @@ class FeedScreenTest : FirestoreTest() {
     currentUid = requireNotNull(FirebaseEmulator.auth.currentUser?.uid)
   }
 
+  class FakeFeedViewModel : FeedViewModel() {
+    fun setUiStateForTest(newState: FeedUiState) {
+      val field = FeedViewModel::class.java.getDeclaredField("_uiState")
+      field.isAccessible = true
+      val flow = field.get(this) as MutableStateFlow<FeedUiState>
+      flow.value = newState
+    }
+  }
+
   // ========================================================================
   // UI Tests
   // ========================================================================
@@ -255,6 +264,15 @@ class FeedScreenTest : FirestoreTest() {
 
     val result = failingRepo.getFeedForUids(listOf(currentUid))
     assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun feedScreen_showsLoadingOverlay_whenIsLoadingTrue() {
+    val viewModel = FakeFeedViewModel().apply { setUiStateForTest(FeedUiState(isLoading = true)) }
+
+    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOADING_OVERLAY).assertIsDisplayed()
   }
 
   // ========================================================================

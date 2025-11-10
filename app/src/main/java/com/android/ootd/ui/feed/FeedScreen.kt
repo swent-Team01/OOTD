@@ -31,6 +31,7 @@ object FeedScreenTestTags {
   const val FEED_LIST = "feedList"
   const val NAVIGATE_TO_SEARCH_SCREEN = "navigateToSearchScreen"
   const val NAVIGATE_TO_NOTIFICATIONS_SCREEN = "navigateToNotificationsScreen"
+  const val LOADING_OVERLAY = "feedLoadingOverlay"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,7 +148,8 @@ fun FeedLoadingOverlay() {
   Box(
       modifier =
           Modifier.fillMaxSize()
-              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f)),
+              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
+              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
       contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Image(
