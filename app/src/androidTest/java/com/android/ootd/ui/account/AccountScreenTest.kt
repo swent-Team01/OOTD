@@ -22,6 +22,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
@@ -45,6 +46,7 @@ class AccountScreenTest {
 
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
+  private lateinit var mockUserRepository: UserRepository
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
@@ -55,6 +57,7 @@ class AccountScreenTest {
   fun setup() {
     mockAccountService = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
+    mockUserRepository = mockk(relaxed = true)
     mockCredentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -71,7 +74,7 @@ class AccountScreenTest {
             profilePicture = "",
             isPrivate = false)
 
-    viewModel = AccountViewModel(mockAccountService, mockAccountRepository)
+    viewModel = AccountViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
   }
 
   @After
@@ -98,7 +101,7 @@ class AccountScreenTest {
     composeTestRule.waitForIdle()
   }
 
-  private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
+  private fun selectTestTag(tag: String) = composeTestRule.onNodeWithTag(tag)
 
   // --- Tests (fewer, but comprehensive) ---
 
@@ -108,24 +111,26 @@ class AccountScreenTest {
     setContent()
 
     // Core chrome
-    n(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
-    n(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
 
     // No photo -> letter avatar shown, image absent
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
 
     // Actions and fields
-    n(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed().assertTextContains("user1")
-    n(UiTestTags.TAG_GOOGLE_FIELD).assertIsDisplayed().assertTextContains("user1@google.com")
-    n(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed().assertTextContains("user1")
+    selectTestTag(UiTestTags.TAG_GOOGLE_FIELD)
+        .assertIsDisplayed()
+        .assertTextContains("user1@google.com")
+    selectTestTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
 
     // Read-only (not editing)
-    n(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    n(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
 
   @Test
@@ -142,7 +147,7 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    n(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
   }
 
   @Test
@@ -151,20 +156,20 @@ class AccountScreenTest {
     setContent()
 
     // Open edit
-    n(UiTestTags.TAG_USERNAME_EDIT).performClick()
-    n(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
     // Save without change -> stays editing (no-op)
-    n(UiTestTags.TAG_USERNAME_SAVE).performClick()
-    n(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
-    n(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
     // Cancel -> back to normal, original name remains
-    n(UiTestTags.TAG_USERNAME_CANCEL).performClick()
-    n(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    n(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
   }
 
   @Test
@@ -190,11 +195,11 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
-    n(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
-    n(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
   }
 
   @Test
@@ -203,8 +208,53 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent(onBack)
 
-    n(UiTestTags.TAG_ACCOUNT_BACK).performClick()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
     verify { onBack() }
+  }
+
+  @Test
+  fun deleteProfilePicture_buttonAppearsOnlyWithPicture_andCallsViewModel() {
+    // Setup account with profile picture
+    val avatarUri = "https://example.com/avatar.jpg"
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = avatarUri,
+            isPrivate = false)
+
+    every { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockAccountRepository.deleteProfilePicture("test-uid") } returns Unit
+    coEvery { mockUserRepository.deleteProfilePicture("test-uid") } returns Unit
+
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Delete button should be visible when there's a profile picture
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Edit").assertIsDisplayed()
+
+    // Click delete button
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify both repositories were called
+    coVerify(exactly = 1) { mockAccountRepository.deleteProfilePicture("test-uid") }
+    coVerify(exactly = 1) { mockUserRepository.deleteProfilePicture("test-uid") }
+  }
+
+  @Test
+  fun deleteProfilePicture_buttonHiddenWhenNoProfilePictureAndShowsUpload() {
+    // Account without profile picture (default setup)
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Delete button should not exist when there's no profile picture
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
+    // Upload button should be shown instead of Edit
+    composeTestRule.onNodeWithText("Upload").assertIsDisplayed()
   }
 
   @Test

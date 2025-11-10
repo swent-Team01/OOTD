@@ -132,13 +132,16 @@ class EditItemsScreenTest {
   }
 
   @Test
-  fun `category field accepts text input`() {
+  fun `category dropdown shows and selects option`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .performTextInput("Clothing")
+    // Click to open dropdown
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).performClick()
 
+    // Select an option
+    composeTestRule.onNodeWithText("Clothing").performClick()
+
+    // Verify selection
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
         .assertTextContains("Clothing")
@@ -269,7 +272,8 @@ class EditItemsScreenTest {
   fun `all input fields have proper labels`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Category").assertExists()
+    // Category is now a dropdown, so check it exists with different assertion
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
     composeTestRule.onNodeWithText("Price").assertExists()

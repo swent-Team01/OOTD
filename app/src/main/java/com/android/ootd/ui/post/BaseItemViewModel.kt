@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Material
+import com.android.ootd.utils.CategoryNormalizer
 import com.android.ootd.utils.TypeSuggestionsLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -86,12 +87,7 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    */
   fun updateTypeSuggestions(input: String) {
     val currentCategory = getCategory(_uiState.value)
-    val normalizedCategory = normalizeCategory(currentCategory).trim()
-    val allSuggestions =
-        typeSuggestions.entries
-            .firstOrNull { it.key.equals(normalizedCategory, ignoreCase = true) }
-            ?.value
-            .orEmpty()
+    val allSuggestions = typeSuggestions[currentCategory].orEmpty()
 
     val filtered =
         if (input.isBlank()) allSuggestions
@@ -106,31 +102,11 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    * @param input The input string to filter suggestions.
    */
   fun updateCategorySuggestions(input: String) {
-    val categories = typeSuggestions.keys.toList()
     val filtered =
-        if (input.isBlank()) categories
-        else categories.filter { it.startsWith(input, ignoreCase = true) }
+        if (input.isBlank()) CategoryNormalizer.VALID_CATEGORIES
+        else CategoryNormalizer.VALID_CATEGORIES.filter { it.startsWith(input, ignoreCase = true) }
     updateState { updateCategorySuggestionsState(it, filtered) }
   }
-
-  /**
-   * Normalizes category names to standard format.
-   *
-   * @param category The category to normalize.
-   * @return The normalized category name.
-   */
-  protected fun normalizeCategory(category: String): String =
-      when (category.trim().lowercase()) {
-        "clothes",
-        "clothing" -> "Clothing"
-        "shoe",
-        "shoes" -> "Shoes"
-        "bag",
-        "bags" -> "Bags"
-        "accessory",
-        "accessories" -> "Accessories"
-        else -> category
-      }
 
   fun clearErrorMsg() = updateState { setErrorMessage(it, null) }
 

@@ -578,11 +578,11 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `updateTypeSuggestions normalizes category names - Clothes`() {
+  fun `updateTypeSuggestions works with valid category - Clothing`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
-    viewModel.setCategory("Clothes")
+    viewModel.setCategory("Clothing")
     viewModel.updateTypeSuggestions("")
 
     val state = viewModel.uiState.value
@@ -590,19 +590,7 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `updateTypeSuggestions normalizes category names - clothing`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
-
-    viewModel.setCategory("clothing")
-    viewModel.updateTypeSuggestions("")
-
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
-
-  @Test
-  fun `updateTypeSuggestions normalizes category names - Shoes`() {
+  fun `updateTypeSuggestions works with valid category - Shoes`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
@@ -614,19 +602,7 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `updateTypeSuggestions normalizes category names - shoe`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
-
-    viewModel.setCategory("shoe")
-    viewModel.updateTypeSuggestions("")
-
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
-
-  @Test
-  fun `updateTypeSuggestions normalizes category names - Bags`() {
+  fun `updateTypeSuggestions works with valid category - Bags`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
@@ -638,35 +614,11 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `updateTypeSuggestions normalizes category names - bag`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
-
-    viewModel.setCategory("bag")
-    viewModel.updateTypeSuggestions("")
-
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
-
-  @Test
-  fun `updateTypeSuggestions normalizes category names - Accessories`() {
+  fun `updateTypeSuggestions works with valid category - Accessories`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Accessories")
-    viewModel.updateTypeSuggestions("")
-
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
-
-  @Test
-  fun `updateTypeSuggestions normalizes category names - accessory`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
-
-    viewModel.setCategory("accessory")
     viewModel.updateTypeSuggestions("")
 
     val state = viewModel.uiState.value

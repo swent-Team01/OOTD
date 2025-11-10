@@ -315,6 +315,46 @@ class AccountViewModelTest {
   }
 
   @Test
+  fun deleteProfilePicture_success_clearsProfilePictureInState() = runTest {
+    stubAccount("test-uid", username = "testuser", picture = "https://example.com/pic.jpg")
+    coEvery { accountRepository.deleteProfilePicture("test-uid") } just Runs
+    coEvery { userRepository.deleteProfilePicture("test-uid") } just Runs
+
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    // Verify initial state has profile picture
+    assertEquals("https://example.com/pic.jpg", viewModel.uiState.value.profilePicture)
+
+    viewModel.deleteProfilePicture()
+    advanceUntilIdle()
+
+    // Verify profile picture is cleared
+    assertEquals("", viewModel.uiState.value.profilePicture)
+    assertNull(viewModel.uiState.value.errorMsg)
+    coVerify { accountRepository.deleteProfilePicture("test-uid") }
+    coVerify { userRepository.deleteProfilePicture("test-uid") }
+  }
+
+  @Test
+  fun deleteProfilePicture_failure_setsErrorMessage() = runTest {
+    stubAccount("test-uid", username = "testuser", picture = "https://example.com/pic.jpg")
+    coEvery { accountRepository.deleteProfilePicture("test-uid") } throws
+        Exception("Failed to delete profile picture")
+
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    viewModel.deleteProfilePicture()
+    advanceUntilIdle()
+
+    // Verify error is set
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertEquals("Failed to delete profile picture", viewModel.uiState.value.errorMsg)
+    coVerify { accountRepository.deleteProfilePicture("test-uid") }
+  }
+
+  @Test
   fun uploadImageToStorage_coversBlankSuccessErrorAndNoAuth() = runTest {
     // 1) Blank path: should return input immediately and not call uploader
     run {

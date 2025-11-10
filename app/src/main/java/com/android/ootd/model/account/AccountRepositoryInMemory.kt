@@ -82,16 +82,16 @@ class AccountRepositoryInMemory : AccountRepository {
     accounts[account.uid] = account
   }
 
-  override suspend fun getAccount(userId: String): Account {
-    if (accounts.containsKey(userId)) {
-      return accounts[userId] ?: throw NoSuchElementException("Account with ID $userId not found")
+  override suspend fun getAccount(userID: String): Account {
+    if (accounts.containsKey(userID)) {
+      return accounts[userID] ?: throw NoSuchElementException("Account with ID $userID not found")
     } else {
-      throw NoSuchElementException("Account with ID $userId not found")
+      throw NoSuchElementException("Account with ID $userID not found")
     }
   }
 
-  override suspend fun accountExists(userId: String): Boolean {
-    val username = getAccount(userId).username
+  override suspend fun accountExists(userID: String): Boolean {
+    val username = getAccount(userID).username
     return username.isNotBlank()
   }
 
@@ -157,6 +157,11 @@ class AccountRepositoryInMemory : AccountRepository {
             username = username.takeIf { it.isNotBlank() } ?: acc.username,
             birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
             profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
+  }
+
+  override suspend fun deleteProfilePicture(userID: String) {
+    val user = getAccount(userID)
+    accounts[userID] = user.copy(profilePicture = "")
   }
 
   override suspend fun togglePrivacy(userID: String): Boolean {

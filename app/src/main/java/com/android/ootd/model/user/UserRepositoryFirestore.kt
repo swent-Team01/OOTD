@@ -13,6 +13,8 @@ const val USER_COLLECTION_PATH = "users"
 // Custom exception for taken username scenario
 class TakenUsernameException(message: String) : Exception(message)
 
+class BlankUserID : Exception("UserID cannot be blank")
+
 @Keep
 private data class UserDto(
     val uid: String = "",
@@ -83,6 +85,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       profilePicture: String
   ) {
 
+    if (uid.isBlank()) throw BlankUserID()
     if (usernameExists(username)) {
       Log.e(TAG, username_taken_exception)
       throw TakenUsernameException(username_taken_exception)
@@ -110,6 +113,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun getUser(userID: String): User {
     return try {
+      if (userID.isBlank()) throw BlankUserID()
       val userDoc = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!userDoc.exists()) {
@@ -126,6 +130,7 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun userExists(userID: String): Boolean {
     return try {
+      if (userID.isBlank()) throw BlankUserID()
       val querySnapshot = db.collection(USER_COLLECTION_PATH).document(userID).get().await()
 
       if (!querySnapshot.exists()) {
@@ -186,6 +191,20 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
       throw e
     } catch (e: Exception) {
       Log.e(TAG, "Error updating username: ${e.message}", e)
+      throw e
+    }
+  }
+
+  override suspend fun deleteProfilePicture(userID: String) {
+    if (userID.isBlank()) throw BlankUserID()
+    try {
+      getUser(userID)
+      db.collection(USER_COLLECTION_PATH).document(userID).update(mapOf("profilePicture" to ""))
+    } catch (e: NoSuchElementException) {
+      Log.e("UserRepositoryFirestore", "User not found: ${e.message}", e)
+      throw e
+    } catch (e: Exception) {
+      Log.e("UserRepositoryFirestore", "Error deleting users profilepicture: ${e.message}", e)
       throw e
     }
   }
