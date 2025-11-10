@@ -351,7 +351,10 @@ class AccountViewModel(
         }
       }
     } else {
-      _uiState.update { it.copy(locationSuggestions = emptyList(), isLoadingLocations = false) }
+      _uiState.update {
+        it.copy(
+            location = emptyLocation, locationSuggestions = emptyList(), isLoadingLocations = false)
+      }
     }
   }
 
