@@ -49,6 +49,42 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     }
   }
 
+  override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> {
+    if (uids.isEmpty()) return emptyList()
+
+    val cleaned = uids.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    if (cleaned.isEmpty()) return emptyList()
+
+    val now = System.currentTimeMillis()
+    val twentyFourHoursAgo = now - 24 * 60 * 60 * 1000 // milliseconds in 24h
+
+    return try {
+      val chunks = cleaned.chunked(10)
+      val results = mutableListOf<OutfitPost>()
+      for (chunk in chunks) {
+        val snap =
+            withTimeout(5_000) {
+              db.collection(POSTS_COLLECTION_PATH)
+                  .whereIn(ownerAttributeName, chunk)
+                  .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
+                  .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                  .get()
+                  .await()
+            }
+        results += snap.toObjects<OutfitPost>()
+      }
+
+      // Sort descending (meaning most recent first)
+      results.sortedByDescending { it.timestamp }
+    } catch (e: TimeoutCancellationException) {
+      Log.w("FeedRepositoryFirestore", "Timed out fetching recent feed; returning empty list", e)
+      emptyList()
+    } catch (e: Exception) {
+      Log.e("FeedRepositoryFirestore", "Error fetching recent friend feed", e)
+      emptyList()
+    }
+  }
+
   override suspend fun addPost(post: OutfitPost) {
     try {
       withTimeout(5_000) {
