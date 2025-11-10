@@ -1,6 +1,7 @@
 package com.android.ootd.ui.map
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.epflLocation
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
@@ -47,6 +49,7 @@ object LocationSelectionTestTags {
   const val LOCATION_MORE = "locationMore"
   const val LOCATION_GPS_BUTTON = "locationGpsButton"
   const val LOCATION_CLEAR_BUTTON = "locationClearButton"
+  const val LOCATION_DEFAULT_EPFL = "locationDefaultEpfl"
 }
 
 /**
@@ -224,6 +227,22 @@ fun LocationSelectionSection(
             }
           }
     }
+
+    // Default EPFL location selector
+    Text(
+        text = "or select default location (EPFL)",
+        color = Primary,
+        fontFamily = Bodoni,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(top = 8.dp, bottom = 4.dp)
+                .clickable {
+                  onLocationQueryChange(epflLocation.name)
+                  onLocationSelect(epflLocation)
+                  onClearSuggestions()
+                }
+                .testTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL))
   }
 }
 
