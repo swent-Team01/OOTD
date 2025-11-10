@@ -58,6 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.ui.map.LocationSelectionSection
+import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -140,6 +143,9 @@ private fun AccountScreenContent(
 ) {
   val context = LocalContext.current
   val scrollState = rememberScrollState()
+  // Max width for centered content (keeps avatar and inputs aligned)
+  val contentMaxWidth = 560.dp
+  val contentModifier = Modifier.fillMaxWidth().widthIn(max = contentMaxWidth)
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
@@ -163,66 +169,108 @@ private fun AccountScreenContent(
       modifier =
           Modifier.fillMaxSize()
               .verticalScroll(scrollState)
-              .padding(horizontal = 24.dp, vertical = 16.dp)) {
+              .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 72.dp),
+      horizontalAlignment = Alignment.CenterHorizontally) {
         BackButton(onBack = onBack)
 
         AccountTitle()
 
-        AvatarSection(
-            avatarUri = uiState.profilePicture,
-            username = uiState.username,
-            onEditClick = {
-              imagePickerLauncher.launch(
-                  PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
-            accountViewModel,
-            context)
+        Box(modifier = contentModifier) {
+          AvatarSection(
+              avatarUri = uiState.profilePicture,
+              username = uiState.username,
+              onEditClick = {
+                imagePickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+              },
+              accountViewModel,
+              context)
+        }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        UsernameField(
-            username = uiState.username,
-            isEditing = isEditingUsername,
-            editedValue = editedUsername,
-            onValueChange = { editedUsername = it },
-            onEditClick = {
-              isEditingUsername = true
-              editedUsername = uiState.username
-            },
-            onCancelClick = {
-              isEditingUsername = false
-              editedUsername = ""
-            },
-            onSaveClick = {
-              if (editedUsername.isNotBlank() && editedUsername != uiState.username) {
-                accountViewModel.editUser(newUsername = editedUsername)
+        Box(modifier = contentModifier) {
+          UsernameField(
+              username = uiState.username,
+              isEditing = isEditingUsername,
+              editedValue = editedUsername,
+              onValueChange = { editedUsername = it },
+              onEditClick = {
+                isEditingUsername = true
+                editedUsername = uiState.username
+              },
+              onCancelClick = {
                 isEditingUsername = false
-              }
-            })
+                editedUsername = ""
+              },
+              onSaveClick = {
+                if (editedUsername.isNotBlank() && editedUsername != uiState.username) {
+                  accountViewModel.editUser(newUsername = editedUsername)
+                  isEditingUsername = false
+                }
+              })
+        }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        GoogleAccountField(email = uiState.googleAccountName)
+        Box(modifier = contentModifier) { GoogleAccountField(email = uiState.googleAccountName) }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        PrivacyToggleRow(
-            isPrivate = uiState.isPrivate,
-            onToggle = onToggle,
-            showPrivacyHelp = uiState.showPrivacyHelp,
-            onHelpClick = onHelpClick,
-            onHelpDismiss = onHelpDismiss,
-            modifier =
-                Modifier.fillMaxWidth().padding(top = 4.dp).testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+        Box(modifier = contentModifier) {
+          LocationField(uiState = uiState, viewModel = accountViewModel)
+        }
+
+        Box(modifier = contentModifier) {
+          PrivacyToggleRow(
+              isPrivate = uiState.isPrivate,
+              onToggle = onToggle,
+              showPrivacyHelp = uiState.showPrivacyHelp,
+              onHelpClick = onHelpClick,
+              onHelpDismiss = onHelpDismiss,
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .padding(top = 4.dp)
+                      .testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        SignOutButton(onClick = onSignOutClick)
+        Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
+          SignOutButton(onClick = onSignOutClick)
+        }
       }
 
   if (uiState.isLoading) {
     LoadingOverlay()
   }
+}
+
+@Composable
+private fun LocationField(uiState: AccountViewState, viewModel: AccountViewModel) {
+  // Determine if there's an error: user has typed, left the field, and query doesn't match the
+  // selected location
+  val hasLocationError =
+      uiState.locationFieldTouched &&
+          uiState.locationFieldLeft &&
+          uiState.locationQuery.isNotEmpty() &&
+          (uiState.location.name != uiState.locationQuery || uiState.location == emptyLocation)
+
+  LocationSelectionSection(
+      textGPSButton = "Update Location (GPS)",
+      textLocationField = "Location",
+      locationQuery = uiState.locationQuery,
+      selectedLocation = uiState.location,
+      suggestions = uiState.locationSuggestions,
+      isLoadingLocation = uiState.isLoadingLocations,
+      onLocationQueryChange = viewModel::setLocationQuery,
+      onLocationSelect = viewModel::setLocation,
+      onGPSClick = { /* TODO: Implement GPS functionality */ },
+      onClearSuggestions = viewModel::clearLocationSuggestions,
+      isError = hasLocationError,
+      onFocusChanged = viewModel::onLocationFieldFocusChanged,
+      modifier =
+          Modifier.padding(vertical = 8.dp).testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
 }
 
 @Composable
@@ -245,12 +293,12 @@ private fun AccountTitle() {
   val typography = MaterialTheme.typography
   Text(
       text = "My Account",
-      style = typography.displayLarge,
+      style = typography.displayMedium,
       color = colors.primary,
       textAlign = TextAlign.Center,
       modifier =
           Modifier.fillMaxWidth()
-              .padding(top = 4.dp, bottom = 20.dp)
+              .padding(top = 4.dp, bottom = 12.dp)
               .testTag(UiTestTags.TAG_ACCOUNT_TITLE))
 }
 
@@ -260,15 +308,17 @@ private fun AvatarSection(
     username: String,
     onEditClick: () -> Unit,
     accountViewModel: AccountViewModel,
-    context: Context = LocalContext.current
+    context: Context = LocalContext.current,
+    modifier: Modifier = Modifier
 ) {
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
 
-  Box(
-      modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER),
-      contentAlignment = Alignment.Center) {
+  Column(
+      modifier = modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).fillMaxWidth(),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        // Avatar image/letter
         if (avatarUri.isNotBlank()) {
           AsyncImage(
               model = avatarUri,
@@ -277,61 +327,61 @@ private fun AvatarSection(
               error = defaultAvatarPainter,
               contentScale = ContentScale.Crop,
               modifier =
-                  Modifier.size(180.dp)
+                  Modifier.size(120.dp)
                       .clip(CircleShape)
                       .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
         } else {
           Box(
               modifier =
-                  Modifier.size(180.dp)
+                  Modifier.size(120.dp)
                       .clip(CircleShape)
                       .background(Primary)
                       .pointerHoverIcon(icon = PointerIcon.Hand),
               contentAlignment = Alignment.Center) {
                 Text(
                     text = username.firstOrNull()?.uppercase() ?: "",
-                    style = typography.headlineLarge,
+                    style = typography.headlineMedium,
                     color = Secondary,
                     modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
               }
         }
-      }
 
-  Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-  val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
+        val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
 
-  // Edit and Delete buttons under avatar
-  Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically) {
-        Button(
-            onClick = onEditClick,
-            shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-            modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
-              Text(
-                  text = editProfilePicture,
-                  color = colors.onPrimary,
-                  style = typography.titleLarge)
-            }
+        // Edit and Delete buttons under avatar
+        Row(
+            modifier = Modifier.wrapContentWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically) {
+              Button(
+                  onClick = onEditClick,
+                  shape = CircleShape,
+                  colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+                  modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT)) {
+                    Text(
+                        text = editProfilePicture,
+                        color = colors.onPrimary,
+                        style = typography.titleMedium)
+                  }
 
-        Spacer(modifier = Modifier.width(16.dp))
+              // Delete button - only show if user has a profile picture
+              if (avatarUri.isNotBlank()) {
+                Spacer(modifier = Modifier.width(16.dp))
 
-        // Delete button - only show if user has a profile picture
-        if (avatarUri.isNotBlank()) {
-          Button(
-              onClick = {
-                accountViewModel.deleteProfilePicture()
-                Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
-              },
-              shape = CircleShape,
-              colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
-              modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
-                Text(text = "Delete", color = colors.onError, style = typography.titleLarge)
+                Button(
+                    onClick = {
+                      accountViewModel.deleteProfilePicture()
+                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
+                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
+                      Text(text = "Delete", color = colors.onError, style = typography.titleMedium)
+                    }
               }
-        }
+            }
       }
 }
 
@@ -434,7 +484,7 @@ private fun SignOutButton(onClick: () -> Unit) {
   val typography = MaterialTheme.typography
 
   Box(
-      modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+      modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
       contentAlignment = Alignment.Center) {
         Button(
             onClick = onClick,
@@ -551,7 +601,7 @@ internal fun handlePickedProfileImage(
     localPath: String,
     upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit,
     editProfilePicture: (String) -> Unit,
-    context: android.content.Context
+    context: Context
 ) {
   if (localPath.isBlank()) return
   upload(
