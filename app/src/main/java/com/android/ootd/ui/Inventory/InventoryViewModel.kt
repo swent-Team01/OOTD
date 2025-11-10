@@ -61,12 +61,49 @@ class InventoryViewModel(
         // Fetch all items using the batch method
         val items = itemsRepository.getItemsByIds(itemIds)
 
-        _uiState.value = _uiState.value.copy(items = items, isLoading = false)
+        // Sort items by category using the predefined order
+        val sortedItems = sortItemsByCategory(items)
+
+        _uiState.value = _uiState.value.copy(items = sortedItems, isLoading = false)
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(
                 isLoading = false, errorMessage = "Failed to load inventory: ${e.message}")
       }
+    }
+  }
+
+  /**
+   * Sorts items by category in the order: Clothing, Shoes, Accessories, Bags. Items with unknown
+   * categories are placed at the end.
+   */
+  private fun sortItemsByCategory(items: List<Item>): List<Item> {
+    val categoryOrder = listOf("Clothing", "Shoes", "Accessories", "Bags")
+
+    return items.sortedWith(
+        compareBy { item ->
+          val normalizedCategory = normalizeCategoryName(item.category)
+          val index =
+              categoryOrder.indexOfFirst { it.equals(normalizedCategory, ignoreCase = true) }
+          if (index >= 0) index else categoryOrder.size
+        })
+  }
+
+  /**
+   * Normalizes category names to handle variations. E.g., "clothes" -> "Clothing", "shoe" ->
+   * "Shoes"
+   */
+  private fun normalizeCategoryName(category: String): String {
+    return when (category.trim().lowercase()) {
+      "clothes",
+      "clothing" -> "Clothing"
+      "shoes",
+      "shoe" -> "Shoes"
+      "bags",
+      "bag" -> "Bags"
+      "accessories",
+      "accessory" -> "Accessories"
+      else -> category.trim()
     }
   }
 
