@@ -18,6 +18,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.items.Item
 
+/**
+ * Screen displaying a grid of items for the "See Fit" feature.
+ *
+ * @param items List of items to display in the grid
+ */
 @Composable
 fun ItemGridScreen(items: List<Item>) {
 
@@ -33,7 +38,6 @@ fun ItemGridScreen(items: List<Item>) {
           items(items) { item -> ItemCard(item = item, onClick = { selectedItem = item }) }
         }
 
-    // Show dialog if an item is selected
     selectedItem?.let { item ->
       SeeItemDetailsDialog(item = item, onDismissRequest = { selectedItem = null })
     }

@@ -26,6 +26,13 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
 
+/**
+ * Composable representing an individual item card in the See Fit grid that displays a small part of
+ * the item with its image, category, and type.
+ *
+ * @param item The item to display
+ * @param onClick Callback when the item is clicked
+ */
 @Composable
 fun ItemCard(item: Item, onClick: () -> Unit) {
   Card(

@@ -56,6 +56,13 @@ object SeeFitScreenTestTags {
   }
 }
 
+/**
+ * Screen to see items associated with a specific post.
+ *
+ * @param seeFitViewModel ViewModel managing the UI state
+ * @param postUuid UUID of the post to fetch items for
+ * @param goBack Callback to navigate back
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeeFitScreen(

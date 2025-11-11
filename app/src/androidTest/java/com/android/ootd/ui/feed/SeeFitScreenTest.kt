@@ -20,6 +20,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+
+/**
+ * Instrumented tests for the SeeFitScreen composable.
+ *
+ * DISCLAIMER : These tests are created with the help of AI and verified by humans.
+ */
 class SeeFitScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -110,8 +116,6 @@ class SeeFitScreenTest {
     }
 
     composeTestRule.waitForIdle()
-    // Error message would be shown via Toast (harder to test directly)
-    // But we can verify the screen still displays
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.SCREEN).assertIsDisplayed()
   }
 
@@ -121,10 +125,8 @@ class SeeFitScreenTest {
 
     composeTestRule.waitForIdle()
 
-    // Verify empty state message
     composeTestRule.onNodeWithText("No items associated with this post.").assertIsDisplayed()
 
-    // Verify screen is still functional
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.SCREEN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.NAVIGATE_TO_FEED_SCREEN).assertIsDisplayed()
   }

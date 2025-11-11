@@ -30,6 +30,12 @@ import com.android.ootd.R
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Primary
 
+/**
+ * Dialog displaying detailed information about an item.
+ *
+ * @param item The item whose details are to be displayed when the dialog is clicked
+ * @param onDismissRequest Callback when the dialog is dismissed
+ */
 @SuppressLint("DefaultLocale")
 @Composable
 fun SeeItemDetailsDialog(
@@ -87,7 +93,6 @@ fun SeeItemDetailsDialog(
                       modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_PRICE))
                 }
 
-                // 🧵 Material composition
                 if (item.material.isNotEmpty()) {
                   val materialText =
                       item.material
