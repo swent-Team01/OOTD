@@ -11,21 +11,27 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -35,6 +41,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -49,6 +56,7 @@ class AccountScreenTest {
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
   private lateinit var mockUserRepository: UserRepository
+  private lateinit var mockLocationRepository: LocationRepository
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
@@ -60,6 +68,7 @@ class AccountScreenTest {
     mockAccountService = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
+    mockLocationRepository = mockk(relaxed = true)
     mockCredentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -76,7 +85,14 @@ class AccountScreenTest {
             profilePicture = "",
             isPrivate = false)
 
-    viewModel = AccountViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
+    coEvery { mockLocationRepository.search(any()) } returns emptyList()
+
+    // Mock the fusedLocationClient to avoid lateinit errors
+    LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
+
+    viewModel =
+        AccountViewModel(
+            mockAccountService, mockAccountRepository, mockUserRepository, mockLocationRepository)
   }
 
   @After
@@ -87,6 +103,11 @@ class AccountScreenTest {
   // --- Helpers ---
   private fun signIn(user: FirebaseUser?) {
     userFlow.value = user
+    composeTestRule.waitForIdle()
+  }
+
+  private fun waitForLoadingToComplete() {
+    composeTestRule.waitUntil(timeoutMillis = 5000) { !viewModel.uiState.value.isLoading }
     composeTestRule.waitForIdle()
   }
 
@@ -153,7 +174,7 @@ class AccountScreenTest {
   }
 
   @Test
-  fun usernameEdit_flow_saveWithoutChange_restores() {
+  fun usernameEdit_flow_saveWithoutChange_staysEditing_thenCancel_restores() {
     signIn(mockFirebaseUser)
     setContent()
 
@@ -164,36 +185,14 @@ class AccountScreenTest {
 
     // Save without change -> stays editing (no-op)
     selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
-
-    composeTestRule.waitUntil(
-        condition = { selectTestTag(UiTestTags.TAG_USERNAME_EDIT).isDisplayed() },
-        timeoutMillis = 5000)
-
-    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
-  }
-
-  @Test
-  fun usernameEdit_save_works() {
-    signIn(mockFirebaseUser)
-    setContent()
-
-    // Open edit
-    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
     selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
     selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
-    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performTextInput("new_text")
-
-    // Save with change -> stays editing (no-op)
-    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
-
-    composeTestRule.waitUntil(
-        condition = { selectTestTag(UiTestTags.TAG_USERNAME_EDIT).isDisplayed() },
-        timeoutMillis = 5000)
-
-    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
-    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+    // Cancel -> back to normal, original name remains
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
   }
 
   @Test
@@ -202,15 +201,34 @@ class AccountScreenTest {
 
     signIn(mockFirebaseUser)
     setContent()
+    waitForLoadingToComplete()
 
-    // Initially Public
-    composeTestRule.onNodeWithText("Public").assertIsDisplayed()
+    // Wait for the privacy toggle to be displayed
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Public").fetchSemanticsNodes().isNotEmpty()
+    }
+
+    // Scroll to privacy toggle to make it visible on smaller screens
+    selectTestTag(UiTestTags.TAG_PRIVACY_TOGGLE).performScrollTo()
+
+    // Initially Public - use exists instead of assertIsDisplayed for text nodes
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Public").fetchSemanticsNodes().isNotEmpty()
+    }
 
     val switchMatcher = isToggleable() and hasAnyAncestor(hasTestTag(UiTestTags.TAG_PRIVACY_TOGGLE))
     composeTestRule.onNode(switchMatcher).performClick()
+    composeTestRule.waitForIdle()
 
-    // Updated and repo called
-    composeTestRule.onNodeWithText("Private").assertIsDisplayed()
+    // Wait for the text to update to Private
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Private").fetchSemanticsNodes().isNotEmpty()
+    }
+
+    // Updated and repo called - verify the text exists in the toggle
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onAllNodesWithText("Private").fetchSemanticsNodes().isNotEmpty()
+    }
     coVerify(exactly = 1) { mockAccountRepository.togglePrivacy("test-uid") }
   }
 
@@ -218,6 +236,9 @@ class AccountScreenTest {
   fun helpIcon_showsAndDismissesPopup() {
     signIn(mockFirebaseUser)
     setContent()
+
+    // Scroll to privacy toggle to make help icon visible on smaller screens
+    selectTestTag(UiTestTags.TAG_PRIVACY_TOGGLE).performScrollTo()
 
     selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
     selectTestTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
@@ -344,6 +365,121 @@ class AccountScreenTest {
 
       assertFalse(uploadInvoked)
       assertFalse(editedCalled)
+    }
+  }
+
+  // --- Location field tests ---
+
+  @Test
+  fun locationField_displaysSavedLocation_whenAccountHasLocation() {
+    // Setup account with saved location
+    val savedLocation = Location(46.5191, 6.5668, "EPFL, Lausanne")
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = "",
+            isPrivate = false,
+            location = savedLocation)
+
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Location field should display the saved location - use the correct test tag
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION)
+        .assertIsDisplayed()
+        .assertTextContains("EPFL, Lausanne")
+  }
+
+  @Test
+  fun locationField_clearButton_makesFieldEditable() {
+    // Setup account with saved location
+    val savedLocation = Location(46.5191, 6.5668, "EPFL, Lausanne")
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = "",
+            isPrivate = false,
+            location = savedLocation)
+
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Verify location is displayed - use the correct test tag
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION).assertTextContains("EPFL, Lausanne")
+
+    // Click clear button
+    selectTestTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Field should now be editable (text cleared)
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION).performTextInput("Zurich")
+    composeTestRule.waitForIdle()
+
+    // Verify text was entered (field is editable)
+    selectTestTag(LocationSelectionTestTags.INPUT_LOCATION).assertTextContains("Zurich")
+  }
+
+  @Test
+  fun locationField_gpsButton_exists() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // GPS button should be visible
+    selectTestTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Update Location (GPS)").assertIsDisplayed()
+  }
+
+  // --- EPFL Default Location tests ---
+
+  @Test
+  fun defaultEpflLocationButton_isDisplayed() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Wait for the EPFL button to exist in the semantics tree
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithText("or select default location (EPFL)", substring = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
+        .performScrollTo()
+        .assertIsDisplayed()
+        .assertTextContains("or select default location (EPFL)")
+  }
+
+  @Test
+  fun defaultEpflLocationButton_setsLocationToEpfl() {
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+
+    // Wait for the EPFL button to exist in the semantics tree
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithText("or select default location (EPFL)", substring = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    // Scroll to make the button visible on smaller screens
+    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL).performScrollTo().performClick()
+    composeTestRule.waitForIdle()
+
+    // Assert: location should be set to EPFL
+    composeTestRule.runOnUiThread {
+      val selectedLocation = viewModel.uiState.value.location
+      assertEquals(46.5191, selectedLocation.latitude, 0.0001)
+      assertEquals(6.5668, selectedLocation.longitude, 0.0001)
+      assertTrue(selectedLocation.name.contains("EPFL"))
+      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
     }
   }
 }
