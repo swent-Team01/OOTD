@@ -13,7 +13,11 @@ class OutfitPostCardTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   // Helpers
-  private fun setCard(post: OutfitPost, blurred: Boolean = false, onSeeFitClick: () -> Unit = {}) =
+  private fun setCard(
+      post: OutfitPost,
+      blurred: Boolean = false,
+      onSeeFitClick: (String) -> Unit = { _ -> }
+  ) =
       composeTestRule.setContent {
         OutfitPostCard(post = post, isBlurred = blurred, onSeeFitClick = onSeeFitClick)
       }
@@ -64,11 +68,18 @@ class OutfitPostCardTest {
   @Test
   fun seeFitButton_invokesCallback() {
     var clicks = 0
-    setCard(post(), onSeeFitClick = { clicks++ })
+    var capturedPostUid = ""
+    setCard(
+        post(),
+        onSeeFitClick = { postUid ->
+          clicks++
+          capturedPostUid = postUid
+        })
 
     n(OutfitPostCardTestTags.SEE_FIT_BUTTON).performClick()
 
     assertEquals(1, clicks)
+    assertEquals("id", capturedPostUid)
   }
 
   @Test

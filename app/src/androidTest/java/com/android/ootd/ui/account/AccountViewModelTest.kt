@@ -2,10 +2,15 @@ package com.android.ootd.ui.account
 
 import android.net.Uri
 import androidx.credentials.CredentialManager
+import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.UserRepository
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -14,6 +19,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +49,7 @@ class AccountViewModelTest {
   private lateinit var accountService: AccountService
   private lateinit var accountRepository: AccountRepository
   private lateinit var userRepository: UserRepository
+  private lateinit var locationRepository: LocationRepository
   private lateinit var credentialManager: CredentialManager
   private lateinit var viewModel: AccountViewModel
   private lateinit var mockFirebaseUser: FirebaseUser
@@ -57,6 +64,7 @@ class AccountViewModelTest {
     accountService = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
     userRepository = mockk(relaxed = true)
+    locationRepository = mockk(relaxed = true)
     credentialManager = mockk(relaxed = true)
     mockFirebaseUser = mockk(relaxed = true)
 
@@ -69,9 +77,13 @@ class AccountViewModelTest {
     coEvery { accountRepository.getAccount("test-uid") } returns
         Account(uid = "test-uid", username = "testuser", profilePicture = "")
 
-    coEvery { accountRepository.editAccount(any(), any(), any(), any()) } just Runs
+    coEvery { accountRepository.editAccount(any(), any(), any(), any(), any()) } just Runs
     coEvery { userRepository.editUser(any(), any(), any()) } just Runs
     coEvery { credentialManager.clearCredentialState(any()) } just Runs
+    coEvery { locationRepository.search(any()) } returns emptyList()
+
+    // Mock the fusedLocationClient to avoid lateinit errors
+    LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
   }
 
   @After
@@ -202,7 +214,7 @@ class AccountViewModelTest {
     viewModel.editUser(newUsername = newUsername, newDate = newDate, profilePicture = newPicture)
     advanceUntilIdle()
 
-    coVerify { accountRepository.editAccount("test-uid", newUsername, newDate, newPicture) }
+    coVerify { accountRepository.editAccount("test-uid", newUsername, newDate, newPicture, any()) }
     coVerify { userRepository.editUser("test-uid", newUsername, newPicture) }
     assertEquals(newUsername, viewModel.uiState.value.username)
     assertEquals(newPicture, viewModel.uiState.value.profilePicture)
@@ -218,13 +230,13 @@ class AccountViewModelTest {
     viewModel.editUser(newUsername = "", newDate = "01/01/2000")
     advanceUntilIdle()
 
-    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "") }
+    coVerify { accountRepository.editAccount("test-uid", "", "01/01/2000", "", any()) }
     coVerify(exactly = 1) { userRepository.editUser(any(), "", "") }
   }
 
   @Test
   fun editUser_sets_error_message_when_accountOrUserRepository_fails() = runTest {
-    coEvery { accountRepository.editAccount(any(), any(), any(), any()) } throws
+    coEvery { accountRepository.editAccount(any(), any(), any(), any(), any()) } throws
         Exception("Failed to update account")
     coEvery { userRepository.editUser(any(), any(), any()) } throws
         Exception("Username already taken")
@@ -431,5 +443,95 @@ class AccountViewModelTest {
       assertTrue(caught is IllegalStateException)
       assertEquals("No authenticated user", vm.uiState.value.errorMsg)
     }
+  }
+
+  @Test
+  fun editUser_updates_location_successfully() = runTest {
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    val newLocation = Location(46.0, 7.0, "Test Location")
+
+    viewModel.editUser(newLocation = newLocation)
+    advanceUntilIdle()
+
+    coVerify { accountRepository.editAccount("test-uid", any(), any(), any(), newLocation) }
+    assertEquals(newLocation, viewModel.uiState.value.location)
+  }
+
+  // --- New GPS/Location functionality tests ---
+
+  @Test
+  fun setLocationQuery_clearsLocation_whenQueryIsEmpty() = runTest {
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    // Set a location first
+    val location = Location(46.0, 7.0, "Test Location")
+    viewModel.setLocation(location)
+    advanceUntilIdle()
+
+    assertEquals(location, viewModel.uiState.value.location)
+    assertEquals("Test Location", viewModel.uiState.value.locationQuery)
+
+    // Clear the query
+    viewModel.setLocationQuery("")
+    advanceUntilIdle()
+
+    // Location should be cleared to make field editable
+    assertEquals(emptyLocation, viewModel.uiState.value.location)
+    assertEquals("", viewModel.uiState.value.locationQuery)
+  }
+
+  @Test
+  fun onLocationPermissionGranted_retrievesGPS_andSavesLocation() = runTest {
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    // Mock GPS location retrieval
+    val mockAndroidLocation = mockk<android.location.Location>(relaxed = true)
+    every { mockAndroidLocation.latitude } returns 46.5191
+    every { mockAndroidLocation.longitude } returns 6.5668
+
+    val mockLocationTask =
+        mockk<com.google.android.gms.tasks.Task<android.location.Location>>(relaxed = true)
+    val successListenerSlot =
+        slot<com.google.android.gms.tasks.OnSuccessListener<android.location.Location>>()
+    every { mockLocationTask.addOnSuccessListener(capture(successListenerSlot)) } answers
+        {
+          mockLocationTask
+        }
+    every {
+      mockLocationTask.addOnFailureListener(any<com.google.android.gms.tasks.OnFailureListener>())
+    } returns mockLocationTask
+    every {
+      LocationProvider.fusedLocationClient.getCurrentLocation(
+          any<Int>(), any<com.google.android.gms.tasks.CancellationToken>())
+    } returns mockLocationTask
+
+    viewModel.onLocationPermissionGranted()
+    successListenerSlot.captured.onSuccess(mockAndroidLocation)
+    advanceUntilIdle()
+
+    // Verify location was set and saved
+    val location = viewModel.uiState.value.location
+    assertNotNull(location)
+    assertEquals(46.5191, location.latitude, 0.0001)
+    assertEquals(6.5668, location.longitude, 0.0001)
+    assertTrue(location.name.contains("Current Location"))
+    coVerify { accountRepository.editAccount("test-uid", any(), any(), any(), location) }
+    assertFalse(viewModel.uiState.value.isLoadingLocations)
+  }
+
+  @Test
+  fun onLocationPermissionDenied_showsErrorMessage() = runTest {
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    viewModel.onLocationPermissionDenied()
+    advanceUntilIdle()
+
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.errorMsg!!.contains("Location permission denied"))
   }
 }

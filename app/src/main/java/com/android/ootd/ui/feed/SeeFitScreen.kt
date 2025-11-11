@@ -3,6 +3,7 @@ package com.android.ootd.ui.feed
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -116,16 +117,23 @@ fun SeeFitScreen(
         )
       },
   ) { innerPadding ->
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally) {
-          if (items.isEmpty()) {
+    if (items.isEmpty()) {
+      Column(
+          modifier = Modifier.fillMaxSize().padding(innerPadding),
+          verticalArrangement = Arrangement.Center,
+          horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "No items associated with this post.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-          } else ItemGridScreen(items = items)
-        }
+          }
+    } else {
+      Column(
+          modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
+          verticalArrangement = Arrangement.Center,
+          horizontalAlignment = Alignment.CenterHorizontally) {
+            ItemGridScreen(items = items)
+          }
+    }
   }
 }

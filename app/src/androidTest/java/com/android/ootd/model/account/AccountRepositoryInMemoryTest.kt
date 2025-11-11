@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.User
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -240,13 +241,19 @@ class AccountRepositoryInMemoryTest {
   fun editAccount_updatesAndKeepsOnBlank() = runTest {
     repository.getAccount("user1") // ensure account exists
 
-    repository.editAccount("user1", username = "new_alice", birthDay = "1995-05-15", picture = ":3")
+    repository.editAccount(
+        "user1",
+        username = "new_alice",
+        birthDay = "1995-05-15",
+        picture = ":3",
+        location = emptyLocation)
     val updated = repository.getAccount("user1")
     assertEquals("new_alice", updated.username)
     assertEquals("1995-05-15", updated.birthday)
     assertEquals(":3", updated.profilePicture)
 
-    repository.editAccount("user1", username = "", birthDay = "", picture = "")
+    repository.editAccount(
+        "user1", username = "", birthDay = "", picture = "", location = emptyLocation)
     val kept = repository.getAccount("user1")
     assertEquals(updated.username, kept.username)
     assertEquals(updated.birthday, kept.birthday)
@@ -256,7 +263,8 @@ class AccountRepositoryInMemoryTest {
   @Test
   fun editAccount_throwsWhenNotFound() = runTest {
     expectThrows<NoSuchElementException>("Account with ID nonexistent not found") {
-      repository.editAccount("nonexistent", username = "new", birthDay = "", picture = "")
+      repository.editAccount(
+          "nonexistent", username = "new", birthDay = "", picture = "", location = emptyLocation)
     }
   }
 
