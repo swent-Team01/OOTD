@@ -77,9 +77,9 @@ fun SelectInventoryItemScreen(
             modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.TOP_APP_BAR),
             title = {
               Text(
-                  text = "FROM INVENTORY",
+                  text = "INVENTORY",
                   style =
-                      MaterialTheme.typography.displayMedium.copy(
+                      MaterialTheme.typography.displayLarge.copy(
                           fontWeight = FontWeight.Bold, color = Primary),
                   modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.TITLE))
             },

@@ -254,7 +254,7 @@ fun PreviewItemScreen(
                     onAddItem(uiState.postUuid)
                   },
                   modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
-                    Text("➕ Create New Item")
+                    Text("Create New Item")
                   }
               TextButton(
                   onClick = {
@@ -263,7 +263,7 @@ fun PreviewItemScreen(
                   },
                   modifier =
                       Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
-                    Text("👕 Select from Inventory")
+                    Text("Select from Inventory")
                   }
             }
           },
