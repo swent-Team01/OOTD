@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -47,11 +49,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -282,11 +289,7 @@ private fun AvatarSection(
                       .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
         } else {
           Box(
-              modifier =
-                  Modifier.size(180.dp)
-                      .clip(CircleShape)
-                      .background(Primary)
-                      .pointerHoverIcon(icon = PointerIcon.Hand),
+              modifier = Modifier.size(180.dp).clip(CircleShape).background(Primary),
               contentAlignment = Alignment.Center) {
                 Text(
                     text = username.firstOrNull()?.uppercase() ?: "",
@@ -347,6 +350,7 @@ private fun UsernameField(
 ) {
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
+  val focusManager = LocalFocusManager.current
 
   OutlinedTextField(
       value = if (isEditing) editedValue else username,
@@ -360,10 +364,26 @@ private fun UsernameField(
             }
       },
       readOnly = !isEditing,
+      singleLine = true,
+      keyboardActions =
+          if (isEditing)
+              KeyboardActions(
+                  onDone = {
+                    onSaveClick()
+                    focusManager.clearFocus()
+                  })
+          else KeyboardActions.Default,
+      keyboardOptions =
+          if (isEditing) KeyboardOptions(imeAction = ImeAction.Done) else KeyboardOptions.Default,
       textStyle = typography.bodyLarge,
       trailingIcon = {
         if (isEditing) {
-          UsernameEditActions(onCancelClick = onCancelClick, onSaveClick = onSaveClick)
+          UsernameEditActions(
+              onCancelClick = onCancelClick,
+              onSaveClick = {
+                onSaveClick()
+                focusManager.clearFocus()
+              })
         } else {
           UsernameEditButton(onClick = onEditClick)
         }
@@ -373,7 +393,16 @@ private fun UsernameField(
               focusedTextColor = colors.primary,
               unfocusedTextColor = colors.primary,
           ),
-      modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_USERNAME_FIELD))
+      modifier =
+          Modifier.fillMaxWidth().testTag(UiTestTags.TAG_USERNAME_FIELD).onKeyEvent { event ->
+            if (isEditing && event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
+              onSaveClick()
+              focusManager.clearFocus()
+              true
+            } else {
+              false
+            }
+          })
 }
 
 @Composable
@@ -551,7 +580,7 @@ internal fun handlePickedProfileImage(
     localPath: String,
     upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit,
     editProfilePicture: (String) -> Unit,
-    context: android.content.Context
+    context: Context
 ) {
   if (localPath.isBlank()) return
   upload(

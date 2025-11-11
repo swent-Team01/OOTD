@@ -16,6 +16,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -321,5 +324,38 @@ class AccountScreenTest {
       assertFalse(uploadInvoked)
       assertFalse(editedCalled)
     }
+  }
+
+  @Test
+  fun editingUsername_pressEnter_savesAndExitsEditMode() {
+    // Arrange
+    signIn(mockFirebaseUser)
+    every { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockAccountRepository.editAccount("test-uid", any(), any(), any()) } returns Unit
+    coEvery { mockUserRepository.editUser("test-uid", any(), any()) } returns Unit
+
+    setContent()
+
+    // Enter edit mode
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+
+    // Replace the text explicitly to avoid caret position issues, then press IME Done
+    val newUsername = "user1X"
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performTextClearance()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performTextInput(newUsername)
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performImeAction()
+    composeTestRule.waitForIdle()
+
+    // Assert: edit controls gone, field shows updated username
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains(newUsername)
+
+    // Verify repository updates invoked with new username
+    coVerify { mockAccountRepository.editAccount("test-uid", newUsername, any(), any()) }
+    coVerify { mockUserRepository.editUser("test-uid", newUsername, any()) }
   }
 }
