@@ -117,14 +117,10 @@ class FeedScreenTest : FirestoreTest() {
 
   @Test
   fun feedScreen_triggersTopBarButtons() {
-    var searchClicked = false
     var notificationsClicked = false
 
     composeTestRule.setContent {
-      FeedScreen(
-          onAddPostClick = {},
-          onSearchClick = { searchClicked = true },
-          onNotificationIconClick = { notificationsClicked = true })
+      FeedScreen(onAddPostClick = {}, onNotificationIconClick = { notificationsClicked = true })
     }
 
     composeTestRule.waitForIdle()
@@ -132,14 +128,11 @@ class FeedScreenTest : FirestoreTest() {
     Thread.sleep(100)
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithContentDescription("Search").performClick()
-
     composeTestRule
         .onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
         .assertExists()
         .performClick()
 
-    assertTrue(searchClicked)
     assertTrue(notificationsClicked)
   }
 

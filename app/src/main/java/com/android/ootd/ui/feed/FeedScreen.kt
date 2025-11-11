@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,11 +12,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
-import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
+import com.android.ootd.ui.theme.OOTDTheme
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -46,6 +46,21 @@ fun FeedScreen(
     feedViewModel.refreshFeedFromFirestore()
   }
 
+  FeedScaffold(
+      hasPostedToday = hasPostedToday,
+      posts = posts,
+      onAddPostClick = onAddPostClick,
+      onNotificationIconClick = onNotificationIconClick)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeedScaffold(
+    hasPostedToday: Boolean,
+    posts: List<OutfitPost>,
+    onAddPostClick: () -> Unit,
+    onNotificationIconClick: () -> Unit = {}
+) {
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
       topBar = {
@@ -59,15 +74,6 @@ fun FeedScreen(
                           fontWeight = FontWeight.ExtraBold,
                           color = MaterialTheme.colorScheme.primary))
             },
-            navigationIcon = {
-              IconButton(
-                  onClick = onSearchClick, modifier = Modifier.testTag(NAVIGATE_TO_SEARCH_SCREEN)) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.tertiary)
-                  }
-            },
             actions = {
               IconButton(
                   onClick = onNotificationIconClick,
@@ -75,7 +81,8 @@ fun FeedScreen(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_notification),
                         contentDescription = "Notifications",
-                        tint = MaterialTheme.colorScheme.tertiary)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(64.dp))
                   }
             },
             colors =
@@ -131,5 +138,39 @@ fun FeedList(
     items(posts) { post ->
       OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+@Suppress("UnusedPrivateMember")
+private fun FeedScreenPreview() {
+  val samplePosts =
+      listOf(
+          OutfitPost(
+              postUID = "1",
+              ownerId = "user1",
+              name = "Alice",
+              userProfilePicURL = "",
+              outfitURL = "",
+              description = "Casual fit",
+              itemsID = emptyList(),
+              timestamp = System.currentTimeMillis()),
+          OutfitPost(
+              postUID = "2",
+              ownerId = "user2",
+              name = "Bob",
+              userProfilePicURL = "",
+              outfitURL = "",
+              description = "Streetwear",
+              itemsID = emptyList(),
+              timestamp = System.currentTimeMillis()))
+
+  OOTDTheme {
+    FeedScaffold(
+        hasPostedToday = false,
+        posts = samplePosts,
+        onAddPostClick = {},
+        onNotificationIconClick = {})
   }
 }
