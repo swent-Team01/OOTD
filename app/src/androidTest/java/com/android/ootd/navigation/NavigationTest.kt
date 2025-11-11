@@ -56,6 +56,7 @@ class NavigationTest {
         composable(Screen.FitCheck.route) { /* minimal screen */ }
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
         composable(Screen.AddItemScreen.route) { /* minimal screen */ }
+        composable(Screen.SelectInventoryItem.route) { /* minimal screen */ }
         composable(Screen.EditItem.route) { /* minimal screen */ }
       }
     }

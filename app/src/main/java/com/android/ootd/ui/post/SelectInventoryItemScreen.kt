@@ -79,7 +79,7 @@ fun SelectInventoryItemScreen(
               Text(
                   text = "FROM INVENTORY",
                   style =
-                      MaterialTheme.typography.displayLarge.copy(
+                      MaterialTheme.typography.displayMedium.copy(
                           fontWeight = FontWeight.Bold, color = Primary),
                   modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.TITLE))
             },
