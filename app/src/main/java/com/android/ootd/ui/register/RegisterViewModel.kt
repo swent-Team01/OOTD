@@ -264,7 +264,6 @@ class RegisterViewModel(
             delay(500) // Wait 500ms after user stops typing in order to not flood nomatim.
             try {
               val results = locationRepository.search(query)
-              Log.d("RegisterViewModel", "The query I searched with was $query")
               _uiState.value =
                   _uiState.value.copy(locationSuggestions = results, isLoadingLocations = false)
             } catch (e: Exception) {

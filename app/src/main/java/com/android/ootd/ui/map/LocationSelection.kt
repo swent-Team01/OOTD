@@ -1,6 +1,5 @@
 package com.android.ootd.ui.map
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -106,7 +105,6 @@ fun LocationSelectionSection(
       OutlinedTextField(
           value = locationQuery,
           onValueChange = {
-            Log.d("LocationSelectionSection", "Showing on location query change $it")
             onLocationQueryChange(it)
             // Ensure dropdown is shown when user types and we're focused
             if (isFocused) {
