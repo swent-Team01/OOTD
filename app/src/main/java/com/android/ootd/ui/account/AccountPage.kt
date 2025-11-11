@@ -9,23 +9,25 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -47,6 +49,9 @@ object AccountPageTestTags {
   const val USERNAME_TEXT = "accountPageUsernameText"
   const val FRIEND_COUNT_TEXT = "accountPageFriendCountText"
   const val LOADING = "accountPageLoading"
+
+  const val YOUR_POST_SECTION = "yourPostsStart"
+  const val POST_TAG = "postTag"
 }
 
 @Composable
@@ -62,7 +67,6 @@ fun AccountPage(
     uiState.errorMsg?.let { msg ->
       Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
       accountModel.clearErrorMsg()
-      accountModel.clearLoading()
     }
   }
 
@@ -74,77 +78,29 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
   val friendList = uiState.friends
   val friendListSize = friendList.size
   val username = uiState.username
-  val profilePicture = uiState.profilePicture
   val posts = uiState.posts
-  val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
   val scrollState = rememberScrollState()
 
   Column(
       modifier =
           Modifier.fillMaxSize()
-              .background(colors.background)
+              .background(colorScheme.background)
               .verticalScroll(scrollState)
               .padding(horizontal = 22.dp, vertical = 10.dp)) {
         // Setting button
-        IconButton(
-            onClick = onEditAccount,
-            modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON).align(Alignment.End)) {
-              Icon(
-                  imageVector = Icons.Default.Settings,
-                  contentDescription = "Settings",
-                  tint = colors.onBackground,
-                  modifier = Modifier.size(32.dp))
-            }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
-              Text(
-                  text = "Your account",
-                  style = typography.displayMedium,
-                  fontFamily = Bodoni,
-                  color = colors.primary,
-                  textAlign = TextAlign.Center,
-                  modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT))
-            }
+        EditButton(onEditAccount, Modifier.align(Alignment.End))
 
         Spacer(modifier = Modifier.height(36.dp))
 
         // Avatar
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          if (profilePicture.isNotBlank()) {
-            AsyncImage(
-                model = profilePicture,
-                contentDescription = "Profile Picture",
-                placeholder = defaultAvatarPainter,
-                error = defaultAvatarPainter,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier.size(150.dp)
-                        .clip(CircleShape)
-                        .testTag(AccountPageTestTags.AVATAR_IMAGE))
-          } else {
-            Box(
-                modifier = Modifier.size(150.dp).clip(CircleShape).background(Primary),
-                contentAlignment = Alignment.Center) {
-                  Text(
-                      text = username.firstOrNull()?.uppercase() ?: "",
-                      style = typography.headlineLarge,
-                      color = Secondary,
-                      modifier = Modifier.testTag(AccountPageTestTags.AVATAR_LETTER))
-                }
-          }
-        }
+        AvatarHolder(uiState, username)
 
         Spacer(modifier = Modifier.height(18.dp))
         // Username
         Text(
             text = username,
             style = typography.displayLarge,
-            color = colors.primary,
+            color = colorScheme.primary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().testTag(AccountPageTestTags.USERNAME_TEXT))
 
@@ -154,7 +110,7 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
         Text(
             text = "$friendListSize friends",
             style = typography.bodyLarge,
-            color = colors.onSurface,
+            color = colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
 
@@ -163,9 +119,9 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
         Text(
             text = "Your posts :",
             fontFamily = Bodoni,
-            color = colors.onSurface,
+            color = colorScheme.onSurface,
             textAlign = TextAlign.Left,
-            modifier = Modifier.fillMaxWidth())
+            modifier = Modifier.fillMaxWidth().testTag(AccountPageTestTags.YOUR_POST_SECTION))
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -179,16 +135,14 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
 
 @Composable
 fun DisplayUsersPosts(posts: List<OutfitPost>) {
-  val colors = MaterialTheme.colorScheme
-  val defaultPainter = rememberVectorPainter(Icons.Default.AccountCircle)
+  val color = colorScheme
+  val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
 
   LazyVerticalGrid(
       columns = GridCells.Fixed(3),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalArrangement = Arrangement.spacedBy(8.dp),
-      modifier =
-          Modifier.fillMaxWidth().height(((posts.size + 2) / 3 * 146).dp) // 138dp + 8dp spacing
-      ) {
+      modifier = Modifier.fillMaxWidth().height(((posts.size + 2) / 3 * 146).dp)) {
         items(posts) { post ->
           AsyncImage(
               model = post.outfitURL,
@@ -198,19 +152,75 @@ fun DisplayUsersPosts(posts: List<OutfitPost>) {
               contentScale = ContentScale.Crop,
               modifier =
                   Modifier.size(138.dp)
-                      .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                      .background(colors.surfaceVariant))
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(color.surfaceVariant)
+                      .testTag(AccountPageTestTags.POST_TAG))
         }
       }
 }
 
 @Composable
 private fun LoadingOverlay() {
-  val colors = MaterialTheme.colorScheme
+  val colors = colorScheme
   Box(
       modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
       contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
             modifier = Modifier.testTag(AccountPageTestTags.LOADING), color = colors.primary)
+      }
+}
+
+@Composable
+private fun AvatarHolder(uiState: AccountPageViewState, username: String) {
+  val profilePicture = uiState.profilePicture
+  val color = colorScheme
+  val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
+
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    if (profilePicture.isNotBlank() && !uiState.isLoading) {
+      AsyncImage(
+          model = profilePicture,
+          contentDescription = "Profile Picture",
+          placeholder = defaultAvatarPainter,
+          error = defaultAvatarPainter,
+          contentScale = ContentScale.Crop,
+          modifier =
+              Modifier.size(150.dp).clip(CircleShape).testTag(AccountPageTestTags.AVATAR_IMAGE))
+    } else {
+      Box(
+          modifier = Modifier.size(150.dp).clip(CircleShape).background(Primary),
+          contentAlignment = Alignment.Center) {
+            Text(
+                text = username.firstOrNull()?.uppercase() ?: "",
+                style = typography.headlineLarge,
+                color = Secondary,
+                modifier = Modifier.testTag(AccountPageTestTags.AVATAR_LETTER))
+          }
+    }
+  }
+}
+
+@Composable
+private fun EditButton(onEditAccount: () -> Unit, modifier: Modifier) {
+  IconButton(
+      onClick = onEditAccount, modifier = modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON)) {
+        Icon(
+            imageVector = Icons.Default.Settings,
+            contentDescription = "Settings",
+            tint = colorScheme.onBackground,
+            modifier = Modifier.size(32.dp))
+      }
+
+  Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "Your account",
+            style = typography.displayMedium,
+            fontFamily = Bodoni,
+            color = colorScheme.primary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT))
       }
 }

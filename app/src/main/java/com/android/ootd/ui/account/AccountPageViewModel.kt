@@ -74,8 +74,8 @@ class AccountPageViewModel(
    */
   private fun retrieveUserData() {
     _uiState.update { it.copy(isLoading = true) }
-    try {
-      viewModelScope.launch {
+    viewModelScope.launch {
+      try {
         val currentUserID = accountService.currentUserId
         val user = userRepository.getUser(currentUserID)
         val account = accountRepository.getAccount(currentUserID)
@@ -85,13 +85,16 @@ class AccountPageViewModel(
               username = user.username,
               profilePicture = user.profilePicture,
               posts = usersPosts,
-              friends = account.friendUids)
+              friends = account.friendUids,
+              isLoading = false)
         }
-        clearLoading()
+        clearErrorMsg()
+      } catch (e: Exception) {
+        Log.e(currentLog, "Error fetching user data : ${e.message}")
+        _uiState.update {
+          it.copy(errorMsg = e.localizedMessage ?: "Failed to load account data", isLoading = false)
+        }
       }
-    } catch (e: Exception) {
-      Log.e(currentLog, "Error fetching user data : ${e.message}")
-      _uiState.update { it.copy(errorMsg = e.message) }
     }
   }
 
@@ -111,14 +114,5 @@ class AccountPageViewModel(
    */
   fun clearErrorMsg() {
     _uiState.update { it.copy(errorMsg = null) }
-  }
-
-  /**
-   * Clears the loading state in the UI.
-   *
-   * Sets [AccountPageViewState.isLoading] to false to indicate that loading has completed.
-   */
-  fun clearLoading() {
-    _uiState.update { it.copy(isLoading = false) }
   }
 }
