@@ -272,10 +272,14 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     // Assert: should show exactly 3 suggestions
-    composeTestRule
-        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-        .assertCountEquals(3)
-
+    composeTestRule.waitUntil(
+        condition = {
+          composeTestRule
+              .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+              .fetchSemanticsNodes()
+              .size == 3
+        },
+        timeoutMillis = 5000)
     // Now select one suggestion to verify selection behavior and that the dropdown closes
     // Arrange: mock repository to return a single suggestion for selection interaction
     val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
@@ -296,9 +300,14 @@ class RegisterScreenTest {
     }
 
     // Assert: dropdown should be closed (suggestions cleared)
-    composeTestRule
-        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-        .assertCountEquals(0)
+    composeTestRule.waitUntil(
+        condition = {
+          composeTestRule
+              .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+              .fetchSemanticsNodes()
+              .isEmpty()
+        },
+        timeoutMillis = 5000)
   }
 
   @Test
@@ -350,9 +359,14 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     // Assert: dropdown should show suggestions automatically
-    composeTestRule
-        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-        .assertCountEquals(1)
+    composeTestRule.waitUntil(
+        condition = {
+          composeTestRule
+              .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+              .fetchSemanticsNodes()
+              .size == 1
+        },
+        timeoutMillis = 5000)
   }
 
   @Test
@@ -368,9 +382,14 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     // Assert: dropdown should be hidden
-    composeTestRule
-        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-        .assertCountEquals(0)
+    composeTestRule.waitUntil(
+        condition = {
+          composeTestRule
+              .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+              .fetchSemanticsNodes()
+              .isEmpty()
+        },
+        timeoutMillis = 5000)
   }
 
   @Test
