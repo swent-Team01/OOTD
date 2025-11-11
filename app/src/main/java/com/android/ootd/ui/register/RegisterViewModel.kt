@@ -22,6 +22,8 @@ import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,6 +81,8 @@ class RegisterViewModel(
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(RegisterUserViewModel())
+  // Add this property to track the search job
+  private var searchJob: Job? = null
 
   /**
    * A [StateFlow] representing the current registration UI state. Observers can collect this flow
@@ -250,19 +254,25 @@ class RegisterViewModel(
   fun setLocationQuery(query: String) {
     _uiState.value = _uiState.value.copy(locationQuery = query, selectedLocation = null)
 
+    // Cancel any pending search
+    searchJob?.cancel()
+
     if (query.isNotEmpty()) {
       _uiState.value = _uiState.value.copy(isLoadingLocations = true)
-      viewModelScope.launch {
-        try {
-          val results = locationRepository.search(query)
-          _uiState.value =
-              _uiState.value.copy(locationSuggestions = results, isLoadingLocations = false)
-        } catch (e: Exception) {
-          Log.e("RegisterViewModel", "Error fetching location suggestions", e)
-          _uiState.value =
-              _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)
-        }
-      }
+      searchJob =
+          viewModelScope.launch {
+            delay(500) // Wait 500ms after user stops typing in order to not flood nomatim.
+            try {
+              val results = locationRepository.search(query)
+              Log.d("RegisterViewModel", "The query I searched with was $query")
+              _uiState.value =
+                  _uiState.value.copy(locationSuggestions = results, isLoadingLocations = false)
+            } catch (e: Exception) {
+              Log.e("RegisterViewModel", "Error fetching location suggestions", e)
+              _uiState.value =
+                  _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)
+            }
+          }
     } else {
       _uiState.value =
           _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)

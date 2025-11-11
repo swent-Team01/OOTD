@@ -1,5 +1,6 @@
 package com.android.ootd.ui.map
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
@@ -104,6 +106,7 @@ fun LocationSelectionSection(
       OutlinedTextField(
           value = locationQuery,
           onValueChange = {
+            Log.d("LocationSelectionSection", "Showing on location query change $it")
             onLocationQueryChange(it)
             // Ensure dropdown is shown when user types and we're focused
             if (isFocused) {
@@ -160,6 +163,7 @@ fun LocationSelectionSection(
       DropdownMenu(
           expanded = showDropdown && suggestions.isNotEmpty() && isFocused,
           onDismissRequest = { showDropdown = false },
+          properties = PopupProperties(focusable = false),
           modifier = Modifier.fillMaxWidth()) {
             suggestions.filterNotNull().take(3).forEach { location ->
               DropdownMenuItem(

@@ -19,7 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -90,7 +89,6 @@ private val SPACER = 16.dp
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
   val registerUiState by viewModel.uiState.collectAsState()
-  val context = LocalContext.current
 
   val usernameField = rememberFieldState()
   val dateField = rememberFieldState()
@@ -188,7 +186,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                       registerUiState.dateOfBirth.isNotBlank() &&
                       registerUiState.username.isNotBlank() &&
                       registerUiState.selectedLocation != null &&
-                      !(usernameError || dateError || locationError),
+                      !(usernameError || dateError),
               onRegisterClick = viewModel::registerUser)
         }
   }
