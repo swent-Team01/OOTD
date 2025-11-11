@@ -42,7 +42,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun previewItemScreen_callbacks_executeNavigationLambdas() {
-    // launchAppAt(Screen.Feed.name)
 
     // Navigate along the real user flow: Feed -> FitCheck -> Preview
     composeRule.runOnIdle {
@@ -66,8 +65,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun feedScreen_callbacks_executeNavigationLambdas() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle { navigation.navigateTo(Screen.Feed) }
 
     composeRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
@@ -90,8 +87,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun navigationActions_addItemToPreview_goBackShouldWork() {
-    // launchAppAt(Screen.Feed.name) // Start from top-level Feed graph
-
     composeRule.runOnIdle {
       // Simulate real user flow: Feed → FitCheck → PreviewItem → AddItem
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
@@ -111,8 +106,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun deepStack_feedToPreviewToAddToEdit_maintainsHistory() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle {
       // Build deep stack
       navigation.navigateTo(Screen.Feed)
@@ -140,8 +133,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun deepStack_multipleAddOperations_maintainsCorrectStack() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
@@ -163,8 +154,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun statePreservation_navigationDoesNotClearStack() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
@@ -482,7 +471,6 @@ class MainActivityCallbacksTest {
 
       // Back button should not return to previous screens
       navigation.goBack()
-      // Should stay at Authentication or go to Splash
     }
   }
 
@@ -563,8 +551,6 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       val testPostUuid = "test-post-uuid-123"
 
-      // This tests the MainActivity code:
-      // val postUuid = navBackStackEntry.arguments?.getString("postUuid") ?: ""
       navigation.navigateTo(Screen.SeeFitScreen(postUuid = testPostUuid))
 
       // Verify we successfully navigated to SeeFitScreen
@@ -589,7 +575,6 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.SeeFitScreen(postUuid = "some-post-id"))
       assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
 
-      // Test the goBack callback: { navigationActions.goBack() }
       navigation.goBack()
 
       // Should return to Feed
@@ -598,7 +583,7 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun mainActivityCode_seeFitScreen_multipleNavigations_extractsCorrectPostUuidEachTime() {
+  fun seeFitScreen_multipleNavigations_maintainsNavigationFlow() {
     val postUuids = listOf("post-A", "post-B", "post-C", "post-xyz-999")
 
     composeRule.runOnIdle {
