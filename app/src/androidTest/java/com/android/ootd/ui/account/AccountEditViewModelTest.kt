@@ -38,7 +38,7 @@ import org.junit.Test
  */
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AccountViewModelTest {
+class AccountEditViewModelTest {
 
   private lateinit var accountService: AccountService
   private lateinit var accountRepository: AccountRepository
