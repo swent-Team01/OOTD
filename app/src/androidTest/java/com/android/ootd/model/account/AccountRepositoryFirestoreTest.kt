@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
@@ -354,11 +355,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account1)
 
     accountRepository.editAccount(
-        account1.uid,
-        username = "",
-        birthDay = "",
-        picture = "",
-        location = com.android.ootd.model.map.emptyLocation)
+        account1.uid, username = "", birthDay = "", picture = "", location = emptyLocation)
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(account1.username, updated.username)
