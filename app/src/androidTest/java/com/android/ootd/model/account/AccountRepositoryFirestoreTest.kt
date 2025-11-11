@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
@@ -337,7 +338,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val newBirthday = "1990-01-01"
     val newPicture = ":3"
     accountRepository.editAccount(
-        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
+        account1.uid,
+        username = newUsername,
+        birthDay = newBirthday,
+        picture = newPicture,
+        location = account1.location)
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(newUsername, updated.username)
@@ -349,7 +354,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun editAccount_keepsValuesWhenBlank() = runTest {
     accountRepository.addAccount(account1)
 
-    accountRepository.editAccount(account1.uid, username = "", birthDay = "", picture = "")
+    accountRepository.editAccount(
+        account1.uid, username = "", birthDay = "", picture = "", location = emptyLocation)
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(account1.username, updated.username)
@@ -501,7 +507,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
     // This test verifies the method executes successfully and logs the success message
     accountRepository.editAccount(
-        account1.uid, username = newUsername, birthDay = newBirthday, picture = newPicture)
+        account1.uid,
+        username = newUsername,
+        birthDay = newBirthday,
+        picture = newPicture,
+        location = account1.location)
 
     val updated = accountRepository.getAccount(account1.uid)
     assertEquals(newUsername, updated.username)

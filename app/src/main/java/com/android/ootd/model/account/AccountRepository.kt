@@ -72,16 +72,24 @@ interface AccountRepository {
   suspend fun deleteAccount(userID: String)
 
   /**
-   * Allows the user to edit his username or date of birth
+   * Allows the user to edit his attributes, ie. username, date of birth, profile picture and
+   * location
    *
    * @param userID Said users ID
    * @param username Users new username, blank by default
    * @param birthDay Users updated date of birth, blank by default
    * @param picture Users profile picture URL, blank by default
+   * @param location Users updated location
    * @throws TakenUserException If the username already exists
    * @throws IllegalStateException The userID does not match the users ID
    */
-  suspend fun editAccount(userID: String, username: String, birthDay: String, picture: String)
+  suspend fun editAccount(
+      userID: String,
+      username: String,
+      birthDay: String,
+      picture: String,
+      location: Location
+  )
 
   /**
    * Delete the profile picture of the account corresponding to [userID].

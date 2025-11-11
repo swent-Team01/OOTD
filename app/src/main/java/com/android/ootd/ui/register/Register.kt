@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,7 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.LocationUtils
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -89,7 +91,6 @@ private val SPACER = 16.dp
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
   val registerUiState by viewModel.uiState.collectAsState()
-
   val usernameField = rememberFieldState()
   val dateField = rememberFieldState()
   val locationField = rememberFieldState()
@@ -109,6 +110,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val usernameError = usernameField.left.value && registerUiState.username.isBlank()
   val dateError = dateField.left.value && registerUiState.dateOfBirth.isBlank()
   val locationError = locationField.left.value && registerUiState.selectedLocation == null
+
+  val onGPSClick = rememberGPSClickHandler(viewModel, locationPermissionLauncher)
 
   HandleRegistrationEffects(
       errorMsg = registerUiState.errorMsg,
@@ -173,23 +176,51 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               viewModel = viewModel,
               fieldState = locationField,
               isError = locationError,
-              onGPSClick = {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-              })
+              onGPSClick = onGPSClick)
 
           Spacer(modifier = Modifier.height(SPACER))
 
           RegisterFooter(
               isLoading = registerUiState.isLoading,
               isEnabled =
-                  !registerUiState.isLoading &&
-                      registerUiState.dateOfBirth.isNotBlank() &&
-                      registerUiState.username.isNotBlank() &&
-                      registerUiState.selectedLocation != null &&
-                      !(usernameError || dateError),
+                  isRegisterEnabled(registerUiState, usernameError, dateError, locationError),
               onRegisterClick = viewModel::registerUser)
         }
   }
+}
+
+/** Handles the GPS button click, checking for location permissions and requesting if needed. */
+@Composable
+private fun rememberGPSClickHandler(
+    viewModel: RegisterViewModel,
+    locationPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+): () -> Unit {
+  val context = LocalContext.current
+  return remember(viewModel, locationPermissionLauncher, context) {
+    {
+      if (LocationUtils.hasLocationPermission(context)) {
+        viewModel.onLocationPermissionGranted()
+      } else {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+      }
+    }
+  }
+}
+
+/** Calculates whether the register button should be enabled based on form state. */
+private fun isRegisterEnabled(
+    registerUiState: RegisterUserViewModel,
+    usernameError: Boolean,
+    dateError: Boolean,
+    locationError: Boolean
+): Boolean {
+  return !registerUiState.isLoading &&
+      registerUiState.dateOfBirth.isNotBlank() &&
+      registerUiState.username.isNotBlank() &&
+      registerUiState.selectedLocation != null &&
+      !usernameError &&
+      !dateError &&
+      !locationError
 }
 
 /**

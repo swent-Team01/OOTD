@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.User
 
 class AccountRepositoryInMemory : AccountRepository {
@@ -150,13 +151,15 @@ class AccountRepositoryInMemory : AccountRepository {
       username: String,
       birthDay: String,
       picture: String,
+      location: Location
   ) {
     val acc = getAccount(userID)
     accounts[userID] =
         acc.copy(
             username = username.takeIf { it.isNotBlank() } ?: acc.username,
             birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
-            profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture)
+            profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture,
+            location = location.takeIf { isValidLocation(it) } ?: acc.location)
   }
 
   override suspend fun deleteProfilePicture(userID: String) {
