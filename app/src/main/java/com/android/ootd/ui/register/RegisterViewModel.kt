@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.MissingLocationException
@@ -20,6 +19,7 @@ import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -314,36 +314,15 @@ class RegisterViewModel(
   private fun setGPSLocation() {
     _uiState.value = _uiState.value.copy(isLoadingLocations = true)
 
-    val cancellationTokenSource = com.google.android.gms.tasks.CancellationTokenSource()
-
-    fusedLocationClient
-        .getCurrentLocation(
-            com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            cancellationTokenSource.token)
-        .addOnSuccessListener { androidLocation: android.location.Location? ->
-          if (androidLocation != null) {
-            // Convert Android Location to our app's Location model
-            val appLocation =
-                Location(
-                    latitude = androidLocation.latitude,
-                    longitude = androidLocation.longitude,
-                    name =
-                        "Current Location (${androidLocation.latitude.format()}, ${androidLocation.longitude.format()})")
-            setLocation(appLocation)
-          } else {
-            Log.w("RegisterViewModel", "getCurrentLocation returned null")
-            emitError(
-                "Unable to get current location. Please enable location services or search manually.")
-          }
+    LocationUtils.getCurrentGPSLocation(
+        onSuccess = { location ->
+          setLocation(location)
           _uiState.value = _uiState.value.copy(isLoadingLocations = false)
-          cancellationTokenSource.cancel()
-        }
-        .addOnFailureListener { exception ->
-          Log.e("RegisterViewModel", "Failed to get current location", exception)
-          emitError("Failed to get current location: ${exception.message ?: "Unknown error"}")
+        },
+        onFailure = { errorMessage ->
+          emitError(errorMessage)
           _uiState.value = _uiState.value.copy(isLoadingLocations = false)
-          cancellationTokenSource.cancel()
-        }
+        })
   }
 
   /** Formats a Double coordinate to 4 decimal places for display. */

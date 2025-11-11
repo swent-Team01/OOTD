@@ -26,7 +26,6 @@ object FeedScreenTestTags {
   const val LOCKED_MESSAGE = "feedLockedMessage"
   const val ADD_POST_FAB = "addPostFab"
   const val FEED_LIST = "feedList"
-  const val NAVIGATE_TO_SEARCH_SCREEN = "navigateToSearchScreen"
   const val NAVIGATE_TO_NOTIFICATIONS_SCREEN = "navigateToNotificationsScreen"
 }
 
@@ -35,8 +34,8 @@ object FeedScreenTestTags {
 fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onAddPostClick: () -> Unit,
-    onSearchClick: () -> Unit = {},
-    onNotificationIconClick: () -> Unit = {}
+    onNotificationIconClick: () -> Unit = {},
+    onSeeFitClick: (String) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -50,7 +49,8 @@ fun FeedScreen(
       hasPostedToday = hasPostedToday,
       posts = posts,
       onAddPostClick = onAddPostClick,
-      onNotificationIconClick = onNotificationIconClick)
+      onNotificationIconClick = onNotificationIconClick,
+      onSeeFitClick = onSeeFitClick)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +59,8 @@ private fun FeedScaffold(
     hasPostedToday: Boolean,
     posts: List<OutfitPost>,
     onAddPostClick: () -> Unit,
-    onNotificationIconClick: () -> Unit = {}
+    onNotificationIconClick: () -> Unit = {},
+    onSeeFitClick: (String) -> Unit = {}
 ) {
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
@@ -110,7 +111,10 @@ private fun FeedScaffold(
                     .padding(top = paddingValues.calculateTopPadding())
                     .background(MaterialTheme.colorScheme.background)) {
               // Renders the list of posts when user has posted.
-              FeedList(isBlurred = !hasPostedToday, posts = posts)
+              FeedList(
+                  isBlurred = !hasPostedToday,
+                  posts = posts,
+                  onSeeFitClick = { post -> onSeeFitClick(post.postUID) })
 
               if (!hasPostedToday && posts.isEmpty()) {
                 Box(
