@@ -89,19 +89,19 @@ object UiTestTags {
  * Shows the current account information (username, Google email, profile picture) and provides
  * actions to edit the avatar, go back, and sign out.
  *
- * @param accountViewModel supplies [AccountViewState] and handles business logic.
+ * @param accountEditViewModel supplies [AccountViewState] and handles business logic.
  * @param credentialManager used when signing out to clear platform credentials.
  * @param onBack callback invoked when the back button is pressed.
  * @param onSignOut callback invoked when the view model signals a successful sign-out.
  */
 @Composable
-fun AccountScreen(
-    accountViewModel: AccountViewModel = viewModel(),
+fun AccountEditScreen(
+    accountEditViewModel: AccountEditViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onBack: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
-  val uiState by accountViewModel.uiState.collectAsState()
+  val uiState by accountEditViewModel.uiState.collectAsState()
   val context = LocalContext.current
 
   LaunchedEffect(uiState.signedOut) {
@@ -114,23 +114,23 @@ fun AccountScreen(
   LaunchedEffect(uiState.errorMsg) {
     uiState.errorMsg?.let { message ->
       Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-      accountViewModel.clearErrorMsg()
+      accountEditViewModel.clearErrorMsg()
     }
   }
 
   AccountScreenContent(
-      accountViewModel = accountViewModel,
+      accountEditViewModel = accountEditViewModel,
       uiState = uiState,
       onBack = onBack,
-      onSignOutClick = { accountViewModel.signOut(credentialManager) },
-      onToggle = { accountViewModel.onTogglePrivacy() },
-      onHelpClick = { accountViewModel.onPrivacyHelpClick() },
-      onHelpDismiss = { accountViewModel.onPrivacyHelpDismiss() })
+      onSignOutClick = { accountEditViewModel.signOut(credentialManager) },
+      onToggle = { accountEditViewModel.onTogglePrivacy() },
+      onHelpClick = { accountEditViewModel.onPrivacyHelpClick() },
+      onHelpDismiss = { accountEditViewModel.onPrivacyHelpDismiss() })
 }
 
 @Composable
 private fun AccountScreenContent(
-    accountViewModel: AccountViewModel = viewModel(),
+    accountEditViewModel: AccountEditViewModel = viewModel(),
     uiState: AccountViewState,
     onBack: () -> Unit,
     onSignOutClick: () -> Unit,
@@ -153,8 +153,8 @@ private fun AccountScreenContent(
             uri?.let {
               handlePickedProfileImage(
                   it.toString(),
-                  upload = accountViewModel::uploadImageToStorage,
-                  editProfilePicture = { accountViewModel.editUser(profilePicture = it) },
+                  upload = accountEditViewModel::uploadImageToStorage,
+                  editProfilePicture = { accountEditViewModel.editUser(profilePicture = it) },
                   context = context)
             }
           })
@@ -175,7 +175,7 @@ private fun AccountScreenContent(
               imagePickerLauncher.launch(
                   PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
-            accountViewModel,
+            accountEditViewModel,
             context)
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -195,7 +195,7 @@ private fun AccountScreenContent(
             },
             onSaveClick = {
               if (editedUsername.isNotBlank() && editedUsername != uiState.username) {
-                accountViewModel.editUser(newUsername = editedUsername)
+                accountEditViewModel.editUser(newUsername = editedUsername)
                 isEditingUsername = false
               }
             })
@@ -259,7 +259,7 @@ private fun AvatarSection(
     avatarUri: String,
     username: String,
     onEditClick: () -> Unit,
-    accountViewModel: AccountViewModel,
+    accountEditViewModel: AccountEditViewModel,
     context: Context = LocalContext.current
 ) {
   val colors = MaterialTheme.colorScheme
@@ -323,7 +323,7 @@ private fun AvatarSection(
         if (avatarUri.isNotBlank()) {
           Button(
               onClick = {
-                accountViewModel.deleteProfilePicture()
+                accountEditViewModel.deleteProfilePicture()
                 Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
               },
               shape = CircleShape,

@@ -49,7 +49,7 @@ class AccountScreenTest {
   private lateinit var mockUserRepository: UserRepository
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
-  private lateinit var viewModel: AccountViewModel
+  private lateinit var viewModel: AccountEditViewModel
 
   private val userFlow = MutableStateFlow<FirebaseUser?>(null)
 
@@ -74,7 +74,7 @@ class AccountScreenTest {
             profilePicture = "",
             isPrivate = false)
 
-    viewModel = AccountViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
+    viewModel = AccountEditViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
   }
 
   @After
@@ -91,8 +91,8 @@ class AccountScreenTest {
   private fun setContent(onBack: (() -> Unit)? = null, onSignOut: (() -> Unit)? = null) {
     composeTestRule.setContent {
       OOTDTheme {
-        AccountScreen(
-            accountViewModel = viewModel,
+        AccountEditScreen(
+            accountEditViewModel = viewModel,
             credentialManager = mockCredentialManager,
             onBack = onBack ?: {},
             onSignOut = onSignOut ?: {})

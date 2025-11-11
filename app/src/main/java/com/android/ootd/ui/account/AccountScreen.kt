@@ -55,8 +55,8 @@ object AccountPageTestTags {
 }
 
 @Composable
-fun AccountPage(
-    accountModel: AccountPageViewModel = viewModel(),
+fun AccountScreen(
+    accountModel: AccountScreenViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onEditAccount: () -> Unit = {},
     onPostClick: (String) -> Unit = {}

@@ -60,7 +60,7 @@ data class AccountViewState(
  * @param accountRepository source of account profile data.
  * @param storage Firebase Storage instance for uploading profile pictures.
  */
-class AccountViewModel(
+class AccountEditViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,

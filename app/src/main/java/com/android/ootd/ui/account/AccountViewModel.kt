@@ -52,7 +52,7 @@ private const val currentLog = "AccountPageViewModel"
  * @property userRepository Repository for accessing user profile data.
  * @property feedRepository Repository for accessing user posts.
  */
-class AccountPageViewModel(
+class AccountScreenViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
