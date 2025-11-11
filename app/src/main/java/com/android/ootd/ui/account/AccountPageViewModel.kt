@@ -99,15 +99,6 @@ class AccountPageViewModel(
   }
 
   /**
-   * Loads a specific post by its ID.
-   *
-   * @param postID The unique identifier of the post to load.
-   */
-  fun loadPost(postID: String) {
-    // TODO
-  }
-
-  /**
    * Clears any transient error message shown in the UI.
    *
    * Resets the [AccountPageViewState.errorMsg] to null.

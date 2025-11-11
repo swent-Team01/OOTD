@@ -1,8 +1,8 @@
 package com.android.ootd.ui.account
 
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -58,7 +58,8 @@ object AccountPageTestTags {
 fun AccountPage(
     accountModel: AccountPageViewModel = viewModel(),
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
-    onEditAccount: () -> Unit = {}
+    onEditAccount: () -> Unit = {},
+    onPostClick: (String) -> Unit = {}
 ) {
   val uiState by accountModel.uiState.collectAsState()
   val context = LocalContext.current
@@ -70,11 +71,15 @@ fun AccountPage(
     }
   }
 
-  AccountPageContent(uiState, context, onEditAccount)
+  AccountPageContent(uiState, onEditAccount, onPostClick)
 }
 
 @Composable
-fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAccount: () -> Unit) {
+fun AccountPageContent(
+    uiState: AccountPageViewState,
+    onEditAccount: () -> Unit,
+    onPostClick: (String) -> Unit = {}
+) {
   val friendList = uiState.friends
   val friendListSize = friendList.size
   val username = uiState.username
@@ -125,7 +130,7 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        DisplayUsersPosts(posts = posts)
+        DisplayUsersPosts(posts, onPostClick)
       }
 
   if (uiState.isLoading) {
@@ -134,7 +139,7 @@ fun AccountPageContent(uiState: AccountPageViewState, context: Context, onEditAc
 }
 
 @Composable
-fun DisplayUsersPosts(posts: List<OutfitPost>) {
+fun DisplayUsersPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
   val color = colorScheme
   val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
 
@@ -153,6 +158,7 @@ fun DisplayUsersPosts(posts: List<OutfitPost>) {
               modifier =
                   Modifier.size(138.dp)
                       .clip(RoundedCornerShape(8.dp))
+                      .clickable(onClick = { onPostClick(post.postUID) })
                       .background(color.surfaceVariant)
                       .testTag(AccountPageTestTags.POST_TAG))
         }

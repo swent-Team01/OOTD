@@ -46,6 +46,7 @@ import com.android.ootd.ui.notifications.NotificationsScreen
 import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
+import com.android.ootd.ui.post.PostViewScreen
 import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
@@ -208,7 +209,11 @@ fun OOTDApp(
                   UserSearchScreen(onBack = { navigationActions.goBack() })
                 }
                 composable(Screen.ViewAcount.route) {
-                  AccountPage(onEditAccount = { navigationActions.navigateTo(Screen.Account) })
+                  AccountPage(
+                      onEditAccount = { navigationActions.navigateTo(Screen.Account) },
+                      onPostClick = { postId ->
+                        navigationActions.navigateTo(Screen.PostView(postId))
+                      })
                 }
                 composable(Screen.Account.route) {
                   AccountScreen(
@@ -299,6 +304,16 @@ fun OOTDApp(
 
                       if (itemUid != null) {
                         EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
+                      }
+                    }
+                composable(
+                    route = Screen.PostView.route,
+                    arguments = listOf(navArgument("postId") { type = NavType.StringType })) {
+                        navBackStackEntry ->
+                      val postId = navBackStackEntry.arguments?.getString("postId")
+
+                      if (postId != null) {
+                        PostViewScreen(postId = postId, onBack = { navigationActions.goBack() })
                       }
                     }
                 composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }

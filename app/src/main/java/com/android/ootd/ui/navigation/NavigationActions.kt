@@ -85,6 +85,13 @@ sealed class Screen(
       const val route = "editItem/{itemUid}"
     }
   }
+
+  data class PostView(val postId: String) :
+      Screen(route = "postView/${postId}", name = "Post View") {
+    companion object {
+      const val route = "postView/{postId}"
+    }
+  }
 }
 
 /**
