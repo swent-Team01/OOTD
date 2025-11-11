@@ -20,6 +20,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,14 +43,10 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
-import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
-/**
- * Reusable category dropdown field Shows a dropdown menu with predefined categories from
- * CategoryNormalizer
- */
+/** Reusable category dropdown field. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryField(
@@ -69,14 +66,14 @@ fun CategoryField(
       modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = category,
-            onValueChange = {}, // Read-only, selection only
+            onValueChange = {}, // Read-only: selection only
             readOnly = true,
-            label = { Text("Category *") },
-            placeholder = { Text("Select a category") },
+            label = { Text("Item Category*") },
+            placeholder = { Text("Select the Item Category") },
             isError = invalidCategory != null,
             supportingText =
-                invalidCategory?.let { error ->
-                  { Text(text = error, color = MaterialTheme.colorScheme.error) }
+                invalidCategory?.let { msg ->
+                  { Text(text = msg, color = MaterialTheme.colorScheme.error) }
                 },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor().testTag(testTag),
@@ -86,13 +83,13 @@ fun CategoryField(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier =
-                dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
-                    ?: Modifier.fillMaxWidth()) {
-              categories.forEach { categoryOption ->
+                (dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
+                    ?: Modifier.fillMaxWidth())) {
+              categories.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(categoryOption) },
+                    text = { Text(option) },
                     onClick = {
-                      onChange(categoryOption)
+                      onChange(option)
                       onValidate?.invoke()
                       expanded = false
                     },
@@ -136,7 +133,10 @@ fun TypeField(
                         }
                       }
                     } ?: Modifier),
-        singleLine = true)
+        singleLine = true,
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        colors = commonTextFieldColors())
 
     DropdownMenu(
         expanded = expanded && suggestions.isNotEmpty(),
@@ -163,6 +163,9 @@ fun BrandField(brand: String, onChange: (String) -> Unit, testTag: String) {
       onValueChange = onChange,
       label = { Text("Brand") },
       placeholder = { Text("Enter a brand") },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
@@ -174,6 +177,9 @@ fun MaterialField(materialText: String, onChange: (String) -> Unit, testTag: Str
       onValueChange = onChange,
       label = { Text("Material") },
       placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
@@ -185,6 +191,9 @@ fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
       onValueChange = onChange,
       label = { Text("Link") },
       placeholder = { Text("e.g., https://example.com") },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
@@ -197,13 +206,13 @@ fun LoadingOverlay(visible: Boolean) {
       contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           CircularProgressIndicator(color = Primary)
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
           Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
         }
       }
 }
 
-/** Reusable image preview component for items Shows local URI, remote URL, or a placeholder icon */
+/** Image preview (local URI, remote URL, or placeholder) */
 @Composable
 fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
     localUri: Uri?,
@@ -228,8 +237,8 @@ fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
                 scaleY = imageScale
                 translationY = -((maxImageSize.toPx() - currentSize.toPx()) / 2f)
               }
-              .clip(RoundedCornerShape(16.dp))
-              .border(4.dp, Tertiary, RoundedCornerShape(16.dp))
+              .clip(RoundedCornerShape(12.dp))
+              .border(6.dp, Primary, RoundedCornerShape(12.dp))
               .background(Secondary)
               .testTag(testTag),
       contentAlignment = Alignment.Center) {
@@ -250,3 +259,19 @@ fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
         }
       }
 }
+
+// Reusable colors for non-category text fields
+@Composable
+private fun commonTextFieldColors() =
+    OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
+        disabledBorderColor = MaterialTheme.colorScheme.tertiary,
+        errorBorderColor = MaterialTheme.colorScheme.error,
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = MaterialTheme.colorScheme.primary,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.primary,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary,
+        focusedTextColor = MaterialTheme.colorScheme.primary,
+        unfocusedTextColor = MaterialTheme.colorScheme.primary)

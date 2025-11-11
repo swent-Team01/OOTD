@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -79,16 +81,14 @@ object AddItemScreenTestTags {
   const val TAKE_A_PHOTO = "takeAPhoto"
 
   const val TYPE_SUGGESTIONS = "typeSuggestion"
-
   const val CATEGORY_SUGGESTION = "categorySuggestion"
-
   const val ALL_FIELDS = "allFields"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddItemsScreen(
-    postUuid: String, // will be received from navigation
+    postUuid: String,
     modifier: Modifier = Modifier,
     addItemsViewModel: AddItemsViewModel = viewModel(),
     maxImageSize: Dp = 250.dp,
@@ -111,10 +111,8 @@ fun AddItemsScreen(
     }
   }
 
-  // Initialise post ID
+  // Initialize post ID and suggestions
   LaunchedEffect(postUuid) { addItemsViewModel.initPostUuid(postUuid) }
-
-  // Initialize type suggestions from YAML file
   LaunchedEffect(Unit) { addItemsViewModel.initTypeSuggestions(context) }
 
   val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
@@ -133,7 +131,6 @@ fun AddItemsScreen(
         if (uri != null) addItemsViewModel.setPhoto(uri)
       }
 
-  // Show custom camera screen when needed
   if (showCamera) {
     CameraScreen(
         onImageCaptured = { uri ->
@@ -154,6 +151,7 @@ fun AddItemsScreen(
                         .padding(18.dp)
                         .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
                         .testTag(AddItemScreenTestTags.ALL_FIELDS),
+
                 // image pick
                 showDialog = showDialog,
                 onShowDialogChange = { showDialog = it },
@@ -165,11 +163,13 @@ fun AddItemsScreen(
                   showDialog = false
                   galleryLauncher.launch("image/*")
                 },
+
                 // category
                 category = itemsUIState.category,
                 invalidCategory = itemsUIState.invalidCategory,
                 onCategoryChange = { addItemsViewModel.setCategory(it) },
                 onCategoryValidate = { addItemsViewModel.validateCategory() },
+
                 // type
                 type = itemsUIState.type,
                 typeSuggestions = itemsUIState.typeSuggestion,
@@ -177,7 +177,8 @@ fun AddItemsScreen(
                   addItemsViewModel.setType(it)
                   addItemsViewModel.updateTypeSuggestions(it)
                 },
-                // brand/price/link/material
+
+                // brand / price / link / material
                 brand = itemsUIState.brand,
                 onBrandChange = addItemsViewModel::setBrand,
                 price = itemsUIState.price,
@@ -186,6 +187,7 @@ fun AddItemsScreen(
                 onLinkChange = addItemsViewModel::setLink,
                 material = itemsUIState.materialText,
                 onMaterialChange = addItemsViewModel::setMaterial,
+
                 // add
                 isAddEnabled = itemsUIState.isAddingValid,
                 onAddClick = addItemsViewModel::onAddItemClick,
@@ -212,14 +214,13 @@ fun AddItemsScreen(
   }
 }
 
-// --- smaller composables ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddItemTopBar(modifier: Modifier, goBack: () -> Unit) {
   CenterAlignedTopAppBar(
       title = {
         Text(
-            text = "ADD ITEMS",
+            text = "ADD ITEM", // ← updated
             style =
                 MaterialTheme.typography.displayLarge.copy(
                     fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
@@ -293,14 +294,18 @@ private fun FieldsList(
           dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
           expandOnChange = true)
     }
+
     item {
       BrandField(
           brand = brand, onChange = onBrandChange, testTag = AddItemScreenTestTags.INPUT_BRAND)
     }
+
     item { PriceField(price = price, onChange = onPriceChange) }
+
     item {
       LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
     }
+
     item {
       MaterialField(
           materialText = material,
@@ -337,7 +342,7 @@ private fun ImagePickerRow(
               tint = White,
               modifier = Modifier.size(16.dp))
           Spacer(Modifier.width(8.dp))
-          Text(text = "Upload a picture of the Item", color = White)
+          Text(text = "Upload a picture of the Item*", color = White) // ← updated copy
         }
   }
 
@@ -366,12 +371,30 @@ private fun ImagePickerRow(
 }
 
 @Composable
+private fun commonTextFieldColors() =
+    OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
+        disabledBorderColor = MaterialTheme.colorScheme.tertiary,
+        errorBorderColor = MaterialTheme.colorScheme.error,
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = MaterialTheme.colorScheme.primary,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.primary,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary,
+        focusedTextColor = MaterialTheme.colorScheme.primary,
+        unfocusedTextColor = MaterialTheme.colorScheme.primary)
+
+@Composable
 private fun PriceField(price: String, onChange: (String) -> Unit) {
   OutlinedTextField(
       value = price,
       onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) onChange(it) },
-      label = { Text("Price") },
-      placeholder = { Text("Enter a price") },
+      label = { Text("Item price") },
+      placeholder = { Text("Enter the item price") },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_PRICE))
 }
 
@@ -395,4 +418,75 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
               Text(text = "Add Item", modifier = Modifier.align(Alignment.CenterVertically))
             }
       }
+}
+
+@Preview(name = "Add Items", showBackground = true)
+@Composable
+private fun AddItemsScreenSmallPreview() {
+  MaterialTheme {
+    val maxImageSize = 180.dp
+    val minImageSize = 80.dp
+
+    var showDialog by remember { mutableStateOf(false) }
+    val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
+    val imageScaleState = remember { mutableFloatStateOf(1f) }
+
+    val nestedScrollConnection =
+        rememberImageResizeScrollConnection(
+            currentImageSize = currentImageSizeState,
+            imageScale = imageScaleState,
+            minImageSize = minImageSize,
+            maxImageSize = maxImageSize)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+      Scaffold(
+          topBar = { AddItemTopBar(Modifier, goBack = {}) },
+          content = { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
+              FieldsList(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .padding(18.dp)
+                          .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
+                          .testTag(AddItemScreenTestTags.ALL_FIELDS),
+                  showDialog = showDialog,
+                  onShowDialogChange = { showDialog = it },
+                  onTakePhoto = { showDialog = false },
+                  onPickFromGallery = { showDialog = false },
+                  category = "Tops",
+                  invalidCategory = null,
+                  onCategoryChange = {},
+                  onCategoryValidate = {},
+                  type = "T-Shirt",
+                  typeSuggestions = listOf("T-Shirt", "Sweater", "Jacket"),
+                  onTypeChange = {},
+                  brand = "BrandX",
+                  onBrandChange = {},
+                  price = "19.99",
+                  onPriceChange = {},
+                  link = "https://example.com/item",
+                  onLinkChange = {},
+                  material = "Cotton",
+                  onMaterialChange = {},
+                  isAddEnabled = true,
+                  onAddClick = {})
+              ItemsImagePreview(
+                  localUri = null,
+                  remoteUrl = "",
+                  maxImageSize = maxImageSize,
+                  imageScale = imageScaleState.floatValue,
+                  currentSize = currentImageSizeState.value,
+                  testTag = AddItemScreenTestTags.IMAGE_PREVIEW,
+                  placeholderIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_photo_placeholder),
+                        contentDescription = "Placeholder icon",
+                        modifier = Modifier.size(64.dp))
+                  })
+            }
+          })
+
+      LoadingOverlay(visible = false)
+    }
+  }
 }
