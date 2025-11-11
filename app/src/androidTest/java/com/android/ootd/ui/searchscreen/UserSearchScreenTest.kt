@@ -20,11 +20,8 @@ import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.feed.FeedScreen
-import com.android.ootd.ui.feed.FeedScreenTestTags
-import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
-import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags.SEARCH_SCREEN
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSearchScreen
@@ -126,15 +123,11 @@ class UserSearchScreenTest : FirestoreTest() {
   @Test
   fun searchScreenNavigation() {
     composeTestRule.setContent { SetupTestNavigationHost() }
-    composeTestRule.onNodeWithTag(NAVIGATE_TO_SEARCH_SCREEN).performClick()
+
+    // Navigate programmatically to the Search screen instead of clicking a UI element
+    composeTestRule.runOnIdle { navController.navigate(Screen.SearchScreen.route) }
 
     composeTestRule.onNodeWithTag(SEARCH_SCREEN).assertIsDisplayed()
-
-    composeTestRule
-        .onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON)
-        .assertIsDisplayed()
-        .performClick()
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
   }
 
   @Test

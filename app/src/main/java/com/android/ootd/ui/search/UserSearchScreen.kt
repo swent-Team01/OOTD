@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,16 +34,7 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), onBack: () ->
               .padding(vertical = 32.dp, horizontal = 20.dp)
               .testTag(SearchScreenTestTags.SEARCH_SCREEN)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-          IconButton(
-              modifier =
-                  Modifier.width(48.dp).height(48.dp).testTag(SearchScreenTestTags.GO_BACK_BUTTON),
-              onClick = onBack) {
-                Icon(
-                    modifier = Modifier.width(48.dp).height(48.dp),
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.primary)
-              }
+          Spacer(modifier = Modifier.width(48.dp))
 
           Spacer(modifier = Modifier.weight(1f))
 
