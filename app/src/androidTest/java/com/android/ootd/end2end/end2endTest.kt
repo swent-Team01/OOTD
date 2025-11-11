@@ -379,8 +379,17 @@ class End2EndTest {
 
       composeTestRule.waitForIdle()
 
-      // STEP 9: Click on search icon to navigate to search screen
-      composeTestRule.onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN).performClick()
+      // STEP 9: Navigate to Search screen using bottom navigation tab
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(NavigationTestTags.getTabTestTag(Tab.Search))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+      composeTestRule
+          .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Search))
+          .assertIsDisplayed()
+          .performClick()
       composeTestRule.waitForIdle()
 
       // Wait for Search screen to appear
@@ -431,8 +440,17 @@ class End2EndTest {
       //    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
       //    composeTestRule.waitForIdle()
 
-      // STEP 13: Click back button to return to Feed screen
-      composeTestRule.onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON).performClick()
+      // STEP 13: Navigate back to Feed screen using bottom navigation tab (instead of back button)
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(NavigationTestTags.getTabTestTag(Tab.Feed))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+      composeTestRule
+          .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Feed))
+          .assertIsDisplayed()
+          .performClick()
       composeTestRule.waitForIdle()
 
       // Wait for Feed screen to appear again
@@ -506,16 +524,14 @@ class End2EndTest {
       // Wait for the Notification Icon to be fully initialized and visible
       composeTestRule.waitUntil(timeoutMillis = 5000) {
         composeTestRule
-            .onAllNodesWithTag(
-                FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
+            .onAllNodesWithTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
             .fetchSemanticsNodes()
             .isNotEmpty()
       }
 
       // Click on the notifications icon
       composeTestRule
-          .onNodeWithTag(
-              FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
+          .onNodeWithTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
           .performClick()
 
       composeTestRule.waitForIdle()
