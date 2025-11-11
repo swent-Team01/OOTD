@@ -174,7 +174,6 @@ fun LocationSelectionSection(
                         fontFamily = Bodoni)
                   },
                   onClick = {
-                    onLocationQueryChange(location.name)
                     onLocationSelect(location)
                     onClearSuggestions()
                     showDropdown = false
