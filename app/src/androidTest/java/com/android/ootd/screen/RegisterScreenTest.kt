@@ -525,27 +525,8 @@ class RegisterScreenTest {
   }
 
   // ========== EPFL Default Location Tests ==========
-
   @Test
-  fun defaultEpflLocationButton_isDisplayed() {
-    // Wait for the EPFL button to exist in the semantics tree
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithText("or select default location (EPFL)", substring = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Scroll to make the button visible on smaller screens
-    composeTestRule
-        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
-        .performScrollTo()
-        .assertIsDisplayed()
-        .assertTextContains("or select default location (EPFL)")
-  }
-
-  @Test
-  fun defaultEpflLocationButton_setsLocationToEpfl() {
+  fun defaultEpflLocationButton_isDisplayed_and_setsLocationToEPFL() {
     // Wait for the EPFL button to exist in the semantics tree
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule
@@ -559,6 +540,7 @@ class RegisterScreenTest {
         .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
         .performScrollTo()
         .performClick()
+        .assertTextContains("or select default location (EPFL)")
     composeTestRule.waitForIdle()
 
     // Assert: location should be set to EPFL
