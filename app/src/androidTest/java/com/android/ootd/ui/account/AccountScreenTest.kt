@@ -17,6 +17,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -167,7 +168,30 @@ class AccountScreenTest {
     composeTestRule.waitUntil(
         condition = { selectTestTag(UiTestTags.TAG_USERNAME_EDIT).isDisplayed() },
         timeoutMillis = 5000)
-    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+  }
+
+  @Test
+  fun usernameEdit_save_works() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open edit
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performTextInput("new_text")
+
+    // Save with change -> stays editing (no-op)
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
+
+    composeTestRule.waitUntil(
+        condition = { selectTestTag(UiTestTags.TAG_USERNAME_EDIT).isDisplayed() },
+        timeoutMillis = 5000)
+
     selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
     selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
