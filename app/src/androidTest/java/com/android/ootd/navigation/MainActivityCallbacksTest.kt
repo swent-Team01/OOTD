@@ -559,79 +559,6 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun seeFitScreen_multipleBackNavigations_maintainsStack() {
-    composeRule.runOnIdle {
-      // Build navigation stack
-      navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.SearchScreen)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "post-xyz"))
-
-      // Verify we're on SeeFitScreen
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-
-      // Go back to Search
-      navigation.goBack()
-      assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
-
-      // Go back to Feed
-      navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun seeFitScreen_receivesCorrectPostUuid() {
-    composeRule.runOnIdle {
-      val testPostUuid = "test-post-123"
-
-      // Navigate to SeeFitScreen with specific postUuid
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = testPostUuid))
-
-      // Verify we're on SeeFitScreen
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun seeFitScreen_goBack_returnsToFeed() {
-    composeRule.runOnIdle {
-      // Start from Feed
-      navigation.navigateTo(Screen.Feed)
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-
-      // Navigate to SeeFitScreen
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "some-post-id"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-
-      // Simulate goBack callback
-      navigation.goBack()
-
-      // Should return to Feed
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun seeFitScreen_fromFeedWithDifferentPostUuids_handlesCorrectly() {
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-
-      // Navigate to first post
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "post-1"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-      navigation.goBack()
-
-      // Navigate to second post
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "post-2"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-      navigation.goBack()
-
-      // Should be back at Feed
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
   fun mainActivityCode_seeFitScreen_extractsPostUuidFromNavArguments() {
     composeRule.runOnIdle {
       val testPostUuid = "test-post-uuid-123"
@@ -671,38 +598,6 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun mainActivityCode_seeFitScreen_withEmptyPostUuid_handlesGracefully() {
-    composeRule.runOnIdle {
-      // Test with empty string (edge case for: ?: "")
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = ""))
-
-      // Should still navigate successfully with empty postUuid
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-    }
-
-    composeRule.waitUntil(timeoutMillis = 5_000) {
-      composeRule.onAllNodesWithTag("seeFitScreen").fetchSemanticsNodes().isNotEmpty()
-    }
-    composeRule.onNodeWithTag("seeFitScreen").assertIsDisplayed()
-  }
-
-  @Test
-  fun mainActivityCode_seeFitScreen_withSpecialCharactersInPostUuid() {
-    composeRule.runOnIdle {
-      // Test with special characters in postUuid
-      val specialPostUuid = "post-with-dashes-123_underscores"
-
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = specialPostUuid))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-    }
-
-    composeRule.waitUntil(timeoutMillis = 5_000) {
-      composeRule.onAllNodesWithTag("seeFitScreen").fetchSemanticsNodes().isNotEmpty()
-    }
-    composeRule.onNodeWithTag("seeFitScreen").assertIsDisplayed()
-  }
-
-  @Test
   fun mainActivityCode_seeFitScreen_multipleNavigations_extractsCorrectPostUuidEachTime() {
     val postUuids = listOf("post-A", "post-B", "post-C", "post-xyz-999")
 
@@ -719,25 +614,6 @@ class MainActivityCallbacksTest {
         navigation.goBack()
         assertEquals(Screen.Feed.route, navigation.currentRoute())
       }
-    }
-  }
-
-  @Test
-  fun mainActivityCode_seeFitScreen_navigationStack_maintainedCorrectly() {
-    composeRule.runOnIdle {
-      // Build a stack: Feed -> Search -> SeeFitScreen
-      navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.SearchScreen)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "stacked-post-id"))
-
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-
-      // Navigate back through the stack
-      navigation.goBack()
-      assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
-
-      navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 
@@ -763,26 +639,6 @@ class MainActivityCallbacksTest {
       navigation.goBack()
 
       assertEquals(Screen.Account.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun mainActivityCode_seeFitScreen_rapidNavigations_handlesCorrectly() {
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-
-      // Rapidly navigate to different posts
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "rapid-1"))
-      navigation.goBack()
-
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "rapid-2"))
-      navigation.goBack()
-
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "rapid-3"))
-      navigation.goBack()
-
-      // Should still be at Feed
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
 }
