@@ -30,8 +30,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.ui.Inventory.InventoryScreen
-import com.android.ootd.ui.account.AccountEditScreen
 import com.android.ootd.ui.account.AccountScreen
+import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.consent.BetaConsentScreen
@@ -209,14 +209,14 @@ fun OOTDApp(
                   UserSearchScreen(onBack = { navigationActions.goBack() })
                 }
                 composable(Screen.ViewAcount.route) {
-                  AccountScreen(
+                  AccountPage(
                       onEditAccount = { navigationActions.navigateTo(Screen.Account) },
                       onPostClick = { postId ->
                         navigationActions.navigateTo(Screen.PostView(postId))
                       })
                 }
                 composable(Screen.Account.route) {
-                  AccountEditScreen(
+                  AccountScreen(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }

@@ -38,13 +38,13 @@ import org.junit.Test
  */
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AccountEditViewModelTest {
+class AccountViewModelTest {
 
   private lateinit var accountService: AccountService
   private lateinit var accountRepository: AccountRepository
   private lateinit var userRepository: UserRepository
   private lateinit var credentialManager: CredentialManager
-  private lateinit var viewModel: AccountEditViewModel
+  private lateinit var viewModel: AccountViewModel
   private lateinit var mockFirebaseUser: FirebaseUser
 
   private val testDispatcher = StandardTestDispatcher()
@@ -85,7 +85,7 @@ class AccountEditViewModelTest {
       accRepo: AccountRepository = accountRepository,
       usrRepo: UserRepository = userRepository
   ) {
-    viewModel = AccountEditViewModel(accountService, accRepo, usrRepo)
+    viewModel = AccountViewModel(accountService, accRepo, usrRepo)
   }
 
   private fun mockUser(
@@ -359,7 +359,7 @@ class AccountEditViewModelTest {
     // 1) Blank path: should return input immediately and not call uploader
     run {
       val vm =
-          AccountEditViewModel(
+          AccountViewModel(
               accountService = accountService,
               accountRepository = accountRepository,
               userRepository = userRepository,
@@ -376,7 +376,7 @@ class AccountEditViewModelTest {
     // 2) Success path: uploader returns URL, onResult receives it, no error set
     run {
       val vm =
-          AccountEditViewModel(
+          AccountViewModel(
               accountService = accountService,
               accountRepository = accountRepository,
               userRepository = userRepository,
@@ -397,7 +397,7 @@ class AccountEditViewModelTest {
     // 3) Error path: uploader throws, onError called, errorMsg set
     run {
       val vm =
-          AccountEditViewModel(
+          AccountViewModel(
               accountService = accountService,
               accountRepository = accountRepository,
               userRepository = userRepository,
@@ -419,7 +419,7 @@ class AccountEditViewModelTest {
       signInAs(null)
 
       val vm =
-          AccountEditViewModel(
+          AccountViewModel(
               accountService = accountService,
               accountRepository = accountRepository,
               userRepository = userRepository,

@@ -29,13 +29,13 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AccountScreenViewModelTest {
+class AccountPageViewModelTest {
 
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
   private lateinit var mockUserRepository: UserRepository
   private lateinit var mockFeedRepository: FeedRepository
-  private lateinit var viewModel: AccountScreenViewModel
+  private lateinit var viewModel: AccountPageViewModel
 
   private val testDispatcher = StandardTestDispatcher()
 
@@ -93,7 +93,7 @@ class AccountScreenViewModelTest {
   @Test
   fun uiState_initializes_with_default_values() {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
 
     val state = viewModel.uiState.value
@@ -104,7 +104,7 @@ class AccountScreenViewModelTest {
   @Test
   fun init_loads_user_data_successfully() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -120,7 +120,7 @@ class AccountScreenViewModelTest {
   @Test
   fun retrieveUserData_calls_all_repositories() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -138,7 +138,7 @@ class AccountScreenViewModelTest {
         }
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
 
     // Should be loading before data arrives
@@ -148,7 +148,7 @@ class AccountScreenViewModelTest {
   @Test
   fun uiState_sets_loading_false_after_data_loads() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -161,7 +161,7 @@ class AccountScreenViewModelTest {
     coEvery { mockUserRepository.getUser("test-uid") } throws Exception(errorMessage)
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -177,7 +177,7 @@ class AccountScreenViewModelTest {
     coEvery { mockAccountRepository.getAccount("test-uid") } throws Exception(errorMessage)
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -193,7 +193,7 @@ class AccountScreenViewModelTest {
     coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } throws Exception(errorMessage)
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -208,7 +208,7 @@ class AccountScreenViewModelTest {
     coEvery { mockUserRepository.getUser("test-uid") } throws RuntimeException()
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -220,7 +220,7 @@ class AccountScreenViewModelTest {
   @Test
   fun uiState_contains_correct_user_information() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -232,7 +232,7 @@ class AccountScreenViewModelTest {
   @Test
   fun uiState_contains_correct_posts() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -245,7 +245,7 @@ class AccountScreenViewModelTest {
   @Test
   fun uiState_contains_correct_friends_list() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -259,7 +259,7 @@ class AccountScreenViewModelTest {
     coEvery { mockUserRepository.getUser("test-uid") } throws Exception("Test error")
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -275,7 +275,7 @@ class AccountScreenViewModelTest {
     coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } returns emptyList()
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -290,7 +290,7 @@ class AccountScreenViewModelTest {
         testAccount.copy(friendUids = emptyList())
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -304,7 +304,7 @@ class AccountScreenViewModelTest {
     coEvery { mockUserRepository.getUser("test-uid") } returns testUser.copy(profilePicture = "")
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -316,7 +316,7 @@ class AccountScreenViewModelTest {
   @Test
   fun uiState_maintains_data_integrity_across_multiple_fields() = runTest {
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -344,7 +344,7 @@ class AccountScreenViewModelTest {
     coEvery { mockFeedRepository.getFeedForUids(listOf("specific-user-id")) } returns testPosts
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -368,7 +368,7 @@ class AccountScreenViewModelTest {
     coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } returns manyPosts
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -384,7 +384,7 @@ class AccountScreenViewModelTest {
         testAccount.copy(friendUids = manyFriends)
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 
@@ -398,7 +398,7 @@ class AccountScreenViewModelTest {
     coEvery { mockUserRepository.getUser("test-uid") } throws Exception("Error")
 
     viewModel =
-        AccountScreenViewModel(
+        AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
     advanceUntilIdle()
 

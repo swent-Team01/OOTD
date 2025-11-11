@@ -1,27 +1,40 @@
 package com.android.ootd.ui.account
 
+/*
+ * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
+ * Copilot provided suggestions which were reviewed and adapted by the developers.
+ */
+import android.content.Context
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.credentials.CredentialManager
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
-import com.android.ootd.model.feed.FeedRepository
-import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.theme.OOTDTheme
+import com.google.firebase.auth.FirebaseUser
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -34,64 +47,34 @@ class AccountScreenTest {
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
   private lateinit var mockUserRepository: UserRepository
-  private lateinit var mockFeedRepository: FeedRepository
   private lateinit var mockCredentialManager: CredentialManager
-  private lateinit var viewModel: AccountScreenViewModel
+  private lateinit var mockFirebaseUser: FirebaseUser
+  private lateinit var viewModel: AccountViewModel
 
-  private var onEditAccountCalled = false
-  private var onPostClickCalledWithId: String? = null
-
-  private val testUser =
-      User(
-          uid = "test-uid",
-          username = "testuser",
-          profilePicture = "https://example.com/profile.jpg")
-
-  private val testAccount =
-      Account(
-          uid = "test-uid",
-          ownerId = "test-uid",
-          username = "testuser",
-          profilePicture = "https://example.com/profile.jpg",
-          friendUids = listOf("friend1", "friend2", "friend3"),
-          isPrivate = false)
-
-  private val testPosts =
-      listOf(
-          OutfitPost(
-              postUID = "post1",
-              name = "testuser",
-              ownerId = "test-uid",
-              outfitURL = "https://example.com/post1.jpg",
-              description = "First post"),
-          OutfitPost(
-              postUID = "post2",
-              name = "testuser",
-              ownerId = "test-uid",
-              outfitURL = "https://example.com/post2.jpg",
-              description = "Second post"),
-          OutfitPost(
-              postUID = "post3",
-              name = "testuser",
-              ownerId = "test-uid",
-              outfitURL = "https://example.com/post3.jpg",
-              description = "Third post"))
+  private val userFlow = MutableStateFlow<FirebaseUser?>(null)
 
   @Before
   fun setup() {
     mockAccountService = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)
-    mockFeedRepository = mockk(relaxed = true)
     mockCredentialManager = mockk(relaxed = true)
+    mockFirebaseUser = mockk(relaxed = true)
 
-    every { mockAccountService.currentUserId } returns "test-uid"
-    coEvery { mockUserRepository.getUser("test-uid") } returns testUser
-    coEvery { mockAccountRepository.getAccount("test-uid") } returns testAccount
-    coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } returns testPosts
+    every { mockAccountService.currentUser } returns userFlow
+    every { mockFirebaseUser.uid } returns "test-uid"
+    every { mockFirebaseUser.email } returns "user1@google.com"
+    every { mockFirebaseUser.photoUrl } returns null
 
-    onEditAccountCalled = false
-    onPostClickCalledWithId = null
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = "",
+            isPrivate = false)
+
+    viewModel = AccountViewModel(mockAccountService, mockAccountRepository, mockUserRepository)
   }
 
   @After
@@ -99,140 +82,244 @@ class AccountScreenTest {
     clearAllMocks()
   }
 
-  private fun setContent() {
-    viewModel =
-        AccountScreenViewModel(
-            mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
+  // --- Helpers ---
+  private fun signIn(user: FirebaseUser?) {
+    userFlow.value = user
+    composeTestRule.waitForIdle()
+  }
 
+  private fun setContent(onBack: (() -> Unit)? = null, onSignOut: (() -> Unit)? = null) {
     composeTestRule.setContent {
       OOTDTheme {
         AccountScreen(
-            accountModel = viewModel,
+            accountViewModel = viewModel,
             credentialManager = mockCredentialManager,
-            onEditAccount = { onEditAccountCalled = true },
-            onPostClick = { postId -> onPostClickCalledWithId = postId })
+            onBack = onBack ?: {},
+            onSignOut = onSignOut ?: {})
       }
     }
     composeTestRule.waitForIdle()
   }
 
+  private fun selectTestTag(tag: String) = composeTestRule.onNodeWithTag(tag)
+
+  // --- Tests (fewer, but comprehensive) ---
+
   @Test
-  fun screen_displays_user_posts() {
+  fun rendersBasic_withoutAvatar_andShowsUserInfo_andReadOnlyState() {
+    signIn(mockFirebaseUser)
     setContent()
 
-    // Should display all posts (we can check by counting nodes with POST_TAG)
-    composeTestRule
-        .onAllNodesWithTag(AccountPageTestTags.POST_TAG)
-        .fetchSemanticsNodes()
-        .size
-        .let { count -> assert(count == 3) { "Expected 3 posts, found $count" } }
+    // Core chrome
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+
+    // No photo -> letter avatar shown, image absent
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertDoesNotExist()
+
+    // Actions and fields
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertIsDisplayed().assertTextContains("user1")
+    selectTestTag(UiTestTags.TAG_GOOGLE_FIELD)
+        .assertIsDisplayed()
+        .assertTextContains("user1@google.com")
+    selectTestTag(UiTestTags.TAG_SIGNOUT_BUTTON).assertExists()
+
+    // Read-only (not editing)
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
 
   @Test
-  fun clicking_post_calls_onPostClick_with_correct_id() {
+  fun showsAvatarImage_whenProfilePictureExists() {
+    val avatarUri = Uri.parse("https://example.com/avatar.jpg")
+    every { mockFirebaseUser.photoUrl } returns avatarUri
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = avatarUri.toString())
+
+    signIn(mockFirebaseUser)
     setContent()
 
-    // Click on first post
-    composeTestRule.onAllNodesWithTag(AccountPageTestTags.POST_TAG)[0].performClick()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE).assertIsDisplayed()
+  }
 
-    assert(onPostClickCalledWithId != null) { "onPostClick should have been called" }
-    assert(onPostClickCalledWithId in listOf("post1", "post2", "post3")) {
-      "Post ID should be one of the test posts"
+  @Test
+  fun usernameEdit_flow_saveWithoutChange_staysEditing_thenCancel_restores() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open edit
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+
+    // Save without change -> stays editing (no-op)
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+
+    // Cancel -> back to normal, original name remains
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+  }
+
+  @Test
+  fun privacyToggle_click_updatesLabel_andCallsRepository() {
+    coEvery { mockAccountRepository.togglePrivacy("test-uid") } returns true
+
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Initially Public
+    composeTestRule.onNodeWithText("Public").assertIsDisplayed()
+
+    val switchMatcher = isToggleable() and hasAnyAncestor(hasTestTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+    composeTestRule.onNode(switchMatcher).performClick()
+
+    // Updated and repo called
+    composeTestRule.onNodeWithText("Private").assertIsDisplayed()
+    coVerify(exactly = 1) { mockAccountRepository.togglePrivacy("test-uid") }
+  }
+
+  @Test
+  fun helpIcon_showsAndDismissesPopup() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_ICON).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertExists()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_HELP_MENU).assertDoesNotExist()
+  }
+
+  @Test
+  fun backButton_invokesCallback() {
+    val onBack = mockk<() -> Unit>(relaxed = true)
+    signIn(mockFirebaseUser)
+    setContent(onBack)
+
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
+    verify { onBack() }
+  }
+
+  @Test
+  fun deleteProfilePicture_buttonAppearsOnlyWithPicture_andCallsViewModel() {
+    // Setup account with profile picture
+    val avatarUri = "https://example.com/avatar.jpg"
+    coEvery { mockAccountRepository.getAccount("test-uid") } returns
+        Account(
+            uid = "test-uid",
+            ownerId = "test-uid",
+            username = "user1",
+            profilePicture = avatarUri,
+            isPrivate = false)
+
+    every { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockAccountRepository.deleteProfilePicture("test-uid") } returns Unit
+    coEvery { mockUserRepository.deleteProfilePicture("test-uid") } returns Unit
+
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Delete button should be visible when there's a profile picture
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Edit").assertIsDisplayed()
+
+    // Click delete button
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify both repositories were called
+    coVerify(exactly = 1) { mockAccountRepository.deleteProfilePicture("test-uid") }
+    coVerify(exactly = 1) { mockUserRepository.deleteProfilePicture("test-uid") }
+  }
+
+  @Test
+  fun deleteProfilePicture_buttonHiddenWhenNoProfilePictureAndShowsUpload() {
+    // Account without profile picture (default setup)
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Delete button should not exist when there's no profile picture
+    selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
+    // Upload button should be shown instead of Edit
+    composeTestRule.onNodeWithText("Upload").assertIsDisplayed()
+  }
+
+  @Test
+  fun handlePickedProfileImage_coversSuccessErrorAndBlank() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+
+    // Success: edit is called with expected URL
+    run {
+      var editedCalled = false
+      var editedUrl: String? = null
+      val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, onSuccess, _ ->
+        onSuccess("https://cdn.example.com/avatar.jpg")
+      }
+
+      composeTestRule.runOnUiThread {
+        handlePickedProfileImage(
+            localPath = "/local/path.jpg",
+            upload = upload,
+            editProfilePicture = {
+              editedCalled = true
+              editedUrl = it
+            },
+            context = ctx)
+      }
+
+      assertTrue(editedCalled)
+      assertTrue(editedUrl == "https://cdn.example.com/avatar.jpg")
     }
-  }
 
-  @Test
-  fun screen_displays_loading_indicator_when_loading() {
-    coEvery { mockUserRepository.getUser("test-uid") } coAnswers
-        {
-          kotlinx.coroutines.delay(5000)
-          testUser
-        }
+    // Error: edit is not called
+    run {
+      var editedCalled = false
+      val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, onError ->
+        onError(IllegalStateException("upload failed"))
+      }
 
-    setContent()
+      composeTestRule.runOnUiThread {
+        handlePickedProfileImage(
+            localPath = "/local/path.jpg",
+            upload = upload,
+            editProfilePicture = { editedCalled = true },
+            context = ctx)
+      }
 
-    composeTestRule.onNodeWithTag(AccountPageTestTags.LOADING).assertIsDisplayed()
-  }
+      assertFalse(editedCalled)
+    }
 
-  @Test
-  fun screen_handles_empty_posts_list() {
-    coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } returns emptyList()
+    // Blank path: no-op (upload not invoked, edit not called)
+    run {
+      var uploadInvoked = false
+      var editedCalled = false
+      val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ ->
+        uploadInvoked = true
+      }
 
-    setContent()
+      composeTestRule.runOnUiThread {
+        handlePickedProfileImage(
+            localPath = "",
+            upload = upload,
+            editProfilePicture = { editedCalled = true },
+            context = ctx)
+      }
 
-    // "Your posts :" section should still be displayed
-    composeTestRule.onNodeWithTag(AccountPageTestTags.YOUR_POST_SECTION).assertIsDisplayed()
-
-    // But no post items should exist
-    composeTestRule
-        .onAllNodesWithTag(AccountPageTestTags.POST_TAG)
-        .fetchSemanticsNodes()
-        .size
-        .let { count -> assert(count == 0) { "Expected 0 posts, found $count" } }
-  }
-
-  @Test
-  fun screen_displays_correct_avatar_letter_for_lowercase_username() {
-    coEvery { mockUserRepository.getUser("test-uid") } returns
-        testUser.copy(username = "alice", profilePicture = "")
-    coEvery { mockAccountRepository.getAccount("test-uid") } returns
-        testAccount.copy(username = "alice", profilePicture = "")
-
-    setContent()
-
-    composeTestRule
-        .onNodeWithTag(AccountPageTestTags.AVATAR_LETTER)
-        .assertIsDisplayed()
-        .assertTextContains("A")
-  }
-
-  @Test
-  fun screen_handles_username_with_special_characters() {
-    coEvery { mockUserRepository.getUser("test-uid") } returns
-        testUser.copy(username = "@user123", profilePicture = "")
-    coEvery { mockAccountRepository.getAccount("test-uid") } returns
-        testAccount.copy(username = "@user123", profilePicture = "")
-
-    setContent()
-
-    composeTestRule
-        .onNodeWithTag(AccountPageTestTags.USERNAME_TEXT)
-        .assertIsDisplayed()
-        .assertTextContains("@user123")
-  }
-
-  @Test
-  fun screen_structure_is_complete() {
-    setContent()
-
-    // Verify all main components are present
-    composeTestRule.onNodeWithTag(AccountPageTestTags.TITLE_TEXT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AccountPageTestTags.SETTINGS_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AccountPageTestTags.USERNAME_TEXT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AccountPageTestTags.FRIEND_COUNT_TEXT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AccountPageTestTags.YOUR_POST_SECTION).assertIsDisplayed()
-  }
-
-  @Test
-  fun screen_handles_large_number_of_posts() {
-    val manyPosts =
-        (1..20).map { index ->
-          OutfitPost(
-              postUID = "post$index",
-              name = "testuser",
-              ownerId = "test-uid",
-              outfitURL = "https://example.com/post$index.jpg",
-              description = "Post $index")
-        }
-
-    coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } returns manyPosts
-
-    setContent()
-
-    composeTestRule
-        .onAllNodesWithTag(AccountPageTestTags.POST_TAG)
-        .fetchSemanticsNodes()
-        .size
-        .let { count -> assert(count == 20) { "Expected 20 posts, found $count" } }
+      assertFalse(uploadInvoked)
+      assertFalse(editedCalled)
+    }
   }
 }
