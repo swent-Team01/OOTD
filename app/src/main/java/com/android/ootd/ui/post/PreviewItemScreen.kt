@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,8 +39,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +63,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
@@ -76,6 +82,9 @@ object PreviewItemScreenTestTags {
   const val CREATE_ITEM_BUTTON = "createItemButton"
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
+  const val ADD_ITEM_DIALOG = "addItemDialog"
+  const val CREATE_NEW_ITEM_OPTION = "createNewItemOption"
+  const val SELECT_FROM_INVENTORY_OPTION = "selectFromInventoryOption"
 
   fun getTestTagForItem(item: Item): String = "item${item.itemUuid}"
 }
@@ -88,6 +97,7 @@ fun PreviewItemScreen(
     description: String,
     onEditItem: (String) -> Unit = {},
     onAddItem: (String) -> Unit = {}, // now takes postUuid
+    onSelectFromInventory: (String) -> Unit = {}, // new callback for inventory selection
     onPostSuccess: () -> Unit = {},
     onGoBack: (String) -> Unit = {},
 ) {
@@ -95,9 +105,22 @@ fun PreviewItemScreen(
   val uiState by outfitPreviewViewModel.uiState.collectAsState()
   val itemsList = uiState.items
   val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+  var showAddItemDialog by remember { mutableStateOf(false) }
+  val lifecycleOwner = LocalLifecycleOwner.current
 
   // Initialise ViewModel with args and generate a new postUuid if needed
   LaunchedEffect(Unit) { outfitPreviewViewModel.initFromFitCheck(imageUri, description) }
+
+  // Reload items when coming back from other screens (e.g., after adding an item from inventory)
+  DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_RESUME) {
+        outfitPreviewViewModel.loadItemsForPost()
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
 
   // Handle error messages
   LaunchedEffect(uiState.errorMessage) {
@@ -168,7 +191,7 @@ fun PreviewItemScreen(
                     }
 
                 Button(
-                    onClick = { onAddItem(uiState.postUuid) },
+                    onClick = { showAddItemDialog = true },
                     modifier =
                         Modifier.height(47.dp)
                             .width(140.dp)
@@ -216,6 +239,37 @@ fun PreviewItemScreen(
                 }
           }
         }
+
+    // Add Item Dialog
+    if (showAddItemDialog) {
+      AlertDialog(
+          modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
+          onDismissRequest = { showAddItemDialog = false },
+          title = { Text(text = "Add Item to Outfit") },
+          text = {
+            Column {
+              TextButton(
+                  onClick = {
+                    showAddItemDialog = false
+                    onAddItem(uiState.postUuid)
+                  },
+                  modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
+                    Text("➕ Create New Item")
+                  }
+              TextButton(
+                  onClick = {
+                    showAddItemDialog = false
+                    onSelectFromInventory(uiState.postUuid)
+                  },
+                  modifier =
+                      Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
+                    Text("👕 Select from Inventory")
+                  }
+            }
+          },
+          confirmButton = {},
+          dismissButton = {})
+    }
 
     if (uiState.isLoading) {
       Box(
