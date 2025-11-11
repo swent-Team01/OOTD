@@ -197,6 +197,8 @@ private fun AccountScreenContent(
               if (editedUsername.isNotBlank() && editedUsername != uiState.username) {
                 accountViewModel.editUser(newUsername = editedUsername)
                 isEditingUsername = false
+              } else if (editedUsername == uiState.username) {
+                isEditingUsername = false
               }
             })
 
