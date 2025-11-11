@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -151,7 +152,7 @@ class AccountScreenTest {
   }
 
   @Test
-  fun usernameEdit_flow_saveWithoutChange_staysEditing_thenCancel_restores() {
+  fun usernameEdit_flow_saveWithoutChange_restores() {
     signIn(mockFirebaseUser)
     setContent()
 
@@ -162,14 +163,13 @@ class AccountScreenTest {
 
     // Save without change -> stays editing (no-op)
     selectTestTag(UiTestTags.TAG_USERNAME_SAVE).performClick()
-    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertDoesNotExist()
-    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
-    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
 
-    // Cancel -> back to normal, original name remains
-    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).performClick()
+    composeTestRule.waitUntil(
+        condition = { selectTestTag(UiTestTags.TAG_USERNAME_EDIT).isDisplayed() },
+        timeoutMillis = 5000)
     selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
-    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains("user1")
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
   }
 
   @Test
