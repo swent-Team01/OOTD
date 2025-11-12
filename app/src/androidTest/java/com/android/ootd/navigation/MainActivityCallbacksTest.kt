@@ -60,8 +60,11 @@ class MainActivityCallbacksTest {
     // Click Add Item button (opens dialog)
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
     composeRule.waitForIdle()
+    // Dialog is shown; click "Create New Item" to navigate to AddItemScreen
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
+    composeRule.waitForIdle()
 
-    // Add Item button should directly navigate to AddItemScreen
+    // Now we should have navigated to AddItemScreen
     composeRule.runOnIdle { assertEquals(Screen.AddItemScreen.route, navigation.currentRoute()) }
   }
 
@@ -496,8 +499,11 @@ class MainActivityCallbacksTest {
 
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
     composeRule.waitForIdle()
+    // Dialog is shown; click "Create New Item" to navigate to AddItemScreen
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
+    composeRule.waitForIdle()
 
-    // Add Item button should directly navigate to AddItemScreen
+    // Add Item should now be visible
     composeRule.runOnIdle {
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
       navigation.goBack()

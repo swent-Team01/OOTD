@@ -46,7 +46,6 @@ object InventoryScreenTestTags {
   const val ITEMS_GRID = "inventoryItemsGrid"
   const val ITEM_CARD = "inventoryItemCard"
   const val ADD_ITEM_FAB = "inventoryAddItemFab"
-  const val CATEGORY_HEADER = "categoryHeader"
 }
 
 /**
