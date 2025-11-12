@@ -270,7 +270,7 @@ private fun PreviewItemScreenContent(
                       text = "Don't forget to add your items",
                       style =
                           MaterialTheme.typography.bodyMedium.copy(
-                              fontWeight = FontWeight.SemiBold,
+                              fontWeight = FontWeight.Medium,
                               color = MaterialTheme.colorScheme.primary),
                       textAlign = TextAlign.Center)
                 }
@@ -405,7 +405,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, widthDp = 360, heightDp = 720, name = "Preview Item Screen")
 @Composable
-private fun PreviewItemScreen_Preview() {
+fun PreviewItemScreen_Preview() {
   val sampleItems =
       listOf(
           Item(

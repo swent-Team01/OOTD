@@ -155,46 +155,57 @@ fun TypeField(
   }
 }
 
-/** Reusable text field for brand input */
+/** Reusable generic text field with common styling */
 @Composable
-fun BrandField(brand: String, onChange: (String) -> Unit, testTag: String) {
+private fun CommonTextField(
+    value: String,
+    onChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    testTag: String
+) {
   OutlinedTextField(
-      value = brand,
+      value = value,
       onValueChange = onChange,
-      label = { Text("Brand") },
-      placeholder = { Text("Enter a brand") },
+      label = { Text(label) },
+      placeholder = { Text(placeholder) },
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
+}
+
+/** Reusable text field for brand input */
+@Composable
+fun BrandField(brand: String, onChange: (String) -> Unit, testTag: String) {
+  CommonTextField(
+      value = brand,
+      onChange = onChange,
+      label = "Brand",
+      placeholder = "Enter a brand",
+      testTag = testTag)
 }
 
 /** Reusable text field for material input */
 @Composable
 fun MaterialField(materialText: String, onChange: (String) -> Unit, testTag: String) {
-  OutlinedTextField(
+  CommonTextField(
       value = materialText,
-      onValueChange = onChange,
-      label = { Text("Material") },
-      placeholder = { Text("E.g., Cotton 80%, Wool 20%") },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(testTag))
+      onChange = onChange,
+      label = "Material",
+      placeholder = "E.g., Cotton 80%, Wool 20%",
+      testTag = testTag)
 }
 
 /** Reusable text field for link input */
 @Composable
 fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
-  OutlinedTextField(
+  CommonTextField(
       value = link,
-      onValueChange = onChange,
-      label = { Text("Link") },
-      placeholder = { Text("e.g., https://example.com") },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(testTag))
+      onChange = onChange,
+      label = "Link",
+      placeholder = "e.g., https://example.com",
+      testTag = testTag)
 }
 
 /** Reusable loading overlay with progress indicator */
