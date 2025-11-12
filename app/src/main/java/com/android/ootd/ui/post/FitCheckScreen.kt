@@ -43,6 +43,18 @@ object FitCheckScreenTestTags {
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
 }
 
+private const val MAX_DESCRIPTION_LENGTH = 100
+
+/**
+ * Screen for adding a FitCheck photo and description before previewing or publishing an outfit
+ * post.
+ *
+ * @param fitCheckViewModel The ViewModel managing the FitCheck screen state.
+ * @param postUuid The UUID of the post being edited, if applicable.
+ * @param onNextClick Callback when the "Next" button is clicked, passing the image URI and
+ *   description.
+ * @param onBackClick Callback when the back button is clicked.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FitCheckScreen(
@@ -173,16 +185,32 @@ fun FitCheckScreen(
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
 
-              OutlinedTextField(
-                  value = uiState.description,
-                  onValueChange = { fitCheckViewModel.setDescription(it) },
-                  label = { Text("Description") },
-                  placeholder = { Text("Add a short caption for your FitCheck") },
-                  modifier =
-                      Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
-                  singleLine = false,
-                  maxLines = 2,
-                  shape = RoundedCornerShape(12.dp))
+              val description = uiState.description
+              val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+
+              Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { newValue ->
+                      if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
+                        fitCheckViewModel.setDescription(newValue)
+                      }
+                    },
+                    label = { Text("Description") },
+                    placeholder = { Text("Add a short caption...") },
+                    modifier =
+                        Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
+                    singleLine = false,
+                    maxLines = 2,
+                    shape = RoundedCornerShape(12.dp))
+
+                // Character counter below the field
+                Text(
+                    text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.End).padding(top = 4.dp, end = 4.dp))
+              }
 
               Button(
                   onClick = { showDialog = true },
