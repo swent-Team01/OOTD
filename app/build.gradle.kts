@@ -29,6 +29,8 @@ android {
 
   val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: ""
 
+  bundle { language { enableSplit = false } }
+
   defaultConfig {
     applicationId = "com.android.ootd"
     minSdk = 28
