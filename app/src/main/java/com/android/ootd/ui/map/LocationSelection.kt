@@ -17,7 +17,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -32,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,9 +39,11 @@ import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.epflLocation
 import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
 
 // Test tags for location selection UI
 object LocationSelectionTestTags {
@@ -88,6 +90,9 @@ fun LocationSelectionSection(
     isError: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {}
 ) {
+  val colors = LightColorScheme
+  val typography = Typography
+
   Column(modifier = modifier) {
     // Local state to control dropdown visibility
     var showDropdown by remember { mutableStateOf(false) }
@@ -129,19 +134,16 @@ fun LocationSelectionSection(
               showDropdown = true
             }
           },
-          textStyle =
-              MaterialTheme.typography.bodyLarge.copy(
-                  fontFamily = Bodoni, color = MaterialTheme.colorScheme.primary),
+          textStyle = typography.bodyLarge.copy(fontFamily = Bodoni, color = colors.primary),
           label = {
             Box(
                 modifier =
-                    Modifier.background(
-                            MaterialTheme.colorScheme.secondary, RoundedCornerShape(4.dp))
+                    Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)) {
                   Text(
                       text = textLocationField,
-                      style = MaterialTheme.typography.bodySmall,
-                      color = MaterialTheme.colorScheme.tertiary)
+                      style = typography.bodySmall.copy(fontFamily = Bodoni),
+                      color = colors.tertiary)
                 }
           },
           placeholder = {
@@ -149,9 +151,9 @@ fun LocationSelectionSection(
           },
           colors =
               OutlinedTextFieldDefaults.colors(
-                  focusedTextColor = MaterialTheme.colorScheme.primary,
-                  unfocusedTextColor = MaterialTheme.colorScheme.primary,
-                  cursorColor = MaterialTheme.colorScheme.primary),
+                  focusedTextColor = colors.primary,
+                  unfocusedTextColor = colors.primary,
+                  cursorColor = colors.primary),
           trailingIcon = {
             when {
               isLoadingLocation -> {
@@ -233,11 +235,11 @@ fun LocationSelectionSection(
     Text(
         text = "or select default location (EPFL)",
         color = Primary,
-        fontFamily = Bodoni,
-        style = MaterialTheme.typography.bodyMedium,
+        style =
+            typography.bodyMedium.copy(
+                fontFamily = Bodoni, textDecoration = TextDecoration.Underline),
         modifier =
-            Modifier.fillMaxWidth()
-                .padding(top = 8.dp, bottom = 4.dp)
+            Modifier.padding(top = 8.dp, bottom = 4.dp)
                 .clickable {
                   onLocationQueryChange(epflLocation.name)
                   onLocationSelect(epflLocation)
