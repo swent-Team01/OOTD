@@ -20,6 +20,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.AddItemsScreen
+import com.android.ootd.ui.post.AddItemsScreenSmallPreview
 import com.android.ootd.ui.post.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
@@ -41,6 +42,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     super.setUp()
     viewModel = AddItemsViewModel(repository)
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    // removed initial composeTestRule.setContent to allow tests to decide which content to render
+  }
+
+  private fun setMainScreen() {
     composeTestRule.setContent {
       AddItemsScreen(addItemsViewModel = viewModel, onNextScreen = {}, postUuid = "postuid")
     }
@@ -50,6 +55,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun fillAllFields_showsCorrectValues() {
+    setMainScreen()
     // Fill all text fields
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("Jacket")
@@ -77,11 +83,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun setPhoto_updatesViewModelAndPreviewExists() {
+    // Pre-populate state before rendering
     val uri = "content://dummy/photo.jpg".toUri()
-
-    // Set photo directly via ViewModel (simulating what happens after picking from gallery)
     composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-    composeTestRule.waitForIdle()
+    setMainScreen()
 
     // Verify ViewModel state updated
     composeTestRule.runOnIdle {
@@ -100,6 +105,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun imagePickerDialog_shows_and_dismisses_via_options() {
+    setMainScreen()
+
     // Open
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PICKER).performClick()
     composeTestRule.waitForIdle()
@@ -126,6 +133,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun categoryDropdown_showsValidOptions_andSelectionWorks() {
+    setMainScreen()
+
     // Click dropdown to open it
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
     composeTestRule.waitForIdle()
@@ -151,6 +160,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun setPhoto_galleryAndCamera_andNullNoop_andEmptySetsError() {
+    setMainScreen()
     val galleryUri = Uri.parse("content://fake/gallery_photo.jpg")
     val cameraUri = Uri.parse("content://fake/camera_photo.jpg")
 
@@ -183,6 +193,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun addButton_disabledForMissingInputs_and_enabledWhenValid() {
+    setMainScreen()
+
     // No image + minimal inputs -> disabled
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.enterAddItemType("Jacket")
@@ -216,6 +228,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun typeSuggestion_showsAndCanSelect_forClothing() {
+    setMainScreen()
+
     composeTestRule.enterAddItemCategory("Clothing")
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("J")
 
@@ -230,6 +244,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun categorySuggestion_showsAndSelectingClearsError() {
+    setMainScreen()
+
     // Click to open the category dropdown
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
 
@@ -242,6 +258,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun typeSuggestions_acrossCategories() {
+    setMainScreen()
+
     // Accessories -> Hat
     composeTestRule.enterAddItemCategory("Accessories")
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_TYPE).performTextInput("H")
@@ -289,6 +307,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun materialInput_parsesVariants_and_ignoresInvalid() {
+    setMainScreen()
+
     // Multi
     composeTestRule.enterAddItemMaterial("Cotton 60%, Polyester 30%, Elastane 10%")
     composeTestRule.runOnIdle {
@@ -321,6 +341,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun priceInput_acceptsDecimals_and_rejectsInvalid() {
+    setMainScreen()
+
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextInput("12.99")
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
 
@@ -350,6 +372,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun uploadingOverlay_initiallyHidden_and_hidesAfterAttempt() = runTest {
+    setMainScreen()
+
     // Initially hidden
     composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
     composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
@@ -369,5 +393,18 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isLoading) }
     composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
+  }
+
+  @Test
+  fun addItems_preview_rendersCoreElements() {
+    // Render preview directly (no main screen content rendered beforehand)
+    composeTestRule.setContent { AddItemsScreenSmallPreview() }
+
+    // Top bar title and go back button exist
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TITLE_ADD).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).assertIsDisplayed()
+
+    // Image preview placeholder is visible in preview mode
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
   }
 }

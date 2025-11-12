@@ -37,7 +37,11 @@ sealed class Screen(
 
   object Feed : Screen(route = "feed", name = "Feed", isTopLevelDestination = true)
 
-  object Account : Screen(route = "account", name = "Account", isTopLevelDestination = false)
+  object AccountEdit :
+      Screen(route = "accountEdit", name = "Account Edit", isTopLevelDestination = false)
+
+  object AccountView :
+      Screen(route = "accountView", name = "Account View", isTopLevelDestination = true)
 
   data class FitCheck(val postUuid: String = "") :
       Screen(route = "fitCheck?postUuid=$postUuid", name = "FitCheck") {
@@ -87,6 +91,20 @@ sealed class Screen(
       Screen(route = "editItem/${itemUid}", name = "Edit Item") {
     companion object {
       const val route = "editItem/{itemUid}"
+    }
+  }
+
+  data class PostView(val postId: String) :
+      Screen(route = "postView/${postId}", name = "Post View") {
+    companion object {
+      const val route = "postView/{postId}"
+    }
+  }
+
+  data class SelectInventoryItem(val postUuid: String) :
+      Screen(route = "selectInventoryItem/$postUuid", name = "Select Inventory Item") {
+    companion object {
+      const val route = "selectInventoryItem/{postUuid}"
     }
   }
 }

@@ -254,24 +254,30 @@ fun DatePickerModalInput(
       dismissButton = {
         TextButton(onClick = onLeaveDate) { Text(text = "Dismiss", fontFamily = Bodoni) }
       }) {
-        DatePicker(
-            state = datePickerState,
-            title = {
-              Text(
-                  text = "Enter your date of birth",
-                  modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
-                  color = Primary,
-                  fontFamily = Bodoni)
-            },
-            headline = {
-              Text(
-                  text = "Entered birth date",
-                  modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
-                  style = Typography.bodyLarge,
-                  color = Primary,
-                  fontFamily = Bodoni)
-            },
-            modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
+        CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalConfiguration provides
+                androidx.compose.ui.platform.LocalConfiguration.current.apply {
+                  setLocale(Locale.UK) // or Locale("en", "GB") for DD/MM/YYYY
+                }) {
+              DatePicker(
+                  state = datePickerState,
+                  title = {
+                    Text(
+                        text = "Enter your date of birth",
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
+                        color = Primary,
+                        fontFamily = Bodoni)
+                  },
+                  headline = {
+                    Text(
+                        text = "Entered birth date",
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
+                        style = Typography.bodyLarge,
+                        color = Primary,
+                        fontFamily = Bodoni)
+                  },
+                  modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
+            }
       }
 }
 

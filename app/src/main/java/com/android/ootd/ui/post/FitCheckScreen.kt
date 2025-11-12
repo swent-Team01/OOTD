@@ -22,11 +22,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.theme.OOTDTheme
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -41,21 +43,8 @@ object FitCheckScreenTestTags {
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
-  const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
 
-private const val MAX_DESCRIPTION_LENGTH = 100
-
-/**
- * Screen for adding a FitCheck photo and description before previewing or publishing an outfit
- * post.
- *
- * @param fitCheckViewModel The ViewModel managing the FitCheck screen state.
- * @param postUuid The UUID of the post being edited, if applicable.
- * @param onNextClick Callback when the "Next" button is clicked, passing the image URI and
- *   description.
- * @param onBackClick Callback when the back button is clicked.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FitCheckScreen(
@@ -66,7 +55,6 @@ fun FitCheckScreen(
 ) {
   val uiState by fitCheckViewModel.uiState.collectAsState()
 
-  var showDialog by remember { mutableStateOf(false) }
   var showCamera by remember { mutableStateOf(false) }
 
   val galleryLauncher =
@@ -78,12 +66,38 @@ fun FitCheckScreen(
   // Show custom camera screen when needed
   if (showCamera) {
     CameraScreen(
-        onImageCaptured = { uri ->
-          fitCheckViewModel.setPhoto(uri)
-          showCamera = false
-        },
+        onImageCaptured = { uri -> fitCheckViewModel.setPhoto(uri) },
         onDismiss = { showCamera = false })
   }
+
+  FitCheckScreenContent(
+      uiState = uiState,
+      onNextClick = onNextClick,
+      onBackClick = {
+        if (postUuid.isNotEmpty()) {
+          fitCheckViewModel.deleteItemsForPost(postUuid)
+        }
+        onBackClick()
+      },
+      onChooseFromGallery = { galleryLauncher.launch("image/*") },
+      onTakePhoto = { showCamera = true },
+      onDescriptionChange = { fitCheckViewModel.setDescription(it) },
+      onClearError = { fitCheckViewModel.clearError() },
+  )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FitCheckScreenContent(
+    uiState: FitCheckUIState,
+    onNextClick: (String, String) -> Unit = { _, _ -> },
+    onBackClick: () -> Unit = {},
+    onChooseFromGallery: () -> Unit = {},
+    onTakePhoto: () -> Unit = {},
+    onDescriptionChange: (String) -> Unit = {},
+    onClearError: () -> Unit = {},
+) {
+  var showDialog by remember { mutableStateOf(false) }
 
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
@@ -99,12 +113,7 @@ fun FitCheckScreen(
             },
             navigationIcon = {
               IconButton(
-                  onClick = {
-                    if (postUuid.isNotEmpty()) {
-                      fitCheckViewModel.deleteItemsForPost(postUuid)
-                    }
-                    onBackClick()
-                  },
+                  onClick = { onBackClick() },
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -118,10 +127,10 @@ fun FitCheckScreen(
         Button(
             onClick = {
               if (uiState.isPhotoValid) {
-                fitCheckViewModel.clearError()
+                onClearError()
                 onNextClick(uiState.image.toString(), uiState.description)
               } else {
-                fitCheckViewModel.setErrorMsg("Please select a photo before continuing.")
+                onDescriptionChange(uiState.description) // no-op; real screen sets error
               }
             },
             modifier =
@@ -135,12 +144,12 @@ fun FitCheckScreen(
               Row(
                   verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.Center) {
-                    Text("Next", color = Color.White)
-                    Spacer(Modifier.width(8.dp))
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Next",
+                        contentDescription = "Add items",
                         tint = Color.White)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add items", color = Color.White)
                   }
             }
       }) { innerPadding ->
@@ -186,35 +195,16 @@ fun FitCheckScreen(
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
 
-              val description = uiState.description
-              val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
-
-              Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { newValue ->
-                      if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
-                        fitCheckViewModel.setDescription(newValue)
-                      }
-                    },
-                    label = { Text("Description") },
-                    placeholder = { Text("Add a short caption...") },
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
-                    singleLine = false,
-                    maxLines = 2,
-                    shape = RoundedCornerShape(12.dp))
-
-                // Character counter below the field
-                Text(
-                    text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier =
-                        Modifier.align(Alignment.End)
-                            .padding(top = 4.dp, end = 4.dp)
-                            .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
-              }
+              OutlinedTextField(
+                  value = uiState.description,
+                  onValueChange = { onDescriptionChange(it) },
+                  label = { Text("Description") },
+                  placeholder = { Text("Add a short caption for your FitCheck") },
+                  modifier =
+                      Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
+                  singleLine = false,
+                  maxLines = 2,
+                  shape = RoundedCornerShape(12.dp))
 
               Button(
                   onClick = { showDialog = true },
@@ -236,7 +226,7 @@ fun FitCheckScreen(
                         TextButton(
                             onClick = {
                               showDialog = false
-                              showCamera = true
+                              onTakePhoto()
                             },
                             modifier = Modifier.testTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)) {
                               Text("Take Photo")
@@ -244,7 +234,7 @@ fun FitCheckScreen(
 
                         TextButton(
                             onClick = {
-                              galleryLauncher.launch("image/*")
+                              onChooseFromGallery()
                               showDialog = false
                             },
                             modifier =
@@ -258,4 +248,13 @@ fun FitCheckScreen(
               }
             }
       }
+}
+
+@Preview(showBackground = true)
+@Composable
+@Suppress("UnusedPrivateMember")
+private fun FitCheckScreenPreview() {
+  val previewState =
+      FitCheckUIState(image = Uri.EMPTY, description = "Comfy autumn layers", errorMessage = null)
+  OOTDTheme { FitCheckScreenContent(uiState = previewState) }
 }

@@ -57,9 +57,14 @@ class MainActivityCallbacksTest {
           .isNotEmpty()
     }
 
+    // Click Add Item button (opens dialog)
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
     composeRule.waitForIdle()
+    // Dialog is shown; click "Create New Item" to navigate to AddItemScreen
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
+    composeRule.waitForIdle()
 
+    // Now we should have navigated to AddItemScreen
     composeRule.runOnIdle { assertEquals(Screen.AddItemScreen.route, navigation.currentRoute()) }
   }
 
@@ -311,15 +316,15 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go to Account screen
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
 
       // Simulate onBack
       navigation.goBack()
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go back to Account
-      navigation.navigateTo(Screen.Account)
+      navigation.navigateTo(Screen.AccountEdit)
 
       // Simulate onSignOut
       navigation.navigateTo(Screen.Authentication)
@@ -464,7 +469,7 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // User decides to sign out
-      navigation.navigateTo(Screen.Account)
+      navigation.navigateTo(Screen.AccountEdit)
       navigation.navigateTo(Screen.Authentication)
 
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
@@ -480,9 +485,26 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+    }
 
-      // Test onAddItem
-      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
+    composeRule.waitForIdle()
+
+    // Test onAddItem - need to click button and select from dialog
+    composeRule.waitUntil(timeoutMillis = 5_000) {
+      composeRule
+          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+    composeRule.waitForIdle()
+    // Dialog is shown; click "Create New Item" to navigate to AddItemScreen
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
+    composeRule.waitForIdle()
+
+    // Add Item should now be visible
+    composeRule.runOnIdle {
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
       navigation.goBack()
 
@@ -533,8 +555,8 @@ class MainActivityCallbacksTest {
       navigation.goBack()
 
       // To Account
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
       navigation.goBack()
 
       navigation.navigateTo(Screen.SeeFitScreen(postUuid = "test_id"))
@@ -618,12 +640,12 @@ class MainActivityCallbacksTest {
       navigation.goBack()
 
       // Test navigation from Account
-      navigation.navigateTo(Screen.Account)
+      navigation.navigateTo(Screen.AccountEdit)
       navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-account"))
       assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
       navigation.goBack()
 
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
     }
   }
 }

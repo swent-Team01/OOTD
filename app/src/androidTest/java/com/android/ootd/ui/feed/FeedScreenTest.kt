@@ -134,14 +134,10 @@ class FeedScreenTest : FirestoreTest() {
 
   @Test
   fun feedScreen_triggersTopBarButtons() {
-    var searchClicked = false
     var notificationsClicked = false
 
     composeTestRule.setContent {
-      FeedScreen(
-          onAddPostClick = {},
-          onSearchClick = { searchClicked = true },
-          onNotificationIconClick = { notificationsClicked = true })
+      FeedScreen(onAddPostClick = {}, onNotificationIconClick = { notificationsClicked = true })
     }
 
     composeTestRule.waitForIdle()
@@ -149,14 +145,11 @@ class FeedScreenTest : FirestoreTest() {
     Thread.sleep(100)
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithContentDescription("Search").performClick()
-
     composeTestRule
         .onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
         .assertExists()
         .performClick()
 
-    assertTrue(searchClicked)
     assertTrue(notificationsClicked)
   }
 
@@ -273,6 +266,24 @@ class FeedScreenTest : FirestoreTest() {
     composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
 
     composeTestRule.onNodeWithTag(FeedScreenTestTags.LOADING_OVERLAY).assertIsDisplayed()
+  }
+
+  @Test
+  fun feedScreenPreview_rendersCoreElements() {
+    composeTestRule.setContent { FeedScreenPreview() }
+
+    // Verify scaffold and top bar exist
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertIsDisplayed()
+
+    // Verify feed list is rendered with sample posts
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertIsDisplayed()
+
+    // Message only appears when: !isLoading && !hasPostedToday && posts.isEmpty()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertDoesNotExist()
+
+    // Verify loading overlay is NOT shown (isLoading = false in preview)
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOADING_OVERLAY).assertDoesNotExist()
   }
 
   // ========================================================================

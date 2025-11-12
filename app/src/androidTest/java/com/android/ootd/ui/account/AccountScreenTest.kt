@@ -18,7 +18,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.test.core.app.ApplicationProvider
@@ -39,7 +41,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -134,8 +135,8 @@ class AccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    // Core chrome
-    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
+    // Core chrome (back arrow removed from UI; don't assert it)
+    // selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
     selectTestTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
     selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
 
@@ -271,16 +272,6 @@ class AccountScreenTest {
   }
 
   @Test
-  fun backButton_invokesCallback() {
-    val onBack = mockk<() -> Unit>(relaxed = true)
-    signIn(mockFirebaseUser)
-    setContent(onBack)
-
-    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).performClick()
-    verify { onBack() }
-  }
-
-  @Test
   fun deleteProfilePicture_buttonAppearsOnlyWithPicture_andCallsViewModel() {
     // Setup account with profile picture
     val avatarUri = "https://example.com/avatar.jpg"
@@ -389,6 +380,40 @@ class AccountScreenTest {
       assertFalse(uploadInvoked)
       assertFalse(editedCalled)
     }
+  }
+
+  @Test
+  fun editingUsername_pressEnter_savesAndExitsEditMode() {
+    // Arrange
+    signIn(mockFirebaseUser)
+    every { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockAccountRepository.editAccount("test-uid", any(), any(), any(), any()) } returns
+        Unit
+    coEvery { mockUserRepository.editUser("test-uid", any(), any()) } returns Unit
+
+    setContent()
+
+    // Enter edit mode
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).performClick()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertIsDisplayed()
+
+    // Replace the text explicitly to avoid caret position issues, then press IME Done
+    val newUsername = "user1X"
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performTextClearance()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performTextInput(newUsername)
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).performImeAction()
+    composeTestRule.waitForIdle()
+
+    // Assert: edit controls gone, field shows updated username
+    selectTestTag(UiTestTags.TAG_USERNAME_EDIT).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_USERNAME_CANCEL).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_SAVE).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_USERNAME_FIELD).assertTextContains(newUsername)
+
+    // Verify repository updates invoked with new username (location param included)
+    coVerify { mockAccountRepository.editAccount("test-uid", newUsername, any(), any(), any()) }
+    coVerify { mockUserRepository.editUser("test-uid", newUsername, any()) }
   }
 
   // --- Location field tests ---

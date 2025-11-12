@@ -19,31 +19,13 @@ import org.json.JSONObject
  * This object will automatically use the emulators if they are running when the tests start.
  */
 object FirebaseEmulator {
-  val auth
-    get() = Firebase.auth
-
-  val firestore
-    get() = Firebase.firestore
-
-  val storage = FirebaseStorage.getInstance().apply { useEmulator(HOST, STORAGE_PORT) }
-
   const val HOST = "10.0.2.2"
   const val EMULATORS_PORT = 4400
   const val FIRESTORE_PORT = 8080
   const val AUTH_PORT = 9099
-
   const val STORAGE_PORT = 9199
 
-  val projectID by lazy { FirebaseApp.getInstance().options.projectId }
-
   private val httpClient = OkHttpClient()
-  private val firestoreEndpoint by lazy {
-    "http://${HOST}:$FIRESTORE_PORT/emulator/v1/projects/$projectID/databases/(default)/documents"
-  }
-
-  private val authEndpoint by lazy {
-    "http://${HOST}:$AUTH_PORT/emulator/v1/projects/$projectID/accounts"
-  }
 
   private val emulatorsEndpoint = "http://$HOST:$EMULATORS_PORT/emulators"
 
@@ -57,15 +39,85 @@ object FirebaseEmulator {
 
   val isRunning = areEmulatorsRunning()
 
+  private var initialized = false
+
   init {
-    if (isRunning) {
-      auth.useEmulator(HOST, AUTH_PORT)
-      firestore.useEmulator(HOST, FIRESTORE_PORT)
-      assert(Firebase.firestore.firestoreSettings.host.contains(HOST)) {
-        "Failed to connect to Firebase Firestore Emulator."
+    if (isRunning && !initialized) {
+      try {
+        // Try to configure emulators directly
+        Firebase.auth.useEmulator(HOST, AUTH_PORT)
+        Firebase.firestore.useEmulator(HOST, FIRESTORE_PORT)
+        FirebaseStorage.getInstance().useEmulator(HOST, STORAGE_PORT)
+        initialized = true
+
+        assert(Firebase.firestore.firestoreSettings.host.contains(HOST)) {
+          "Failed to connect to Firebase Firestore Emulator."
+        }
+      } catch (e: IllegalStateException) {
+        // If Firebase was already initialized, we need to delete and recreate the app
+        if (e.message?.contains("useEmulator") == true ||
+            e.message?.contains("initialized") == true) {
+          Log.w(
+              "FirebaseEmulator",
+              "Firebase already initialized, reinitializing with emulator...",
+              e)
+
+          // Get the application context
+          val context =
+              androidx.test.core.app.ApplicationProvider.getApplicationContext<
+                  android.content.Context>()
+
+          // Delete all Firebase app instances
+          val apps = FirebaseApp.getApps(context).toList()
+          apps.forEach { app ->
+            try {
+              app.delete()
+            } catch (ex: Exception) {
+              Log.w("FirebaseEmulator", "Error deleting Firebase app: ${app.name}", ex)
+            }
+          }
+
+          // Give Firebase time to clean up
+          Thread.sleep(200)
+
+          // Reinitialize the default Firebase app
+          val newApp = FirebaseApp.initializeApp(context)
+          requireNotNull(newApp) { "Failed to reinitialize Firebase app" }
+
+          // Now configure emulators on the fresh instance
+          Firebase.auth.useEmulator(HOST, AUTH_PORT)
+          Firebase.firestore.useEmulator(HOST, FIRESTORE_PORT)
+          FirebaseStorage.getInstance().useEmulator(HOST, STORAGE_PORT)
+          initialized = true
+
+          assert(Firebase.firestore.firestoreSettings.host.contains(HOST)) {
+            "Failed to connect to Firebase Firestore Emulator after reinitialize."
+          }
+        } else {
+          throw e
+        }
       }
     }
   }
+
+  val projectID by lazy { FirebaseApp.getInstance().options.projectId }
+
+  private val firestoreEndpoint by lazy {
+    "http://${HOST}:$FIRESTORE_PORT/emulator/v1/projects/$projectID/databases/(default)/documents"
+  }
+
+  private val authEndpoint by lazy {
+    "http://${HOST}:$AUTH_PORT/emulator/v1/projects/$projectID/accounts"
+  }
+
+  val auth
+    get() = Firebase.auth
+
+  val firestore
+    get() = Firebase.firestore
+
+  val storage
+    get() = FirebaseStorage.getInstance()
 
   private fun clearEmulator(endpoint: String) {
     val client = httpClient
