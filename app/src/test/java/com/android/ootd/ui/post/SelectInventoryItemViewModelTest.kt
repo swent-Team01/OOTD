@@ -65,8 +65,22 @@ class SelectInventoryItemViewModelTest {
 
   @Test
   fun `initPostUuid edge cases - empty and duplicate calls`() = runTest {
-    // Test empty postUuid
+    // Test empty postUuid - should reset state without loading
     viewModel.initPostUuid("")
+    advanceUntilIdle()
+
+    assertEquals(false, viewModel.uiState.value.isLoading)
+    assertEquals(emptyList<Item>(), viewModel.uiState.value.availableItems)
+    assertNull(viewModel.uiState.value.errorMessage)
+    coVerify(exactly = 0) { mockAccountRepo.getItemsList(any()) }
+
+    // Test blank postUuid - should reset state without loading
+    viewModel.initPostUuid("   ")
+    advanceUntilIdle()
+
+    assertEquals(false, viewModel.uiState.value.isLoading)
+    assertEquals(emptyList<Item>(), viewModel.uiState.value.availableItems)
+    assertNull(viewModel.uiState.value.errorMessage)
     coVerify(exactly = 0) { mockAccountRepo.getItemsList(any()) }
 
     // Test duplicate calls with same postUuid

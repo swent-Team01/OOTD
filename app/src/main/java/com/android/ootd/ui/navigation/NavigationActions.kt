@@ -84,9 +84,9 @@ sealed class Screen(
   }
 
   data class SelectInventoryItem(val postUuid: String) :
-      Screen(route = "selectInventoryItem?postUuid=$postUuid", name = "Select Inventory Item") {
+      Screen(route = "selectInventoryItem/$postUuid", name = "Select Inventory Item") {
     companion object {
-      const val route = "selectInventoryItem?postUuid={postUuid}"
+      const val route = "selectInventoryItem/{postUuid}"
     }
   }
 }

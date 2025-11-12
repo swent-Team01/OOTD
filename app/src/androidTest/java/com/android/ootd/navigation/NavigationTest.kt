@@ -5,10 +5,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
@@ -56,7 +58,11 @@ class NavigationTest {
         composable(Screen.FitCheck.route) { /* minimal screen */ }
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
         composable(Screen.AddItemScreen.route) { /* minimal screen */ }
-        composable(Screen.SelectInventoryItem.route) { /* minimal screen */ }
+        composable(
+            Screen.SelectInventoryItem.route,
+            arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+              /* minimal screen */
+            }
         composable(Screen.EditItem.route) { /* minimal screen */ }
       }
     }

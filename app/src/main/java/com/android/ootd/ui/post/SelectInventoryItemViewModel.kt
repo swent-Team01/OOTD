@@ -55,6 +55,13 @@ class SelectInventoryItemViewModel(
    * @param postUuid The UUID of the post to add items to
    */
   fun initPostUuid(postUuid: String) {
+    // Guard for blank/empty postUuid
+    if (postUuid.isBlank()) {
+      _uiState.value =
+          _uiState.value.copy(isLoading = false, availableItems = emptyList(), errorMessage = null)
+      return
+    }
+
     if (_uiState.value.postUuid == postUuid) return
 
     _uiState.value = _uiState.value.copy(postUuid = postUuid)
