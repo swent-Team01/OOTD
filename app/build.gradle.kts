@@ -20,14 +20,19 @@ android {
   namespace = "com.android.ootd"
   compileSdk = 35
 
-  // Load the API key from local.properties
-  val localProperties = Properties()
-  val localPropertiesFile = rootProject.file("local.properties")
-  if (localPropertiesFile.exists()) {
-    localProperties.load(FileInputStream(localPropertiesFile))
-  }
-
-  val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: ""
+  // Load the API key from environment variable (for CI) or local.properties (for local dev)
+  val mapsApiKey: String =
+      System.getenv("MAPS_API_KEY")
+          ?: run {
+            val localProperties = Properties()
+            val localPropertiesFile = rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+              localProperties.load(FileInputStream(localPropertiesFile))
+              localProperties.getProperty("MAPS_API_KEY") ?: ""
+            } else {
+              ""
+            }
+          }
 
   bundle { language { enableSplit = false } }
 
