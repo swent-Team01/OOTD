@@ -28,6 +28,7 @@ import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
+import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
@@ -539,6 +540,11 @@ class End2EndTest {
 
       composeTestRule
           .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account))
+          .assertIsDisplayed()
+          .performClick()
+
+      composeTestRule
+          .onNodeWithTag(AccountPageTestTags.SETTINGS_BUTTON)
           .assertIsDisplayed()
           .performClick()
 

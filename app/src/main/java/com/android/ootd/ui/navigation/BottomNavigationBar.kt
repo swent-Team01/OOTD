@@ -47,7 +47,7 @@ sealed class Tab(
           Icons.AutoMirrored.Filled.List,
           Screen.InventoryScreen)
 
-  object Account : Tab("Account", Icons.Outlined.Person, Icons.Filled.Person, Screen.Account)
+  object Account : Tab("Account", Icons.Outlined.Person, Icons.Filled.Person, Screen.AccountView)
 
   object Map : Tab("Map", Icons.Outlined.Place, Icons.Filled.Place, Screen.Map)
 }
