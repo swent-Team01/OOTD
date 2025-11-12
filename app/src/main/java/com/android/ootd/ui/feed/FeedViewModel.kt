@@ -108,6 +108,11 @@ open class FeedViewModel(
     _uiState.value = _uiState.value.copy(currentAccount = account)
   }
 
+  /**
+   * Sets the error message in the UI state
+   *
+   * @param message The error message to set in the UI state.
+   */
   fun setErrorMessage(message: String?) {
     _uiState.value = _uiState.value.copy(errorMessage = message)
   }
