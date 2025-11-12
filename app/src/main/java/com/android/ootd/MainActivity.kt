@@ -121,7 +121,7 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.ViewAcount.route,
+              Screen.AccountView.route,
               Screen.Map.route,
               Screen.NotificationsScreen.route)
 
@@ -213,14 +213,14 @@ fun OOTDApp(
                 composable(Screen.SearchScreen.route) {
                   UserSearchScreen(onBack = { navigationActions.goBack() })
                 }
-                composable(Screen.ViewAcount.route) {
+                composable(Screen.AccountView.route) {
                   AccountPage(
-                      onEditAccount = { navigationActions.navigateTo(Screen.Account) },
+                      onEditAccount = { navigationActions.navigateTo(Screen.AccountEdit) },
                       onPostClick = { postId ->
                         navigationActions.navigateTo(Screen.PostView(postId))
                       })
                 }
-                composable(Screen.Account.route) {
+                composable(Screen.AccountEdit.route) {
                   AccountScreen(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })

@@ -51,8 +51,8 @@ class NavigationTest {
 
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */ }
-        composable(Screen.Account.route) { /* minimal screen */ }
-        composable(Screen.ViewAcount.route) { /* minimal screen */ }
+        composable(Screen.AccountEdit.route) { /* minimal screen */ }
+        composable(Screen.AccountView.route) { /* minimal screen */ }
         composable(Screen.Map.route) { MapScreen(onBack = { navigation.goBack() }) }
         composable(Screen.FitCheck.route) { /* minimal screen */ }
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
@@ -198,8 +198,8 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Navigate to Account screen
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
     }
   }
 
@@ -211,8 +211,8 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Navigate to Account
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
 
       // Go back to Feed
       navigation.goBack()
@@ -228,8 +228,8 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Navigate to Account
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
 
       // Sign out navigates to Authentication
       navigation.navigateTo(Screen.Authentication)

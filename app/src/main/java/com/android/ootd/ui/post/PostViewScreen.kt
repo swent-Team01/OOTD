@@ -18,8 +18,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
-import com.android.ootd.ui.theme.Primary
 
 object PostViewTestTags {
   const val SCREEN = "postViewScreen"
@@ -47,6 +47,7 @@ fun PostViewScreen(
   val uiState by viewModel.uiState.collectAsState()
 
   LaunchedEffect(postId) { viewModel.loadPost(postId) }
+  val colors = MaterialTheme.colorScheme
 
   Scaffold(
       modifier = Modifier.fillMaxSize().testTag(PostViewTestTags.SCREEN),
@@ -60,7 +61,7 @@ fun PostViewScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = Primary)
+                        tint = colors.onBackground)
                   }
             },
             colors =
@@ -89,8 +90,7 @@ fun PostViewScreen(
             }
             uiState.post != null -> {
               val post = uiState.post!!
-              val color = MaterialTheme.colorScheme
-              val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
+              val defaultPainter = remember(Tertiary) { ColorPainter(Tertiary) }
 
               Column(
                   modifier = Modifier.fillMaxSize().padding(16.dp),

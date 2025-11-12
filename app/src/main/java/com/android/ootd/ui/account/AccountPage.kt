@@ -100,31 +100,28 @@ fun AccountPageContent(
 
         Spacer(modifier = Modifier.height(18.dp))
         // Username
-        Text(
+        AccountText(
             text = username,
             style = typography.displayLarge,
             color = colorScheme.primary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().testTag(AccountPageTestTags.USERNAME_TEXT))
+            testTag = AccountPageTestTags.USERNAME_TEXT)
 
         Spacer(modifier = Modifier.height(9.dp))
 
         // Friend count
-        Text(
+        AccountText(
             text = "$friendListSize friends",
             style = typography.bodyLarge,
-            color = colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
+            testTag = AccountPageTestTags.FRIEND_COUNT_TEXT)
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Text(
+        AccountText(
             text = "Your posts :",
-            fontFamily = Bodoni,
-            color = colorScheme.onSurface,
+            style = typography.bodyLarge,
             textAlign = TextAlign.Left,
-            modifier = Modifier.fillMaxWidth().testTag(AccountPageTestTags.YOUR_POST_SECTION))
+            fontFamily = Bodoni,
+            testTag = AccountPageTestTags.YOUR_POST_SECTION)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -137,15 +134,40 @@ fun AccountPageContent(
 }
 
 @Composable
+private fun AccountText(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle,
+    modifier: Modifier = Modifier,
+    color: androidx.compose.ui.graphics.Color = colorScheme.onSurface,
+    textAlign: TextAlign = TextAlign.Center,
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null,
+    testTag: String = ""
+) {
+  Text(
+      text = text,
+      style = style,
+      color = color,
+      textAlign = textAlign,
+      fontFamily = fontFamily,
+      modifier = modifier.fillMaxWidth().testTag(testTag))
+}
+
+@Composable
 fun DisplayUsersPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
   val color = colorScheme
   val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
+  val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
+  val itemWidth = (screenWidth - 44.dp - 16.dp) / 3 // subtract padding and spacing
+  val itemHeight = itemWidth
+  val rowCount = (posts.size + 2) / 3
+  val totalHeight = rowCount * itemHeight.value + (rowCount - 1) * 8
 
   LazyVerticalGrid(
       columns = GridCells.Fixed(3),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalArrangement = Arrangement.spacedBy(8.dp),
-      modifier = Modifier.fillMaxWidth().height(((posts.size + 2) / 3 * 146).dp)) {
+      modifier = Modifier.fillMaxWidth().height(totalHeight.dp)) {
         items(posts) { post ->
           AsyncImage(
               model = post.outfitURL,
@@ -154,7 +176,7 @@ fun DisplayUsersPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
               error = defaultPainter,
               contentScale = ContentScale.Crop,
               modifier =
-                  Modifier.size(138.dp)
+                  Modifier.size(itemWidth)
                       .clip(RoundedCornerShape(8.dp))
                       .clickable(onClick = { onPostClick(post.postUID) })
                       .background(color.surfaceVariant)

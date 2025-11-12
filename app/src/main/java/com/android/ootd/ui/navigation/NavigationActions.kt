@@ -37,10 +37,11 @@ sealed class Screen(
 
   object Feed : Screen(route = "feed", name = "Feed", isTopLevelDestination = true)
 
-  object Account : Screen(route = "account", name = "Account", isTopLevelDestination = false)
+  object AccountEdit :
+      Screen(route = "accountEdit", name = "Account Edit", isTopLevelDestination = false)
 
-  object ViewAcount :
-      Screen(route = "viewAccount", name = "View Account", isTopLevelDestination = true)
+  object AccountView :
+      Screen(route = "accountView", name = "Account View", isTopLevelDestination = true)
 
   data class FitCheck(val postUuid: String = "") :
       Screen(route = "fitCheck?postUuid=$postUuid", name = "FitCheck") {
