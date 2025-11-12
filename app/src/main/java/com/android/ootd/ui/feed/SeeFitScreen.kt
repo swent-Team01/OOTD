@@ -3,12 +3,15 @@ package com.android.ootd.ui.feed
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -117,23 +120,37 @@ fun SeeFitScreen(
         )
       },
   ) { innerPadding ->
-    if (items.isEmpty()) {
-      Column(
-          modifier = Modifier.fillMaxSize().padding(innerPadding),
-          verticalArrangement = Arrangement.Center,
-          horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "No items associated with this post.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-          }
-    } else {
-      Column(
-          modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
-          verticalArrangement = Arrangement.Center,
-          horizontalAlignment = Alignment.CenterHorizontally) {
-            ItemGridScreen(items = items)
-          }
+    when {
+      uiState.isLoading -> {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              CircularProgressIndicator(color = Primary)
+              Spacer(modifier = Modifier.height(12.dp))
+              Text(
+                  text = "Loading items...",
+                  style = MaterialTheme.typography.bodyLarge,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+      }
+
+      items.isEmpty() -> {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              Text(
+                  text = "No items associated with this post.",
+                  style = MaterialTheme.typography.bodyLarge,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+      }
+
+      else -> {
+        ItemGridScreen(
+            items = items, modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding))
+      }
     }
   }
 }

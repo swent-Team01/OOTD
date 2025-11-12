@@ -3,8 +3,6 @@ package com.android.ootd.ui.feed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -24,11 +22,11 @@ import com.android.ootd.model.items.Item
  * @param items List of items to display in the grid
  */
 @Composable
-fun ItemGridScreen(items: List<Item>) {
+fun ItemGridScreen(items: List<Item>, modifier: Modifier = Modifier) {
 
   var selectedItem by remember { mutableStateOf<Item?>(null) }
 
-  Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+  Box(modifier = modifier) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.testTag(SeeFitScreenTestTags.ITEMS_GRID),

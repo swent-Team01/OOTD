@@ -42,7 +42,7 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
               .clickable { onClick() }
               .testTag(SeeFitScreenTestTags.getTestTagForItem(item)),
       shape = RoundedCornerShape(8.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
       elevation = CardDefaults.cardElevation(4.dp)) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -66,7 +66,7 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
                   modifier =
                       Modifier.weight(0.3f)
                           .fillMaxWidth()
-                          .background(MaterialTheme.colorScheme.primaryContainer)
+                          .background(MaterialTheme.colorScheme.secondary)
                           .padding(8.dp),
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {

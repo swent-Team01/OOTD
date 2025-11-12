@@ -22,7 +22,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 
 /**
- * Instrumented tests for the SeeFitScreen composable.
+ * Instrumented tests for the SeeFitScreen composable to verify UI behavior and interactions.
  *
  * DISCLAIMER : These tests are created with the help of AI and verified by humans.
  */
@@ -129,6 +129,28 @@ class SeeFitScreenTest {
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.SCREEN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.NAVIGATE_TO_FEED_SCREEN).assertIsDisplayed()
+  }
+
+  @Test
+  fun seeFitScreen_showsLoadingIndicator_whenLoading() {
+    // Mock repository to delay the response to keep loading state visible
+    coEvery { mockRepository.getAssociatedItems(any()) } coAnswers
+        {
+          kotlinx.coroutines.delay(1000) // Keep loading state active
+          emptyList()
+        }
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        SeeFitScreen(
+            seeFitViewModel = viewModel, postUuid = "test-post-1", goBack = { goBackCalled = true })
+      }
+    }
+    // Verify loading indicator and text are displayed
+    composeTestRule.onNodeWithText("Loading items...").assertIsDisplayed()
+
+    // Wait for loading to complete
+    composeTestRule.waitForIdle()
   }
 
   @Test
