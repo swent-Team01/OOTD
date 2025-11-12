@@ -107,8 +107,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
       onAdd: (String) -> Unit = {},
       onEdit: (String) -> Unit = {},
       onBack: (String) -> Unit = {},
-      onPostSuccess: () -> Unit = {},
-      onSelectFromInventory: (String) -> Unit = {}
+      onPostSuccess: () -> Unit = {}
   ) {
     runTest { items.forEach { repository.addItem(it) } }
     composeTestRule.setContent {
@@ -117,7 +116,6 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           imageUri = "fake_image_uri",
           description = "Test outfit description",
           onAddItem = onAdd,
-          onSelectFromInventory = onSelectFromInventory,
           onEditItem = onEdit,
           onGoBack = onBack,
           onPostSuccess = onPostSuccess)
@@ -196,59 +194,6 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
-  fun addItemButton_showsDialog_withBothOptions() {
-    val i = item()
-    setContent(items = listOf(i))
-
-    // Click Add Item button
-    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Verify dialog is shown
-    n(PreviewItemScreenTestTags.ADD_ITEM_DIALOG).assertIsDisplayed()
-
-    // Verify both options are present
-    n(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).assertIsDisplayed()
-    n(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION).assertIsDisplayed()
-  }
-
-  @Test
-  fun addItemDialog_createNewItem_callsOnAddItem() {
-    var addClickedPostId: String? = null
-    val i = item()
-    setContent(items = listOf(i), onAdd = { addClickedPostId = it })
-
-    // Click Add Item button
-    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Click "Create New Item" option
-    n(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
-    composeTestRule.waitForIdle()
-
-    // Verify callback was called
-    assert(addClickedPostId != null)
-  }
-
-  @Test
-  fun addItemDialog_selectFromInventory_callsOnSelectFromInventory() {
-    var selectFromInventoryPostId: String? = null
-    val i = item()
-    setContent(items = listOf(i), onSelectFromInventory = { selectFromInventoryPostId = it })
-
-    // Click Add Item button
-    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Click "Select from Inventory" option
-    n(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION).performClick()
-    composeTestRule.waitForIdle()
-
-    // Verify callback was called
-    assert(selectFromInventoryPostId != null)
-  }
-
-  @Test
   fun allCallbacks_addEditBackPostSuccess_work() {
     var addClickedPostId: String? = null
     var editedId: String? = null
@@ -262,10 +207,6 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         onBack = { backClickedPostId = it })
 
     n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-    // Now we need to click the dialog option
-    n(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
-    composeTestRule.waitForIdle()
     assert(addClickedPostId != null)
 
     n(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON).performClick()
@@ -292,7 +233,6 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           imageUri = "fake_image_uri",
           description = "Test outfit description",
           onAddItem = {},
-          onSelectFromInventory = {},
           onEditItem = {},
           onGoBack = {},
           onPostSuccess = {})
@@ -425,7 +365,6 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           imageUri = "test_uri",
           description = "test_desc",
           onAddItem = {},
-          onSelectFromInventory = {},
           onEditItem = {},
           onGoBack = {},
           onPostSuccess = { onPostSuccessCalled = true })
@@ -441,5 +380,31 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
 
     assert(onPostSuccessCalled)
+  }
+
+  @Test
+  fun previewItemScreen_Preview_rendersCoreElements() {
+    composeTestRule.setContent { PreviewItemScreenPreview() }
+
+    // Verify top bar and title exist
+    n(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.GO_BACK_BUTTON).assertIsDisplayed()
+
+    // Verify item list is displayed with 2 sample items
+    n(PreviewItemScreenTestTags.ITEM_LIST).assertIsDisplayed()
+
+    // Verify both buttons exist (Post and Add Item)
+    n(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+
+    // Verify sample items are rendered (category text visible)
+    txt("Clothing").assertIsDisplayed()
+    txt("Accessories").assertIsDisplayed()
+
+    // Verify empty message is NOT shown (items list is not empty)
+    n(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG).assertDoesNotExist()
+
+    // Verify loading overlay is NOT shown (isLoading = false, enablePreview = true)
+    txt("Publishing your outfit...").assertDoesNotExist()
   }
 }

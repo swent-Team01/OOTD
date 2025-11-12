@@ -61,17 +61,7 @@ class MainActivityCallbacksTest {
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
     composeRule.waitForIdle()
 
-    // Dialog should be displayed, click "Create New Item" option
-    composeRule.waitUntil(timeoutMillis = 5_000) {
-      composeRule
-          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
-    composeRule.waitForIdle()
-
+    // Add Item button should directly navigate to AddItemScreen
     composeRule.runOnIdle { assertEquals(Screen.AddItemScreen.route, navigation.currentRoute()) }
   }
 
@@ -507,16 +497,7 @@ class MainActivityCallbacksTest {
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
     composeRule.waitForIdle()
 
-    composeRule.waitUntil(timeoutMillis = 5_000) {
-      composeRule
-          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
-    composeRule.waitForIdle()
-
+    // Add Item button should directly navigate to AddItemScreen
     composeRule.runOnIdle {
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
       navigation.goBack()

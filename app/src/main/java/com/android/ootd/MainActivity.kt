@@ -199,7 +199,6 @@ fun OOTDApp(
                 composable(Screen.Feed.route) {
                   FeedScreen(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
-                      onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onNotificationIconClick = {
                         navigationActions.navigateTo(Screen.NotificationsScreen)
                       },
@@ -207,16 +206,14 @@ fun OOTDApp(
                         navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
                       })
                 }
-
-                composable(Screen.SearchScreen.route) {
-                  UserSearchScreen(onBack = { navigationActions.goBack() })
-                }
                 composable(Screen.Account.route) {
                   AccountScreen(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
                 composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
+
+                composable(Screen.SearchScreen.route) { UserSearchScreen() }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)
@@ -269,9 +266,6 @@ fun OOTDApp(
                           description = description,
                           onAddItem = { postUuid ->
                             navController.navigate(Screen.AddItemScreen(postUuid).route)
-                          },
-                          onSelectFromInventory = { postUuid ->
-                            navController.navigate(Screen.SelectInventoryItem(postUuid).route)
                           },
                           onEditItem = { itemUuid ->
                             navController.navigate(Screen.EditItem(itemUuid).route)
