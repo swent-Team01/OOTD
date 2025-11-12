@@ -27,7 +27,8 @@ data class FeedUiState(
     val feedPosts: List<OutfitPost> = emptyList(),
     val currentAccount: Account? = null,
     val hasPostedToday: Boolean = false,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 /**
@@ -93,7 +94,8 @@ open class FeedViewModel(
                 hasPostedToday = hasPosted, feedPosts = filteredPost, isLoading = false)
       } catch (e: Exception) {
         Log.e("FeedViewModel", "Failed to refresh feed", e)
-        _uiState.value = _uiState.value.copy(isLoading = false)
+        _uiState.value =
+            _uiState.value.copy(isLoading = false, errorMessage = "Failed to load feed")
       }
     }
   }
@@ -105,5 +107,9 @@ open class FeedViewModel(
    */
   fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
+  }
+
+  fun setErrorMessage(message: String?) {
+    _uiState.value = _uiState.value.copy(errorMessage = message)
   }
 }

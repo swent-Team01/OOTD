@@ -43,6 +43,7 @@ fun FeedScreen(
     onNotificationIconClick: () -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
+  val snackbarHostState = remember { SnackbarHostState() }
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
 
@@ -50,8 +51,17 @@ fun FeedScreen(
     feedViewModel.refreshFeedFromFirestore()
   }
 
+  LaunchedEffect(uiState.errorMessage) {
+    uiState.errorMessage?.let { message ->
+      snackbarHostState.showSnackbar(message)
+      // Clear error message
+      feedViewModel.setErrorMessage(null)
+    }
+  }
+
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
+      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
         CenterAlignedTopAppBar(
             modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
