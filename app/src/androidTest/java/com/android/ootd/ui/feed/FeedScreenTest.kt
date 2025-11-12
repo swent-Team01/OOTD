@@ -82,6 +82,10 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId() = "fake-id"
+
+          override suspend fun getPostById(postUuid: String): OutfitPost? {
+            TODO("Not yet implemented")
+          }
         }
 
     FeedRepositoryProvider.repository = fakeRepo
@@ -109,6 +113,10 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId() = "fake-id"
+
+          override suspend fun getPostById(postUuid: String): OutfitPost? {
+            TODO("Not yet implemented")
+          }
         }
 
     FeedRepositoryProvider.repository = fakeRepo
@@ -232,6 +240,10 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId() = "fake-id"
+
+          override suspend fun getPostById(postUuid: String): OutfitPost? {
+            TODO("Not yet implemented")
+          }
         }
 
     FeedRepositoryProvider.repository = fakeRepo

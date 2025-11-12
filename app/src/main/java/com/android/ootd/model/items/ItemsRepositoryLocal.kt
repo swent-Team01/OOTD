@@ -101,6 +101,10 @@ class ItemsRepositoryLocal : ItemsRepository {
     items.values.removeIf { it.postUuids.contains(postUuid) }
   }
 
+  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+    return items.values.filter { it.postUuids.contains(postUuid) && it.ownerId == friendId }
+  }
+
   /** Clears all items from the local storage. Useful for resetting state between tests. */
   fun clearAll() {
     items.clear()

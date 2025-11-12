@@ -104,7 +104,8 @@ service cloud.firestore {
 
     match /items/{itemId} {
       allow read: if isAuthed() &&
-                        (resource == null || resource.data.ownerId == request.auth.uid);
+                        (resource == null || resource.data.ownerId == request.auth.uid ||
+                        isFriend(request.auth.uid, resource.data.ownerId));
 
       allow create: if isAuthed()
           && request.resource.data.ownerId == request.auth.uid;

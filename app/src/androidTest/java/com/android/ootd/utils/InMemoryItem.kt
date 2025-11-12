@@ -50,5 +50,9 @@ object InMemoryItem : ItemsTest {
     override suspend fun deletePostItems(postUuid: String) {
       itemList.removeIf { it.postUuids.contains(postUuid) }
     }
+
+    override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+      return itemList.filter { it.postUuids.contains(postUuid) }
+    }
   }
 }

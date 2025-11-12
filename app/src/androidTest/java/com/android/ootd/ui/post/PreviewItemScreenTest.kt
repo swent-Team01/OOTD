@@ -27,6 +27,14 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Instrumented tests for the PreviewItemScreen composable and its ViewModel.
+ *
+ * These tests cover various UI states and interactions, as well as ViewModel logic for loading
+ * items, handling errors, and posting outfits.
+ *
+ * DISCLAIMER : These tests are partially created with the help of AI tools and verified by humans.
+ */
 class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -77,6 +85,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun deleteItem(uuid: String) {}
 
         override suspend fun deletePostItems(postUuid: String) {}
+
+        override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+          TODO("Not yet implemented")
+        }
       }
 
   private val fakePostRepo =
@@ -331,6 +343,13 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun deleteItem(uuid: String) {}
 
           override suspend fun deletePostItems(postUuid: String) {}
+
+          override suspend fun getFriendItemsForPost(
+              postUuid: String,
+              friendId: String
+          ): List<Item> {
+            return emptyList()
+          }
         }
 
     val vm = OutfitPreviewViewModel(customFailRepo, fakePostRepo)
