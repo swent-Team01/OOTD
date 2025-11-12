@@ -57,7 +57,19 @@ class MainActivityCallbacksTest {
           .isNotEmpty()
     }
 
+    // Click Add Item button (opens dialog)
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+    composeRule.waitForIdle()
+
+    // Dialog should be displayed, click "Create New Item" option
+    composeRule.waitUntil(timeoutMillis = 5_000) {
+      composeRule
+          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
     composeRule.waitForIdle()
 
     composeRule.runOnIdle { assertEquals(Screen.AddItemScreen.route, navigation.currentRoute()) }
@@ -480,9 +492,32 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
               imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+    }
 
-      // Test onAddItem
-      navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
+    composeRule.waitForIdle()
+
+    // Test onAddItem - need to click button and select from dialog
+    composeRule.waitUntil(timeoutMillis = 5_000) {
+      composeRule
+          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
+    composeRule.waitForIdle()
+
+    composeRule.waitUntil(timeoutMillis = 5_000) {
+      composeRule
+          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
+    composeRule.waitForIdle()
+
+    composeRule.runOnIdle {
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
       navigation.goBack()
 

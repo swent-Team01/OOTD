@@ -267,6 +267,9 @@ fun OOTDApp(
                           onAddItem = { postUuid ->
                             navController.navigate(Screen.AddItemScreen(postUuid).route)
                           },
+                          onSelectFromInventory = { postUuid ->
+                            navController.navigate(Screen.SelectInventoryItem(postUuid).route)
+                          },
                           onEditItem = { itemUuid ->
                             navController.navigate(Screen.EditItem(itemUuid).route)
                           },
@@ -308,6 +311,18 @@ fun OOTDApp(
                         EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
                       }
                     }
+
+                composable(
+                    route = Screen.SelectInventoryItem.route,
+                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val postUuid = backStackEntry.arguments?.getString("postUuid") ?: ""
+                      com.android.ootd.ui.post.SelectInventoryItemScreen(
+                          postUuid = postUuid,
+                          onItemSelected = { navController.popBackStack() },
+                          onGoBack = { navController.popBackStack() })
+                    }
+
                 composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }
               }
             }
