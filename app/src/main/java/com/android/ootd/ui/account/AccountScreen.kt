@@ -33,7 +33,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
@@ -71,9 +70,12 @@ import coil.compose.AsyncImage
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.register.RegisterScreenTestTags
+import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 
 // Test tag constants for UI tests
@@ -281,11 +283,11 @@ private fun AccountScreenContent(
 
 @Composable
 private fun AccountTitle() {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
+  val colors = LightColorScheme
+  val typography = Typography
   Text(
       text = "My Account",
-      style = typography.displayMedium,
+      style = typography.displayMedium.copy(fontFamily = Bodoni),
       color = colors.primary,
       textAlign = TextAlign.Center,
       modifier =
@@ -303,8 +305,8 @@ private fun AvatarSection(
     modifier: Modifier = Modifier,
     context: Context = LocalContext.current
 ) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
+  val colors = LightColorScheme
+  val typography = Typography
   val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
 
   Column(
@@ -332,7 +334,7 @@ private fun AvatarSection(
               contentAlignment = Alignment.Center) {
                 Text(
                     text = username.firstOrNull()?.uppercase() ?: "",
-                    style = typography.headlineMedium,
+                    style = typography.headlineMedium.copy(fontFamily = Bodoni),
                     color = Secondary,
                     modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
               }
@@ -355,7 +357,7 @@ private fun AvatarSection(
                     Text(
                         text = editProfilePicture,
                         color = colors.onPrimary,
-                        style = typography.titleMedium)
+                        style = typography.titleMedium.copy(fontFamily = Bodoni))
                   }
 
               // Delete button - only show if user has a profile picture
@@ -370,7 +372,10 @@ private fun AvatarSection(
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
                     modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
-                      Text(text = "Delete", color = colors.onError, style = typography.titleMedium)
+                      Text(
+                          text = "Delete",
+                          color = colors.onError,
+                          style = typography.titleMedium.copy(fontFamily = Bodoni))
                     }
               }
             }
@@ -390,6 +395,8 @@ private fun UsernameField(
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
   val focusManager = LocalFocusManager.current
+  val colors = LightColorScheme
+  val typography = Typography
 
   OutlinedTextField(
       value = if (isEditing) editedValue else username,
@@ -399,7 +406,10 @@ private fun UsernameField(
             modifier =
                 Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)) {
-              Text(text = "Username", style = typography.bodySmall, color = colors.tertiary)
+              Text(
+                  text = "Username",
+                  style = typography.bodySmall.copy(fontFamily = Bodoni),
+                  color = colors.tertiary)
             }
       },
       readOnly = !isEditing,
@@ -415,6 +425,7 @@ private fun UsernameField(
       keyboardOptions =
           if (isEditing) KeyboardOptions(imeAction = ImeAction.Done) else KeyboardOptions.Default,
       textStyle = typography.bodyLarge,
+      textStyle = typography.bodyLarge.copy(fontFamily = Bodoni),
       trailingIcon = {
         if (isEditing) {
           UsernameEditActions(
@@ -446,7 +457,7 @@ private fun UsernameField(
 
 @Composable
 private fun UsernameEditActions(onCancelClick: () -> Unit, onSaveClick: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
+  val colors = LightColorScheme
   Row {
     IconButton(
         onClick = onCancelClick, modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_CANCEL)) {
@@ -461,7 +472,7 @@ private fun UsernameEditActions(onCancelClick: () -> Unit, onSaveClick: () -> Un
 
 @Composable
 private fun UsernameEditButton(onClick: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
+  val colors = LightColorScheme
   IconButton(onClick = onClick, modifier = Modifier.testTag(UiTestTags.TAG_USERNAME_EDIT)) {
     Icon(
         imageVector = Icons.Default.Edit,
@@ -472,8 +483,8 @@ private fun UsernameEditButton(onClick: () -> Unit) {
 
 @Composable
 private fun GoogleAccountField(email: String) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
+  val colors = LightColorScheme
+  val typography = Typography
 
   OutlinedTextField(
       value = email,
@@ -483,11 +494,14 @@ private fun GoogleAccountField(email: String) {
             modifier =
                 Modifier.background(colors.secondary, RoundedCornerShape(6.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)) {
-              Text(text = "Google Account", style = typography.bodySmall, color = colors.tertiary)
+              Text(
+                  text = "Google Account",
+                  style = typography.bodySmall.copy(fontFamily = Bodoni),
+                  color = colors.tertiary)
             }
       },
       readOnly = true,
-      textStyle = typography.bodyLarge,
+      textStyle = typography.bodyLarge.copy(fontFamily = Bodoni),
       colors =
           OutlinedTextFieldDefaults.colors(
               focusedTextColor = colors.primary,
@@ -498,8 +512,8 @@ private fun GoogleAccountField(email: String) {
 
 @Composable
 private fun SignOutButton(onClick: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
+  val colors = LightColorScheme
+  val typography = Typography
 
   Box(
       modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -509,14 +523,17 @@ private fun SignOutButton(onClick: () -> Unit) {
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
             modifier = Modifier.testTag(UiTestTags.TAG_SIGNOUT_BUTTON)) {
-              Text(text = "Sign Out", color = colors.onPrimary, style = typography.titleLarge)
+              Text(
+                  text = "Sign Out",
+                  color = colors.onPrimary,
+                  style = typography.titleLarge.copy(fontFamily = Bodoni))
             }
       }
 }
 
 @Composable
 private fun LoadingOverlay() {
-  val colors = MaterialTheme.colorScheme
+  val colors = LightColorScheme
   Box(
       modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
       contentAlignment = Alignment.Center) {
@@ -555,7 +572,7 @@ private fun LocationField(
 
 @Composable
 private fun BackButton(onBack: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
+  val colors = LightColorScheme
   Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
     IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
       Icon(
@@ -576,14 +593,14 @@ private fun PrivacyToggleRow(
     onHelpDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
+  val colors = LightColorScheme
+  val typography = Typography
 
   Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
           text = "Privacy",
-          style = typography.titleMedium,
+          style = typography.titleMedium.copy(fontFamily = Bodoni),
           color = colors.primary,
           modifier = Modifier.padding(start = 4.dp))
       Spacer(modifier = Modifier.width(2.dp))
@@ -602,7 +619,7 @@ private fun PrivacyToggleRow(
               text = {
                 Text(
                     "Private: only you and mutual friends can view your posts. Public: everyone can view.",
-                    style = typography.bodySmall,
+                    style = typography.bodySmall.copy(fontFamily = Bodoni),
                     color = colors.onSurface)
               },
               onClick = onHelpDismiss)
@@ -617,7 +634,7 @@ private fun PrivacyToggleRow(
         verticalAlignment = Alignment.CenterVertically) {
           Text(
               text = if (isPrivate) "Private" else "Public",
-              style = typography.bodyMedium,
+              style = typography.bodyMedium.copy(fontFamily = Bodoni),
               color = colors.onSurface)
           Switch(
               checked = isPrivate,
