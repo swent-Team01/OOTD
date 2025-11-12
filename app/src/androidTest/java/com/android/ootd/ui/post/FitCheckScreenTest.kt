@@ -43,16 +43,17 @@ class FitCheckScreenTest {
   }
 
   @Test
-  fun clickingNextButtonWithoutPhoto_showsErrorMessage() {
+  fun clickingNextButtonWithoutPhoto_doesNotShowError_andKeepsPlaceholder() {
     composeTestRule.setContent { FitCheckScreen() }
 
     composeTestRule.onAllNodesWithTag(FitCheckScreenTestTags.ERROR_MESSAGE).assertCountEquals(0)
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.PLACEHOLDER_ICON).assertIsDisplayed()
 
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
 
-    composeTestRule
-        .onNodeWithTag(FitCheckScreenTestTags.ERROR_MESSAGE)
-        .assertIsDisplayed()
-        .assertTextEquals("Please select a photo before continuing.")
+    // Behavior now: no inline error message is displayed by the screen
+    composeTestRule.onAllNodesWithTag(FitCheckScreenTestTags.ERROR_MESSAGE).assertCountEquals(0)
+    // The placeholder remains visible
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.PLACEHOLDER_ICON).assertIsDisplayed()
   }
 }

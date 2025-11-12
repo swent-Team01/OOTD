@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,9 +37,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -58,12 +61,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.Material
 import com.android.ootd.ui.theme.Primary
 
 object PreviewItemScreenTestTags {
@@ -87,36 +93,67 @@ fun PreviewItemScreen(
     imageUri: String,
     description: String,
     onEditItem: (String) -> Unit = {},
-    onAddItem: (String) -> Unit = {}, // now takes postUuid
+    onAddItem: (String) -> Unit = {}, // now take
     onPostSuccess: () -> Unit = {},
     onGoBack: (String) -> Unit = {},
+    enablePreview: Boolean = false,
+    uiStateOverride: PreviewUIState? = null,
 ) {
   val context = LocalContext.current
-  val uiState by outfitPreviewViewModel.uiState.collectAsState()
-  val itemsList = uiState.items
+  val realUiState by outfitPreviewViewModel.uiState.collectAsState()
+  val ui = uiStateOverride ?: realUiState
   val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
   // Initialise ViewModel with args and generate a new postUuid if needed
-  LaunchedEffect(Unit) { outfitPreviewViewModel.initFromFitCheck(imageUri, description) }
-
-  // Handle error messages
-  LaunchedEffect(uiState.errorMessage) {
-    uiState.errorMessage?.let { message ->
-      Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-      outfitPreviewViewModel.clearErrorMessage()
-    }
+  if (!enablePreview) {
+    LaunchedEffect(Unit) { outfitPreviewViewModel.initFromFitCheck(imageUri, description) }
   }
 
-  LaunchedEffect(uiState.successMessage) {
-    uiState.successMessage?.let { message ->
-      Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-      outfitPreviewViewModel.clearErrorMessage()
-      if (uiState.isPublished) {
-        onPostSuccess()
+  // Handle error messages
+  if (!enablePreview) {
+    LaunchedEffect(ui.errorMessage) {
+      ui.errorMessage?.let { message ->
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        outfitPreviewViewModel.clearErrorMessage()
       }
     }
   }
 
+  if (!enablePreview) {
+    LaunchedEffect(ui.successMessage) {
+      ui.successMessage?.let { message ->
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        outfitPreviewViewModel.clearErrorMessage()
+        if (ui.isPublished) {
+          onPostSuccess()
+        }
+      }
+    }
+  }
+
+  PreviewItemScreenContent(
+      ui = ui,
+      scrollBehavior = scrollBehavior,
+      onEditItem = onEditItem,
+      onAddItem = onAddItem,
+      onPublish = { if (!enablePreview) outfitPreviewViewModel.publishPost() },
+      onGoBack = onGoBack,
+      enablePreview = enablePreview)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewItemScreenContent(
+    ui: PreviewUIState,
+    scrollBehavior: TopAppBarScrollBehavior,
+    onEditItem: (String) -> Unit,
+    onAddItem: (String) -> Unit,
+    onPublish: () -> Unit,
+    onGoBack: (String) -> Unit,
+    enablePreview: Boolean,
+) {
+  val itemsList = ui.items
+  val hasItems = itemsList.isNotEmpty()
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
@@ -128,12 +165,11 @@ fun PreviewItemScreen(
                         MaterialTheme.typography.displayLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
-                )
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
               },
               navigationIcon = {
                 IconButton(
-                    onClick = { onGoBack(uiState.postUuid) },
+                    onClick = { onGoBack(ui.postUuid) },
                     modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
                       Icon(
                           Icons.AutoMirrored.Outlined.ArrowBack,
@@ -147,28 +183,44 @@ fun PreviewItemScreen(
                       scrolledContainerColor = MaterialTheme.colorScheme.background,
                       titleContentColor = Primary,
                       navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-              scrollBehavior = scrollBehavior,
-          )
+              scrollBehavior = scrollBehavior)
         },
         bottomBar = {
           Row(
               modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
               horizontalArrangement = Arrangement.SpaceEvenly,
               verticalAlignment = Alignment.CenterVertically) {
+                if (hasItems) {
+                  Button(
+                      onClick = onPublish,
+                      modifier =
+                          Modifier.height(47.dp)
+                              .width(140.dp)
+                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                        Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Post", color = White)
+                      }
+                } else {
+                  OutlinedButton(
+                      onClick = {},
+                      enabled = false,
+                      modifier =
+                          Modifier.height(47.dp)
+                              .width(140.dp)
+                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                      border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary)) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Post (add items first)",
+                            tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Post", color = MaterialTheme.colorScheme.primary)
+                      }
+                }
                 Button(
-                    onClick = { outfitPreviewViewModel.publishPost() },
-                    modifier =
-                        Modifier.height(47.dp)
-                            .width(140.dp)
-                            .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                      Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
-                      Spacer(Modifier.width(8.dp))
-                      Text("Post", color = White)
-                    }
-
-                Button(
-                    onClick = { onAddItem(uiState.postUuid) },
+                    onClick = { onAddItem(ui.postUuid) },
                     modifier =
                         Modifier.height(47.dp)
                             .width(140.dp)
@@ -213,11 +265,19 @@ fun PreviewItemScreen(
                               color = MaterialTheme.colorScheme.onSurfaceVariant),
                       textAlign = TextAlign.Center,
                       color = MaterialTheme.colorScheme.onSurfaceVariant)
+                  Spacer(Modifier.height(12.dp))
+                  Text(
+                      text = "Don't forget to add your items",
+                      style =
+                          MaterialTheme.typography.bodyMedium.copy(
+                              fontWeight = FontWeight.Medium,
+                              color = MaterialTheme.colorScheme.primary),
+                      textAlign = TextAlign.Center)
                 }
           }
         }
 
-    if (uiState.isLoading) {
+    if (ui.isLoading && !enablePreview) {
       Box(
           modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
           contentAlignment = Alignment.Center) {
@@ -337,4 +397,57 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
               }
         }
       }
+}
+
+// -------------------------
+// Compact full-screen preview
+// -------------------------
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, widthDp = 360, heightDp = 720, name = "Preview Item Screen")
+@Composable
+fun PreviewItemScreenPreview() {
+  val sampleItems =
+      listOf(
+          Item(
+              itemUuid = "item1",
+              postUuids = listOf("post1"),
+              image = ImageData("img1", "https://picsum.photos/seed/cloth1/400/400"),
+              category = "Clothing",
+              type = "T-Shirt",
+              brand = "BrandX",
+              price = 19.99,
+              material = listOf(Material("Cotton", 100.0)),
+              link = "https://example.com/item1",
+              ownerId = "user1"),
+          Item(
+              itemUuid = "item2",
+              postUuids = listOf("post1"),
+              image = ImageData("img2", "https://picsum.photos/seed/cloth2/400/400"),
+              category = "Accessories",
+              type = "Watch",
+              brand = "BrandY",
+              price = 129.0,
+              material = emptyList(),
+              link = null,
+              ownerId = "user1"))
+  val sampleState =
+      PreviewUIState(
+          postUuid = "post1",
+          imageUri = "file:///preview.png",
+          description = "Comfy casual look",
+          items = sampleItems,
+          isLoading = false,
+          isPublished = false)
+
+  MaterialTheme {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    PreviewItemScreenContent(
+        ui = sampleState,
+        scrollBehavior = scrollBehavior,
+        onEditItem = {},
+        onAddItem = {},
+        onPublish = {},
+        onGoBack = {},
+        enablePreview = true)
+  }
 }

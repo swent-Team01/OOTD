@@ -5,10 +5,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
@@ -51,11 +53,17 @@ class NavigationTest {
 
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */ }
-        composable(Screen.Account.route) { /* minimal screen */ }
+        composable(Screen.AccountEdit.route) { /* minimal screen */ }
+        composable(Screen.AccountView.route) { /* minimal screen */ }
         composable(Screen.Map.route) { MapScreen(onBack = { navigation.goBack() }) }
         composable(Screen.FitCheck.route) { /* minimal screen */ }
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
         composable(Screen.AddItemScreen.route) { /* minimal screen */ }
+        composable(
+            Screen.SelectInventoryItem.route,
+            arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+              /* minimal screen */
+            }
         composable(Screen.EditItem.route) { /* minimal screen */ }
       }
     }
@@ -197,8 +205,8 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Navigate to Account screen
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
     }
   }
 
@@ -210,8 +218,8 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Navigate to Account
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
 
       // Go back to Feed
       navigation.goBack()
@@ -227,8 +235,8 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Navigate to Account
-      navigation.navigateTo(Screen.Account)
-      assertEquals(Screen.Account.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.AccountEdit)
+      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
 
       // Sign out navigates to Authentication
       navigation.navigateTo(Screen.Authentication)

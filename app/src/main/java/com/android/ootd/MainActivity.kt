@@ -30,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.ui.Inventory.InventoryScreen
+import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
@@ -46,6 +47,7 @@ import com.android.ootd.ui.notifications.NotificationsScreen
 import com.android.ootd.ui.post.AddItemsScreen
 import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
+import com.android.ootd.ui.post.PostViewScreen
 import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
@@ -119,7 +121,7 @@ fun OOTDApp(
               Screen.Feed.route,
               Screen.SearchScreen.route,
               Screen.InventoryScreen.route,
-              Screen.Account.route,
+              Screen.AccountView.route,
               Screen.Map.route,
               Screen.NotificationsScreen.route)
 
@@ -199,7 +201,6 @@ fun OOTDApp(
                 composable(Screen.Feed.route) {
                   FeedScreen(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
-                      onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onNotificationIconClick = {
                         navigationActions.navigateTo(Screen.NotificationsScreen)
                       },
@@ -208,15 +209,22 @@ fun OOTDApp(
                       })
                 }
 
-                composable(Screen.SearchScreen.route) {
-                  UserSearchScreen(onBack = { navigationActions.goBack() })
+                composable(Screen.SearchScreen.route) { UserSearchScreen() }
+                composable(Screen.AccountView.route) {
+                  AccountPage(
+                      onEditAccount = { navigationActions.navigateTo(Screen.AccountEdit) },
+                      onPostClick = { postId ->
+                        navigationActions.navigateTo(Screen.PostView(postId))
+                      })
                 }
-                composable(Screen.Account.route) {
+                composable(Screen.AccountEdit.route) {
                   AccountScreen(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
                 composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
+
+                composable(Screen.SearchScreen.route) { UserSearchScreen() }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)
@@ -298,8 +306,6 @@ fun OOTDApp(
                           onNextScreen = { navController.popBackStack() },
                           goBack = { navController.popBackStack() })
                     }
-                /* TODO: add navigation to ProfileScreen*/
-                // Navigation to User Profile screen is not yet implemented
 
                 composable(
                     route = Screen.EditItem.route,
@@ -311,6 +317,28 @@ fun OOTDApp(
                         EditItemsScreen(itemUuid = itemUid, goBack = { navigationActions.goBack() })
                       }
                     }
+                composable(
+                    route = Screen.PostView.route,
+                    arguments = listOf(navArgument("postId") { type = NavType.StringType })) {
+                        navBackStackEntry ->
+                      val postId = navBackStackEntry.arguments?.getString("postId")
+
+                      if (postId != null) {
+                        PostViewScreen(postId = postId, onBack = { navigationActions.goBack() })
+                      }
+                    }
+
+                composable(
+                    route = Screen.SelectInventoryItem.route,
+                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val postUuid = backStackEntry.arguments?.getString("postUuid") ?: ""
+                      com.android.ootd.ui.post.SelectInventoryItemScreen(
+                          postUuid = postUuid,
+                          onItemSelected = { navController.popBackStack() },
+                          onGoBack = { navController.popBackStack() })
+                    }
+
                 composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }
               }
             }
