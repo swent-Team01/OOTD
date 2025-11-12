@@ -392,8 +392,6 @@ private fun UsernameField(
     onCancelClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
   val focusManager = LocalFocusManager.current
   val colors = LightColorScheme
   val typography = Typography
@@ -424,7 +422,6 @@ private fun UsernameField(
           else KeyboardActions.Default,
       keyboardOptions =
           if (isEditing) KeyboardOptions(imeAction = ImeAction.Done) else KeyboardOptions.Default,
-      textStyle = typography.bodyLarge,
       textStyle = typography.bodyLarge.copy(fontFamily = Bodoni),
       trailingIcon = {
         if (isEditing) {
