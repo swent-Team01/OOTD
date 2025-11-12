@@ -169,10 +169,29 @@ fun FeedList(
   }
 }
 
+@Composable
+fun FeedLoadingOverlay() {
+  Box(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
+              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Image(
+              painter = painterResource(id = R.drawable.hanger),
+              contentDescription = "Loading feed",
+              modifier = Modifier.size(72.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+          CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+      }
+}
+
 @Preview(showBackground = true)
 @Composable
 @Suppress("UnusedPrivateMember")
-private fun FeedScreenPreview() {
+fun FeedScreenPreview() {
   val samplePosts =
       listOf(
           OutfitPost(
@@ -204,23 +223,4 @@ private fun FeedScreenPreview() {
         onAddPostClick = {},
         onNotificationIconClick = {})
   }
-}
-
-@Composable
-fun FeedLoadingOverlay() {
-  Box(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
-              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          Image(
-              painter = painterResource(id = R.drawable.hanger),
-              contentDescription = "Loading feed",
-              modifier = Modifier.size(72.dp))
-          Spacer(modifier = Modifier.height(16.dp))
-          CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-      }
 }

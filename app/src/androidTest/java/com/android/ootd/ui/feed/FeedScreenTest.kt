@@ -268,6 +268,24 @@ class FeedScreenTest : FirestoreTest() {
     composeTestRule.onNodeWithTag(FeedScreenTestTags.LOADING_OVERLAY).assertIsDisplayed()
   }
 
+  @Test
+  fun feedScreenPreview_rendersCoreElements() {
+    composeTestRule.setContent { FeedScreenPreview() }
+
+    // Verify scaffold and top bar exist
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertIsDisplayed()
+
+    // Verify feed list is rendered with sample posts
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertIsDisplayed()
+
+    // Message only appears when: !isLoading && !hasPostedToday && posts.isEmpty()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOCKED_MESSAGE).assertDoesNotExist()
+
+    // Verify loading overlay is NOT shown (isLoading = false in preview)
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.LOADING_OVERLAY).assertDoesNotExist()
+  }
+
   // ========================================================================
   // Helpers
   // ========================================================================
