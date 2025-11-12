@@ -42,7 +42,7 @@ open class FeedViewModel(
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(FeedUiState())
+  private val _uiState = MutableStateFlow(FeedUiState(isLoading = true))
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
   init {
@@ -74,7 +74,6 @@ open class FeedViewModel(
     val account = _uiState.value.currentAccount ?: return
     viewModelScope.launch {
       try {
-        _uiState.value = _uiState.value.copy(isLoading = true)
         val hasPosted = repository.hasPostedToday(account.uid)
         val posts = repository.getRecentFeedForUids(account.friendUids + account.uid)
 
