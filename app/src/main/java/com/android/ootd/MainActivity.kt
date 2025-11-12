@@ -48,7 +48,6 @@ import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.register.RegisterScreen
-import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -205,10 +204,6 @@ fun OOTDApp(
                       onSeeFitClick = { postUuid ->
                         navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
                       })
-                }
-
-                composable(Screen.SearchScreen.route) {
-                  UserSearchScreen(onBack = { navigationActions.goBack() })
                 }
                 composable(Screen.Account.route) {
                   AccountScreen(
