@@ -10,7 +10,7 @@ class BottomNavigationBarUnitTest {
     assertEquals(Tab.Feed, routeToTab(Screen.Feed.route))
     assertEquals(Tab.Search, routeToTab(Screen.SearchScreen.route))
     assertEquals(Tab.Inventory, routeToTab(Screen.InventoryScreen.route))
-    assertEquals(Tab.Account, routeToTab(Screen.AccountView.route))
+    assertEquals(Tab.Account, routeToTab(Screen.Account.route))
   }
 
   @Test
@@ -23,7 +23,7 @@ class BottomNavigationBarUnitTest {
     assertEquals(Screen.Feed, tabToScreen(Tab.Feed))
     assertEquals(Screen.SearchScreen, tabToScreen(Tab.Search))
     assertEquals(Screen.InventoryScreen, tabToScreen(Tab.Inventory))
-    assertEquals(Screen.AccountView, tabToScreen(Tab.Account))
+    assertEquals(Screen.Account, tabToScreen(Tab.Account))
   }
 
   @Test

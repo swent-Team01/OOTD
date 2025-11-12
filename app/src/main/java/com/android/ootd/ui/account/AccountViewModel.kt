@@ -6,7 +6,6 @@ package com.android.ootd.ui.account
  */
 import android.Manifest
 import android.util.Log
-import androidx.annotation.Keep
 import androidx.annotation.RequiresPermission
 import androidx.core.net.toUri
 import androidx.credentials.ClearCredentialStateRequest
@@ -34,7 +33,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-@Keep
 /**
  * UI state for the Account screen.
  *

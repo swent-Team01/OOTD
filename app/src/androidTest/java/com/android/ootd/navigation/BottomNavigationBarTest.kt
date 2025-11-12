@@ -7,10 +7,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.android.ootd.ui.account.AccountPageTestTags
+import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
-import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.search.SearchScreenTestTags
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -43,16 +42,30 @@ class BottomNavigationBarTest {
   @Test
   fun bottomBar_isVisibleOnFeed_andTabsExist() {
     composeRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Feed)).assertIsDisplayed()
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Search)).assertIsDisplayed()
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Inventory)).assertIsDisplayed()
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Map)).assertIsDisplayed()
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account)).assertIsDisplayed()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Feed))
+        .assertIsDisplayed()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Search))
+        .assertIsDisplayed()
+    composeRule
+        .onNodeWithTag(
+            NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Inventory))
+        .assertIsDisplayed()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Map))
+        .assertIsDisplayed()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Account))
+        .assertIsDisplayed()
   }
 
   @Test
   fun bottomBar_clickInventory_navigatesToInventoryScreen_andRouteUpdates() {
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Inventory)).performClick()
+    composeRule
+        .onNodeWithTag(
+            NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Inventory))
+        .performClick()
     composeRule.waitForIdle()
     composeRule.onNodeWithTag("inventoryScreen").assertIsDisplayed()
     composeRule.runOnIdle {
@@ -62,13 +75,17 @@ class BottomNavigationBarTest {
 
   @Test
   fun bottomBar_clickAccount_navigatesToAccount() {
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account)).performClick()
-    composeRule.onNodeWithTag(AccountPageTestTags.YOUR_POST_SECTION).assertIsDisplayed()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Account))
+        .performClick()
+    composeRule.onNodeWithTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
   }
 
   @Test
   fun bottomBar_clickSearch_navigatesToSearch() {
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Search)).performClick()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Search))
+        .performClick()
     composeRule.waitForIdle()
     // Assert route and UI tag to ensure we're on Search, not Feed
     composeRule.runOnIdle {
@@ -86,7 +103,9 @@ class BottomNavigationBarTest {
 
   @Test
   fun bottomBar_clickMap_navigatesToMapScreen_andRouteUpdates() {
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Map)).performClick()
+    composeRule
+        .onNodeWithTag(NavigationTestTags.getTabTestTag(com.android.ootd.ui.navigation.Tab.Map))
+        .performClick()
     composeRule.waitForIdle()
     composeRule.runOnIdle {
       assertEquals(Screen.Map.route, navController.currentDestination?.route)

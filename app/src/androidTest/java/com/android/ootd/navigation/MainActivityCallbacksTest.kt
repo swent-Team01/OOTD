@@ -313,15 +313,15 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go to Account screen
-      navigation.navigateTo(Screen.AccountEdit)
-      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Account)
+      assertEquals(Screen.Account.route, navigation.currentRoute())
 
       // Simulate onBack
       navigation.goBack()
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Go back to Account
-      navigation.navigateTo(Screen.AccountEdit)
+      navigation.navigateTo(Screen.Account)
 
       // Simulate onSignOut
       navigation.navigateTo(Screen.Authentication)
@@ -466,7 +466,7 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // User decides to sign out
-      navigation.navigateTo(Screen.AccountEdit)
+      navigation.navigateTo(Screen.Account)
       navigation.navigateTo(Screen.Authentication)
 
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
@@ -549,8 +549,8 @@ class MainActivityCallbacksTest {
       navigation.goBack()
 
       // To Account
-      navigation.navigateTo(Screen.AccountEdit)
-      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
+      navigation.navigateTo(Screen.Account)
+      assertEquals(Screen.Account.route, navigation.currentRoute())
       navigation.goBack()
 
       navigation.navigateTo(Screen.SeeFitScreen(postUuid = "test_id"))
@@ -634,12 +634,12 @@ class MainActivityCallbacksTest {
       navigation.goBack()
 
       // Test navigation from Account
-      navigation.navigateTo(Screen.AccountEdit)
+      navigation.navigateTo(Screen.Account)
       navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-account"))
       assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
       navigation.goBack()
 
-      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
+      assertEquals(Screen.Account.route, navigation.currentRoute())
     }
   }
 }
