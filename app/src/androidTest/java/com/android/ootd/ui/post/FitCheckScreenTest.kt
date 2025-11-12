@@ -36,10 +36,11 @@ class FitCheckScreenTest {
   }
 
   @Test
-  fun descriptionField_isVisibleOnScreen() {
+  fun descriptionAndCounter_areVisibleOnScreen() {
     composeTestRule.setContent { FitCheckScreen() }
 
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER).assertIsDisplayed()
   }
 
   @Test

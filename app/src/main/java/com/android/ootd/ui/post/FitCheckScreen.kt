@@ -41,6 +41,7 @@ object FitCheckScreenTestTags {
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
+  const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -209,7 +210,10 @@ fun FitCheckScreen(
                     text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.End).padding(top = 4.dp, end = 4.dp))
+                    modifier =
+                        Modifier.align(Alignment.End)
+                            .padding(top = 4.dp, end = 4.dp)
+                            .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
               }
 
               Button(
