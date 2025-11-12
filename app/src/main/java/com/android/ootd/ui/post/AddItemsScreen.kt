@@ -422,7 +422,7 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
 
 @Preview(name = "Add Items", showBackground = true)
 @Composable
-private fun AddItemsScreenSmallPreview() {
+fun AddItemsScreenSmallPreview() {
   MaterialTheme {
     val maxImageSize = 180.dp
     val minImageSize = 80.dp

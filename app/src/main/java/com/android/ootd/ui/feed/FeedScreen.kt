@@ -41,7 +41,6 @@ fun FeedScreen(
     onSeeFitClick: (String) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
-  val snackbarHostState = remember { SnackbarHostState() }
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
 
@@ -52,6 +51,9 @@ fun FeedScreen(
   FeedScaffold(
       hasPostedToday = hasPostedToday,
       posts = posts,
+      isLoading = uiState.isLoading,
+      errorMessage = uiState.errorMessage,
+      onClearError = { feedViewModel.setErrorMessage(null) },
       onAddPostClick = onAddPostClick,
       onNotificationIconClick = onNotificationIconClick,
       onSeeFitClick = onSeeFitClick)
@@ -62,15 +64,19 @@ fun FeedScreen(
 private fun FeedScaffold(
     hasPostedToday: Boolean,
     posts: List<OutfitPost>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onClearError: () -> Unit,
     onAddPostClick: () -> Unit,
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {}
 ) {
-  LaunchedEffect(uiState.errorMessage) {
-    uiState.errorMessage?.let { message ->
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  LaunchedEffect(errorMessage) {
+    errorMessage?.let { message ->
       snackbarHostState.showSnackbar(message)
-      // Clear error message
-      feedViewModel.setErrorMessage(null)
+      onClearError()
     }
   }
 
@@ -104,7 +110,7 @@ private fun FeedScaffold(
                     containerColor = MaterialTheme.colorScheme.background))
       },
       floatingActionButton = {
-        if (!uiState.isLoading && !hasPostedToday) {
+        if (!isLoading && !hasPostedToday) {
           Button(
               onClick = onAddPostClick,
               colors =
@@ -130,11 +136,11 @@ private fun FeedScaffold(
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) })
 
               // Loading overlay
-              if (uiState.isLoading) {
-                AnimatedVisibility(visible = uiState.isLoading) { FeedLoadingOverlay() }
+              if (isLoading) {
+                AnimatedVisibility(visible = isLoading) { FeedLoadingOverlay() }
               }
 
-              if (!uiState.isLoading && !hasPostedToday && posts.isEmpty()) {
+              if (!isLoading && !hasPostedToday && posts.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
                     contentAlignment = Alignment.Center) {
@@ -192,9 +198,14 @@ private fun FeedScreenPreview() {
     FeedScaffold(
         hasPostedToday = false,
         posts = samplePosts,
+        isLoading = false,
+        errorMessage = null,
+        onClearError = {},
         onAddPostClick = {},
         onNotificationIconClick = {})
   }
+}
+
 @Composable
 fun FeedLoadingOverlay() {
   Box(
