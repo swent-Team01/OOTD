@@ -1,55 +1,31 @@
 package com.android.ootd.end2end
 
-import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
-import com.android.ootd.model.account.AccountRepositoryFirestore
-import com.android.ootd.model.account.AccountRepositoryProvider
-import com.android.ootd.model.consent.Consent
-import com.android.ootd.model.consent.ConsentRepository
-import com.android.ootd.model.consent.ConsentRepositoryFirestore
-import com.android.ootd.model.consent.ConsentRepositoryProvider
 import com.android.ootd.model.map.Location
-import com.android.ootd.model.map.LocationRepository
-import com.android.ootd.model.map.LocationRepositoryProvider
-import com.android.ootd.model.notifications.NotificationRepositoryFirestore
-import com.android.ootd.model.notifications.NotificationRepositoryProvider
-import com.android.ootd.model.user.UserRepositoryFirestore
-import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
-import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags
-import com.android.ootd.utils.FakeCredentialManager
-import com.android.ootd.utils.FakeJwtGenerator
-import com.google.android.gms.tasks.Tasks
-import com.google.firebase.Firebase
-import com.google.firebase.auth.AuthResult
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.firestore
+import com.android.ootd.utils.BaseEnd2EndTest
+import com.android.ootd.utils.verifyFeedScreenAppears
+import com.android.ootd.utils.verifySignInScreenAppears
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -65,75 +41,7 @@ import org.junit.runner.RunWith
  * Some code was made using an AI coding tool
  */
 @RunWith(AndroidJUnit4::class)
-class End2EndTest {
-
-  @get:Rule val composeTestRule = createComposeRule()
-
-  private lateinit var context: Context
-  private lateinit var mockFirebaseAuth: FirebaseAuth
-  private lateinit var mockFirebaseUser: FirebaseUser
-  private lateinit var mockAuthResult: AuthResult
-  private lateinit var mockUserRepository: UserRepositoryFirestore
-  private lateinit var mockAccountRepository: AccountRepositoryFirestore
-  private lateinit var mockNotificationRepository: NotificationRepositoryFirestore
-  private lateinit var mockLocationRepository: LocationRepository
-  private lateinit var mockConsentRepository: ConsentRepository
-  private lateinit var testUserId: String
-  private lateinit var testUsername: String
-
-  @Before
-  fun setUp() {
-    context = ApplicationProvider.getApplicationContext()
-    mockFirebaseAuth = mockk(relaxed = true)
-    mockFirebaseUser = mockk(relaxed = true)
-    mockAuthResult = mockk(relaxed = true)
-    mockUserRepository = mockk(relaxed = true)
-    mockAccountRepository = mockk(relaxed = true)
-    mockLocationRepository = mockk(relaxed = true)
-    mockConsentRepository = mockk(relaxed = true)
-
-    mockNotificationRepository = mockk(relaxed = true)
-    // Inject mock repositories into the providers so the app uses them instead of real Firestore
-    UserRepositoryProvider.repository = mockUserRepository
-    AccountRepositoryProvider.repository = mockAccountRepository
-    NotificationRepositoryProvider.repository = mockNotificationRepository
-    LocationRepositoryProvider.repository = mockLocationRepository
-    ConsentRepositoryProvider.repository = mockConsentRepository
-
-    // Generate unique identifiers for each test run to avoid conflicts
-    val timestamp = System.currentTimeMillis()
-    testUserId = "test_user_$timestamp"
-    testUsername = "user$timestamp"
-
-    // Pre-populate SharedPreferences with consent data to skip consent screen
-    val consentPrefs = context.getSharedPreferences("ootd_beta_consent", Context.MODE_PRIVATE)
-    consentPrefs.edit().apply {
-      putBoolean("ootd_consent_given", true)
-      putLong("ootd_consent_timestamp", timestamp)
-      putString("ootd_consent_uuid", "test_consent_uuid_$timestamp")
-      apply()
-    }
-
-    // Ensure clean state
-    FirebaseAuth.getInstance().signOut()
-  }
-
-  @After
-  fun tearDown() {
-    unmockkAll()
-
-    // Clean up SharedPreferences
-    val consentPrefs = context.getSharedPreferences("ootd_beta_consent", Context.MODE_PRIVATE)
-    consentPrefs.edit().clear().apply()
-
-    // Restore the real repositories after test completes
-    UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
-    AccountRepositoryProvider.repository = AccountRepositoryFirestore(Firebase.firestore)
-    LocationRepositoryProvider.repository =
-        com.android.ootd.model.map.NominatimLocationRepository(
-            com.android.ootd.HttpClientProvider.client)
-    ConsentRepositoryProvider.repository = ConsentRepositoryFirestore(Firebase.firestore)
-  }
+class End2EndTest : BaseEnd2EndTest() {
 
   /**
    * End-to-end test: Complete user journey from sign-in through registration, search, follow,
@@ -179,46 +87,7 @@ class End2EndTest {
   @Test
   fun fullAppFlow_newUser_signInAndCompleteRegistration() {
     runBlocking {
-      // Create a fake Google ID token for a new user
-      val fakeGoogleIdToken =
-          FakeJwtGenerator.createFakeGoogleIdToken("greg", email = "greg@gmail.com")
-      val fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
-
-      // Set up mock Firebase authentication with new unique test user ID
-      every { mockFirebaseUser.uid } returns testUserId
-      every { mockAuthResult.user } returns mockFirebaseUser
-
-      mockkStatic(FirebaseAuth::class)
-      every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-      every { mockFirebaseAuth.currentUser } returns null // Initially not signed in
-      every { mockFirebaseAuth.signInWithCredential(any()) } returns Tasks.forResult(mockAuthResult)
-
-      // Mock signOut to update currentUser to null when called
-      every { mockFirebaseAuth.signOut() } answers
-          {
-            every { mockFirebaseAuth.currentUser } returns null
-          }
-
-      // New user, so userExists returns false initially (no username set yet)
-      // After registration, it will return true
-      coEvery { mockUserRepository.userExists(any()) } returns false
-
-      // Mock successful user creation - use any() matchers since we're testing the flow, not exact
-      // values
-      coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
-
-      // Mock successful account creation
-      coEvery { mockAccountRepository.createAccount(any(), any(), any(), any()) } returns Unit
-      coEvery { mockAccountRepository.accountExists(any()) } returns false
-
-      // Mock consent as already given (user has consented, so consent screen will be skipped)
-      val mockConsent =
-          Consent(
-              consentUuid = "mock_consent_uuid",
-              userId = testUserId,
-              timestamp = System.currentTimeMillis(),
-              version = "1.0")
-      coEvery { mockConsentRepository.getConsentByUserId(any()) } returns mockConsent
+      initializeMocksForTest()
 
       // STEP 1: Launch the full app
       composeTestRule.setContent {
@@ -373,9 +242,7 @@ class End2EndTest {
         }
       }
 
-      // Verify we're on the Feed screen
-      composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
-      composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).assertIsDisplayed()
+      verifyFeedScreenAppears(composeTestRule)
 
       composeTestRule.waitForIdle()
 
@@ -500,7 +367,7 @@ class End2EndTest {
       }
 
       // Verify we're back on the Feed screen
-      composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
+      verifyFeedScreenAppears(composeTestRule)
 
       // STEP 18: User clicks notification Icon
       // Wait for the Notification Icon to be fully initialized and visible
@@ -549,11 +416,7 @@ class End2EndTest {
       }
 
       // Verify we're back on the Sign-In screen after logout
-      composeTestRule
-          .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-          .performScrollTo()
-          .assertIsDisplayed()
-      composeTestRule.onNodeWithTag(SignInScreenTestTags.APP_LOGO).assertIsDisplayed()
+      verifySignInScreenAppears(composeTestRule)
     }
   }
 }
