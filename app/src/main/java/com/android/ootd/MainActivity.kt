@@ -209,9 +209,7 @@ fun OOTDApp(
                       })
                 }
 
-                composable(Screen.SearchScreen.route) {
-                  UserSearchScreen(onBack = { navigationActions.goBack() })
-                }
+                composable(Screen.SearchScreen.route) { UserSearchScreen() }
                 composable(Screen.AccountView.route) {
                   AccountPage(
                       onEditAccount = { navigationActions.navigateTo(Screen.AccountEdit) },
