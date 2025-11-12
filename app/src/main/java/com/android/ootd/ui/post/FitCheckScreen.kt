@@ -72,7 +72,6 @@ fun FitCheckScreen(
 
   FitCheckScreenContent(
       uiState = uiState,
-      postUuid = postUuid,
       onNextClick = onNextClick,
       onBackClick = {
         if (postUuid.isNotEmpty()) {
@@ -91,7 +90,6 @@ fun FitCheckScreen(
 @Composable
 private fun FitCheckScreenContent(
     uiState: FitCheckUIState,
-    postUuid: String = "",
     onNextClick: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {},
     onChooseFromGallery: () -> Unit = {},

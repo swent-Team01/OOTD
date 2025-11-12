@@ -28,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -308,15 +307,7 @@ private fun PriceField(price: Double, onChange: (Double) -> Unit) {
       placeholder = { Text("e.g., 49.99") },
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors =
-          OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-              unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
-              disabledBorderColor = MaterialTheme.colorScheme.tertiary,
-              errorBorderColor = MaterialTheme.colorScheme.error,
-              cursorColor = MaterialTheme.colorScheme.primary,
-              focusedLabelColor = MaterialTheme.colorScheme.primary,
-              unfocusedLabelColor = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
 }
 

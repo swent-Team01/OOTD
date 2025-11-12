@@ -18,12 +18,11 @@ import com.android.ootd.ui.theme.OOTDTheme
 
 object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
-  const val GO_BACK_BUTTON = "goBackButton"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), onBack: () -> Unit) {
+fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
   val uiState by viewModel.uiState.collectAsState()
 
   Column(
@@ -83,6 +82,6 @@ fun UserSearchScreenPreview() {
             userRepository = UserRepositoryInMemory(),
             accountRepository = AccountRepositoryInMemory(),
             overrideUser = true)
-    UserSearchScreen(viewModel = mockViewModel, onBack = {})
+    UserSearchScreen(viewModel = mockViewModel)
   }
 }

@@ -405,7 +405,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, widthDp = 360, heightDp = 720, name = "Preview Item Screen")
 @Composable
-fun PreviewItemScreen_Preview() {
+fun PreviewItemScreenPreview() {
   val sampleItems =
       listOf(
           Item(

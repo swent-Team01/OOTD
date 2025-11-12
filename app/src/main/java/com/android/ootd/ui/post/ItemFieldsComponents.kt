@@ -271,9 +271,9 @@ fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
       }
 }
 
-// Reusable colors for non-category text fields
+/** Common text field colors for all item input fields */
 @Composable
-private fun commonTextFieldColors() =
+fun commonTextFieldColors() =
     OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.tertiary,
         unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,

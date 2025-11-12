@@ -30,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -220,7 +219,7 @@ private fun AddItemTopBar(modifier: Modifier, goBack: () -> Unit) {
   CenterAlignedTopAppBar(
       title = {
         Text(
-            text = "ADD ITEM", // ← updated
+            text = "ADD ITEM",
             style =
                 MaterialTheme.typography.displayLarge.copy(
                     fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
@@ -342,7 +341,7 @@ private fun ImagePickerRow(
               tint = White,
               modifier = Modifier.size(16.dp))
           Spacer(Modifier.width(8.dp))
-          Text(text = "Upload a picture of the Item*", color = White) // ← updated copy
+          Text(text = "Upload a picture of the Item*", color = White)
         }
   }
 
@@ -369,21 +368,6 @@ private fun ImagePickerRow(
         dismissButton = {})
   }
 }
-
-@Composable
-private fun commonTextFieldColors() =
-    OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
-        disabledBorderColor = MaterialTheme.colorScheme.tertiary,
-        errorBorderColor = MaterialTheme.colorScheme.error,
-        cursorColor = MaterialTheme.colorScheme.primary,
-        focusedLabelColor = MaterialTheme.colorScheme.primary,
-        unfocusedLabelColor = MaterialTheme.colorScheme.primary,
-        focusedPlaceholderColor = MaterialTheme.colorScheme.primary,
-        unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary,
-        focusedTextColor = MaterialTheme.colorScheme.primary,
-        unfocusedTextColor = MaterialTheme.colorScheme.primary)
 
 @Composable
 private fun PriceField(price: String, onChange: (String) -> Unit) {
