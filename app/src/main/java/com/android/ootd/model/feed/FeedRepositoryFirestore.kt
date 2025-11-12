@@ -4,6 +4,7 @@ import android.util.Log
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
+import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
@@ -11,6 +12,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
 const val POSTS_COLLECTION_PATH = "posts"
+private val MILLIS_IN_24_HOURS = Duration.ofHours(24).toMillis()
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
   private val ownerAttributeName = "ownerId"
@@ -56,7 +58,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     if (cleaned.isEmpty()) return emptyList()
 
     val now = System.currentTimeMillis()
-    val twentyFourHoursAgo = now - 24 * 60 * 60 * 1000 // milliseconds in 24h
+    val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS // milliseconds in 24h
 
     return try {
       val chunks = cleaned.chunked(10)
