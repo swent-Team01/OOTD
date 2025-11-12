@@ -99,7 +99,6 @@ class PostViewScreenTest {
     val postWithoutDescription = testPost.copy(description = "")
     coEvery { mockRepository.getPostById("test-post-id") } returns postWithoutDescription
 
-    setContent("test-post-id")
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(PostViewTestTags.POST_IMAGE).assertIsDisplayed()

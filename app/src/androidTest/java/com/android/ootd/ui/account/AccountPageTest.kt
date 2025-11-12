@@ -108,7 +108,6 @@ class AccountPageTest {
       OOTDTheme {
         AccountPage(
             accountModel = viewModel,
-            credentialManager = mockCredentialManager,
             onEditAccount = { onEditAccountCalled = true },
             onPostClick = { postId -> onPostClickCalledWithId = postId })
       }

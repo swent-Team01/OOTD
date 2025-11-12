@@ -307,8 +307,6 @@ fun OOTDApp(
                           onNextScreen = { navController.popBackStack() },
                           goBack = { navController.popBackStack() })
                     }
-                /* TODO: add navigation to ProfileScreen*/
-                // Navigation to User Profile screen is not yet implemented
 
                 composable(
                     route = Screen.EditItem.route,

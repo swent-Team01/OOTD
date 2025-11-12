@@ -79,7 +79,8 @@ class AccountPageViewModel(
         val currentUserID = accountService.currentUserId
         val user = userRepository.getUser(currentUserID)
         val account = accountRepository.getAccount(currentUserID)
-        val usersPosts = feedRepository.getFeedForUids(listOf(currentUserID))
+        val usersPosts =
+            feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
         _uiState.update {
           it.copy(
               username = user.username,

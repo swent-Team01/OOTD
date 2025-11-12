@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.model.posts.OutfitPost
@@ -57,7 +56,6 @@ object AccountPageTestTags {
 @Composable
 fun AccountPage(
     accountModel: AccountPageViewModel = viewModel(),
-    credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onEditAccount: () -> Unit = {},
     onPostClick: (String) -> Unit = {}
 ) {

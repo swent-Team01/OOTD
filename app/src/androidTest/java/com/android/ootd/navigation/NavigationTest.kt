@@ -52,6 +52,7 @@ class NavigationTest {
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
         composable(Screen.Feed.route) { /* minimal screen */ }
         composable(Screen.Account.route) { /* minimal screen */ }
+        composable(Screen.ViewAcount.route) { /* minimal screen */ }
         composable(Screen.Map.route) { MapScreen(onBack = { navigation.goBack() }) }
         composable(Screen.FitCheck.route) { /* minimal screen */ }
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
