@@ -137,7 +137,7 @@ class End2EndTest {
   }
 
   /**
-   * End-to-end test: Complete user journey from sign-in through registration, search, follow,
+   * End-to-end test: Complete user journey from sign-in through registration, navigation,
    * attempting to post an outfit, and logout
    *
    * This test validates the FULL application flow using the actual navigation system:
@@ -146,36 +146,35 @@ class End2EndTest {
    * 3. User clicks Google Sign-In button
    * 4. Authentication succeeds with a new user (no username set)
    * 5. App automatically navigates to Registration screen
-   * 6. User enters username and date of birth
+   * 6. User enters username, date of birth, and location
    * 7. User clicks Save button
    * 8. App navigates directly to Feed screen (consent already given via mock)
-   * 9. User clicks search icon to navigate to Search screen
-   * 10. User searches for "Greg" in the username field
-   * 11. User selects Greg from the suggestions
-   * 12. User clicks Follow button on Greg's profile
-   * 13. User clicks back button to return to Feed screen
+   * 9. User navigates to Search screen via bottom navigation tab 10-12. (Search/follow steps
+   *    skipped - require real Firebase data)
+   * 13. User returns to Feed screen via bottom navigation tab
    * 14. User clicks "Do a Fit Check" button to start posting a new outfit
    * 15. User reaches FitCheck screen and verifies "Add Fit Photo" button
    * 16. Note: Photo selection with camera/gallery cannot be tested in automated UI tests because it
    *     launches external Android activities that break the Compose hierarchy
-   * 17. User navigates back to Feed screen from FitCheck
-   * 18. User clicks notification icon
-   * 19. User goes on account page
+   * 17. User navigates back to Feed screen from FitCheck using back button
+   * 18. User clicks notification icon in top bar
+   * 19. User navigates to Account page via bottom navigation tab
    * 20. User clicks Sign Out button
    * 21. App navigates back to Authentication screen
    *
    * LIMITATIONS:
    * - Camera/Gallery intents cannot be tested in Compose UI tests without mocking
    * - Taking photos launches external activities that break ComposeTestRule
+   * - Search/follow flow requires real Firebase data (steps 10-12 commented out)
    *
    * This test:
    * - Uses the REAL OOTDApp composable with the full NavHost navigation graph
    * - Simulates actual user interactions across multiple screens
    * - Validates automatic navigation flows between screens
-   * - Tests the user lifecycle: sign-in → register → search → follow → partial outfit post →
-   *   sign-out
+   * - Tests the user lifecycle: sign-in → register → navigation → partial outfit post → sign-out
    * - Uses FakeCredentialManager and mocked Firebase to avoid network calls
    * - Mocks consent as already given to skip the consent screen
+   * - Uses bottom navigation tabs for Search and Account navigation (no top-bar back arrows)
    */
   @Test
   fun fullAppFlow_newUser_signInAndCompleteRegistration() {
@@ -380,8 +379,17 @@ class End2EndTest {
 
       composeTestRule.waitForIdle()
 
-      // STEP 9: Click on search icon to navigate to search screen
-      composeTestRule.onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN).performClick()
+      // STEP 9: Navigate to Search screen using bottom navigation tab
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(NavigationTestTags.getTabTestTag(Tab.Search))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+      composeTestRule
+          .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Search))
+          .assertIsDisplayed()
+          .performClick()
       composeTestRule.waitForIdle()
 
       // Wait for Search screen to appear
@@ -432,8 +440,17 @@ class End2EndTest {
       //    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
       //    composeTestRule.waitForIdle()
 
-      // STEP 13: Click back button to return to Feed screen
-      composeTestRule.onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON).performClick()
+      // STEP 13: Navigate back to Feed screen using bottom navigation tab (instead of back button)
+      composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule
+            .onAllNodesWithTag(NavigationTestTags.getTabTestTag(Tab.Feed))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+      composeTestRule
+          .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Feed))
+          .assertIsDisplayed()
+          .performClick()
       composeTestRule.waitForIdle()
 
       // Wait for Feed screen to appear again
@@ -507,16 +524,14 @@ class End2EndTest {
       // Wait for the Notification Icon to be fully initialized and visible
       composeTestRule.waitUntil(timeoutMillis = 5000) {
         composeTestRule
-            .onAllNodesWithTag(
-                FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
+            .onAllNodesWithTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
             .fetchSemanticsNodes()
             .isNotEmpty()
       }
 
       // Click on the notifications icon
       composeTestRule
-          .onNodeWithTag(
-              FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
+          .onNodeWithTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
           .performClick()
 
       composeTestRule.waitForIdle()

@@ -98,6 +98,10 @@ sealed class Screen(
       Screen(route = "postView/${postId}", name = "Post View") {
     companion object {
       const val route = "postView/{postId}"
+  data class SelectInventoryItem(val postUuid: String) :
+      Screen(route = "selectInventoryItem/$postUuid", name = "Select Inventory Item") {
+    companion object {
+      const val route = "selectInventoryItem/{postUuid}"
     }
   }
 }

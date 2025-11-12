@@ -201,7 +201,6 @@ fun OOTDApp(
                 composable(Screen.Feed.route) {
                   FeedScreen(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
-                      onSearchClick = { navigationActions.navigateTo(Screen.SearchScreen) },
                       onNotificationIconClick = {
                         navigationActions.navigateTo(Screen.NotificationsScreen)
                       },
@@ -226,6 +225,8 @@ fun OOTDApp(
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
                 composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
+
+                composable(Screen.SearchScreen.route) { UserSearchScreen() }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)
@@ -328,6 +329,18 @@ fun OOTDApp(
                         PostViewScreen(postId = postId, onBack = { navigationActions.goBack() })
                       }
                     }
+
+                composable(
+                    route = Screen.SelectInventoryItem.route,
+                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val postUuid = backStackEntry.arguments?.getString("postUuid") ?: ""
+                      com.android.ootd.ui.post.SelectInventoryItemScreen(
+                          postUuid = postUuid,
+                          onItemSelected = { navController.popBackStack() },
+                          onGoBack = { navController.popBackStack() })
+                    }
+
                 composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }
               }
             }

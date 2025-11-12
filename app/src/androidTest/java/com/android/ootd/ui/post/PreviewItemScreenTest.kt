@@ -364,6 +364,9 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           outfitPreviewViewModel = vm,
           imageUri = "test_uri",
           description = "test_desc",
+          onAddItem = {},
+          onEditItem = {},
+          onGoBack = {},
           onPostSuccess = { onPostSuccessCalled = true })
     }
 
@@ -377,5 +380,31 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
 
     assert(onPostSuccessCalled)
+  }
+
+  @Test
+  fun previewItemScreen_Preview_rendersCoreElements() {
+    composeTestRule.setContent { PreviewItemScreenPreview() }
+
+    // Verify top bar and title exist
+    n(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.GO_BACK_BUTTON).assertIsDisplayed()
+
+    // Verify item list is displayed with 2 sample items
+    n(PreviewItemScreenTestTags.ITEM_LIST).assertIsDisplayed()
+
+    // Verify both buttons exist (Post and Add Item)
+    n(PreviewItemScreenTestTags.POST_BUTTON).assertIsDisplayed()
+    n(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).assertIsDisplayed()
+
+    // Verify sample items are rendered (category text visible)
+    txt("Clothing").assertIsDisplayed()
+    txt("Accessories").assertIsDisplayed()
+
+    // Verify empty message is NOT shown (items list is not empty)
+    n(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG).assertDoesNotExist()
+
+    // Verify loading overlay is NOT shown (isLoading = false, enablePreview = true)
+    txt("Publishing your outfit...").assertDoesNotExist()
   }
 }

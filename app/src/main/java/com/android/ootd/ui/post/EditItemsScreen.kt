@@ -305,6 +305,9 @@ private fun PriceField(price: Double, onChange: (Double) -> Unit) {
       onValueChange = { onChange(it.toDoubleOrNull() ?: 0.0) },
       label = { Text("Price") },
       placeholder = { Text("e.g., 49.99") },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
 }
 

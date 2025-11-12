@@ -1,11 +1,11 @@
 package com.android.ootd.ui.feed
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,11 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
-import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN
+import com.android.ootd.ui.theme.OOTDTheme
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -26,8 +28,8 @@ object FeedScreenTestTags {
   const val LOCKED_MESSAGE = "feedLockedMessage"
   const val ADD_POST_FAB = "addPostFab"
   const val FEED_LIST = "feedList"
-  const val NAVIGATE_TO_SEARCH_SCREEN = "navigateToSearchScreen"
   const val NAVIGATE_TO_NOTIFICATIONS_SCREEN = "navigateToNotificationsScreen"
+  const val LOADING_OVERLAY = "feedLoadingOverlay"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +37,6 @@ object FeedScreenTestTags {
 fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onAddPostClick: () -> Unit,
-    onSearchClick: () -> Unit = {},
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {}
 ) {
@@ -47,8 +48,41 @@ fun FeedScreen(
     feedViewModel.refreshFeedFromFirestore()
   }
 
+  FeedScaffold(
+      hasPostedToday = hasPostedToday,
+      posts = posts,
+      isLoading = uiState.isLoading,
+      errorMessage = uiState.errorMessage,
+      onClearError = { feedViewModel.setErrorMessage(null) },
+      onAddPostClick = onAddPostClick,
+      onNotificationIconClick = onNotificationIconClick,
+      onSeeFitClick = onSeeFitClick)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeedScaffold(
+    hasPostedToday: Boolean,
+    posts: List<OutfitPost>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onClearError: () -> Unit,
+    onAddPostClick: () -> Unit,
+    onNotificationIconClick: () -> Unit = {},
+    onSeeFitClick: (String) -> Unit = {}
+) {
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  LaunchedEffect(errorMessage) {
+    errorMessage?.let { message ->
+      snackbarHostState.showSnackbar(message)
+      onClearError()
+    }
+  }
+
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
+      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
         CenterAlignedTopAppBar(
             modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
@@ -60,15 +94,6 @@ fun FeedScreen(
                           fontWeight = FontWeight.ExtraBold,
                           color = MaterialTheme.colorScheme.primary))
             },
-            navigationIcon = {
-              IconButton(
-                  onClick = onSearchClick, modifier = Modifier.testTag(NAVIGATE_TO_SEARCH_SCREEN)) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.tertiary)
-                  }
-            },
             actions = {
               IconButton(
                   onClick = onNotificationIconClick,
@@ -76,7 +101,8 @@ fun FeedScreen(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_notification),
                         contentDescription = "Notifications",
-                        tint = MaterialTheme.colorScheme.tertiary)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(64.dp))
                   }
             },
             colors =
@@ -84,7 +110,7 @@ fun FeedScreen(
                     containerColor = MaterialTheme.colorScheme.background))
       },
       floatingActionButton = {
-        if (!hasPostedToday) {
+        if (!isLoading && !hasPostedToday) {
           Button(
               onClick = onAddPostClick,
               colors =
@@ -109,7 +135,12 @@ fun FeedScreen(
                   posts = posts,
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) })
 
-              if (!hasPostedToday && posts.isEmpty()) {
+              // Loading overlay
+              if (isLoading) {
+                AnimatedVisibility(visible = isLoading) { FeedLoadingOverlay() }
+              }
+
+              if (!isLoading && !hasPostedToday && posts.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
                     contentAlignment = Alignment.Center) {
@@ -135,5 +166,61 @@ fun FeedList(
     items(posts) { post ->
       OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
+  }
+}
+
+@Composable
+fun FeedLoadingOverlay() {
+  Box(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
+              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Image(
+              painter = painterResource(id = R.drawable.hanger),
+              contentDescription = "Loading feed",
+              modifier = Modifier.size(72.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+          CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+      }
+}
+
+@Preview(showBackground = true)
+@Composable
+@Suppress("UnusedPrivateMember")
+fun FeedScreenPreview() {
+  val samplePosts =
+      listOf(
+          OutfitPost(
+              postUID = "1",
+              ownerId = "user1",
+              name = "Alice",
+              userProfilePicURL = "",
+              outfitURL = "",
+              description = "Casual fit",
+              itemsID = emptyList(),
+              timestamp = System.currentTimeMillis()),
+          OutfitPost(
+              postUID = "2",
+              ownerId = "user2",
+              name = "Bob",
+              userProfilePicURL = "",
+              outfitURL = "",
+              description = "Streetwear",
+              itemsID = emptyList(),
+              timestamp = System.currentTimeMillis()))
+
+  OOTDTheme {
+    FeedScaffold(
+        hasPostedToday = false,
+        posts = samplePosts,
+        isLoading = false,
+        errorMessage = null,
+        onClearError = {},
+        onAddPostClick = {},
+        onNotificationIconClick = {})
   }
 }
