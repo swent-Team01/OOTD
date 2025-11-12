@@ -71,6 +71,31 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     assertTrue(feedRepository.hasPostedToday(currentUid))
   }
 
+  @Test
+  fun getRecentFeed_returnsOnlyPostsFromLast24Hours() = runTest {
+    val now = System.currentTimeMillis()
+    val within24h = samplePost("recent1", ts = now - 2 * 60 * 60 * 1000) // 2 hours ago
+    val borderline = samplePost("recent2", ts = now - 23 * 60 * 60 * 1000) // 23 hours ago
+    val old = samplePost("old", ts = now - 26 * 60 * 60 * 1000) // 26 hours ago
+
+    feedRepository.addPost(within24h)
+    feedRepository.addPost(borderline)
+    feedRepository.addPost(old)
+
+    val result = feedRepository.getRecentFeedForUids(listOf(currentUid))
+
+    assertTrue(result.all { now - it.timestamp <= 24 * 60 * 60 * 1000 })
+  }
+
+  @Test
+  fun getRecentFeed_returnsEmpty_whenNoRecentPosts() = runTest {
+    val oldPost = samplePost("veryold", ts = System.currentTimeMillis() - 50 * 60 * 60 * 1000)
+    feedRepository.addPost(oldPost)
+
+    val result = feedRepository.getRecentFeedForUids(listOf(currentUid))
+    assertTrue(result.isEmpty())
+  }
+
   // -------- Error handling --------
 
   @Test

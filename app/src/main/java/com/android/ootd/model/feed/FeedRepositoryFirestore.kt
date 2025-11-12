@@ -4,6 +4,7 @@ import android.util.Log
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
+import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
@@ -11,6 +12,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
 const val POSTS_COLLECTION_PATH = "posts"
+private val MILLIS_IN_24_HOURS = Duration.ofHours(24).toMillis()
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
   private val ownerAttributeName = "ownerId"
@@ -45,6 +47,42 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       emptyList()
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error fetching friend-filtered feed", e)
+      emptyList()
+    }
+  }
+
+  override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> {
+    if (uids.isEmpty()) return emptyList()
+
+    val cleaned = uids.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    if (cleaned.isEmpty()) return emptyList()
+
+    val now = System.currentTimeMillis()
+    val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS // milliseconds in 24h
+
+    return try {
+      val chunks = cleaned.chunked(10)
+      val results = mutableListOf<OutfitPost>()
+      for (chunk in chunks) {
+        val snap =
+            withTimeout(5_000) {
+              db.collection(POSTS_COLLECTION_PATH)
+                  .whereIn(ownerAttributeName, chunk)
+                  .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
+                  .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                  .get()
+                  .await()
+            }
+        results += snap.toObjects<OutfitPost>()
+      }
+
+      // Sort descending (meaning most recent first)
+      results.sortedByDescending { it.timestamp }
+    } catch (e: TimeoutCancellationException) {
+      Log.w("FeedRepositoryFirestore", "Timed out fetching recent feed; returning empty list", e)
+      emptyList()
+    } catch (e: Exception) {
+      Log.e("FeedRepositoryFirestore", "Error fetching recent friend feed", e)
       emptyList()
     }
   }

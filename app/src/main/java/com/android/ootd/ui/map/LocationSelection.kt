@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.epflLocation
 import com.android.ootd.ui.theme.Bodoni
@@ -197,6 +198,7 @@ fun LocationSelectionSection(
       DropdownMenu(
           expanded = showDropdown && suggestions.isNotEmpty() && isFocused,
           onDismissRequest = { showDropdown = false },
+          properties = PopupProperties(focusable = false),
           modifier = Modifier.fillMaxWidth()) {
             suggestions.take(3).forEach { location ->
               DropdownMenuItem(
@@ -209,7 +211,6 @@ fun LocationSelectionSection(
                         fontFamily = Bodoni)
                   },
                   onClick = {
-                    onLocationQueryChange(location.name)
                     onLocationSelect(location)
                     onClearSuggestions()
                     showDropdown = false

@@ -11,6 +11,8 @@ import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +26,9 @@ import kotlinx.coroutines.launch
 data class FeedUiState(
     val feedPosts: List<OutfitPost> = emptyList(),
     val currentAccount: Account? = null,
-    val hasPostedToday: Boolean = false
+    val hasPostedToday: Boolean = false,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 /**
@@ -33,7 +37,7 @@ data class FeedUiState(
  * Responsible for managing the state by fetching and providing data for feed posts from the
  * [FeedRepository] and account data from the [AccountRepository].
  */
-class FeedViewModel(
+open class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {
@@ -69,9 +73,30 @@ class FeedViewModel(
   fun refreshFeedFromFirestore() {
     val account = _uiState.value.currentAccount ?: return
     viewModelScope.launch {
-      val hasPosted = repository.hasPostedToday(account.uid)
-      val posts = repository.getFeedForUids(account.friendUids + account.uid)
-      _uiState.value = _uiState.value.copy(hasPostedToday = hasPosted, feedPosts = posts)
+      try {
+        _uiState.value = _uiState.value.copy(isLoading = true)
+        val hasPosted = repository.hasPostedToday(account.uid)
+        val posts = repository.getRecentFeedForUids(account.friendUids + account.uid)
+
+        val todayStart =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        // Filter posts to only include today's post for the current user and all posts for friends
+        val filteredPost =
+            posts.filter { post ->
+              if (post.ownerId == account.uid) {
+                post.timestamp >= todayStart
+              } else true
+            }
+
+        _uiState.value =
+            _uiState.value.copy(
+                hasPostedToday = hasPosted, feedPosts = filteredPost, isLoading = false)
+      } catch (e: Exception) {
+        Log.e("FeedViewModel", "Failed to refresh feed", e)
+        _uiState.value =
+            _uiState.value.copy(isLoading = false, errorMessage = "Failed to load feed")
+      }
     }
   }
 
@@ -82,5 +107,9 @@ class FeedViewModel(
    */
   fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
+  }
+
+  fun setErrorMessage(message: String?) {
+    _uiState.value = _uiState.value.copy(errorMessage = message)
   }
 }
