@@ -267,9 +267,6 @@ fun OOTDApp(
                           onAddItem = { postUuid ->
                             navController.navigate(Screen.AddItemScreen(postUuid).route)
                           },
-                          onSelectFromInventory = { postUuid ->
-                            navController.navigate(Screen.SelectInventoryItem(postUuid).route)
-                          },
                           onEditItem = { itemUuid ->
                             navController.navigate(Screen.EditItem(itemUuid).route)
                           },
