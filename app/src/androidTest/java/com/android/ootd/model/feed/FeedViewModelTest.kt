@@ -81,6 +81,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
 
     viewModel.setCurrentAccount(account)
     viewModel.refreshFeedFromFirestore()
+    waitUntilFeedLoaded()
 
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       viewModel.uiState.value.feedPosts.isNotEmpty()
@@ -167,5 +168,9 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     val state = viewModel.uiState.first()
     assertNotNull(state.currentAccount)
     assertEquals("carol", state.currentAccount?.username)
+  }
+
+  private fun waitUntilFeedLoaded(timeoutMillis: Long = 5000) {
+    composeTestRule.waitUntil(timeoutMillis) { !viewModel.uiState.value.isLoading }
   }
 }

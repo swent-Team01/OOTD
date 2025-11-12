@@ -8,6 +8,8 @@ interface FeedRepository {
   /**
    * Retrieves posts authored by any of the provided user IDs. Implementations should query using
    * whereIn in chunks of 10 and sort by timestamp ascending.
+   *
+   * @param uids List of user IDs whose posts are to be retrieved
    */
   suspend fun getFeedForUids(uids: List<String>): List<OutfitPost>
 
@@ -24,6 +26,13 @@ interface FeedRepository {
    * @param post the user's post for the day
    */
   suspend fun addPost(post: OutfitPost)
+
+  /**
+   * Retrieves posts authored by any of the provided user IDs within the last 24 hours.
+   *
+   * @param uids List of user IDs whose recent posts are to be retrieved
+   */
+  suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost>
 
   /** Generates a unique post ID. */
   fun getNewPostId(): String

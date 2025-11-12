@@ -1,5 +1,7 @@
 package com.android.ootd.ui.feed
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
@@ -28,6 +31,7 @@ object FeedScreenTestTags {
   const val FEED_LIST = "feedList"
   const val NAVIGATE_TO_SEARCH_SCREEN = "navigateToSearchScreen"
   const val NAVIGATE_TO_NOTIFICATIONS_SCREEN = "navigateToNotificationsScreen"
+  const val LOADING_OVERLAY = "feedLoadingOverlay"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +44,7 @@ fun FeedScreen(
     onSeeFitClick: (String) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
+  val snackbarHostState = remember { SnackbarHostState() }
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
 
@@ -47,8 +52,17 @@ fun FeedScreen(
     feedViewModel.refreshFeedFromFirestore()
   }
 
+  LaunchedEffect(uiState.errorMessage) {
+    uiState.errorMessage?.let { message ->
+      snackbarHostState.showSnackbar(message)
+      // Clear error message
+      feedViewModel.setErrorMessage(null)
+    }
+  }
+
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
+      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
         CenterAlignedTopAppBar(
             modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
@@ -84,7 +98,7 @@ fun FeedScreen(
                     containerColor = MaterialTheme.colorScheme.background))
       },
       floatingActionButton = {
-        if (!hasPostedToday) {
+        if (!uiState.isLoading && !hasPostedToday) {
           Button(
               onClick = onAddPostClick,
               colors =
@@ -109,7 +123,12 @@ fun FeedScreen(
                   posts = posts,
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) })
 
-              if (!hasPostedToday && posts.isEmpty()) {
+              // Loading overlay
+              if (uiState.isLoading) {
+                AnimatedVisibility(visible = uiState.isLoading) { FeedLoadingOverlay() }
+              }
+
+              if (!uiState.isLoading && !hasPostedToday && posts.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
                     contentAlignment = Alignment.Center) {
@@ -136,4 +155,23 @@ fun FeedList(
       OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
   }
+}
+
+@Composable
+fun FeedLoadingOverlay() {
+  Box(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
+              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Image(
+              painter = painterResource(id = R.drawable.hanger),
+              contentDescription = "Loading feed",
+              modifier = Modifier.size(72.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+          CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+      }
 }

@@ -21,12 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.theme.OOTDTheme
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
@@ -37,42 +35,85 @@ object OutfitPostCardTestTags {
   const val PROFILE_PIC = "profilePic"
   const val PROFILE_INITIAL = "profileInitial"
   const val BLUR_OVERLAY = "blurOverlay"
+  const val REMAINING_TIME = "remainingTime"
+  const val EXPIRED_INDICATOR = "expiredIndicator"
 }
 
 @Composable
 private fun ProfileSection(post: OutfitPost) {
+  val totalLifetime = 24 * 60 * 60 * 1000L // 24h in ms
+  val now = System.currentTimeMillis()
+  val elapsed = (now - post.timestamp).coerceAtLeast(0L)
+  val remainingMs = totalLifetime - elapsed
+  val remainingFraction = (remainingMs.toFloat() / totalLifetime.toFloat()).coerceIn(0f, 1f)
+
   Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
-    if (post.userProfilePicURL.isNotBlank()) {
-      AsyncImage(
-          model = post.userProfilePicURL,
-          contentDescription = "Profile picture",
-          contentScale = ContentScale.Crop,
-          modifier =
-              Modifier.size(36.dp)
-                  .clip(RoundedCornerShape(50))
-                  .background(MaterialTheme.colorScheme.surface)
-                  .testTag(OutfitPostCardTestTags.PROFILE_PIC))
-    } else {
-      Box(
-          modifier =
-              Modifier.size(36.dp)
-                  .clip(CircleShape)
-                  .background(MaterialTheme.colorScheme.primary)
-                  .testTag(OutfitPostCardTestTags.PROFILE_INITIAL),
-          contentAlignment = Alignment.Center) {
-            Text(
-                text = post.name.firstOrNull()?.uppercase() ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary)
-          }
+    Box(contentAlignment = Alignment.Center) {
+      // Circular indicator for remaining lifetime
+      CircularProgressIndicator(
+          progress = { remainingFraction },
+          color = MaterialTheme.colorScheme.primary,
+          trackColor = MaterialTheme.colorScheme.surfaceVariant,
+          strokeWidth = 3.dp,
+          modifier = Modifier.size(44.dp))
+
+      if (post.userProfilePicURL.isNotBlank()) {
+        AsyncImage(
+            model = post.userProfilePicURL,
+            contentDescription = "Profile picture",
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier.size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .testTag(OutfitPostCardTestTags.PROFILE_PIC))
+      } else {
+        Box(
+            modifier =
+                Modifier.size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .testTag(OutfitPostCardTestTags.PROFILE_INITIAL),
+            contentAlignment = Alignment.Center) {
+              Text(
+                  text = post.name.firstOrNull()?.uppercase() ?: "",
+                  style = MaterialTheme.typography.titleMedium,
+                  color = MaterialTheme.colorScheme.onPrimary)
+            }
+      }
     }
 
     Spacer(modifier = Modifier.width(8.dp))
-    Text(
-        text = post.name,
-        style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
+
+    Column {
+      Text(
+          text = post.name,
+          style = MaterialTheme.typography.titleLarge,
+          color = MaterialTheme.colorScheme.primary,
+          modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
+
+      // ---- Remaining lifetime label ----
+      val (remainingText, tag) =
+          when {
+            remainingMs <= 0L -> {
+              "Expired" to OutfitPostCardTestTags.EXPIRED_INDICATOR
+            }
+            remainingMs < 60 * 60 * 1000L -> {
+              val mins = (remainingMs / (60 * 1000L)).coerceAtLeast(1)
+              "${mins}m left" to OutfitPostCardTestTags.REMAINING_TIME
+            }
+            else -> {
+              val hrs = (remainingMs / (60 * 60 * 1000L)).coerceAtLeast(1)
+              "${hrs}h left" to OutfitPostCardTestTags.REMAINING_TIME
+            }
+          }
+
+      Text(
+          text = remainingText,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.tertiary,
+          modifier = Modifier.testTag(tag))
+    }
   }
 }
 
@@ -193,20 +234,4 @@ fun OutfitPostCard(
               }
         }
       }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFEFFFE)
-@Composable
-fun OutfitPostCardPreview() {
-  OOTDTheme {
-    OutfitPostCard(
-        post =
-            OutfitPost(
-                postUID = "1",
-                name = "Pit",
-                ownerId = "user123",
-                description = "Casual monochrome fit for fall 🍂",
-                outfitURL = "https://via.placeholder.com/600x400"),
-        isBlurred = true)
-  }
 }
