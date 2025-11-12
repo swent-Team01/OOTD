@@ -122,9 +122,13 @@ class OutfitPostCardTest {
   @Test
   fun showsExpiredIndicator_forOldPost() {
     val oldPost =
-        post().copy(timestamp = System.currentTimeMillis() - 26 * 60 * 60 * 1000) // 26h ago
+        post()
+            .copy(
+                timestamp = System.currentTimeMillis() - 26 * 60 * 60 * 1000 // 26 hours ago
+                )
     setCard(oldPost)
 
-    n(OutfitPostCardTestTags.REMAINING_TIME).assertIsDisplayed()
+    n(OutfitPostCardTestTags.EXPIRED_INDICATOR).assertIsDisplayed()
+    n(OutfitPostCardTestTags.REMAINING_TIME).assertDoesNotExist()
   }
 }

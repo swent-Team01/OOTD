@@ -36,6 +36,7 @@ object OutfitPostCardTestTags {
   const val PROFILE_INITIAL = "profileInitial"
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
+  const val EXPIRED_INDICATOR = "expiredIndicator"
 }
 
 @Composable
@@ -92,16 +93,18 @@ private fun ProfileSection(post: OutfitPost) {
           modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
 
       // ---- Remaining lifetime label ----
-      val remainingText =
+      val (remainingText, tag) =
           when {
-            remainingMs <= 0L -> "Expired"
+            remainingMs <= 0L -> {
+              "Expired" to OutfitPostCardTestTags.EXPIRED_INDICATOR
+            }
             remainingMs < 60 * 60 * 1000L -> {
               val mins = (remainingMs / (60 * 1000L)).coerceAtLeast(1)
-              "${mins}m left"
+              "${mins}m left" to OutfitPostCardTestTags.REMAINING_TIME
             }
             else -> {
               val hrs = (remainingMs / (60 * 60 * 1000L)).coerceAtLeast(1)
-              "${hrs}h left"
+              "${hrs}h left" to OutfitPostCardTestTags.REMAINING_TIME
             }
           }
 
@@ -109,7 +112,7 @@ private fun ProfileSection(post: OutfitPost) {
           text = remainingText,
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.tertiary,
-          modifier = Modifier.testTag(OutfitPostCardTestTags.REMAINING_TIME))
+          modifier = Modifier.testTag(tag))
     }
   }
 }
