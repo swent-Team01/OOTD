@@ -36,7 +36,8 @@ fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onAddPostClick: () -> Unit,
     onSearchClick: () -> Unit = {},
-    onNotificationIconClick: () -> Unit = {}
+    onNotificationIconClick: () -> Unit = {},
+    onSeeFitClick: (String) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -103,7 +104,10 @@ fun FeedScreen(
                     .padding(top = paddingValues.calculateTopPadding())
                     .background(MaterialTheme.colorScheme.background)) {
               // Renders the list of posts when user has posted.
-              FeedList(isBlurred = !hasPostedToday, posts = posts)
+              FeedList(
+                  isBlurred = !hasPostedToday,
+                  posts = posts,
+                  onSeeFitClick = { post -> onSeeFitClick(post.postUID) })
 
               if (!hasPostedToday && posts.isEmpty()) {
                 Box(

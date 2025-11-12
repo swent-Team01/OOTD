@@ -7,6 +7,7 @@ import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.utils.CategoryNormalizer
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,13 +62,24 @@ class InventoryViewModel(
         // Fetch all items using the batch method
         val items = itemsRepository.getItemsByIds(itemIds)
 
-        _uiState.value = _uiState.value.copy(items = items, isLoading = false)
+        // Sort items by category using the predefined order
+        val sortedItems = sortItemsByCategory(items)
+
+        _uiState.value = _uiState.value.copy(items = sortedItems, isLoading = false)
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(
                 isLoading = false, errorMessage = "Failed to load inventory: ${e.message}")
       }
     }
+  }
+
+  /**
+   * Sorts items by category in the order: Clothing → Shoes → Accessories → Bags. Items with unknown
+   * categories are placed at the end.
+   */
+  private fun sortItemsByCategory(items: List<Item>): List<Item> {
+    return items.sortedBy { item -> CategoryNormalizer.getSortOrder(item.category) }
   }
 
   /** Clears the error message. */

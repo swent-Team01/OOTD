@@ -1,5 +1,6 @@
 package com.android.ootd.navigation
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -9,7 +10,6 @@ import com.android.ootd.OOTDApp
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
-import com.android.ootd.ui.post.PreviewItemScreen
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
 import junit.framework.TestCase.assertEquals
 import org.junit.Assert
@@ -17,6 +17,14 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Integration tests for navigation callbacks in MainActivity and various screens.
+ *
+ * These tests verify that navigation actions triggered by UI interactions correctly change the
+ * current screen as expected.
+ *
+ * DISCLAIMER: These tests are partially created by AI and verified by humans.
+ */
 class MainActivityCallbacksTest {
 
   @get:Rule val composeRule = createComposeRule()
@@ -33,20 +41,7 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun feedScreen_callbacks_executeNavigationLambdas() {
-    // launchAppAt(Screen.Feed.route)
-
-    composeRule.runOnIdle { navigation.navigateTo(Screen.Feed) }
-
-    composeRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    composeRule.waitForIdle()
-
-    composeRule.runOnIdle { assertEquals(Screen.FitCheck.route, navigation.currentRoute()) }
-  }
-
-  @Test
   fun previewItemScreen_callbacks_executeNavigationLambdas() {
-    // launchAppAt(Screen.Feed.name)
 
     // Navigate along the real user flow: Feed -> FitCheck -> Preview
     composeRule.runOnIdle {
@@ -69,9 +64,17 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun navigate_feedToFitCheckToPreview_shouldWork() {
-    // launchAppAt(Screen.Feed.route)
+  fun feedScreen_callbacks_executeNavigationLambdas() {
+    composeRule.runOnIdle { navigation.navigateTo(Screen.Feed) }
 
+    composeRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
+    composeRule.waitForIdle()
+
+    composeRule.runOnIdle { assertEquals(Screen.FitCheck.route, navigation.currentRoute()) }
+  }
+
+  @Test
+  fun navigate_feedToFitCheckToPreview_shouldWork() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
@@ -84,8 +87,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun navigationActions_addItemToPreview_goBackShouldWork() {
-    // launchAppAt(Screen.Feed.name) // Start from top-level Feed graph
-
     composeRule.runOnIdle {
       // Simulate real user flow: Feed → FitCheck → PreviewItem → AddItem
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
@@ -105,8 +106,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun deepStack_feedToPreviewToAddToEdit_maintainsHistory() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle {
       // Build deep stack
       navigation.navigateTo(Screen.Feed)
@@ -134,8 +133,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun deepStack_multipleAddOperations_maintainsCorrectStack() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
@@ -157,8 +154,6 @@ class MainActivityCallbacksTest {
 
   @Test
   fun statePreservation_navigationDoesNotClearStack() {
-    // launchAppAt(Screen.Feed.route)
-
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
@@ -476,7 +471,6 @@ class MainActivityCallbacksTest {
 
       // Back button should not return to previous screens
       navigation.goBack()
-      // Should stay at Authentication or go to Splash
     }
   }
 
@@ -543,8 +537,93 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.Account.route, navigation.currentRoute())
       navigation.goBack()
 
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "test_id"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+      navigation.goBack()
+
       // Should be back at Feed
       assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mainActivityCode_seeFitScreen_extractsPostUuidFromNavArguments() {
+    composeRule.runOnIdle {
+      val testPostUuid = "test-post-uuid-123"
+
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = testPostUuid))
+
+      // Verify we successfully navigated to SeeFitScreen
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+    }
+
+    // Verify the screen is displayed (meaning postUuid was extracted successfully)
+    composeRule.waitUntil(timeoutMillis = 5_000) {
+      composeRule.onAllNodesWithTag("seeFitScreen").fetchSemanticsNodes().isNotEmpty()
+    }
+    composeRule.onNodeWithTag("seeFitScreen").assertIsDisplayed()
+  }
+
+  @Test
+  fun mainActivityCode_seeFitScreen_goBackCallback_executesCorrectly() {
+    composeRule.runOnIdle {
+      // Start from Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to SeeFitScreen (tests postUuid argument extraction)
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "some-post-id"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+
+      navigation.goBack()
+
+      // Should return to Feed
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun seeFitScreen_multipleNavigations_maintainsNavigationFlow() {
+    val postUuids = listOf("post-A", "post-B", "post-C", "post-xyz-999")
+
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+
+      postUuids.forEach { postUuid ->
+        // Navigate to SeeFitScreen with different postUuid
+        // Tests: navBackStackEntry.arguments?.getString("postUuid")
+        navigation.navigateTo(Screen.SeeFitScreen(postUuid = postUuid))
+        assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+
+        // Go back to Feed
+        navigation.goBack()
+        assertEquals(Screen.Feed.route, navigation.currentRoute())
+      }
+    }
+  }
+
+  @Test
+  fun mainActivityCode_seeFitScreen_fromDifferentOrigins_argumentExtractionWorks() {
+    composeRule.runOnIdle {
+      // Test navigation from Feed
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-feed"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Test navigation from Search
+      navigation.navigateTo(Screen.SearchScreen)
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-search"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Test navigation from Account
+      navigation.navigateTo(Screen.Account)
+      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-account"))
+      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
+      navigation.goBack()
+
+      assertEquals(Screen.Account.route, navigation.currentRoute())
     }
   }
 }

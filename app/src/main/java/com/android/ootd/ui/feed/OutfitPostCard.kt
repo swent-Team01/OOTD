@@ -98,7 +98,11 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean) {
 }
 
 @Composable
-private fun DescriptionAndButton(post: OutfitPost, isBlurred: Boolean, onSeeFitClick: () -> Unit) {
+private fun DescriptionAndButton(
+    post: OutfitPost,
+    isBlurred: Boolean,
+    onSeeFitClick: (String) -> Unit
+) {
   var expanded by remember { mutableStateOf(false) }
 
   Row(
@@ -125,7 +129,7 @@ private fun DescriptionAndButton(post: OutfitPost, isBlurred: Boolean, onSeeFitC
                     .clickable { expanded = !expanded })
 
         Button(
-            onClick = onSeeFitClick,
+            onClick = { onSeeFitClick(post.postUID) },
             enabled = !isBlurred,
             shape = RoundedCornerShape(50),
             colors =
@@ -143,7 +147,7 @@ fun OutfitPostCard(
     post: OutfitPost,
     isBlurred: Boolean,
     modifier: Modifier = Modifier,
-    onSeeFitClick: () -> Unit = {}
+    onSeeFitClick: (String) -> Unit = {}
 ) {
   Box(
       modifier =

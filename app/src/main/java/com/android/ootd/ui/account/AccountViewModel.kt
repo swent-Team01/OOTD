@@ -4,8 +4,10 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
+import android.Manifest
 import android.util.Log
 import androidx.annotation.Keep
+import androidx.annotation.RequiresPermission
 import androidx.core.net.toUri
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -15,8 +17,14 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.LocationRepositoryProvider
+import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.android.ootd.utils.LocationUtils
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,11 +50,17 @@ data class AccountViewState(
     val googleAccountName: String = "",
     val profilePicture: String = "",
     val dateOfBirth: String = "",
+    val location: Location = emptyLocation,
+    val locationQuery: String = "",
+    val locationSuggestions: List<Location> = emptyList(),
+    val isLoadingLocations: Boolean = false,
     val errorMsg: String? = null,
     val signedOut: Boolean = false,
     val isLoading: Boolean = false,
     val isPrivate: Boolean = false,
     val showPrivacyHelp: Boolean = false,
+    val locationFieldTouched: Boolean = false,
+    val locationFieldLeft: Boolean = false,
 )
 
 /**
@@ -64,6 +78,7 @@ class AccountViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
+    private val locationRepository: LocationRepository = LocationRepositoryProvider.repository,
     private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
     // Uploader returns the download URL. Parameters: userId, localPath.
     private val uploader: suspend (String, String, FirebaseStorage) -> String = { uid, local, st ->
@@ -125,6 +140,8 @@ class AccountViewModel(
             isPrivate = currentAccount.isPrivate,
             profilePicture = currentAccount.profilePicture,
             dateOfBirth = currentAccount.birthday,
+            location = currentAccount.location,
+            locationQuery = currentAccount.location.name,
             errorMsg = null,
             isLoading = false)
       }
@@ -199,15 +216,22 @@ class AccountViewModel(
    * @param newUsername the new username to set, blank by default
    * @param newDate the new date to set, blank by default
    * @param profilePicture the new profile picture to set, blank by default
+   * @param newLocation the new location to set, emptyLocation by default
    */
-  fun editUser(newUsername: String = "", newDate: String = "", profilePicture: String = "") {
+  fun editUser(
+      newUsername: String = "",
+      newDate: String = "",
+      profilePicture: String = "",
+      newLocation: Location = emptyLocation
+  ) {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoading = true) }
 
       try {
         val currentUserId = accountService.currentUserId
 
-        accountRepository.editAccount(currentUserId, newUsername, newDate, profilePicture)
+        accountRepository.editAccount(
+            currentUserId, newUsername, newDate, profilePicture, newLocation)
         userRepository.editUser(currentUserId, newUsername, profilePicture)
         // Update UI state with new values
         val updatedState = _uiState.value.copy(isLoading = false, errorMsg = null)
@@ -215,7 +239,8 @@ class AccountViewModel(
           updatedState.copy(
               username = newUsername.ifBlank { it.username },
               dateOfBirth = newDate.ifBlank { it.dateOfBirth },
-              profilePicture = profilePicture.ifBlank { it.profilePicture })
+              profilePicture = profilePicture.ifBlank { it.profilePicture },
+              location = if (isValidLocation(newLocation)) newLocation else it.location)
         }
       } catch (e: Exception) {
         _uiState.update {
@@ -288,5 +313,108 @@ class AccountViewModel(
 
   fun onPrivacyHelpDismiss() {
     _uiState.update { it.copy(showPrivacyHelp = false) }
+  }
+
+  // ----------------- Location-related helpers -----------------
+  /**
+   * Selects a location and updates the UI state.
+   *
+   * @param location The chosen Location; also sets the location query to the location's name.
+   */
+  fun setLocation(location: Location) {
+    _uiState.update {
+      it.copy(
+          location = location,
+          locationQuery = location.name,
+          locationFieldTouched = false,
+          locationFieldLeft = false)
+    }
+    // Automatically save the location to the account
+    editUser(newLocation = location)
+  }
+
+  /**
+   * Updates the location search query and fetches suggestions.
+   *
+   * If the query is non-empty a background search is started and the resulting suggestions are
+   * stored in the UI state; otherwise suggestions are cleared.
+   *
+   * @param query The new location query string.
+   */
+  fun setLocationQuery(query: String) {
+    _uiState.update { it.copy(locationQuery = query, locationFieldTouched = true) }
+
+    if (query.isNotEmpty()) {
+      _uiState.update { it.copy(isLoadingLocations = true) }
+      viewModelScope.launch {
+        try {
+          val results = locationRepository.search(query)
+          _uiState.update { it.copy(locationSuggestions = results, isLoadingLocations = false) }
+        } catch (e: Exception) {
+          Log.e("AccountViewModel", "Error fetching location suggestions", e)
+          _uiState.update { it.copy(locationSuggestions = emptyList(), isLoadingLocations = false) }
+        }
+      }
+    } else {
+      _uiState.update {
+        it.copy(
+            location = emptyLocation, locationSuggestions = emptyList(), isLoadingLocations = false)
+      }
+    }
+  }
+
+  /** Clears the location suggestions from the UI state. */
+  fun clearLocationSuggestions() {
+    _uiState.update { it.copy(locationSuggestions = emptyList()) }
+  }
+
+  /** Called when the location field focus changes. */
+  fun onLocationFieldFocusChanged(isFocused: Boolean) {
+    if (!isFocused && _uiState.value.locationFieldTouched) {
+      _uiState.update { it.copy(locationFieldLeft = true) }
+    }
+  }
+
+  /**
+   * Called when location permission is granted by the user. Initiates GPS location retrieval and
+   * updates the selected location.
+   */
+  @Suppress("MissingPermission") // Permission is checked by the caller (permission launcher)
+  fun onLocationPermissionGranted() {
+    Log.d("AccountViewModel", "Location permission granted")
+    setGPSLocation()
+  }
+
+  /**
+   * Retrieves the current GPS location and sets it as the selected location.
+   *
+   * Uses FusedLocationProviderClient to get the device's current location with balanced power
+   * accuracy. Handles both success and failure cases with appropriate user feedback.
+   */
+  @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+  private fun setGPSLocation() {
+    _uiState.update { it.copy(isLoadingLocations = true) }
+
+    LocationUtils.getCurrentGPSLocation(
+        onSuccess = { location ->
+          setLocation(location)
+          _uiState.update { it.copy(isLoadingLocations = false) }
+        },
+        onFailure = { errorMessage ->
+          _uiState.update { it.copy(errorMsg = errorMessage, isLoadingLocations = false) }
+        })
+  }
+
+  /**
+   * Called when location permission is denied by the user. Shows an error message to inform the
+   * user they need to search manually.
+   */
+  fun onLocationPermissionDenied() {
+    Log.d("AccountViewModel", "Location permission denied")
+    _uiState.update {
+      it.copy(
+          errorMsg =
+              "Location permission denied. Please search for your location manually if you want to add your location.")
+    }
   }
 }
