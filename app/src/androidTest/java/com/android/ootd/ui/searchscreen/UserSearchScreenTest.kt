@@ -51,9 +51,6 @@ class UserSearchScreenTest : FirestoreTest() {
               onAddPostClick = { /* TODO: handle add post */ }, // this will go to AddItemScreen
               onNotificationIconClick = { /* TODO: show user profile page */ })
         }
-        composable(Screen.SearchScreen.route) {
-          UserSearchScreen(onBack = { navigationActions.goBack() })
-        }
       }
     }
   }
@@ -66,8 +63,7 @@ class UserSearchScreenTest : FirestoreTest() {
               userRepository = userRepository,
               accountRepository = accountRepository,
               notificationRepository = notificationsRepository,
-              overrideUser = false),
-          onBack = {})
+              overrideUser = false))
     }
     val secondUsername = UserRepositoryInMemory().nameList[1]
     val lastUsername = UserRepositoryInMemory().nameList[4]
@@ -160,7 +156,7 @@ class UserSearchScreenTest : FirestoreTest() {
             accountRepository = AccountRepositoryInMemory(),
             overrideUser = false)
 
-    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
+    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel) }
     val secondUsername = UserRepositoryInMemory().nameList[1]
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
@@ -212,7 +208,7 @@ class UserSearchScreenTest : FirestoreTest() {
             accountRepository = accountRepositoryInMemory,
             overrideUser = false)
 
-    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel, onBack = {}) }
+    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel) }
     val secondUsername = userRepositoryInMemory.nameList[1]
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)

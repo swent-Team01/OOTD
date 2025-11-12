@@ -381,7 +381,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
   @Test
   fun previewItemScreen_Preview_rendersCoreElements() {
-    composeTestRule.setContent { PreviewItemScreen_Preview() }
+    composeTestRule.setContent { PreviewItemScreenPreview() }
 
     // Verify top bar and title exist
     n(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
