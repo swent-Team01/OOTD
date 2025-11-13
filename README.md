@@ -17,7 +17,7 @@ interface from the business logic and data handling. This architecture enhances 
 testability, and scalability. Below is a brief diagram of the architecture, more details can be 
 found in our project wiki. The full Excalidraw file is available in the diagrams folder of the repository.
 
-![App Architecture](diagrams/App_Arch_M1.png)
+![App Architecture](diagrams/App_Arch_M2.png)
 ## Installation
 
 ### Clone the Repository

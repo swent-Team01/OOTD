@@ -1,0 +1,134 @@
+flowchart LR
+ %% UI LAYER
+subgraph UI["UI Layer"]
+    UI_Map@{ label: "**Map**<br>LocationSelection" }
+    UI_Auth@{ label: "**Authentication**<br>SignInScreen<br>RegisterScreen<br>ConsentScreen" }
+    UI_Account@{ label: "**AccountScreen**<br>Account<br>EditAccountScreen" }
+    UI_Interactions@{ label: "**Interactions**<br>UserSearch<br>NotificationsScreen" }
+    UI_Posts@{ label: "**Posts**<br>Feedscreen<br>FitCheckScreen<br>AddItemsScreen<br>PreviewItemScreen<br>PostViewScreen" }
+    UI_Items@{ label: "**Items**<br>InventoryScreen<br>SeeFitScreen<br>EditScreen<br>SelectInventoryItemScreen" }
+    UI_Camera@{ label: "**Camera**<br>CameraScreen" }
+end
+
+ %% DOMAIN / VM LAYER 
+ subgraph VM["Domain Layer"]
+        VM_Map@{ label: "MapVM" }
+        VM_Auth@{ label: "SignInVM<br>RegisterVM<br>BetaConsentVM" }
+        VM_Account@{ label: "AccountVM<br>EditAccountVM" }
+        VM_Interactions@{ label: "UserSearchVM<br>NotificationsVM" }
+        VM_Posts@{ label: "FeedVM<br>FitCheckVM<br>AddItemsVM<br>OutfitPreviewVM<br>PostViewVM" }
+        VM_Items@{ label: "InventoryVM<br>SeeFitVM<br>EditScreenVM<br>SelectInventoryItemVM" }
+        VM_Camera@{ label: "CameraVM" }
+  end
+
+ %% UNIFIED DATA LAYER 
+ subgraph DATA_LAYER["Data Layer"]
+        %% Repositories
+        R_Map["LocationRepository"]
+        R_Auth["AccountServiceFirebase"]
+        R_Account["AccountRepositoryFirestore"]
+        R_User["UserRepositoryFirestore"]
+        R_Post["OutfitPostRepositoryFirestore"]
+        R_Item["ItemsRepositoryFirestore"]
+        R_Feed["FeedRepositoryFirestore"]
+        R_Notif["NotificationRepositoryFirestore"]
+        R_Consent["ConsentRepositoryFirestore"]
+        R_Camera["CameraRepositoryImplementation"]
+
+        %% Data Objects (expanded)
+        M_Location@{ label: "<b>Location</b><br>latitude: Double<br>longitude: Double<br>name: String" }
+
+        M_Account@{ label: "<b>Account</b><br>uid: String<br>ownerId: String<br>username: String<br>birthday: String<br>googleAccountEmail: String<br>profilePicture: String<br>friendUids: List&lt;String&gt;<br>isPrivate: Boolean<br>location: Location<br>itemsUids: List&lt;String&gt;" }
+
+        M_User@{ label: "<b>User</b><br>uid: String<br>ownerId: String<br>username: String<br>profilePicture: String" }
+
+        M_Post@{ label: "<b>OutfitPost</b><br>postUID: String<br>name: String<br>ownerId: String<br>userProfilePicURL: String<br>outfitURL: String<br>description: String<br>itemsID: List&lt;String&gt;<br>timestamp: Long" }
+
+        M_Item@{ label: "<b>Item</b><br>itemUuid: String<br>postUuids: List&lt;String&gt;<br>image: ImageData<br>category: String<br>type: String<br>brand: String<br>price: Double<br>material: List&lt;Material&gt;<br>link: String<br>ownerId: String" }
+
+        M_ImageUploader@{ label: "<b>ImageUploader</b><br>imageId: String<br>imageUrl: String" }
+
+        M_Notification@{ label: "<b>Notification</b><br>uid: String<br>senderId: String<br>receiverId: String<br>type: String<br>content: String" }
+
+        M_Consent@{ label: "<b>Consent</b><br>consentUuid: String<br>userId: String<br>timestamp: Long<br>version: String" }
+
+        %% External Data Sources
+        D_Maps["Google Maps API"]
+        D_Auth["Firebase Auth"]
+        D_Storage["Firebase Cloud Storage"]
+        D_Firestore["Firebase Firestore"]
+        D_Camera["CameraX API"]
+  end
+
+ %% Connections with action labels
+
+ %% UI → VM
+ UI_Map -- "enable location" --> VM_Map
+ UI_Auth -- "SignIn/SignOut" --> VM_Auth
+ UI_Account -- "view details" --> VM_Account
+ UI_Interactions -- "search /befriend users" --> VM_Interactions
+ UI_Posts -- "view/set post details" --> VM_Posts
+ UI_Items -- "view/add/edit items" --> VM_Items
+ UI_Camera -- "capture photo" --> VM_Camera
+
+ %% VM → Repository
+ VM_Map -- "fetch coordinates" --> R_Map
+
+ VM_Auth -- "authenticate user" --> R_Auth
+ VM_Auth -- "use location data" --> R_Map
+ VM_Auth -- "save consent" --> R_Consent
+ VM_Auth -- "manage account" --> R_Account
+
+ VM_Account -- "fetch account location" --> R_Map
+ VM_Account -- "get account detail" --> R_Account
+ VM_Account -- "get user details" --> R_User
+ VM_Interactions -- "get users" --> R_User
+ VM_Interactions -- "read/write notifs" --> R_Notif
+
+ VM_Posts -- "add posts details" --> R_Post
+ VM_Posts -- "fetch posts details" --> R_Feed
+ VM_Posts -- "attach items" --> R_Item
+
+ VM_Items -- "fetch post items" --> R_Feed
+ VM_Items -- "fetch items details" --> R_Item
+ VM_Items -- "save items details" --> R_Item
+
+ VM_Camera -- "save image" --> R_Camera
+
+ %% Repository → Data Models
+ R_Map --> M_Location
+ R_Auth --> M_Account
+ R_Account --> M_Account
+ R_User --> M_User
+ R_Post --> M_Post
+ R_Item --> M_Item
+ R_Item --> M_ImageUploader
+ R_Feed --> M_Post
+ R_Notif --> M_Notification
+ R_Consent --> M_Consent
+ R_Camera --> D_Camera
+
+ %% Data Models → External Sources
+ M_Location --> D_Maps
+ M_Account --> D_Auth
+ M_Account --> D_Firestore
+ M_User --> D_Firestore
+ M_Post --> D_Firestore
+ M_Item --> D_Firestore
+ M_ImageUploader --> D_Storage
+ M_Notification --> D_Firestore
+ M_Consent --> D_Firestore
+
+ %% STYLING 
+ classDef ui fill:#E8F0FE,stroke:#1E40AF,stroke-width:1.5px,color:#1E293B,font-size:12px,font-weight:600,rx:6,ry:6;
+ classDef vm fill:#DCFCE7,stroke:#166534,stroke-width:1.5px,color:#1B4332,font-size:12px,font-weight:600,rx:6,ry:6;
+ classDef repo fill:#FEF9C3,stroke:#92400E,stroke-width:1.5px,color:#2D3748,font-size:12px,font-weight:600,rx:6,ry:6;
+ classDef model fill:#DDD6FE,stroke:#6D28D9,stroke-width:1.5px,color:#3B0764,font-size:11px,font-weight:500,rx:6,ry:6;
+ classDef external fill:#FEE2E2,stroke:#B91C1C,stroke-width:1.5px,color:#7F1D1D,font-size:12px,font-weight:600,rx:6,ry:6;
+
+ %% CLASS ASSIGNMENTS
+ class UI_Map,UI_Auth,UI_Account,UI_Interactions,UI_Posts,UI_Items,UI_Camera ui;
+ class VM_Map,VM_Auth,VM_Account,VM_Interactions,VM_Posts,VM_Items,VM_Camera vm;
+ class R_Map,R_Auth,R_Account,R_User,R_Post,R_Item,R_Feed,R_Notif,R_Consent,R_Camera repo;
+ class M_Location,M_Account,M_User,M_Post,M_Item,M_ImageUploader,M_Notification,M_Consent model;
+ class D_Maps,D_Auth,D_Storage,D_Firestore,D_Camera external;
