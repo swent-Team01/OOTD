@@ -51,7 +51,8 @@ fun FitCheckScreen(
     fitCheckViewModel: FitCheckViewModel = viewModel(),
     postUuid: String = "", // passed from previous screen if editing existing post
     onNextClick: (String, String) -> Unit = { _, _ -> },
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    overridePhoto: Boolean = false
 ) {
   val uiState by fitCheckViewModel.uiState.collectAsState()
 
@@ -83,7 +84,7 @@ fun FitCheckScreen(
       onTakePhoto = { showCamera = true },
       onDescriptionChange = { fitCheckViewModel.setDescription(it) },
       onClearError = { fitCheckViewModel.clearError() },
-  )
+      overridePhoto = overridePhoto)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +97,7 @@ private fun FitCheckScreenContent(
     onTakePhoto: () -> Unit = {},
     onDescriptionChange: (String) -> Unit = {},
     onClearError: () -> Unit = {},
+    overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
 
@@ -126,7 +128,7 @@ private fun FitCheckScreenContent(
       bottomBar = {
         Button(
             onClick = {
-              if (uiState.isPhotoValid) {
+              if (overridePhoto || uiState.isPhotoValid) {
                 onClearError()
                 onNextClick(uiState.image.toString(), uiState.description)
               } else {
