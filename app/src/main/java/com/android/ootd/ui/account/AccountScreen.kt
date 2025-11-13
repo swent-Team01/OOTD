@@ -1,6 +1,7 @@
 package com.android.ootd.ui.account
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,11 +32,14 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -69,7 +73,11 @@ fun AccountPage(
     }
   }
 
-  AccountPageContent(uiState, onEditAccount, onPostClick)
+  if (uiState.isLoading) {
+    LoadingOverlay()
+  } else {
+    AccountPageContent(uiState, onEditAccount, onPostClick)
+  }
 }
 
 @Composable
@@ -127,10 +135,6 @@ fun AccountPageContent(
 
         DisplayUsersPosts(posts, onPostClick)
       }
-
-  if (uiState.isLoading) {
-    LoadingOverlay()
-  }
 }
 
 @Composable
@@ -187,12 +191,20 @@ fun DisplayUsersPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
 
 @Composable
 private fun LoadingOverlay() {
-  val colors = colorScheme
   Box(
-      modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
+      modifier =
+          Modifier.fillMaxSize()
+              .background(colorScheme.background.copy(alpha = 0.95f))
+              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
       contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(
-            modifier = Modifier.testTag(AccountPageTestTags.LOADING), color = colors.primary)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Image(
+              painter = painterResource(id = R.drawable.hanger),
+              contentDescription = "Loading feed",
+              modifier = Modifier.size(72.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+          CircularProgressIndicator(color = colorScheme.primary)
+        }
       }
 }
 
