@@ -83,6 +83,14 @@ fun SeeItemDetailsDialog(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_TYPE))
 
+                Text(
+                    text = item.brand ?: "Item Brand",
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_BRAND))
+
                 item.price?.let {
                   Text(
                       text = "CHF ${String.format("%.2f", it)}",
