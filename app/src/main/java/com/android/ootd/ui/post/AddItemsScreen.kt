@@ -89,7 +89,9 @@ object AddItemScreenTestTags {
 fun AddItemsScreen(
     postUuid: String,
     modifier: Modifier = Modifier,
-    addItemsViewModel: AddItemsViewModel = viewModel(),
+    overridePhoto: Boolean = false,
+    addItemsViewModel: AddItemsViewModel =
+        viewModel(factory = AddItemsViewModelFactory(overridePhoto = overridePhoto)),
     maxImageSize: Dp = 250.dp,
     minImageSize: Dp = 100.dp,
     onNextScreen: () -> Unit = {},
@@ -188,7 +190,7 @@ fun AddItemsScreen(
                 onMaterialChange = addItemsViewModel::setMaterial,
 
                 // add
-                isAddEnabled = itemsUIState.isAddingValid,
+                isAddEnabled = overridePhoto || itemsUIState.isAddingValid,
                 onAddClick = addItemsViewModel::onAddItemClick,
             )
 
