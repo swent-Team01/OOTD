@@ -189,6 +189,7 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertIsDisplayed()
   }
 
   @Test
