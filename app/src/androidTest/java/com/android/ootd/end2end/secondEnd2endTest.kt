@@ -1,5 +1,6 @@
 package com.android.ootd.end2end
 
+import android.Manifest
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.notifications.Notification
@@ -17,24 +19,30 @@ import com.android.ootd.model.user.User
 import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
 import com.android.ootd.ui.Inventory.InventoryScreenTestTags
+import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
-import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
+import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
+import com.android.ootd.ui.post.PreviewItemScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.android.ootd.utils.BaseEnd2EndTest
+import com.android.ootd.utils.InMemoryItem.ensureVisible
+import com.android.ootd.utils.clickWithWait
 import com.android.ootd.utils.verifyFeedScreenAppears
 import com.android.ootd.utils.verifyInventoryScreenAppears
 import com.android.ootd.utils.verifyRegisterScreenAppears
 import com.android.ootd.utils.verifySignInScreenAppears
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -52,6 +60,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SecondEnd2EndTest : BaseEnd2EndTest() {
 
+  @get:Rule
+  val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
+
   /**
    * Launches the full OOTD application and waits for the login screen to appear.
    *
@@ -67,7 +78,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   fun launchFullAppWaitForLogin() {
     // STEP 1: Launch the full app
     composeTestRule.setContent {
-      OOTDApp(context = context, credentialManager = fakeCredentialManager)
+      OOTDApp(context = context, credentialManager = fakeCredentialManager, overridePhoto = true)
     }
 
     composeTestRule.waitForIdle()
@@ -280,6 +291,37 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     composeTestRule.waitForIdle()
   }
 
+  @OptIn(ExperimentalPermissionsApi::class)
+  fun addPostWithOneItem() {
+
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+
+    composeTestRule.waitForIdle()
+
+    // Dialog visible with both options
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).assertIsDisplayed()
+    clickWithWait(composeTestRule, FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
+        .performTextInput("Sample description")
+
+    clickWithWait(composeTestRule, FitCheckScreenTestTags.NEXT_BUTTON)
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
+
+    clickWithWait(composeTestRule, PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
+    clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
+
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
+    composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
+
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
+    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
+    clickWithWait(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
+
+    verifyFeedScreenAppears(composeTestRule)
+  }
+
   /**
    * Navigates from the Feed screen to the Search screen.
    *
@@ -290,8 +332,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    */
   fun navigateToSearchScreen() {
     // STEP 9: Click on search icon to navigate to search screen
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_SEARCH_SCREEN).performClick()
-    composeTestRule.waitForIdle()
+    clickWithWait(composeTestRule, NavigationTestTags.SEARCH_TAB)
 
     // Wait for Search screen to appear
     composeTestRule.waitUntil(timeoutMillis = 5000) {
@@ -342,116 +383,9 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     composeTestRule.waitForIdle()
 
     // STEP 12: Wait for the profile card to appear and click Follow button
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    clickWithWait(composeTestRule, UserProfileCardTestTags.USER_FOLLOW_BUTTON)
 
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
     composeTestRule.waitForIdle()
-  }
-
-  /**
-   * Navigates back from the Search screen to the Feed screen.
-   *
-   * This function:
-   * 1. Clicks the back button on the Search screen
-   * 2. Waits for the Feed screen to appear
-   * 3. Verifies the Feed screen is displayed
-   */
-  fun navigateBackToFeedFromSearch() {
-    // STEP 13: Click back button to return to Feed screen
-    composeTestRule.onNodeWithTag(SearchScreenTestTags.GO_BACK_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Wait for Feed screen to appear again
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're back on the Feed screen
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertIsDisplayed()
-  }
-
-  /**
-   * Navigates from the Feed screen to the FitCheck screen to start creating a new outfit post.
-   *
-   * This function:
-   * 1. Waits for the "Add Post" floating action button to appear
-   * 2. Verifies the button is displayed
-   * 3. Clicks the button to start posting a new outfit
-   * 4. Waits for the FitCheck screen to appear
-   * 5. Verifies the FitCheck screen and "Add Photo" button are displayed
-   *
-   * Note: The photo selection functionality cannot be fully tested in automated UI tests because it
-   * launches external Android activities (camera/gallery) that break the Compose hierarchy.
-   */
-  fun navigateToFitCheckScreen() {
-    // STEP 14: Click "Do a Fit Check" button to start posting a new outfit
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.ADD_POST_FAB)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    composeTestRule.waitForIdle()
-
-    // Wait for FitCheck screen to appear
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(FitCheckScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're on the FitCheck screen
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.SCREEN).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    // STEP 15: Verify the "Add Fit Photo" button is available
-    // Note: We cannot actually take a photo with the camera in an automated test because:
-    // - Clicking "Take Photo" launches the native Android camera app as a separate activity
-    // - This causes the Compose hierarchy to be lost (app goes to background)
-    // - ComposeTestRule can only interact with Compose UI in the foreground
-  }
-
-  /**
-   * Navigates back from the FitCheck screen to the Feed screen.
-   *
-   * This function:
-   * 1. Clicks the back button on the FitCheck screen
-   * 2. Waits for the Feed screen to appear
-   * 3. Verifies the Feed screen is displayed
-   *
-   * This is used when the user decides not to complete the outfit post.
-   */
-  fun navigateBackToFeedFromFitCheck() {
-    // STEP 17: Navigate back to Feed screen from FitCheck
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.BACK_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Wait for Feed screen to appear again
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're back on the Feed screen
-    verifyFeedScreenAppears(composeTestRule)
   }
 
   /**
@@ -477,23 +411,13 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
                   content = "Wants to follow you"))
         }
 
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(
-              FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Click on the notifications icon
-    composeTestRule
-        .onNodeWithTag(FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN, useUnmergedTree = true)
-        .performClick()
-    composeTestRule.waitForIdle()
+    clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
+    clickWithWait(composeTestRule, FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
 
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule.onNodeWithTag(NotificationsScreenTestTags.NOTIFICATIONS_SCREEN).isDisplayed()
     }
+
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule
           .onAllNodesWithTag(NotificationsScreenTestTags.NOTIFICATION_ITEM)
@@ -533,49 +457,23 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   }
 
   /**
-   * Navigates to the Account page using the bottom navigation bar.
-   *
-   * This function:
-   * 1. Finds the Account tab in the navigation bar
-   * 2. Verifies it is displayed
-   * 3. Clicks on it to navigate to the Account screen
-   * 4. Scrolls to and verifies the Sign Out button is visible
-   * 5. Waits for the UI to stabilize
-   */
-  fun navigateToAccountPage() {
-    // STEP 22: Go to account page
-
-    composeTestRule
-        .onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account))
-        .assertIsDisplayed()
-        .performClick()
-
-    // Scroll to Sign Out button
-    composeTestRule
-        .onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON)
-        .performScrollTo()
-        .assertIsDisplayed()
-
-    composeTestRule.waitForIdle()
-  }
-
-  /**
    * Signs out the user and verifies navigation back to the Sign-In screen.
    *
    * This function:
-   * 1. Scrolls to and clicks the Sign Out button
-   * 2. Waits for the UI to stabilize
-   * 3. Waits for navigation back to the Authentication screen
-   * 4. Verifies the Sign-In screen is displayed
+   * 1. Goes to account page
+   * 2. Clicks the Sign Out button
+   * 3. Waits for the UI to stabilize
+   * 4. Waits for navigation back to the Authentication screen
+   * 5. Verifies the Sign-In screen is displayed
    *
    * After sign-out, the user should be returned to the initial authentication state, requiring them
    * to sign in again to access the app.
    */
   fun signOutAndVerifyAuthScreen() {
     // STEP 23-24: User clicks signout Button
-    composeTestRule.onNodeWithTag(UiTestTags.TAG_SIGNOUT_BUTTON).performScrollTo().performClick()
-
-    composeTestRule.waitForIdle()
+    clickWithWait(composeTestRule, NavigationTestTags.ACCOUNT_TAB)
+    clickWithWait(composeTestRule, AccountPageTestTags.SETTINGS_BUTTON)
+    clickWithWait(composeTestRule, UiTestTags.TAG_SIGNOUT_BUTTON)
 
     // Wait for navigation back to Authentication screen after logout
     composeTestRule.waitUntil(timeoutMillis = 10000) {
@@ -656,39 +554,25 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
       // Steps 7-8: Save registration and navigate to feed
       saveRegistrationAndNavigateToFeed()
 
-      // Step 9: Navigate to search screen
+      // Step 9: Add post with one item attached to it and check it is displayed in feed
+      addPostWithOneItem()
+
+      // Step 10: Navigate to search screen
       navigateToSearchScreen()
 
-      // Step 10-12: Searches for Greg and follows him
+      // Step 11-12: Searches for Greg and follows him
       searchAndFollowUser()
 
-      // Step 13: Navigate back to feed from search
-      navigateBackToFeedFromSearch()
-
-      // Steps 14-15: Navigate to FitCheck screen and verify photo button
-      navigateToFitCheckScreen()
-
-      // STEP 16: Skip photo selection for testing purposes
-      // In a real-world scenario, the user would select a photo here
-      // For automated testing, we'll proceed without it
-      // Since the Next button requires a valid photo, we cannot proceed further
-
-      // Step 17: Navigate back to feed from FitCheck
-      navigateBackToFeedFromFitCheck()
-
-      // Step 18: Open notifications screen
+      // Step 13: Open notifications screen
       openNotificationsScreen()
 
-      // Step 19: Accept follow notification
+      // Step 14: Accept follow notification
       acceptFollowNotification()
 
-      // Step 20-21: Navigate to inventory and check add item button exists
+      // Step 15-16: Navigate to inventory and check add item button exists
       navigateToInventoryAndCheckAddItemButton()
 
-      // Step 22: Navigate to account page
-      navigateToAccountPage()
-
-      // Step 23-24: Sign out and verify auth screen
+      // Step 17-18: Sign out and verify auth screen
       signOutAndVerifyAuthScreen()
     }
   }

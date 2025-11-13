@@ -71,7 +71,6 @@ open class BaseEnd2EndTest {
     NotificationRepositoryProvider.repository = mockNotificationRepository
     LocationRepositoryProvider.repository = mockLocationRepository
     ConsentRepositoryProvider.repository = mockConsentRepository
-
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
     testUserId = "test_user_$timestamp"

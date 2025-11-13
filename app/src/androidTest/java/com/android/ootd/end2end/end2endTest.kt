@@ -17,6 +17,7 @@ import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
+import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.post.FitCheckScreenTestTags
