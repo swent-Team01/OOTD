@@ -36,4 +36,12 @@ interface FeedRepository {
 
   /** Generates a unique post ID. */
   fun getNewPostId(): String
+
+  /**
+   * Retrieves a specific post by its unique identifier.
+   *
+   * @param postUuid The unique identifier of the post to retrieve.
+   * @return The outfit post with the specified identifier, or null if not found.
+   */
+  suspend fun getPostById(postUuid: String): OutfitPost?
 }

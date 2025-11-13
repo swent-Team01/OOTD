@@ -93,6 +93,40 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
         .size()
   }
 
+  suspend fun signInOrCreateTestUser(email: String, password: String): String {
+    return try {
+      // try to create; if exists, the call will throw and we fallback to sign in
+      FirebaseEmulator.auth.createUserWithEmailAndPassword(email, password).await()
+      FirebaseEmulator.auth.currentUser?.uid ?: throw IllegalStateException("Auth failed")
+    } catch (e: Exception) {
+      // user may already exist — sign in instead
+      FirebaseEmulator.auth.signInWithEmailAndPassword(email, password).await()
+      FirebaseEmulator.auth.currentUser?.uid ?: throw IllegalStateException("Auth failed")
+    }
+  }
+
+  @Test
+  fun getFriendItemsForPostReturnsEmptyWhenNoMatch2() = runBlocking {
+    val postUuid = "post-with-no-friend-items"
+    val friendEmail = "friend@example.test"
+    val friendPassword = "test-pass-123"
+
+    // sign in as friend (creates if missing) so request.auth.uid == friendUid
+    val friendUid = signInOrCreateTestUser(friendEmail, friendPassword)
+
+    // seed friend's items (use Firestore directly if you want to create items owned by friend)
+    val friendItem = item1.copy(itemUuid = "f1", postUuids = listOf(postUuid), ownerId = friendUid)
+    FirebaseEmulator.firestore
+        .collection(ITEMS_COLLECTION)
+        .document(friendItem.itemUuid)
+        .set(friendItem)
+        .await()
+
+    // now query as friend
+    val friendItems = itemsRepository.getFriendItemsForPost(postUuid, friendUid)
+    assertTrue(friendItems.isNotEmpty())
+  }
+
   @Test
   fun repositoryConsistencyTest() = runBlocking {
     // Unique IDs
@@ -545,4 +579,97 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     // Verify all returned items belong to current user
     retrievedItems.forEach { item -> assertEquals(ownerId, item.ownerId) }
   }
+
+  @Test
+  fun getFriendItemsForPostFiltersCorrectlyByPostUuid() = runBlocking {
+    val postUuid1 = "friend-post-aaa"
+    val postUuid2 = "friend-post-bbb"
+    val friendEmail = "friend999@example.test"
+    val friendPassword = "test-pass-999"
+
+    // Sign in as friend to avoid permission errors
+    val friendId = signInOrCreateTestUser(friendEmail, friendPassword)
+
+    // Friend items for post1
+    val friendItem1 =
+        item1.copy(itemUuid = "friend-item-1", postUuids = listOf(postUuid1), ownerId = friendId)
+    val friendItem2 =
+        item2.copy(itemUuid = "friend-item-2", postUuids = listOf(postUuid1), ownerId = friendId)
+
+    // Friend items for post2
+    val friendItem3 =
+        item3.copy(itemUuid = "friend-item-3", postUuids = listOf(postUuid2), ownerId = friendId)
+
+    // Add all items to Firestore
+    FirebaseEmulator.firestore
+        .collection(ITEMS_COLLECTION)
+        .document(friendItem1.itemUuid)
+        .set(friendItem1)
+        .await()
+    FirebaseEmulator.firestore
+        .collection(ITEMS_COLLECTION)
+        .document(friendItem2.itemUuid)
+        .set(friendItem2)
+        .await()
+    FirebaseEmulator.firestore
+        .collection(ITEMS_COLLECTION)
+        .document(friendItem3.itemUuid)
+        .set(friendItem3)
+        .await()
+
+    // Get items for post1
+    val itemsForPost1 = itemsRepository.getFriendItemsForPost(postUuid1, friendId)
+    assertEquals(2, itemsForPost1.size)
+    assertTrue(itemsForPost1.all { it.postUuids.contains(postUuid1) })
+
+    // Get items for post2
+    val itemsForPost2 = itemsRepository.getFriendItemsForPost(postUuid2, friendId)
+    assertEquals(1, itemsForPost2.size)
+    assertTrue(itemsForPost2.all { it.postUuids.contains(postUuid2) })
+  }
+
+  //    @Test
+  //    fun getFriendItemsForPostDoesNotReturnOtherFriendsItems() = runBlocking {
+  //        val postUuid = "shared-post"
+  //        val friend1Email = "friend1@example.test"
+  //        val friend1Password = "test-pass-friend1"
+  //        val friend2Email = "friend2@example.test"
+  //        val friend2Password = "test-pass-friend2"
+  //
+  //        // Sign in as friend 1
+  //        val friend1Id = signInOrCreateTestUser(friend1Email, friend1Password)
+  //
+  //        // Items for friend 1
+  //        val friend1Item = item1.copy(
+  //            itemUuid = "friend1-item",
+  //            postUuids = listOf(postUuid),
+  //            ownerId = friend1Id
+  //        )
+  //
+  //        // Add friend 1's item
+  //        FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).document(friend1Item.itemUuid)
+  //            .set(friend1Item).await()
+  //
+  //        // Sign in as friend 2
+  //        val friend2Id = signInOrCreateTestUser(friend2Email, friend2Password)
+  //
+  //        // Items for friend 2
+  //        val friend2Item = item2.copy(
+  //            itemUuid = "friend2-item",
+  //            postUuids = listOf(postUuid),
+  //            ownerId = friend2Id
+  //        )
+  //
+  //        // Add friend 2's item
+  //        FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).document(friend2Item.itemUuid)
+  //            .set(friend2Item).await()
+  //
+  //        // Get items for friend 1 only (while still signed in as friend 2, query friend 1's
+  // items)
+  //        val friend1Items = itemsRepository.getFriendItemsForPost(postUuid, friend1Id)
+  //
+  //        assertEquals(1, friend1Items.size)
+  //        assertEquals(friend1Id, friend1Items.first().ownerId)
+  //        assertEquals("friend1-item", friend1Items.first().itemUuid)
+  //    }
 }

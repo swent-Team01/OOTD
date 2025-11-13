@@ -67,4 +67,12 @@ interface ItemsRepository {
    * @param postUuid The unique identifier of the post.
    */
   suspend fun deletePostItems(postUuid: String)
+
+  /**
+   * Gets all the items associated with a specific friend's post.
+   *
+   * @param postUuid The unique identifier of the post.
+   * @param friendId The unique identifier of the friend who owns the post.
+   */
+  suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item>
 }
