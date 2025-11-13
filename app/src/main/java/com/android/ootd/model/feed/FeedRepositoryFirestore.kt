@@ -2,6 +2,7 @@ package com.android.ootd.model.feed
 
 import android.util.Log
 import com.android.ootd.model.posts.OutfitPost
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObjects
 import java.time.Duration
@@ -123,5 +124,36 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
   override fun getNewPostId(): String {
     return java.util.UUID.randomUUID().toString()
+  }
+
+  override suspend fun getPostById(postUuid: String): OutfitPost? {
+    val doc = db.collection(POSTS_COLLECTION_PATH).document(postUuid).get().await()
+    return mapToPost(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
+  }
+
+  private fun mapToPost(doc: DocumentSnapshot): OutfitPost? {
+    return try {
+      val postUuid = doc.getString("postUID") ?: ""
+      val ownerId = doc.getString("ownerId") ?: ""
+      val timestamp = doc.getLong("timestamp") ?: 0L
+      val description = doc.getString("description") ?: ""
+      val itemsList = doc.get("itemsID") as? List<*> // Changed from "itemsId" to "itemsID"
+      val itemUuids = itemsList?.mapNotNull { it as? String } ?: emptyList()
+      val name = doc.getString("name") ?: ""
+      val outfitUrl = doc.getString("outfitURL") ?: ""
+      val userProfilePicture = doc.getString("userProfilePicURL") ?: ""
+      OutfitPost(
+          postUID = postUuid,
+          ownerId = ownerId,
+          timestamp = timestamp,
+          description = description,
+          itemsID = itemUuids,
+          name = name,
+          outfitURL = outfitUrl,
+          userProfilePicURL = userProfilePicture)
+    } catch (e: Exception) {
+      Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
+      null
+    }
   }
 }

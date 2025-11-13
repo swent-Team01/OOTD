@@ -3,6 +3,8 @@ package com.android.ootd.ui.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
@@ -30,6 +32,7 @@ data class SeeFitUIState(
 
 class SeeFitViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
+    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
@@ -49,7 +52,8 @@ class SeeFitViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
-        val items = itemsRepository.getAssociatedItems(postUuid)
+        val friendId = feedRepository.getPostById(postUuid)?.ownerId
+        val items = itemsRepository.getFriendItemsForPost(postUuid, friendId ?: "")
         _uiState.value = _uiState.value.copy(items = items, isLoading = false, errorMessage = null)
       } catch (e: Exception) {
         _uiState.value =

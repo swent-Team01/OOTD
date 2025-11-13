@@ -118,6 +118,10 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun deleteItem(uuid: String) {}
 
         override suspend fun deletePostItems(postUuid: String) {}
+
+        override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+          return emptyList()
+        }
       }
 
   @Test

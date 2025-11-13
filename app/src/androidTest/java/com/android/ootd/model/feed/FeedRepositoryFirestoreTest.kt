@@ -18,6 +18,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Tests for [FeedRepositoryFirestore] using Firebase Emulator Suite.
+ *
+ * DISCLAIMER : These tests are partially created using AI and verified by humans.
+ */
 @RunWith(AndroidJUnit4::class)
 class FeedRepositoryFirestoreTest : FirestoreTest() {
   private val db = FirebaseEmulator.firestore
@@ -132,6 +137,151 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     val freshDb = firestoreForApp("unreachable-reader", "10.0.2.2", 6553)
     val freshRepo = FeedRepositoryFirestore(freshDb)
     assertTrue(freshRepo.getFeedForUids(listOf(currentUid)).isEmpty())
+  }
+
+  // -------- getPostById and mapToPost tests --------
+
+  @Test
+  fun getPostById_returnsCorrectPost_whenExists() = runBlocking {
+    val post = samplePost("test-post-123", ts = 12345L)
+    feedRepository.addPost(post)
+
+    val retrieved = feedRepository.getPostById("test-post-123")
+
+    assertEquals("test-post-123", retrieved?.postUID)
+    assertEquals(currentUid, retrieved?.ownerId)
+    assertEquals(12345L, retrieved?.timestamp)
+    assertEquals("desc-test-post-123", retrieved?.description)
+    assertEquals("name-test-post-123", retrieved?.name)
+    assertEquals(2, retrieved?.itemsID?.size)
+    assertTrue(retrieved?.itemsID?.contains("i1-test-post-123") == true)
+  }
+
+  @Test
+  fun getPostById_handlesPostWithEmptyFields() = runBlocking {
+    val postWithEmptyFields =
+        OutfitPost(
+            postUID = "empty-fields-post",
+            name = "",
+            ownerId = currentUid,
+            userProfilePicURL = "",
+            outfitURL = "",
+            description = "",
+            itemsID = emptyList(),
+            timestamp = 0L)
+    feedRepository.addPost(postWithEmptyFields)
+
+    val retrieved = feedRepository.getPostById("empty-fields-post")
+
+    assertEquals("empty-fields-post", retrieved?.postUID)
+    assertEquals("", retrieved?.name)
+    assertEquals("", retrieved?.description)
+    assertEquals(0L, retrieved?.timestamp)
+    assertTrue(retrieved?.itemsID?.isEmpty() == true)
+  }
+
+  @Test
+  fun getPostById_handlesPostWithMultipleItems() = runBlocking {
+    val postWithManyItems =
+        OutfitPost(
+            postUID = "multi-item-post",
+            name = "Multi Item Post",
+            ownerId = currentUid,
+            userProfilePicURL = "https://example.com/profile.jpg",
+            outfitURL = "https://example.com/outfit.jpg",
+            description = "A post with many items",
+            itemsID = listOf("item1", "item2", "item3", "item4", "item5"),
+            timestamp = System.currentTimeMillis())
+    feedRepository.addPost(postWithManyItems)
+
+    val retrieved = feedRepository.getPostById("multi-item-post")
+
+    assertEquals(5, retrieved?.itemsID?.size)
+    assertEquals(listOf("item1", "item2", "item3", "item4", "item5"), retrieved?.itemsID)
+  }
+
+  @Test(expected = Exception::class)
+  fun getPostById_throwsException_whenDocumentIsCorrupted() =
+      runBlocking<Unit> {
+        // Add a valid post first
+        feedRepository.addPost(samplePost("corrupted-doc", ts = 100L))
+
+        // Corrupt the document by removing required fields
+        db.collection(POSTS_COLLECTION_PATH)
+            .document("corrupted-doc")
+            .update(mapOf("postUuid" to null, "ownerId" to null))
+            .await()
+
+        // mapToPost returns null, getPostById throws
+        feedRepository.getPostById("corrupted-doc")
+      }
+
+  @Test
+  fun getPostById_handlesNullItemsIdGracefully() = runBlocking {
+    // Manually create a document with null itemsId
+    val docData =
+        mapOf(
+            "postUID" to "null-items-post", // Changed from "postUuid"
+            "ownerId" to currentUid,
+            "timestamp" to 500L,
+            "description" to "Test post",
+            "name" to "Test",
+            "outfitURL" to "https://example.com/outfit.jpg", // Changed from "outfitUrl"
+            "userProfilePicURL" to
+                "https://example.com/profile.jpg", // Changed from "userProfilePicture"
+            "itemsID" to null // Changed from "itemsId"
+            )
+    db.collection(POSTS_COLLECTION_PATH).document("null-items-post").set(docData).await()
+
+    val retrieved = feedRepository.getPostById("null-items-post")
+
+    assertEquals("null-items-post", retrieved?.postUID)
+    assertTrue(retrieved?.itemsID?.isEmpty() == true) // Should default to empty list
+  }
+
+  @Test
+  fun getPostById_handlesItemsIdWithMixedTypes() = runBlocking {
+    // Create document with mixed types in itemsId array
+    val docData =
+        mapOf(
+            "postUID" to "mixed-items-post", // Changed from "postUuid"
+            "ownerId" to currentUid,
+            "timestamp" to 600L,
+            "description" to "Test",
+            "name" to "Test",
+            "outfitURL" to "https://example.com/outfit.jpg", // Changed from "outfitUrl"
+            "userProfilePicURL" to
+                "https://example.com/profile.jpg", // Changed from "userProfilePicture"
+            "itemsID" to listOf("item1", 123, "item2", null, "item3") // Changed from "itemsId"
+            )
+    db.collection(POSTS_COLLECTION_PATH).document("mixed-items-post").set(docData).await()
+
+    val retrieved = feedRepository.getPostById("mixed-items-post")
+
+    // mapNotNull should filter out non-strings
+    assertEquals(3, retrieved?.itemsID?.size)
+    assertEquals(listOf("item1", "item2", "item3"), retrieved?.itemsID)
+  }
+
+  @Test
+  fun getPostById_handlesVeryOldTimestamp() = runBlocking {
+    val veryOldPost = samplePost("very-old-post", ts = 1L) // Unix epoch + 1ms
+    feedRepository.addPost(veryOldPost)
+
+    val retrieved = feedRepository.getPostById("very-old-post")
+
+    assertEquals(1L, retrieved?.timestamp)
+  }
+
+  @Test
+  fun getPostById_handlesRecentTimestamp() = runBlocking {
+    val now = System.currentTimeMillis()
+    val recentPost = samplePost("recent-post", ts = now)
+    feedRepository.addPost(recentPost)
+
+    val retrieved = feedRepository.getPostById("recent-post")
+
+    assertEquals(now, retrieved?.timestamp)
   }
 
   // -------- Helpers --------

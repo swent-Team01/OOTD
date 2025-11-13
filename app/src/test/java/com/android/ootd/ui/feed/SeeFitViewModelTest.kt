@@ -1,8 +1,10 @@
 package com.android.ootd.ui.feed
 
+import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.posts.OutfitPost
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -34,6 +36,7 @@ class SeeFitViewModelTest {
 
   private lateinit var viewModel: SeeFitViewModel
   private lateinit var mockItemsRepository: ItemsRepository
+  private lateinit var mockFeedRepository: FeedRepository
   private val testDispatcher = StandardTestDispatcher()
 
   private val testItem1 =
@@ -62,11 +65,35 @@ class SeeFitViewModelTest {
           link = "https://example.com/sneakers",
           ownerId = "owner1")
 
+  private val testPost1 =
+      OutfitPost(
+          postUID = "post1",
+          name = "Test User",
+          ownerId = "owner1",
+          userProfilePicURL = "https://example.com/profile.jpg",
+          outfitURL = "https://example.com/outfit.jpg",
+          description = "Test outfit",
+          itemsID = listOf("item1", "item2"),
+          timestamp = System.currentTimeMillis())
+
+  private val testPost2 =
+      OutfitPost(
+          postUID = "post2",
+          name = "Another User",
+          ownerId = "owner2",
+          userProfilePicURL = "https://example.com/profile2.jpg",
+          outfitURL = "https://example.com/outfit2.jpg",
+          description = "Another outfit",
+          itemsID = listOf("item2"),
+          timestamp = System.currentTimeMillis())
+
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
     mockItemsRepository = mockk(relaxed = true)
-    viewModel = SeeFitViewModel(itemsRepository = mockItemsRepository)
+    mockFeedRepository = mockk(relaxed = true)
+    viewModel =
+        SeeFitViewModel(itemsRepository = mockItemsRepository, feedRepository = mockFeedRepository)
   }
 
   @After
@@ -98,7 +125,8 @@ class SeeFitViewModelTest {
 
     advanceUntilIdle()
 
-    coVerify(exactly = 0) { mockItemsRepository.getAssociatedItems(any()) }
+    coVerify(exactly = 0) { mockFeedRepository.getPostById(any()) }
+    coVerify(exactly = 0) { mockItemsRepository.getFriendItemsForPost(any(), any()) }
 
     val state = viewModel.uiState.value
     assertTrue(state.items.isEmpty())
@@ -108,7 +136,8 @@ class SeeFitViewModelTest {
 
   @Test
   fun `getItemsForPost sets isLoading to true during fetch`() = runTest {
-    coEvery { mockItemsRepository.getAssociatedItems("post1") } coAnswers
+    coEvery { mockFeedRepository.getPostById("post1") } returns testPost1
+    coEvery { mockItemsRepository.getFriendItemsForPost("post1", "owner1") } coAnswers
         {
           // Simulate delay
           kotlinx.coroutines.delay(100)
@@ -129,8 +158,10 @@ class SeeFitViewModelTest {
     val items1 = listOf(testItem1)
     val items2 = listOf(testItem2)
 
-    coEvery { mockItemsRepository.getAssociatedItems("post1") } returns items1
-    coEvery { mockItemsRepository.getAssociatedItems("post2") } returns items2
+    coEvery { mockFeedRepository.getPostById("post1") } returns testPost1
+    coEvery { mockFeedRepository.getPostById("post2") } returns testPost2
+    coEvery { mockItemsRepository.getFriendItemsForPost("post1", "owner1") } returns items1
+    coEvery { mockItemsRepository.getFriendItemsForPost("post2", "owner2") } returns items2
 
     // Fetch first post
     viewModel.getItemsForPost("post1")
@@ -142,14 +173,17 @@ class SeeFitViewModelTest {
     advanceUntilIdle()
     assertEquals(items2, viewModel.uiState.value.items)
 
-    coVerify(exactly = 1) { mockItemsRepository.getAssociatedItems("post1") }
-    coVerify(exactly = 1) { mockItemsRepository.getAssociatedItems("post2") }
+    coVerify(exactly = 1) { mockFeedRepository.getPostById("post1") }
+    coVerify(exactly = 1) { mockFeedRepository.getPostById("post2") }
+    coVerify(exactly = 1) { mockItemsRepository.getFriendItemsForPost("post1", "owner1") }
+    coVerify(exactly = 1) { mockItemsRepository.getFriendItemsForPost("post2", "owner2") }
   }
 
   @Test
   fun `getItemsForPost successfully loads items`() = runTest {
     val expectedItems = listOf(testItem1, testItem2)
-    coEvery { mockItemsRepository.getAssociatedItems("post1") } returns expectedItems
+    coEvery { mockFeedRepository.getPostById("post1") } returns testPost1
+    coEvery { mockItemsRepository.getFriendItemsForPost("post1", "owner1") } returns expectedItems
 
     viewModel.getItemsForPost("post1")
 
@@ -160,12 +194,16 @@ class SeeFitViewModelTest {
     assertFalse(state.isLoading)
     assertNull(state.errorMessage)
 
-    coVerify(exactly = 1) { mockItemsRepository.getAssociatedItems("post1") }
+    coVerify(exactly = 1) { mockFeedRepository.getPostById("post1") }
+    coVerify(exactly = 1) { mockItemsRepository.getFriendItemsForPost("post1", "owner1") }
   }
 
   @Test
   fun `getItemsForPost with empty result returns empty list`() = runTest {
-    coEvery { mockItemsRepository.getAssociatedItems("post-no-items") } returns emptyList()
+    coEvery { mockFeedRepository.getPostById("post-no-items") } returns
+        testPost1.copy(postUID = "post-no-items")
+    coEvery { mockItemsRepository.getFriendItemsForPost("post-no-items", "owner1") } returns
+        emptyList()
 
     viewModel.getItemsForPost("post-no-items")
 
@@ -178,9 +216,26 @@ class SeeFitViewModelTest {
   }
 
   @Test
-  fun `getItemsForPost handles repository exception`() = runTest {
+  fun `getItemsForPost handles feedRepository exception`() = runTest {
+    val errorMessage = "Post not found"
+    coEvery { mockFeedRepository.getPostById("post1") } throws Exception(errorMessage)
+
+    viewModel.getItemsForPost("post1")
+
+    advanceUntilIdle()
+
+    val state = viewModel.uiState.value
+    assertTrue(state.items.isEmpty())
+    assertFalse(state.isLoading)
+    assertTrue(state.errorMessage?.contains(errorMessage) == true)
+  }
+
+  @Test
+  fun `getItemsForPost handles itemsRepository exception`() = runTest {
     val errorMessage = "Network error"
-    coEvery { mockItemsRepository.getAssociatedItems("post1") } throws Exception(errorMessage)
+    coEvery { mockFeedRepository.getPostById("post1") } returns testPost1
+    coEvery { mockItemsRepository.getFriendItemsForPost("post1", "owner1") } throws
+        Exception(errorMessage)
 
     viewModel.getItemsForPost("post1")
 
@@ -195,7 +250,7 @@ class SeeFitViewModelTest {
   @Test
   fun `getItemsForPost clears previous error message on new fetch`() = runTest {
     // First fetch fails
-    coEvery { mockItemsRepository.getAssociatedItems("post1") } throws Exception("First error")
+    coEvery { mockFeedRepository.getPostById("post1") } throws Exception("First error")
 
     viewModel.getItemsForPost("post1")
     advanceUntilIdle()
@@ -203,7 +258,9 @@ class SeeFitViewModelTest {
     assertTrue(viewModel.uiState.value.errorMessage != null)
 
     // Second fetch succeeds
-    coEvery { mockItemsRepository.getAssociatedItems("post2") } returns listOf(testItem1)
+    coEvery { mockFeedRepository.getPostById("post2") } returns testPost2
+    coEvery { mockItemsRepository.getFriendItemsForPost("post2", "owner2") } returns
+        listOf(testItem2)
 
     viewModel.getItemsForPost("post2")
     advanceUntilIdle()
@@ -220,7 +277,7 @@ class SeeFitViewModelTest {
   @Test
   fun `clearMessage removes error message`() = runTest {
     // Set an error
-    coEvery { mockItemsRepository.getAssociatedItems("post1") } throws Exception("Test error")
+    coEvery { mockFeedRepository.getPostById("post1") } throws Exception("Test error")
 
     viewModel.getItemsForPost("post1")
     advanceUntilIdle()

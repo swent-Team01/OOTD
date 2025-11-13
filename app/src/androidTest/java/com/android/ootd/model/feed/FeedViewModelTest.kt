@@ -39,7 +39,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     accountRepo = AccountRepositoryFirestore(FirebaseEmulator.firestore)
     feedRepo = FeedRepositoryFirestore(FirebaseEmulator.firestore)
 
-    runBlocking { auth.signInAnonymously() }
+    runBlocking { auth.signInAnonymously().await() }
 
     viewModel = FeedViewModel(feedRepo, accountRepo)
   }
@@ -50,8 +50,13 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     val account = Account(uid, uid, "bob", friendUids = emptyList())
     FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    // Give the listener a moment to propagate
-    delay(500)
+    // Give the auth listener time to pick up the account
+    delay(1000)
+
+    // Wait for the account to be loaded by the auth listener
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      viewModel.uiState.value.currentAccount != null
+    }
 
     viewModel.refreshFeedFromFirestore()
     delay(500)
@@ -121,13 +126,16 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
             postUID = "p_today",
             ownerId = uid,
             name = "bob",
-            description = "today’s outfit",
+            description = "today's outfit",
             outfitURL = "https://example.com/fake.jpg",
             timestamp = System.currentTimeMillis())
     FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
 
-    // allow listeners/emulator to settle
-    delay(700)
+    // Wait for auth listener to load the account
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      viewModel.uiState.value.currentAccount != null
+    }
+
     viewModel.refreshFeedFromFirestore()
     delay(1000)
 
@@ -162,8 +170,10 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     val account = Account(uid, uid, "carol", friendUids = emptyList())
     FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    // allow listener to pick up the account
-    delay(700)
+    // Wait for auth listener to load the account (use composeTestRule.waitUntil for reliability)
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      viewModel.uiState.value.currentAccount != null
+    }
 
     val state = viewModel.uiState.first()
     assertNotNull(state.currentAccount)

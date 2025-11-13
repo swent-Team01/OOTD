@@ -11,7 +11,6 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
-import kotlin.NoSuchElementException
 import kotlinx.coroutines.tasks.await
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"

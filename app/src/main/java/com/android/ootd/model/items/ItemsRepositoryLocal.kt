@@ -97,8 +97,24 @@ class ItemsRepositoryLocal : ItemsRepository {
     items.remove(uuid)
   }
 
+  /**
+   * Deletes all items associated with a specific post from the local storage.
+   *
+   * @param postUuid The unique identifier of the post whose items are to be deleted.
+   */
   override suspend fun deletePostItems(postUuid: String) {
     items.values.removeIf { it.postUuids.contains(postUuid) }
+  }
+
+  /**
+   * Gets items associated with a specific post that belong to a specific friend.
+   *
+   * @param postUuid The unique identifier of the post to filter by.
+   * @param friendId The unique identifier of the friend whose items to retrieve.
+   * @return A list of items associated with the post and owned by the specified friend.
+   */
+  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+    return items.values.filter { it.postUuids.contains(postUuid) && it.ownerId == friendId }
   }
 
   /** Clears all items from the local storage. Useful for resetting state between tests. */

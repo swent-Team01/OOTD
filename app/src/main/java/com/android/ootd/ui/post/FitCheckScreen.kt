@@ -43,7 +43,10 @@ object FitCheckScreenTestTags {
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
+  const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
+
+private const val MAX_DESCRIPTION_LENGTH = 100
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,16 +200,35 @@ private fun FitCheckScreenContent(
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
 
-              OutlinedTextField(
-                  value = uiState.description,
-                  onValueChange = { onDescriptionChange(it) },
-                  label = { Text("Description") },
-                  placeholder = { Text("Add a short caption for your FitCheck") },
-                  modifier =
-                      Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
-                  singleLine = false,
-                  maxLines = 2,
-                  shape = RoundedCornerShape(12.dp))
+              // --- Description field with char limit & counter ---
+              val description = uiState.description
+              val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+
+              Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { newValue ->
+                      if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
+                        onDescriptionChange(newValue)
+                      }
+                    },
+                    label = { Text("Description") },
+                    placeholder = { Text("Add a short caption for your FitCheck") },
+                    modifier =
+                        Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
+                    singleLine = false,
+                    maxLines = 2,
+                    shape = RoundedCornerShape(12.dp))
+
+                Text(
+                    text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier =
+                        Modifier.align(Alignment.End)
+                            .padding(top = 4.dp, end = 4.dp)
+                            .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
+              }
 
               Button(
                   onClick = { showDialog = true },

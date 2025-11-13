@@ -7,10 +7,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -30,7 +32,8 @@ class SeeFitScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  private lateinit var mockRepository: ItemsRepository
+  private lateinit var mockItemsRepository: ItemsRepository
+  private lateinit var mockFeedRepository: FeedRepository
   private lateinit var viewModel: SeeFitViewModel
   private var goBackCalled = false
 
@@ -60,15 +63,32 @@ class SeeFitScreenTest {
           link = "https://example.com/sneakers",
           ownerId = "owner1")
 
+  private val testPost1 =
+      OutfitPost(
+          postUID = "test-post-1",
+          name = "Test User",
+          ownerId = "owner1",
+          userProfilePicURL = "https://example.com/profile.jpg",
+          outfitURL = "https://example.com/outfit.jpg",
+          description = "Test outfit",
+          itemsID = listOf("item1", "item2"),
+          timestamp = System.currentTimeMillis())
+
   @Before
   fun setup() {
-    mockRepository = mockk(relaxed = true)
-    viewModel = SeeFitViewModel(itemsRepository = mockRepository)
+    mockItemsRepository = mockk(relaxed = true)
+    mockFeedRepository = mockk(relaxed = true)
+    viewModel =
+        SeeFitViewModel(itemsRepository = mockItemsRepository, feedRepository = mockFeedRepository)
     goBackCalled = false
   }
 
   private fun setScreen(postUuid: String = "test-post-1", items: List<Item> = emptyList()) {
-    coEvery { mockRepository.getAssociatedItems(postUuid) } returns items
+    // Mock feedRepository to return the post with owner ID
+    coEvery { mockFeedRepository.getPostById(postUuid) } returns testPost1.copy(postUID = postUuid)
+
+    // Mock itemsRepository to return the items for that friend
+    coEvery { mockItemsRepository.getFriendItemsForPost(postUuid, "owner1") } returns items
 
     composeTestRule.setContent {
       OOTDTheme {
@@ -106,7 +126,8 @@ class SeeFitScreenTest {
   @Test
   fun seeFitScreen_displaysErrorToast_onError() {
     // Mock repository to throw an exception
-    coEvery { mockRepository.getAssociatedItems(any()) } throws Exception("Network error")
+    coEvery { mockItemsRepository.getFriendItemsForPost(any(), any()) } throws
+        Exception("Network error")
 
     composeTestRule.setContent {
       OOTDTheme {
@@ -134,7 +155,7 @@ class SeeFitScreenTest {
   @Test
   fun seeFitScreen_showsLoadingIndicator_whenLoading() {
     // Mock repository to delay the response to keep loading state visible
-    coEvery { mockRepository.getAssociatedItems(any()) } coAnswers
+    coEvery { mockItemsRepository.getFriendItemsForPost(any(), any()) } coAnswers
         {
           kotlinx.coroutines.delay(1000) // Keep loading state active
           emptyList()
@@ -189,6 +210,7 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertIsDisplayed()
   }
 
   @Test

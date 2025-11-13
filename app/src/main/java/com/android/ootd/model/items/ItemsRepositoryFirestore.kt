@@ -90,6 +90,17 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       doc.reference.delete().await()
     }
   }
+
+  override suspend fun getFriendItemsForPost(postUuid: String, friendUid: String): List<Item> {
+    val snapshot =
+        db.collection(ITEMS_COLLECTION)
+            .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, friendUid)
+            .get()
+            .await()
+
+    return snapshot.mapNotNull { mapToItem(it) }
+  }
 }
 
 private fun mapToItem(doc: DocumentSnapshot): Item? {

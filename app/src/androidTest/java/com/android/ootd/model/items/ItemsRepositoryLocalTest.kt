@@ -425,6 +425,136 @@ class ItemsRepositoryLocalTest {
     TestCase.assertTrue(repository.hasItem(item1.itemUuid))
   }
 
+  @Test
+  fun getFriendItemsForPostReturnsEmptyWhenNoMatch() = runTest {
+    val postUuid = "post-with-no-friend-items"
+    val friendId = "friend-user-789"
+
+    // Add items for current user only
+    repository.addItem(item1.copy(postUuids = listOf(postUuid), ownerId = "user-123"))
+
+    val friendItems = repository.getFriendItemsForPost(postUuid, friendId)
+
+    TestCase.assertTrue(friendItems.isEmpty())
+  }
+
+  @Test
+  fun getFriendItemsForPostFiltersCorrectlyByPostUuid() = runTest {
+    val postUuid1 = "friend-post-aaa"
+    val postUuid2 = "friend-post-bbb"
+    val friendId = "friend-999"
+
+    // Friend items for post1
+    val friendItem1 =
+        item1.copy(itemUuid = "friend-item-1", postUuids = listOf(postUuid1), ownerId = friendId)
+    val friendItem2 =
+        item2.copy(itemUuid = "friend-item-2", postUuids = listOf(postUuid1), ownerId = friendId)
+
+    // Friend items for post2
+    val friendItem3 =
+        item3.copy(itemUuid = "friend-item-3", postUuids = listOf(postUuid2), ownerId = friendId)
+
+    repository.addItem(friendItem1)
+    repository.addItem(friendItem2)
+    repository.addItem(friendItem3)
+
+    // Get items for post1
+    val itemsForPost1 = repository.getFriendItemsForPost(postUuid1, friendId)
+    TestCase.assertEquals(2, itemsForPost1.size)
+    TestCase.assertTrue(itemsForPost1.all { it.postUuids.contains(postUuid1) })
+    TestCase.assertTrue(itemsForPost1.any { it.itemUuid == "friend-item-1" })
+    TestCase.assertTrue(itemsForPost1.any { it.itemUuid == "friend-item-2" })
+
+    // Get items for post2
+    val itemsForPost2 = repository.getFriendItemsForPost(postUuid2, friendId)
+    TestCase.assertEquals(1, itemsForPost2.size)
+    TestCase.assertTrue(itemsForPost2.all { it.postUuids.contains(postUuid2) })
+    TestCase.assertEquals("friend-item-3", itemsForPost2.first().itemUuid)
+  }
+
+  @Test
+  fun getFriendItemsForPostWithMixedOwnersAndPosts() = runTest {
+    val postUuid = "mixed-post"
+    val friendId = "target-friend"
+
+    // Target: friend's item for the post
+    val targetItem =
+        item1.copy(itemUuid = "target", postUuids = listOf(postUuid), ownerId = friendId)
+
+    // Wrong post, correct friend
+    val wrongPostItem =
+        item2.copy(itemUuid = "wrong-post", postUuids = listOf("other-post"), ownerId = friendId)
+
+    // Correct post, wrong friend
+    val wrongFriendItem =
+        item3.copy(
+            itemUuid = "wrong-friend", postUuids = listOf(postUuid), ownerId = "other-friend")
+
+    // Wrong post and friend
+    val wrongBothItem =
+        item4.copy(
+            itemUuid = "wrong-both", postUuids = listOf("other-post"), ownerId = "other-friend")
+
+    repository.addItem(targetItem)
+    repository.addItem(wrongPostItem)
+    repository.addItem(wrongFriendItem)
+    repository.addItem(wrongBothItem)
+
+    val friendItems = repository.getFriendItemsForPost(postUuid, friendId)
+
+    // Should only return the target item
+    TestCase.assertEquals(1, friendItems.size)
+    TestCase.assertEquals("target", friendItems.first().itemUuid)
+    TestCase.assertEquals(postUuid, friendItems.first().postUuids.first())
+    TestCase.assertEquals(friendId, friendItems.first().ownerId)
+  }
+
+  @Test
+  fun getItemsByIdsReturnsCorrectItems() = runTest {
+    // Add multiple items
+    repository.addItem(item1)
+    repository.addItem(item2)
+    repository.addItem(item3)
+    repository.addItem(item4)
+
+    // Test retrieving multiple items by their IDs
+    val requestedIds = listOf(item1.itemUuid, item3.itemUuid, item4.itemUuid)
+    val retrievedItems = repository.getItemsByIds(requestedIds)
+
+    TestCase.assertEquals(3, retrievedItems.size)
+    TestCase.assertTrue(retrievedItems.contains(item1))
+    TestCase.assertTrue(retrievedItems.contains(item3))
+    TestCase.assertTrue(retrievedItems.contains(item4))
+    TestCase.assertFalse(retrievedItems.contains(item2))
+
+    // Test with empty list
+    val emptyResult = repository.getItemsByIds(emptyList())
+    TestCase.assertTrue(emptyResult.isEmpty())
+
+    // Test with non-existent IDs (should be filtered out)
+    val mixedIds = listOf(item1.itemUuid, "non-existent-1", item2.itemUuid, "non-existent-2")
+    val mixedResult = repository.getItemsByIds(mixedIds)
+    TestCase.assertEquals(2, mixedResult.size)
+    TestCase.assertTrue(mixedResult.contains(item1))
+    TestCase.assertTrue(mixedResult.contains(item2))
+
+    // Test with all non-existent IDs
+    val nonExistentIds = listOf("fake-1", "fake-2", "fake-3")
+    val nonExistentResult = repository.getItemsByIds(nonExistentIds)
+    TestCase.assertTrue(nonExistentResult.isEmpty())
+
+    // Test with single ID
+    val singleResult = repository.getItemsByIds(listOf(item2.itemUuid))
+    TestCase.assertEquals(1, singleResult.size)
+    TestCase.assertEquals(item2, singleResult.first())
+
+    // Test with duplicate IDs (should return item multiple times)
+    val duplicateIds = listOf(item1.itemUuid, item1.itemUuid, item1.itemUuid)
+    val duplicateResult = repository.getItemsByIds(duplicateIds)
+    TestCase.assertEquals(3, duplicateResult.size) // mapNotNull keeps duplicates
+    TestCase.assertTrue(duplicateResult.all { it == item1 })
+  }
+
   @After
   fun tearDown() {
     repository.clearAll()

@@ -242,6 +242,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     verifyElementAppearsWithTimer(composeTestRule, PreviewItemScreenTestTags.SCREEN_TITLE)
 
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
+    clickWithWait(composeTestRule, PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)
     clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
 
     clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
