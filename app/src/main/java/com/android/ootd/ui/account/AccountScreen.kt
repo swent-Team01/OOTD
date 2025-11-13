@@ -39,7 +39,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -195,7 +194,7 @@ private fun LoadingOverlay() {
       modifier =
           Modifier.fillMaxSize()
               .background(colorScheme.background.copy(alpha = 0.95f))
-              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
+              .testTag(AccountPageTestTags.LOADING),
       contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Image(
