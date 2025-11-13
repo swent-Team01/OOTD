@@ -99,6 +99,11 @@ class AccountPageViewModel(
     }
   }
 
+  /** Refreshes the user's account data. */
+  fun refreshUserData() {
+    retrieveUserData()
+  }
+
   /**
    * Clears any transient error message shown in the UI.
    *
