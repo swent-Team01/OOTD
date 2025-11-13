@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 
 fun ComposeTestRule.enterUsername(text: String) {
@@ -30,8 +31,7 @@ fun ComposeTestRule.enterDate(date: String) {
 }
 
 fun ComposeTestRule.enterLocation(text: String) {
-  onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION).performClick()
-  onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
-      .performTextInput(text)
+  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performTextInput(text)
   waitForIdle()
 }

@@ -29,7 +29,7 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AccountPageViewModelTest {
+class AccountScreenViewModelTest {
 
   private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
