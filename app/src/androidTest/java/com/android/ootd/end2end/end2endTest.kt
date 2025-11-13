@@ -543,6 +543,16 @@ class End2EndTest {
           .assertIsDisplayed()
           .performClick()
 
+      composeTestRule.waitForIdle()
+
+      // Wait for the account page to finish loading (there's a loading overlay shown first)
+      composeTestRule.waitUntil(timeoutMillis = 10000) {
+        composeTestRule
+            .onAllNodesWithTag(AccountPageTestTags.SETTINGS_BUTTON)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+      }
+
       composeTestRule
           .onNodeWithTag(AccountPageTestTags.SETTINGS_BUTTON)
           .assertIsDisplayed()
