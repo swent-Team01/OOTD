@@ -41,7 +41,7 @@ abstract class BaseTest() {
   lateinit var accountRepository: AccountRepository
   lateinit var notificationsRepository: NotificationRepository
   val outfitPostRepository: OutfitPostRepository
-    get() = com.android.ootd.model.post.OutfitPostRepositoryProvider.repository
+    get() = OutfitPostRepositoryProvider.repository
 
   val currentUser: FirebaseUser
     get() {
