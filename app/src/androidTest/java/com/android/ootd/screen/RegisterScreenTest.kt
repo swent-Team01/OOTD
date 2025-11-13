@@ -22,6 +22,7 @@ import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
+import com.android.ootd.utils.verifyElementDoesNotAppearWithTimer
 import com.google.android.gms.location.FusedLocationProviderClient
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -300,14 +301,8 @@ class RegisterScreenTest {
     }
 
     // Assert: dropdown should be closed (suggestions cleared)
-    composeTestRule.waitUntil(
-        condition = {
-          composeTestRule
-              .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
-              .fetchSemanticsNodes()
-              .isEmpty()
-        },
-        timeoutMillis = 5000)
+    verifyElementDoesNotAppearWithTimer(
+        composeTestRule, LocationSelectionTestTags.LOCATION_SUGGESTION)
   }
 
   @Test

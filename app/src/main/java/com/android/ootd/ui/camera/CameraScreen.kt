@@ -57,6 +57,7 @@ object CameraScreenTestTags {
   const val RETAKE_BUTTON = "retakeButton"
   const val APPROVE_BUTTON = "approveButton"
   const val CROP_BUTTON = "cropButton"
+  const val ERROR_MESSAGE = "errorMessage"
 }
 
 /**
@@ -258,10 +259,7 @@ private fun CameraView(
 
                 // Capture Button
                 Box(
-                    modifier =
-                        Modifier.size(72.dp)
-                            .border(4.dp, Tertiary, CircleShape)
-                            .testTag(CameraScreenTestTags.CAPTURE_BUTTON),
+                    modifier = Modifier.size(72.dp).border(4.dp, Tertiary, CircleShape),
                     contentAlignment = Alignment.Center) {
                       IconButton(
                           onClick = {
@@ -277,7 +275,10 @@ private fun CameraView(
                             }
                           },
                           enabled = !cameraUiState.isCapturing,
-                          modifier = Modifier.size(60.dp).background(Primary, CircleShape)) {
+                          modifier =
+                              Modifier.size(60.dp)
+                                  .background(Primary, CircleShape)
+                                  .testTag(CameraScreenTestTags.CAPTURE_BUTTON)) {
                             // Empty icon button - the circle is the visual
                           }
                     }
@@ -364,7 +365,10 @@ private fun ImagePreviewScreen(
             Text(
                 text = errorMessage ?: "Unknown error",
                 color = White,
-                modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                modifier =
+                    Modifier.align(Alignment.Center)
+                        .padding(16.dp)
+                        .testTag(CameraScreenTestTags.ERROR_MESSAGE),
                 style = MaterialTheme.typography.bodyLarge)
           }
           bitmap != null -> {

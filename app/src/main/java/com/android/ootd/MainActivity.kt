@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
  *
  * @param context Compose-provided [Context], defaults to [LocalContext].
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
+ * @param overridePhoto Used for testing to disable checks on photo because we can't use the camera.
  */
 @Composable
 fun OOTDApp(
@@ -107,6 +108,7 @@ fun OOTDApp(
     credentialManager: CredentialManager = CredentialManager.create(context),
     testNavController: NavHostController? = null,
     testStartDestination: String? = null,
+    overridePhoto: Boolean = false
 ) {
   val navController = testNavController ?: rememberNavController()
   val navigationActions = remember { NavigationActions(navController) }
@@ -249,7 +251,8 @@ fun OOTDApp(
                           onBackClick = {
                             // later we'll use postUuid to delete items
                             navigationActions.goBack()
-                          })
+                          },
+                          overridePhoto = overridePhoto)
                     }
 
                 composable(
@@ -296,7 +299,8 @@ fun OOTDApp(
                               popUpTo(Screen.Feed.route) { inclusive = false }
                               launchSingleTop = true
                             }
-                          })
+                          },
+                          overridePhoto = overridePhoto)
                     }
 
                 composable(
@@ -307,7 +311,8 @@ fun OOTDApp(
                       AddItemsScreen(
                           postUuid = postUuid,
                           onNextScreen = { navController.popBackStack() },
-                          goBack = { navController.popBackStack() })
+                          goBack = { navController.popBackStack() },
+                          overridePhoto = overridePhoto)
                     }
 
                 composable(
