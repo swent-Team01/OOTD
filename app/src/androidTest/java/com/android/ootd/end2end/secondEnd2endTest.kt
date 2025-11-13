@@ -361,7 +361,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   fun signOutAndVerifyAuthScreen() {
     clickWithWait(composeTestRule, NavigationTestTags.ACCOUNT_TAB)
     clickWithWait(composeTestRule, AccountPageTestTags.SETTINGS_BUTTON)
-    clickWithWait(composeTestRule, UiTestTags.TAG_SIGNOUT_BUTTON)
+    clickWithWait(composeTestRule, UiTestTags.TAG_SIGNOUT_BUTTON, shouldScroll = true)
     verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
     verifySignInScreenAppears(composeTestRule)
   }
