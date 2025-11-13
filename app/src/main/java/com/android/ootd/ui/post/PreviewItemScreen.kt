@@ -98,6 +98,7 @@ fun PreviewItemScreen(
     onGoBack: (String) -> Unit = {},
     enablePreview: Boolean = false,
     uiStateOverride: PreviewUIState? = null,
+    overridePhoto: Boolean = false
 ) {
   val context = LocalContext.current
   val realUiState by outfitPreviewViewModel.uiState.collectAsState()
@@ -136,9 +137,12 @@ fun PreviewItemScreen(
       scrollBehavior = scrollBehavior,
       onEditItem = onEditItem,
       onAddItem = onAddItem,
-      onPublish = { if (!enablePreview) outfitPreviewViewModel.publishPost() },
+      onPublish = {
+        if (!enablePreview) outfitPreviewViewModel.publishPost(overridePhoto = overridePhoto)
+      },
       onGoBack = onGoBack,
-      enablePreview = enablePreview)
+      enablePreview = enablePreview,
+      overridePhoto = overridePhoto)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -151,6 +155,7 @@ private fun PreviewItemScreenContent(
     onPublish: () -> Unit,
     onGoBack: (String) -> Unit,
     enablePreview: Boolean,
+    overridePhoto: Boolean = false
 ) {
   val itemsList = ui.items
   val hasItems = itemsList.isNotEmpty()
@@ -190,7 +195,7 @@ private fun PreviewItemScreenContent(
               modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
               horizontalArrangement = Arrangement.SpaceEvenly,
               verticalAlignment = Alignment.CenterVertically) {
-                if (hasItems) {
+                if (overridePhoto || hasItems) {
                   Button(
                       onClick = onPublish,
                       modifier =
