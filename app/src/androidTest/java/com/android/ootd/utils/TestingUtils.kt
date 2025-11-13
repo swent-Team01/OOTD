@@ -1,15 +1,14 @@
 package com.android.ootd.utils
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.android.ootd.ui.Inventory.InventoryScreenTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
-import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 
@@ -56,18 +55,33 @@ fun verifyInventoryScreenAppears(composeTestRule: ComposeContentTestRule) {
   }
 }
 
-fun clickWithWait(composeTestRule: ComposeContentTestRule, tag: String) {
+fun clickWithWait(
+    composeTestRule: ComposeContentTestRule,
+    tag: String,
+    shouldScroll: Boolean = false,
+    useUnmergedTree: Boolean = false
+) {
   composeTestRule.waitUntil(timeoutMillis = 5000) {
-    composeTestRule.onNodeWithTag(tag).isDisplayed()
+    composeTestRule.onNodeWithTag(tag, useUnmergedTree = useUnmergedTree).isDisplayed()
   }
-  composeTestRule.onNodeWithTag(tag).performClick()
+  if (shouldScroll) {
+    composeTestRule
+        .onNodeWithTag(tag, useUnmergedTree = useUnmergedTree)
+        .performScrollTo()
+        .performClick()
+  } else {
+    composeTestRule.onNodeWithTag(tag, useUnmergedTree = useUnmergedTree).performClick()
+  }
 }
 
-fun takePicture(composeTestRule: ComposeContentTestRule) {
-  composeTestRule.onNodeWithTag(CameraScreenTestTags.CAPTURE_BUTTON).assertIsDisplayed()
-  clickWithWait(composeTestRule, CameraScreenTestTags.CAPTURE_BUTTON)
+fun verifyElementDoesNotAppearWithTimer(composeTestRule: ComposeContentTestRule, tag: String) {
+  composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()
+  }
+}
 
-  composeTestRule.onNodeWithTag(CameraScreenTestTags.ERROR_MESSAGE).assertIsDisplayed()
-  composeTestRule.onNodeWithTag(CameraScreenTestTags.ERROR_MESSAGE).assertTextContains("Wowzers")
-  clickWithWait(composeTestRule, CameraScreenTestTags.APPROVE_BUTTON)
+fun verifyElementAppearsWithTimer(composeTestRule: ComposeContentTestRule, tag: String) {
+  composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+  }
 }

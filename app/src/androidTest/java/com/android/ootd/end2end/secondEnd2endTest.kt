@@ -1,10 +1,7 @@
 package com.android.ootd.end2end
 
 import android.Manifest
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -23,6 +20,7 @@ import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
+import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
 import com.android.ootd.ui.post.AddItemScreenTestTags
@@ -35,6 +33,8 @@ import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.android.ootd.utils.BaseEnd2EndTest
 import com.android.ootd.utils.InMemoryItem.ensureVisible
 import com.android.ootd.utils.clickWithWait
+import com.android.ootd.utils.verifyElementAppearsWithTimer
+import com.android.ootd.utils.verifyElementDoesNotAppearWithTimer
 import com.android.ootd.utils.verifyFeedScreenAppears
 import com.android.ootd.utils.verifyInventoryScreenAppears
 import com.android.ootd.utils.verifyRegisterScreenAppears
@@ -64,7 +64,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
 
   /**
-   * Launches the full OOTD application and waits for the login screen to appear.
+   * STEP 1-2: Launches the full OOTD application and waits for the login screen to appear.
    *
    * This function performs the following steps:
    * 1. Sets up the OOTDApp composable with the fake credential manager
@@ -76,28 +76,15 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * navigate from Splash to the Authentication screen.
    */
   fun launchFullAppWaitForLogin() {
-    // STEP 1: Launch the full app
     composeTestRule.setContent {
       OOTDApp(context = context, credentialManager = fakeCredentialManager, overridePhoto = true)
     }
-
-    composeTestRule.waitForIdle()
-
-    // STEP 2: Wait for navigation from Splash to Authentication screen
-    // (Since FirebaseAuth.currentUser is null, we should navigate to authentication)
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're on the Sign-In screen
+    verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
     verifySignInScreenAppears(composeTestRule)
   }
 
   /**
-   * Simulates pressing the Google Sign-In button on the Authentication screen.
+   * STEP 3: Simulates pressing the Google Sign-In button on the Authentication screen.
    *
    * This function:
    * 1. Updates the mock Firebase authentication to return a signed-in user
@@ -108,20 +95,13 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * is new (no username set).
    */
   fun pressLoginButton() {
-    // STEP 3: Click the Google Sign-In button
     // Update mock to return the signed-in user after sign-in
     every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
-
-    composeTestRule
-        .onNodeWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-        .performScrollTo()
-        .performClick()
-
-    composeTestRule.waitForIdle()
+    clickWithWait(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON, true)
   }
 
   /**
-   * Waits for automatic navigation to the Registration screen after successful sign-in.
+   * STEP 4: Waits for automatic navigation to the Registration screen after successful sign-in.
    *
    * This function waits until the Register Save button is visible on screen, indicating that the
    * app has successfully navigated to the Registration screen.
@@ -131,14 +111,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * - The user account doesn't exist in the database (userExists returns false)
    */
   fun waitNavigationRegisterScreen() {
-    // STEP 4: Wait for automatic navigation to Registration screen
-    // (userExists returns false, so the app should navigate to registration)
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    verifyElementAppearsWithTimer(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE)
   }
 
   /**
@@ -165,7 +138,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   }
 
   /**
-   * Enters a date of birth using the date picker in the registration form.
+   * STEP 6: Enters a date of birth using the date picker in the registration form.
    *
    * This function:
    * 1. Scrolls to and clicks the date picker icon
@@ -177,25 +150,15 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * @param testDateofBirth The date of birth to be entered (format: "DD/MM/YYYY")
    */
   fun enterDateOfBirth(testDateofBirth: String) {
-    // STEP 6: Fill in the registration form - enter date of birth
-
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
-        .performScrollTo()
-        .performClick()
-
-    composeTestRule.waitForIdle()
-
-    // Verify date picker is displayed
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
-
+    clickWithWait(composeTestRule, RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
+    verifyElementAppearsWithTimer(composeTestRule, RegisterScreenTestTags.REGISTER_DATE_PICKER)
     // Enter date and confirm
     composeTestRule.enterDate(testDateofBirth)
     composeTestRule.waitForIdle()
   }
 
   /**
-   * Selects a location from the location picker in the registration form.
+   * STEP 6b: Selects a location from the location picker in the registration form.
    *
    * This function:
    * 1. Mocks the location repository to return the provided location when searching
@@ -207,16 +170,11 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * @param testLocation The location object to be used as the search result
    */
   fun enterLocation(testLocation: Location) {
-    // STEP 6b: Select a location
     // Mock the location repository to return suggestions when user types "Zurich"
 
     coEvery { mockLocationRepository.search(any()) } returns listOf(testLocation)
-
     // Enter location text in the input field
-    composeTestRule
-        .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
-        .performScrollTo()
-        .performClick()
+    clickWithWait(composeTestRule, LocationSelectionTestTags.INPUT_LOCATION, true)
     composeTestRule.waitForIdle()
 
     // Type "Zurich" to trigger location search
@@ -225,15 +183,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
         .performTextInput("Zurich")
     composeTestRule.waitForIdle()
 
-    // Wait for location suggestions to appear (now from mocked repository)
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Click the first location suggestion to select it
+    verifyElementAppearsWithTimer(composeTestRule, LocationSelectionTestTags.LOCATION_SUGGESTION)
     composeTestRule
         .onAllNodesWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
         .performClick()
@@ -241,7 +191,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   }
 
   /**
-   * Saves the registration form and waits for navigation to the Feed screen.
+   * STEP 7-8: Saves the registration form and waits for navigation to the Feed screen.
    *
    * This function:
    * 1. Updates mock behavior to indicate the user now exists in the database
@@ -255,64 +205,46 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * not given, the app would navigate to the Consent screen instead.
    */
   fun saveRegistrationAndNavigateToFeed() {
-    // STEP 7: Save the registration
     // Update mock behavior BEFORE clicking Save to avoid race conditions
     // After successful registration, userExists should return true
 
     coEvery { mockUserRepository.userExists(any()) } returns true
     coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
 
-    composeTestRule.waitForIdle()
-
     // Ensure the Save button is visible by scrolling to it if necessary
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE)
-        .performScrollTo()
-        .assertIsEnabled()
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_SAVE).performClick()
-
-    // STEP 8: App automatically navigates to Feed screen (consent is mocked as already given)
-    composeTestRule.waitForIdle()
+    clickWithWait(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE, shouldScroll = true)
 
     // More robust waiting with better error handling
     composeTestRule.waitUntil(timeoutMillis = 10000) {
-      try {
-        composeTestRule
-            .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
-            .fetchSemanticsNodes()
-            .isNotEmpty()
-      } catch (_: Exception) {
-        // Return false to continue waiting if there's an exception
-        false
-      }
+      composeTestRule
+          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
     }
 
     verifyFeedScreenAppears(composeTestRule)
     composeTestRule.waitForIdle()
   }
 
+  /** STEP 9 */
   @OptIn(ExperimentalPermissionsApi::class)
   fun addPostWithOneItem() {
 
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.ADD_POST_FAB).performClick()
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
-
-    composeTestRule.waitForIdle()
-
-    // Dialog visible with both options
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).assertIsDisplayed()
+    clickWithWait(composeTestRule, FeedScreenTestTags.ADD_POST_FAB)
+    clickWithWait(composeTestRule, FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+    verifyElementAppearsWithTimer(composeTestRule, FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)
     clickWithWait(composeTestRule, FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)
     composeTestRule
         .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
         .performTextInput("Sample description")
 
     clickWithWait(composeTestRule, FitCheckScreenTestTags.NEXT_BUTTON)
-    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.SCREEN_TITLE).assertIsDisplayed()
+    verifyElementAppearsWithTimer(composeTestRule, PreviewItemScreenTestTags.SCREEN_TITLE)
 
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
     clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
 
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
+    clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
     composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
 
     composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
@@ -323,7 +255,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
   }
 
   /**
-   * Navigates from the Feed screen to the Search screen.
+   * STEP 10: Navigates from the Feed screen to the Search screen.
    *
    * This function:
    * 1. Clicks the search icon on the Feed screen
@@ -331,23 +263,12 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 3. Verifies the Search screen is displayed
    */
   fun navigateToSearchScreen() {
-    // STEP 9: Click on search icon to navigate to search screen
     clickWithWait(composeTestRule, NavigationTestTags.SEARCH_TAB)
-
-    // Wait for Search screen to appear
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(SearchScreenTestTags.SEARCH_SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're on the Search screen
-    composeTestRule.onNodeWithTag(SearchScreenTestTags.SEARCH_SCREEN).assertIsDisplayed()
+    verifyElementAppearsWithTimer(composeTestRule, SearchScreenTestTags.SEARCH_SCREEN)
   }
 
   /**
-   * Searches for the user Greg and follows him
+   * STEP 10-12: Searches for the user Greg and follows him
    *
    * This function:
    * 1. Inputs the name greg in the search screen
@@ -355,12 +276,9 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 3. Follows greg by clicking the follow button
    */
   fun searchAndFollowUser() {
-    // Steps 10-12: Search and follow user
-    // This step doesn't work as we are on a local FireBase
     coEvery { mockUserRepository.getAllUsers() } returns
         runBlocking { listOf(User(username = userId)) }
 
-    // STEP 10: Search for "Greg" in the username field
     composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performClick()
     composeTestRule.waitForIdle()
     composeTestRule
@@ -368,28 +286,17 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
         .performTextInput(userId)
     composeTestRule.waitForIdle()
 
-    // STEP 11: Wait for and click on the username suggestion
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    verifyElementAppearsWithTimer(composeTestRule, UserSelectionFieldTestTags.USERNAME_SUGGESTION)
 
     // Click on the first suggestion (Greg)
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .performClick()
-    composeTestRule.waitForIdle()
-
-    // STEP 12: Wait for the profile card to appear and click Follow button
     clickWithWait(composeTestRule, UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-
-    composeTestRule.waitForIdle()
   }
 
   /**
-   * Opens the notifications screen from the Feed screen.
+   * STEP 13: Opens the notifications screen from the Feed screen.
    *
    * This function:
    * 1. Waits for the notification icon to be initialized and visible
@@ -398,8 +305,6 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 4. Tests to see that there is a follow notification for the user on the screen
    */
   fun openNotificationsScreen() {
-    // STEP 18: User clicks notification Icon
-    // Wait for the Notification Icon to be fully initialized and visible
     coEvery { mockNotificationRepository.getNotificationsForReceiver(any()) } returns
         runBlocking {
           listOf(
@@ -413,77 +318,50 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
 
     clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
     clickWithWait(composeTestRule, FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onNodeWithTag(NotificationsScreenTestTags.NOTIFICATIONS_SCREEN).isDisplayed()
-    }
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(NotificationsScreenTestTags.NOTIFICATION_ITEM)
-          .fetchSemanticsNodes()
-          .size == 1
-    }
+    verifyElementAppearsWithTimer(composeTestRule, NotificationsScreenTestTags.NOTIFICATIONS_SCREEN)
+    verifyElementAppearsWithTimer(composeTestRule, NotificationsScreenTestTags.NOTIFICATION_ITEM)
   }
 
-  /** Accepts follow notification from the notification screen and checks it dissapeared after. */
+  /**
+   * STEP 14: Accepts follow notification from the notification screen and checks it dissapeared
+   * after.
+   */
   fun acceptFollowNotification() {
     composeTestRule.onAllNodesWithTag(NotificationsScreenTestTags.ACCEPT_BUTTON)[0].performClick()
-
-    // STEP 19: Accept follow notification
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(NotificationsScreenTestTags.NOTIFICATION_ITEM)
-          .fetchSemanticsNodes()
-          .isEmpty()
-    }
+    verifyElementDoesNotAppearWithTimer(
+        composeTestRule, NotificationsScreenTestTags.NOTIFICATION_ITEM)
   }
 
   /**
-   * Goes to the inventory by clicking the corresponding tab button and checks the items button is
-   * there *
+   * STEPS 15-16: Goes to the inventory by clicking the corresponding tab button and checks the
+   * items button is there.
    */
   fun navigateToInventoryAndCheckAddItemButton() {
-    composeTestRule.onNodeWithTag(NavigationTestTags.INVENTORY_TAB).performClick()
-
+    clickWithWait(composeTestRule, NavigationTestTags.INVENTORY_TAB)
     verifyInventoryScreenAppears(composeTestRule)
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onNodeWithTag(InventoryScreenTestTags.EMPTY_STATE).isDisplayed()
-    }
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onNodeWithTag(InventoryScreenTestTags.ADD_ITEM_FAB).isDisplayed()
-    }
+    verifyElementAppearsWithTimer(composeTestRule, InventoryScreenTestTags.EMPTY_STATE)
+    verifyElementAppearsWithTimer(composeTestRule, InventoryScreenTestTags.ADD_ITEM_FAB)
   }
 
   /**
-   * Signs out the user and verifies navigation back to the Sign-In screen.
+   * STEP 17-18: Signs out the user and verifies navigation back to the Sign-In screen.
    *
    * This function:
    * 1. Goes to account page
-   * 2. Clicks the Sign Out button
-   * 3. Waits for the UI to stabilize
-   * 4. Waits for navigation back to the Authentication screen
-   * 5. Verifies the Sign-In screen is displayed
+   * 2. Goes to the account settings
+   * 3. Clicks the Sign Out button
+   * 4. Waits for the UI to stabilize
+   * 5. Waits for navigation back to the Authentication screen
+   * 6. Verifies the Sign-In screen is displayed
    *
    * After sign-out, the user should be returned to the initial authentication state, requiring them
    * to sign in again to access the app.
    */
   fun signOutAndVerifyAuthScreen() {
-    // STEP 23-24: User clicks signout Button
     clickWithWait(composeTestRule, NavigationTestTags.ACCOUNT_TAB)
     clickWithWait(composeTestRule, AccountPageTestTags.SETTINGS_BUTTON)
     clickWithWait(composeTestRule, UiTestTags.TAG_SIGNOUT_BUTTON)
-
-    // Wait for navigation back to Authentication screen after logout
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule
-          .onAllNodesWithTag(SignInScreenTestTags.LOGIN_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Verify we're back on the Sign-In screen after logout
+    verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
     verifySignInScreenAppears(composeTestRule)
   }
 
@@ -500,32 +378,26 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 6. User enters username, date of birth and location
    * 7. User clicks Save button
    * 8. App navigates directly to Feed screen (consent already given via mock)
-   * 9. User clicks search icon to navigate to Search screen
+   * 9. User adds post with one item attached to it and check it is displayed in feed
    * 10. User searches for "greg" in the username field
    * 11. User selects greg from the suggestions
    * 12. User clicks Follow button on greg's profile
-   * 13. User clicks back button to return to Feed screen
-   * 14. User clicks "Do a Fit Check" button to start posting a new outfit
-   * 15. User reaches FitCheck screen and verifies "Add Fit Photo" button
-   * 16. Note: Photo selection with camera/gallery cannot be tested in automated UI tests
-   * 17. User navigates back to Feed screen from FitCheck
-   * 18. User clicks notification icon
-   * 19. User accepts follow notification
-   * 20. User goes to inventory checks no items are there
-   * 21. User checks the add item button is there
-   * 23. User clicks Sign Out button
-   * 24. App navigates back to Authentication screen
+   * 13. User clicks notification icon and goes to notification screen.
+   * 14. User accepts follow notification
+   * 15. User goes to inventory checks no items are there
+   * 16. User checks the add item button is there
+   * 17. User clicks Sign Out button
+   * 18. App navigates back to Authentication screen
    *
    * LIMITATIONS:
-   * - Camera/Gallery intents cannot be tested in Compose UI tests without mocking
    * - Taking photos launches external activities that break ComposeTestRule
    *
    * This test:
    * - Uses the REAL OOTDApp composable with the full NavHost navigation graph
    * - Simulates actual user interactions across multiple screens
    * - Validates automatic navigation flows between screens
-   * - Tests the user lifecycle: sign-in → register → search → partial outfit post → accept
-   *   notification → sign-out
+   * - Tests the user lifecycle: sign-in → register → outfit post → search → accept notification →
+   *   sign-out
    * - Uses FakeCredentialManager and mocked Firebase to avoid network calls
    * - Mocks consent as already given to skip the consent screen
    */
