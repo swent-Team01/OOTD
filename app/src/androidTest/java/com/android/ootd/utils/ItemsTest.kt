@@ -14,7 +14,7 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
-import com.android.ootd.ui.post.AddItemScreenTestTags
+import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import org.junit.Before
 
 // Test partially generated with an AI coding agent

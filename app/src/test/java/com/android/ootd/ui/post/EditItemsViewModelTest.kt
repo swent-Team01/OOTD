@@ -9,6 +9,7 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
+import com.android.ootd.ui.post.items.EditItemsViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

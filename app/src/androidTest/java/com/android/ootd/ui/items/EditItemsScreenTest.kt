@@ -22,9 +22,9 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryLocal
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
-import com.android.ootd.ui.post.EditItemsScreen
-import com.android.ootd.ui.post.EditItemsScreenTestTags
-import com.android.ootd.ui.post.EditItemsViewModel
+import com.android.ootd.ui.post.items.EditItemsScreen
+import com.android.ootd.ui.post.items.EditItemsScreenTestTags
+import com.android.ootd.ui.post.items.EditItemsViewModel
 import com.android.ootd.utils.InMemoryItem.waitForNodeWithTag
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.delay

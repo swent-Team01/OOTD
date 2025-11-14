@@ -1,9 +1,10 @@
-package com.android.ootd.ui.post
+package com.android.ootd.ui.post.items
 
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -217,7 +218,7 @@ fun LoadingOverlay(visible: Boolean) {
       contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           CircularProgressIndicator(color = Primary)
-          Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(12.dp))
           Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
         }
       }
@@ -225,7 +226,7 @@ fun LoadingOverlay(visible: Boolean) {
 
 /** Image preview (local URI, remote URL, or placeholder) */
 @Composable
-fun androidx.compose.foundation.layout.BoxScope.ItemsImagePreview(
+fun BoxScope.ItemsImagePreview(
     localUri: Uri?,
     remoteUrl: String,
     maxImageSize: Dp,

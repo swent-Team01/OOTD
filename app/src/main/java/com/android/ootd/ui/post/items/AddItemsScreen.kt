@@ -1,4 +1,4 @@
-package com.android.ootd.ui.post
+package com.android.ootd.ui.post.items
 
 import android.net.Uri
 import android.widget.Toast
@@ -120,7 +120,7 @@ fun AddItemsScreen(
   val imageScaleState = remember { mutableFloatStateOf(1f) }
 
   val nestedScrollConnection =
-      rememberImageResizeScrollConnection(
+      _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
           currentImageSize = currentImageSizeState,
           imageScale = imageScaleState,
           minImageSize = minImageSize,
@@ -418,7 +418,7 @@ fun AddItemsScreenSmallPreview() {
     val imageScaleState = remember { mutableFloatStateOf(1f) }
 
     val nestedScrollConnection =
-        rememberImageResizeScrollConnection(
+        _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
             currentImageSize = currentImageSizeState,
             imageScale = imageScaleState,
             minImageSize = minImageSize,
