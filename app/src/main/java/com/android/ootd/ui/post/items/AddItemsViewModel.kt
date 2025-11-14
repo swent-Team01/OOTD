@@ -58,6 +58,7 @@ data class AddItemsUIState(
 /** Factory used to pass parameter to the view model for testing. */
 class AddItemsViewModelFactory(private val overridePhoto: Boolean) : ViewModelProvider.Factory {
 
+  @Suppress("UNCHECKED_CAST")
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
     if (modelClass.isAssignableFrom(AddItemsViewModel::class.java)) {
       return AddItemsViewModel(overridePhoto = overridePhoto) as T
@@ -126,79 +127,107 @@ open class AddItemsViewModel(
     _uiState.value = _uiState.value.copy(postUuid = postUuid)
   }
 
+  /** Validates the current state and returns an error message if invalid, or null if valid */
+  private fun validateAddItemState(state: AddItemsUIState): String? {
+    return when {
+      state.localPhotoUri == null && state.image.imageUrl.isEmpty() ->
+          "Please upload a photo before adding the item."
+      state.category.isBlank() -> "Please enter a category before adding the item."
+      state.invalidCategory != null -> "Please select a valid category."
+      else -> null
+    }
+  }
+
+  /** Uploads image and returns the uploaded ImageData, or null if upload fails */
+  private suspend fun uploadItemImage(localUri: Uri?, itemUuid: String): ImageData? {
+    if (localUri == null) return ImageData("", "")
+
+    val uploadedImage = FirebaseImageUploader.uploadImage(localUri, itemUuid)
+    return if (uploadedImage.imageUrl.isEmpty()) null else uploadedImage
+  }
+
+  /** Creates an Item object from the current state */
+  private fun createItemFromState(
+      state: AddItemsUIState,
+      itemUuid: String,
+      uploadedImage: ImageData,
+      ownerId: String
+  ): Item {
+    return Item(
+        itemUuid = itemUuid,
+        postUuids = if (state.postUuid.isNotEmpty()) listOf(state.postUuid) else emptyList(),
+        image = uploadedImage,
+        category = state.category,
+        type = state.type,
+        brand = state.brand,
+        price = state.price.toDoubleOrNull() ?: 0.0,
+        material = state.material,
+        link = state.link,
+        ownerId = ownerId)
+  }
+
+  /** Adds item to repository and inventory, handling rollback on failure */
+  private suspend fun addItemAndUpdateInventory(item: Item, uploadedImage: ImageData): Boolean {
+    repository.addItem(item)
+
+    val addedToInventory = accountRepository.addItem(item.itemUuid)
+    if (!addedToInventory) {
+      // Rollback: delete item and uploaded image
+      repository.deleteItem(item.itemUuid)
+      FirebaseImageUploader.deleteImage(uploadedImage.imageId)
+      return false
+    }
+    return true
+  }
+
   fun onAddItemClick() {
-    // Override photo makes sure that we can pass these checks without having
-    // to actually upload the image.
     val state = _uiState.value
+
     if (overridePhoto) {
-      _addOnSuccess.value = true // Go over the handling of the images
-    } else {
-      if (!state.isAddingValid) {
-        val error =
-            when {
-              state.localPhotoUri == null && state.image.imageUrl.isEmpty() ->
-                  "Please upload a photo before adding the item."
+      _addOnSuccess.value = true
+      return
+    }
 
-              state.category.isBlank() -> "Please enter a category before adding the item."
-              state.invalidCategory != null -> "Please select a valid category."
-              else -> "Some required fields are missing."
-            }
-        setErrorMsg(error)
-        _addOnSuccess.value = false
-        return
-      }
+    // Validate state
+    if (!state.isAddingValid) {
+      val error = validateAddItemState(state) ?: "Some required fields are missing."
+      setErrorMsg(error)
+      _addOnSuccess.value = false
+      return
+    }
 
-      val ownerId = Firebase.auth.currentUser?.uid ?: ""
-      viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true)
-        try {
-          val itemUuid = repository.getNewItemId()
-          val localUri = state.localPhotoUri
-          val uploadedImage =
-              if (localUri != null) {
-                FirebaseImageUploader.uploadImage(localUri, itemUuid)
-              } else ImageData("", "")
+    val ownerId = Firebase.auth.currentUser?.uid ?: ""
+    viewModelScope.launch {
+      _uiState.value = _uiState.value.copy(isLoading = true)
+      try {
+        val itemUuid = repository.getNewItemId()
 
-          if (uploadedImage.imageUrl.isEmpty()) {
-            setErrorMsg("Image upload failed. Please try again.")
-            _addOnSuccess.value = false
-            return@launch
-          }
-
-          val item =
-              Item(
-                  itemUuid = itemUuid,
-                  postUuids =
-                      if (state.postUuid.isNotEmpty()) listOf(state.postUuid) else emptyList(),
-                  image = uploadedImage,
-                  category = state.category,
-                  type = state.type,
-                  brand = state.brand,
-                  price = state.price.toDoubleOrNull() ?: 0.0,
-                  material = state.material,
-                  link = state.link,
-                  ownerId = ownerId)
-
-          repository.addItem(item)
-
-          // Add item to user's inventory
-          val addedToInventory = accountRepository.addItem(itemUuid)
-          if (!addedToInventory) {
-            repository.deleteItem(itemUuid)
-            FirebaseImageUploader.deleteImage(uploadedImage.imageId)
-            setErrorMsg("Failed to add item to inventory. Please try again.")
-            _addOnSuccess.value = false
-            return@launch
-          }
-
-          _addOnSuccess.value = true
-          clearErrorMsg()
-        } catch (e: Exception) {
-          setErrorMsg("Failed to add item: ${e.message}")
+        // Upload image
+        val uploadedImage = uploadItemImage(state.localPhotoUri, itemUuid)
+        if (uploadedImage == null) {
+          setErrorMsg("Image upload failed. Please try again.")
           _addOnSuccess.value = false
-        } finally {
-          _uiState.value = _uiState.value.copy(isLoading = false)
+          return@launch
         }
+
+        // Create item
+        val item = createItemFromState(state, itemUuid, uploadedImage, ownerId)
+
+        // Add item and update inventory
+        val success = addItemAndUpdateInventory(item, uploadedImage)
+        if (!success) {
+          setErrorMsg("Failed to add item to inventory. Please try again.")
+          _addOnSuccess.value = false
+          return@launch
+        }
+
+        _addOnSuccess.value = true
+        clearErrorMsg()
+      } catch (e: Exception) {
+        setErrorMsg("Failed to add item: ${e.message}")
+        _addOnSuccess.value = false
+      } finally {
+        _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
   }
