@@ -4,7 +4,6 @@ import android.util.Log
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.toObjects
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -36,7 +35,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
                   .get()
                   .await()
             }
-        results += snap.toObjects<OutfitPost>()
+        results += snap.documents.mapNotNull { mapToPost(it) }
       }
       // Merge and sort by timestamp ascending
       results.sortedBy { it.timestamp }
@@ -74,7 +73,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
                   .get()
                   .await()
             }
-        results += snap.toObjects<OutfitPost>()
+        results += snap.documents.mapNotNull { mapToPost(it) }
       }
 
       // Sort descending (meaning most recent first)
@@ -137,7 +136,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val ownerId = doc.getString("ownerId") ?: ""
       val timestamp = doc.getLong("timestamp") ?: 0L
       val description = doc.getString("description") ?: ""
-      val itemsList = doc.get("itemsID") as? List<*> // Changed from "itemsId" to "itemsID"
+      val itemsList = doc["itemsID"] as? List<*>
       val itemUuids = itemsList?.mapNotNull { it as? String } ?: emptyList()
       val name = doc.getString("name") ?: ""
       val outfitUrl = doc.getString("outfitURL") ?: ""

@@ -147,12 +147,9 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
   override suspend fun addUser(user: User) {
     try {
-      if (userExists(user.uid)) {
-        throw IllegalArgumentException("User with UID ${user.uid} already exists")
-      }
+      require(!userExists(user.uid)) { "User with UID ${user.uid} already exists" }
 
       db.collection(USER_COLLECTION_PATH).document(user.uid).set(user.toDto()).await()
-
       Log.d(TAG, "Successfully added user with UID: ${user.uid}")
     } catch (e: Exception) {
       Log.e(TAG, "Error adding user: ${e.message}", e)

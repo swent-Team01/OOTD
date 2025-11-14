@@ -61,9 +61,9 @@ object InventoryScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
+    modifier: Modifier = Modifier,
     inventoryViewModel: InventoryViewModel = viewModel(),
     navigationActions: NavigationActions? = null,
-    modifier: Modifier = Modifier
 ) {
   val uiState by inventoryViewModel.uiState.collectAsState()
   val snackbarHostState = remember { SnackbarHostState() }
