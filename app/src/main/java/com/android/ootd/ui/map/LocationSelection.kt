@@ -143,7 +143,6 @@ private fun LocationSuggestionsDropdown(
 /** Default EPFL location selector text */
 @Composable
 private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
-  val colors = LightColorScheme
   val typography = Typography
 
   Text(
