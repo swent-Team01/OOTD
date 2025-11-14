@@ -48,6 +48,103 @@ object FitCheckScreenTestTags {
 
 private const val MAX_DESCRIPTION_LENGTH = 100
 
+/** Image preview box showing selected photo or placeholder */
+@Composable
+private fun ImagePreviewBox(imageUri: Uri) {
+  Box(
+      modifier =
+          Modifier.size(220.dp)
+              .clip(RoundedCornerShape(16.dp))
+              .border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+              .background(Color.White)
+              .testTag(FitCheckScreenTestTags.IMAGE_PREVIEW),
+      contentAlignment = Alignment.Center) {
+        if (imageUri == Uri.EMPTY) {
+          Icon(
+              painter = painterResource(id = R.drawable.ic_photo_placeholder),
+              contentDescription = "Placeholder icon",
+              modifier = Modifier.size(80.dp).testTag(FitCheckScreenTestTags.PLACEHOLDER_ICON),
+              tint = Color.Gray)
+        } else {
+          AsyncImage(
+              model = imageUri,
+              contentDescription = "Selected photo",
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop)
+        }
+      }
+}
+
+/** Description input field with character counter */
+@Composable
+private fun DescriptionInputField(description: String, onDescriptionChange: (String) -> Unit) {
+  val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+
+  Column(modifier = Modifier.fillMaxWidth()) {
+    OutlinedTextField(
+        value = description,
+        onValueChange = { newValue ->
+          if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
+            onDescriptionChange(newValue)
+          }
+        },
+        label = { Text("Description") },
+        placeholder = { Text("Add a short caption for your FitCheck") },
+        modifier = Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
+        singleLine = false,
+        maxLines = 2,
+        shape = RoundedCornerShape(12.dp))
+
+    Text(
+        text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier =
+            Modifier.align(Alignment.End)
+                .padding(top = 4.dp, end = 4.dp)
+                .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
+  }
+}
+
+/** Photo selection dialog */
+@Composable
+private fun PhotoSelectionDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onChooseFromGallery: () -> Unit
+) {
+  if (showDialog) {
+    AlertDialog(
+        modifier = Modifier.testTag(FitCheckScreenTestTags.ALERT_DIALOG),
+        onDismissRequest = onDismiss,
+        title = { Text("Select Photo") },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(
+                onClick = {
+                  onDismiss()
+                  onTakePhoto()
+                },
+                modifier = Modifier.testTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)) {
+                  Text("Take Photo")
+                }
+
+            TextButton(
+                onClick = {
+                  onChooseFromGallery()
+                  onDismiss()
+                },
+                modifier = Modifier.testTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)) {
+                  Text("Choose from Gallery")
+                }
+          }
+        },
+        confirmButton = {},
+        dismissButton = {})
+  }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FitCheckScreen(
@@ -166,31 +263,10 @@ private fun FitCheckScreenContent(
                     .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
-              Box(
-                  modifier =
-                      Modifier.size(220.dp)
-                          .clip(RoundedCornerShape(16.dp))
-                          .border(
-                              4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
-                          .background(Color.White)
-                          .testTag(FitCheckScreenTestTags.IMAGE_PREVIEW),
-                  contentAlignment = Alignment.Center) {
-                    if (uiState.image == Uri.EMPTY) {
-                      Icon(
-                          painter = painterResource(id = R.drawable.ic_photo_placeholder),
-                          contentDescription = "Placeholder icon",
-                          modifier =
-                              Modifier.size(80.dp).testTag(FitCheckScreenTestTags.PLACEHOLDER_ICON),
-                          tint = Color.Gray)
-                    } else {
-                      AsyncImage(
-                          model = uiState.image,
-                          contentDescription = "Selected photo",
-                          modifier = Modifier.fillMaxSize(),
-                          contentScale = ContentScale.Crop)
-                    }
-                  }
+              // Image preview
+              ImagePreviewBox(imageUri = uiState.image)
 
+              // Error message
               uiState.errorMessage?.let { msg ->
                 Text(
                     text = msg,
@@ -200,36 +276,11 @@ private fun FitCheckScreenContent(
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
 
-              // --- Description field with char limit & counter ---
-              val description = uiState.description
-              val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+              // Description field with counter
+              DescriptionInputField(
+                  description = uiState.description, onDescriptionChange = onDescriptionChange)
 
-              Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { newValue ->
-                      if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
-                        onDescriptionChange(newValue)
-                      }
-                    },
-                    label = { Text("Description") },
-                    placeholder = { Text("Add a short caption for your FitCheck") },
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
-                    singleLine = false,
-                    maxLines = 2,
-                    shape = RoundedCornerShape(12.dp))
-
-                Text(
-                    text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier =
-                        Modifier.align(Alignment.End)
-                            .padding(top = 4.dp, end = 4.dp)
-                            .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
-              }
-
+              // Add photo button
               Button(
                   onClick = { showDialog = true },
                   shape = RoundedCornerShape(24.dp),
@@ -240,36 +291,12 @@ private fun FitCheckScreenContent(
                     Text("Add Fit Photo", color = Color.White)
                   }
 
-              if (showDialog) {
-                AlertDialog(
-                    modifier = Modifier.testTag(FitCheckScreenTestTags.ALERT_DIALOG),
-                    onDismissRequest = { showDialog = false },
-                    title = { Text("Select Photo") },
-                    text = {
-                      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(
-                            onClick = {
-                              showDialog = false
-                              onTakePhoto()
-                            },
-                            modifier = Modifier.testTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)) {
-                              Text("Take Photo")
-                            }
-
-                        TextButton(
-                            onClick = {
-                              onChooseFromGallery()
-                              showDialog = false
-                            },
-                            modifier =
-                                Modifier.testTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)) {
-                              Text("Choose from Gallery")
-                            }
-                      }
-                    },
-                    confirmButton = {},
-                    dismissButton = {})
-              }
+              // Photo selection dialog
+              PhotoSelectionDialog(
+                  showDialog = showDialog,
+                  onDismiss = { showDialog = false },
+                  onTakePhoto = onTakePhoto,
+                  onChooseFromGallery = onChooseFromGallery)
             }
       }
 }

@@ -55,6 +55,109 @@ object LocationSelectionTestTags {
   const val LOCATION_DEFAULT_EPFL = "locationDefaultEpfl"
 }
 
+/** GPS Button component for location selection */
+@Composable
+private fun GPSButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
+  OutlinedButton(
+      onClick = onClick,
+      modifier =
+          Modifier.fillMaxWidth()
+              .padding(vertical = 8.dp)
+              .testTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON),
+      colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
+      enabled = !isLoading) {
+        Icon(
+            imageVector = Icons.Default.LocationOn,
+            contentDescription = "GPS",
+            modifier = Modifier.padding(end = 8.dp))
+        Text(text, fontFamily = Bodoni)
+      }
+}
+
+/** Trailing icon for location input field (loading, clear, or none) */
+@Composable
+private fun LocationInputTrailingIcon(
+    isLoadingLocation: Boolean,
+    locationQuery: String,
+    onClear: () -> Unit
+) {
+  when {
+    isLoadingLocation -> {
+      CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+    }
+    locationQuery.isNotEmpty() -> {
+      IconButton(
+          onClick = onClear,
+          modifier = Modifier.testTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)) {
+            Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "Clear location",
+                tint = Primary)
+          }
+    }
+  }
+}
+
+/** Dropdown menu showing location suggestions */
+@Composable
+private fun LocationSuggestionsDropdown(
+    showDropdown: Boolean,
+    suggestions: List<Location>,
+    isFocused: Boolean,
+    onDismiss: () -> Unit,
+    onLocationSelect: (Location) -> Unit,
+    onClearSuggestions: () -> Unit
+) {
+  DropdownMenu(
+      expanded = showDropdown && suggestions.isNotEmpty() && isFocused,
+      onDismissRequest = onDismiss,
+      properties = PopupProperties(focusable = false),
+      modifier = Modifier.fillMaxWidth()) {
+        suggestions.take(3).forEach { location ->
+          DropdownMenuItem(
+              text = {
+                Text(
+                    text = location.name.take(30) + if (location.name.length > 30) "..." else "",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontFamily = Bodoni)
+              },
+              onClick = {
+                onLocationSelect(location)
+                onClearSuggestions()
+                onDismiss()
+              },
+              modifier =
+                  Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_SUGGESTION))
+        }
+
+        if (suggestions.size > 3) {
+          DropdownMenuItem(
+              text = { Text("More...", fontFamily = Bodoni) },
+              onClick = { /* Nothing */ },
+              modifier = Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
+        }
+      }
+}
+
+/** Default EPFL location selector text */
+@Composable
+private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
+  val colors = LightColorScheme
+  val typography = Typography
+
+  Text(
+      text = "or select default location (EPFL)",
+      color = Primary,
+      style =
+          typography.bodyMedium.copy(
+              fontFamily = Bodoni, textDecoration = TextDecoration.Underline),
+      modifier =
+          Modifier.padding(top = 8.dp, bottom = 4.dp)
+              .clickable { onSelectDefault() }
+              .testTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL))
+}
+
 /**
  * Location selection UI with a GPS button, text input and suggestion dropdown.
  *
@@ -94,42 +197,21 @@ fun LocationSelectionSection(
   val typography = Typography
 
   Column(modifier = modifier) {
-    // Local state to control dropdown visibility
     var showDropdown by remember { mutableStateOf(false) }
     var isFocused by remember { mutableStateOf(false) }
 
     // Automatically show dropdown when suggestions are available and field is focused
-    LaunchedEffect(suggestions, isFocused) {
-      if (isFocused && suggestions.isNotEmpty()) {
-        showDropdown = true
-      } else if (suggestions.isEmpty()) {
-        showDropdown = false
-      }
-    }
+    LaunchedEffect(suggestions, isFocused) { showDropdown = isFocused && suggestions.isNotEmpty() }
 
     // GPS Button
-    OutlinedButton(
-        onClick = onGPSClick,
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .testTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON),
-        colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
-        enabled = !isLoadingLocation) {
-          Icon(
-              imageVector = Icons.Default.LocationOn,
-              contentDescription = "GPS",
-              modifier = Modifier.padding(end = 8.dp))
-          Text(textGPSButton, fontFamily = Bodoni)
-        }
+    GPSButton(text = textGPSButton, isLoading = isLoadingLocation, onClick = onGPSClick)
 
-    // Manual Input Field with custom dropdown
+    // Manual Input Field with dropdown
     Box {
       OutlinedTextField(
           value = locationQuery,
           onValueChange = {
             onLocationQueryChange(it)
-            // Ensure dropdown is shown when user types and we're focused
             if (isFocused) {
               showDropdown = true
             }
@@ -155,25 +237,13 @@ fun LocationSelectionSection(
                   unfocusedTextColor = colors.primary,
                   cursorColor = colors.primary),
           trailingIcon = {
-            when {
-              isLoadingLocation -> {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-              }
-              // Show clear button when user typed anything (so they can clear invalid query)
-              locationQuery.isNotEmpty() -> {
-                IconButton(
-                    onClick = {
-                      onLocationQueryChange("")
-                      onClearSuggestions()
-                    },
-                    modifier = Modifier.testTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.Default.Clear,
-                          contentDescription = "Clear location",
-                          tint = Primary)
-                    }
-              }
-            }
+            LocationInputTrailingIcon(
+                isLoadingLocation = isLoadingLocation,
+                locationQuery = locationQuery,
+                onClear = {
+                  onLocationQueryChange("")
+                  onClearSuggestions()
+                })
           },
           modifier =
               Modifier.fillMaxWidth()
@@ -183,11 +253,9 @@ fun LocationSelectionSection(
                     isFocused = focusState.isFocused
                     onFocusChanged(focusState.isFocused)
 
-                    // Show dropdown when gaining focus if there are suggestions
                     if (focusState.isFocused && !wasFocused && suggestions.isNotEmpty()) {
                       showDropdown = true
                     }
-                    // Hide dropdown when losing focus
                     if (!focusState.isFocused && wasFocused) {
                       showDropdown = false
                     }
@@ -197,55 +265,22 @@ fun LocationSelectionSection(
           readOnly = selectedLocation != null && selectedLocation.name.isNotEmpty())
 
       // Dropdown menu for location suggestions
-      DropdownMenu(
-          expanded = showDropdown && suggestions.isNotEmpty() && isFocused,
-          onDismissRequest = { showDropdown = false },
-          properties = PopupProperties(focusable = false),
-          modifier = Modifier.fillMaxWidth()) {
-            suggestions.take(3).forEach { location ->
-              DropdownMenuItem(
-                  text = {
-                    Text(
-                        text =
-                            location.name.take(30) + if (location.name.length > 30) "..." else "",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontFamily = Bodoni)
-                  },
-                  onClick = {
-                    onLocationSelect(location)
-                    onClearSuggestions()
-                    showDropdown = false
-                  },
-                  modifier =
-                      Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_SUGGESTION))
-            }
-
-            if (suggestions.size > 3) {
-              DropdownMenuItem(
-                  text = { Text("More...", fontFamily = Bodoni) },
-                  onClick = { /* Optionally show more results */ },
-                  modifier =
-                      Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
-            }
-          }
+      LocationSuggestionsDropdown(
+          showDropdown = showDropdown,
+          suggestions = suggestions,
+          isFocused = isFocused,
+          onDismiss = { showDropdown = false },
+          onLocationSelect = onLocationSelect,
+          onClearSuggestions = onClearSuggestions)
     }
 
     // Default EPFL location selector
-    Text(
-        text = "or select default location (EPFL)",
-        color = Primary,
-        style =
-            typography.bodyMedium.copy(
-                fontFamily = Bodoni, textDecoration = TextDecoration.Underline),
-        modifier =
-            Modifier.padding(top = 8.dp, bottom = 4.dp)
-                .clickable {
-                  onLocationQueryChange(epflLocation.name)
-                  onLocationSelect(epflLocation)
-                  onClearSuggestions()
-                }
-                .testTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL))
+    DefaultLocationSelector(
+        onSelectDefault = {
+          onLocationQueryChange(epflLocation.name)
+          onLocationSelect(epflLocation)
+          onClearSuggestions()
+        })
   }
 }
 
