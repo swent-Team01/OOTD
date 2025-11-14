@@ -118,7 +118,7 @@ fun TypeField(
         value = type,
         onValueChange = {
           onChange(it)
-          expanded = if (expandOnChange) it.isNotBlank() else true
+          expanded = expandOnChange && it.isNotBlank() || !expandOnChange
         },
         label = { Text("Type") },
         placeholder = { Text("Enter a type") },
