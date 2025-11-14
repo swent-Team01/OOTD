@@ -44,11 +44,11 @@ import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreen
-import com.android.ootd.ui.post.AddItemsScreen
-import com.android.ootd.ui.post.EditItemsScreen
 import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.post.PostViewScreen
 import com.android.ootd.ui.post.PreviewItemScreen
+import com.android.ootd.ui.post.items.AddItemsScreen
+import com.android.ootd.ui.post.items.EditItemsScreen
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme

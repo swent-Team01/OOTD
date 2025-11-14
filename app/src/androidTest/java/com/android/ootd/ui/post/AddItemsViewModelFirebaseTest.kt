@@ -5,6 +5,7 @@ import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.ui.post.items.AddItemsViewModel
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import io.mockk.coEvery

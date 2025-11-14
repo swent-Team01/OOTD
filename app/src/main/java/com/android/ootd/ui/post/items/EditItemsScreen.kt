@@ -1,4 +1,4 @@
-package com.android.ootd.ui.post
+package com.android.ootd.ui.post.items
 
 import android.net.Uri
 import android.widget.Toast
@@ -96,7 +96,7 @@ fun EditItemsScreen(
   val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
   val imageScaleState = remember { mutableFloatStateOf(1f) }
   val nestedScrollConnection =
-      rememberImageResizeScrollConnection(
+      _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
           currentImageSize = currentImageSizeState,
           imageScale = imageScaleState,
           minImageSize = minImageSize,
@@ -126,7 +126,7 @@ fun EditItemsScreen(
                   Modifier.fillMaxSize()
                       .padding(innerPadding)
                       .nestedScroll(nestedScrollConnection)) {
-                FieldsList(
+                _root_ide_package_.com.android.ootd.ui.post.items.FieldsList(
                     modifier =
                         Modifier.fillMaxWidth()
                             .padding(16.dp)

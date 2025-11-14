@@ -7,6 +7,7 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.ui.post.items.EditItemsViewModel
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import io.mockk.coEvery

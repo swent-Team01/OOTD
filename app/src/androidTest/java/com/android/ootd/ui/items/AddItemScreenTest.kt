@@ -18,10 +18,10 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryProvider
-import com.android.ootd.ui.post.AddItemScreenTestTags
-import com.android.ootd.ui.post.AddItemsScreen
-import com.android.ootd.ui.post.AddItemsScreenSmallPreview
-import com.android.ootd.ui.post.AddItemsViewModel
+import com.android.ootd.ui.post.items.AddItemScreenTestTags
+import com.android.ootd.ui.post.items.AddItemsScreen
+import com.android.ootd.ui.post.items.AddItemsScreenSmallPreview
+import com.android.ootd.ui.post.items.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
 import kotlinx.coroutines.test.runTest

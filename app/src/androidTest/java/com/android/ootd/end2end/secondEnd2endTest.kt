@@ -21,9 +21,9 @@ import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
-import com.android.ootd.ui.post.AddItemScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
+import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.UserProfileCardTestTags

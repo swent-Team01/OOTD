@@ -1,4 +1,4 @@
-package com.android.ootd.ui.post
+package com.android.ootd.ui.post.items
 
 import android.content.Context
 import android.net.Uri
