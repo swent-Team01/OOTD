@@ -41,20 +41,27 @@ class ViewUserViewModel(
   private val _uiState = MutableStateFlow(ViewUserData())
   val uiState: StateFlow<ViewUserData> = _uiState.asStateFlow()
 
-  private fun refresh(currentUserId: String, friendId: String) {
+  fun update(friendId: String) {
+    if (friendId.isNotBlank()) {
+      refresh(friendId)
+    }
+  }
+
+  private fun refresh(friendId: String) {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoading = true) }
       try {
-        val isFriend = accountRepository.isMyFriend(currentUserId, friendId)
+        val currentUserId = accountService.currentUserId
+        val isFriend = isMyFriend(currentUserId, friendId)
         val friend = userRepository.getUser(friendId)
-        val friendPosts =
-            if (isFriend) feedRepository.getFeedForUids(listOf(friendId)) else emptyList()
+        val friendPosts = postsToShow(friendId, isFriend)
+        //        val friendCount = accountRepository.getFriends(friendId).size
         _uiState.update {
           it.copy(
               username = friend.username,
               profilePicture = friend.profilePicture,
-              isFriend = true,
               friendPosts = friendPosts,
+              //              friendCount = friendCount,
               isLoading = false)
         }
       } catch (e: Exception) {
@@ -64,8 +71,16 @@ class ViewUserViewModel(
     }
   }
 
-  fun getPublicProfile(friendId: String) {
-    val currentUserId = accountService.currentUserId
-    refresh(currentUserId, friendId)
+  private suspend fun isMyFriend(userId: String, friendId: String): Boolean {
+    val isFriend = accountRepository.isMyFriend(userId, friendId)
+    _uiState.update { it.copy(isFriend = isFriend) }
+    return isFriend
+  }
+
+  private suspend fun postsToShow(friendId: String, isFriend: Boolean): List<OutfitPost> {
+    if (isFriend) {
+      return feedRepository.getFeedForUids(listOf(friendId))
+    }
+    return emptyList()
   }
 }
