@@ -347,7 +347,12 @@ fun OOTDApp(
                         navBackStackEntry ->
                       val userId = navBackStackEntry.arguments?.getString("userId")
                       if (userId != null) {
-                        ViewUserProfile(onBackButton = { navigationActions.goBack() })
+                        ViewUserProfile(
+                            userId = userId,
+                            onBackButton = { navigationActions.goBack() },
+                            onPostClick = { postId ->
+                              navigationActions.navigateTo(Screen.PostView(postId))
+                            })
                       }
                     }
 

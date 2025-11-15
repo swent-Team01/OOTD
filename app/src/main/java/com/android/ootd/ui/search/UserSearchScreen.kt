@@ -68,7 +68,7 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), onUserClick: 
               hasRequestPending = uiState.hasRequestPending,
               errorMessage = uiState.errorMessage,
               onFollowClick = { viewModel.pressFollowButton() },
-              onUserClick = { onUserClick(uiState.username) },
+              onUserClick = { onUserClick(uiState.selectedUser!!.uid) },
               onErrorDismiss = { viewModel.clearError() })
         }
       }
