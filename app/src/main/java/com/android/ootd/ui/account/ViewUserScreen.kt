@@ -13,7 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +55,7 @@ object ViewUserScreenTags {
   const val LOADING_TAG = "viewUserLoading"
   const val BACK_BUTTON_TAG = "viewUserBackButton"
   const val TITLE_TAG = "viewUserTitle"
+  const val FOLLOW_BUTTON_TAG = "viewUserFollowButton"
 }
 
 @Composable
@@ -87,7 +89,7 @@ private fun ViewUserProfileContent(
   val scrollState = rememberScrollState()
 
   val isFriendText = if (uiState.isFriend) "your" else "not your"
-  val usernameText = "${uiState.username} is $isFriendText friend"
+  val friendStatusText = "This user is $isFriendText friend"
 
   Column(
       modifier =
@@ -95,8 +97,8 @@ private fun ViewUserProfileContent(
               .background(colorScheme.background)
               .verticalScroll(scrollState)
               .padding(horizontal = 22.dp, vertical = 10.dp)) {
-        // Back button
-        ViewUserBackButton(onBackButton, Modifier.align(Alignment.Start))
+        // Back button with username as title
+        ViewUserBackButton(onBackButton, uiState.username, Modifier.align(Alignment.Start))
 
         Spacer(modifier = Modifier.height(36.dp))
 
@@ -105,16 +107,12 @@ private fun ViewUserProfileContent(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Username
-        ViewUserText(
-            text = "@${uiState.username}",
-            style = typography.displayLarge,
-            color = colorScheme.primary,
-            testTag = ViewUserScreenTags.USERNAME_TAG)
+        // Follow Button
+        ViewUserFollowButton(uiState.isFriend, onFollowClick = {})
 
         Spacer(modifier = Modifier.height(9.dp))
 
-        ViewUserText(text = usernameText, style = typography.bodyLarge)
+        ViewUserText(text = friendStatusText, style = typography.bodyLarge)
 
         Spacer(modifier = Modifier.height(9.dp))
 
@@ -253,11 +251,22 @@ private fun ViewUserAvatar(uiState: ViewUserData) {
 }
 
 @Composable
-private fun ViewUserBackButton(onBackButton: () -> Unit, modifier: Modifier) {
+private fun ViewUserFollowButton(isFriend: Boolean, onFollowClick: () -> Unit) {
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Button(
+        onClick = onFollowClick,
+        modifier = Modifier.testTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG)) {
+          Text(text = if (isFriend) "Unfollow" else "Follow")
+        }
+  }
+}
+
+@Composable
+private fun ViewUserBackButton(onBackButton: () -> Unit, username: String, modifier: Modifier) {
   IconButton(
       onClick = onBackButton, modifier = modifier.testTag(ViewUserScreenTags.BACK_BUTTON_TAG)) {
         Icon(
-            imageVector = Icons.Default.ArrowBack,
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Back",
             tint = colorScheme.onBackground,
             modifier = Modifier.size(32.dp))
@@ -268,7 +277,7 @@ private fun ViewUserBackButton(onBackButton: () -> Unit, modifier: Modifier) {
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = "User Profile",
+            text = "@$username",
             style = typography.displayMedium,
             fontFamily = Bodoni,
             color = colorScheme.primary,
