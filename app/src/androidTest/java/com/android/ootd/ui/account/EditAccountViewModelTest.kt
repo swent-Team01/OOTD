@@ -10,6 +10,7 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
@@ -95,9 +96,11 @@ class EditAccountViewModelTest {
   // --- tiny helpers to shorten tests ---
   private fun initVM(
       accRepo: AccountRepository = accountRepository,
-      usrRepo: UserRepository = userRepository
+      usrRepo: UserRepository = userRepository,
+      locRepo: LocationRepository = locationRepository
   ) {
-    viewModel = AccountViewModel(accountService, accRepo, usrRepo)
+    viewModel =
+        AccountViewModel(accountService, accRepo, usrRepo, LocationSelectionViewModel(locRepo))
   }
 
   private fun mockUser(
@@ -472,15 +475,15 @@ class EditAccountViewModelTest {
     advanceUntilIdle()
 
     assertEquals(location, viewModel.uiState.value.location)
-    assertEquals("Test Location", viewModel.uiState.value.locationQuery)
+    assertEquals("Test Location", viewModel.locationSelectionViewModel.uiState.value.locationQuery)
 
     // Clear the query
-    viewModel.setLocationQuery("")
+    viewModel.locationSelectionViewModel.setLocationQuery("")
     advanceUntilIdle()
 
     // Location should be cleared to make field editable
     assertEquals(emptyLocation, viewModel.uiState.value.location)
-    assertEquals("", viewModel.uiState.value.locationQuery)
+    assertEquals("", viewModel.locationSelectionViewModel.uiState.value.locationQuery)
   }
 
   @Test
@@ -499,6 +502,7 @@ class EditAccountViewModelTest {
         slot<com.google.android.gms.tasks.OnSuccessListener<android.location.Location>>()
     every { mockLocationTask.addOnSuccessListener(capture(successListenerSlot)) } answers
         {
+          successListenerSlot.captured.onSuccess(mockAndroidLocation)
           mockLocationTask
         }
     every {
@@ -510,7 +514,6 @@ class EditAccountViewModelTest {
     } returns mockLocationTask
 
     viewModel.onLocationPermissionGranted()
-    successListenerSlot.captured.onSuccess(mockAndroidLocation)
     advanceUntilIdle()
 
     // Verify location was set and saved
@@ -520,7 +523,7 @@ class EditAccountViewModelTest {
     assertEquals(6.5668, location.longitude, 0.0001)
     assertTrue(location.name.contains("Current Location"))
     coVerify { accountRepository.editAccount("test-uid", any(), any(), any(), location) }
-    assertFalse(viewModel.uiState.value.isLoadingLocations)
+    assertFalse(viewModel.locationSelectionViewModel.uiState.value.isLoadingLocations)
   }
 
   @Test

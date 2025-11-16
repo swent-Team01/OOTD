@@ -33,6 +33,7 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.map.LocationSelectionTestTags
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
@@ -62,6 +63,7 @@ class EditAccountScreenTest {
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
+  private lateinit var mockLocationSelectionViewModel: LocationSelectionViewModel
 
   private val userFlow = MutableStateFlow<FirebaseUser?>(null)
 
@@ -92,9 +94,15 @@ class EditAccountScreenTest {
     // Mock the fusedLocationClient to avoid lateinit errors
     LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
 
+    // Create LocationSelectionViewModel with mock repository
+    mockLocationSelectionViewModel = LocationSelectionViewModel(mockLocationRepository)
+
     viewModel =
         AccountViewModel(
-            mockAccountService, mockAccountRepository, mockUserRepository, mockLocationRepository)
+            mockAccountService,
+            mockAccountRepository,
+            mockUserRepository,
+            mockLocationSelectionViewModel)
   }
 
   @After
@@ -527,7 +535,8 @@ class EditAccountScreenTest {
       assertEquals(46.5191, selectedLocation.latitude, 0.0001)
       assertEquals(6.5668, selectedLocation.longitude, 0.0001)
       assertTrue(selectedLocation.name.contains("EPFL"))
-      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
+      assertEquals(
+          selectedLocation.name, viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
   }
 }
