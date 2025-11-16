@@ -19,6 +19,7 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.map.LocationSelectionTestTags
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.register.RegisterScreen
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.register.RegisterViewModel
@@ -49,14 +50,24 @@ class RegisterScreenTest {
   private lateinit var viewModel: RegisterViewModel
   private lateinit var repository: UserRepository
   private lateinit var locationRepository: LocationRepository
+  private lateinit var locationSelectionViewModel: LocationSelectionViewModel
 
   @Before
   fun setUp() {
     repository = mockk(relaxed = true)
     locationRepository = mockk(relaxed = true)
     LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
+
+    // Create LocationSelectionViewModel with mocked repository
+    locationSelectionViewModel = LocationSelectionViewModel(locationRepository = locationRepository)
+
+    // Create RegisterViewModel with the locationSelectionViewModel that uses mocked repo
     viewModel =
-        RegisterViewModel(userRepository = repository, locationRepository = locationRepository)
+        RegisterViewModel(
+            userRepository = repository, locationSelectionViewModel = locationSelectionViewModel)
+
+    // Mock the location repository to return empty list by default
+    coEvery { locationRepository.search(any()) } returns emptyList()
     composeTestRule.setContent { RegisterScreen(viewModel = viewModel) }
   }
 
@@ -216,7 +227,7 @@ class RegisterScreenTest {
 
     // Set a valid location
     composeTestRule.runOnUiThread {
-      viewModel.setLocation(Location(47.0, 8.0, "Zürich, Switzerland"))
+      viewModel.locationSelectionViewModel.setLocation(Location(47.0, 8.0, "Zürich, Switzerland"))
     }
     composeTestRule.waitForIdle()
 
@@ -296,8 +307,10 @@ class RegisterScreenTest {
 
     // Assert: location should be selected and query updated
     composeTestRule.runOnUiThread {
-      assertEquals(testLocation, viewModel.uiState.value.selectedLocation)
-      assertEquals(testLocation.name, viewModel.uiState.value.locationQuery)
+      assertEquals(
+          testLocation, viewModel.locationSelectionViewModel.uiState.value.selectedLocation)
+      assertEquals(
+          testLocation.name, viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
 
     // Assert: dropdown should be closed (suggestions cleared)
@@ -373,7 +386,9 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     // Act: clear suggestions via viewModel
-    composeTestRule.runOnUiThread { viewModel.clearLocationSuggestions() }
+    composeTestRule.runOnUiThread {
+      viewModel.locationSelectionViewModel.clearLocationSuggestions()
+    }
     composeTestRule.waitForIdle()
 
     // Assert: dropdown should be hidden
@@ -409,7 +424,9 @@ class RegisterScreenTest {
   fun locationDropdown_showsAgain_whenRefocusingWithExistingSuggestions() {
     // Arrange: set suggestions and then blur the field
     val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
-    composeTestRule.runOnUiThread { viewModel.setLocationSuggestions(suggestions) }
+    composeTestRule.runOnUiThread {
+      viewModel.locationSelectionViewModel.setLocationSuggestions(suggestions)
+    }
     composeTestRule.waitForIdle()
 
     // Focus another field first
@@ -430,7 +447,9 @@ class RegisterScreenTest {
   fun locationField_isReadOnly_whenValidLocationSelected() {
     // Arrange: select a valid location
     val validLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
-    composeTestRule.runOnUiThread { viewModel.setLocation(validLocation) }
+    composeTestRule.runOnUiThread {
+      viewModel.locationSelectionViewModel.setLocation(validLocation)
+    }
     composeTestRule.waitForIdle()
 
     // Assert: location field should display the location name
@@ -441,8 +460,10 @@ class RegisterScreenTest {
     // Assert: field should be read-only (text input won't change the value)
     // When a location is selected, the field becomes read-only
     composeTestRule.runOnUiThread {
-      assertEquals(validLocation, viewModel.uiState.value.selectedLocation)
-      assertEquals("Zürich, Switzerland", viewModel.uiState.value.locationQuery)
+      assertEquals(
+          validLocation, viewModel.locationSelectionViewModel.uiState.value.selectedLocation)
+      assertEquals(
+          "Zürich, Switzerland", viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
   }
 
@@ -450,22 +471,22 @@ class RegisterScreenTest {
   fun locationField_becomesEditable_whenLocationIsCleared() {
     // Arrange: first set a location
     val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
-    composeTestRule.runOnUiThread { viewModel.setLocation(location) }
+    composeTestRule.runOnUiThread { viewModel.locationSelectionViewModel.setLocation(location) }
     composeTestRule.waitForIdle()
 
     // Assert: field is read-only with location
     composeTestRule.runOnUiThread {
-      assertEquals(location, viewModel.uiState.value.selectedLocation)
+      assertEquals(location, viewModel.locationSelectionViewModel.uiState.value.selectedLocation)
     }
 
     // Act: clear the location by setting empty query
-    composeTestRule.runOnUiThread { viewModel.setLocationQuery("") }
+    composeTestRule.runOnUiThread { viewModel.locationSelectionViewModel.setLocationQuery("") }
     composeTestRule.waitForIdle()
 
     // Assert: field becomes editable again (no selected location)
     composeTestRule.runOnUiThread {
-      assertNull(viewModel.uiState.value.selectedLocation)
-      assertEquals("", viewModel.uiState.value.locationQuery)
+      assertNull(viewModel.locationSelectionViewModel.uiState.value.selectedLocation)
+      assertEquals("", viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
 
     // Assert: field should now accept input
@@ -473,7 +494,7 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.runOnUiThread {
-      assertEquals("Lausanne", viewModel.uiState.value.locationQuery)
+      assertEquals("Lausanne", viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
   }
 
@@ -486,7 +507,7 @@ class RegisterScreenTest {
 
     // Select location - clear button appears
     val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
-    composeTestRule.runOnUiThread { viewModel.setLocation(location) }
+    composeTestRule.runOnUiThread { viewModel.locationSelectionViewModel.setLocation(location) }
     composeTestRule.waitForIdle()
 
     composeTestRule
@@ -498,8 +519,8 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.runOnUiThread {
-      assertNull(viewModel.uiState.value.selectedLocation)
-      assertEquals("", viewModel.uiState.value.locationQuery)
+      assertNull(viewModel.locationSelectionViewModel.uiState.value.selectedLocation)
+      assertEquals("", viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
 
     composeTestRule
@@ -519,7 +540,7 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
 
     // Verify loading state was set (GPS retrieval started)
-    assertTrue(viewModel.uiState.value.isLoadingLocations)
+    assertTrue(viewModel.locationSelectionViewModel.uiState.value.isLoadingLocations)
   }
 
   @Test
@@ -527,15 +548,14 @@ class RegisterScreenTest {
     // Verify GPS button exists
     composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
 
-    val freshViewModel =
-        RegisterViewModel(userRepository = repository, locationRepository = locationRepository)
+    val freshViewModel = RegisterViewModel(userRepository = repository)
 
     // Simulate permission denied on the fresh VM
     freshViewModel.onLocationPermissionDenied()
 
     // Verify error message set on the ViewModel
     assertNotNull(freshViewModel.uiState.value.errorMsg)
-    assertTrue(freshViewModel.uiState.value.errorMsg!!.contains("Location permission denied"))
+    assertTrue(freshViewModel.uiState.value.errorMsg!!.contains("Location permission"))
   }
 
   // ========== EPFL Default Location Tests ==========
@@ -559,12 +579,13 @@ class RegisterScreenTest {
 
     // Assert: location should be set to EPFL
     composeTestRule.runOnUiThread {
-      val selectedLocation = viewModel.uiState.value.selectedLocation
+      val selectedLocation = viewModel.locationSelectionViewModel.uiState.value.selectedLocation
       assertNotNull(selectedLocation)
       assertEquals(46.5191, selectedLocation!!.latitude, 0.0001)
       assertEquals(6.5668, selectedLocation.longitude, 0.0001)
       assertTrue(selectedLocation.name.contains("EPFL"))
-      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
+      assertEquals(
+          selectedLocation.name, viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
   }
 }
