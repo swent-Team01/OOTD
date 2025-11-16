@@ -16,7 +16,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import com.android.ootd.model.map.Location
 import org.junit.Rule
 import org.junit.Test
 
@@ -28,17 +27,8 @@ import org.junit.Test
 class RegisterComponentsTest {
   @get:Rule val composeTestRule = createComposeRule()
 
-  private fun baseState(
-      username: String = "",
-      date: String = "",
-      locationQuery: String = "",
-      selectedLocation: Location? = null
-  ) =
-      RegisterUserViewModel(
-          username = username,
-          dateOfBirth = date,
-          locationQuery = locationQuery,
-          selectedLocation = selectedLocation)
+  private fun baseState(username: String = "", date: String = "") =
+      RegisterUserViewModel(username = username, dateOfBirth = date)
 
   // --- Field color & error behavior ---
   @Test
@@ -106,11 +96,14 @@ class RegisterComponentsTest {
   fun locationField_errorShown_whenLeftEmpty() {
     composeTestRule.setContent {
       val f = rememberFieldState()
+      val locationViewModel = com.android.ootd.ui.map.LocationSelectionViewModel()
+      val locationUiState = com.android.ootd.ui.map.LocationSelectionViewState()
       LocationField(
-          registerUiState = baseState(locationQuery = ""),
-          viewModel = RegisterViewModel(), // real VM (default repos) just for signatures
+          locationUiState = locationUiState,
+          locationViewModel = locationViewModel,
           fieldState = f,
-          isError = true)
+          isError = true,
+          onGPSClick = {})
     }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE).assertIsDisplayed()
