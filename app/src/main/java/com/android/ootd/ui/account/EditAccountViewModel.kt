@@ -94,6 +94,7 @@ class AccountViewModel(
 
   init {
     observeAuthState()
+    observeLocationSelectionState()
   }
 
   /** Start observing auth state and update the UI when the current account changes. */
@@ -115,6 +116,30 @@ class AccountViewModel(
               }
             }
           }
+    }
+  }
+
+  /** Observe location selection changes and sync with account state. */
+  private fun observeLocationSelectionState() {
+    viewModelScope.launch {
+      locationSelectionViewModel.uiState.collect { locationState ->
+        // When location query is cleared, clear the account location
+        if (locationState.locationQuery.isEmpty() && locationState.selectedLocation == null) {
+          _uiState.update { it.copy(location = emptyLocation) }
+        }
+        // When a location is selected (e.g., from GPS), auto-save it
+        else if (locationState.selectedLocation != null &&
+            locationState.selectedLocation != _uiState.value.location) {
+          _uiState.update {
+            it.copy(
+                location = locationState.selectedLocation,
+                locationFieldTouched = false,
+                locationFieldLeft = false)
+          }
+          // Auto-save the location
+          editUser(newLocation = locationState.selectedLocation)
+        }
+      }
     }
   }
 
