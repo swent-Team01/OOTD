@@ -227,9 +227,7 @@ internal fun DateOfBirthField(
 
 @Composable
 internal fun LocationField(
-    registerUiState: RegisterUserViewModel,
     locationUiState: LocationSelectionViewState,
-    registerViewModel: RegisterViewModel,
     locationViewModel: LocationSelectionViewModel,
     fieldState: FieldState,
     isError: Boolean,
