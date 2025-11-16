@@ -383,9 +383,4 @@ class AccountViewModel(
               "Location permission denied. Please search for your location manually if you want to add your location.")
     }
   }
-
-  /** Marks that the location field has been touched by the user. */
-  fun onLocationFieldTouched() {
-    _uiState.update { it.copy(locationFieldTouched = true) }
-  }
 }
