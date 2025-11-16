@@ -4,10 +4,9 @@ package com.android.ootd.ui.account
  * DISCLAIMER: This file was created/modified with the assistance of GitHub Copilot.
  * Copilot provided suggestions which were reviewed and adapted by the developer.
  */
-import android.Manifest
+
 import android.util.Log
 import androidx.annotation.Keep
-import androidx.annotation.RequiresPermission
 import androidx.core.net.toUri
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -23,7 +22,6 @@ import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.ui.map.LocationSelectionViewModel
-import com.android.ootd.utils.LocationUtils
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -343,32 +341,8 @@ class AccountViewModel(
   @Suppress("MissingPermission") // Permission is checked by the caller (permission launcher)
   fun onLocationPermissionGranted() {
     Log.d("AccountViewModel", "Location permission granted")
-    setGPSLocation()
-  }
-
-  /**
-   * Retrieves the current GPS location and sets it as the selected location.
-   *
-   * Uses FusedLocationProviderClient to get the device's current location with balanced power
-   * accuracy. Handles both success and failure cases with appropriate user feedback.
-   */
-  @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-  private fun setGPSLocation() {
-    viewModelScope.launch {
-      try {
-        LocationUtils.getCurrentGPSLocation(
-            onSuccess = { location: Location -> setLocation(location) },
-            onFailure = { errorMessage: String ->
-              Log.e("AccountViewModel", "Error getting GPS location: $errorMessage")
-              _uiState.update {
-                it.copy(errorMsg = errorMessage.ifBlank { "Failed to get current location" })
-              }
-            })
-      } catch (e: Exception) {
-        Log.e("AccountViewModel", "Error initiating GPS location", e)
-        _uiState.update { it.copy(errorMsg = e.message ?: "Failed to get current location") }
-      }
-    }
+    locationSelectionViewModel.onLocationPermissionGranted(
+        onError = { errorMessage -> _uiState.update { it.copy(errorMsg = errorMessage) } })
   }
 
   /**
@@ -377,10 +351,13 @@ class AccountViewModel(
    */
   fun onLocationPermissionDenied() {
     Log.d("AccountViewModel", "Location permission denied")
-    _uiState.update {
-      it.copy(
-          errorMsg =
-              "Location permission denied. Please search for your location manually if you want to add your location.")
-    }
+    locationSelectionViewModel.onLocationPermissionDenied(
+        onDenied = {
+          _uiState.update {
+            it.copy(
+                errorMsg =
+                    "Location permission denied. Please search for your location manually if you want to add your location.")
+          }
+        })
   }
 }

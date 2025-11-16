@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
+import com.android.ootd.utils.LocationUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,7 +102,59 @@ class LocationSelectionViewModel(
     _uiState.value = _uiState.value.copy(locationSuggestions = suggestions)
   }
 
+  /**
+   * Sets the loading state for location operations.
+   *
+   * This is primarily used for GPS location retrieval where loading state needs to be managed
+   * externally.
+   *
+   * @param isLoading True to show loading indicator, false to hide it.
+   */
+  fun setLoadingState(isLoading: Boolean) {
+    _uiState.value = _uiState.value.copy(isLoadingLocations = isLoading)
+  }
+
   fun isLoadingLocations(): Boolean {
     return uiState.value.locationSuggestions.isEmpty() && uiState.value.locationQuery.isNotEmpty()
+  }
+
+  /**
+   * Called when location permission is granted by the user. Initiates GPS location retrieval.
+   *
+   * @param onError Optional callback to handle errors. Receives the error message as a parameter.
+   */
+  @Suppress("MissingPermission")
+  fun onLocationPermissionGranted(onError: ((String) -> Unit)? = null) {
+    // Set loading state before starting GPS retrieval
+    setLoadingState(true)
+
+    viewModelScope.launch {
+      try {
+        LocationUtils.getCurrentGPSLocation(
+            onSuccess = { location: Location ->
+              setLocation(location)
+              setLoadingState(false)
+            },
+            onFailure = { errorMessage: String ->
+              Log.e("LocationSelectionViewModel", "Error getting GPS location: $errorMessage")
+              setLoadingState(false)
+              onError?.invoke(errorMessage.ifBlank { "Failed to get current location" })
+            })
+      } catch (e: Exception) {
+        Log.e("LocationSelectionViewModel", "Error initiating GPS location", e)
+        setLoadingState(false)
+        onError?.invoke(e.message ?: "Failed to get current location")
+      }
+    }
+  }
+
+  /**
+   * Called when location permission is denied by the user.
+   *
+   * @param onDenied Optional callback to handle the permission denial. If not provided, no action
+   *   is taken.
+   */
+  fun onLocationPermissionDenied(onDenied: (() -> Unit)? = null) {
+    onDenied?.invoke()
   }
 }

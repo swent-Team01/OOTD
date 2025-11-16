@@ -9,14 +9,12 @@ import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.account.TakenUserException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
-import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.ui.map.LocationSelectionViewModel
-import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -227,26 +225,15 @@ class RegisterViewModel(
   /** Called when location permission is granted by the user. Initiates GPS location retrieval. */
   @Suppress("MissingPermission")
   fun onLocationPermissionGranted() {
-    viewModelScope.launch {
-      try {
-        LocationUtils.getCurrentGPSLocation(
-            onSuccess = { location: Location -> locationSelectionViewModel.setLocation(location) },
-            onFailure = { errorMessage: String ->
-              Log.e("RegisterViewModel", "Error getting GPS location: $errorMessage")
-              _uiState.value =
-                  _uiState.value.copy(
-                      errorMsg = errorMessage.ifBlank { "Failed to get current location" })
-            })
-      } catch (e: Exception) {
-        Log.e("RegisterViewModel", "Error initiating GPS location", e)
-        _uiState.value =
-            _uiState.value.copy(errorMsg = e.message ?: "Failed to get current location")
-      }
-    }
+    locationSelectionViewModel.onLocationPermissionGranted(
+        onError = { errorMessage -> _uiState.value = _uiState.value.copy(errorMsg = errorMessage) })
   }
 
   /** Called when location permission is denied by the user. */
   fun onLocationPermissionDenied() {
-    _uiState.value = _uiState.value.copy(errorMsg = "Location permission is required")
+    locationSelectionViewModel.onLocationPermissionDenied(
+        onDenied = {
+          _uiState.value = _uiState.value.copy(errorMsg = "Location permission is required")
+        })
   }
 }
