@@ -62,17 +62,16 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.ui.map.LocationSelectionSection
+import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
-import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
@@ -118,6 +117,7 @@ fun AccountScreen(
     onSignOut: () -> Unit = {}
 ) {
   val uiState by accountViewModel.uiState.collectAsState()
+  val locationUiState by accountViewModel.locationSelectionViewModel.uiState.collectAsState()
   val context = LocalContext.current
 
   LaunchedEffect(uiState.signedOut) {
@@ -137,6 +137,7 @@ fun AccountScreen(
   AccountScreenContent(
       accountViewModel = accountViewModel,
       uiState = uiState,
+      locationUiState = locationUiState,
       onBack = onBack,
       onSignOutClick = { accountViewModel.signOut(credentialManager) },
       onToggle = { accountViewModel.onTogglePrivacy() },
@@ -146,8 +147,9 @@ fun AccountScreen(
 
 @Composable
 private fun AccountScreenContent(
-    accountViewModel: AccountViewModel = viewModel(),
+    accountViewModel: AccountViewModel,
     uiState: AccountViewState,
+    locationUiState: LocationSelectionViewState,
     onBack: () -> Unit,
     onSignOutClick: () -> Unit,
     onToggle: () -> Unit,
@@ -247,6 +249,7 @@ private fun AccountScreenContent(
         Box(modifier = contentModifier) {
           LocationField(
               uiState = uiState,
+              locationUiState = locationUiState,
               viewModel = accountViewModel,
               onGPSClick = {
                 if (LocationUtils.hasLocationPermission(context)) {
@@ -542,26 +545,28 @@ private fun LoadingOverlay() {
 @Composable
 private fun LocationField(
     uiState: AccountViewState,
+    locationUiState: LocationSelectionViewState,
     viewModel: AccountViewModel,
     onGPSClick: () -> Unit = {}
 ) {
   val hasLocationError =
       uiState.locationFieldTouched &&
           uiState.locationFieldLeft &&
-          uiState.locationQuery.isNotEmpty() &&
-          (uiState.location.name != uiState.locationQuery || uiState.location == emptyLocation)
+          locationUiState.locationQuery.isNotEmpty() &&
+          (uiState.location.name != locationUiState.locationQuery ||
+              uiState.location == emptyLocation)
 
   LocationSelectionSection(
       textGPSButton = "Update Location (GPS)",
       textLocationField = "Location",
-      locationQuery = uiState.locationQuery,
-      selectedLocation = uiState.location,
-      suggestions = uiState.locationSuggestions,
-      isLoadingLocation = uiState.isLoadingLocations,
-      onLocationQueryChange = viewModel::setLocationQuery,
+      locationQuery = locationUiState.locationQuery,
+      selectedLocation = locationUiState.selectedLocation,
+      suggestions = locationUiState.locationSuggestions,
+      isLoadingLocation = locationUiState.isLoadingLocations,
+      onLocationQueryChange = viewModel.locationSelectionViewModel::setLocationQuery,
       onLocationSelect = viewModel::setLocation,
       onGPSClick = onGPSClick,
-      onClearSuggestions = viewModel::clearLocationSuggestions,
+      onClearSuggestions = viewModel.locationSelectionViewModel::clearLocationSuggestions,
       isError = hasLocationError,
       onFocusChanged = viewModel::onLocationFieldFocusChanged,
       modifier = Modifier.testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
@@ -644,28 +649,6 @@ private fun PrivacyToggleRow(
                       uncheckedThumbColor = colors.onPrimary,
                       uncheckedTrackColor = colors.outlineVariant))
         }
-  }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AccountScreenPreview() {
-  OOTDTheme {
-    AccountScreenContent(
-        uiState =
-            AccountViewState(
-                username = "Jane Doe",
-                googleAccountName = "jane@google.com",
-                profilePicture = "",
-                isPrivate = false,
-                showPrivacyHelp = true,
-            ),
-        onBack = {},
-        onSignOutClick = {},
-        onToggle = {},
-        onHelpClick = {},
-        onHelpDismiss = {},
-    )
   }
 }
 
