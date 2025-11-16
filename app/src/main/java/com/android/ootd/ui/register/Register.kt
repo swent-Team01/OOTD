@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
@@ -91,6 +92,7 @@ private val SPACER = 16.dp
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () -> Unit = {}) {
   val registerUiState by viewModel.uiState.collectAsState()
+  val locationUiState by viewModel.locationSelectionViewModel.uiState.collectAsState()
   val usernameField = rememberFieldState()
   val dateField = rememberFieldState()
   val locationField = rememberFieldState()
@@ -109,7 +111,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
 
   val usernameError = usernameField.left.value && registerUiState.username.isBlank()
   val dateError = dateField.left.value && registerUiState.dateOfBirth.isBlank()
-  val locationError = locationField.left.value && registerUiState.selectedLocation == null
+  val locationError = locationField.left.value && locationUiState.selectedLocation == null
 
   val onGPSClick = rememberGPSClickHandler(viewModel, locationPermissionLauncher)
 
@@ -173,7 +175,9 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
 
           LocationField(
               registerUiState = registerUiState,
-              viewModel = viewModel,
+              locationUiState = locationUiState,
+              registerViewModel = viewModel,
+              locationViewModel = viewModel.locationSelectionViewModel,
               fieldState = locationField,
               isError = locationError,
               onGPSClick = onGPSClick)
@@ -183,7 +187,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           RegisterFooter(
               isLoading = registerUiState.isLoading,
               isEnabled =
-                  isRegisterEnabled(registerUiState, usernameError, dateError, locationError),
+                  isRegisterEnabled(
+                      registerUiState, locationUiState, usernameError, dateError, locationError),
               onRegisterClick = viewModel::registerUser)
         }
   }
@@ -210,6 +215,7 @@ private fun rememberGPSClickHandler(
 /** Calculates whether the register button should be enabled based on form state. */
 private fun isRegisterEnabled(
     registerUiState: RegisterUserViewModel,
+    locationUiState: LocationSelectionViewState,
     usernameError: Boolean,
     dateError: Boolean,
     locationError: Boolean
@@ -217,7 +223,7 @@ private fun isRegisterEnabled(
   return !registerUiState.isLoading &&
       registerUiState.dateOfBirth.isNotBlank() &&
       registerUiState.username.isNotBlank() &&
-      registerUiState.selectedLocation != null &&
+      locationUiState.selectedLocation != null &&
       !usernameError &&
       !dateError &&
       !locationError
