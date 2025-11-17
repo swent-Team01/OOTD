@@ -15,8 +15,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ReactionFirestoreRepositoryTest : FirestoreTest() {
 
-  private lateinit var repo: ReactionFirestoreRepository
-
   private fun uid() = FirebaseEmulator.auth.currentUser!!.uid
 
   private fun newPostId() = FirebaseEmulator.firestore.collection("posts").document().id
@@ -47,7 +45,7 @@ class ReactionFirestoreRepositoryTest : FirestoreTest() {
   @Before
   override fun setUp() {
     super.setUp()
-    repo = ReactionFirestoreRepository(FirebaseEmulator.firestore, FirebaseEmulator.storage)
+    Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
   }
 
   @Test
@@ -55,7 +53,7 @@ class ReactionFirestoreRepositoryTest : FirestoreTest() {
     val postId = createPost()
     val userId = uid()
 
-    repo.addOrReplaceReaction(postId, userId, createTempImageUri())
+    reactionRepository.addOrReplaceReaction(postId, userId, createTempImageUri())
 
     val snap =
         FirebaseEmulator.firestore
@@ -77,14 +75,14 @@ class ReactionFirestoreRepositoryTest : FirestoreTest() {
     val postId = createPost()
     val userId = uid()
 
-    repo.addOrReplaceReaction(postId, userId, createTempImageUri())
-    val r1 = repo.getUserReaction(postId, userId)
+    reactionRepository.addOrReplaceReaction(postId, userId, createTempImageUri())
+    val r1 = reactionRepository.getUserReaction(postId, userId)
     Assert.assertNotNull(r1)
 
     // Replace reaction
     Thread.sleep(50) // ensure file changes
-    repo.addOrReplaceReaction(postId, userId, createTempImageUri())
-    val r2 = repo.getUserReaction(postId, userId)
+    reactionRepository.addOrReplaceReaction(postId, userId, createTempImageUri())
+    val r2 = reactionRepository.getUserReaction(postId, userId)
 
     Assert.assertNotNull(r2)
     Assert.assertNotEquals(r1!!.reactionURL, r2!!.reactionURL)
@@ -93,7 +91,7 @@ class ReactionFirestoreRepositoryTest : FirestoreTest() {
   @Test
   fun getReaction_returnsNullIfNotExists() = runTest {
     val postId = createPost()
-    val result = repo.getUserReaction(postId, uid())
+    val result = reactionRepository.getUserReaction(postId, uid())
     Assert.assertNull(result)
   }
 
@@ -102,9 +100,9 @@ class ReactionFirestoreRepositoryTest : FirestoreTest() {
     val postId = createPost()
     val userId = uid()
 
-    repo.addOrReplaceReaction(postId, userId, createTempImageUri())
+    reactionRepository.addOrReplaceReaction(postId, userId, createTempImageUri())
 
-    repo.deleteReaction(postId, userId)
+    reactionRepository.deleteReaction(postId, userId)
 
     // Firestore doc deleted?
     val doc =

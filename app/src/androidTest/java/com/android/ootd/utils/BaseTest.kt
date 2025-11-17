@@ -12,6 +12,8 @@ import com.android.ootd.model.notifications.NotificationRepositoryFirestore
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
+import com.android.ootd.model.reactions.ReactionRepository
+import com.android.ootd.model.reactions.ReactionRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryFirestore
@@ -42,6 +44,9 @@ abstract class BaseTest() {
   lateinit var notificationsRepository: NotificationRepository
   val outfitPostRepository: OutfitPostRepository
     get() = OutfitPostRepositoryProvider.repository
+
+  val reactionRepository: ReactionRepository
+    get() = ReactionRepositoryProvider.repository
 
   val currentUser: FirebaseUser
     get() {
