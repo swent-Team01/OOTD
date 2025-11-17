@@ -557,16 +557,11 @@ private fun LocationField(
               uiState.location == emptyLocation)
 
   LocationSelectionSection(
+      viewModel = viewModel.locationSelectionViewModel,
       textGPSButton = "Update Location (GPS)",
       textLocationField = "Location",
-      locationQuery = locationUiState.locationQuery,
-      selectedLocation = locationUiState.selectedLocation,
-      suggestions = locationUiState.locationSuggestions,
-      isLoadingLocation = locationUiState.isLoadingLocations,
-      onLocationQueryChange = viewModel.locationSelectionViewModel::setLocationQuery,
       onLocationSelect = viewModel::setLocation,
       onGPSClick = onGPSClick,
-      onClearSuggestions = viewModel.locationSelectionViewModel::clearLocationSuggestions,
       isError = hasLocationError,
       onFocusChanged = viewModel::onLocationFieldFocusChanged,
       modifier = Modifier.testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
