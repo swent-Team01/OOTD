@@ -78,7 +78,7 @@ class LocationSelectionViewModel(
       _uiState.value = _uiState.value.copy(isLoadingLocations = true)
       searchJob =
           viewModelScope.launch {
-            delay(500) // Wait 500ms after user stops typing in order to not flood nomatim.
+            delay(1000) // Wait 1000ms after user stops typing in order to not flood nomatim.
             try {
               val results = locationRepository.search(query)
               _uiState.value =
