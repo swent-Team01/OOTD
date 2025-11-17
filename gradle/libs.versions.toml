@@ -34,7 +34,7 @@ googleid = "1.1.1"
 # Google Service and Maps
 playServicesAuth = "21.2.0"
 playServicesMaps = "19.0.0"
-mapsCompose = "4.3.3"
+mapsCompose = "6.12.2"
 mapsComposeUtils = "4.3.0"
 
 # Networking
