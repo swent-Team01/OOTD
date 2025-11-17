@@ -14,6 +14,7 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.InMemoryItem
@@ -107,7 +108,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             name: String,
             userProfilePicURL: String,
             localPath: String,
-            description: String
+            description: String,
+            location: Location
         ) = OutfitPost(postUID = "post_123", ownerId = uid, name = name)
 
         override suspend fun deletePost(postId: String) {}
