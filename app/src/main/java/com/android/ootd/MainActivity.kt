@@ -1,10 +1,17 @@
 package com.android.ootd
 
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -18,6 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -29,6 +39,8 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
+import com.android.ootd.model.notifications.Notification
+import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
@@ -54,6 +66,9 @@ import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.ktx.Firebase
 import okhttp3.OkHttpClient
 
 /**
@@ -63,6 +78,21 @@ import okhttp3.OkHttpClient
  */
 object HttpClientProvider {
   var client: OkHttpClient = OkHttpClient()
+}
+
+private const val OOTD_CHANNEL_ID = "ootd_channel"
+
+/** Function to create the notification channel for push notifications */
+fun createNotificationChannel(context: Context) {
+  val name = "OOTD Notifications"
+  val descriptionText = "Notifications for OOTD app"
+  val importance = NotificationManager.IMPORTANCE_HIGH
+  val channel =
+      NotificationChannel(OOTD_CHANNEL_ID, name, importance).apply { description = descriptionText }
+
+  val notificationManager: NotificationManager =
+      context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+  notificationManager.createNotificationChannel(channel)
 }
 
 /**
@@ -76,6 +106,7 @@ object LocationProvider {
 
 /** Activity that hosts the app's Compose UI. */
 class MainActivity : ComponentActivity() {
+  @RequiresApi(Build.VERSION_CODES.TIRAMISU)
   override fun onCreate(savedInstanceState: Bundle?) {
     fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     super.onCreate(savedInstanceState)
@@ -102,6 +133,7 @@ class MainActivity : ComponentActivity() {
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
  * @param overridePhoto Used for testing to disable checks on photo because we can't use the camera.
  */
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun OOTDApp(
     context: Context = LocalContext.current,
@@ -130,6 +162,46 @@ fun OOTDApp(
   // Create ViewModel using factory to properly inject SharedPreferences
   val betaConsentViewModel: BetaConsentViewModel =
       viewModel(factory = BetaConsentViewModelFactory(context))
+
+  val isNotificationsPermissionGranted =
+      ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+          PackageManager.PERMISSION_GRANTED
+  var listenerRegistration: ListenerRegistration? = null
+
+  @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+  fun sendLocalNotification(notification: Notification) {
+    val manager = NotificationManagerCompat.from(context)
+
+    Log.d("MainActivity", "Sending push notification")
+
+    val builder =
+        NotificationCompat.Builder(context, "ootd_channel")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(notification.getNotificationMessage())
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+    manager.notify(notification.uid.hashCode(), builder.build())
+  }
+
+  fun observeUnpushedNotifications(userId: String) {
+    if (listenerRegistration != null) return
+
+    listenerRegistration =
+        NotificationRepositoryProvider.repository.listenForUnpushedNotifications(
+            receiverId = userId) { notification ->
+              sendLocalNotification(notification) // YOU implement this
+            }
+  }
+
+  LaunchedEffect(Unit) {
+    val currentUserId = Firebase.auth.currentUser?.uid ?: ""
+    Log.d("MainActivity", "Current user id: $currentUserId")
+    Log.d("MainActivity", "Are notification permitted ${isNotificationsPermissionGranted}")
+    if (currentUserId.isNotEmpty() && isNotificationsPermissionGranted) {
+      createNotificationChannel(context) // Only create if the notifications are permitted
+      observeUnpushedNotifications(currentUserId)
+    }
+  }
 
   Scaffold(
       bottomBar = {

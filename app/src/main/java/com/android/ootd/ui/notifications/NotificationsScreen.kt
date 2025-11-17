@@ -58,7 +58,7 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
       rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
   // Check if permission is granted
-  val isPermissionGranted =
+  val isNotificationsPermissionGranted =
       ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
           PackageManager.PERMISSION_GRANTED
 
@@ -81,7 +81,7 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(24.dp))
 
         // --- NEW: Show button if permission missing ---
-        if (!isPermissionGranted) {
+        if (!isNotificationsPermissionGranted) {
           Text(
               modifier =
                   Modifier.fillMaxWidth()

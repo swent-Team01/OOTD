@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.annotation.Keep
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import java.util.UUID
 import kotlinx.coroutines.tasks.await
@@ -19,7 +20,8 @@ data class NotificationDto(
     val senderId: String = "",
     val receiverId: String = "",
     val type: String = "",
-    val content: String = ""
+    val content: String = "",
+    val wasPushed: Boolean = false
 )
 
 private fun Notification.toDto(): NotificationDto {
@@ -28,7 +30,8 @@ private fun Notification.toDto(): NotificationDto {
       senderId = this.senderId,
       receiverId = this.receiverId,
       type = this.type,
-      content = this.content)
+      content = this.content,
+      wasPushed = this.wasPushed)
 }
 
 private fun NotificationDto.toDomain(): Notification {
@@ -37,7 +40,8 @@ private fun NotificationDto.toDomain(): Notification {
       senderId = this.senderId,
       receiverId = this.receiverId,
       type = this.type,
-      content = this.content)
+      content = this.content,
+      wasPushed = this.wasPushed)
 }
 
 class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : NotificationRepository {
@@ -87,6 +91,33 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
    */
   override fun getFollowNotificationId(senderId: String, receiverId: String): String {
     return "${senderId}_follow_${receiverId}"
+  }
+
+  override fun listenForUnpushedNotifications(
+      receiverId: String,
+      onNewNotification: (Notification) -> Unit
+  ): ListenerRegistration {
+    return db.collection(NOTIFICATION_COLLECTION_PATH)
+        .whereEqualTo(RECEIVER_ID, receiverId)
+        .whereEqualTo("wasPushed", false)
+        .addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            Log.e("NotificationRepo", "Listener error: ${error.message}")
+            return@addSnapshotListener
+          }
+
+          snapshot?.documents?.forEach { doc ->
+            val notification = transformNotificationDocument(doc)
+            if (notification != null) {
+              onNewNotification(notification)
+
+              // Mark as pushed
+              db.collection(NOTIFICATION_COLLECTION_PATH)
+                  .document(notification.uid)
+                  .update("wasPushed", true)
+            }
+          }
+        }
   }
 
   override suspend fun addNotification(notification: Notification) {
