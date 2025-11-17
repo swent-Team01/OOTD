@@ -174,12 +174,12 @@ private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
  */
 @Composable
 fun LocationSelectionSection(
+    modifier: Modifier = Modifier,
     viewModel: LocationSelectionViewModel,
     textGPSButton: String,
     textLocationField: String,
     onLocationSelect: ((Location) -> Unit)? = null,
     onGPSClick: () -> Unit,
-    modifier: Modifier = Modifier,
     textColor: Color = Tertiary,
     isError: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {}
