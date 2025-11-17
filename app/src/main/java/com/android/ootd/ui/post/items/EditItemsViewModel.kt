@@ -108,8 +108,7 @@ open class EditItemsViewModel(
             type = item.type ?: "",
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
-            // Currency not stored in Item; keep default / previous selection
-            currency = _uiState.value.currency,
+            currency = item.currency ?: "CHF",
             material = item.material.filterNotNull(),
             materialText = materialText,
             link = item.link ?: "",

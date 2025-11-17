@@ -259,8 +259,10 @@ fun CurrencyField(
             label = { Text(label) },
             placeholder = { Text("Select currency") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth().menuAnchor().testTag(testTag),
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
+            colors = commonTextFieldColors())
 
         DropdownMenu(
             expanded = expanded,

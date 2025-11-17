@@ -306,15 +306,18 @@ private fun FieldsList(
     }
 
     item {
-      PriceField(
-          price = price, onChange = onPriceChange, testTag = AddItemScreenTestTags.INPUT_PRICE)
-    }
-
-    item {
-      CurrencyField(
-          currency = currency,
-          onChange = onCurrencyChange,
-          testTag = AddItemScreenTestTags.INPUT_CURRENCY)
+      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(modifier = Modifier.weight(1f)) {
+          PriceField(
+              price = price, onChange = onPriceChange, testTag = AddItemScreenTestTags.INPUT_PRICE)
+        }
+        Box(modifier = Modifier.weight(1f)) {
+          CurrencyField(
+              currency = currency,
+              onChange = onCurrencyChange,
+              testTag = AddItemScreenTestTags.INPUT_CURRENCY)
+        }
+      }
     }
 
     item {

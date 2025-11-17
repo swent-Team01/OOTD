@@ -264,16 +264,20 @@ private fun FieldsList(
           testTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND)
     }
     item {
-      PriceField(
-          price = price,
-          onChange = onPriceChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE)
-    }
-    item {
-      CurrencyField(
-          currency = currency,
-          onChange = onCurrencyChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(modifier = Modifier.weight(1f)) {
+          PriceField(
+              price = price,
+              onChange = onPriceChange,
+              testTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE)
+        }
+        Box(modifier = Modifier.weight(1f)) {
+          CurrencyField(
+              currency = currency,
+              onChange = onCurrencyChange,
+              testTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+        }
+      }
     }
     item {
       MaterialField(
