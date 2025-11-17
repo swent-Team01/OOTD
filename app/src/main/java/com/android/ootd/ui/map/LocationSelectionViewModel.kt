@@ -14,6 +14,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * UI state for location selection screens.
+ *
+ * @property selectedLocation currently selected location or null.
+ * @property locationQuery current text in the location input.
+ * @property locationSuggestions current suggestion list.
+ * @property isLoadingLocations whether a location lookup is in progress.
+ */
 data class LocationSelectionViewState(
     val selectedLocation: Location? = null,
     val locationQuery: String = "",
@@ -21,9 +29,15 @@ data class LocationSelectionViewState(
     val isLoadingLocations: Boolean = false
 )
 
+/**
+ * ViewModel handling location input, suggestions and selection.
+ *
+ * Uses a [LocationRepository] to fetch suggestions.
+ */
 class LocationSelectionViewModel(
     private val locationRepository: LocationRepository = LocationRepositoryProvider.repository
 ) : ViewModel() {
+  // Backing state flow for the UI.
   private val _uiState = MutableStateFlow(LocationSelectionViewState())
 
   /**
@@ -114,6 +128,7 @@ class LocationSelectionViewModel(
     _uiState.value = _uiState.value.copy(isLoadingLocations = isLoading)
   }
 
+  /** Returns true when a non-empty query is present and no suggestions are shown. */
   fun isLoadingLocations(): Boolean {
     return uiState.value.locationSuggestions.isEmpty() && uiState.value.locationQuery.isNotEmpty()
   }
