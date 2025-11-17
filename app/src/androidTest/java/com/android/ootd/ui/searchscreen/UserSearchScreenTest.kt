@@ -113,6 +113,13 @@ class UserSearchScreenTest : FirestoreTest() {
     }
 
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.AVATAR_LETTER, useUnmergedTree = true)
+        .assertIsDisplayed()
   }
 
   @Test
