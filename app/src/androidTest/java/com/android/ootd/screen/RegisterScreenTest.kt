@@ -296,9 +296,22 @@ class RegisterScreenTest {
     val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
     coEvery { locationRepository.search(any()) } returns listOf(testLocation)
 
-    // Act: type and click the first suggestion
+    // Act: clear field, then type and wait for suggestions before clicking
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_CLEAR_BUTTON).performClick()
+    composeTestRule.waitForIdle()
     composeTestRule.enterLocation("Zur")
     composeTestRule.waitForIdle()
+
+    // Wait for the suggestion to appear before trying to click it
+    composeTestRule.waitUntil(
+        condition = {
+          composeTestRule
+              .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+              .fetchSemanticsNodes()
+              .size >= 1
+        },
+        timeoutMillis = 5000)
+
     composeTestRule
         .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
         .performClick()
