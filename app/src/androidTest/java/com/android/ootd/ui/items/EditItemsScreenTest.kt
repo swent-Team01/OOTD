@@ -51,6 +51,7 @@ class EditItemsScreenTest {
           type = "T-shirt",
           brand = "Nike",
           price = 29.99,
+          currency = "USD",
           material =
               listOf(
                   Material(name = "Cotton", percentage = 80.0),
@@ -118,6 +119,9 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextEquals("Price", "29.99")
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+        .assertTextEquals("Currency", "USD")
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
         .assertTextContains("Cotton 80.0%, Polyester 20.0%")
@@ -194,6 +198,13 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
+
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY).performClick()
+    composeTestRule.onNodeWithText("EUR", useUnmergedTree = true).assertIsDisplayed().performClick()
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+        .assertTextContains("EUR")
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).performTextClearance()

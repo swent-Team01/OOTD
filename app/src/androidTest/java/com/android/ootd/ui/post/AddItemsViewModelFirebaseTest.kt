@@ -64,7 +64,8 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("Clothing")
     viewModel.setType("T-Shirt")
     viewModel.setBrand("Nike")
-    viewModel.setPrice("29.99")
+    viewModel.setPrice(29.99)
+    viewModel.setCurrency("EUR")
     viewModel.setLink("https://example.com/tshirt")
 
     // Trigger add
@@ -86,6 +87,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     assertEquals("T-Shirt", addedItem.type)
     assertEquals("Nike", addedItem.brand)
     assertEquals(29.99, addedItem.price)
+    assertEquals("EUR", addedItem.currency)
     assertEquals("https://example.com/tshirt", addedItem.link)
 
     // Verify image was uploaded to Storage
@@ -102,7 +104,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("Shoes")
     viewModel.setType("Sneakers")
     viewModel.setBrand("Adidas")
-    viewModel.setPrice("89.99")
+    viewModel.setPrice(89.99)
 
     viewModel.onAddItemClick()
 
@@ -124,7 +126,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setPhoto(uri)
     viewModel.setType("Jacket")
     viewModel.setBrand("Zara")
-    viewModel.setPrice("120.00")
+    viewModel.setPrice(120.00)
 
     viewModel.onAddItemClick()
 
@@ -148,7 +150,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("InvalidCategory123")
     viewModel.setType("Something")
     viewModel.setBrand("Brand")
-    viewModel.setPrice("50.00")
+    viewModel.setPrice(50.00)
 
     viewModel.onAddItemClick()
 
@@ -171,7 +173,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("Clothing")
     viewModel.setType("Sweater")
     viewModel.setBrand("H&M")
-    viewModel.setPrice("45.00")
+    viewModel.setPrice(45.00)
     viewModel.setMaterial("Cotton 80%, Polyester 20%")
 
     viewModel.onAddItemClick()
@@ -202,7 +204,8 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("Bags")
     viewModel.setType("Backpack")
     viewModel.setBrand("Nike")
-    viewModel.setPrice("79.99")
+    viewModel.setPrice(79.99)
+    viewModel.setCurrency("USD")
     viewModel.onAddItemClick()
     kotlinx.coroutines.delay(2000)
 
@@ -218,7 +221,8 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel2.setCategory("Accessories")
     viewModel2.setType("Hat")
     viewModel2.setBrand("Puma")
-    viewModel2.setPrice("25.00")
+    viewModel2.setPrice(25.00)
+    viewModel2.setCurrency("CHF")
     viewModel2.onAddItemClick()
     kotlinx.coroutines.delay(2000)
 
@@ -231,10 +235,16 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     val brands = items.map { it.brand }.toSet()
     assertTrue(brands.contains("Nike"))
     assertTrue(brands.contains("Puma"))
+
+    // Verify currencies persisted per item
+    val first = items.first { it.brand == "Nike" }
+    val second = items.first { it.brand == "Puma" }
+    assertEquals("USD", first.currency)
+    assertEquals("CHF", second.currency)
   }
 
   @Test
-  fun onAddItemClick_withEmptyPrice_defaultsToZero() = runBlocking {
+  fun onAddItemClick_withoutSettingPrice_defaultsToZero() = runBlocking {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
@@ -244,7 +254,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("Clothing")
     viewModel.setType("Socks")
     viewModel.setBrand("Generic")
-    viewModel.setPrice("") // Empty price
+    // Intentionally do not call setPrice; default should be 0.0
 
     viewModel.onAddItemClick()
 
@@ -268,7 +278,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setCategory("Clothing") // Exact match from dropdown (no longer accepts "clothes")
     viewModel.setType("Pants")
     viewModel.setBrand("Levi's")
-    viewModel.setPrice("60.00")
+    viewModel.setPrice(60.00)
 
     viewModel.onAddItemClick()
 

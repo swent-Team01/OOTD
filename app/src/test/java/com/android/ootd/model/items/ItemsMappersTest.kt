@@ -96,4 +96,15 @@ class ItemsMappersTest {
     assertEquals("id", parsed2.image.imageId)
     assertEquals("", parsed2.image.imageUrl)
   }
+
+  @Test
+  fun parseIncludesCurrencyWhenPresent() {
+    val withCurrency = baseMap(mapOf("currency" to "EUR"))
+    val item = requireNotNull(ItemsMappers.parseItem(withCurrency))
+    assertEquals("EUR", item.currency)
+
+    val withoutCurrency = baseMap().toMutableMap().apply { remove("currency") }
+    val item2 = requireNotNull(ItemsMappers.parseItem(withoutCurrency))
+    assertNull(item2.currency)
+  }
 }

@@ -67,6 +67,7 @@ class EditItemsViewModelTest {
     assertEquals("", state.type)
     assertEquals("", state.brand)
     assertEquals(0.0, state.price, 0.0)
+    assertEquals("CHF", state.currency)
     assertEquals(emptyList<Material>(), state.material)
     assertEquals("", state.materialText)
     assertEquals("", state.link)
@@ -176,6 +177,11 @@ class EditItemsViewModelTest {
 
     val state = viewModel.uiState.value
     assertEquals(49.99, state.price, 0.0)
+
+    // also verify currency can be set
+    viewModel.setCurrency("EUR")
+    val state2 = viewModel.uiState.value
+    assertEquals("EUR", state2.currency)
   }
 
   @Test
@@ -257,6 +263,7 @@ class EditItemsViewModelTest {
             type = "T-shirt",
             brand = "Nike",
             price = 49.99,
+            currency = "USD",
             material = materials,
             link = "https://example.com",
             ownerId = "ownerId")
@@ -270,6 +277,7 @@ class EditItemsViewModelTest {
     assertEquals("T-shirt", state.type)
     assertEquals("Nike", state.brand)
     assertEquals(49.99, state.price, 0.0)
+    assertEquals("USD", state.currency)
     assertEquals(materials, state.material)
     assertEquals("Cotton 100.0%", state.materialText)
     assertEquals("https://example.com", state.link)
@@ -286,6 +294,7 @@ class EditItemsViewModelTest {
             type = null,
             brand = null,
             price = null,
+            currency = null,
             material = emptyList(),
             link = null,
             ownerId = "ownerId")
@@ -299,6 +308,8 @@ class EditItemsViewModelTest {
     assertEquals("", state.type)
     assertEquals("", state.brand)
     assertEquals(0.0, state.price, 0.0)
+    // default currency applied
+    assertEquals("CHF", state.currency)
     assertEquals("", state.materialText)
     assertEquals("", state.link)
   }

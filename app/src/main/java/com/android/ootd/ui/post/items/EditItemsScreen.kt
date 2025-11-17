@@ -52,6 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
+import java.util.Locale
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -319,8 +320,8 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
 }
 
 @Composable
-private fun PriceField(price: Double, onChange: (Double) -> Unit) {
-  val text = if (price == 0.0) "" else price.toString()
+private fun PriceField(price: Double, onChange: (Double) -> Unit, testTag: String) {
+  val text = if (price == 0.0) "" else String.format(Locale.US, "%.2f", price)
   OutlinedTextField(
       value = text,
       onValueChange = { onChange(it.toDoubleOrNull() ?: 0.0) },
@@ -329,7 +330,7 @@ private fun PriceField(price: Double, onChange: (Double) -> Unit) {
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
+      modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
 @Composable
