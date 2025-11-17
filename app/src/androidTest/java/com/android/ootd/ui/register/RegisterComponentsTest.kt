@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import org.junit.Rule
 import org.junit.Test
 
@@ -96,14 +97,9 @@ class RegisterComponentsTest {
   fun locationField_errorShown_whenLeftEmpty() {
     composeTestRule.setContent {
       val f = rememberFieldState()
-      val locationViewModel = com.android.ootd.ui.map.LocationSelectionViewModel()
-      val locationUiState = com.android.ootd.ui.map.LocationSelectionViewState()
+      val locationViewModel = LocationSelectionViewModel()
       LocationField(
-          locationUiState = locationUiState,
-          locationViewModel = locationViewModel,
-          fieldState = f,
-          isError = true,
-          onGPSClick = {})
+          locationViewModel = locationViewModel, fieldState = f, isError = true, onGPSClick = {})
     }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE).assertIsDisplayed()
