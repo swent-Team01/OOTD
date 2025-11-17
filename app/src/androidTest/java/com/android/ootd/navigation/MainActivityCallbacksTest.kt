@@ -7,6 +7,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.rememberNavController
 import com.android.ootd.OOTDApp
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -30,6 +32,9 @@ class MainActivityCallbacksTest {
   @get:Rule val composeRule = createComposeRule()
   private lateinit var navigation: NavigationActions
 
+  // Helper for creating test location
+  private val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
+
   @Before
   fun setUp() {
     composeRule.setContent {
@@ -47,7 +52,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
     }
 
     composeRule.waitUntil(timeoutMillis = 5_000) {
@@ -85,7 +92,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = emptyLocation))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
     }
   }
@@ -97,7 +106,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("testpostUuid"))
 
       // Now the current screen is AddItem
@@ -117,7 +128,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // Go to edit instead
@@ -141,7 +154,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = emptyLocation))
 
       // Add first item and don't save
       navigation.navigateTo(Screen.AddItemScreen("test_id"))
@@ -163,7 +178,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_id"))
 
       // Cancel
@@ -183,7 +200,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = emptyLocation))
 
       for (i in 1..3) {
         navigation.navigateTo(Screen.AddItemScreen("test_id"))
@@ -194,7 +213,8 @@ class MainActivityCallbacksTest {
         navigation.navigateTo(
             Screen.PreviewItemScreen(
                 imageUri = "content://another_uri",
-                description = "Another Test Outfit Description"))
+                description = "Another Test Outfit Description",
+                location = emptyLocation))
         Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
       }
     }
@@ -205,7 +225,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
 
       // Add first item
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
@@ -243,7 +265,9 @@ class MainActivityCallbacksTest {
       // Go to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       Assert.assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Add an item
@@ -261,7 +285,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       val itemId = "same-item"
 
       // Edit same item multiple times
@@ -340,7 +366,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.EditItem("item-123"))
 
       // Confirm we’re at EditItem
@@ -362,13 +390,17 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       navigation.popUpTo(Screen.PreviewItemScreen.route)
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.popUpTo(Screen.Feed.route)
       navigation.navigateTo(Screen.Feed)
 
@@ -378,7 +410,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())
     }
@@ -416,7 +450,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
       navigation.goBack()
       navigation.navigateTo(Screen.EditItem("item-1"))
@@ -441,7 +477,9 @@ class MainActivityCallbacksTest {
       // Edit from Preview
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.EditItem("item-1"))
       assertEquals(Screen.EditItem.route, navigation.currentRoute())
       navigation.goBack()
@@ -465,7 +503,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // User decides to sign out
@@ -484,7 +524,9 @@ class MainActivityCallbacksTest {
     composeRule.runOnIdle {
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
     }
 
     composeRule.waitForIdle()
@@ -527,7 +569,9 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.FitCheck(postUuid = "test_id"))
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       // PopUpTo Preview and navigate there
