@@ -282,6 +282,6 @@ private fun ViewUserBackButton(onBackButton: () -> Unit, username: String, modif
             fontFamily = Bodoni,
             color = colorScheme.primary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(ViewUserScreenTags.TITLE_TAG))
+            modifier = Modifier.testTag(ViewUserScreenTags.USERNAME_TAG))
       }
 }

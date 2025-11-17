@@ -244,22 +244,6 @@ class ViewUserViewModelTest {
   }
 
   @Test
-  fun `isFriend updates state correctly when true`() = runTest {
-    coEvery { mockAccountRepository.isMyFriend(testCurrentUserId, testFriendId) } returns true
-    coEvery { mockUserRepository.getUser(testFriendId) } returns testUser
-    coEvery { mockFeedRepository.getFeedForUids(any()) } returns emptyList()
-
-    viewModel =
-        ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
-    viewModel.update(testFriendId)
-    advanceUntilIdle()
-
-    val state = viewModel.uiState.value
-    assertTrue(state.isFriend)
-  }
-
-  @Test
   fun `isFriend updates state correctly when false`() = runTest {
     coEvery { mockAccountRepository.isMyFriend(testCurrentUserId, testFriendId) } returns false
     coEvery { mockUserRepository.getUser(testFriendId) } returns testUser
@@ -270,15 +254,12 @@ class ViewUserViewModelTest {
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
-    val state = viewModel.uiState.value
-    assertFalse(state.isFriend)
-  }
+    val stateFalse = viewModel.uiState.value
+    assertFalse(stateFalse.isFriend)
 
-  @Test
-  fun `user with no profile picture loads successfully`() = runTest {
-    val userNoProfilePic = User(uid = testFriendId, username = "testuser", profilePicture = "")
-    coEvery { mockAccountRepository.isMyFriend(testCurrentUserId, testFriendId) } returns false
-    coEvery { mockUserRepository.getUser(testFriendId) } returns userNoProfilePic
+    coEvery { mockAccountRepository.isMyFriend(testCurrentUserId, testFriendId) } returns true
+    coEvery { mockUserRepository.getUser(testFriendId) } returns testUser
+    coEvery { mockFeedRepository.getFeedForUids(any()) } returns emptyList()
 
     viewModel =
         ViewUserViewModel(
@@ -286,17 +267,14 @@ class ViewUserViewModelTest {
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
-    val state = viewModel.uiState.value
-    assertFalse(state.isLoading)
-    assertEquals("testuser", state.username)
-    assertEquals("", state.profilePicture)
-    assertFalse(state.error)
+    val stateTrue = viewModel.uiState.value
+    assertTrue(stateTrue.isFriend)
   }
 
   @Test
   fun `multiple updates work correctly`() = runTest {
     val friend1 = User(uid = "friend1", username = "user1", profilePicture = "pic1")
-    val friend2 = User(uid = "friend2", username = "user2", profilePicture = "pic2")
+    val friend2 = User(uid = "friend2", username = "user2", profilePicture = "")
 
     coEvery { mockAccountRepository.isMyFriend(testCurrentUserId, "friend1") } returns true
     coEvery { mockUserRepository.getUser("friend1") } returns friend1
@@ -323,7 +301,7 @@ class ViewUserViewModelTest {
 
     state = viewModel.uiState.value
     assertEquals("user2", state.username)
-    assertEquals("pic2", state.profilePicture)
+    assertEquals("", state.profilePicture)
     assertFalse(state.isFriend)
     assertEquals(0, state.friendPosts.size)
   }
