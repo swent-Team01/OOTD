@@ -1,3 +1,19 @@
+/**
+ * ViewUserScreen displays another user's profile information.
+ *
+ * This composable screen shows:
+ * - User's profile picture or avatar with first letter of username
+ * - Username as title
+ * - Follow/Unfollow button
+ * - Friend status text
+ * - Friend count
+ * - User's outfit posts (only visible if the user is a friend)
+ * - Loading state with a branded loading indicator
+ * - Error handling with toast messages
+ *
+ * The screen respects privacy by only showing posts if the viewed user is a friend of the current
+ * user.
+ */
 package com.android.ootd.ui.account
 
 import android.widget.Toast
@@ -45,6 +61,12 @@ import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 
+/**
+ * Test tags for ViewUserScreen components.
+ *
+ * These tags are used for UI testing to identify and interact with specific components on the view
+ * user profile screen.
+ */
 object ViewUserScreenTags {
   const val PROFILE_PICTURE_TAG = "viewUserProfilePicture"
   const val AVATAR_LETTER_TAG = "viewUserAvatarLetter"
@@ -54,10 +76,17 @@ object ViewUserScreenTags {
   const val POST_TAG = "viewUserPost"
   const val LOADING_TAG = "viewUserLoading"
   const val BACK_BUTTON_TAG = "viewUserBackButton"
-  const val TITLE_TAG = "viewUserTitle"
   const val FOLLOW_BUTTON_TAG = "viewUserFollowButton"
 }
 
+/**
+ * Main composable for viewing another user's profile.
+ *
+ * @param viewModel The ViewModel that manages the profile data and state
+ * @param userId The unique identifier of the user whose profile is being viewed
+ * @param onBackButton Callback invoked when the back button is pressed
+ * @param onPostClick Callback invoked when a post is clicked, receives the post ID
+ */
 @Composable
 fun ViewUserProfile(
     viewModel: ViewUserViewModel = viewModel(),
@@ -80,6 +109,13 @@ fun ViewUserProfile(
   }
 }
 
+/**
+ * Displays the main content of the user profile when data is loaded.
+ *
+ * @param uiState The current UI state containing user profile data
+ * @param onBackButton Callback invoked when the back button is pressed
+ * @param onPostClick Callback invoked when a post is clicked, receives the post ID
+ */
 @Composable
 private fun ViewUserProfileContent(
     uiState: ViewUserData,
@@ -146,6 +182,20 @@ private fun ViewUserProfileContent(
       }
 }
 
+/**
+ * Reusable text component for displaying styled text in the user profile.
+ *
+ * A helper composable that provides consistent text styling across the profile screen with
+ * customizable properties.
+ *
+ * @param text The text content to display
+ * @param style The text style to apply
+ * @param modifier Additional modifier for the text component
+ * @param color The color of the text, defaults to onSurface from the theme
+ * @param textAlign Text alignment, defaults to center
+ * @param fontFamily Optional custom font family
+ * @param testTag Optional test tag for UI testing
+ */
 @Composable
 private fun ViewUserText(
     text: String,
@@ -165,6 +215,16 @@ private fun ViewUserText(
       modifier = modifier.fillMaxWidth().testTag(testTag))
 }
 
+/**
+ * Displays a grid of the user's outfit posts.
+ *
+ * Shows posts in a 3-column grid layout with consistent spacing. Each post image is clickable and
+ * navigates to the full post view. The grid height is calculated based on the number of posts to
+ * ensure proper scrolling behavior.
+ *
+ * @param posts List of outfit posts to display
+ * @param onPostClick Callback invoked when a post is clicked, receives the post ID
+ */
 @Composable
 private fun ViewUserPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
   val color = colorScheme
@@ -198,6 +258,12 @@ private fun ViewUserPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit
       }
 }
 
+/**
+ * Displays a loading overlay while the user profile data is being fetched.
+ *
+ * Shows a branded loading indicator with the app's hanger icon and a circular progress indicator.
+ * The overlay covers the entire screen with a semi-transparent background.
+ */
 @Composable
 private fun ViewUserLoadingOverlay() {
   Box(
@@ -217,6 +283,15 @@ private fun ViewUserLoadingOverlay() {
       }
 }
 
+/**
+ * Displays the user's profile avatar.
+ *
+ * Shows the user's profile picture if available, otherwise displays a circular avatar with the
+ * first letter of their username. The avatar is rendered as a 150dp circle with appropriate
+ * styling.
+ *
+ * @param uiState The current UI state containing user profile information
+ */
 @Composable
 private fun ViewUserAvatar(uiState: ViewUserData) {
   val profilePicture = uiState.profilePicture
@@ -250,6 +325,15 @@ private fun ViewUserAvatar(uiState: ViewUserData) {
   }
 }
 
+/**
+ * Displays a follow/unfollow button based on the current friend status.
+ *
+ * Shows "Unfollow" if the user is already a friend, "Follow" otherwise. The button is centered
+ * horizontally on the screen.
+ *
+ * @param isFriend Whether the user is currently a friend
+ * @param onFollowClick Callback invoked when the button is clicked
+ */
 @Composable
 private fun ViewUserFollowButton(isFriend: Boolean, onFollowClick: () -> Unit) {
   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -261,6 +345,16 @@ private fun ViewUserFollowButton(isFriend: Boolean, onFollowClick: () -> Unit) {
   }
 }
 
+/**
+ * Displays a back button and the username title.
+ *
+ * The back button is positioned on the left side, while the username (prefixed with @) is displayed
+ * as a centered title using the app's primary color and Bodoni font.
+ *
+ * @param onBackButton Callback invoked when the back button is pressed
+ * @param username The username to display as the title
+ * @param modifier Modifier to apply to the back button icon
+ */
 @Composable
 private fun ViewUserBackButton(onBackButton: () -> Unit, username: String, modifier: Modifier) {
   IconButton(
