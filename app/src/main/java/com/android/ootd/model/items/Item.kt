@@ -11,6 +11,7 @@ data class Item(
     val type: String?,
     val brand: String?,
     val price: Double?,
+    val currency: String? = null,
     val material: List<Material?>,
     val link: String?,
     val ownerId: String

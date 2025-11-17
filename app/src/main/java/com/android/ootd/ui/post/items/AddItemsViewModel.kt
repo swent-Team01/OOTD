@@ -29,7 +29,8 @@ data class AddItemsUIState(
     val category: String = "",
     val type: String = "",
     val brand: String = "",
-    val price: String = "",
+    val price: Double = 0.0,
+    val currency: String = "CHF",
     val material: List<Material> = emptyList(),
     val link: String = "",
     val errorMessage: String? = null,
@@ -160,7 +161,8 @@ open class AddItemsViewModel(
         category = state.category,
         type = state.type,
         brand = state.brand,
-        price = state.price.toDoubleOrNull() ?: 0.0,
+        price = state.price,
+        currency = state.currency,
         material = state.material,
         link = state.link,
         ownerId = ownerId)
@@ -272,8 +274,12 @@ open class AddItemsViewModel(
                 })
   }
 
-  fun setPrice(price: String) {
+  fun setPrice(price: Double) {
     _uiState.value = _uiState.value.copy(price = price)
+  }
+
+  fun setCurrency(currency: String) {
+    _uiState.value = _uiState.value.copy(currency = currency)
   }
 
   fun validateCategory() {

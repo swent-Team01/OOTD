@@ -29,7 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,6 +62,7 @@ object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"
   const val INPUT_BRAND = "inputItemBrand"
   const val INPUT_PRICE = "inputItemPrice"
+  const val INPUT_CURRENCY = "inputItemCurrency"
   const val INPUT_LINK = "inputItemLink"
   const val INPUT_MATERIAL = "inputItemMaterial"
   const val INPUT_CATEGORY = "inputItemCategory"
@@ -179,11 +179,13 @@ fun AddItemsScreen(
                   addItemsViewModel.updateTypeSuggestions(it)
                 },
 
-                // brand / price / link / material
+                // brand / price / link / material / currency
                 brand = itemsUIState.brand,
                 onBrandChange = addItemsViewModel::setBrand,
                 price = itemsUIState.price,
                 onPriceChange = addItemsViewModel::setPrice,
+                currency = itemsUIState.currency,
+                onCurrencyChange = addItemsViewModel::setCurrency,
                 link = itemsUIState.link,
                 onLinkChange = addItemsViewModel::setLink,
                 material = itemsUIState.materialText,
@@ -257,8 +259,10 @@ private fun FieldsList(
     onTypeChange: (String) -> Unit,
     brand: String,
     onBrandChange: (String) -> Unit,
-    price: String,
-    onPriceChange: (String) -> Unit,
+    price: Double,
+    onPriceChange: (Double) -> Unit,
+    currency: String,
+    onCurrencyChange: (String) -> Unit,
     link: String,
     onLinkChange: (String) -> Unit,
     material: String,
@@ -301,7 +305,17 @@ private fun FieldsList(
           brand = brand, onChange = onBrandChange, testTag = AddItemScreenTestTags.INPUT_BRAND)
     }
 
-    item { PriceField(price = price, onChange = onPriceChange) }
+    item {
+      PriceField(
+          price = price, onChange = onPriceChange, testTag = AddItemScreenTestTags.INPUT_PRICE)
+    }
+
+    item {
+      CurrencyField(
+          currency = currency,
+          onChange = onCurrencyChange,
+          testTag = AddItemScreenTestTags.INPUT_CURRENCY)
+    }
 
     item {
       LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
@@ -372,19 +386,6 @@ private fun ImagePickerRow(
 }
 
 @Composable
-private fun PriceField(price: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = price,
-      onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) onChange(it) },
-      label = { Text("Item price") },
-      placeholder = { Text("Enter the item price") },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_PRICE))
-}
-
-@Composable
 private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
   Button(
       onClick = onClick,
@@ -448,8 +449,10 @@ fun AddItemsScreenSmallPreview() {
                   onTypeChange = {},
                   brand = "BrandX",
                   onBrandChange = {},
-                  price = "19.99",
+                  price = 19.99,
                   onPriceChange = {},
+                  currency = "CHF",
+                  onCurrencyChange = {},
                   link = "https://example.com/item",
                   onLinkChange = {},
                   material = "Cotton",

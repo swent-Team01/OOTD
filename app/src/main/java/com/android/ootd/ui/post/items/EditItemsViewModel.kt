@@ -27,6 +27,7 @@ data class EditItemsUIState(
     val type: String = "",
     val brand: String = "",
     val price: Double = 0.0,
+    val currency: String = "CHF",
     val material: List<Material> = emptyList(),
     val materialText: String = "",
     val link: String = "",
@@ -107,6 +108,8 @@ open class EditItemsViewModel(
             type = item.type ?: "",
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
+            // Currency not stored in Item; keep default / previous selection
+            currency = _uiState.value.currency,
             material = item.material.filterNotNull(),
             materialText = materialText,
             link = item.link ?: "",
@@ -160,6 +163,7 @@ open class EditItemsViewModel(
               type = state.type,
               brand = state.brand,
               price = state.price,
+              currency = state.currency,
               material = state.material,
               link = state.link,
               ownerId = state.ownerId)
@@ -223,5 +227,10 @@ open class EditItemsViewModel(
    */
   fun setPrice(price: Double) {
     _uiState.value = _uiState.value.copy(price = price)
+  }
+
+  /** Sets the currency (UI only). */
+  fun setCurrency(currency: String) {
+    _uiState.value = _uiState.value.copy(currency = currency)
   }
 }

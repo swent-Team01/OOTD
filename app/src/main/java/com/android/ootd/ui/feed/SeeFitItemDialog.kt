@@ -92,8 +92,9 @@ fun SeeItemDetailsDialog(
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_BRAND))
 
                 item.price?.let {
+                  val c = item.currency ?: "CHF"
                   Text(
-                      text = "CHF ${String.format("%.2f", it)}",
+                      text = "$c ${String.format("%.2f", it)}",
                       style =
                           MaterialTheme.typography.bodyLarge.copy(
                               color = MaterialTheme.colorScheme.onSurfaceVariant),

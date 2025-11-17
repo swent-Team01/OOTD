@@ -209,6 +209,77 @@ fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
       testTag = testTag)
 }
 
+/** Shared price field that always exposes a Double value. */
+@Composable
+fun PriceField(
+    price: Double,
+    onChange: (Double) -> Unit,
+    testTag: String,
+    label: String = "Item price",
+    placeholder: String = "Enter the item price"
+) {
+  val text = if (price == 0.0) "" else price.toString()
+  OutlinedTextField(
+      value = text,
+      onValueChange = {
+        // Accept empty, integers, and decimals
+        if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) {
+          onChange(it.toDoubleOrNull() ?: 0.0)
+        }
+      },
+      label = { Text(label) },
+      placeholder = { Text(placeholder) },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
+      modifier = Modifier.fillMaxWidth().testTag(testTag))
+}
+
+/** Simple currency dropdown similar to CategoryField with fixed options. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CurrencyField(
+    currency: String,
+    onChange: (String) -> Unit,
+    testTag: String,
+    dropdownTestTag: String? = null,
+    label: String = "Currency",
+    options: List<String> = listOf("CHF", "USD", "EUR")
+) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+      expanded = expanded,
+      onExpandedChange = { expanded = it },
+      modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = currency,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            placeholder = { Text("Select currency") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor().testTag(testTag),
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier =
+                (dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
+                    ?: Modifier.fillMaxWidth())) {
+              options.forEach { opt ->
+                DropdownMenuItem(
+                    text = { Text(opt) },
+                    onClick = {
+                      onChange(opt)
+                      expanded = false
+                    })
+              }
+            }
+      }
+}
+
 /** Reusable loading overlay with progress indicator */
 @Composable
 fun LoadingOverlay(visible: Boolean) {

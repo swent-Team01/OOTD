@@ -118,6 +118,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
     val type = doc.getString("type") ?: return null
     val brand = doc.getString("brand") ?: return null
     val price = doc.getDouble("price") ?: return null
+    val currency = doc.getString("currency")
     val link = doc.getString("link") ?: return null
     val ownerId = doc.getString(OWNER_ATTRIBUTE_NAME) ?: return null
     val materialList = doc["material"] as? List<*>
@@ -138,6 +139,7 @@ private fun mapToItem(doc: DocumentSnapshot): Item? {
         type = type,
         brand = brand,
         price = price,
+        currency = currency,
         material = material,
         link = link,
         ownerId = ownerId)

@@ -44,6 +44,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_TYPE = "inputItemType"
   const val INPUT_ITEM_BRAND = "inputItemBrand"
   const val INPUT_ITEM_PRICE = "inputItemPrice"
+  const val INPUT_ITEM_CURRENCY = "inputItemCurrency"
   const val INPUT_ITEM_MATERIAL = "inputItemMaterial"
   const val INPUT_ITEM_LINK = "inputItemLink"
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
@@ -147,6 +149,8 @@ fun EditItemsScreen(
                     onBrandChange = editItemsViewModel::setBrand,
                     price = itemsUIState.price,
                     onPriceChange = editItemsViewModel::setPrice,
+                    currency = itemsUIState.currency,
+                    onCurrencyChange = editItemsViewModel::setCurrency,
                     material = itemsUIState.materialText,
                     onMaterialChange = editItemsViewModel::setMaterial,
                     link = itemsUIState.link,
@@ -225,6 +229,8 @@ private fun FieldsList(
     onBrandChange: (String) -> Unit,
     price: Double,
     onPriceChange: (Double) -> Unit,
+    currency: String,
+    onCurrencyChange: (String) -> Unit,
     material: String,
     onMaterialChange: (String) -> Unit,
     link: String,
@@ -257,7 +263,18 @@ private fun FieldsList(
           onChange = onBrandChange,
           testTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND)
     }
-    item { PriceField(price = price, onChange = onPriceChange) }
+    item {
+      PriceField(
+          price = price,
+          onChange = onPriceChange,
+          testTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE)
+    }
+    item {
+      CurrencyField(
+          currency = currency,
+          onChange = onCurrencyChange,
+          testTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+    }
     item {
       MaterialField(
           materialText = material,
@@ -346,5 +363,69 @@ private fun SaveDeleteRow(
         colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
           Text("Save Changes")
         }
+  }
+}
+
+@Preview(name = "Edit Items", showBackground = true)
+@Composable
+fun EditItemsScreenSmallPreview() {
+  MaterialTheme {
+    val maxImageSize = 180.dp
+    val minImageSize = 80.dp
+
+    var showCamera by remember { mutableStateOf(false) }
+    val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
+    val imageScaleState = remember { mutableFloatStateOf(1f) }
+
+    val nestedScrollConnection =
+        _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+            currentImageSize = currentImageSizeState,
+            imageScale = imageScaleState,
+            minImageSize = minImageSize,
+            maxImageSize = maxImageSize)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+      Scaffold(
+          topBar = { EditTopBar(goBack = {}) },
+          content = { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
+              FieldsList(
+                  modifier =
+                      Modifier.fillMaxWidth().padding(16.dp).offset {
+                        IntOffset(0, currentImageSizeState.value.roundToPx())
+                      },
+                  onPickFromGallery = {},
+                  onOpenCamera = { showCamera = false },
+                  category = "Tops",
+                  onCategoryChange = {},
+                  type = "Hoodie",
+                  suggestions = listOf("Hoodie", "Jacket", "T-Shirt"),
+                  onTypeChange = {},
+                  onTypeFocus = {},
+                  brand = "BrandY",
+                  onBrandChange = {},
+                  price = 49.9,
+                  onPriceChange = {},
+                  currency = "EUR",
+                  onCurrencyChange = {},
+                  material = "Cotton 80%, Wool 20%",
+                  onMaterialChange = {},
+                  link = "https://example.com/item",
+                  onLinkChange = {},
+                  isDeleteEnabled = true,
+                  onDelete = {},
+                  isSaveEnabled = true,
+                  onSave = {})
+
+              ItemsImagePreview(
+                  localUri = null,
+                  remoteUrl = "",
+                  maxImageSize = maxImageSize,
+                  imageScale = imageScaleState.floatValue,
+                  currentSize = currentImageSizeState.value,
+                  testTag = EditItemsScreenTestTags.PLACEHOLDER_PICTURE)
+            }
+          })
+    }
   }
 }

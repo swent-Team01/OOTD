@@ -22,6 +22,7 @@ object ItemsMappers {
       val type = data["type"] as? String ?: return null
       val brand = data["brand"] as? String ?: return null
       val price = (data["price"] as? Number)?.toDouble() ?: return null
+      val currency = data["currency"] as? String
       val link = data["link"] as? String ?: return null
       val ownerId = data["ownerId"] as? String ?: return null
       val postUuids = (data["postUuids"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
@@ -44,6 +45,7 @@ object ItemsMappers {
           type = type,
           brand = brand,
           price = price,
+          currency = currency,
           material = material,
           link = link,
           ownerId = ownerId)
