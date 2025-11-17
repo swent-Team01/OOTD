@@ -129,6 +129,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           outfitPreviewViewModel = OutfitPreviewViewModel(fakeRepo(items), fakePostRepo),
           imageUri = "fake_image_uri",
           description = "Test outfit description",
+          location = Location(46.5197, 6.5682, "Lausanne, Switzerland"),
           onAddItem = onAdd,
           onSelectFromInventory = onSelectFromInventory,
           onEditItem = onEdit,
@@ -221,6 +222,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           outfitPreviewViewModel = vm,
           imageUri = "fake_image_uri",
           description = "Test outfit description",
+          location = Location(46.5197, 6.5682, "Lausanne, Switzerland"),
           onAddItem = {},
           onEditItem = {},
           onGoBack = {},
@@ -270,15 +272,18 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     assert(initial.items.isEmpty())
     assert(initial.imageUri == "")
     assert(initial.description == "")
+    assert(initial.location.name == "")
 
     // Load items
-    vm.initFromFitCheck("uri", "desc")
+    val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
+    vm.initFromFitCheck("uri", "desc", testLocation)
     composeTestRule.waitForIdle()
 
     assert(vm.uiState.value.items.size == 3)
     assert(vm.uiState.value.items.first().itemUuid == i.itemUuid)
     assert(vm.uiState.value.imageUri == "uri")
     assert(vm.uiState.value.description == "desc")
+    assert(vm.uiState.value.location == testLocation)
 
     // Clear error (use reflection to inject error)
     @Suppress("UNCHECKED_CAST")
@@ -332,7 +337,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     val vm = OutfitPreviewViewModel(customFailRepo, fakePostRepo)
 
     // First call via initFromFitCheck
-    vm.initFromFitCheck("uri", "desc")
+    val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
+    vm.initFromFitCheck("uri", "desc", testLocation)
     // Wait for viewModelScope coroutine
     composeTestRule.waitForIdle()
 
@@ -360,6 +366,7 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           outfitPreviewViewModel = vm,
           imageUri = "test_uri",
           description = "test_desc",
+          location = Location(46.5197, 6.5682, "Lausanne, Switzerland"),
           onAddItem = {},
           onEditItem = {},
           onGoBack = {},
