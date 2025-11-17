@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,8 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
+import com.android.ootd.model.map.Location
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.map.LocationSelectionSection
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.utils.LocationUtils
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -149,14 +155,38 @@ private fun PhotoSelectionDialog(
 @Composable
 fun FitCheckScreen(
     fitCheckViewModel: FitCheckViewModel = viewModel(),
+    locationSelectionViewModel: LocationSelectionViewModel = viewModel(),
     postUuid: String = "", // passed from previous screen if editing existing post
-    onNextClick: (String, String) -> Unit = { _, _ -> },
+    onNextClick: (String, String, Location) -> Unit = { _, _, _ -> },
     onBackClick: () -> Unit = {},
     overridePhoto: Boolean = false
 ) {
   val uiState by fitCheckViewModel.uiState.collectAsState()
 
   var showCamera by remember { mutableStateOf(false) }
+
+  val locationPermissionLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.RequestPermission(),
+          onResult = { isGranted ->
+            if (isGranted) {
+              locationSelectionViewModel.onLocationPermissionGranted()
+            } else {
+              locationSelectionViewModel.onLocationPermissionDenied()
+            }
+          })
+
+  val context = LocalContext.current
+  val onGPSClick =
+      remember(locationSelectionViewModel, locationPermissionLauncher, context) {
+        {
+          if (LocationUtils.hasLocationPermission(context)) {
+            locationSelectionViewModel.onLocationPermissionGranted()
+          } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+          }
+        }
+      }
 
   val galleryLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?
@@ -173,7 +203,10 @@ fun FitCheckScreen(
 
   FitCheckScreenContent(
       uiState = uiState,
-      onNextClick = onNextClick,
+      locationSelectionViewModel = locationSelectionViewModel,
+      onNextClick = { imageUri, description, location ->
+        onNextClick(imageUri, description, location)
+      },
       onBackClick = {
         if (postUuid.isNotEmpty()) {
           fitCheckViewModel.deleteItemsForPost(postUuid)
@@ -184,6 +217,8 @@ fun FitCheckScreen(
       onTakePhoto = { showCamera = true },
       onDescriptionChange = { fitCheckViewModel.setDescription(it) },
       onClearError = { fitCheckViewModel.clearError() },
+      onGPSClick = onGPSClick,
+      onLocationSelect = { fitCheckViewModel.setLocation(it) },
       overridePhoto = overridePhoto)
 }
 
@@ -191,12 +226,15 @@ fun FitCheckScreen(
 @Composable
 private fun FitCheckScreenContent(
     uiState: FitCheckUIState,
-    onNextClick: (String, String) -> Unit = { _, _ -> },
+    locationSelectionViewModel: LocationSelectionViewModel? = null,
+    onNextClick: (String, String, Location) -> Unit = { _, _, _ -> },
     onBackClick: () -> Unit = {},
     onChooseFromGallery: () -> Unit = {},
     onTakePhoto: () -> Unit = {},
     onDescriptionChange: (String) -> Unit = {},
     onClearError: () -> Unit = {},
+    onGPSClick: () -> Unit = {},
+    onLocationSelect: (Location) -> Unit = {},
     overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
@@ -230,7 +268,7 @@ private fun FitCheckScreenContent(
             onClick = {
               if (overridePhoto || uiState.isPhotoValid) {
                 onClearError()
-                onNextClick(uiState.image.toString(), uiState.description)
+                onNextClick(uiState.image.toString(), uiState.description, uiState.location)
               } else {
                 onDescriptionChange(uiState.description) // no-op; real screen sets error
               }
@@ -280,6 +318,14 @@ private fun FitCheckScreenContent(
               DescriptionInputField(
                   description = uiState.description, onDescriptionChange = onDescriptionChange)
 
+              // Location section (optional)
+              locationSelectionViewModel?.let { viewModel ->
+                LocationSection(
+                    locationSelectionViewModel = viewModel,
+                    onGPSClick = onGPSClick,
+                    onLocationSelect = onLocationSelect)
+              }
+
               // Add photo button
               Button(
                   onClick = { showDialog = true },
@@ -299,6 +345,21 @@ private fun FitCheckScreenContent(
                   onChooseFromGallery = onChooseFromGallery)
             }
       }
+}
+
+@Composable
+fun LocationSection(
+    locationSelectionViewModel: LocationSelectionViewModel,
+    onGPSClick: () -> Unit = {},
+    onLocationSelect: (Location) -> Unit = {}
+) {
+  LocationSelectionSection(
+      modifier = Modifier.fillMaxWidth(),
+      viewModel = locationSelectionViewModel,
+      textGPSButton = "Use current location (GPS)",
+      textLocationField = "Location (Optional)",
+      onGPSClick = onGPSClick,
+      onLocationSelect = onLocationSelect)
 }
 
 @Preview(showBackground = true)
