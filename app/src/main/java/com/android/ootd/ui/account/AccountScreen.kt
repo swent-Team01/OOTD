@@ -3,14 +3,8 @@ package com.android.ootd.ui.account
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -24,24 +18,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.ColorPainter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.android.ootd.R
-import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.Bodoni
-import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.DisplayUserPosts
+import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.utils.TextField
 
 object AccountPageTestTags {
   const val TITLE_TEXT = "accountPageTitleText"
@@ -103,88 +92,42 @@ fun AccountPageContent(
         Spacer(modifier = Modifier.height(36.dp))
 
         // Avatar
-        AvatarHolder(uiState, username)
+        ProfilePicture(
+            size = 150.dp, profilePicture = uiState.profilePicture, username = uiState.username)
 
         Spacer(modifier = Modifier.height(18.dp))
         // Username
-        AccountText(
+        TextField(
             text = username,
             style = typography.displayLarge,
-            color = colorScheme.primary,
-            testTag = AccountPageTestTags.USERNAME_TEXT)
+            modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
+            color = colorScheme.primary)
 
         Spacer(modifier = Modifier.height(9.dp))
 
         // Friend count
-        AccountText(
+        TextField(
             text = "$friendListSize friends",
             style = typography.bodyLarge,
-            testTag = AccountPageTestTags.FRIEND_COUNT_TEXT)
+            modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        AccountText(
+        TextField(
             text = "Your posts :",
             style = typography.bodyLarge,
+            modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
             textAlign = TextAlign.Left,
-            fontFamily = Bodoni,
-            testTag = AccountPageTestTags.YOUR_POST_SECTION)
+            fontFamily = Bodoni)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        DisplayUsersPosts(posts, onPostClick)
-      }
-}
-
-@Composable
-private fun AccountText(
-    text: String,
-    style: androidx.compose.ui.text.TextStyle,
-    modifier: Modifier = Modifier,
-    color: androidx.compose.ui.graphics.Color = colorScheme.onSurface,
-    textAlign: TextAlign = TextAlign.Center,
-    fontFamily: androidx.compose.ui.text.font.FontFamily? = null,
-    testTag: String = ""
-) {
-  Text(
-      text = text,
-      style = style,
-      color = color,
-      textAlign = textAlign,
-      fontFamily = fontFamily,
-      modifier = modifier.fillMaxWidth().testTag(testTag))
-}
-
-@Composable
-fun DisplayUsersPosts(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
-  val color = colorScheme
-  val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
-  val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-  val screenWidth = configuration.screenWidthDp.dp
-  val itemWidth = (screenWidth - 44.dp - 16.dp) / 3 // subtract padding and spacing
-  val itemHeight = itemWidth
-  val rowCount = (posts.size + 2) / 3
-  val totalHeight = rowCount * itemHeight.value + (rowCount - 1) * 8
-
-  LazyVerticalGrid(
-      columns = GridCells.Fixed(3),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      verticalArrangement = Arrangement.spacedBy(8.dp),
-      modifier = Modifier.fillMaxWidth().height(totalHeight.dp)) {
-        items(posts) { post ->
-          AsyncImage(
-              model = post.outfitURL,
-              contentDescription = "Post image",
-              placeholder = defaultPainter,
-              error = defaultPainter,
-              contentScale = ContentScale.Crop,
-              modifier =
-                  Modifier.size(itemWidth)
-                      .clip(RoundedCornerShape(8.dp))
-                      .clickable(onClick = { onPostClick(post.postUID) })
-                      .background(color.surfaceVariant)
-                      .testTag(AccountPageTestTags.POST_TAG))
-        }
+        DisplayUserPosts(
+            posts = posts,
+            onPostClick = onPostClick,
+            modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
+            padding = 22.dp,
+            spacing = 8.dp)
       }
 }
 
@@ -205,36 +148,6 @@ private fun LoadingOverlay() {
           CircularProgressIndicator(color = colorScheme.primary)
         }
       }
-}
-
-@Composable
-private fun AvatarHolder(uiState: AccountPageViewState, username: String) {
-  val profilePicture = uiState.profilePicture
-  val color = colorScheme
-  val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
-
-  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    if (profilePicture.isNotBlank() && !uiState.isLoading) {
-      AsyncImage(
-          model = profilePicture,
-          contentDescription = "Profile Picture",
-          placeholder = defaultAvatarPainter,
-          error = defaultAvatarPainter,
-          contentScale = ContentScale.Crop,
-          modifier =
-              Modifier.size(150.dp).clip(CircleShape).testTag(AccountPageTestTags.AVATAR_IMAGE))
-    } else {
-      Box(
-          modifier = Modifier.size(150.dp).clip(CircleShape).background(Primary),
-          contentAlignment = Alignment.Center) {
-            Text(
-                text = username.firstOrNull()?.uppercase() ?: "",
-                style = typography.headlineLarge,
-                color = Secondary,
-                modifier = Modifier.testTag(AccountPageTestTags.AVATAR_LETTER))
-          }
-    }
-  }
 }
 
 @Composable
