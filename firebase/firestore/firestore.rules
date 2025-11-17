@@ -132,6 +132,37 @@ service cloud.firestore {
              && (resource == null || resource.data.userId == request.auth.uid);
     }
 
+    match /reactions/{postId}/users/{userId} {
+
+      allow create, update, delete: if isAuthed()
+           && request.auth.uid == userId
+           && (
+                // user is the post owner
+                request.auth.uid ==
+                  get(/databases/$(database)/documents/posts/$(postId)).data.ownerId
+                ||
+                // OR user is a friend of the post owner
+                isFriend(
+                  request.auth.uid,
+                  get(/databases/$(database)/documents/posts/$(postId)).data.ownerId
+                )
+           );
+
+      allow read: if isAuthed()
+           && (
+                // post owner
+                request.auth.uid ==
+                  get(/databases/$(database)/documents/posts/$(postId)).data.ownerId
+                ||
+                // OR friends of the post owner
+                isFriend(
+                  request.auth.uid,
+                  get(/databases/$(database)/documents/posts/$(postId)).data.ownerId
+                )
+           );
+    }
+
+
     // Default deny for documents except items
     match /{document=**} {
       allow read, write: if false;
