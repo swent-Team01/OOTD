@@ -29,6 +29,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
+import com.android.ootd.model.map.Location
 import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
@@ -244,9 +245,9 @@ fun OOTDApp(
 
                       FitCheckScreen(
                           postUuid = postUuid,
-                          onNextClick = { imageUri, description ->
+                          onNextClick = { imageUri, description, location ->
                             navigationActions.navigateTo(
-                                Screen.PreviewItemScreen(imageUri, description))
+                                Screen.PreviewItemScreen(imageUri, description, location))
                           },
                           onBackClick = {
                             // later we'll use postUuid to delete items
@@ -270,14 +271,28 @@ fun OOTDApp(
                     arguments =
                         listOf(
                             navArgument("imageUri") { type = NavType.StringType },
-                            navArgument("description") { type = NavType.StringType })) {
+                            navArgument("description") { type = NavType.StringType },
+                            navArgument("locationLat") { type = NavType.FloatType },
+                            navArgument("locationLon") { type = NavType.FloatType },
+                            navArgument("locationName") { type = NavType.StringType })) {
                         backStackEntry ->
                       val imageUri = backStackEntry.arguments?.getString("imageUri") ?: ""
                       val description = backStackEntry.arguments?.getString("description") ?: ""
+                      val locationLat = backStackEntry.arguments?.getFloat("locationLat") ?: 0.0
+                      val locationLon = backStackEntry.arguments?.getFloat("locationLon") ?: 0.0
+                      val locationName = backStackEntry.arguments?.getString("locationName") ?: ""
+
+                      // Reconstruct Location object from navigation arguments
+                      val location =
+                          Location(
+                              latitude = locationLat.toDouble(),
+                              longitude = locationLon.toDouble(),
+                              name = locationName)
 
                       PreviewItemScreen(
                           imageUri = imageUri,
                           description = description,
+                          location = location,
                           onAddItem = { postUuid ->
                             navController.navigate(Screen.AddItemScreen(postUuid).route)
                           },
