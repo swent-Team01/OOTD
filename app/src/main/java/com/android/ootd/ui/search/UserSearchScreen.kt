@@ -22,7 +22,10 @@ object SearchScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel(), onUserClick: (String) -> Unit) {
+fun UserSearchScreen(
+    viewModel: UserSearchViewModel = viewModel(),
+    onUserClick: (String) -> Unit = {}
+) {
   val uiState by viewModel.uiState.collectAsState()
 
   Column(

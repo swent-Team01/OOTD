@@ -20,7 +20,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
@@ -40,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.android.ootd.model.user.User
-import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -51,6 +49,8 @@ object UserProfileCardTestTags {
   const val USERNAME_TEXT = "usernameText"
   const val ERROR_MESSAGE = "errorMessage"
   const val ERROR_DISMISS_BUTTON = "errorDismissButton"
+  const val AVATAR_IMAGE = "avatarImage"
+  const val AVATAR_LETTER = "avatarLetter"
 }
 
 @Preview
@@ -132,7 +132,7 @@ fun UserProfileCard(
                           modifier =
                               Modifier.size(50.dp)
                                   .clip(CircleShape)
-                                  .testTag(AccountPageTestTags.AVATAR_IMAGE))
+                                  .testTag(UserProfileCardTestTags.AVATAR_IMAGE))
                     } else {
                       Box(
                           modifier = Modifier.size(50.dp).clip(CircleShape).background(Primary),
@@ -141,7 +141,7 @@ fun UserProfileCard(
                                 text = username.firstOrNull()?.uppercase() ?: "",
                                 style = typography.bodySmall,
                                 color = Secondary,
-                                modifier = Modifier.testTag(AccountPageTestTags.AVATAR_LETTER))
+                                modifier = Modifier.testTag(UserProfileCardTestTags.AVATAR_LETTER))
                           }
                     }
                   }
@@ -173,9 +173,8 @@ fun UserProfileCard(
               shape = RoundedCornerShape(12.dp),
               colors =
                   ButtonDefaults.buttonColors(
-                      containerColor = MaterialTheme.colorScheme.primary,
-                      disabledContainerColor =
-                          MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))) {
+                      containerColor = colorScheme.primary,
+                      disabledContainerColor = colorScheme.primary.copy(alpha = 0.6f))) {
                 Text(
                     text =
                         when {
