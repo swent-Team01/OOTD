@@ -8,13 +8,18 @@ data class Item(
     val postUuids: List<String>,
     val image: ImageData,
     val category: String,
-    val type: String?,
-    val brand: String?,
-    val price: Double?,
+    val type: String? = null,
+    val brand: String? = null,
+    val price: Double? = null,
     val currency: String? = null,
-    val material: List<Material?>,
-    val link: String?,
-    val ownerId: String
+    val material: List<Material?> = emptyList(),
+    val link: String? = null,
+    val ownerId: String,
+    val condition: String? = null,
+    val size: String? = null,
+    val fitType: String? = null,
+    val style: String? = null,
+    val notes: String? = null,
 )
 
 @Keep data class Material(val name: String = "", val percentage: Double = 0.0)

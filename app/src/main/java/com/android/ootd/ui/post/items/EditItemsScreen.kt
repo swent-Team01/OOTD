@@ -4,6 +4,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +19,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +75,13 @@ object EditItemsScreenTestTags {
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
   const val ALL_FIELDS = "allFields"
   const val TYPE_SUGGESTIONS = "typeSuggestions"
+  const val ADDITIONAL_DETAILS_TOGGLE = "edit_additionalDetailsToggle"
+  const val ADDITIONAL_DETAILS_SECTION = "edit_additionalDetailsSection"
+  const val INPUT_ITEM_CONDITION = "edit_inputItemCondition"
+  const val INPUT_ITEM_SIZE = "edit_inputItemSize"
+  const val INPUT_ITEM_FIT_TYPE = "edit_inputItemFitType"
+  const val INPUT_ITEM_STYLE = "edit_inputItemStyle"
+  const val INPUT_ITEM_NOTES = "edit_inputItemNotes"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,6 +176,17 @@ fun EditItemsScreen(
                             itemsUIState.image.imageUrl.isNotEmpty()) &&
                             itemsUIState.category.isNotEmpty(),
                     onSave = editItemsViewModel::onSaveItemClick,
+                    // Additional
+                    condition = itemsUIState.condition,
+                    onConditionChange = editItemsViewModel::setCondition,
+                    size = itemsUIState.size,
+                    onSizeChange = editItemsViewModel::setSize,
+                    fitType = itemsUIState.fitType,
+                    onFitTypeChange = editItemsViewModel::setFitType,
+                    style = itemsUIState.style,
+                    onStyleChange = editItemsViewModel::setStyle,
+                    notes = itemsUIState.notes,
+                    onNotesChange = editItemsViewModel::setNotes,
                 )
 
                 // Image preview overlay
@@ -240,6 +264,19 @@ private fun FieldsList(
     onDelete: () -> Unit,
     isSaveEnabled: Boolean,
     onSave: () -> Unit,
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    // Preview flags
+    additionalExpandedPreview: Boolean = false,
+    conditionMenuExpandedPreview: Boolean = false,
 ) {
   LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
     item { ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera) }
@@ -289,6 +326,21 @@ private fun FieldsList(
     item {
       LinkField(
           link = link, onChange = onLinkChange, testTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+    }
+    item {
+      AdditionalDetailsSectionEdit(
+          condition = condition,
+          onConditionChange = onConditionChange,
+          size = size,
+          onSizeChange = onSizeChange,
+          fitType = fitType,
+          onFitTypeChange = onFitTypeChange,
+          style = style,
+          onStyleChange = onStyleChange,
+          notes = notes,
+          onNotesChange = onNotesChange,
+          expandedInitially = additionalExpandedPreview,
+          condExpandedInitially = conditionMenuExpandedPreview)
     }
     item {
       SaveDeleteRow(
@@ -371,6 +423,116 @@ private fun SaveDeleteRow(
   }
 }
 
+@Composable
+private fun AdditionalDetailsSectionEdit(
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    expandedInitially: Boolean = false,
+    condExpandedInitially: Boolean = false,
+) {
+  var expanded by remember { mutableStateOf(expandedInitially) }
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp)
+                .testTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+          Icon(
+              imageVector =
+                  if (expanded) Icons.Filled.KeyboardArrowDown
+                  else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+              contentDescription = if (expanded) "Collapse" else "Expand",
+              tint = MaterialTheme.colorScheme.primary)
+          Text(
+              text = "Enter additional details",
+              style =
+                  MaterialTheme.typography.bodyLarge.copy(
+                      color = MaterialTheme.colorScheme.primary))
+        }
+
+    AnimatedVisibility(visible = expanded) {
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        var condExpanded by remember { mutableStateOf(condExpandedInitially) }
+        // Condition dropdown
+        OutlinedTextField(
+            value = condition,
+            onValueChange = onConditionChange,
+            label = { Text("Condition") },
+            readOnly = true,
+            trailingIcon = {
+              IconButton(onClick = { condExpanded = !condExpanded }) {
+                Icon(
+                    imageVector =
+                        if (condExpanded) Icons.Filled.KeyboardArrowDown
+                        else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null)
+              }
+            },
+            colors = commonTextFieldColors(),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+            modifier =
+                Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_CONDITION))
+        DropdownMenu(expanded = condExpanded, onDismissRequest = { condExpanded = false }) {
+          listOf("New", "Like new", "Used", "Vintage").forEach { opt ->
+            DropdownMenuItem(
+                text = { Text(opt) },
+                onClick = {
+                  onConditionChange(opt)
+                  condExpanded = false
+                })
+          }
+        }
+
+        OutlinedTextField(
+            value = size,
+            onValueChange = onSizeChange,
+            label = { Text("Size") },
+            colors = commonTextFieldColors(),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_SIZE))
+        OutlinedTextField(
+            value = fitType,
+            onValueChange = onFitTypeChange,
+            label = { Text("Item fit type") },
+            colors = commonTextFieldColors(),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE))
+        OutlinedTextField(
+            value = style,
+            onValueChange = onStyleChange,
+            label = { Text("Item style") },
+            colors = commonTextFieldColors(),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE))
+        OutlinedTextField(
+            value = notes,
+            onValueChange = onNotesChange,
+            label = { Text("Notes") },
+            colors = commonTextFieldColors(),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_NOTES),
+            maxLines = 5)
+      }
+    }
+  }
+}
+
 @Preview(name = "Edit Items", showBackground = true)
 @Composable
 fun EditItemsScreenSmallPreview() {
@@ -420,7 +582,19 @@ fun EditItemsScreenSmallPreview() {
                   isDeleteEnabled = true,
                   onDelete = {},
                   isSaveEnabled = true,
-                  onSave = {})
+                  onSave = {},
+                  condition = "New",
+                  onConditionChange = {},
+                  size = "M",
+                  onSizeChange = {},
+                  fitType = "Regular",
+                  onFitTypeChange = {},
+                  style = "Casual",
+                  onStyleChange = {},
+                  notes = "Great condition",
+                  onNotesChange = {},
+                  additionalExpandedPreview = true,
+                  conditionMenuExpandedPreview = true)
 
               ItemsImagePreview(
                   localUri = null,

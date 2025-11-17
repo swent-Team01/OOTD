@@ -38,7 +38,12 @@ data class EditItemsUIState(
     val isSaveSuccessful: Boolean = false,
     val isDeleteSuccessful: Boolean = false,
     val ownerId: String = "",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val condition: String = "",
+    val size: String = "",
+    val fitType: String = "",
+    val style: String = "",
+    val notes: String = "",
 ) {
   val isEditValid: Boolean
     get() =
@@ -112,7 +117,13 @@ open class EditItemsViewModel(
             material = item.material.filterNotNull(),
             materialText = materialText,
             link = item.link ?: "",
-            ownerId = item.ownerId)
+            ownerId = item.ownerId,
+            condition = item.condition ?: "",
+            size = item.size ?: "",
+            fitType = item.fitType ?: "",
+            style = item.style ?: "",
+            notes = item.notes ?: "",
+        )
   }
 
   /** Loads an item by its UUID directly from the repository. */
@@ -165,7 +176,13 @@ open class EditItemsViewModel(
               currency = state.currency,
               material = state.material,
               link = state.link,
-              ownerId = state.ownerId)
+              ownerId = state.ownerId,
+              condition = state.condition,
+              size = state.size,
+              fitType = state.fitType,
+              style = state.style,
+              notes = state.notes,
+          )
 
       try {
         _uiState.value =
@@ -231,5 +248,25 @@ open class EditItemsViewModel(
   /** Sets the currency (UI only). */
   fun setCurrency(currency: String) {
     _uiState.value = _uiState.value.copy(currency = currency)
+  }
+
+  fun setCondition(value: String) {
+    _uiState.value = _uiState.value.copy(condition = value)
+  }
+
+  fun setSize(value: String) {
+    _uiState.value = _uiState.value.copy(size = value)
+  }
+
+  fun setFitType(value: String) {
+    _uiState.value = _uiState.value.copy(fitType = value)
+  }
+
+  fun setStyle(value: String) {
+    _uiState.value = _uiState.value.copy(style = value)
+  }
+
+  fun setNotes(value: String) {
+    _uiState.value = _uiState.value.copy(notes = value)
   }
 }

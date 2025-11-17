@@ -40,7 +40,12 @@ data class AddItemsUIState(
     val categorySuggestion: List<String> = emptyList(),
     val materialText: String = "",
     val isLoading: Boolean = false,
-    val overridePhoto: Boolean = false
+    val overridePhoto: Boolean = false,
+    val condition: String = "",
+    val size: String = "",
+    val fitType: String = "",
+    val style: String = "",
+    val notes: String = ""
 ) {
   val isAddingValid: Boolean
     get() =
@@ -165,7 +170,13 @@ open class AddItemsViewModel(
         currency = state.currency,
         material = state.material,
         link = state.link,
-        ownerId = ownerId)
+        ownerId = ownerId,
+        condition = state.condition.ifBlank { null },
+        size = state.size.ifBlank { null },
+        fitType = state.fitType.ifBlank { null },
+        style = state.style.ifBlank { null },
+        notes = state.notes.ifBlank { null },
+    )
   }
 
   /** Adds item to repository and inventory, handling rollback on failure */
@@ -280,6 +291,26 @@ open class AddItemsViewModel(
 
   fun setCurrency(currency: String) {
     _uiState.value = _uiState.value.copy(currency = currency)
+  }
+
+  fun setCondition(value: String) {
+    _uiState.value = _uiState.value.copy(condition = value)
+  }
+
+  fun setSize(value: String) {
+    _uiState.value = _uiState.value.copy(size = value)
+  }
+
+  fun setFitType(value: String) {
+    _uiState.value = _uiState.value.copy(fitType = value)
+  }
+
+  fun setStyle(value: String) {
+    _uiState.value = _uiState.value.copy(style = value)
+  }
+
+  fun setNotes(value: String) {
+    _uiState.value = _uiState.value.copy(notes = value)
   }
 
   fun validateCategory() {

@@ -4,6 +4,12 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,16 +26,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -82,6 +94,13 @@ object AddItemScreenTestTags {
   const val TYPE_SUGGESTIONS = "typeSuggestion"
   const val CATEGORY_SUGGESTION = "categorySuggestion"
   const val ALL_FIELDS = "allFields"
+  const val ADDITIONAL_DETAILS_TOGGLE = "additionalDetailsToggle"
+  const val ADDITIONAL_DETAILS_SECTION = "additionalDetailsSection"
+  const val INPUT_CONDITION = "inputItemCondition"
+  const val INPUT_SIZE = "inputItemSize"
+  const val INPUT_FIT_TYPE = "inputItemFitType"
+  const val INPUT_STYLE = "inputItemStyle"
+  const val INPUT_NOTES = "inputItemNotes"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -194,6 +213,16 @@ fun AddItemsScreen(
                 // add
                 isAddEnabled = overridePhoto || itemsUIState.isAddingValid,
                 onAddClick = addItemsViewModel::onAddItemClick,
+                condition = itemsUIState.condition,
+                onConditionChange = addItemsViewModel::setCondition,
+                size = itemsUIState.size,
+                onSizeChange = addItemsViewModel::setSize,
+                fitType = itemsUIState.fitType,
+                onFitTypeChange = addItemsViewModel::setFitType,
+                style = itemsUIState.style,
+                onStyleChange = addItemsViewModel::setStyle,
+                notes = itemsUIState.notes,
+                onNotesChange = addItemsViewModel::setNotes,
             )
 
             // top image preview overlays the list
@@ -269,6 +298,19 @@ private fun FieldsList(
     onMaterialChange: (String) -> Unit,
     isAddEnabled: Boolean,
     onAddClick: () -> Unit,
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    // Preview-only flags (default false for runtime)
+    additionalExpandedPreview: Boolean = false,
+    conditionMenuExpandedPreview: Boolean = false,
 ) {
   LazyColumn(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     item {
@@ -329,6 +371,22 @@ private fun FieldsList(
           materialText = material,
           onChange = onMaterialChange,
           testTag = AddItemScreenTestTags.INPUT_MATERIAL)
+    }
+
+    item {
+      AdditionalDetailsSection(
+          condition = condition,
+          onConditionChange = onConditionChange,
+          size = size,
+          onSizeChange = onSizeChange,
+          fitType = fitType,
+          onFitTypeChange = onFitTypeChange,
+          style = style,
+          onStyleChange = onStyleChange,
+          notes = notes,
+          onNotesChange = onNotesChange,
+          expandedInitially = additionalExpandedPreview,
+          condExpandedInitially = conditionMenuExpandedPreview)
     }
 
     item {
@@ -410,6 +468,150 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
       }
 }
 
+@Composable
+private fun AdditionalDetailsSection(
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    expandedInitially: Boolean = false,
+    condExpandedInitially: Boolean = false,
+) {
+  var expanded by remember { mutableStateOf(expandedInitially) }
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp)
+                .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+          Icon(
+              imageVector =
+                  if (expanded) Icons.Filled.KeyboardArrowDown
+                  else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+              contentDescription = if (expanded) "Collapse" else "Expand",
+              tint = MaterialTheme.colorScheme.primary)
+          Text(
+              text = "Enter additional details",
+              style =
+                  MaterialTheme.typography.bodyLarge.copy(
+                      color = MaterialTheme.colorScheme.primary))
+        }
+
+    AnimatedVisibility(
+        visible = expanded,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()) {
+          Column(
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .padding(top = 4.dp)
+                      .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION),
+              verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ConditionDropdown(
+                    condition = condition,
+                    onConditionChange = onConditionChange,
+                    expandedInitially = condExpandedInitially)
+                OutlinedTextField(
+                    value = size,
+                    onValueChange = onSizeChange,
+                    label = { Text("Size") },
+                    placeholder = { Text("e.g., M, 42, One-size") },
+                    textStyle =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary),
+                    colors = commonTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_SIZE))
+                OutlinedTextField(
+                    value = fitType,
+                    onValueChange = onFitTypeChange,
+                    label = { Text("Item fit type") },
+                    placeholder = { Text("e.g., oversized, slim") },
+                    textStyle =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary),
+                    colors = commonTextFieldColors(),
+                    modifier =
+                        Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_FIT_TYPE))
+                OutlinedTextField(
+                    value = style,
+                    onValueChange = onStyleChange,
+                    label = { Text("Item style") },
+                    placeholder = { Text("e.g., streetwear, formal") },
+                    textStyle =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary),
+                    colors = commonTextFieldColors(),
+                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_STYLE))
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = onNotesChange,
+                    label = { Text("Notes") },
+                    placeholder = { Text("Optional notes") },
+                    textStyle =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary),
+                    colors = commonTextFieldColors(),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .heightIn(min = 80.dp)
+                            .testTag(AddItemScreenTestTags.INPUT_NOTES),
+                    maxLines = 5)
+              }
+        }
+  }
+}
+
+@Composable
+private fun ConditionDropdown(
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    expandedInitially: Boolean = false,
+) {
+  var expanded by remember { mutableStateOf(expandedInitially) }
+  val options = listOf("New", "Like new", "Used", "Vintage")
+  Column(Modifier.fillMaxWidth()) {
+    OutlinedTextField(
+        value = condition.ifEmpty { "" },
+        onValueChange = { onConditionChange(it) },
+        label = { Text("Condition") },
+        placeholder = { Text("Select condition") },
+        readOnly = true,
+        trailingIcon = {
+          IconButton(onClick = { expanded = !expanded }) {
+            Icon(
+                imageVector =
+                    if (expanded) Icons.Filled.KeyboardArrowDown
+                    else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Toggle condition options",
+                tint = MaterialTheme.colorScheme.primary)
+          }
+        },
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        colors = commonTextFieldColors(),
+        modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_CONDITION))
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      options.forEach { opt ->
+        DropdownMenuItem(
+            text = { Text(opt) },
+            onClick = {
+              onConditionChange(opt)
+              expanded = false
+            })
+      }
+    }
+  }
+}
+
 @Preview(name = "Add Items", showBackground = true)
 @Composable
 fun AddItemsScreenSmallPreview() {
@@ -461,7 +663,19 @@ fun AddItemsScreenSmallPreview() {
                   material = "Cotton",
                   onMaterialChange = {},
                   isAddEnabled = true,
-                  onAddClick = {})
+                  onAddClick = {},
+                  condition = "New",
+                  onConditionChange = {},
+                  size = "M",
+                  onSizeChange = {},
+                  fitType = "Regular",
+                  onFitTypeChange = {},
+                  style = "Casual",
+                  onStyleChange = {},
+                  notes = "Great condition",
+                  onNotesChange = {},
+                  additionalExpandedPreview = true,
+                  conditionMenuExpandedPreview = true)
               ItemsImagePreview(
                   localUri = null,
                   remoteUrl = "",
