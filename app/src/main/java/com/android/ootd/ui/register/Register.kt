@@ -174,7 +174,6 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           }
 
           LocationField(
-              locationUiState = locationUiState,
               locationViewModel = viewModel.locationSelectionViewModel,
               fieldState = locationField,
               isError = locationError,

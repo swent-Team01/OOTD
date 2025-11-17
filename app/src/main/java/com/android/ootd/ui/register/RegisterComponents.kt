@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.sp
 import com.android.ootd.R
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
-import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -227,23 +226,16 @@ internal fun DateOfBirthField(
 
 @Composable
 internal fun LocationField(
-    locationUiState: LocationSelectionViewState,
     locationViewModel: LocationSelectionViewModel,
     fieldState: FieldState,
     isError: Boolean,
     onGPSClick: () -> Unit = {}
 ) {
   LocationSelectionSection(
+      viewModel = locationViewModel,
       textGPSButton = "Use current location (GPS)",
       textLocationField = "Search Location",
-      locationQuery = locationUiState.locationQuery,
-      selectedLocation = locationUiState.selectedLocation,
-      suggestions = locationUiState.locationSuggestions,
-      isLoadingLocation = locationUiState.isLoadingLocations,
-      onLocationQueryChange = locationViewModel::setLocationQuery,
-      onLocationSelect = locationViewModel::setLocation,
       onGPSClick = onGPSClick,
-      onClearSuggestions = locationViewModel::clearLocationSuggestions,
       textColor = fieldState.textColor.value,
       isError = isError && !fieldState.focused.value,
       onFocusChanged = { isFocused ->
