@@ -32,7 +32,12 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.screen.testLocationDropdown_hidesAutomatically_whenSuggestionsCleared
+import com.android.ootd.screen.testLocationDropdown_hidesWhenLosingFocus
+import com.android.ootd.screen.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions
+import com.android.ootd.screen.testLocationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused
 import com.android.ootd.ui.map.LocationSelectionTestTags
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
@@ -62,6 +67,7 @@ class EditAccountScreenTest {
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: AccountViewModel
+  private lateinit var mockLocationSelectionViewModel: LocationSelectionViewModel
 
   private val userFlow = MutableStateFlow<FirebaseUser?>(null)
 
@@ -92,9 +98,15 @@ class EditAccountScreenTest {
     // Mock the fusedLocationClient to avoid lateinit errors
     LocationProvider.fusedLocationClient = mockk<FusedLocationProviderClient>(relaxed = true)
 
+    // Create LocationSelectionViewModel with mock repository
+    mockLocationSelectionViewModel = LocationSelectionViewModel(mockLocationRepository)
+
     viewModel =
         AccountViewModel(
-            mockAccountService, mockAccountRepository, mockUserRepository, mockLocationRepository)
+            mockAccountService,
+            mockAccountRepository,
+            mockUserRepository,
+            mockLocationSelectionViewModel)
   }
 
   @After
@@ -128,8 +140,14 @@ class EditAccountScreenTest {
 
   private fun selectTestTag(tag: String) = composeTestRule.onNodeWithTag(tag)
 
-  // --- Tests (fewer, but comprehensive) ---
+  // Helper to set up screen for dropdown tests
+  private fun setupScreenForDropdownTests() {
+    signIn(mockFirebaseUser)
+    setContent()
+    waitForLoadingToComplete()
+  }
 
+  // --- Tests ---
   @Test
   fun rendersBasic_withoutAvatar_andShowsUserInfo_andReadOnlyState() {
     signIn(mockFirebaseUser)
@@ -527,7 +545,53 @@ class EditAccountScreenTest {
       assertEquals(46.5191, selectedLocation.latitude, 0.0001)
       assertEquals(6.5668, selectedLocation.longitude, 0.0001)
       assertTrue(selectedLocation.name.contains("EPFL"))
-      assertEquals(selectedLocation.name, viewModel.uiState.value.locationQuery)
+      assertEquals(
+          selectedLocation.name, viewModel.locationSelectionViewModel.uiState.value.locationQuery)
     }
+  }
+
+  // ========== Dropdown Behavior Tests ==========
+
+  @Test
+  fun locationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused() {
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { mockLocationRepository.search(any()) } returns suggestions
+
+    setupScreenForDropdownTests()
+
+    // Use shared test helper
+    composeTestRule.testLocationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused()
+  }
+
+  @Test
+  fun locationDropdown_hidesAutomatically_whenSuggestionsCleared() {
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { mockLocationRepository.search(any()) } returns suggestions
+
+    setupScreenForDropdownTests()
+
+    // Use shared test helper
+    composeTestRule.testLocationDropdown_hidesAutomatically_whenSuggestionsCleared(
+        viewModel.locationSelectionViewModel)
+  }
+
+  @Test
+  fun locationDropdown_hidesWhenLosingFocus() {
+    val suggestions = listOf(Location(47.3769, 8.5417, "Zürich, Switzerland"))
+    coEvery { mockLocationRepository.search(any()) } returns suggestions
+
+    setupScreenForDropdownTests()
+
+    // Use shared test helper
+    composeTestRule.testLocationDropdown_hidesWhenLosingFocus(UiTestTags.TAG_USERNAME_FIELD)
+  }
+
+  @Test
+  fun locationDropdown_showsAgain_whenRefocusingWithExistingSuggestions() {
+    setupScreenForDropdownTests()
+
+    // Use shared test helper
+    composeTestRule.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions(
+        viewModel.locationSelectionViewModel, UiTestTags.TAG_USERNAME_FIELD)
   }
 }
