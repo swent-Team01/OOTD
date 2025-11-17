@@ -4,6 +4,8 @@ import android.net.Uri
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
@@ -113,5 +115,69 @@ class FitCheckViewModelFirebaseTest : FirestoreTest() {
 
     val state = viewModel.uiState.value
     assertEquals(desc, state.description)
+  }
+
+  @Test
+  fun setLocation_updatesLocationField() = runBlocking {
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    viewModel.setLocation(location)
+
+    val state = viewModel.uiState.value
+    assertEquals(location, state.location)
+    assertEquals("Zürich, Switzerland", state.location.name)
+  }
+
+  @Test
+  fun setLocation_withEmptyLocation_works() = runBlocking {
+    viewModel.setLocation(emptyLocation)
+
+    val state = viewModel.uiState.value
+    assertEquals(emptyLocation, state.location)
+  }
+
+  @Test
+  fun setLocation_replacesExistingLocation() = runBlocking {
+    val location1 = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    val location2 = Location(46.2044, 6.1432, "Lausanne, Switzerland")
+
+    viewModel.setLocation(location1)
+    assertEquals(location1, viewModel.uiState.value.location)
+
+    viewModel.setLocation(location2)
+    assertEquals(location2, viewModel.uiState.value.location)
+  }
+
+  @Test
+  fun setLocation_doesNotAffectOtherFields() = runBlocking {
+    val uri = Uri.parse("content://test/photo.jpg")
+    val description = "Test description"
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    viewModel.setPhoto(uri)
+    viewModel.setDescription(description)
+    viewModel.setLocation(location)
+
+    val state = viewModel.uiState.value
+    assertEquals(uri, state.image)
+    assertEquals(description, state.description)
+    assertEquals(location, state.location)
+  }
+
+  @Test
+  fun fullState_photoDescriptionAndLocation_allPersist() = runBlocking {
+    val uri = Uri.parse("content://test/photo.jpg")
+    val description = "Winter outfit in Zürich"
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    viewModel.setPhoto(uri)
+    viewModel.setDescription(description)
+    viewModel.setLocation(location)
+
+    val state = viewModel.uiState.value
+    assertEquals(uri, state.image)
+    assertEquals(description, state.description)
+    assertEquals(location, state.location)
+    assertNull(state.errorMessage)
   }
 }
