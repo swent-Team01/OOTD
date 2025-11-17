@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -160,16 +161,12 @@ private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
 /**
  * Location selection UI with a GPS button, text input and suggestion dropdown.
  *
+ * @param viewModel the LocationSelectionViewModel managing location state and actions
  * @param textGPSButton label for the GPS button
  * @param textLocationField label for the location input field
- * @param locationQuery current text value of the location input
- * @param selectedLocation currently selected Location, or null
- * @param suggestions list of location suggestions shown in the dropdown
- * @param isLoadingLocation whether a location lookup is in progress
- * @param onLocationQueryChange callback invoked when the input text changes
- * @param onLocationSelect callback invoked when a suggestion is selected
+ * @param onLocationSelect callback invoked when a suggestion is selected (optional, for custom
+ *   handling)
  * @param onGPSClick callback invoked when the GPS button is clicked
- * @param onClearSuggestions callback to clear the suggestion list
  * @param modifier optional Compose modifier for the section
  * @param textColor color used for labels and placeholders
  * @param isError whether the input should show an error state
@@ -177,16 +174,11 @@ private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
  */
 @Composable
 fun LocationSelectionSection(
+    viewModel: LocationSelectionViewModel,
     textGPSButton: String,
     textLocationField: String,
-    locationQuery: String,
-    selectedLocation: Location?,
-    suggestions: List<Location>,
-    isLoadingLocation: Boolean,
-    onLocationQueryChange: (String) -> Unit,
-    onLocationSelect: (Location) -> Unit,
+    onLocationSelect: ((Location) -> Unit)? = null,
     onGPSClick: () -> Unit,
-    onClearSuggestions: () -> Unit,
     modifier: Modifier = Modifier,
     textColor: Color = Tertiary,
     isError: Boolean = false,
@@ -194,23 +186,27 @@ fun LocationSelectionSection(
 ) {
   val colors = LightColorScheme
   val typography = Typography
+  val locationUiState by viewModel.uiState.collectAsState()
 
   Column(modifier = modifier) {
     var showDropdown by remember { mutableStateOf(false) }
     var isFocused by remember { mutableStateOf(false) }
 
     // Automatically show dropdown when suggestions are available and field is focused
-    LaunchedEffect(suggestions, isFocused) { showDropdown = isFocused && suggestions.isNotEmpty() }
+    LaunchedEffect(locationUiState.locationSuggestions, isFocused) {
+      showDropdown = isFocused && locationUiState.locationSuggestions.isNotEmpty()
+    }
 
     // GPS Button
-    GPSButton(text = textGPSButton, isLoading = isLoadingLocation, onClick = onGPSClick)
+    GPSButton(
+        text = textGPSButton, isLoading = locationUiState.isLoadingLocations, onClick = onGPSClick)
 
     // Manual Input Field with dropdown
     Box {
       OutlinedTextField(
-          value = locationQuery,
+          value = locationUiState.locationQuery,
           onValueChange = {
-            onLocationQueryChange(it)
+            viewModel.setLocationQuery(it)
             if (isFocused) {
               showDropdown = true
             }
@@ -237,11 +233,11 @@ fun LocationSelectionSection(
                   cursorColor = colors.primary),
           trailingIcon = {
             LocationInputTrailingIcon(
-                isLoadingLocation = isLoadingLocation,
-                locationQuery = locationQuery,
+                isLoadingLocation = locationUiState.isLoadingLocations,
+                locationQuery = locationUiState.locationQuery,
                 onClear = {
-                  onLocationQueryChange("")
-                  onClearSuggestions()
+                  viewModel.setLocationQuery("")
+                  viewModel.clearLocationSuggestions()
                 })
           },
           modifier =
@@ -252,7 +248,9 @@ fun LocationSelectionSection(
                     isFocused = focusState.isFocused
                     onFocusChanged(focusState.isFocused)
 
-                    if (focusState.isFocused && !wasFocused && suggestions.isNotEmpty()) {
+                    if (focusState.isFocused &&
+                        !wasFocused &&
+                        locationUiState.locationSuggestions.isNotEmpty()) {
                       showDropdown = true
                     }
                     if (!focusState.isFocused && wasFocused) {
@@ -261,24 +259,28 @@ fun LocationSelectionSection(
                   },
           singleLine = true,
           isError = isError,
-          readOnly = selectedLocation != null && selectedLocation.name.isNotEmpty())
+          readOnly = locationUiState.selectedLocation?.name?.isNotEmpty() == true)
 
       // Dropdown menu for location suggestions
       LocationSuggestionsDropdown(
           showDropdown = showDropdown,
-          suggestions = suggestions,
+          suggestions = locationUiState.locationSuggestions,
           isFocused = isFocused,
           onDismiss = { showDropdown = false },
-          onLocationSelect = onLocationSelect,
-          onClearSuggestions = onClearSuggestions)
+          onLocationSelect = { location ->
+            viewModel.setLocation(location)
+            onLocationSelect?.invoke(location)
+          },
+          onClearSuggestions = viewModel::clearLocationSuggestions)
     }
 
     // Default EPFL location selector
     DefaultLocationSelector(
         onSelectDefault = {
-          onLocationQueryChange(epflLocation.name)
-          onLocationSelect(epflLocation)
-          onClearSuggestions()
+          viewModel.setLocationQuery(epflLocation.name)
+          viewModel.setLocation(epflLocation)
+          onLocationSelect?.invoke(epflLocation)
+          viewModel.clearLocationSuggestions()
         })
   }
 }
@@ -289,19 +291,10 @@ fun LocationSelectionSection(
 private fun LocationSelectionSectionPreview() {
   OOTDTheme {
     LocationSelectionSection(
+        viewModel = LocationSelectionViewModel(),
         textGPSButton = "Use GPS Location",
         textLocationField = "Enter Location",
-        locationQuery = "Zurich",
-        selectedLocation = Location(47.3769, 8.5417, "Zürich, Switzerland"),
-        suggestions =
-            listOf(
-                Location(47.3769, 8.5417, "Zürich, Switzerland"),
-                Location(46.2044, 6.1432, "Lausanne, Switzerland"),
-                Location(46.5197, 6.6323, "Geneva, Switzerland")),
-        isLoadingLocation = false,
-        onLocationQueryChange = {},
-        onLocationSelect = {},
         onGPSClick = {},
-        onClearSuggestions = {})
+        onLocationSelect = {})
   }
 }
