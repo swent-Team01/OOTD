@@ -10,8 +10,10 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
 
@@ -396,11 +398,34 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun getItemsList(userID: String): List<String> {
     return try {
-      val account = getAccount(userID)
-      account.itemsUids
+      // Try to read from cache first (offline-first pattern)
+      val document =
+          try {
+            db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.CACHE).await()
+          } catch (e: Exception) {
+            Log.w(
+                "AccountRepositoryFirestore",
+                "Cache read failed, trying default source: ${e.message}")
+            // If cache fails, try with default source (network or cache) with timeout
+            kotlinx.coroutines.withTimeoutOrNull(3_000L) {
+              db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+            }
+          }
+
+      if (document == null || !document.exists()) {
+        Log.w(
+            "AccountRepositoryFirestore",
+            "Account not found in cache or network for items list, returning empty list")
+        emptyList()
+      } else {
+        // Extract itemsUids directly from document
+        @Suppress("UNCHECKED_CAST")
+        (document.get("itemsUids") as? List<String>) ?: emptyList()
+      }
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error getting items list for $userID: ${e.message}", e)
-      throw e
+      // Return empty list instead of throwing - better UX when offline
+      emptyList()
     }
   }
 
@@ -409,9 +434,21 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-      userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
 
-      true
+      // With timeout to prevent hanging when offline
+      // Firestore persistence should make this complete to cache quickly
+      val success =
+          withTimeoutOrNull(3_000L) {
+            userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
+            true
+          } ?: false
+
+      if (success) {
+        Log.d("AccountRepositoryFirestore", "Item added to account (queued if offline)")
+      } else {
+        Log.w("AccountRepositoryFirestore", "Item addition timed out")
+      }
+      success
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error adding item: ${e.message}", e)
       false
@@ -424,9 +461,20 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await()
+      // With timeout to prevent hanging when offline
+      // Firestore persistence should make this complete to cache quickly
+      val success =
+          withTimeoutOrNull(3_000L) {
+            userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await()
+            true
+          } ?: false
 
-      true
+      if (success) {
+        Log.d("AccountRepositoryFirestore", "Item removed from account (queued if offline)")
+      } else {
+        Log.w("AccountRepositoryFirestore", "Item removal timed out")
+      }
+      success
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error removing item: ${e.message}", e)
       false

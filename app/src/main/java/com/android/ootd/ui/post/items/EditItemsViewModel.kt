@@ -139,44 +139,58 @@ open class EditItemsViewModel(
 
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
-      val finalImage =
-          if (state.localPhotoUri != null)
-              FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
-          else state.image
-
-      if (finalImage.imageUrl.isEmpty()) {
-        setErrorMsg("Please select a photo.")
-        _uiState.value = _uiState.value.copy(isSaveSuccessful = false)
-        _uiState.value = _uiState.value.copy(isLoading = false)
-        return@launch
-      }
-
-      val updatedItem =
-          Item(
-              itemUuid = state.itemId,
-              postUuids = state.postUuids,
-              image = finalImage,
-              category = state.category,
-              type = state.type,
-              brand = state.brand,
-              price = state.price,
-              material = state.material,
-              link = state.link,
-              ownerId = state.ownerId)
-
       try {
+        val finalImage =
+            if (state.localPhotoUri != null)
+                FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
+            else state.image
+
+        if (finalImage.imageUrl.isEmpty()) {
+          setErrorMsg("Please select a photo.")
+          _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
+          return@launch
+        }
+
+        val updatedItem =
+            Item(
+                itemUuid = state.itemId,
+                postUuids = state.postUuids,
+                image = finalImage,
+                category = state.category,
+                type = state.type,
+                brand = state.brand,
+                price = state.price,
+                material = state.material,
+                link = state.link,
+                ownerId = state.ownerId)
+
+        // Launch save in background without blocking (like AddItemsViewModel)
+        // Firestore with persistence will handle this offline
+        viewModelScope.launch {
+          try {
+            repository.editItem(updatedItem.itemUuid, updatedItem)
+            Log.d("EditItemsViewModel", "Item edit queued (will sync when online)")
+          } catch (e: Exception) {
+            Log.e("EditItemsViewModel", "Failed to queue item edit: ${e.message}", e)
+          }
+        }
+
+        // Return success immediately - operation is queued
         _uiState.value =
-            _uiState.value.copy(image = finalImage, errorMessage = null, isSaveSuccessful = true)
-        repository.editItem(updatedItem.itemUuid, updatedItem)
+            _uiState.value.copy(
+                image = finalImage, errorMessage = null, isSaveSuccessful = true, isLoading = false)
+        Log.d("EditItemsViewModel", "Item edit operation queued successfully")
       } catch (e: Exception) {
-        setErrorMsg("Failed to update item: ${e.message}")
-      } finally {
-        _uiState.value = _uiState.value.copy(isLoading = false)
+        setErrorMsg("Failed to save item: ${e.message}")
+        _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
       }
     }
   }
 
-  /** Deletes the current item from the repository. */
+  /**
+   * Deletes the current item from the repository using optimistic pattern. Assumes success
+   * immediately and queues operations in background.
+   */
   fun deleteItem() {
     val state = _uiState.value
     if (state.itemId.isEmpty()) {
@@ -184,22 +198,34 @@ open class EditItemsViewModel(
       return
     }
 
+    // Optimistic delete - assume success immediately
+    _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
+
+    // Queue delete operations in background
     viewModelScope.launch {
       try {
-        // Remove item from user's inventory
-        val removedFromInventory = accountRepository.removeItem(state.itemId)
-        if (!removedFromInventory) {
-          setErrorMsg("Failed to remove item from inventory. Please try again.")
-          return@launch
-        }
-
-        repository.deleteItem(state.itemId)
-
-        val deleted = FirebaseImageUploader.deleteImage(state.image.imageId)
-        if (!deleted) Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
-        _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
+        accountRepository.removeItem(state.itemId)
+        Log.d("EditItemsViewModel", "Item removal queued (will sync when online)")
       } catch (e: Exception) {
-        setErrorMsg("Failed to delete item: ${e.message}")
+        Log.e("EditItemsViewModel", "Failed to queue item removal: ${e.message}")
+      }
+    }
+
+    viewModelScope.launch {
+      try {
+        repository.deleteItem(state.itemId)
+        Log.d("EditItemsViewModel", "Item deletion queued (will sync when online)")
+      } catch (e: Exception) {
+        Log.e("EditItemsViewModel", "Failed to queue item deletion: ${e.message}")
+      }
+    }
+
+    viewModelScope.launch {
+      try {
+        FirebaseImageUploader.deleteImage(state.image.imageId)
+        Log.d("EditItemsViewModel", "Image deletion queued (will sync when online)")
+      } catch (e: Exception) {
+        Log.w("EditItemsViewModel", "Image deletion failed: ${e.message}")
       }
     }
   }
