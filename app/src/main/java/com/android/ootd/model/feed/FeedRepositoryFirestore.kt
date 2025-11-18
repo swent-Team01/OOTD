@@ -145,7 +145,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val userProfilePicture = doc.getString("userProfilePicURL") ?: ""
 
       // Read location from Firestore
-      val locationMap = doc.get("location") as? Map<*, *>
+      val locationMap = doc["location"] as? Map<*, *>
       val location =
           if (locationMap != null) {
             Location(
