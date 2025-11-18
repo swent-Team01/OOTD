@@ -4,12 +4,14 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.feed.FeedRepository
@@ -234,6 +236,12 @@ class SeeFitScreenTest {
     }
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG)
+        .performScrollToNode(hasTestTag(SeeFitScreenTestTags.ITEM_NOTES))
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG)
+        .performScrollToNode(hasTestTag(SeeFitScreenTestTags.ITEM_LINK))
     composeTestRule
         .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK, useUnmergedTree = true)
         .assertIsDisplayed()

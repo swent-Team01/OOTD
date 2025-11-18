@@ -80,6 +80,7 @@ class EditItemsScreenTest {
 
   // Helper: ensure a node is visible (scroll if needed)
   private fun ensureVisible(tag: String) {
+    composeTestRule.waitForNodeWithTag(tag)
     val alreadyVisible =
         runCatching {
               composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed()

@@ -30,6 +30,7 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.ensureVisible(tag: String) {
+    waitForNodeWithTag(tag)
     val alreadyVisible =
         runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess
     if (alreadyVisible) return
