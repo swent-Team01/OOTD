@@ -75,21 +75,29 @@ fun SeeItemDetailsDialog(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CATEGORY))
 
-                Text(
-                    text = item.type ?: "Item Type",
-                    style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_TYPE))
+                item.type
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = it,
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_TYPE))
+                    }
 
-                Text(
-                    text = item.brand ?: "Item Brand",
-                    style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_BRAND))
+                item.brand
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = it,
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_BRAND))
+                    }
 
                 item.price?.let {
                   val c = item.currency ?: "CHF"
@@ -122,6 +130,66 @@ fun SeeItemDetailsDialog(
                       textAlign = TextAlign.Center,
                       modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_MATERIAL))
                 }
+
+                item.condition
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = "Condition: $it",
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CONDITION))
+                    }
+
+                item.size
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = "Size: $it",
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_SIZE))
+                    }
+
+                item.fitType
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = "Fit: $it",
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_FIT_TYPE))
+                    }
+
+                item.style
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = "Style: $it",
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_STYLE))
+                    }
+
+                item.notes
+                    ?.takeUnless { it.isBlank() }
+                    ?.let {
+                      Text(
+                          text = it,
+                          style =
+                              MaterialTheme.typography.bodyLarge.copy(
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
+                          textAlign = TextAlign.Center,
+                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_NOTES))
+                    }
 
                 item.link?.let {
                   val context = LocalContext.current

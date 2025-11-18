@@ -48,7 +48,12 @@ class SeeFitScreenTest {
           price = 29.99,
           material = listOf(Material("Cotton", 100.0)),
           link = "https://example.com/tshirt",
-          ownerId = "owner1")
+          ownerId = "owner1",
+          condition = "Like new",
+          size = "M",
+          fitType = "Regular",
+          style = "Casual",
+          notes = "Made by grandma")
 
   private val testItem2 =
       Item(
@@ -61,7 +66,12 @@ class SeeFitScreenTest {
           price = 89.99,
           material = listOf(Material("Leather", 80.0), Material("Rubber", 20.0)),
           link = "https://example.com/sneakers",
-          ownerId = "owner1")
+          ownerId = "owner1",
+          condition = "Used",
+          size = "42",
+          fitType = "Slim",
+          style = "Sporty",
+          notes = "Limited edition")
 
   private val testPost1 =
       OutfitPost(
@@ -202,6 +212,11 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertDoesNotExist()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertDoesNotExist()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_CONDITION).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_SIZE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES).assertDoesNotExist()
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1)).performClick()
     composeTestRule.waitForIdle()
@@ -211,6 +226,11 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_CONDITION).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_SIZE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES).assertIsDisplayed()
   }
 
   @Test
