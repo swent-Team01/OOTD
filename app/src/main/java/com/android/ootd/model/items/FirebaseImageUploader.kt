@@ -15,11 +15,13 @@ import kotlinx.coroutines.withTimeout
  */
 object FirebaseImageUploader {
 
+  private val TAG = "FirebaseImageUploader"
+
   private val storage by lazy {
     try {
       Firebase.storage.reference
     } catch (_: IllegalStateException) {
-      Log.w("FirebaseImageUploader", "Firebase not initialized, using dummy reference.")
+      Log.w(TAG, "Firebase not initialized, using dummy reference.")
       null
     }
   }
@@ -42,7 +44,7 @@ object FirebaseImageUploader {
 
     return try {
       // Add timeout to prevent indefinite hanging when offline
-      kotlinx.coroutines.withTimeout(10_000L) {
+      kotlinx.coroutines.withTimeout(1_000L) {
         val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
         val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
         imageRef.putFile(localUri).await()
@@ -50,11 +52,9 @@ object FirebaseImageUploader {
         ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
       }
     } catch (e: Exception) {
-      Log.w(
-          "FirebaseImageUploader",
-          "Image upload failed (likely offline), using local URI: ${e.message}")
-      // Return local URI as fallback - allows offline item creation
-      // The image stays on device and can be uploaded later when online
+      Log.w(TAG, "Image upload failed (likely offline), using local URI: ${e.message}")
+      // Return local URI as fallback. This allows offline item creation
+      // The image stays on device and can be uploaded later when back online
       ImageData(imageId = fileName, imageUrl = localUri.toString())
     }
   }
@@ -71,10 +71,10 @@ object FirebaseImageUploader {
       // If the image does not exist, consider it a successful deletion because if the object is
       // already missing, that post-condition is still true
       if (e is StorageException && e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) {
-        Log.w("FirebaseImageUploader", "Image not found for deletion: $imageId")
+        Log.w(TAG, "Image not found for deletion: $imageId")
         true
       } else {
-        Log.e("FirebaseImageUploader", "Image deletion failed", e)
+        Log.e(TAG, "Image deletion failed", e)
         false
       }
     }

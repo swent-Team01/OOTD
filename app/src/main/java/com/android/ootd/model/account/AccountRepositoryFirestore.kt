@@ -100,10 +100,18 @@ private fun DocumentSnapshot.toAccount(): Account {
 
 class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRepository {
 
+  // In-memory cache for items list - updated optimistically for offline support
+  private val itemsListCache = mutableMapOf<String, MutableList<String>>()
+
+  companion object {
+
+    private val TAG = "AccountRepositoryFirestore"
+  }
+
   /** Helper method to check account data as firestore might add the default values */
   private fun checkAccountData(account: Account): Account? {
     if (account.uid.isBlank()) {
-      Log.e("AccountRepositoryFirestore", "Invalid account data: uid is blank")
+      Log.e(TAG, "Invalid account data: uid is blank")
       return null
     }
     return account
@@ -115,10 +123,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val account = document.toAccount()
       checkAccountData(account)
     } catch (e: Exception) {
-      Log.e(
-          "AccountRepositoryFirestore",
-          "Error transforming document ${document.id}: ${e.message}",
-          e)
+      Log.e(TAG, "Error transforming document ${document.id}: ${e.message}", e)
       return null
     }
   }
@@ -130,7 +135,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       location: Location
   ) {
     if (userExists(user)) {
-      Log.e("AccountRepositoryFirestore", "Username already in use")
+      Log.e(TAG, "Username already in use")
       throw TakenUserException("Username already in use")
     }
 
@@ -146,7 +151,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     try {
       addAccount(newAccount)
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error while creating account: ${e.message}", e)
+      Log.e(TAG, "Error while creating account: ${e.message}", e)
       throw e
     }
   }
@@ -163,7 +168,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       transformAccountDocument(document)
           ?: throw IllegalStateException("Failed to transform document with ID $userID")
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error getting account $userID: ${e.message}", e)
+      Log.e(TAG, "Error getting account $userID: ${e.message}", e)
       throw e
     }
   }
@@ -184,7 +189,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     // There is no way we can get permission denied because we are checking the public user
     // collection.
     catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error checking account existence: ${e.message}", e)
+      Log.e(TAG, "Error checking account existence: ${e.message}", e)
       throw e
     }
   }
@@ -201,7 +206,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           .set(account.toFirestoreMap())
           .await()
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error adding account: ${e.message}", e)
+      Log.e(TAG, "Error adding account: ${e.message}", e)
       throw e
     }
   }
@@ -212,7 +217,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
       if (!friendUserDoc.exists()) {
-        Log.e("AccountRepositoryFirestore", "The user with id ${friendID} not found")
+        Log.e(TAG, "The user with id ${friendID} not found")
         throw NoSuchElementException("The user with id ${friendID} not found")
       }
 
@@ -234,14 +239,11 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       } catch (e: Exception) {
         // If we can't update their account (maybe we're not in their friend list),
         // log it but don't fail the entire operation
-        Log.w(
-            "AccountRepositoryFirestore",
-            "Could not add $userID to $friendID's friend list: ${e.message}")
+        Log.w(TAG, "Could not add $userID to $friendID's friend list: ${e.message}")
         return false
       }
     } catch (e: Exception) {
-      Log.e(
-          "AccountRepositoryFirestore", "Error adding friend $friendID to $userID: ${e.message}", e)
+      Log.e(TAG, "Error adding friend $friendID to $userID: ${e.message}", e)
       throw e
     }
   }
@@ -267,15 +269,10 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       } catch (e: Exception) {
         // If we can't update their account (maybe we're not in their friend list),
         // log it but don't fail the entire operation
-        Log.w(
-            "AccountRepositoryFirestore",
-            "Could not remove $userID from $friendID's friend list: ${e.message}")
+        Log.w(TAG, "Could not remove $userID from $friendID's friend list: ${e.message}")
       }
     } catch (e: Exception) {
-      Log.e(
-          "AccountRepositoryFirestore",
-          "Error removing friend $friendID from $userID: ${e.message}",
-          e)
+      Log.e(TAG, "Error removing friend $friendID from $userID: ${e.message}", e)
       throw e
     }
   }
@@ -320,11 +317,11 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       getAccount(userID)
 
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
-      Log.d("AccountRepositoryFirestore", "Successfully deleted account with UID: $userID")
+      Log.d(TAG, "Successfully deleted account with UID: $userID")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error deleting account: ${e.message}", e)
+      Log.e(TAG, "Error deleting account: ${e.message}", e)
       throw e
     }
   }
@@ -371,13 +368,13 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           .await()
 
       Log.d(
-          "AccountRepositoryFirestore",
+          TAG,
           "Successfully updated account with UID: $userID, new username $newUsername, " +
               "birthdate $newBirthDate, profilePic $newProfilePic, location $newLocation")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error updating account: ${e.message}", e)
+      Log.e(TAG, "Error updating account: ${e.message}", e)
       throw e
     }
   }
@@ -388,24 +385,28 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       getAccount(userID)
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).update(mapOf("profilePicture" to ""))
     } catch (e: NoSuchElementException) {
-      Log.e("AccountRepositoryFirestore", "User with userID $userID not found", e)
+      Log.e(TAG, "User with userID $userID not found", e)
       throw UnknowUserID()
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error deleting picture : ${e.message}", e)
+      Log.e(TAG, "Error deleting picture : ${e.message}", e)
       throw e
     }
   }
 
   override suspend fun getItemsList(userID: String): List<String> {
     return try {
-      // Try to read from cache first (offline-first pattern)
+      // First check in-memory cache (for offline optimistic updates)
+      if (itemsListCache.containsKey(userID)) {
+        Log.d(TAG, "Returning items list from memory cache")
+        return itemsListCache[userID]?.toList() ?: emptyList()
+      }
+
+      // Try to read from Firestore cache first (offline-first pattern)
       val document =
           try {
             db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.CACHE).await()
           } catch (e: Exception) {
-            Log.w(
-                "AccountRepositoryFirestore",
-                "Cache read failed, trying default source: ${e.message}")
+            Log.w(TAG, "Cache read failed, trying default source: ${e.message}")
             // If cache fails, try with default source (network or cache) with timeout
             kotlinx.coroutines.withTimeoutOrNull(3_000L) {
               db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
@@ -414,24 +415,38 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       if (document == null || !document.exists()) {
         Log.w(
-            "AccountRepositoryFirestore",
-            "Account not found in cache or network for items list, returning empty list")
-        emptyList()
+            TAG,
+            "Account not found in cache or network for items list, returning cached or empty list")
+        return itemsListCache[userID]?.toList() ?: emptyList()
       } else {
         // Extract itemsUids directly from document
         @Suppress("UNCHECKED_CAST")
-        (document.get("itemsUids") as? List<String>) ?: emptyList()
+        val itemsList = (document.get("itemsUids") as? List<String>) ?: emptyList()
+        // Update memory cache with fetched data
+        itemsListCache[userID] = itemsList.toMutableList()
+        return itemsList
       }
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error getting items list for $userID: ${e.message}", e)
-      // Return empty list instead of throwing - better UX when offline
-      emptyList()
+      Log.e(TAG, "Error getting items list for $userID: ${e.message}", e)
+      // Return cached list if available, otherwise empty
+      return itemsListCache[userID]?.toList() ?: emptyList()
     }
   }
 
   override suspend fun addItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+
+      // Optimistically update memory cache immediately
+      if (!itemsListCache.containsKey(currentUserId)) {
+        // Initialize cache if not present by fetching current list
+        val currentList = getItemsList(currentUserId)
+        itemsListCache[currentUserId] = currentList.toMutableList()
+      }
+      if (!itemsListCache[currentUserId]!!.contains(itemUid)) {
+        itemsListCache[currentUserId]!!.add(itemUid)
+        Log.d(TAG, "Added item to memory cache")
+      }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
@@ -444,13 +459,13 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           } ?: false
 
       if (success) {
-        Log.d("AccountRepositoryFirestore", "Item added to account (queued if offline)")
+        Log.d(TAG, "Item added to account (queued if offline)")
       } else {
-        Log.w("AccountRepositoryFirestore", "Item addition timed out")
+        Log.w(TAG, "Item addition timed out")
       }
       success
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error adding item: ${e.message}", e)
+      Log.e(TAG, "Error adding item: ${e.message}", e)
       false
     }
   }
@@ -458,6 +473,12 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   override suspend fun removeItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+
+      // Optimistically update memory cache immediately
+      if (itemsListCache.containsKey(currentUserId)) {
+        itemsListCache[currentUserId]!!.remove(itemUid)
+        Log.d(TAG, "Removed item from memory cache")
+      }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
@@ -470,13 +491,13 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           } ?: false
 
       if (success) {
-        Log.d("AccountRepositoryFirestore", "Item removed from account (queued if offline)")
+        Log.d(TAG, "Item removed from account (queued if offline)")
       } else {
-        Log.w("AccountRepositoryFirestore", "Item removal timed out")
+        Log.w(TAG, "Item removal timed out")
       }
       success
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error removing item: ${e.message}", e)
+      Log.e(TAG, "Error removing item: ${e.message}", e)
       false
     }
   }
@@ -490,7 +511,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       // If any document exists with a different id, the username is taken.
       querySnapshot.documents.any { it.id != user.uid }
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error checking user existence: ${e.message}", e)
+      Log.e(TAG, "Error checking user existence: ${e.message}", e)
       throw e
     }
   }
