@@ -182,40 +182,37 @@ open class AddItemsViewModel(
    * Adds item to repository and inventory using optimistic offline-first pattern.
    *
    * **Optimistic UI Pattern:**
-   * - Launches save operations in background
-   * - Assumes success immediately for better UX
+   * - Updates cache immediately (synchronous)
+   * - Queues Firestore operations in background
    * - Firestore will sync when network available
-   * - No blocking, no timeouts needed
    *
    * This provides immediate feedback even when network is slow/unavailable.
    */
   private suspend fun addItemAndUpdateInventory(item: Item, uploadedImage: ImageData): Boolean {
     return try {
-      // Launch saves in background without blocking
-      // Firestore with persistence will handle these offline
-      viewModelScope.launch {
-        try {
-          repository.addItem(item)
-          Log.d(TAG, "Item save queued (will sync when online)")
-        } catch (e: Exception) {
-          Log.e(TAG, "Failed to queue item save: ${e.message}", e)
-        }
+      // Call repository methods directly (not nested launch)
+      // Cache updates happen synchronously before Firestore .await()
+      try {
+        repository.addItem(item)
+        Log.d(TAG, "Item added to cache, Firestore queued")
+      } catch (e: Exception) {
+        // Acceptable when offline - cache is still updated
+        Log.w(TAG, "Item add may be offline (cache updated): ${e.message}")
       }
 
-      viewModelScope.launch {
-        try {
-          accountRepository.addItem(item.itemUuid)
-          Log.d(TAG, "Account update queued (will sync when online)")
-        } catch (e: Exception) {
-          Log.e(TAG, "Failed to queue account update: ${e.message}", e)
-        }
+      try {
+        accountRepository.addItem(item.itemUuid)
+        Log.d(TAG, "Account updated in cache, Firestore queued")
+      } catch (e: Exception) {
+        // Acceptable when offline - cache is still updated
+        Log.w(TAG, "Account add may be offline (cache updated): ${e.message}")
       }
 
-      // Return success immediately - operations are queued
-      Log.d(TAG, "Item operations queued successfully")
+      // Operations completed - cache is updated, Firestore will sync
+      Log.d(TAG, "Item operations completed (cache updated)")
       true
     } catch (e: Exception) {
-      Log.e(TAG, "Error queuing item operations: ${e.message}", e)
+      Log.e(TAG, "Error in item operations: ${e.message}", e)
       false
     }
   }

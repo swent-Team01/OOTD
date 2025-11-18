@@ -169,22 +169,22 @@ open class EditItemsViewModel(
                 link = state.link,
                 ownerId = state.ownerId)
 
-        // Launch save in background without blocking (like AddItemsViewModel)
-        // Firestore with persistence will handle this offline
-        viewModelScope.launch {
-          try {
-            repository.editItem(updatedItem.itemUuid, updatedItem)
-            Log.d(TAG, "Item edit queued (will sync when online)")
-          } catch (e: Exception) {
-            Log.e(TAG, "Failed to queue item edit: ${e.message}", e)
-          }
+        // Call editItem directly in this coroutine (not nested launch)
+        // The cache update in editItem() happens synchronously before Firestore .await()
+        // So even if this coroutine finishes, the cache is already updated
+        try {
+          repository.editItem(updatedItem.itemUuid, updatedItem)
+          Log.d(TAG, "Item edit completed (cache updated, Firestore queued)")
+        } catch (e: Exception) {
+          // Error is acceptable when offline - cache is still updated
+          Log.w(TAG, "Item edit may be offline (cache updated): ${e.message}")
         }
 
-        // Return success immediately - operation is queued
+        // Return success - cache is already updated above
         _uiState.value =
             _uiState.value.copy(
                 image = finalImage, errorMessage = null, isSaveSuccessful = true, isLoading = false)
-        Log.d(TAG, "Item edit operation queued successfully")
+        Log.d(TAG, "Item edit operation completed")
       } catch (e: Exception) {
         setErrorMsg("Failed to save item: ${e.message}")
         _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
