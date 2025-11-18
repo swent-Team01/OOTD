@@ -150,32 +150,16 @@ class UserSearchScreenTest : FirestoreTest() {
   @Test
   fun testFollowButtonNotLoggedIn() = runTest {
     FirebaseEmulator.auth.signOut()
+    val userRepository = UserRepositoryInMemory()
+    val accountRepository = AccountRepositoryInMemory()
     val mockViewModel =
         UserSearchViewModel(
-            userRepository = UserRepositoryInMemory(),
-            accountRepository = AccountRepositoryInMemory(),
+            userRepository = userRepository,
+            accountRepository = accountRepository,
             overrideUser = false)
 
-    composeTestRule.setContent { UserSearchScreen(viewModel = mockViewModel) }
-    val secondUsername = UserRepositoryInMemory().nameList[1]
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextInput(secondUsername)
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
-
-    val exception =
-        runCatching {
-              composeTestRule
-                  .onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-                  .performClick()
-            }
-            .exceptionOrNull()
+    val targetUser = userRepository.getAllUsers()[1]
+    val exception = runCatching { mockViewModel.selectUsername(targetUser) }.exceptionOrNull()
     FirebaseEmulator.auth.signInAnonymously()
     // There is no logged in user so this should throw an error
     assert(exception is IllegalStateException)

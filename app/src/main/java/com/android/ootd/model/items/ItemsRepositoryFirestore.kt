@@ -76,8 +76,11 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun editItem(itemUUID: String, newItem: Item) {
+    val docRef = db.collection(ITEMS_COLLECTION).document(itemUUID)
+    val existing = docRef.get().await()
+    if (!existing.exists()) throw Exception("ItemsRepositoryFirestore: Item not found")
     val map = ItemsMappers.toMap(newItem)
-    db.collection(ITEMS_COLLECTION).document(itemUUID).set(map).await()
+    docRef.set(map).await()
   }
 
   override suspend fun deleteItem(uuid: String) {
