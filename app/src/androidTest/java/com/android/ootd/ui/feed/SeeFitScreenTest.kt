@@ -1,11 +1,15 @@
 package com.android.ootd.ui.feed
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
@@ -16,6 +20,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.coEvery
 import io.mockk.mockk
+import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -231,6 +236,26 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY).assertIsDisplayed()
+
+    val clipboard =
+        ApplicationProvider.getApplicationContext<Context>()
+            .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.runOnIdle {
+      assertEquals("Made by grandma", clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: "")
+    }
+
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.runOnIdle {
+      assertEquals(
+          "https://example.com/tshirt", clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: "")
+    }
   }
 
   @Test
