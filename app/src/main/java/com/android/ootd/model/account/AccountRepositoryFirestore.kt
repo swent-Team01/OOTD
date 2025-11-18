@@ -439,12 +439,35 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       // Optimistically update memory cache immediately (synchronous)
       if (!itemsListCache.containsKey(currentUserId)) {
-        // Initialize cache with empty list if not present
-        itemsListCache[currentUserId] = mutableListOf()
+        // Initialize cache by fetching current list from Firestore
+        val currentList =
+            try {
+              // Try to get from cache first with short timeout
+              kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                val doc =
+                    db.collection(ACCOUNT_COLLECTION_PATH)
+                        .document(currentUserId)
+                        .get(Source.CACHE)
+                        .await()
+                @Suppress("UNCHECKED_CAST")
+                (doc.get("itemsUids") as? List<String>) ?: emptyList()
+              } ?: emptyList()
+            } catch (e: Exception) {
+              Log.w(
+                  "AccountRepositoryFirestore",
+                  "Could not fetch current items, starting with empty: ${e.message}")
+              emptyList()
+            }
+        itemsListCache[currentUserId] = currentList.toMutableList()
+        Log.d(
+            "AccountRepositoryFirestore",
+            "Initialized cache with ${currentList.size} existing items")
       }
       if (!itemsListCache[currentUserId]!!.contains(itemUid)) {
         itemsListCache[currentUserId]!!.add(itemUid)
-        Log.d("AccountRepositoryFirestore", "Added item to memory cache")
+        Log.d(
+            "AccountRepositoryFirestore",
+            "Added item to memory cache (total: ${itemsListCache[currentUserId]!!.size})")
       }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
