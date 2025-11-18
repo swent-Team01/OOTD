@@ -129,6 +129,7 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
         .assertTextContains("Cotton 80.0%, Polyester 20.0%")
+    composeTestRule.ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .assertTextContains("https://nike.com/tshirt")

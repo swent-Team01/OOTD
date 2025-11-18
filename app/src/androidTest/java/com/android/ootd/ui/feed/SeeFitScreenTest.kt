@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -225,6 +226,12 @@ class SeeFitScreenTest {
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1)).performClick()
     composeTestRule.waitForIdle()
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_LINK, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG).assertIsDisplayed()
     composeTestRule
