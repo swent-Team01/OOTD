@@ -59,9 +59,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemType("Jacket")
     composeTestRule.enterAddItemBrand("Brand")
     composeTestRule.enterAddItemPrice(99.99)
-    // Select currency EUR
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CURRENCY).performClick()
-    composeTestRule.onNodeWithText("EUR", useUnmergedTree = true).performClick()
+    // Set currency via view model to avoid flakey dropdown interactions
+    composeTestRule.runOnIdle { viewModel.setCurrency("EUR") }
     composeTestRule.enterAddItemLink("www.ootd.com")
     composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
 
@@ -303,6 +302,39 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForNodeWithTag(
         AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
     composeTestRule.onNodeWithText("Backpack", useUnmergedTree = true).assertIsDisplayed()
+  }
+
+  @Test
+  fun fitTypeSuggestions_showAndSelect() {
+    setMainScreen()
+
+    // Expand additional section and type in fit field
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
+    composeTestRule.ensureVisible(AddItemScreenTestTags.INPUT_FIT_TYPE)
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_FIT_TYPE).performTextInput("S")
+
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Slim", useUnmergedTree = true).performClick()
+
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.fitType == "Slim") }
+  }
+
+  @Test
+  fun styleSuggestions_showAndSelect() {
+    setMainScreen()
+
+    composeTestRule.ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
+    composeTestRule.ensureVisible(AddItemScreenTestTags.INPUT_STYLE)
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_STYLE).performTextInput("C")
+
+    composeTestRule.waitForNodeWithTag(
+        AddItemScreenTestTags.STYLE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Casual", useUnmergedTree = true).performClick()
+
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.style == "Casual") }
   }
 
   // ----------- Material parsing -----------

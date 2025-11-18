@@ -291,4 +291,38 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     // Category should be exactly as selected from dropdown
     assertEquals("Clothing", items[0].category)
   }
+
+  @Test
+  fun onAddItemClick_withAdditionalDetails_persistsAllFields() = runBlocking {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    viewModel.initTypeSuggestions(context)
+
+    val uri = createReadableUri()
+
+    viewModel.setPhoto(uri)
+    viewModel.setCategory("Clothing")
+    viewModel.setType("Coat")
+    viewModel.setBrand("Uniqlo")
+    viewModel.setPrice(150.0)
+    viewModel.setCondition("Like new")
+    viewModel.setSize("M")
+    viewModel.setFitType("Oversized")
+    viewModel.setStyle("Minimalist")
+    viewModel.setNotes("Worn twice")
+
+    viewModel.onAddItemClick()
+    kotlinx.coroutines.delay(2000)
+
+    assertTrue(viewModel.addOnSuccess.first())
+
+    val items = repository.getAllItems()
+    assertEquals(1, items.size)
+
+    val addedItem = items[0]
+    assertEquals("Like new", addedItem.condition)
+    assertEquals("M", addedItem.size)
+    assertEquals("Oversized", addedItem.fitType)
+    assertEquals("Minimalist", addedItem.style)
+    assertEquals("Worn twice", addedItem.notes)
+  }
 }

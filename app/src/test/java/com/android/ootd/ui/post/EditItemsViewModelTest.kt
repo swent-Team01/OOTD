@@ -15,6 +15,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.slot
 import junit.framework.TestCase.assertNotNull
 import kotlin.collections.emptyList
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +76,11 @@ class EditItemsViewModelTest {
     assertNull(state.invalidPhotoMsg)
     assertNull(state.invalidCategory)
     assertEquals(emptyList<String>(), state.suggestions)
+    assertEquals("", state.condition)
+    assertEquals("", state.size)
+    assertEquals("", state.fitType)
+    assertEquals("", state.style)
+    assertEquals("", state.notes)
     assertFalse(state.isSaveSuccessful)
   }
 
@@ -198,6 +204,22 @@ class EditItemsViewModelTest {
   }
 
   @Test
+  fun `additional detail setters update state`() {
+    viewModel.setCondition("Like new")
+    viewModel.setSize("M")
+    viewModel.setFitType("Slim")
+    viewModel.setStyle("Formal")
+    viewModel.setNotes("Dry clean only")
+
+    val state = viewModel.uiState.value
+    assertEquals("Like new", state.condition)
+    assertEquals("M", state.size)
+    assertEquals("Slim", state.fitType)
+    assertEquals("Formal", state.style)
+    assertEquals("Dry clean only", state.notes)
+  }
+
+  @Test
   fun `setMaterial handles single material`() {
     viewModel.setMaterial("Cotton 100%")
 
@@ -266,7 +288,12 @@ class EditItemsViewModelTest {
             currency = "USD",
             material = materials,
             link = "https://example.com",
-            ownerId = "ownerId")
+            ownerId = "ownerId",
+            condition = "Like new",
+            size = "M",
+            fitType = "Relaxed",
+            style = "Streetwear",
+            notes = "Only worn twice")
 
     viewModel.loadItem(item)
 
@@ -281,6 +308,11 @@ class EditItemsViewModelTest {
     assertEquals(materials, state.material)
     assertEquals("Cotton 100.0%", state.materialText)
     assertEquals("https://example.com", state.link)
+    assertEquals("Like new", state.condition)
+    assertEquals("M", state.size)
+    assertEquals("Relaxed", state.fitType)
+    assertEquals("Streetwear", state.style)
+    assertEquals("Only worn twice", state.notes)
   }
 
   @Test
@@ -312,6 +344,11 @@ class EditItemsViewModelTest {
     assertEquals("CHF", state.currency)
     assertEquals("", state.materialText)
     assertEquals("", state.link)
+    assertEquals("", state.condition)
+    assertEquals("", state.size)
+    assertEquals("", state.fitType)
+    assertEquals("", state.style)
+    assertEquals("", state.notes)
   }
 
   @Test
@@ -394,6 +431,48 @@ class EditItemsViewModelTest {
     coVerify { mockRepository.editItem("test-id", any()) }
     assertNull(viewModel.uiState.value.errorMessage)
     assertTrue(viewModel.uiState.value.isSaveSuccessful)
+  }
+
+  @Test
+  fun `onSaveItemClick persists updated additional details`() = runTest {
+    coEvery { mockRepository.editItem(any(), any()) } returns Unit
+
+    viewModel.loadItem(
+        Item(
+            itemUuid = "detail-id",
+            postUuids = listOf("post"),
+            image = ImageData("img", "url"),
+            category = "Clothing",
+            type = "Jacket",
+            brand = "Brand",
+            price = 99.0,
+            material = emptyList(),
+            link = "https://example.com",
+            ownerId = "owner",
+            condition = "Used",
+            size = "L",
+            fitType = "Relaxed",
+            style = "Casual",
+            notes = "Old notes"))
+
+    viewModel.setCondition("Like new")
+    viewModel.setSize("M")
+    viewModel.setFitType("Slim")
+    viewModel.setStyle("Formal")
+    viewModel.setNotes("Dry clean only")
+
+    viewModel.onSaveItemClick()
+    advanceUntilIdle()
+
+    val savedItemSlot = slot<Item>()
+    coVerify { mockRepository.editItem("detail-id", capture(savedItemSlot)) }
+
+    val saved = savedItemSlot.captured
+    assertEquals("Like new", saved.condition)
+    assertEquals("M", saved.size)
+    assertEquals("Slim", saved.fitType)
+    assertEquals("Formal", saved.style)
+    assertEquals("Dry clean only", saved.notes)
   }
 
   @Test

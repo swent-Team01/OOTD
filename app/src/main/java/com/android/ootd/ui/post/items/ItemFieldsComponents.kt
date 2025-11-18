@@ -124,6 +124,13 @@ fun TypeField(
     expandOnChange: Boolean = false
 ) {
   var expanded by remember { mutableStateOf(false) }
+  val filtered =
+      remember(type, suggestions) {
+        val base =
+            if (type.isBlank()) suggestions.take(5)
+            else suggestions.filter { it.startsWith(type, ignoreCase = true) }
+        base.take(5)
+      }
 
   Box(modifier = Modifier.fillMaxWidth()) {
     OutlinedTextField(
@@ -152,11 +159,11 @@ fun TypeField(
         colors = commonTextFieldColors())
 
     DropdownMenu(
-        expanded = expanded && suggestions.isNotEmpty(),
+        expanded = expanded && filtered.isNotEmpty(),
         onDismissRequest = { expanded = false },
         modifier = Modifier.fillMaxWidth().testTag(dropdownTestTag),
         properties = PopupProperties(focusable = false)) {
-          suggestions.forEach { suggestion ->
+          filtered.forEach { suggestion ->
             DropdownMenuItem(
                 text = { Text(suggestion) },
                 onClick = {

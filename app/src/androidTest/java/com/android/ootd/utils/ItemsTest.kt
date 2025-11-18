@@ -76,8 +76,19 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.enterAddItemMaterial(material: String) {
+    val materialVisible =
+        runCatching {
+              onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
+                  .assertIsDisplayed()
+            }
+            .isSuccess
 
-    ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
+    if (!materialVisible) {
+      ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+      onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE, useUnmergedTree = true)
+          .performClick()
+      ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
+    }
 
     onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
         .performTextReplacement(material)

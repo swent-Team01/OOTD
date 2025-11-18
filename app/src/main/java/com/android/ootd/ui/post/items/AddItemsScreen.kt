@@ -78,15 +78,11 @@ object AddItemScreenTestTags {
   const val ERROR_MESSAGE = "errorMessage"
   const val IMAGE_PICKER = "itemImagePicker"
   const val IMAGE_PREVIEW = "itemImagePreview"
-
   const val GO_BACK_BUTTON = "goBackButton"
-
   const val IMAGE_PICKER_DIALOG = "imagePickerDialog"
-
   const val TITLE_ADD = "titleAddItem"
   const val PICK_FROM_GALLERY = "pickFromGallery"
   const val TAKE_A_PHOTO = "takeAPhoto"
-
   const val TYPE_SUGGESTIONS = "typeSuggestion"
   const val CATEGORY_SUGGESTION = "categorySuggestion"
   const val ALL_FIELDS = "allFields"

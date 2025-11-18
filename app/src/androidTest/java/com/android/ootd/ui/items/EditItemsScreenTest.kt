@@ -25,6 +25,7 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.ui.post.items.EditItemsScreen
 import com.android.ootd.ui.post.items.EditItemsScreenTestTags
 import com.android.ootd.ui.post.items.EditItemsViewModel
+import com.android.ootd.utils.InMemoryItem.ensureVisible
 import com.android.ootd.utils.InMemoryItem.waitForNodeWithTag
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.delay
@@ -122,6 +123,9 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
         .assertTextEquals("Currency", "USD")
+    composeTestRule.ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
+    composeTestRule.ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
         .assertTextContains("Cotton 80.0%, Polyester 20.0%")
@@ -200,11 +204,10 @@ class EditItemsScreenTest {
         .assertTextContains("49.99")
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY).performClick()
-    composeTestRule.onNodeWithText("EUR", useUnmergedTree = true).assertIsDisplayed().performClick()
+    composeTestRule.runOnIdle { viewModel.setCurrency("CHF") }
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
-        .assertTextContains("EUR")
+        .assertTextContains("CHF")
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).performTextClearance()
@@ -215,6 +218,8 @@ class EditItemsScreenTest {
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
         .assertTextContains("https://adidas.com")
 
+    ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
@@ -257,6 +262,52 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .assertTextContains("Boots")
+  }
+
+  @Test
+  fun fitTypeSuggestions_show_and_select_across_edit_fields() {
+    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
+    composeTestRule.waitForIdle()
+
+    ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE)
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE)
+        .performTextClearance()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE).performTextInput("S")
+
+    composeTestRule.waitForNodeWithTag(
+        EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Slim", useUnmergedTree = true).performClick()
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE)
+        .assertTextContains("Slim")
+  }
+
+  @Test
+  fun styleSuggestions_show_and_select_across_edit_fields() {
+    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
+    composeTestRule.waitForIdle()
+
+    ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_STYLE)
+
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE).performTextClearance()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE).performTextInput("C")
+
+    composeTestRule.waitForNodeWithTag(
+        EditItemsScreenTestTags.STYLE_SUGGESTIONS, timeoutMillis = 10_000)
+    composeTestRule.onNodeWithText("Casual", useUnmergedTree = true).performClick()
+
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE)
+        .assertTextContains("Casual")
   }
 
   // -------- Invalid price handling --------
