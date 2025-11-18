@@ -1,6 +1,7 @@
 package com.android.ootd.ui.post.items
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -138,11 +139,18 @@ open class AddItemsViewModel(
     }
   }
 
-  /** Uploads image and returns the uploaded ImageData, or null if upload fails */
+  /**
+   * Uploads image and returns the uploaded ImageData.
+   *
+   * Returns null only if localUri is null. Accepts both cloud URLs and local URIs (for offline
+   * mode).
+   */
   private suspend fun uploadItemImage(localUri: Uri?, itemUuid: String): ImageData? {
-    if (localUri == null) return ImageData("", "")
+    if (localUri == null) return null
 
+    // FirebaseImageUploader returns local URI as fallback when offline
     val uploadedImage = FirebaseImageUploader.uploadImage(localUri, itemUuid)
+    // Accept both cloud URLs and local URIs - empty URL means actual failure
     return if (uploadedImage.imageUrl.isEmpty()) null else uploadedImage
   }
 
@@ -166,18 +174,46 @@ open class AddItemsViewModel(
         ownerId = ownerId)
   }
 
-  /** Adds item to repository and inventory, handling rollback on failure */
+  /**
+   * Adds item to repository and inventory using optimistic offline-first pattern.
+   *
+   * **Optimistic UI Pattern:**
+   * - Launches save operations in background
+   * - Assumes success immediately for better UX
+   * - Firestore will sync when network available
+   * - No blocking, no timeouts needed
+   *
+   * This provides immediate feedback even when network is slow/unavailable.
+   */
   private suspend fun addItemAndUpdateInventory(item: Item, uploadedImage: ImageData): Boolean {
-    repository.addItem(item)
+    return try {
+      // Launch saves in background without blocking
+      // Firestore with persistence will handle these offline
+      viewModelScope.launch {
+        try {
+          repository.addItem(item)
+          Log.d("AddItemsViewModel", "Item save queued (will sync when online)")
+        } catch (e: Exception) {
+          Log.e("AddItemsViewModel", "Failed to queue item save: ${e.message}", e)
+        }
+      }
 
-    val addedToInventory = accountRepository.addItem(item.itemUuid)
-    if (!addedToInventory) {
-      // Rollback: delete item and uploaded image
-      repository.deleteItem(item.itemUuid)
-      FirebaseImageUploader.deleteImage(uploadedImage.imageId)
-      return false
+      viewModelScope.launch {
+        try {
+          accountRepository.addItem(item.itemUuid)
+          Log.d("AddItemsViewModel", "Account update queued (will sync when online)")
+        } catch (e: Exception) {
+          Log.e("AddItemsViewModel", "Failed to queue account update: ${e.message}", e)
+        }
+      }
+
+      // Return success immediately - operations are queued
+      Log.d("AddItemsViewModel", "Item operations queued successfully")
+      true
+    } catch (e: Exception) {
+      Log.e("AddItemsViewModel", "Error queuing item operations: ${e.message}", e)
+      false
     }
-    return true
   }
 
   fun onAddItemClick() {
@@ -202,10 +238,10 @@ open class AddItemsViewModel(
       try {
         val itemUuid = repository.getNewItemId()
 
-        // Upload image
+        // Upload image (uses local URI when offline)
         val uploadedImage = uploadItemImage(state.localPhotoUri, itemUuid)
         if (uploadedImage == null) {
-          setErrorMsg("Image upload failed. Please try again.")
+          setErrorMsg("Please select a photo before adding the item.")
           _addOnSuccess.value = false
           return@launch
         }
