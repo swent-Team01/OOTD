@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -19,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -46,6 +51,13 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
+
+val CONDITION_OPTIONS = listOf("New", "Like new", "Used", "Vintage", "Very Used")
+val STYLE_SUGGESTIONS =
+    listOf(
+        "Casual", "Formal", "Streetwear", "Vintage", "Business", "Sporty", "Smart casual", "Chic")
+val FIT_TYPE_SUGGESTIONS =
+    listOf("Slim", "Regular", "Relaxed", "Oversized", "Skinny", "Tailored", "Boxy", "Loose")
 
 /** Reusable category dropdown field. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -198,6 +210,129 @@ fun MaterialField(materialText: String, onChange: (String) -> Unit, testTag: Str
       testTag = testTag)
 }
 
+/** Reusable text field for size input */
+@Composable
+fun SizeField(size: String, onChange: (String) -> Unit, testTag: String) {
+  CommonTextField(
+      value = size,
+      onChange = onChange,
+      label = "Size",
+      placeholder = "e.g., M, 42, One-size",
+      testTag = testTag)
+}
+
+/** Autocomplete-style field for item style suggestions. */
+@Composable
+fun StyleField(
+    style: String,
+    onChange: (String) -> Unit,
+    testTag: String,
+    dropdownTestTag: String,
+    suggestions: List<String> = STYLE_SUGGESTIONS
+) {
+  var expanded by remember { mutableStateOf(false) }
+  val filtered =
+      remember(style, suggestions) {
+        if (style.isBlank()) suggestions else suggestions.filter { it.startsWith(style, true) }
+      }
+
+  Box(modifier = Modifier.fillMaxWidth()) {
+    OutlinedTextField(
+        value = style,
+        onValueChange = {
+          onChange(it)
+          expanded = true
+        },
+        label = { Text("Item style") },
+        placeholder = { Text("e.g., Streetwear, Formal") },
+        modifier =
+            Modifier.fillMaxWidth().testTag(testTag).onFocusChanged { focusState ->
+              expanded = focusState.isFocused && filtered.isNotEmpty()
+            },
+        singleLine = true,
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        colors = commonTextFieldColors())
+
+    DropdownMenu(
+        expanded = expanded && filtered.isNotEmpty(),
+        onDismissRequest = { expanded = false },
+        modifier = Modifier.fillMaxWidth().testTag(dropdownTestTag),
+        properties = PopupProperties(focusable = false)) {
+          filtered.forEach { suggestion ->
+            DropdownMenuItem(
+                text = {
+                  Text(
+                      suggestion,
+                      style =
+                          MaterialTheme.typography.bodyMedium.copy(
+                              color = MaterialTheme.colorScheme.primary))
+                },
+                onClick = {
+                  onChange(suggestion)
+                  expanded = false
+                })
+          }
+        }
+  }
+}
+
+/** Autocomplete-style field for item fit type suggestions. */
+@Composable
+fun FitTypeField(
+    fitType: String,
+    onChange: (String) -> Unit,
+    testTag: String,
+    dropdownTestTag: String,
+    suggestions: List<String> = FIT_TYPE_SUGGESTIONS
+) {
+  var expanded by remember { mutableStateOf(false) }
+  val filtered =
+      remember(fitType, suggestions) {
+        if (fitType.isBlank()) suggestions else suggestions.filter { it.startsWith(fitType, true) }
+      }
+
+  Box(modifier = Modifier.fillMaxWidth()) {
+    OutlinedTextField(
+        value = fitType,
+        onValueChange = {
+          onChange(it)
+          expanded = true
+        },
+        label = { Text("Item fit type") },
+        placeholder = { Text("e.g., oversized, slim") },
+        modifier =
+            Modifier.fillMaxWidth().testTag(testTag).onFocusChanged { focusState ->
+              expanded = focusState.isFocused && filtered.isNotEmpty()
+            },
+        singleLine = true,
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        colors = commonTextFieldColors())
+
+    DropdownMenu(
+        expanded = expanded && filtered.isNotEmpty(),
+        onDismissRequest = { expanded = false },
+        modifier = Modifier.fillMaxWidth().testTag(dropdownTestTag),
+        properties = PopupProperties(focusable = false)) {
+          filtered.forEach { suggestion ->
+            DropdownMenuItem(
+                text = {
+                  Text(
+                      suggestion,
+                      style =
+                          MaterialTheme.typography.bodyMedium.copy(
+                              color = MaterialTheme.colorScheme.primary))
+                },
+                onClick = {
+                  onChange(suggestion)
+                  expanded = false
+                })
+          }
+        }
+  }
+}
+
 /** Reusable text field for link input */
 @Composable
 fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
@@ -235,8 +370,7 @@ fun PriceField(
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
-/** Simple currency dropdown similar to CategoryField with fixed options. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Simple currency dropdown similar to ConditionDropdown with fixed options. */
 @Composable
 fun CurrencyField(
     currency: String,
@@ -244,42 +378,120 @@ fun CurrencyField(
     testTag: String,
     dropdownTestTag: String? = null,
     label: String = "Currency",
-    options: List<String> = listOf("CHF", "USD", "EUR")
+    options: List<String> =
+        listOf("CHF", "USD", "EUR", "JPY", "GBP", "CAD", "AUD", "CNY", "V-BUCKS")
 ) {
   var expanded by remember { mutableStateOf(false) }
+  Column(Modifier.fillMaxWidth()) {
+    OutlinedTextField(
+        value = currency,
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label) },
+        placeholder = { Text("Select currency") },
+        trailingIcon = {
+          IconButton(onClick = { expanded = !expanded }) {
+            Icon(
+                imageVector =
+                    if (expanded) Icons.Filled.KeyboardArrowDown
+                    else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Toggle currency options",
+                tint = MaterialTheme.colorScheme.primary)
+          }
+        },
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        colors = commonTextFieldColors(),
+        modifier = Modifier.fillMaxWidth().testTag(testTag))
+    val menuModifier = dropdownTestTag?.let { Modifier.testTag(it) } ?: Modifier
+    DropdownMenu(
+        expanded = expanded, onDismissRequest = { expanded = false }, modifier = menuModifier) {
+          options.forEach { opt ->
+            DropdownMenuItem(
+                text = {
+                  Text(
+                      opt,
+                      style =
+                          MaterialTheme.typography.bodyMedium.copy(
+                              color = MaterialTheme.colorScheme.primary))
+                },
+                onClick = {
+                  onChange(opt)
+                  expanded = false
+                })
+          }
+        }
+  }
+}
 
-  ExposedDropdownMenuBox(
-      expanded = expanded,
-      onExpandedChange = { expanded = it },
-      modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = currency,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            placeholder = { Text("Select currency") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            textStyle =
-                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().menuAnchor().testTag(testTag),
-            colors = commonTextFieldColors())
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier =
-                (dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
-                    ?: Modifier.fillMaxWidth())) {
-              options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt) },
-                    onClick = {
-                      onChange(opt)
-                      expanded = false
-                    })
-              }
-            }
+/** Shared condition dropdown used by add/edit screens. */
+@Composable
+fun ConditionDropdown(
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    testTag: String,
+    expandedInitially: Boolean = false,
+    options: List<String> = CONDITION_OPTIONS
+) {
+  var expanded by remember { mutableStateOf(expandedInitially) }
+  Column(Modifier.fillMaxWidth()) {
+    OutlinedTextField(
+        value = condition.ifEmpty { "" },
+        onValueChange = { onConditionChange(it) },
+        label = { Text("Condition") },
+        placeholder = { Text("Select condition") },
+        readOnly = true,
+        trailingIcon = {
+          IconButton(onClick = { expanded = !expanded }) {
+            Icon(
+                imageVector =
+                    if (expanded) Icons.Filled.KeyboardArrowDown
+                    else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Toggle condition options",
+                tint = MaterialTheme.colorScheme.primary)
+          }
+        },
+        textStyle =
+            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        colors = commonTextFieldColors(),
+        modifier = Modifier.fillMaxWidth().testTag(testTag))
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      options.forEach { opt ->
+        DropdownMenuItem(
+            text = {
+              Text(
+                  opt,
+                  style =
+                      MaterialTheme.typography.bodyMedium.copy(
+                          color = MaterialTheme.colorScheme.primary))
+            },
+            onClick = {
+              onConditionChange(opt)
+              expanded = false
+            })
       }
+    }
+  }
+}
+
+/** Reusable multi-line notes field sharing the same styling as other inputs. */
+@Composable
+fun NotesField(
+    notes: String,
+    onChange: (String) -> Unit,
+    testTag: String,
+    placeholder: String = "Optional notes"
+) {
+  OutlinedTextField(
+      value = notes,
+      onValueChange = onChange,
+      label = { Text("Notes") },
+      placeholder = { Text(placeholder) },
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
+      modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).testTag(testTag),
+      maxLines = 5)
 }
 
 /** Reusable loading overlay with progress indicator */

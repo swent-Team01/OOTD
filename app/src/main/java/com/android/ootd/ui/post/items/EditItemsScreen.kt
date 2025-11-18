@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +80,8 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_FIT_TYPE = "edit_inputItemFitType"
   const val INPUT_ITEM_STYLE = "edit_inputItemStyle"
   const val INPUT_ITEM_NOTES = "edit_inputItemNotes"
+  const val STYLE_SUGGESTIONS = "edit_styleSuggestions"
+  const val FIT_TYPE_SUGGESTIONS = "edit_fitTypeSuggestions"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -165,8 +165,6 @@ fun EditItemsScreen(
                     onPriceChange = editItemsViewModel::setPrice,
                     currency = itemsUIState.currency,
                     onCurrencyChange = editItemsViewModel::setCurrency,
-                    material = itemsUIState.materialText,
-                    onMaterialChange = editItemsViewModel::setMaterial,
                     link = itemsUIState.link,
                     onLinkChange = editItemsViewModel::setLink,
                     isDeleteEnabled = itemsUIState.itemId.isNotEmpty(),
@@ -187,6 +185,8 @@ fun EditItemsScreen(
                     onStyleChange = editItemsViewModel::setStyle,
                     notes = itemsUIState.notes,
                     onNotesChange = editItemsViewModel::setNotes,
+                    material = itemsUIState.materialText,
+                    onMaterialChange = editItemsViewModel::setMaterial,
                 )
 
                 // Image preview overlay
@@ -256,8 +256,6 @@ private fun FieldsList(
     onPriceChange: (Double) -> Unit,
     currency: String,
     onCurrencyChange: (String) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
     link: String,
     onLinkChange: (String) -> Unit,
     isDeleteEnabled: Boolean,
@@ -274,6 +272,8 @@ private fun FieldsList(
     onStyleChange: (String) -> Unit,
     notes: String,
     onNotesChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
     // Preview flags
     additionalExpandedPreview: Boolean = false,
     conditionMenuExpandedPreview: Boolean = false,
@@ -318,10 +318,8 @@ private fun FieldsList(
       }
     }
     item {
-      MaterialField(
-          materialText = material,
-          onChange = onMaterialChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+      SizeField(
+          size = size, onChange = onSizeChange, testTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE)
     }
     item {
       LinkField(
@@ -331,8 +329,8 @@ private fun FieldsList(
       AdditionalDetailsSectionEdit(
           condition = condition,
           onConditionChange = onConditionChange,
-          size = size,
-          onSizeChange = onSizeChange,
+          material = material,
+          onMaterialChange = onMaterialChange,
           fitType = fitType,
           onFitTypeChange = onFitTypeChange,
           style = style,
@@ -427,8 +425,8 @@ private fun SaveDeleteRow(
 private fun AdditionalDetailsSectionEdit(
     condition: String,
     onConditionChange: (String) -> Unit,
-    size: String,
-    onSizeChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
     fitType: String,
     onFitTypeChange: (String) -> Unit,
     style: String,
@@ -462,72 +460,30 @@ private fun AdditionalDetailsSectionEdit(
         }
 
     AnimatedVisibility(visible = expanded) {
-      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        var condExpanded by remember { mutableStateOf(condExpandedInitially) }
-        // Condition dropdown
-        OutlinedTextField(
-            value = condition,
-            onValueChange = onConditionChange,
-            label = { Text("Condition") },
-            readOnly = true,
-            trailingIcon = {
-              IconButton(onClick = { condExpanded = !condExpanded }) {
-                Icon(
-                    imageVector =
-                        if (condExpanded) Icons.Filled.KeyboardArrowDown
-                        else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null)
-              }
-            },
-            colors = commonTextFieldColors(),
-            textStyle =
-                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-            modifier =
-                Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_CONDITION))
-        DropdownMenu(expanded = condExpanded, onDismissRequest = { condExpanded = false }) {
-          listOf("New", "Like new", "Used", "Vintage").forEach { opt ->
-            DropdownMenuItem(
-                text = { Text(opt) },
-                onClick = {
-                  onConditionChange(opt)
-                  condExpanded = false
-                })
-          }
-        }
-
-        OutlinedTextField(
-            value = size,
-            onValueChange = onSizeChange,
-            label = { Text("Size") },
-            colors = commonTextFieldColors(),
-            textStyle =
-                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_SIZE))
-        OutlinedTextField(
-            value = fitType,
-            onValueChange = onFitTypeChange,
-            label = { Text("Item fit type") },
-            colors = commonTextFieldColors(),
-            textStyle =
-                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE))
-        OutlinedTextField(
-            value = style,
-            onValueChange = onStyleChange,
-            label = { Text("Item style") },
-            colors = commonTextFieldColors(),
-            textStyle =
-                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE))
-        OutlinedTextField(
-            value = notes,
-            onValueChange = onNotesChange,
-            label = { Text("Notes") },
-            colors = commonTextFieldColors(),
-            textStyle =
-                MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_NOTES),
-            maxLines = 5)
+      Column {
+        ConditionDropdown(
+            condition = condition,
+            onConditionChange = onConditionChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_CONDITION,
+            expandedInitially = condExpandedInitially)
+        MaterialField(
+            materialText = material,
+            onChange = onMaterialChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        FitTypeField(
+            fitType = fitType,
+            onChange = onFitTypeChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE,
+            dropdownTestTag = EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS)
+        StyleField(
+            style = style,
+            onChange = onStyleChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_STYLE,
+            dropdownTestTag = EditItemsScreenTestTags.STYLE_SUGGESTIONS)
+        NotesField(
+            notes = notes,
+            onChange = onNotesChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_NOTES)
       }
     }
   }
@@ -575,8 +531,6 @@ fun EditItemsScreenSmallPreview() {
                   onPriceChange = {},
                   currency = "EUR",
                   onCurrencyChange = {},
-                  material = "Cotton 80%, Wool 20%",
-                  onMaterialChange = {},
                   link = "https://example.com/item",
                   onLinkChange = {},
                   isDeleteEnabled = true,
@@ -593,6 +547,8 @@ fun EditItemsScreenSmallPreview() {
                   onStyleChange = {},
                   notes = "Great condition",
                   onNotesChange = {},
+                  material = "Cotton 80%, Wool 20%",
+                  onMaterialChange = {},
                   additionalExpandedPreview = true,
                   conditionMenuExpandedPreview = true)
 

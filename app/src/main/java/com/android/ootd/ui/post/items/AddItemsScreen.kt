@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,13 +33,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -101,6 +97,8 @@ object AddItemScreenTestTags {
   const val INPUT_FIT_TYPE = "inputItemFitType"
   const val INPUT_STYLE = "inputItemStyle"
   const val INPUT_NOTES = "inputItemNotes"
+  const val STYLE_SUGGESTIONS = "styleSuggestions"
+  const val FIT_TYPE_SUGGESTIONS = "fitTypeSuggestions"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -363,22 +361,19 @@ private fun FieldsList(
     }
 
     item {
-      LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
+      SizeField(size = size, onChange = onSizeChange, testTag = AddItemScreenTestTags.INPUT_SIZE)
     }
 
     item {
-      MaterialField(
-          materialText = material,
-          onChange = onMaterialChange,
-          testTag = AddItemScreenTestTags.INPUT_MATERIAL)
+      LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
     }
 
     item {
       AdditionalDetailsSection(
           condition = condition,
           onConditionChange = onConditionChange,
-          size = size,
-          onSizeChange = onSizeChange,
+          material = material,
+          onMaterialChange = onMaterialChange,
           fitType = fitType,
           onFitTypeChange = onFitTypeChange,
           style = style,
@@ -472,8 +467,8 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
 private fun AdditionalDetailsSection(
     condition: String,
     onConditionChange: (String) -> Unit,
-    size: String,
-    onSizeChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
     fitType: String,
     onFitTypeChange: (String) -> Unit,
     style: String,
@@ -513,102 +508,32 @@ private fun AdditionalDetailsSection(
           Column(
               modifier =
                   Modifier.fillMaxWidth()
-                      .padding(top = 4.dp)
-                      .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION),
-              verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                      .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION)) {
                 ConditionDropdown(
                     condition = condition,
                     onConditionChange = onConditionChange,
+                    testTag = AddItemScreenTestTags.INPUT_CONDITION,
                     expandedInitially = condExpandedInitially)
-                OutlinedTextField(
-                    value = size,
-                    onValueChange = onSizeChange,
-                    label = { Text("Size") },
-                    placeholder = { Text("e.g., M, 42, One-size") },
-                    textStyle =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary),
-                    colors = commonTextFieldColors(),
-                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_SIZE))
-                OutlinedTextField(
-                    value = fitType,
-                    onValueChange = onFitTypeChange,
-                    label = { Text("Item fit type") },
-                    placeholder = { Text("e.g., oversized, slim") },
-                    textStyle =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary),
-                    colors = commonTextFieldColors(),
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_FIT_TYPE))
-                OutlinedTextField(
-                    value = style,
-                    onValueChange = onStyleChange,
-                    label = { Text("Item style") },
-                    placeholder = { Text("e.g., streetwear, formal") },
-                    textStyle =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary),
-                    colors = commonTextFieldColors(),
-                    modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_STYLE))
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = onNotesChange,
-                    label = { Text("Notes") },
-                    placeholder = { Text("Optional notes") },
-                    textStyle =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary),
-                    colors = commonTextFieldColors(),
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .heightIn(min = 80.dp)
-                            .testTag(AddItemScreenTestTags.INPUT_NOTES),
-                    maxLines = 5)
+                MaterialField(
+                    materialText = material,
+                    onChange = onMaterialChange,
+                    testTag = AddItemScreenTestTags.INPUT_MATERIAL)
+                FitTypeField(
+                    fitType = fitType,
+                    onChange = onFitTypeChange,
+                    testTag = AddItemScreenTestTags.INPUT_FIT_TYPE,
+                    dropdownTestTag = AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS)
+                StyleField(
+                    style = style,
+                    onChange = onStyleChange,
+                    testTag = AddItemScreenTestTags.INPUT_STYLE,
+                    dropdownTestTag = AddItemScreenTestTags.STYLE_SUGGESTIONS)
+                NotesField(
+                    notes = notes,
+                    onChange = onNotesChange,
+                    testTag = AddItemScreenTestTags.INPUT_NOTES)
               }
         }
-  }
-}
-
-@Composable
-private fun ConditionDropdown(
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    expandedInitially: Boolean = false,
-) {
-  var expanded by remember { mutableStateOf(expandedInitially) }
-  val options = listOf("New", "Like new", "Used", "Vintage")
-  Column(Modifier.fillMaxWidth()) {
-    OutlinedTextField(
-        value = condition.ifEmpty { "" },
-        onValueChange = { onConditionChange(it) },
-        label = { Text("Condition") },
-        placeholder = { Text("Select condition") },
-        readOnly = true,
-        trailingIcon = {
-          IconButton(onClick = { expanded = !expanded }) {
-            Icon(
-                imageVector =
-                    if (expanded) Icons.Filled.KeyboardArrowDown
-                    else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Toggle condition options",
-                tint = MaterialTheme.colorScheme.primary)
-          }
-        },
-        textStyle =
-            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-        colors = commonTextFieldColors(),
-        modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_CONDITION))
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      options.forEach { opt ->
-        DropdownMenuItem(
-            text = { Text(opt) },
-            onClick = {
-              onConditionChange(opt)
-              expanded = false
-            })
-      }
-    }
   }
 }
 
