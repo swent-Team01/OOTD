@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
@@ -268,7 +269,11 @@ private fun FitCheckScreenContent(
             onClick = {
               if (overridePhoto || uiState.isPhotoValid) {
                 onClearError()
-                onNextClick(uiState.image.toString(), uiState.description, uiState.location)
+                // Get the location from the locationSelectionViewModel if available, otherwise use
+                // emptyLocation
+                val finalLocation =
+                    locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
+                onNextClick(uiState.image.toString(), uiState.description, finalLocation)
               } else {
                 onDescriptionChange(uiState.description) // no-op; real screen sets error
               }
