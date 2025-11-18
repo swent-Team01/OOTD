@@ -81,7 +81,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     val missingUuids = uuids.filter { !itemsCache.containsKey(it) }
     if (missingUuids.isNotEmpty()) {
       try {
-        kotlinx.coroutines.withTimeoutOrNull(3_000L) {
+        kotlinx.coroutines.withTimeoutOrNull(2_000L) {
           missingUuids.chunked(10).forEach { batch ->
             val snapshot =
                 db.collection(ITEMS_COLLECTION)
@@ -124,6 +124,25 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun editItem(itemUUID: String, newItem: Item) {
+    // Determine if item exists (cache fast-path, then Firestore with timeout)
+    val existedInCache = itemsCache.containsKey(itemUUID)
+    var existedInStore = false
+    if (!existedInCache) {
+      try {
+        existedInStore =
+            kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+              db.collection(ITEMS_COLLECTION).document(itemUUID).get().await().exists()
+            } ?: false
+      } catch (e: Exception) {
+        // Offline / timeout: treat as not found in store for contract purposes
+        existedInStore = false
+        Log.w("ItemsRepositoryFirestore", "Existence check timed out/offline: ${e.message}")
+      }
+    }
+    if (!existedInCache && !existedInStore) {
+      throw Exception("ItemsRepositoryFirestore: Item not found")
+    }
+
     // Optimistically update memory cache immediately (synchronous, instant)
     itemsCache[itemUUID] = newItem
     Log.d("ItemsRepositoryFirestore", "Updated item $itemUUID in memory cache")

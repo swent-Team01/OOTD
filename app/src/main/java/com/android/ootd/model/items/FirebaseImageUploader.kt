@@ -40,7 +40,7 @@ object FirebaseImageUploader {
    *   offline).
    */
   suspend fun uploadImage(localUri: Uri, fileName: String): ImageData {
-    val ref = storage ?: return ImageData(fileName, localUri.toString())
+    val ref = storage ?: return fallbackImageData(localUri, fileName)
 
     return try {
       // Add timeout to prevent indefinite hanging when offline
@@ -52,10 +52,21 @@ object FirebaseImageUploader {
         ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
       }
     } catch (e: Exception) {
-      Log.w(TAG, "Image upload failed (likely offline), using local URI: ${e.message}")
-      // Return local URI as fallback. This allows offline item creation
-      // The image stays on device and can be uploaded later when back online
-      ImageData(imageId = fileName, imageUrl = localUri.toString())
+      Log.w(TAG, "Image upload failed (likely offline or invalid): ${e.message}")
+      fallbackImageData(localUri, fileName)
+    }
+  }
+
+  private fun fallbackImageData(localUri: Uri, fileName: String): ImageData {
+    // If local file exists, keep offline URI; else return empty to signal invalid selection
+    return try {
+      val isFile = localUri.scheme == "file"
+      val path = localUri.path
+      val fileExists = isFile && path != null && java.io.File(path).exists()
+      if (fileExists) ImageData(imageId = fileName, imageUrl = localUri.toString())
+      else ImageData("", "")
+    } catch (_: Exception) {
+      ImageData("", "")
     }
   }
 

@@ -408,7 +408,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           } catch (e: Exception) {
             Log.w(TAG, "Cache read failed, trying default source: ${e.message}")
             // If cache fails, try with default source (network or cache) with timeout
-            kotlinx.coroutines.withTimeoutOrNull(3_000L) {
+            kotlinx.coroutines.withTimeoutOrNull(2_000L) {
               db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
             }
           }
