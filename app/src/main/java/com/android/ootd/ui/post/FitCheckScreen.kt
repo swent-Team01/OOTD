@@ -323,14 +323,6 @@ private fun FitCheckScreenContent(
               DescriptionInputField(
                   description = uiState.description, onDescriptionChange = onDescriptionChange)
 
-              // Location section (optional)
-              locationSelectionViewModel?.let { viewModel ->
-                LocationSection(
-                    locationSelectionViewModel = viewModel,
-                    onGPSClick = onGPSClick,
-                    onLocationSelect = onLocationSelect)
-              }
-
               // Add photo button
               Button(
                   onClick = { showDialog = true },
@@ -341,6 +333,14 @@ private fun FitCheckScreenContent(
                           containerColor = MaterialTheme.colorScheme.primary)) {
                     Text("Add Fit Photo", color = Color.White)
                   }
+
+              // Location section (optional)
+              locationSelectionViewModel?.let { viewModel ->
+                LocationSection(
+                    locationSelectionViewModel = viewModel,
+                    onGPSClick = onGPSClick,
+                    onLocationSelect = onLocationSelect)
+              }
 
               // Photo selection dialog
               PhotoSelectionDialog(
