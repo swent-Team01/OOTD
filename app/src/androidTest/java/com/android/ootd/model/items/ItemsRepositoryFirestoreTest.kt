@@ -23,6 +23,10 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   override fun setUp() {
     super.setUp()
     Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
+    runBlocking {
+      val collection = FirebaseEmulator.firestore.collection(ITEMS_COLLECTION).get().await()
+      collection.forEach { it.reference.delete().await() }
+    }
     ownerId = FirebaseEmulator.auth.uid ?: ""
     if (ownerId == "") {
       throw IllegalStateException("There needs to be an authenticated user")

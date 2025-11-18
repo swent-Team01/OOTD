@@ -130,7 +130,7 @@ class EditItemsScreenTest {
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
         .assertTextContains("Cotton 80.0%, Polyester 20.0%")
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .assertTextEquals("Link", "https://nike.com/tshirt")
   }
 
@@ -210,12 +210,14 @@ class EditItemsScreenTest {
         .assertTextContains("CHF")
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).performTextClearance()
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
+        .performTextClearance()
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .performTextInput("https://adidas.com")
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .assertTextContains("https://adidas.com")
 
     ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)

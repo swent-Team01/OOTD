@@ -47,6 +47,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       AddItemsScreen(addItemsViewModel = viewModel, onNextScreen = {}, postUuid = "postuid")
     }
+    composeTestRule.waitForIdle()
   }
 
   // ----------- Input and photo flow -----------

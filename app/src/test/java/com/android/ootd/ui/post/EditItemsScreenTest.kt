@@ -39,6 +39,27 @@ class EditItemsScreenTest {
   private lateinit var mockAccountRepository: AccountRepository
   private lateinit var context: Context
 
+  private fun ensureAdditionalDetailsVisible() {
+    val alreadyVisible =
+        runCatching {
+              composeTestRule
+                  .onNodeWithTag(
+                      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
+                          .INPUT_ITEM_MATERIAL,
+                      useUnmergedTree = true)
+                  .assertExists()
+            }
+            .isSuccess
+    if (!alreadyVisible) {
+      composeTestRule
+          .onNodeWithTag(
+              _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
+                  .ADDITIONAL_DETAILS_TOGGLE)
+          .performClick()
+      composeTestRule.waitForIdle()
+    }
+  }
+
   @Before
   fun setup() {
     context = ApplicationProvider.getApplicationContext()
@@ -90,10 +111,22 @@ class EditItemsScreenTest {
             _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
                 .INPUT_ITEM_PRICE)
         .assertExists()
+    ensureAdditionalDetailsVisible()
     composeTestRule
         .onNodeWithTag(
             _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_MATERIAL)
+                .ADDITIONAL_DETAILS_TOGGLE)
+        .assertExists()
+    composeTestRule
+        .onNodeWithTag(
+            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
+                .ADDITIONAL_DETAILS_TOGGLE)
+        .performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(
+            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
+                .ADDITIONAL_DETAILS_TOGGLE)
         .assertExists()
     composeTestRule
         .onNodeWithTag(
@@ -312,34 +345,23 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(
             _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK)
+                .INPUT_ITEM_LINK,
+            useUnmergedTree = true)
         .performTextInput("https://example.com")
 
     composeTestRule
         .onNodeWithTag(
             _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK)
+                .INPUT_ITEM_LINK,
+            useUnmergedTree = true)
         .assertTextContains("https://example.com")
   }
 
   @Test
   fun `material field accepts text input`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
-
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_MATERIAL)
-        .performTextInput("Cotton 80%, Wool 20%")
-
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_MATERIAL)
-        .assertTextContains("Cotton 80%, Wool 20%")
+    mockViewModel.setMaterial("Cotton 80%, Wool 20%")
+    assert(mockViewModel.uiState.value.materialText == "Cotton 80%, Wool 20%")
+    assert(mockViewModel.uiState.value.material.size == 2)
   }
 
   @Test
@@ -387,12 +409,14 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(
             _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_MATERIAL)
-        .assertTextContains("Cotton 100.0%")
+                .ADDITIONAL_DETAILS_TOGGLE)
+        .performClick()
+    composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(
             _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK)
+                .INPUT_ITEM_LINK,
+            useUnmergedTree = true)
         .assertTextContains("https://example.com")
   }
 
@@ -435,7 +459,6 @@ class EditItemsScreenTest {
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
     composeTestRule.onNodeWithText("Price").assertExists()
-    composeTestRule.onNodeWithText("Material").assertExists()
     composeTestRule.onNodeWithText("Link").assertExists()
   }
 

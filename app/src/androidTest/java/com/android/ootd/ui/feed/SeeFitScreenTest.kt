@@ -227,30 +227,56 @@ class SeeFitScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_CONDITION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_SIZE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CONDITION, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_SIZE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY, useUnmergedTree = true)
+        .assertIsDisplayed()
 
     val clipboard =
         ApplicationProvider.getApplicationContext<Context>()
             .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
 
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY).performClick()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY, useUnmergedTree = true)
+        .performClick()
     composeTestRule.waitForIdle()
     composeTestRule.runOnIdle {
       assertEquals("Made by grandma", clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: "")
     }
 
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY).performClick()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY, useUnmergedTree = true)
+        .performClick()
     composeTestRule.waitForIdle()
     composeTestRule.runOnIdle {
       assertEquals(

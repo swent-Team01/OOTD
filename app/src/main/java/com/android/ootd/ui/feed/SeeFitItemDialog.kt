@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -243,12 +244,12 @@ private fun CopyableDetailRow(
         }
         textModifier = textModifier.testTag(textTag)
         Text(text = text, style = textStyle, textAlign = TextAlign.Center, modifier = textModifier)
-        IconButton(onClick = onCopy, modifier = Modifier.testTag(copyTag)) {
+        IconButton(onClick = onCopy, modifier = Modifier.size(32.dp).testTag(copyTag)) {
           Icon(
               imageVector = Icons.Filled.ContentCopy,
               contentDescription = "Copy",
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.padding(4.dp))
+              modifier = Modifier.size(16.dp))
         }
       }
 }
