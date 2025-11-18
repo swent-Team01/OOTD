@@ -1,4 +1,4 @@
-package com.android.ootd.utils
+package com.android.ootd.model.image
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import java.io.ByteArrayOutputStream
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -20,8 +19,12 @@ import kotlinx.coroutines.withContext
  * requirement or reaches a minimum quality level.
  *
  * This compressor is implemented based on https://www.youtube.com/watch?v=Q0Njj-rfEXE
+ *
+ * @param dispatcherProvider Provides CoroutineDispatchers for various threading needs.
  */
-class ImageCompressor {
+class ImageCompressor(
+    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider
+) {
 
   /**
    * Compresses an image from the provided [contentUri] if its size exceeds the
@@ -38,9 +41,12 @@ class ImageCompressor {
       compressionThreshold: Long,
       context: Context?
   ): ByteArray? =
-      withContext(Dispatchers.IO) {
+      withContext(dispatcherProvider.io) {
+
+        // Get the MIME type of the image
         val mimeType = context?.contentResolver?.getType(contentUri)
 
+        // Read the image bytes from the content URI
         val inputBytes =
             context?.contentResolver?.openInputStream(contentUri)?.use { inputStream ->
               inputStream.readBytes()
@@ -53,7 +59,7 @@ class ImageCompressor {
 
         ensureActive()
 
-        withContext(Dispatchers.Default) {
+        withContext(dispatcherProvider.default) {
           val bitmap = BitmapFactory.decodeByteArray(inputBytes, 0, inputBytes.size)
 
           ensureActive()
@@ -63,9 +69,11 @@ class ImageCompressor {
                 "image/png" -> Bitmap.CompressFormat.PNG // lossless == quality is ignored
                 "image/jpeg" -> Bitmap.CompressFormat.JPEG
                 "image/webp" ->
+                    // Use WEBP_LOSSLESS for API 30+, otherwise use WEBP
                     if (Build.VERSION.SDK_INT >= 30) {
                       Bitmap.CompressFormat.WEBP_LOSSLESS
                     } else Bitmap.CompressFormat.WEBP
+
                 else -> Bitmap.CompressFormat.JPEG
               }
 
