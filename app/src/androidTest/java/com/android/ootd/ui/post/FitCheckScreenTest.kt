@@ -161,8 +161,14 @@ class FitCheckScreenTest {
 
   @Test
   fun locationSection_isDisplayed() {
-    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   @Test
@@ -221,6 +227,7 @@ class FitCheckScreenTest {
   fun gpsButton_isClickable() {
     composeTestRule
         .onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON)
+        .performScrollTo()
         .assertIsDisplayed()
         .performClick()
     composeTestRule.waitForIdle()
