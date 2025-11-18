@@ -93,6 +93,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     return "${senderId}_follow_${receiverId}"
   }
 
+  /** Adds a listener directly to the firebase for notifications that have not been pushed yet. */
   override fun listenForUnpushedNotifications(
       receiverId: String,
       onNewNotification: (Notification) -> Unit

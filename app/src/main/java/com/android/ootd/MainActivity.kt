@@ -169,6 +169,12 @@ fun OOTDApp(
               PackageManager.PERMISSION_GRANTED
   var listenerRegistration: ListenerRegistration? = null
 
+  /**
+   * Pushes given notification
+   *
+   * This function is useful for defining the properties of a push notification. For example, this
+   * could entail some notifications need to be clicked, or deleted from the notification bar etc.
+   */
   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
   fun sendLocalNotification(notification: Notification) {
     val manager = NotificationManagerCompat.from(context)
@@ -182,6 +188,11 @@ fun OOTDApp(
     manager.notify(notification.uid.hashCode(), builder.build())
   }
 
+  /**
+   * Creates a listener for new repositories coming in.
+   *
+   * If a listener was already created, it does nothing.
+   */
   fun observeUnpushedNotifications(userId: String) {
     if (listenerRegistration != null) return
 
