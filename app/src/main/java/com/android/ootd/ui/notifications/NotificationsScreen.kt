@@ -45,11 +45,15 @@ object NotificationsScreenTestTags {
   const val EMPTY_STATE_TEXT = "emptyStateText"
   const val ERROR_MESSAGE = "errorMessage"
   const val PUSH_NOTIFICATIONS_INSTRUCTIONS = "pushNotificationsInstructions"
+  const val ENABLE_PUSH_NOTIFICATIONS = "enablePushNotifications"
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
+fun NotificationsScreen(
+    viewModel: NotificationsViewModel = viewModel(),
+    testMode: Boolean = false
+) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
 
@@ -91,8 +95,14 @@ fun NotificationsScreen(viewModel: NotificationsViewModel = viewModel()) {
               fontSize = 16.sp,
               color = MaterialTheme.colorScheme.primary)
           Button(
-              onClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-              modifier = Modifier.fillMaxWidth()) {
+              onClick = {
+                if (!testMode) {
+                  permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+              },
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .testTag(NotificationsScreenTestTags.ENABLE_PUSH_NOTIFICATIONS)) {
                 Text("Enable Push Notifications")
               }
 

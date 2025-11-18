@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
  *
  * @param context Compose-provided [Context], defaults to [LocalContext].
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
- * @param overridePhoto Used for testing to disable checks on photo because we can't use the camera.
+ * @param testMode Used for overriding permission screens for testing mode
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -140,7 +140,7 @@ fun OOTDApp(
     credentialManager: CredentialManager = CredentialManager.create(context),
     testNavController: NavHostController? = null,
     testStartDestination: String? = null,
-    overridePhoto: Boolean = false
+    testMode: Boolean = false
 ) {
   val navController = testNavController ?: rememberNavController()
   val navigationActions = remember { NavigationActions(navController) }
@@ -164,15 +164,14 @@ fun OOTDApp(
       viewModel(factory = BetaConsentViewModelFactory(context))
 
   val isNotificationsPermissionGranted =
-      ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-          PackageManager.PERMISSION_GRANTED
+      testMode ||
+          ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+              PackageManager.PERMISSION_GRANTED
   var listenerRegistration: ListenerRegistration? = null
 
   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
   fun sendLocalNotification(notification: Notification) {
     val manager = NotificationManagerCompat.from(context)
-
-    Log.d("MainActivity", "Sending push notification")
 
     val builder =
         NotificationCompat.Builder(context, "ootd_channel")
@@ -195,8 +194,6 @@ fun OOTDApp(
 
   LaunchedEffect(Unit) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: ""
-    Log.d("MainActivity", "Current user id: $currentUserId")
-    Log.d("MainActivity", "Are notification permitted ${isNotificationsPermissionGranted}")
     if (currentUserId.isNotEmpty() && isNotificationsPermissionGranted) {
       createNotificationChannel(context) // Only create if the notifications are permitted
       observeUnpushedNotifications(currentUserId)
@@ -324,7 +321,7 @@ fun OOTDApp(
                             // later we'll use postUuid to delete items
                             navigationActions.goBack()
                           },
-                          overridePhoto = overridePhoto)
+                          overridePhoto = testMode)
                     }
 
                 composable(
@@ -372,7 +369,7 @@ fun OOTDApp(
                               launchSingleTop = true
                             }
                           },
-                          overridePhoto = overridePhoto)
+                          overridePhoto = testMode)
                     }
 
                 composable(
@@ -384,7 +381,7 @@ fun OOTDApp(
                           postUuid = postUuid,
                           onNextScreen = { navController.popBackStack() },
                           goBack = { navController.popBackStack() },
-                          overridePhoto = overridePhoto)
+                          overridePhoto = testMode)
                     }
 
                 composable(
@@ -419,7 +416,9 @@ fun OOTDApp(
                           onGoBack = { navController.popBackStack() })
                     }
 
-                composable(route = Screen.NotificationsScreen.route) { NotificationsScreen() }
+                composable(route = Screen.NotificationsScreen.route) {
+                  NotificationsScreen(testMode = testMode)
+                }
               }
             }
       }
