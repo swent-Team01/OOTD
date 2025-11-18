@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.android.ootd.model.map.Location
@@ -60,8 +61,14 @@ class FitCheckScreenTest {
 
   @Test
   fun fitCheckScreen_showsPlaceholder_andAddPhotoButton() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.PLACEHOLDER_ICON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.PLACEHOLDER_ICON)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   @Test
@@ -72,20 +79,29 @@ class FitCheckScreenTest {
 
   @Test
   fun clickingAddPhotoButton_opensDialog() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ALERT_DIALOG).assertIsDisplayed()
   }
 
   @Test
   fun dialog_containsCameraAndGalleryButtons() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).assertIsDisplayed()
   }
 
   @Test
   fun clickingChooseFromGallery_dismissesDialog() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
@@ -94,7 +110,10 @@ class FitCheckScreenTest {
 
   @Test
   fun clickingAddPhotoButton_thenTakePhoto_closesDialogAndKeepsInvalidState() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
@@ -255,6 +274,7 @@ class FitCheckScreenTest {
   fun defaultEpflLocation_isDisplayedAndClickable() {
     composeTestRule
         .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
+        .performScrollTo()
         .assertIsDisplayed()
         .performClick()
     composeTestRule.waitForIdle()
