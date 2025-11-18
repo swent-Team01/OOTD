@@ -453,7 +453,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       // With timeout to prevent hanging when offline
       // Firestore persistence should make this complete to cache quickly
       val success =
-          withTimeoutOrNull(3_000L) {
+          withTimeoutOrNull(1_000L) {
             userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
             true
           } ?: false
@@ -482,10 +482,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      // With timeout to prevent hanging when offline
-      // Firestore persistence should make this complete to cache quickly
       val success =
-          withTimeoutOrNull(3_000L) {
+          withTimeoutOrNull(1_000L) {
             userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await()
             true
           } ?: false

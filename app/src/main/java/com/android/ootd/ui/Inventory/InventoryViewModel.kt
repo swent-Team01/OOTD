@@ -64,13 +64,13 @@ class InventoryViewModel(
 
         // Get the list of item IDs from the account (with timeout for offline)
         val itemIds =
-            kotlinx.coroutines.withTimeoutOrNull(5_000L) {
+            kotlinx.coroutines.withTimeoutOrNull(2_000L) {
               accountRepository.getItemsList(currentUserId)
             } ?: emptyList()
 
         // Fetch all items using the batch method (with timeout for offline)
         val items =
-            kotlinx.coroutines.withTimeoutOrNull(5_000L) { itemsRepository.getItemsByIds(itemIds) }
+            kotlinx.coroutines.withTimeoutOrNull(2_000L) { itemsRepository.getItemsByIds(itemIds) }
                 ?: emptyList()
 
         // Sort items by category using the predefined order

@@ -78,6 +78,10 @@ open class AddItemsViewModel(
     private val overridePhoto: Boolean = false
 ) : BaseItemViewModel<AddItemsUIState>() {
 
+  companion object {
+    private val TAG = "AddItemsViewModel"
+  }
+
   // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
   override fun initialState() = AddItemsUIState(overridePhoto = overridePhoto)
 
@@ -192,26 +196,26 @@ open class AddItemsViewModel(
       viewModelScope.launch {
         try {
           repository.addItem(item)
-          Log.d("AddItemsViewModel", "Item save queued (will sync when online)")
+          Log.d(TAG, "Item save queued (will sync when online)")
         } catch (e: Exception) {
-          Log.e("AddItemsViewModel", "Failed to queue item save: ${e.message}", e)
+          Log.e(TAG, "Failed to queue item save: ${e.message}", e)
         }
       }
 
       viewModelScope.launch {
         try {
           accountRepository.addItem(item.itemUuid)
-          Log.d("AddItemsViewModel", "Account update queued (will sync when online)")
+          Log.d(TAG, "Account update queued (will sync when online)")
         } catch (e: Exception) {
-          Log.e("AddItemsViewModel", "Failed to queue account update: ${e.message}", e)
+          Log.e(TAG, "Failed to queue account update: ${e.message}", e)
         }
       }
 
       // Return success immediately - operations are queued
-      Log.d("AddItemsViewModel", "Item operations queued successfully")
+      Log.d(TAG, "Item operations queued successfully")
       true
     } catch (e: Exception) {
-      Log.e("AddItemsViewModel", "Error queuing item operations: ${e.message}", e)
+      Log.e(TAG, "Error queuing item operations: ${e.message}", e)
       false
     }
   }

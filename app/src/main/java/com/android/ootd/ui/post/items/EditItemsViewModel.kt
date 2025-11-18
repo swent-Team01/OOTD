@@ -61,6 +61,11 @@ open class EditItemsViewModel(
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : BaseItemViewModel<EditItemsUIState>() {
 
+  companion object {
+
+    private val TAG = "EditItemsViewModel"
+  }
+
   // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
   override fun initialState() = EditItemsUIState()
 
@@ -169,9 +174,9 @@ open class EditItemsViewModel(
         viewModelScope.launch {
           try {
             repository.editItem(updatedItem.itemUuid, updatedItem)
-            Log.d("EditItemsViewModel", "Item edit queued (will sync when online)")
+            Log.d(TAG, "Item edit queued (will sync when online)")
           } catch (e: Exception) {
-            Log.e("EditItemsViewModel", "Failed to queue item edit: ${e.message}", e)
+            Log.e(TAG, "Failed to queue item edit: ${e.message}", e)
           }
         }
 
@@ -179,7 +184,7 @@ open class EditItemsViewModel(
         _uiState.value =
             _uiState.value.copy(
                 image = finalImage, errorMessage = null, isSaveSuccessful = true, isLoading = false)
-        Log.d("EditItemsViewModel", "Item edit operation queued successfully")
+        Log.d(TAG, "Item edit operation queued successfully")
       } catch (e: Exception) {
         setErrorMsg("Failed to save item: ${e.message}")
         _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
@@ -205,27 +210,27 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         accountRepository.removeItem(state.itemId)
-        Log.d("EditItemsViewModel", "Item removal queued (will sync when online)")
+        Log.d(TAG, "Item removal queued (will sync when online)")
       } catch (e: Exception) {
-        Log.e("EditItemsViewModel", "Failed to queue item removal: ${e.message}")
+        Log.e(TAG, "Failed to queue item removal: ${e.message}")
       }
     }
 
     viewModelScope.launch {
       try {
         repository.deleteItem(state.itemId)
-        Log.d("EditItemsViewModel", "Item deletion queued (will sync when online)")
+        Log.d(TAG, "Item deletion queued (will sync when online)")
       } catch (e: Exception) {
-        Log.e("EditItemsViewModel", "Failed to queue item deletion: ${e.message}")
+        Log.e(TAG, "Failed to queue item deletion: ${e.message}")
       }
     }
 
     viewModelScope.launch {
       try {
         FirebaseImageUploader.deleteImage(state.image.imageId)
-        Log.d("EditItemsViewModel", "Image deletion queued (will sync when online)")
+        Log.d(TAG, "Image deletion queued (will sync when online)")
       } catch (e: Exception) {
-        Log.w("EditItemsViewModel", "Image deletion failed: ${e.message}")
+        Log.w(TAG, "Image deletion failed: ${e.message}")
       }
     }
   }
