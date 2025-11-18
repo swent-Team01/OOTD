@@ -1,4 +1,4 @@
-package com.android.ootd.utils
+package com.android.ootd.model.image
 
 import android.content.ContentResolver
 import android.content.Context
@@ -11,15 +11,18 @@ import io.mockk.mockkStatic
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+/**
+ * Unit tests for the ImageCompressor class.
+ *
+ * DISCLAIMER: Tests are partially created by AI, reviewed and modified by human developers to
+ * ensure accuracy and relevance.
+ */
 @RunWith(RobolectricTestRunner::class)
 class ImageCompressorTest {
 
@@ -61,10 +64,10 @@ class ImageCompressorTest {
 
         val result = imageCompressor.compressImage(mockUri, 1024L, mockContext)
 
-        assertNull(result)
+        Assert.assertNull(result)
 
         val resultNull = imageCompressor.compressImage(mockUri, 1024L, null)
-        assertNull(resultNull)
+        Assert.assertNull(resultNull)
       }
 
   @Test
@@ -79,8 +82,8 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
-    assertArrayEquals(originalBytes, result)
+    Assert.assertNotNull(result)
+    Assert.assertArrayEquals(originalBytes, result)
   }
 
   @Test
@@ -98,8 +101,8 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
-    assertTrue(
+    Assert.assertNotNull(result)
+    Assert.assertTrue(
         "Compressed image should be smaller than original", result!!.size < originalBytes.size)
   }
 
@@ -118,7 +121,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
     // PNG is lossless, so quality parameter is ignored
     // The result should still be valid
   }
@@ -138,7 +141,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
   }
 
   @Test
@@ -156,7 +159,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
   }
 
   @Test
@@ -174,9 +177,9 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
     // The compression should have reduced the size
-    assertTrue("Result should exist and be compressed", result!!.size < originalBytes.size)
+    Assert.assertTrue("Result should exist and be compressed", result!!.size < originalBytes.size)
   }
 
   @Test
@@ -194,7 +197,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
     // Should stop compressing at quality > 20
   }
 
@@ -213,7 +216,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
   }
 
   @Test
@@ -231,7 +234,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    assertNotNull(result)
+    Assert.assertNotNull(result)
     // Should return the best compression it can achieve
   }
 }
