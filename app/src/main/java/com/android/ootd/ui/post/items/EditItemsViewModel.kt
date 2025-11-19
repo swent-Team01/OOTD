@@ -66,6 +66,7 @@ open class EditItemsViewModel(
 
   companion object {
 
+    private const val COMPRESS_THRESHOLD = 200 * 1024L // 200 KB
     private const val TAG = "EditItemsViewModel"
   }
 
@@ -151,7 +152,7 @@ open class EditItemsViewModel(
         val finalImage =
             if (state.localPhotoUri != null) {
               val compressedImage =
-                  imageCompressor.compressImage(state.localPhotoUri, 200 * 1024, context)
+                  imageCompressor.compressImage(state.localPhotoUri, COMPRESS_THRESHOLD, context)
               if (compressedImage == null) {
                 setErrorMsg("Failed to compress image.")
                 _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)

@@ -82,6 +82,8 @@ open class AddItemsViewModel(
 ) : BaseItemViewModel<AddItemsUIState>() {
 
   companion object {
+
+    private const val COMPRESS_THRESHOLD = 200 * 1024L // 200 KB
     private const val TAG = "AddItemsViewModel"
   }
 
@@ -157,7 +159,7 @@ open class AddItemsViewModel(
 
     val compressedImage =
         imageCompressor.compressImage(
-            contentUri = localUri, compressionThreshold = 200 * 1024, context = context)
+            contentUri = localUri, compressionThreshold = COMPRESS_THRESHOLD, context = context)
 
     if (compressedImage == null) return null
 

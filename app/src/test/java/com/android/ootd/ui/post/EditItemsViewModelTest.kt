@@ -693,4 +693,41 @@ class EditItemsViewModelTest {
     assertFalse(state.isSaveSuccessful)
     coVerify(exactly = 0) { mockRepository.editItem(any(), any()) }
   }
+
+  @Test
+  fun `onSaveItemClick sets error when image compression fails`() = runTest {
+    val mockUri = mockk<Uri>()
+    every { mockUri.toString() } returns "content://test"
+
+    // Mock ImageCompressor to return null (compression failure)
+    val mockImageCompressor = mockk<ImageCompressor>()
+    coEvery { mockImageCompressor.compressImage(any(), any(), any()) } returns null
+
+    // Recreate ViewModel with mocked compressor
+    viewModel = EditItemsViewModel(mockRepository, mockAccountRepository, mockImageCompressor)
+
+    viewModel.loadItem(
+        Item(
+            itemUuid = "test-id",
+            postUuids = listOf("test_post_uuid"),
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
+            category = "Clothing",
+            type = "T-shirt",
+            brand = "Nike",
+            price = 49.99,
+            material = emptyList(),
+            link = "https://example.com",
+            ownerId = "ownerId"))
+
+    viewModel.setPhoto(mockUri)
+    viewModel.onSaveItemClick(context)
+
+    advanceUntilIdle()
+
+    val state = viewModel.uiState.value
+    assertEquals("Failed to compress image.", state.errorMessage)
+    assertFalse(state.isSaveSuccessful)
+    assertFalse(state.isLoading)
+    coVerify(exactly = 0) { mockRepository.editItem(any(), any()) }
+  }
 }

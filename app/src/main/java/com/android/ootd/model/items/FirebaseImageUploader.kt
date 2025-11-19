@@ -15,7 +15,9 @@ import kotlinx.coroutines.tasks.await
 object FirebaseImageUploader {
 
   private const val TAG = "FirebaseImageUploader"
-  private const val UPLOAD_TIMEOUT_MS = 1_000L
+
+  // Timeout duration for upload operations to Firebase Storage
+  private const val UPLOAD_TIMEOUT_MS = 10_000L // 10 seconds
 
   private val storage by lazy {
     try {
@@ -36,6 +38,7 @@ object FirebaseImageUploader {
    *
    * @param localUri The local URI of the image to upload.
    * @param fileName The desired file name (without extension) for the uploaded image.
+   * @param imageData The image data as a ByteArray.
    * @return An [ImageData] object containing the image ID and download URL (or local URI if
    *   offline).
    */
