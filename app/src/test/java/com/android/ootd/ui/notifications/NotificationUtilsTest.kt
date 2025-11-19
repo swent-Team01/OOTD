@@ -3,6 +3,7 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import com.android.ootd.createNotificationChannel
+import com.android.ootd.model.notifications.Notification
 import io.mockk.*
 import org.junit.Before
 import org.junit.Test
@@ -38,5 +39,22 @@ class NotificationUtilsTest {
 
     // Run function
     createNotificationChannel(context)
+  }
+
+  @Test
+  fun `get notification message`() {
+    val randomNotification =
+        Notification(
+            uid = "", senderId = "", receiverId = "", type = "", content = "", wasPushed = false)
+    assert(randomNotification.getNotificationMessage() == "New notification available")
+    val followNotification =
+        Notification(
+            uid = "",
+            senderId = "",
+            receiverId = "",
+            type = "FOLLOW_REQUEST",
+            content = "",
+            wasPushed = false)
+    assert(followNotification.getNotificationMessage() == "New follow request")
   }
 }
