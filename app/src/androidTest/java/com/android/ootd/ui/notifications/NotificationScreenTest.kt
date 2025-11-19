@@ -62,7 +62,7 @@ class NotificationsScreenTest : FirestoreTest() {
                   Notification(uid = "", senderId = "", receiverId = "", type = "", content = ""),
               User()))
     }
-    composeTestRule.setContent { NotificationsScreen(viewModel = mockViewModel) }
+    composeTestRule.setContent { NotificationsScreen(viewModel = mockViewModel, testMode = true) }
 
     composeTestRule.waitForIdle()
   }
