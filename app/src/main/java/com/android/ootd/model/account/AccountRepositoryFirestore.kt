@@ -463,11 +463,12 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
             "AccountRepositoryFirestore",
             "Initialized cache with ${currentList.size} existing items")
       }
-      if (!itemsListCache[currentUserId]!!.contains(itemUid)) {
-        itemsListCache[currentUserId]!!.add(itemUid)
+      val itemsList = itemsListCache[currentUserId]!!
+      if (!itemsList.contains(itemUid)) {
+        itemsList.add(itemUid)
         Log.d(
             "AccountRepositoryFirestore",
-            "Added item to memory cache (total: ${itemsListCache[currentUserId]!!.size})")
+            "Added item to memory cache (total: ${itemsList.size})")
       }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
