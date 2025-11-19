@@ -458,7 +458,7 @@ class EditItemsScreenTest {
         .assertExists()
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
-    composeTestRule.onNodeWithText("Price").assertExists()
+    composeTestRule.onNodeWithText("Item price").assertExists()
     composeTestRule.onNodeWithText("Link").assertExists()
   }
 
