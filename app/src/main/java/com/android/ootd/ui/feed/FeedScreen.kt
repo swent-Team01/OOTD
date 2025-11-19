@@ -11,16 +11,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.utils.LoadingScreen
+import com.android.ootd.utils.NotificationButton
+import com.android.ootd.utils.OOTDTopBar
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -84,30 +84,14 @@ private fun FeedScaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
-        CenterAlignedTopAppBar(
+        OOTDTopBar(
             modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
-            title = {
-              Text(
-                  text = "OOTD",
-                  style =
-                      MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.ExtraBold,
-                          color = MaterialTheme.colorScheme.primary))
-            },
-            actions = {
-              IconButton(
-                  onClick = onNotificationIconClick,
-                  modifier = Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_notification),
-                        contentDescription = "Notifications",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(64.dp))
-                  }
-            },
-            colors =
-                TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background))
+            rightComposable = {
+              NotificationButton(
+                  onNotificationIconClick,
+                  Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
+                  size = 64.dp)
+            })
       },
       floatingActionButton = {
         if (!isLoading && !hasPostedToday) {

@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.theme.Bodoni
@@ -125,31 +126,31 @@ fun ProfilePicture(
     size: Dp,
     profilePicture: String,
     username: String,
-    shape: RoundedCornerShape
+    textStyle: TextStyle = typography.headlineLarge,
+    shape: RoundedCornerShape = CircleShape
 ) {
   val color = colorScheme
   val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
 
-  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    if (profilePicture.isNotBlank()) {
-      AsyncImage(
-          model = profilePicture,
-          contentDescription = "Profile Picture",
-          placeholder = defaultAvatarPainter,
-          error = defaultAvatarPainter,
-          contentScale = ContentScale.Crop,
-          modifier = modifier.size(size).clip(shape))
-    } else {
-      Box(
-          modifier = Modifier.size(size).clip(shape).background(Primary),
-          contentAlignment = Alignment.Center) {
-            Text(
-                text = username.firstOrNull()?.uppercase() ?: "",
-                style = typography.headlineLarge,
-                color = Secondary,
-                modifier = modifier) // Only test tag
-          }
-    }
+  if (profilePicture.isNotBlank()) {
+    AsyncImage(
+        model = profilePicture,
+        contentDescription = "Profile Picture",
+        placeholder = defaultAvatarPainter,
+        error = defaultAvatarPainter,
+        contentScale = ContentScale.Crop,
+        modifier = modifier.size(size).clip(shape))
+  } else {
+    Box(
+        modifier = Modifier.size(size).clip(shape).background(Primary),
+        contentAlignment = Alignment.Center) {
+          Text(
+              text = username.firstOrNull()?.uppercase() ?: "",
+              style = textStyle,
+              fontFamily = Bodoni,
+              color = Secondary,
+              modifier = modifier) // Only test tag
+        }
   }
 }
 
@@ -290,15 +291,16 @@ fun ActionButton(
 @Composable
 fun OOTDTopBar(
     modifier: Modifier = Modifier,
+    textModifier: Modifier = Modifier,
     centerText: String = "OOTD",
     leftComposable: @Composable () -> Unit = {},
     rightComposable: @Composable () -> Unit = {}
 ) {
   CenterAlignedTopAppBar(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = modifier.fillMaxWidth(),
       title = {
         Text(
-            modifier = modifier,
+            modifier = textModifier,
             text = centerText,
             style =
                 typography.displayLarge.copy(
@@ -379,6 +381,21 @@ fun SettingsButton(onEditAccount: () -> Unit, modifier: Modifier = Modifier, siz
   }
 }
 
+@Composable
+fun NotificationButton(
+    onNotificationIconClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp
+) {
+  IconButton(onClick = onNotificationIconClick, modifier = modifier) {
+    Icon(
+        painter = painterResource(id = R.drawable.ic_notification),
+        contentDescription = "Notifications",
+        tint = colorScheme.primary,
+        modifier = Modifier.size(size))
+  }
+}
+
 /**
  * Displays a Google Sign-In button with the Google logo and text.
  *
@@ -447,4 +464,158 @@ fun EmptyStateText(message: String, modifier: Modifier = Modifier) {
       color = Color.Gray,
       textAlign = Center,
       modifier = modifier.fillMaxWidth().padding(32.dp))
+}
+
+/**
+ * Displays a circular icon button with a background and customizable icon.
+ *
+ * Commonly used for floating actions like close, camera switch, or other circular buttons that need
+ * to stand out from the background.
+ *
+ * @param onClick Callback invoked when the button is clicked.
+ * @param icon The icon to display inside the button.
+ * @param contentDescription The content description for accessibility.
+ * @param modifier The modifier to be applied to the button.
+ * @param backgroundColor The background color of the button. Defaults to Primary with 50% alpha.
+ * @param iconTint The tint color of the icon. Defaults to White.
+ * @param iconSize The size of the icon. Defaults to 36.dp.
+ */
+@Composable
+fun CircularIconButton(
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = Primary.copy(alpha = 0.5f),
+    iconTint: Color = Color.White,
+    iconSize: Dp = 36.dp
+) {
+  IconButton(onClick = onClick, modifier = modifier.background(backgroundColor, CircleShape)) {
+    Icon(
+        imageVector = icon,
+        contentDescription = contentDescription,
+        tint = iconTint,
+        modifier = Modifier.size(iconSize))
+  }
+}
+
+/**
+ * Displays a permission request screen with message and action buttons.
+ *
+ * Shows a centered message explaining why permission is needed, with buttons to grant permission or
+ * cancel.
+ *
+ * @param permissionName The name of the permission being requested (e.g., "Camera").
+ * @param message The message explaining why the permission is needed.
+ * @param onRequestPermission Callback invoked when user clicks to grant permission.
+ * @param onCancel Callback invoked when user cancels the permission request.
+ * @param modifier The modifier to be applied to the container.
+ */
+@Composable
+fun PermissionRequestScreen(
+    permissionName: String,
+    message: String,
+    onRequestPermission: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+  Column(
+      modifier = modifier.fillMaxSize().background(colorScheme.background).padding(32.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
+        Text(
+            text = message,
+            color = colorScheme.onBackground,
+            style = typography.bodyLarge,
+            textAlign = Center,
+            modifier = Modifier.padding(16.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onRequestPermission,
+            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+            modifier = Modifier.testTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON)) {
+              Text("Grant Permission !")
+            }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        androidx.compose.material3.TextButton(onClick = onCancel) {
+          Text("Cancel", color = Secondary)
+        }
+      }
+}
+
+@Composable
+fun CenteredLoadingState(message: String? = null, modifier: Modifier = Modifier) {
+  Column(
+      modifier = modifier.fillMaxSize(),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        CircularProgressIndicator(color = colorScheme.primary)
+        if (message != null) {
+          Spacer(modifier = Modifier.height(12.dp))
+          Text(text = message, style = typography.bodyLarge, color = colorScheme.onSurfaceVariant)
+        }
+      }
+}
+
+/**
+ * Displays a centered empty state with a message.
+ *
+ * Used when there's no data to display in a screen or list.
+ *
+ * @param message The message to display.
+ * @param modifier The modifier to be applied to the container.
+ */
+@Composable
+fun CenteredEmptyState(message: String, modifier: Modifier = Modifier) {
+  Column(
+      modifier = modifier.fillMaxSize(),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = message,
+            style = typography.bodyLarge,
+            color = colorScheme.onSurfaceVariant,
+            textAlign = Center,
+            modifier = Modifier.padding(32.dp))
+      }
+}
+
+/**
+ * Displays a profile picture with a circular progress indicator.
+ *
+ * Used for showing user profiles with time-based progress indicators (e.g., story-like features).
+ *
+ * @param profilePictureUrl URL of the profile picture to display.
+ * @param username Username for fallback initial display.
+ * @param progressFraction Progress value between 0 and 1 for the circular indicator.
+ * @param modifier The modifier to be applied to the container.
+ * @param size The size of the profile picture and progress indicator.
+ */
+@Composable
+fun ProfilePictureWithProgress(
+    profilePictureUrl: String,
+    username: String,
+    progressFraction: Float,
+    modifier: Modifier = Modifier,
+    size: Dp = 44.dp
+) {
+  Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    // Circular progress indicator
+    CircularProgressIndicator(
+        progress = { progressFraction.coerceIn(0f, 1f) },
+        color = colorScheme.primary,
+        trackColor = colorScheme.surfaceVariant,
+        strokeWidth = 3.dp,
+        modifier = Modifier.size(size))
+    ProfilePicture(
+        modifier = modifier,
+        size = size,
+        profilePicture = profilePictureUrl,
+        username = username,
+        shape = CircleShape)
+  }
 }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -86,7 +87,7 @@ fun AccountPageContent(
               .padding(horizontal = 22.dp, vertical = 10.dp)) {
         // Setting button
         OOTDTopBar(
-            modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
+            textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
             rightComposable = {
               SettingsButton(
                   onEditAccount = onEditAccount,
@@ -97,15 +98,17 @@ fun AccountPageContent(
         Spacer(modifier = Modifier.height(36.dp))
 
         // Avatar
-        ProfilePicture(
-            modifier =
-                Modifier.testTag(
-                    AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() }
-                        ?: AccountPageTestTags.AVATAR_IMAGE),
-            size = 150.dp,
-            profilePicture = profilePicture,
-            username = uiState.username,
-            shape = CircleShape)
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          ProfilePicture(
+              modifier =
+                  Modifier.testTag(
+                      AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() }
+                          ?: AccountPageTestTags.AVATAR_IMAGE),
+              size = 150.dp,
+              profilePicture = profilePicture,
+              username = uiState.username,
+              shape = CircleShape)
+        }
 
         Spacer(modifier = Modifier.height(18.dp))
         // Username

@@ -1,37 +1,25 @@
 package com.android.ootd.ui.feed
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.Item
-import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.BackArrow
+import com.android.ootd.utils.CenteredEmptyState
+import com.android.ootd.utils.CenteredLoadingState
+import com.android.ootd.utils.OOTDTopBar
 
 object SeeFitScreenTestTags {
   const val SCREEN = "seeFitScreen"
@@ -91,60 +79,26 @@ fun SeeFitScreen(
   Scaffold(
       modifier = Modifier.testTag(SeeFitScreenTestTags.SCREEN),
       topBar = {
-        CenterAlignedTopAppBar(
+        OOTDTopBar(
             modifier = Modifier.testTag(SeeFitScreenTestTags.TOP_APP_BAR),
-            title = {
-              Text(
-                  modifier = Modifier.testTag(SeeFitScreenTestTags.TITLE),
-                  text = "OOTD",
-                  style =
-                      MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
-            },
-            navigationIcon = {
-              IconButton(
-                  onClick = { goBack() },
-                  modifier = Modifier.testTag(SeeFitScreenTestTags.NAVIGATE_TO_FEED_SCREEN)) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Go Back",
-                        tint = MaterialTheme.colorScheme.tertiary)
-                  }
-            },
-            colors =
-                TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = Primary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-        )
+            textModifier = Modifier.testTag(SeeFitScreenTestTags.TITLE),
+            leftComposable = {
+              BackArrow(
+                  onBackClick = goBack,
+                  modifier = Modifier.testTag(SeeFitScreenTestTags.NAVIGATE_TO_FEED_SCREEN))
+            })
       },
   ) { innerPadding ->
     when {
       uiState.isLoading -> {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally) {
-              CircularProgressIndicator(color = Primary)
-              Spacer(modifier = Modifier.height(12.dp))
-              Text(
-                  text = "Loading items...",
-                  style = MaterialTheme.typography.bodyLarge,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        CenteredLoadingState(
+            message = "Loading items...", modifier = Modifier.fillMaxSize().padding(innerPadding))
       }
 
       items.isEmpty() -> {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally) {
-              Text(
-                  text = "No items associated with this post.",
-                  style = MaterialTheme.typography.bodyLarge,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        CenteredEmptyState(
+            message = "No items associated with this post.",
+            modifier = Modifier.fillMaxSize().padding(innerPadding))
       }
 
       else -> {
