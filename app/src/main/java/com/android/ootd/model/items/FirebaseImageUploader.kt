@@ -39,7 +39,7 @@ object FirebaseImageUploader {
    * @return An [ImageData] object containing the image ID and download URL (or local URI if
    *   offline).
    */
-  suspend fun uploadImage(localUri: Uri, fileName: String): ImageData {
+  suspend fun uploadImage(imageData: ByteArray, fileName: String, localUri: Uri): ImageData {
     val ref = storage ?: return fallbackImageData(localUri, fileName)
 
     return try {
@@ -47,7 +47,7 @@ object FirebaseImageUploader {
       kotlinx.coroutines.withTimeout(UPLOAD_TIMEOUT_MS) {
         val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
         val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
-        imageRef.putFile(localUri).await()
+        imageRef.putBytes(imageData).await()
         val downloadUrl = imageRef.downloadUrl.await()
         ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
       }

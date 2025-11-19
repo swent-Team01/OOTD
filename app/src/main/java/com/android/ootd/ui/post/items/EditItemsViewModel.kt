@@ -1,11 +1,13 @@
 package com.android.ootd.ui.post.items
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -58,7 +60,8 @@ data class EditItemsUIState(
  */
 open class EditItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
-    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
+    private val imageCompressor: ImageCompressor = ImageCompressor()
 ) : BaseItemViewModel<EditItemsUIState>() {
 
   companion object {
@@ -130,7 +133,7 @@ open class EditItemsViewModel(
     }
   }
 
-  fun onSaveItemClick() {
+  fun onSaveItemClick(context: Context) {
     val state = _uiState.value
 
     if (state.link.isNotEmpty() && !isValidUrl(state.link)) {
@@ -146,9 +149,16 @@ open class EditItemsViewModel(
       _uiState.value = _uiState.value.copy(isLoading = true)
       try {
         val finalImage =
-            if (state.localPhotoUri != null)
-                FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
-            else state.image
+            if (state.localPhotoUri != null) {
+              val compressedImage =
+                  imageCompressor.compressImage(state.localPhotoUri, 200 * 1024, context)
+              if (compressedImage == null) {
+                setErrorMsg("Failed to compress image.")
+                _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
+                return@launch
+              }
+              FirebaseImageUploader.uploadImage(compressedImage, state.itemId, state.localPhotoUri)
+            } else state.image
 
         if (finalImage.imageUrl.isEmpty()) {
           setErrorMsg("Please select a photo.")

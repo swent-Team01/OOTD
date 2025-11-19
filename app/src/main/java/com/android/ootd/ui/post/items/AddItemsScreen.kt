@@ -155,7 +155,7 @@ fun AddItemsScreen(
 
                 // image pick
                 showDialog = showDialog,
-                onShowDialogChange = { showDialog = it },
+                onShowDialogChange = { newValue -> showDialog = newValue },
                 onTakePhoto = {
                   showDialog = false
                   showCamera = true
@@ -183,7 +183,7 @@ fun AddItemsScreen(
                 brand = itemsUIState.brand,
                 onBrandChange = addItemsViewModel::setBrand,
                 price = itemsUIState.price,
-                onPriceChange = addItemsViewModel::setPrice,
+                onPriceChange = { addItemsViewModel.setPrice(it) },
                 link = itemsUIState.link,
                 onLinkChange = addItemsViewModel::setLink,
                 material = itemsUIState.materialText,
@@ -191,7 +191,7 @@ fun AddItemsScreen(
 
                 // add
                 isAddEnabled = overridePhoto || itemsUIState.isAddingValid,
-                onAddClick = addItemsViewModel::onAddItemClick,
+                onAddClick = { addItemsViewModel.onAddItemClick(context = context) },
             )
 
             // top image preview overlays the list

@@ -41,7 +41,6 @@ class EditItemsScreenTest {
 
   private lateinit var viewModel: EditItemsViewModel
   private lateinit var repository: ItemsRepositoryLocal
-
   private val testItem =
       Item(
           itemUuid = "test-item-1",
@@ -265,6 +264,8 @@ class EditItemsScreenTest {
   @Test
   fun overlay_shows_on_save_and_hides_after() = runTest {
     composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+
     composeTestRule.runOnIdle {
       viewModel.loadItem(testItem)
       viewModel.setBrand("Adidas")
@@ -276,7 +277,7 @@ class EditItemsScreenTest {
     composeTestRule.onAllNodesWithText("Uploading item...").assertCountEquals(0)
 
     // Start save
-    composeTestRule.runOnIdle { viewModel.onSaveItemClick() }
+    composeTestRule.runOnIdle { viewModel.onSaveItemClick(context) }
     composeTestRule.waitForIdle()
 
     // Either loading or already succeeded (fast path)

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -42,6 +43,8 @@ class EditItemsViewModelTest {
   private lateinit var mockRepository: ItemsRepository
   private lateinit var mockAccountRepository: AccountRepository
   private val testDispatcher = StandardTestDispatcher()
+
+  private val context: Context = ApplicationProvider.getApplicationContext()
 
   @Before
   fun setup() {
@@ -304,7 +307,7 @@ class EditItemsViewModelTest {
 
   @Test
   fun `onSaveItemClick sets error when validation fails`() = runTest {
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
 
     advanceUntilIdle()
 
@@ -322,7 +325,7 @@ class EditItemsViewModelTest {
     viewModel.setCategory("Clothing")
     viewModel.setLink("invalid-url")
 
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
 
     advanceUntilIdle()
 
@@ -351,7 +354,7 @@ class EditItemsViewModelTest {
             link = "https://example.com",
             ownerId = "ownerId"))
 
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     advanceUntilIdle()
 
     coVerify { mockRepository.editItem("test-id", any()) }
@@ -376,7 +379,7 @@ class EditItemsViewModelTest {
             link = "",
             ownerId = "ownerId"))
 
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     advanceUntilIdle()
 
     coVerify { mockRepository.editItem("test-id", any()) }
@@ -401,7 +404,7 @@ class EditItemsViewModelTest {
             link = "https://example.com",
             ownerId = "ownerId"))
 
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
 
     advanceUntilIdle()
 
@@ -543,8 +546,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `initTypeSuggestions loads suggestions from context`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-
     viewModel.initTypeSuggestions(context)
 
     // After initialization, suggestions should be available
@@ -557,7 +558,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions filters by input`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Clothing")
@@ -569,7 +569,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions returns all suggestions when input is blank`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Clothing")
@@ -581,7 +580,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions works with valid category - Clothing`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Clothing")
@@ -593,7 +591,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions works with valid category - Shoes`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Shoes")
@@ -605,7 +602,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions works with valid category - Bags`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Bags")
@@ -617,7 +613,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions works with valid category - Accessories`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Accessories")
@@ -629,7 +624,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions returns empty list for invalid category`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("InvalidCategory")
@@ -641,7 +635,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateTypeSuggestions filters case insensitive`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     viewModel.setCategory("Clothing")
@@ -653,7 +646,6 @@ class EditItemsViewModelTest {
 
   @Test
   fun `updateCategorySuggestions does not modify state in EditItemsViewModel`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
     viewModel.initTypeSuggestions(context)
 
     val initialState = viewModel.uiState.value
@@ -670,8 +662,13 @@ class EditItemsViewModelTest {
     val mockUri = mockk<Uri>()
     every { mockUri.toString() } returns "content://test"
 
+    val mockImageCompressor = mockk<ImageCompressor>()
+    coEvery { mockImageCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
+    viewModel = EditItemsViewModel(mockRepository, mockAccountRepository, mockImageCompressor)
+
     // Mock image upload to return empty URL (failure case)
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("test-id", "")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("test-id", "")
 
     viewModel.loadItem(
         Item(
@@ -687,7 +684,7 @@ class EditItemsViewModelTest {
             ownerId = "ownerId"))
 
     viewModel.setPhoto(mockUri)
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
 
     advanceUntilIdle()
 

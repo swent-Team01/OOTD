@@ -1,8 +1,10 @@
 package com.android.ootd.ui.post
 
+import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.ItemsRepository
@@ -43,12 +45,23 @@ class AddItemsViewModelTest {
   private lateinit var mockAccountRepository: AccountRepository
   private val testDispatcher = StandardTestDispatcher()
 
+  private lateinit var context: Context
+  private lateinit var mockCompressor: ImageCompressor
+
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
     mockRepository = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
-    viewModel = AddItemsViewModel(mockRepository, mockAccountRepository)
+    mockCompressor = mockk(relaxed = true)
+    context = ApplicationProvider.getApplicationContext()
+    // Recreate ViewModel with mocked compressor
+    viewModel =
+        AddItemsViewModel(
+            repository = mockRepository,
+            accountRepository = mockAccountRepository,
+            overridePhoto = false,
+            imageCompressor = mockCompressor)
   }
 
   @After
@@ -116,14 +129,14 @@ class AddItemsViewModelTest {
   @Test
   fun `onAddItemClick with overridePhoto succeeds`() = runTest {
     val vm = AddItemsViewModel(mockRepository, mockAccountRepository, true)
-    vm.onAddItemClick()
+    vm.onAddItemClick(context)
     advanceUntilIdle()
     assertTrue(vm.addOnSuccess.value)
   }
 
   @Test
   fun `onAddItemClick without photo fails`() = runTest {
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
     assertFalse(viewModel.addOnSuccess.value)
     assertNotNull(viewModel.uiState.value.errorMessage)
@@ -131,6 +144,7 @@ class AddItemsViewModelTest {
 
   @Test
   fun `onAddItemClick with valid input succeeds`() = runTest {
+    // Mock FirebaseAuth so FirebaseApp isn't required
     mockkStatic(FirebaseAuth::class)
     val mockAuth = mockk<FirebaseAuth>()
     val mockUser = mockk<FirebaseUser>()
@@ -138,23 +152,25 @@ class AddItemsViewModelTest {
     every { mockAuth.currentUser } returns mockUser
     every { mockUser.uid } returns "uid"
 
+    // Mock compressor and uploader
+    coEvery { mockCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
     mockkObject(FirebaseImageUploader)
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
 
+    val mockUri = mockk<Uri>()
     coEvery { mockRepository.getNewItemId() } returns "id"
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
     coEvery { mockRepository.addItem(any()) } returns Unit
     coEvery { mockAccountRepository.addItem(any()) } returns true
 
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     assertTrue(viewModel.addOnSuccess.value)
-    coVerify { mockRepository.addItem(any()) }
+    coVerify(exactly = 1) { mockRepository.addItem(any()) }
   }
 
   @Test
@@ -171,12 +187,12 @@ class AddItemsViewModelTest {
     every { mockUri.toString() } returns "content://test"
 
     coEvery { mockRepository.getNewItemId() } returns "id"
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("", "")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns ImageData("", "")
 
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     assertFalse(viewModel.addOnSuccess.value)
@@ -192,17 +208,19 @@ class AddItemsViewModelTest {
     every { mockUser.uid } returns "uid"
 
     mockkObject(FirebaseImageUploader)
+    coEvery { mockCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
+
     val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
 
     coEvery { mockRepository.getNewItemId() } returns "id"
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
     coEvery { mockRepository.addItem(any()) } throws Exception("error")
 
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     assertTrue(viewModel.addOnSuccess.value)
@@ -218,11 +236,13 @@ class AddItemsViewModelTest {
     every { mockUser.uid } returns "uid"
 
     mockkObject(FirebaseImageUploader)
+    coEvery { mockCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
+
     val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
 
     coEvery { mockRepository.getNewItemId() } returns "id"
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
     coEvery { mockRepository.addItem(any()) } returns Unit
     coEvery { mockAccountRepository.addItem(any()) } returns true
 
@@ -230,7 +250,7 @@ class AddItemsViewModelTest {
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
     viewModel.setPrice("invalid")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     assertTrue(viewModel.addOnSuccess.value)
@@ -246,18 +266,21 @@ class AddItemsViewModelTest {
     every { mockUser.uid } returns "uid"
 
     mockkObject(FirebaseImageUploader)
+    coEvery { mockCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
+
     val mockUri = mockk<Uri>()
     every { mockUri.toString() } returns "content://test"
 
     coEvery { mockRepository.getNewItemId() } returns "id"
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
     coEvery { mockRepository.addItem(any()) } returns Unit
     coEvery { mockAccountRepository.addItem(any()) } returns true
 
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     assertTrue(viewModel.addOnSuccess.value)
@@ -278,16 +301,21 @@ class AddItemsViewModelTest {
     every { mockAuth.currentUser } returns mockUser
     every { mockUser.uid } returns "uid"
     mockkObject(FirebaseImageUploader)
+
+    coEvery { mockCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
+
     val mockUri = mockk<Uri>()
     coEvery { mockRepository.getNewItemId() } returns "id"
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
     coEvery { mockRepository.addItem(any()) } throws RuntimeException("Critical error")
     coEvery { mockAccountRepository.addItem(any()) } throws RuntimeException("Critical error")
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
+
     assertTrue(viewModel.addOnSuccess.value)
   }
 }
