@@ -80,7 +80,7 @@ object HttpClientProvider {
   var client: OkHttpClient = OkHttpClient()
 }
 
-private const val OOTD_CHANNEL_ID = "ootd_channel"
+const val OOTD_CHANNEL_ID = "ootd_channel"
 
 /** Function to create the notification channel for push notifications */
 fun createNotificationChannel(context: Context) {
@@ -205,7 +205,7 @@ fun OOTDApp(
 
   LaunchedEffect(Unit) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: ""
-    if (currentUserId.isNotEmpty() && isNotificationsPermissionGranted) {
+    if ((testMode || currentUserId.isNotEmpty()) && isNotificationsPermissionGranted) {
       createNotificationChannel(context)
       observeUnpushedNotifications(currentUserId)
     }
