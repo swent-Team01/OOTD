@@ -129,4 +129,46 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
     assertEquals(postId, like.postId)
     assertEquals(userA, like.likerUserId)
   }
+
+  @Test
+  fun isPostLikedByUser_returnsFalseOnError() = runTest {
+    FirebaseEmulator.auth.signInAnonymously().await()
+    val userA = FirebaseEmulator.auth.currentUser!!.uid
+
+    // invalid postId to trigger Firestore read error
+    val result = repo.isPostLikedByUser("nonexistentPost", userA)
+
+    assertFalse(result) // error branch
+  }
+
+  @Test
+  fun likePost_throwsOnFirestoreFailure() = runTest {
+    FirebaseEmulator.auth.signInAnonymously().await()
+    val uid = FirebaseEmulator.auth.currentUser!!.uid
+
+    val invalidLike =
+        Like(
+            postId = "bad/id", // Firestore does not allow ids with '/'
+            likerUserId = uid,
+            timestamp = System.currentTimeMillis())
+
+    assertThrows(Exception::class.java) { runTest { repo.likePost(invalidLike) } }
+  }
+
+  @Test
+  fun unlikePost_throwsOnFirestoreFailure() = runTest {
+    FirebaseEmulator.auth.signInAnonymously().await()
+    val uid = FirebaseEmulator.auth.currentUser!!.uid
+
+    assertThrows(Exception::class.java) { runTest { repo.unlikePost("bad/id", uid) } }
+  }
+
+  @Test
+  fun getLikesForPost_returnsEmptyListOnError() = runTest {
+    FirebaseEmulator.auth.signInAnonymously().await()
+
+    val likes = repo.getLikesForPost("bad/id")
+
+    assertTrue(likes.isEmpty())
+  }
 }
