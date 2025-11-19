@@ -48,7 +48,7 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
 
     val postId = createPost(user)
 
-    val like = Like(postId = postId, likerUserId = user, timestamp = System.currentTimeMillis())
+    val like = Like(postId = postId, postLikerUserId = user, timestamp = System.currentTimeMillis())
 
     repo.likePost(like)
 
@@ -121,14 +121,14 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
     val postId = createPost(userA)
 
     repo.likePost(
-        Like(postId = postId, likerUserId = userA, timestamp = System.currentTimeMillis()))
+        Like(postId = postId, postLikerUserId = userA, timestamp = System.currentTimeMillis()))
 
     val likes = repo.getLikesForPost(postId)
 
     assertEquals(1, likes.size)
     val like = likes.first()
     assertEquals(postId, like.postId)
-    assertEquals(userA, like.likerUserId)
+    assertEquals(userA, like.postLikerUserId)
   }
 
   @Test
@@ -139,7 +139,7 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
     // invalid postId to trigger Firestore read error
     val result = repo.isPostLikedByUser("nonexistentPost", userA)
 
-    assertFalse(result) // error branch
+    assertFalse(result)
   }
 
   @Test
@@ -150,7 +150,7 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
     val invalidLike =
         Like(
             postId = "bad/id", // Firestore does not allow ids with '/'
-            likerUserId = uid,
+            postLikerUserId = uid,
             timestamp = System.currentTimeMillis())
 
     assertThrows(Exception::class.java) { runTest { repo.likePost(invalidLike) } }
