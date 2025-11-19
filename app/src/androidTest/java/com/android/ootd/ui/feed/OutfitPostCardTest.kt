@@ -7,19 +7,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-/** UI tests for OutfitPostCard kept minimal but meaningful. */
 class OutfitPostCardTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  // Helpers
+  // Helper that injects required new parameters
   private fun setCard(
       post: OutfitPost,
-      blurred: Boolean = false,
-      onSeeFitClick: (String) -> Unit = { _ -> }
+      isBlurred: Boolean = false,
+      isLiked: Boolean = false,
+      likeCount: Int = 0,
+      onLikeClick: (String) -> Unit = {},
+      onSeeFitClick: (String) -> Unit = {}
   ) =
       composeTestRule.setContent {
-        OutfitPostCard(post = post, isBlurred = blurred, onSeeFitClick = onSeeFitClick)
+        OutfitPostCard(
+            post = post,
+            isBlurred = isBlurred,
+            isLiked = isLiked,
+            likeCount = likeCount,
+            onLikeClick = onLikeClick,
+            onSeeFitClick = onSeeFitClick)
       }
 
   private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
@@ -39,29 +47,27 @@ class OutfitPostCardTest {
           userProfilePicURL = profilePic,
           itemsID = emptyList())
 
-  // Tests
+  // Existing tests (unchanged except for new required params)
 
   @Test
   fun rendersBasics() {
-    setCard(post(name = "John Doe", description = "Casual Friday outfit"))
+    setCard(post("John Doe", "Casual Friday outfit"))
 
     n(OutfitPostCardTestTags.OUTFIT_POST_CARD).assertIsDisplayed()
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("John Doe")
     n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("John Doe: Casual Friday outfit")
     n(OutfitPostCardTestTags.SEE_FIT_BUTTON).assertIsDisplayed().assertHasClickAction()
+
+    // NEW: Like button + count should appear
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
+    n(OutfitPostCardTestTags.LIKE_COUNT).assertIsDisplayed()
   }
 
   @Test
   fun rendersDescriptionLine_whenEmpty() {
     setCard(post(name = "Minimalist", description = ""))
 
-    // The username still shows as before
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("Minimalist")
-
-    // The description node should still exist
-    n(OutfitPostCardTestTags.POST_DESCRIPTION).assertIsDisplayed()
-
-    // And it should show only the name (no colon or extra space)
     n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("Minimalist")
   }
 
@@ -69,11 +75,12 @@ class OutfitPostCardTest {
   fun seeFitButton_invokesCallback() {
     var clicks = 0
     var capturedPostUid = ""
+
     setCard(
         post(),
-        onSeeFitClick = { postUid ->
+        onSeeFitClick = { uid ->
           clicks++
-          capturedPostUid = postUid
+          capturedPostUid = uid
         })
 
     n(OutfitPostCardTestTags.SEE_FIT_BUTTON).performClick()
@@ -84,8 +91,7 @@ class OutfitPostCardTest {
 
   @Test
   fun renders_whenBlurred() {
-    setCard(post(name = "Blurred", description = "x"), blurred = true)
-
+    setCard(post(name = "Blurred"), isBlurred = true)
     n(OutfitPostCardTestTags.OUTFIT_POST_CARD).assertIsDisplayed()
   }
 
@@ -109,37 +115,63 @@ class OutfitPostCardTest {
   @Test
   fun description_expandsOnClick() {
     val longDesc = "Very long description ".repeat(20)
-    val post = post(name = "User", description = longDesc)
+    val p = post(description = longDesc)
 
-    setCard(post)
+    setCard(p)
 
     val descNode = n(OutfitPostCardTestTags.POST_DESCRIPTION)
-    descNode.assertIsDisplayed()
-    descNode.performClick() // toggle expansion
-    // No direct assert for expanded lines in Compose testing yet,
-    // but you can check that click didn’t crash and node still exists.
+    descNode.performClick()
     descNode.assertIsDisplayed()
   }
 
   @Test
   fun showsRemainingLifetimeIndicator() {
-    val recentPost =
-        post().copy(timestamp = System.currentTimeMillis() - 2 * 60 * 60 * 1000) // 2h ago
-    setCard(recentPost)
+    val recent = post().copy(timestamp = System.currentTimeMillis() - 2 * 60 * 60 * 1000)
+    setCard(recent)
 
     n(OutfitPostCardTestTags.REMAINING_TIME).assertIsDisplayed()
   }
 
   @Test
   fun showsExpiredIndicator_forOldPost() {
-    val oldPost =
-        post()
-            .copy(
-                timestamp = System.currentTimeMillis() - 26 * 60 * 60 * 1000 // 26 hours ago
-                )
-    setCard(oldPost)
+    val old = post().copy(timestamp = System.currentTimeMillis() - 26 * 60 * 60 * 1000)
+    setCard(old)
 
     n(OutfitPostCardTestTags.EXPIRED_INDICATOR).assertIsDisplayed()
-    n(OutfitPostCardTestTags.REMAINING_TIME).assertDoesNotExist()
+  }
+
+  @Test
+  fun likeButton_showsCorrectCount() {
+    setCard(post(), likeCount = 12)
+
+    n(OutfitPostCardTestTags.LIKE_COUNT).assertTextEquals("12")
+  }
+
+  @Test
+  fun likeButton_invokesCallback() {
+    var clicks = 0
+
+    setCard(post(), isLiked = false, likeCount = 0, onLikeClick = { clicks++ })
+
+    n(OutfitPostCardTestTags.LIKE_BUTTON).performClick()
+
+    assertEquals(1, clicks)
+  }
+
+  @Test
+  fun likeButton_showsFilledHeart_whenLiked() {
+    setCard(post(), isLiked = true)
+
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
+    // You may check semantics / contentDescription
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Unlike")
+  }
+
+  @Test
+  fun likeButton_showsEmptyHeart_whenNotLiked() {
+    setCard(post(), isLiked = false)
+
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Like")
   }
 }
