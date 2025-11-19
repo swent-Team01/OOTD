@@ -140,7 +140,7 @@ fun EditItemsScreen(
                   Modifier.fillMaxSize()
                       .padding(innerPadding)
                       .nestedScroll(nestedScrollConnection)) {
-                _root_ide_package_.com.android.ootd.ui.post.items.FieldsList(
+                FieldsList(
                     modifier =
                         Modifier.fillMaxWidth()
                             .padding(16.dp)

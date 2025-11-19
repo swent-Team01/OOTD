@@ -183,4 +183,44 @@ class InventoryViewModelTest {
 
     Assert.assertTrue(viewModel.uiState.value.errorMessage?.contains("not logged in") == true)
   }
+
+  @Test
+  fun `loadInventory uses empty list when getItemsList times out`() = runTest {
+    // Simulate timeout by making getItemsList suspend indefinitely
+    coEvery { accountRepository.getItemsList(testUserId) } coAnswers
+        {
+          kotlinx.coroutines.delay(5000) // Longer than the 2s timeout
+          testItemIds
+        }
+    coEvery { itemsRepository.getItemsByIds(emptyList()) } returns emptyList()
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    Assert.assertFalse(viewModel.uiState.value.isLoading)
+    Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
+    Assert.assertNull(viewModel.uiState.value.errorMessage)
+    coVerify { accountRepository.getItemsList(testUserId) }
+    coVerify { itemsRepository.getItemsByIds(emptyList()) }
+  }
+
+  @Test
+  fun `loadInventory uses empty list when getItemsByIds times out`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    // Simulate timeout by making getItemsByIds suspend indefinitely
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } coAnswers
+        {
+          kotlinx.coroutines.delay(5000) // Longer than the 2s timeout
+          testItems
+        }
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    Assert.assertFalse(viewModel.uiState.value.isLoading)
+    Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
+    Assert.assertNull(viewModel.uiState.value.errorMessage)
+    coVerify { accountRepository.getItemsList(testUserId) }
+    coVerify { itemsRepository.getItemsByIds(testItemIds) }
+  }
 }

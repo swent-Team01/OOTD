@@ -477,6 +477,7 @@ class EditItemsViewModelTest {
 
   @Test
   fun `onSaveItemClick handles exception`() = runTest {
+  fun `onSaveItemClick succeeds even when repository throws (offline optimistic)`() = runTest {
     coEvery { mockRepository.editItem(any(), any()) } throws Exception("Update failed")
 
     viewModel.loadItem(
@@ -497,7 +498,9 @@ class EditItemsViewModelTest {
     advanceUntilIdle()
 
     val state = viewModel.uiState.value
-    assertEquals("Failed to update item: Update failed", state.errorMessage)
+    // Offline optimistic pattern: error swallowed, success reported
+    assertNull(state.errorMessage)
+    assertTrue(state.isSaveSuccessful)
   }
 
   @Test
@@ -541,7 +544,7 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `deleteItem handles exception`() = runTest {
+  fun `deleteItem optimistic success even when repository throws`() = runTest {
     coEvery { mockAccountRepository.removeItem(any()) } returns true
     coEvery { mockRepository.deleteItem(any()) } throws Exception("Delete failed")
 
@@ -562,13 +565,13 @@ class EditItemsViewModelTest {
     advanceUntilIdle()
 
     val state = viewModel.uiState.value
-    assertEquals("Failed to delete item: Delete failed", state.errorMessage)
-    assertFalse(state.isDeleteSuccessful)
-    assertNotNull(state.errorMessage)
+    // Optimistic delete reports success
+    assertNull(state.errorMessage)
+    assertTrue(state.isDeleteSuccessful)
   }
 
   @Test
-  fun `deleteItem fails when removing from inventory fails`() = runTest {
+  fun `deleteItem still proceeds when inventory removal fails (optimistic)`() = runTest {
     coEvery { mockAccountRepository.removeItem(any()) } returns false
 
     viewModel.loadItem(
@@ -588,11 +591,11 @@ class EditItemsViewModelTest {
 
     advanceUntilIdle()
 
-    // Verify the operation failed and didn't proceed to delete the item
+    // Optimistic pattern: still attempts repository deletion and reports success
     val state = viewModel.uiState.value
-    assertEquals("Failed to remove item from inventory. Please try again.", state.errorMessage)
-    assertFalse(state.isDeleteSuccessful)
-    coVerify(exactly = 0) { mockRepository.deleteItem(any()) }
+    assertNull(state.errorMessage)
+    assertTrue(state.isDeleteSuccessful)
+    coVerify { mockRepository.deleteItem(any()) }
   }
 
   @Test

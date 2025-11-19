@@ -14,11 +14,14 @@ import kotlinx.coroutines.tasks.await
  */
 object FirebaseImageUploader {
 
+  private const val TAG = "FirebaseImageUploader"
+  private const val UPLOAD_TIMEOUT_MS = 1_000L
+
   private val storage by lazy {
     try {
       Firebase.storage.reference
     } catch (_: IllegalStateException) {
-      Log.w("FirebaseImageUploader", "Firebase not initialized, using dummy reference.")
+      Log.w(TAG, "Firebase not initialized, using dummy reference.")
       null
     }
   }
@@ -26,21 +29,43 @@ object FirebaseImageUploader {
   /**
    * Uploads an image to Firebase Storage and returns the corresponding [ImageData].
    *
+   * **Offline Mode Handling:**
+   * - When offline, returns the local URI as imageUrl so the item can be created
+   * - The image is stored locally on the device
+   * - When back online, the image upload should be retried (future enhancement)
+   *
    * @param localUri The local URI of the image to upload.
    * @param fileName The desired file name (without extension) for the uploaded image.
-   * @return An [ImageData] object containing the image ID and download URL.
+   * @return An [ImageData] object containing the image ID and download URL (or local URI if
+   *   offline).
    */
   suspend fun uploadImage(localUri: Uri, fileName: String): ImageData {
-    val ref = storage ?: return ImageData("", "")
+    val ref = storage ?: return fallbackImageData(localUri, fileName)
 
     return try {
-      val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
-      val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
-      imageRef.putFile(localUri).await()
-      val downloadUrl = imageRef.downloadUrl.await()
-      ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
+      // Add timeout to prevent indefinite hanging when offline
+      kotlinx.coroutines.withTimeout(UPLOAD_TIMEOUT_MS) {
+        val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
+        val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
+        imageRef.putFile(localUri).await()
+        val downloadUrl = imageRef.downloadUrl.await()
+        ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
+      }
     } catch (e: Exception) {
-      Log.e("FirebaseImageUploader", "Image upload failed", e)
+      Log.w(TAG, "Image upload failed (likely offline or invalid): ${e.message}")
+      fallbackImageData(localUri, fileName)
+    }
+  }
+
+  private fun fallbackImageData(localUri: Uri, fileName: String): ImageData {
+    // If local file exists, keep offline URI; else return empty to signal invalid selection
+    return try {
+      val isFile = localUri.scheme == "file"
+      val path = localUri.path
+      val fileExists = isFile && path != null && java.io.File(path).exists()
+      if (fileExists) ImageData(imageId = fileName, imageUrl = localUri.toString())
+      else ImageData("", "")
+    } catch (_: Exception) {
       ImageData("", "")
     }
   }
@@ -57,10 +82,10 @@ object FirebaseImageUploader {
       // If the image does not exist, consider it a successful deletion because if the object is
       // already missing, that post-condition is still true
       if (e is StorageException && e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) {
-        Log.w("FirebaseImageUploader", "Image not found for deletion: $imageId")
+        Log.w(TAG, "Image not found for deletion: $imageId")
         true
       } else {
-        Log.e("FirebaseImageUploader", "Image deletion failed", e)
+        Log.e(TAG, "Image deletion failed", e)
         false
       }
     }
