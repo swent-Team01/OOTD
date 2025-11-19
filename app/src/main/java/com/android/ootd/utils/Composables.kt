@@ -208,7 +208,7 @@ fun DisplayUserPosts(
  * @param contentDescription The content description for the hanger icon.
  */
 @Composable
-fun LoadingScreen(modifier: Modifier = Modifier, contentDescription: String) {
+fun LoadingScreen(modifier: Modifier = Modifier, contentDescription: String? = null) {
   Box(
       modifier = modifier.fillMaxSize().background(colorScheme.background.copy(alpha = 0.95f)),
       contentAlignment = Alignment.Center) {
