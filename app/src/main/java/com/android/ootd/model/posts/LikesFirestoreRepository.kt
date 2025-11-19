@@ -2,10 +2,10 @@ package com.android.ootd.model.posts
 
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 const val LIKE_COLLECTION_PATH = "likes"
+private const val TAG_LIKE_REPOSITORY = "LikeRepository"
 
 class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesRepository {
 
@@ -14,16 +14,16 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
       db.collection(LIKE_COLLECTION_PATH)
           .document(like.postId)
           .collection("users")
-          .document(like.likerUserId)
+          .document(like.postLikerUserId)
           .set(
               mapOf(
                   "postId" to like.postId,
-                  "likerUserId" to like.likerUserId,
+                  "likerUserId" to like.postLikerUserId,
                   "timestamp" to like.timestamp),
-              SetOptions.merge())
+          )
           .await()
     } catch (e: Exception) {
-      Log.e("LikeRepository", "Failed to add like for post ${like.postId}", e)
+      Log.e(TAG_LIKE_REPOSITORY, "Failed to add like for post ${like.postId}", e)
       throw e
     }
   }
@@ -37,7 +37,7 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
           .delete()
           .await()
     } catch (e: Exception) {
-      Log.e("LikeRepository", "Failed to remove like for post $postId", e)
+      Log.e(TAG_LIKE_REPOSITORY, "Failed to remove like for post $postId", e)
       throw e
     }
   }
@@ -54,7 +54,7 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
 
       snap.exists()
     } catch (e: Exception) {
-      Log.w("LikeRepository", "Failed to check like state for $postId", e)
+      Log.e(TAG_LIKE_REPOSITORY, "Failed to check like state for $postId", e)
       false
     }
   }
@@ -68,15 +68,15 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
         try {
           Like(
               postId = postId,
-              likerUserId = doc.getString("likerUserId") ?: return@mapNotNull null,
+              postLikerUserId = doc.getString("likerUserId") ?: return@mapNotNull null,
               timestamp = doc.getLong("timestamp") ?: 0L)
         } catch (e: Exception) {
-          Log.e("LikeRepository", "Invalid like document ${doc.id}", e)
+          Log.e(TAG_LIKE_REPOSITORY, "Invalid like document ${doc.id}", e)
           null
         }
       }
     } catch (e: Exception) {
-      Log.e("LikeRepository", "Failed to fetch likes for $postId", e)
+      Log.e(TAG_LIKE_REPOSITORY, "Failed to fetch likes for $postId", e)
       emptyList()
     }
   }
@@ -85,7 +85,7 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
     return try {
       db.collection(LIKE_COLLECTION_PATH).document(postId).collection("users").get().await().size()
     } catch (e: Exception) {
-      Log.w("LikeRepository", "Failed to retrieve like count for $postId", e)
+      Log.e(TAG_LIKE_REPOSITORY, "Failed to retrieve like count for $postId", e)
       0
     }
   }
