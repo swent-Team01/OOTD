@@ -24,7 +24,7 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
           .await()
     } catch (e: Exception) {
       Log.e("LikeRepository", "Failed to add like for post ${like.postId}", e)
-      throw e // same as PostRepository: rethrow critical errors
+      throw e
     }
   }
 
@@ -55,7 +55,7 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
       snap.exists()
     } catch (e: Exception) {
       Log.w("LikeRepository", "Failed to check like state for $postId", e)
-      false // safe fallback
+      false
     }
   }
 
