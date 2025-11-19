@@ -86,7 +86,7 @@ private const val OOTD_CHANNEL_ID = "ootd_channel"
 fun createNotificationChannel(context: Context) {
   val name = "OOTD Notifications"
   val descriptionText = "Notifications for OOTD app"
-  val importance = NotificationManager.IMPORTANCE_HIGH
+  val importance = NotificationManager.IMPORTANCE_DEFAULT
   val channel =
       NotificationChannel(OOTD_CHANNEL_ID, name, importance).apply { description = descriptionText }
 
@@ -199,14 +199,14 @@ fun OOTDApp(
     listenerRegistration =
         NotificationRepositoryProvider.repository.listenForUnpushedNotifications(
             receiverId = userId) { notification ->
-              sendLocalNotification(notification) // YOU implement this
+              sendLocalNotification(notification)
             }
   }
 
   LaunchedEffect(Unit) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: ""
     if (currentUserId.isNotEmpty() && isNotificationsPermissionGranted) {
-      createNotificationChannel(context) // Only create if the notifications are permitted
+      createNotificationChannel(context)
       observeUnpushedNotifications(currentUserId)
     }
   }

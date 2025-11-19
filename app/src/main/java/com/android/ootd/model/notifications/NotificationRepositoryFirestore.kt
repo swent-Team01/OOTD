@@ -103,7 +103,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
         .whereEqualTo("wasPushed", false)
         .addSnapshotListener { snapshot, error ->
           if (error != null) {
-            Log.e("NotificationRepo", "Listener error: ${error.message}")
+            Log.e("TAG = NotificationRepo", "Listener error: ${error.message}")
             return@addSnapshotListener
           }
 
