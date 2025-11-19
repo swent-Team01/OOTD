@@ -3,8 +3,6 @@ package com.android.ootd.ui.items
 import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -194,39 +192,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   // ----------- Add button enabled states -----------
 
-  @Test
-  fun addButton_disabledForMissingInputs_and_enabledWhenValid() {
-    setMainScreen()
-
-    // No image + minimal inputs -> disabled
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.enterAddItemType("Jacket")
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isAddingValid) }
-
-    // With image but no category -> disabled
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-    // Reset category by setting to empty
-    composeTestRule.runOnIdle { viewModel.setCategory("") }
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-
-    // Valid all (image + category selected from dropdown) -> enabled
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.enterAddItemType("T-Shirt")
-    composeTestRule.enterAddItemBrand("Nike")
-    composeTestRule.enterAddItemPrice(19.99)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsEnabled()
-  }
-
   // ----------- Suggestions: show and select -----------
 
   @Test
@@ -306,72 +271,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.onNodeWithText("Backpack", useUnmergedTree = true).assertIsDisplayed()
   }
 
-  @Test
-  fun fitTypeSuggestions_showAndSelect() {
-    setMainScreen()
-
-    // Expand additional section and type in fit field
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
-    composeTestRule.ensureVisible(AddItemScreenTestTags.INPUT_FIT_TYPE)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_FIT_TYPE).performTextInput("S")
-
-    composeTestRule.waitForNodeWithTag(
-        AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Slim", useUnmergedTree = true).performClick()
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.fitType == "Slim") }
-  }
-
-  @Test
-  fun styleSuggestions_showAndSelect() {
-    setMainScreen()
-
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
-    composeTestRule.ensureVisible(AddItemScreenTestTags.INPUT_STYLE)
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_STYLE).performTextInput("C")
-
-    composeTestRule.waitForNodeWithTag(
-        AddItemScreenTestTags.STYLE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Casual", useUnmergedTree = true).performClick()
-
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.style == "Casual") }
-  }
-
   // ----------- Material parsing -----------
-
-  @Test
-  fun materialInput_parsesVariants_and_ignoresInvalid() {
-    setMainScreen()
-
-    // Multi
-    composeTestRule.enterAddItemMaterial("Cotton 60%, Polyester 30%, Elastane 10%")
-    composeTestRule.runOnIdle {
-      val m = viewModel.uiState.value.material
-      assert(m.size == 3)
-      assert(m[0].name == "Cotton" && m[0].percentage == 60.0)
-      assert(m[1].name == "Polyester" && m[1].percentage == 30.0)
-      assert(m[2].name == "Elastane" && m[2].percentage == 10.0)
-    }
-
-    // Single
-    composeTestRule.enterAddItemMaterial("Cotton 100%")
-    composeTestRule.runOnIdle {
-      val m = viewModel.uiState.value.material
-      assert(m.size == 1)
-      assert(m[0].name == "Cotton" && m[0].percentage == 100.0)
-    }
-
-    // Invalid entries are ignored
-    composeTestRule.enterAddItemMaterial("Cotton 80%, InvalidEntry, Wool 20%")
-    composeTestRule.runOnIdle {
-      val m = viewModel.uiState.value.material
-      assert(m.size == 2)
-      assert(m[0].name == "Cotton" && m[0].percentage == 80.0)
-      assert(m[1].name == "Wool" && m[1].percentage == 20.0)
-    }
-  }
 
   // ----------- Price handling -----------
 

@@ -59,6 +59,10 @@ val STYLE_SUGGESTIONS =
 val FIT_TYPE_SUGGESTIONS =
     listOf("Slim", "Regular", "Relaxed", "Oversized", "Skinny", "Tailored", "Boxy", "Loose")
 
+fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<String> {
+  return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
+}
+
 /** Reusable category dropdown field. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,10 +242,7 @@ fun StyleField(
     suggestions: List<String> = STYLE_SUGGESTIONS
 ) {
   var expanded by remember { mutableStateOf(false) }
-  val filtered =
-      remember(style, suggestions) {
-        if (style.isBlank()) suggestions else suggestions.filter { it.startsWith(style, true) }
-      }
+  val filtered = remember(style, suggestions) { filterDropdownSuggestions(style, suggestions) }
 
   Box(modifier = Modifier.fillMaxWidth()) {
     OutlinedTextField(
@@ -294,10 +295,7 @@ fun FitTypeField(
     suggestions: List<String> = FIT_TYPE_SUGGESTIONS
 ) {
   var expanded by remember { mutableStateOf(false) }
-  val filtered =
-      remember(fitType, suggestions) {
-        if (fitType.isBlank()) suggestions else suggestions.filter { it.startsWith(fitType, true) }
-      }
+  val filtered = remember(fitType, suggestions) { filterDropdownSuggestions(fitType, suggestions) }
 
   Box(modifier = Modifier.fillMaxWidth()) {
     OutlinedTextField(

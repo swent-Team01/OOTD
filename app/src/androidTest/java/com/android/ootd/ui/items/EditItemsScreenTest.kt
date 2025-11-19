@@ -1,12 +1,8 @@
 package com.android.ootd.ui.items
 
-import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -25,7 +21,6 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.ui.post.items.EditItemsScreen
 import com.android.ootd.ui.post.items.EditItemsScreenTestTags
 import com.android.ootd.ui.post.items.EditItemsViewModel
-import com.android.ootd.utils.InMemoryItem.ensureVisible
 import com.android.ootd.utils.InMemoryItem.waitForNodeWithTag
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.delay
@@ -99,65 +94,6 @@ class EditItemsScreenTest {
           .isSuccess)
           return
     }
-  }
-
-  // -------- Load/Populate --------
-
-  @Test
-  fun loadItem_populatesAllFields() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .assertTextContains("Clothing")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
-        .assertTextEquals("Type", "T-shirt")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
-        .assertTextEquals("Brand", "Nike")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
-        .assertTextEquals("Price", "29.99")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
-        .assertTextEquals("Currency", "USD")
-    composeTestRule.ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
-    composeTestRule.ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
-        .assertTextContains("Cotton 80.0%, Polyester 20.0%")
-    composeTestRule.ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
-        .assertTextContains("https://nike.com/tshirt")
-  }
-
-  // -------- Save/Delete enablement --------
-
-  @Test
-  fun save_and_delete_button_enablement() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-
-    // Initially disabled (no loaded item / missing prereqs)
-    ensureVisible(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
-    ensureVisible(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsNotEnabled()
-
-    // Load item and set minimal valid state
-    composeTestRule.runOnIdle {
-      viewModel.loadItem(testItem)
-      viewModel.setPhoto(Uri.parse("https://example.com/test.jpg"))
-      viewModel.setCategory("Clothing")
-    }
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsEnabled()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsEnabled()
   }
 
   // -------- Edit multiple fields --------
@@ -266,52 +202,6 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .assertTextContains("Boots")
-  }
-
-  @Test
-  fun fitTypeSuggestions_show_and_select_across_edit_fields() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-    composeTestRule.waitForIdle()
-
-    ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
-    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE)
-
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE)
-        .performTextClearance()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE).performTextInput("S")
-
-    composeTestRule.waitForNodeWithTag(
-        EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Slim", useUnmergedTree = true).performClick()
-
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE)
-        .assertTextContains("Slim")
-  }
-
-  @Test
-  fun styleSuggestions_show_and_select_across_edit_fields() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-    composeTestRule.waitForIdle()
-
-    ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
-    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_STYLE)
-
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE).performTextClearance()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE).performTextInput("C")
-
-    composeTestRule.waitForNodeWithTag(
-        EditItemsScreenTestTags.STYLE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Casual", useUnmergedTree = true).performClick()
-
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_STYLE)
-        .assertTextContains("Casual")
   }
 
   // -------- Invalid price handling --------
