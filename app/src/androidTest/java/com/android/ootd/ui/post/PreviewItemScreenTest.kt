@@ -111,6 +111,13 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         ) = OutfitPost(postUID = "post_123", ownerId = uid, name = name)
 
         override suspend fun deletePost(postId: String) {}
+
+        override suspend fun uploadOutfitWithCompressedPhoto(
+            imageData: ByteArray,
+            postId: String
+        ): String {
+          TODO("Not yet implemented")
+        }
       }
 
   private fun setContent(

@@ -11,7 +11,8 @@ import kotlinx.coroutines.tasks.await
 
 /** Firestore collection name for outfit posts* */
 const val POSTS_COLLECTION = "posts"
-
+/** Tag for logging in OutfitPostRepository * */
+const val OUTFITPOST_TAG = "OutfitPostRepository"
 /** Firestore collection name for outfit images * */
 const val POSTS_IMAGES_FOLDER = "images/posts"
 
@@ -41,9 +42,22 @@ class OutfitPostRepositoryFirestore(
       ref.putFile(fileUri).await()
       ref.downloadUrl.await().toString()
     } catch (e: Exception) {
-      Log.w(
-          "OutfitPostRepository", "Upload failed (test or offline env): ${e.javaClass.simpleName}")
+      Log.w(OUTFITPOST_TAG, "Upload failed (test or offline env): ${e.javaClass.simpleName}")
       "https://fake.storage/$postId.jpg"
+    }
+  }
+
+  override suspend fun uploadOutfitWithCompressedPhoto(
+      imageData: ByteArray,
+      postId: String
+  ): String {
+    return try {
+      val ref = storage.reference.child("$POSTS_IMAGES_FOLDER/$postId.jpg")
+      ref.putBytes(imageData).await()
+      ref.downloadUrl.await().toString()
+    } catch (e: Exception) {
+      Log.e(OUTFITPOST_TAG, "Upload failed (test or offline env): ${e.javaClass.simpleName}")
+      ""
     }
   }
 
@@ -136,7 +150,7 @@ class OutfitPostRepositoryFirestore(
           itemsID = itemsID,
           timestamp = doc.getLong("timestamp") ?: 0L)
     } catch (e: Exception) {
-      Log.e("OutfitPostRepository", "Error converting document ${doc.id} to OutfitPost", e)
+      Log.e(OUTFITPOST_TAG, "Error converting document ${doc.id} to OutfitPost", e)
       null
     }
   }
