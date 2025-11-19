@@ -145,6 +145,37 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
   }
 
   @Test
+  fun refreshFeed_loadsLikesAndCountsSuccessfully() = runBlocking {
+    val uid = auth.currentUser!!.uid
+
+    val account = Account(uid, uid, "bob", friendUids = listOf(uid))
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
+
+    val post =
+        OutfitPost(
+            postUID = "post1",
+            ownerId = uid,
+            name = "bob",
+            description = "abc",
+            outfitURL = "x",
+            timestamp = System.currentTimeMillis())
+    FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
+
+    likesRepository.likePost(
+        com.android.ootd.model.posts.Like(
+            postId = "post1", postLikerId = uid, timestamp = System.currentTimeMillis()))
+
+    viewModel.setCurrentAccount(account)
+    viewModel.refreshFeedFromFirestore()
+    delay(600)
+
+    val state = viewModel.uiState.value
+
+    assertTrue(state.likes["post1"] == true)
+    assertEquals(1, state.likeCounts["post1"])
+  }
+
+  @Test
   fun refresh_noop_whenNoCurrentAccount() = runBlocking {
     // sign out to clear currentAccount
     auth.signOut()
@@ -178,6 +209,49 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     val state = viewModel.uiState.first()
     assertNotNull(state.currentAccount)
     assertEquals("carol", state.currentAccount?.username)
+  }
+
+  @Test
+  fun toggleLike_addsLikeAndUpdatesUiState() = runBlocking {
+    val uid = auth.currentUser!!.uid
+
+    val account = Account(uid, uid, "bob", friendUids = emptyList())
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
+
+    val post =
+        OutfitPost(
+            postUID = "p_toggle",
+            ownerId = uid,
+            name = "bob",
+            description = "",
+            outfitURL = "x",
+            timestamp = System.currentTimeMillis())
+    FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
+
+    viewModel.setCurrentAccount(account)
+    viewModel.refreshFeedFromFirestore()
+    delay(300)
+
+    assertFalse(viewModel.uiState.value.likes["p_toggle"] == true)
+
+    viewModel.onToggleLike("p_toggle")
+    delay(300)
+
+    val state = viewModel.uiState.value
+
+    assertTrue(state.likes["p_toggle"] == true)
+    assertEquals(1, state.likeCounts["p_toggle"])
+
+    val snap =
+        FirebaseEmulator.firestore
+            .collection("likes")
+            .document("p_toggle")
+            .collection("users")
+            .document(uid)
+            .get()
+            .await()
+
+    assertTrue(snap.exists())
   }
 
   private fun waitUntilFeedLoaded(timeoutMillis: Long = 5000) {
