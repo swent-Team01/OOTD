@@ -91,7 +91,7 @@ interface ItemsTest {
    */
   fun ComposeTestRule.waitForNodeWithTag(
       tag: String,
-      timeoutMillis: Long = 15_000,
+      timeoutMillis: Long = 5_000,
       useUnmergedTree: Boolean = true
   ) {
     waitUntil(timeoutMillis) {
