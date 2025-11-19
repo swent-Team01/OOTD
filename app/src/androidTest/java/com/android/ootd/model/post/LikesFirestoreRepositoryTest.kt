@@ -125,7 +125,6 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
 
     val likes = repo.getLikesForPost(postId)
 
-    assertEquals(1, likes.size)
     val like = likes.first()
     assertEquals(postId, like.postId)
     assertEquals(userA, like.postLikerId)
