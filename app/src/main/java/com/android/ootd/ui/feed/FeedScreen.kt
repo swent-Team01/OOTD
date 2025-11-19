@@ -1,7 +1,6 @@
 package com.android.ootd.ui.feed
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +20,7 @@ import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.utils.LoadingScreen
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -137,7 +137,11 @@ private fun FeedScaffold(
 
               // Loading overlay
               if (isLoading) {
-                AnimatedVisibility(visible = isLoading) { FeedLoadingOverlay() }
+                AnimatedVisibility(visible = isLoading) {
+                  LoadingScreen(
+                      modifier = Modifier.testTag(FeedScreenTestTags.LOADING_OVERLAY),
+                      contentDescription = "Loading feed")
+                }
               }
 
               if (!isLoading && !hasPostedToday && posts.isEmpty()) {
@@ -167,25 +171,6 @@ fun FeedList(
       OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
     }
   }
-}
-
-@Composable
-fun FeedLoadingOverlay() {
-  Box(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
-              .testTag(FeedScreenTestTags.LOADING_OVERLAY),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          Image(
-              painter = painterResource(id = R.drawable.hanger),
-              contentDescription = "Loading feed",
-              modifier = Modifier.size(72.dp))
-          Spacer(modifier = Modifier.height(16.dp))
-          CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-      }
 }
 
 @Preview(showBackground = true)

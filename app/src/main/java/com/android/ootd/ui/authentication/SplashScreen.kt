@@ -1,28 +1,15 @@
 package com.android.ootd.ui.authentication
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.R
-import com.android.ootd.ui.theme.Background
-import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.LoadingScreen
 import kotlinx.coroutines.delay
 
 private const val SPLASH_TIMEOUT = 1000L
-private val splashProgressTab = "splashProgress"
-private val splashLogoTag = "splashLogo"
 
 /**
  * UI content for the app splash screen.
@@ -35,22 +22,7 @@ private val splashLogoTag = "splashLogo"
  */
 @Composable
 fun SplashScreenContent(modifier: Modifier = Modifier) {
-  Column(
-      modifier =
-          modifier
-              .fillMaxWidth()
-              .fillMaxHeight()
-              .background(Background)
-              .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(
-            painter = painterResource(id = R.drawable.hanger),
-            contentDescription = null,
-            modifier = Modifier.size(128.dp).padding(bottom = 16.dp).testTag(splashLogoTag))
-
-        CircularProgressIndicator(color = Primary, modifier = Modifier.testTag(splashProgressTab))
-      }
+  LoadingScreen(modifier = modifier, contentDescription = "Loading app")
 }
 
 /**

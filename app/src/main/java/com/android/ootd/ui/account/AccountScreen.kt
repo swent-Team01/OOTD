@@ -57,7 +57,9 @@ fun AccountPage(
   }
 
   if (uiState.isLoading) {
-      LoadingScreen(modifier = Modifier.testTag(AccountPageTestTags.LOADING), contentDescription = "Loading profile")
+    LoadingScreen(
+        modifier = Modifier.testTag(AccountPageTestTags.LOADING),
+        contentDescription = "Loading profile")
   } else {
     AccountPageContent(uiState, onEditAccount, onPostClick)
   }
@@ -73,7 +75,7 @@ fun AccountPageContent(
   val friendListSize = friendList.size
   val username = uiState.username
   val posts = uiState.posts
-    val profilePicture = uiState.profilePicture
+  val profilePicture = uiState.profilePicture
   val scrollState = rememberScrollState()
 
   Column(
@@ -83,23 +85,27 @@ fun AccountPageContent(
               .verticalScroll(scrollState)
               .padding(horizontal = 22.dp, vertical = 10.dp)) {
         // Setting button
-      OOTDTopBar(
-          modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
-          rightComposable = {
+        OOTDTopBar(
+            modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
+            rightComposable = {
               SettingsButton(
                   onEditAccount = onEditAccount,
                   modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
-                  size = 32.dp
-              )
-          },
-          leftComposable = { }
-      )
+                  size = 32.dp)
+            },
+            leftComposable = {})
         Spacer(modifier = Modifier.height(36.dp))
 
         // Avatar
         ProfilePicture(
-            modifier = Modifier.testTag(AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() } ?: AccountPageTestTags.AVATAR_IMAGE),
-            size = 150.dp, profilePicture = profilePicture, username = uiState.username, shape = CircleShape)
+            modifier =
+                Modifier.testTag(
+                    AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() }
+                        ?: AccountPageTestTags.AVATAR_IMAGE),
+            size = 150.dp,
+            profilePicture = profilePicture,
+            username = uiState.username,
+            shape = CircleShape)
 
         Spacer(modifier = Modifier.height(18.dp))
         // Username
@@ -140,20 +146,14 @@ fun AccountPageContent(
 @Preview(showBackground = true)
 @Composable
 fun AccountPagePreview() {
-    val sampleState = AccountPageViewState(
-        username = "JohnDoe",
-        profilePicture = "",
-        friends = listOf("friend1", "friend2", "friend3"),
-        posts = listOf(),
-        isLoading = false,
-        errorMsg = null
-    )
+  val sampleState =
+      AccountPageViewState(
+          username = "JohnDoe",
+          profilePicture = "",
+          friends = listOf("friend1", "friend2", "friend3"),
+          posts = listOf(),
+          isLoading = false,
+          errorMsg = null)
 
-    OOTDTheme {
-        AccountPageContent(
-            uiState = sampleState,
-            onEditAccount = {},
-            onPostClick = {}
-        )
-    }
+  OOTDTheme { AccountPageContent(uiState = sampleState, onEditAccount = {}, onPostClick = {}) }
 }

@@ -1,5 +1,6 @@
 package com.android.ootd.utils
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -7,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +35,7 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -69,14 +72,13 @@ import com.android.ootd.ui.theme.Secondary
  */
 @Composable
 fun BackArrow(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(onClick = onBackClick, modifier = modifier) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Back",
-            tint = colorScheme.onBackground,
-            modifier = Modifier.size(48.dp)
-        )
-    }
+  IconButton(onClick = onBackClick, modifier = modifier) {
+    Icon(
+        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = "Back",
+        tint = colorScheme.onBackground,
+        modifier = Modifier.size(48.dp))
+  }
 }
 
 /**
@@ -108,8 +110,8 @@ fun ShowText(
 }
 
 /**
- * Displays a user's profile picture. If no picture URL is provided, shows a circular avatar
- * with the first letter of the username.
+ * Displays a user's profile picture. If no picture URL is provided, shows a circular avatar with
+ * the first letter of the username.
  *
  * @param modifier The modifier to be applied to the profile picture.
  * @param size The size of the profile picture.
@@ -118,7 +120,13 @@ fun ShowText(
  * @param shape The shape of the profile picture container.
  */
 @Composable
-fun ProfilePicture(modifier: Modifier = Modifier, size: Dp, profilePicture: String, username: String, shape: RoundedCornerShape) {
+fun ProfilePicture(
+    modifier: Modifier = Modifier,
+    size: Dp,
+    profilePicture: String,
+    username: String,
+    shape: RoundedCornerShape
+) {
   val color = colorScheme
   val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
 
@@ -130,22 +138,16 @@ fun ProfilePicture(modifier: Modifier = Modifier, size: Dp, profilePicture: Stri
           placeholder = defaultAvatarPainter,
           error = defaultAvatarPainter,
           contentScale = ContentScale.Crop,
-          modifier =
-              modifier
-                  .size(size)
-                  .clip(shape))
+          modifier = modifier.size(size).clip(shape))
     } else {
       Box(
-          modifier = Modifier
-              .size(size)
-              .clip(shape)
-              .background(Primary),
+          modifier = Modifier.size(size).clip(shape).background(Primary),
           contentAlignment = Alignment.Center) {
             Text(
                 text = username.firstOrNull()?.uppercase() ?: "",
                 style = typography.headlineLarge,
                 color = Secondary,
-                modifier = modifier) //Only test tag
+                modifier = modifier) // Only test tag
           }
     }
   }
@@ -181,9 +183,7 @@ fun DisplayUserPosts(
       columns = GridCells.Fixed(3),
       horizontalArrangement = Arrangement.spacedBy(spacing),
       verticalArrangement = Arrangement.spacedBy(spacing),
-      modifier = Modifier
-          .fillMaxWidth()
-          .height(totalHeight.dp)) {
+      modifier = Modifier.fillMaxWidth().height(totalHeight.dp)) {
         items(posts) { post ->
           AsyncImage(
               model = post.outfitURL,
@@ -209,20 +209,18 @@ fun DisplayUserPosts(
  */
 @Composable
 fun LoadingScreen(modifier: Modifier = Modifier, contentDescription: String) {
-    Box(
-        modifier =
-            modifier.fillMaxSize()
-                .background(colorScheme.background.copy(alpha = 0.95f)),
-        contentAlignment = Alignment.Center) {
+  Box(
+      modifier = modifier.fillMaxSize().background(colorScheme.background.copy(alpha = 0.95f)),
+      contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = painterResource(id = R.drawable.hanger),
-                contentDescription = contentDescription,
-                modifier = Modifier.size(72.dp))
-            Spacer(modifier = Modifier.height(16.dp))
-            CircularProgressIndicator(color = colorScheme.primary)
+          Image(
+              painter = painterResource(id = R.drawable.hanger),
+              contentDescription = contentDescription,
+              modifier = Modifier.size(72.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+          CircularProgressIndicator(color = colorScheme.primary)
         }
-    }
+      }
 }
 
 /**
@@ -238,20 +236,19 @@ fun FloatingButton(
     modifier: Modifier = Modifier,
     buttonText: @Composable () -> Unit
 ) {
-    androidx.compose.material3.FloatingActionButton(
-        onClick = { onButtonClick(null) },
-        containerColor = colorScheme.primary,
-        modifier = modifier
-    ) {
+  androidx.compose.material3.FloatingActionButton(
+      onClick = { onButtonClick(null) },
+      containerColor = colorScheme.primary,
+      modifier = modifier) {
         buttonText()
-    }
+      }
 }
 
 /**
  * Displays a circular action button with optional text content.
  *
- * If no text is provided, only the button container is displayed
- * (typically used with an icon added separately).
+ * If no text is provided, only the button container is displayed (typically used with an icon added
+ * separately).
  *
  * @param onButtonClick Callback invoked when the button is clicked.
  * @param modifier The modifier to be applied to the button.
@@ -263,27 +260,26 @@ fun ActionButton(
     modifier: Modifier = Modifier,
     buttonText: String? = null
 ) {
-    val colors = LightColorScheme
-    Button(
-        onClick = onButtonClick,
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-        modifier = modifier) {
-        if(buttonText != null) {
-            Text(
-                text = buttonText,
-                color = colors.onPrimary,
-                style = typography.titleMedium.copy(fontFamily = Bodoni)
-            )
+  val colors = LightColorScheme
+  Button(
+      onClick = onButtonClick,
+      shape = CircleShape,
+      colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+      modifier = modifier) {
+        if (buttonText != null) {
+          Text(
+              text = buttonText,
+              color = colors.onPrimary,
+              style = typography.titleMedium.copy(fontFamily = Bodoni))
         }
-    }
+      }
 }
 
 /**
  * Displays a center-aligned top app bar with customizable left and right composables.
  *
- * The center displays the app name or custom text. Left and right slots can contain
- * composables like back arrows, action buttons, or other icons.
+ * The center displays the app name or custom text. Left and right slots can contain composables
+ * like back arrows, action buttons, or other icons.
  *
  * @param modifier The modifier to be applied to the title text.
  * @param centerText The text to display in the center of the top bar. Defaults to "OOTD".
@@ -298,33 +294,27 @@ fun OOTDTopBar(
     leftComposable: @Composable () -> Unit = {},
     rightComposable: @Composable () -> Unit = {}
 ) {
-    CenterAlignedTopAppBar(
-        modifier = Modifier.fillMaxWidth(),
-        title = {
-            Text(
-                modifier = modifier,
-                text = centerText,
-                style =
-                    typography.displayLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.primary))
-        },
-        navigationIcon = {
-            leftComposable()
-        },
-        actions = {
-            rightComposable()
-        },
-        colors =
-            TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = colorScheme.background))
+  CenterAlignedTopAppBar(
+      modifier = Modifier.fillMaxWidth(),
+      title = {
+        Text(
+            modifier = modifier,
+            text = centerText,
+            style =
+                typography.displayLarge.copy(
+                    fontWeight = FontWeight.ExtraBold, color = colorScheme.primary))
+      },
+      navigationIcon = { leftComposable() },
+      actions = { rightComposable() },
+      colors =
+          TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = colorScheme.background))
 }
 
 /**
  * Displays a bottom navigation bar with multiple tabs.
  *
- * Each tab shows an icon (filled when selected, outlined when not) and highlights
- * the currently selected tab.
+ * Each tab shows an icon (filled when selected, outlined when not) and highlights the currently
+ * selected tab.
  *
  * @param tabs The list of tabs to display in the navigation bar.
  * @param selectedTab The currently selected tab, or null if none is selected.
@@ -338,37 +328,37 @@ fun BottomNavigationMenu(
     onTabSelected: (Tab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    NavigationBar(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .border(
-                    width = 0.5.dp,
-                    color = Color.LightGray.copy(alpha = 0.3f),
-                )
-                .padding(top = 4.dp)
-                .testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
-        containerColor = colorScheme.background,
-    ) {
-        tabs.forEach { tab ->
-            val isSelected = tab == selectedTab
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
-                        contentDescription = "Navigate to ${tab.name}")
-                },
-                selected = isSelected,
-                onClick = { onTabSelected(tab) },
-                colors =
-                    NavigationBarItemDefaults.colors(
-                        selectedIconColor = colorScheme.primary,
-                        unselectedIconColor = colorScheme.onBackground,
-                        indicatorColor = Color.Transparent),
-                modifier = Modifier.padding(top = 8.dp).testTag(NavigationTestTags.getTabTestTag(tab)))
-        }
+  NavigationBar(
+      modifier =
+          modifier
+              .fillMaxWidth()
+              .height(80.dp)
+              .border(
+                  width = 0.5.dp,
+                  color = Color.LightGray.copy(alpha = 0.3f),
+              )
+              .padding(top = 4.dp)
+              .testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
+      containerColor = colorScheme.background,
+  ) {
+    tabs.forEach { tab ->
+      val isSelected = tab == selectedTab
+      NavigationBarItem(
+          icon = {
+            Icon(
+                imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
+                contentDescription = "Navigate to ${tab.name}")
+          },
+          selected = isSelected,
+          onClick = { onTabSelected(tab) },
+          colors =
+              NavigationBarItemDefaults.colors(
+                  selectedIconColor = colorScheme.primary,
+                  unselectedIconColor = colorScheme.onBackground,
+                  indicatorColor = Color.Transparent),
+          modifier = Modifier.padding(top = 8.dp).testTag(NavigationTestTags.getTabTestTag(tab)))
     }
+  }
 }
 
 /**
@@ -380,12 +370,81 @@ fun BottomNavigationMenu(
  */
 @Composable
 fun SettingsButton(onEditAccount: () -> Unit, modifier: Modifier = Modifier, size: Dp) {
-    IconButton(
-        onClick = onEditAccount, modifier = modifier) {
-        Icon(
-            imageVector = Icons.Default.Settings,
-            contentDescription = "Settings",
-            tint = colorScheme.onBackground,
-            modifier = Modifier.size(size))
-    }
+  IconButton(onClick = onEditAccount, modifier = modifier) {
+    Icon(
+        imageVector = Icons.Default.Settings,
+        contentDescription = "Settings",
+        tint = colorScheme.onBackground,
+        modifier = Modifier.size(size))
+  }
+}
+
+/**
+ * Displays a Google Sign-In button with the Google logo and text.
+ *
+ * This button follows Material Design guidelines and includes the Google branding with proper
+ * styling and spacing.
+ *
+ * @param onClick Callback invoked when the button is clicked.
+ * @param modifier The modifier to be applied to the button.
+ */
+@Composable
+fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+  OutlinedButton(
+      onClick = onClick,
+      shape = RoundedCornerShape(50),
+      modifier = modifier,
+      border = BorderStroke(1.dp, Primary),
+      colors = ButtonDefaults.outlinedButtonColors(containerColor = colorScheme.background)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Box(
+              modifier =
+                  Modifier.size(28.dp)
+                      .background(colorScheme.background, shape = CircleShape)
+                      .border(1.dp, Primary, CircleShape),
+              contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(id = R.drawable.google_logo),
+                    contentDescription = "Google logo",
+                    modifier = Modifier.size(18.dp))
+              }
+
+          Spacer(modifier = Modifier.size(12.dp))
+
+          Text(text = "Sign in with Google", style = typography.titleLarge, color = Primary)
+        }
+      }
+}
+
+/**
+ * Displays an error message text with consistent styling.
+ *
+ * @param errorMessage The error message to display.
+ * @param modifier The modifier to be applied to the text.
+ * @param textAlign The text alignment. Defaults to Center.
+ */
+@Composable
+fun ErrorText(errorMessage: String, modifier: Modifier = Modifier, textAlign: TextAlign = Center) {
+  Text(
+      text = errorMessage,
+      style = typography.bodyLarge,
+      color = colorScheme.error,
+      textAlign = textAlign,
+      modifier = modifier.fillMaxWidth().padding(16.dp))
+}
+
+/**
+ * Displays an empty state message with consistent styling.
+ *
+ * @param message The empty state message to display.
+ * @param modifier The modifier to be applied to the text.
+ */
+@Composable
+fun EmptyStateText(message: String, modifier: Modifier = Modifier) {
+  Text(
+      text = message,
+      style = typography.bodyLarge,
+      color = Color.Gray,
+      textAlign = Center,
+      modifier = modifier.fillMaxWidth().padding(32.dp))
 }
