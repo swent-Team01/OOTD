@@ -105,7 +105,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   companion object {
 
-    private val TAG = "AccountRepositoryFirestore"
+    private const val TAG = "AccountRepositoryFirestore"
   }
 
   /** Helper method to check account data as firestore might add the default values */
