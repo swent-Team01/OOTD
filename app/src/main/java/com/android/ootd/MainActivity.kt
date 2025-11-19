@@ -196,6 +196,12 @@ fun OOTDApp(
   fun observeUnpushedNotifications(userId: String) {
     if (listenerRegistration != null) return
 
+    if (testMode) {
+      sendLocalNotification(
+          Notification(
+              uid = "", senderId = "", receiverId = "", type = "", content = "", wasPushed = false))
+    }
+
     listenerRegistration =
         NotificationRepositoryProvider.repository.listenForUnpushedNotifications(
             receiverId = userId) { notification ->
