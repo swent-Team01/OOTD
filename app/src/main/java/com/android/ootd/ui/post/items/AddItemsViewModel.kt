@@ -79,7 +79,7 @@ open class AddItemsViewModel(
 ) : BaseItemViewModel<AddItemsUIState>() {
 
   companion object {
-    private val TAG = "AddItemsViewModel"
+    private const val TAG = "AddItemsViewModel"
   }
 
   // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
