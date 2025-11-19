@@ -285,33 +285,19 @@ open class AddItemsViewModel(
                 })
   }
 
-  fun setPrice(price: Double) {
-    _uiState.value = _uiState.value.copy(price = price)
-  }
+  fun setPrice(price: Double) = updateSimpleField { it.copy(price = price) }
 
-  fun setCurrency(currency: String) {
-    _uiState.value = _uiState.value.copy(currency = currency)
-  }
+  fun setCurrency(currency: String) = updateSimpleField { it.copy(currency = currency) }
 
-  fun setCondition(value: String) {
-    _uiState.value = _uiState.value.copy(condition = value)
-  }
+  fun setCondition(value: String) = updateSimpleField { it.copy(condition = value) }
 
-  fun setSize(value: String) {
-    _uiState.value = _uiState.value.copy(size = value)
-  }
+  fun setSize(value: String) = updateSimpleField { it.copy(size = value) }
 
-  fun setFitType(value: String) {
-    _uiState.value = _uiState.value.copy(fitType = value)
-  }
+  fun setFitType(value: String) = updateSimpleField { it.copy(fitType = value) }
 
-  fun setStyle(value: String) {
-    _uiState.value = _uiState.value.copy(style = value)
-  }
+  fun setStyle(value: String) = updateSimpleField { it.copy(style = value) }
 
-  fun setNotes(value: String) {
-    _uiState.value = _uiState.value.copy(notes = value)
-  }
+  fun setNotes(value: String) = updateSimpleField { it.copy(notes = value) }
 
   fun validateCategory() {
     val state = _uiState.value

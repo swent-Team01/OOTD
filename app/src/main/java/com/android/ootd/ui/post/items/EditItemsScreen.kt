@@ -31,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,7 +55,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
-import java.util.Locale
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -296,34 +294,22 @@ private fun FieldsList(
           onFocus = onTypeFocus)
     }
     item {
-      BrandField(
+      ItemPrimaryFields(
           brand = brand,
-          onChange = onBrandChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND)
-    }
-    item {
-      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(modifier = Modifier.weight(1f)) {
-          PriceField(
-              price = price,
-              onChange = onPriceChange,
-              testTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE)
-        }
-        Box(modifier = Modifier.weight(1f)) {
-          CurrencyField(
-              currency = currency,
-              onChange = onCurrencyChange,
-              testTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
-        }
-      }
-    }
-    item {
-      SizeField(
-          size = size, onChange = onSizeChange, testTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE)
-    }
-    item {
-      LinkField(
-          link = link, onChange = onLinkChange, testTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+          onBrandChange = onBrandChange,
+          brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
+          price = price,
+          onPriceChange = onPriceChange,
+          priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
+          currency = currency,
+          onCurrencyChange = onCurrencyChange,
+          currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
+          size = size,
+          onSizeChange = onSizeChange,
+          sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
+          link = link,
+          onLinkChange = onLinkChange,
+          linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
     }
     item {
       AdditionalDetailsSectionEdit(
@@ -367,20 +353,6 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
           Text("Take a new picture")
         }
   }
-}
-
-@Composable
-private fun PriceField(price: Double, onChange: (Double) -> Unit, testTag: String) {
-  val text = if (price == 0.0) "" else String.format(Locale.US, "%.2f", price)
-  OutlinedTextField(
-      value = text,
-      onValueChange = { onChange(it.toDoubleOrNull() ?: 0.0) },
-      label = { Text("Price") },
-      placeholder = { Text("e.g., 49.99") },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
 @Composable
@@ -496,7 +468,6 @@ fun EditItemsScreenSmallPreview() {
     val maxImageSize = 180.dp
     val minImageSize = 80.dp
 
-    var showCamera by remember { mutableStateOf(false) }
     val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
     val imageScaleState = remember { mutableFloatStateOf(1f) }
 
@@ -518,7 +489,7 @@ fun EditItemsScreenSmallPreview() {
                         IntOffset(0, currentImageSizeState.value.roundToPx())
                       },
                   onPickFromGallery = {},
-                  onOpenCamera = { showCamera = false },
+                  onOpenCamera = {},
                   category = "Tops",
                   onCategoryChange = {},
                   type = "Hoodie",

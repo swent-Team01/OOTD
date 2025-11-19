@@ -3,9 +3,11 @@ package com.android.ootd.ui.post.items
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,6 +63,42 @@ val FIT_TYPE_SUGGESTIONS =
 
 fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<String> {
   return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
+}
+
+@Composable
+fun ItemPrimaryFields(
+    brand: String,
+    onBrandChange: (String) -> Unit,
+    brandTag: String,
+    price: Double,
+    onPriceChange: (Double) -> Unit,
+    priceTag: String,
+    currency: String,
+    onCurrencyChange: (String) -> Unit,
+    currencyTag: String,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    sizeTag: String,
+    link: String,
+    onLinkChange: (String) -> Unit,
+    linkTag: String,
+) {
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    BrandField(brand = brand, onChange = onBrandChange, testTag = brandTag)
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      Box(modifier = Modifier.weight(1f)) {
+        PriceField(price = price, onChange = onPriceChange, testTag = priceTag)
+      }
+      Box(modifier = Modifier.weight(1f)) {
+        CurrencyField(currency = currency, onChange = onCurrencyChange, testTag = currencyTag)
+      }
+    }
+
+    SizeField(size = size, onChange = onSizeChange, testTag = sizeTag)
+
+    LinkField(link = link, onChange = onLinkChange, testTag = linkTag)
+  }
 }
 
 /** Reusable category dropdown field. */

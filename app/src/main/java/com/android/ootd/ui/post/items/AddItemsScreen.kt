@@ -337,31 +337,22 @@ private fun FieldsList(
     }
 
     item {
-      BrandField(
-          brand = brand, onChange = onBrandChange, testTag = AddItemScreenTestTags.INPUT_BRAND)
-    }
-
-    item {
-      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(modifier = Modifier.weight(1f)) {
-          PriceField(
-              price = price, onChange = onPriceChange, testTag = AddItemScreenTestTags.INPUT_PRICE)
-        }
-        Box(modifier = Modifier.weight(1f)) {
-          CurrencyField(
-              currency = currency,
-              onChange = onCurrencyChange,
-              testTag = AddItemScreenTestTags.INPUT_CURRENCY)
-        }
-      }
-    }
-
-    item {
-      SizeField(size = size, onChange = onSizeChange, testTag = AddItemScreenTestTags.INPUT_SIZE)
-    }
-
-    item {
-      LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
+      ItemPrimaryFields(
+          brand = brand,
+          onBrandChange = onBrandChange,
+          brandTag = AddItemScreenTestTags.INPUT_BRAND,
+          price = price,
+          onPriceChange = onPriceChange,
+          priceTag = AddItemScreenTestTags.INPUT_PRICE,
+          currency = currency,
+          onCurrencyChange = onCurrencyChange,
+          currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
+          size = size,
+          onSizeChange = onSizeChange,
+          sizeTag = AddItemScreenTestTags.INPUT_SIZE,
+          link = link,
+          onLinkChange = onLinkChange,
+          linkTag = AddItemScreenTestTags.INPUT_LINK)
     }
 
     item {
