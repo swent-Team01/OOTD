@@ -16,6 +16,7 @@ import kotlinx.coroutines.withTimeout
 object FirebaseImageUploader {
 
   private const val TAG = "FirebaseImageUploader"
+  private const val UPLOAD_TIMEOUT_MS = 1_000L
 
   private val storage by lazy {
     try {
@@ -44,7 +45,7 @@ object FirebaseImageUploader {
 
     return try {
       // Add timeout to prevent indefinite hanging when offline
-      kotlinx.coroutines.withTimeout(1_000L) {
+      kotlinx.coroutines.withTimeout(UPLOAD_TIMEOUT_MS) {
         val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
         val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
         imageRef.putFile(localUri).await()

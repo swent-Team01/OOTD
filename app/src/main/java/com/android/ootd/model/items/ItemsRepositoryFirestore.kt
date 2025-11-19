@@ -15,7 +15,8 @@ const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged i
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
 
   // In-memory cache for items - updated optimistically for offline support
-  private val itemsCache = mutableMapOf<String, Item>()
+  // ConcurrentHashMap ensures thread-safe reads/writes across coroutines
+  private val itemsCache = java.util.concurrent.ConcurrentHashMap<String, Item>()
 
   override fun getNewItemId(): String {
     return db.collection(ITEMS_COLLECTION).document().id

@@ -45,6 +45,10 @@ class InventoryViewModel(
   private val _uiState = MutableStateFlow(InventoryUIState())
   val uiState: StateFlow<InventoryUIState> = _uiState.asStateFlow()
 
+  companion object {
+    private const val FIRESTORE_TIMEOUT_MS = 2_000L
+  }
+
   init {
     loadInventory()
   }
@@ -63,14 +67,15 @@ class InventoryViewModel(
 
         // Get the list of item IDs from the account (with timeout for offline)
         val itemIds =
-            kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
               accountRepository.getItemsList(currentUserId)
             } ?: emptyList()
 
         // Fetch all items using the batch method (with timeout for offline)
         val items =
-            kotlinx.coroutines.withTimeoutOrNull(2_000L) { itemsRepository.getItemsByIds(itemIds) }
-                ?: emptyList()
+            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+              itemsRepository.getItemsByIds(itemIds)
+            } ?: emptyList()
 
         // Sort items by category using the predefined order
         val sortedItems = sortItemsByCategory(items)

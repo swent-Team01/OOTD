@@ -101,7 +101,10 @@ private fun DocumentSnapshot.toAccount(): Account {
 class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRepository {
 
   // In-memory cache for items list - updated optimistically for offline support
-  private val itemsListCache = mutableMapOf<String, MutableList<String>>()
+  // ConcurrentHashMap and CopyOnWriteArrayList ensure thread-safe operations across coroutines
+  private val itemsListCache =
+      java.util.concurrent.ConcurrentHashMap<
+          String, java.util.concurrent.CopyOnWriteArrayList<String>>()
 
   companion object {
 
@@ -423,7 +426,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
         @Suppress("UNCHECKED_CAST")
         val itemsList = (document.get("itemsUids") as? List<String>) ?: emptyList()
         // Update memory cache with fetched data
-        itemsListCache[userID] = itemsList.toMutableList()
+        itemsListCache[userID] = java.util.concurrent.CopyOnWriteArrayList(itemsList)
         return itemsList
       }
     } catch (e: Exception) {
@@ -453,20 +456,16 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
                 (doc.get("itemsUids") as? List<String>) ?: emptyList()
               } ?: emptyList()
             } catch (e: Exception) {
-              Log.w(
-                  "AccountRepositoryFirestore",
-                  "Could not fetch current items, starting with empty: ${e.message}")
+              Log.w(TAG, "Could not fetch current items, starting with empty: ${e.message}")
               emptyList()
             }
-        itemsListCache[currentUserId] = currentList.toMutableList()
-        Log.d(
-            "AccountRepositoryFirestore",
-            "Initialized cache with ${currentList.size} existing items")
+        itemsListCache[currentUserId] = java.util.concurrent.CopyOnWriteArrayList(currentList)
+        Log.d(TAG, "Initialized cache with ${currentList.size} existing items")
       }
-      val itemsList = itemsListCache[currentUserId] ?: mutableListOf()
+      val itemsList = itemsListCache[currentUserId] ?: java.util.concurrent.CopyOnWriteArrayList()
       if (!itemsList.contains(itemUid)) {
         itemsList.add(itemUid)
-        Log.d("AccountRepositoryFirestore", "Added item to memory cache (total: ${itemsList.size})")
+        Log.d(TAG, "Added item to memory cache (total: ${itemsList.size})")
       }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
@@ -476,15 +475,15 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
         withTimeoutOrNull(2_000L) {
           userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
         }
-        Log.d("AccountRepositoryFirestore", "Item added to Firestore (or queued if offline)")
+        Log.d(TAG, "Item added to Firestore (or queued if offline)")
       } catch (e: Exception) {
         // Acceptable when offline - cache is already updated
-        Log.w("AccountRepositoryFirestore", "Firestore update queued (offline): ${e.message}")
+        Log.w(TAG, "Firestore update queued (offline): ${e.message}")
       }
 
       true // Cache is updated, that's what matters
     } catch (e: Exception) {
-      Log.e("AccountRepositoryFirestore", "Error adding item: ${e.message}", e)
+      Log.e(TAG, "Error adding item: ${e.message}", e)
       false
     }
   }
@@ -494,8 +493,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
 
       // Optimistically update memory cache immediately
-      if (itemsListCache.containsKey(currentUserId)) {
-        itemsListCache[currentUserId]!!.remove(itemUid)
+      itemsListCache[currentUserId]?.remove(itemUid)?.let {
         Log.d("AccountRepositoryFirestore", "Removed item from memory cache")
       }
 
