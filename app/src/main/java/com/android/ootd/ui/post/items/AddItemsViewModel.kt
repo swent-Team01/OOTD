@@ -188,7 +188,7 @@ open class AddItemsViewModel(
    *
    * This provides immediate feedback even when network is slow/unavailable.
    */
-  private suspend fun addItemAndUpdateInventory(item: Item, uploadedImage: ImageData): Boolean {
+  private suspend fun addItemAndUpdateInventory(item: Item): Boolean {
     return try {
       // Call repository methods directly (not nested launch)
       // Cache updates happen synchronously before Firestore .await()
@@ -251,7 +251,7 @@ open class AddItemsViewModel(
         val item = createItemFromState(state, itemUuid, uploadedImage, ownerId)
 
         // Add item and update inventory
-        val success = addItemAndUpdateInventory(item, uploadedImage)
+        val success = addItemAndUpdateInventory(item)
         if (!success) {
           setErrorMsg("Failed to add item to inventory. Please try again.")
           _addOnSuccess.value = false

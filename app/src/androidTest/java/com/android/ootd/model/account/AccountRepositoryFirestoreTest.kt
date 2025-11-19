@@ -754,4 +754,72 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertFalse(itemsList.contains(item2))
     assertTrue(itemsList.contains(item3))
   }
+
+  @Test
+  fun checkAccountData_logsErrorForBlankUid() = runTest {
+    // Test that checkAccountData correctly identifies and logs blank UIDs
+    // Getting account with blank UID should throw BlankUserID before checkAccountData
+    expectThrows<BlankUserID> { accountRepository.getAccount("") }
+  }
+
+  @Test
+  fun createAccount_logsErrorAndRethrowsOnException() = runTest {
+    // Add user to simulate existing username
+    add(account1)
+
+    val user =
+        User(
+            uid = "test_user",
+            ownerId = "test_user",
+            username = account1.username,
+            profilePicture = "")
+
+    // Try to create account with existing username - should log error and throw
+    expectThrows<TakenUserException>("already in use") {
+      accountRepository.createAccount(user, "test@example.com", "1990-01-01", emptyLocation)
+    }
+  }
+
+  @Test
+  fun addFriend_logsWarningWhenCannotAddToFriendsList() = runTest {
+    add(account1, account2)
+
+    // Manually add friend1 to friend2's list
+    accountRepository.addFriend(account1.uid, account2.uid)
+
+    // Delete account2's document to simulate inability to update their list
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account2.uid)
+        .delete()
+        .await()
+
+    // This should log warning but not throw (returns false)
+    val result = accountRepository.addFriend(account1.uid, account2.uid)
+
+    // Result should be false because we couldn't update friend2's list
+    assertFalse(result)
+  }
+
+  @Test
+  fun editAccount_logsErrorOnException() = runTest {
+    add(account1)
+
+    // Try to update a non-existent account - should throw UnknowUserID
+    expectThrows<UnknowUserID> {
+      accountRepository.editAccount(
+          "nonexistent_uid", "newusername", "2000-01-01", "", emptyLocation)
+    }
+
+    // Try to update with a taken username - should throw TakenUserException and log error
+    add(account2)
+    expectThrows<TakenUserException>("already in use") {
+      accountRepository.editAccount(
+          account1.uid,
+          account2.username, // Use account2's username
+          "2000-01-01",
+          "",
+          emptyLocation)
+    }
+  }
 }

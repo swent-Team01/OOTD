@@ -6,7 +6,6 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeout
 
 /**
  * Object responsible for uploading images to Firebase Storage and return [ImageData]

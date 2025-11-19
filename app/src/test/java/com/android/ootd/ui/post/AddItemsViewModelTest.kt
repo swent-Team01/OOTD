@@ -268,4 +268,26 @@ class AddItemsViewModelTest {
     viewModel.resetAddSuccess()
     assertFalse(viewModel.addOnSuccess.value)
   }
+
+  @Test
+  fun `addItemAndUpdateInventory handles exception in outer catch`() = runTest {
+    mockkStatic(FirebaseAuth::class)
+    val mockAuth = mockk<FirebaseAuth>()
+    val mockUser = mockk<FirebaseUser>()
+    every { FirebaseAuth.getInstance() } returns mockAuth
+    every { mockAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "uid"
+    mockkObject(FirebaseImageUploader)
+    val mockUri = mockk<Uri>()
+    coEvery { mockRepository.getNewItemId() } returns "id"
+    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { mockRepository.addItem(any()) } throws RuntimeException("Critical error")
+    coEvery { mockAccountRepository.addItem(any()) } throws RuntimeException("Critical error")
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.setPhoto(mockUri)
+    viewModel.setCategory("Clothing")
+    viewModel.onAddItemClick()
+    advanceUntilIdle()
+    assertTrue(viewModel.addOnSuccess.value)
+  }
 }
