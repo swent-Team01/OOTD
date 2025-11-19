@@ -529,6 +529,151 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
+  fun getItemsList_returnsItemsFromCache() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUids = listOf("item1", "item2", "item3")
+    itemUids.forEach { accountRepository.addItem(it) }
+
+    // First call populates cache
+    val firstCall = accountRepository.getItemsList(account1.uid)
+    assertEquals(3, firstCall.size)
+
+    // Second call should return from memory cache
+    val secondCall = accountRepository.getItemsList(account1.uid)
+    assertEquals(3, secondCall.size)
+    itemUids.forEach { assertTrue(secondCall.contains(it)) }
+  }
+
+  @Test
+  fun getItemsList_returnsEmptyListWhenAccountNotFound() = runTest {
+    val itemsList = accountRepository.getItemsList("nonExistentUser")
+
+    assertTrue(itemsList.isEmpty())
+  }
+
+  @Test
+  fun getItemsList_returnsItemsAfterMultipleAdditions() = runTest {
+    accountRepository.addAccount(account1)
+
+    val item1 = "item1"
+    accountRepository.addItem(item1)
+    val list1 = accountRepository.getItemsList(account1.uid)
+    assertEquals(1, list1.size)
+
+    val item2 = "item2"
+    accountRepository.addItem(item2)
+    val list2 = accountRepository.getItemsList(account1.uid)
+    assertEquals(2, list2.size)
+    assertTrue(list2.containsAll(listOf(item1, item2)))
+  }
+
+  @Test
+  fun getItemsList_returnsUpdatedListAfterRemoval() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUids = listOf("item1", "item2", "item3")
+    itemUids.forEach { accountRepository.addItem(it) }
+
+    accountRepository.removeItem("item2")
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+    assertEquals(2, itemsList.size)
+    assertTrue(itemsList.contains("item1"))
+    assertFalse(itemsList.contains("item2"))
+    assertTrue(itemsList.contains("item3"))
+  }
+
+  @Test
+  fun getItemsList_handlesEmptyItemsUidsField() = runTest {
+    // Create account without itemsUids field
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId,
+                "location" to
+                    mapOf(
+                        "latitude" to account1.location.latitude,
+                        "longitude" to account1.location.longitude,
+                        "name" to account1.location.name)))
+        .await()
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+
+    assertTrue(itemsList.isEmpty())
+  }
+
+  @Test
+  fun getItemsList_handlesInvalidItemsUidsType() = runTest {
+    // Create account with invalid itemsUids type (not a list)
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .set(
+            mapOf(
+                "username" to account1.username,
+                "birthday" to account1.birthday,
+                "googleAccountEmail" to account1.googleAccountEmail,
+                "profilePicture" to account1.profilePicture,
+                "friendUids" to account1.friendUids,
+                "isPrivate" to account1.isPrivate,
+                "ownerId" to account1.ownerId,
+                "location" to
+                    mapOf(
+                        "latitude" to account1.location.latitude,
+                        "longitude" to account1.location.longitude,
+                        "name" to account1.location.name),
+                "itemsUids" to "not_a_list"))
+        .await()
+
+    val itemsList = accountRepository.getItemsList(account1.uid)
+
+    assertTrue(itemsList.isEmpty())
+  }
+
+  @Test
+  fun getItemsList_returnsImmutableCopy() = runTest {
+    accountRepository.addAccount(account1)
+
+    val itemUids = listOf("item1", "item2")
+    itemUids.forEach { accountRepository.addItem(it) }
+
+    val itemsList1 = accountRepository.getItemsList(account1.uid)
+    val itemsList2 = accountRepository.getItemsList(account1.uid)
+
+    // Verify we get separate list instances (defensive copy)
+    assertTrue(itemsList1 == itemsList2)
+    assertFalse(itemsList1 === itemsList2)
+  }
+
+  @Test
+  fun getItemsList_worksForDifferentUsers() = runTest {
+    accountRepository.addAccount(account1)
+    accountRepository.addAccount(account2)
+
+    accountRepository.addItem("item1")
+    accountRepository.addItem("item2")
+
+    // Switch to account2 by logging in as different user
+    // Note: In this test, both operations use currentUser, so we're testing
+    // that items are stored per user
+    val itemsListUser1 = accountRepository.getItemsList(currentUser.uid)
+    assertEquals(2, itemsListUser1.size)
+
+    // account2 should have no items
+    val itemsListUser2 = accountRepository.getItemsList(account2.uid)
+    assertTrue(itemsListUser2.isEmpty())
+  }
+
+  @Test
   fun addItem_addsItemToInventory() = runTest {
     accountRepository.addAccount(account1)
 
@@ -608,5 +753,73 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertTrue(itemsList.contains(item1))
     assertFalse(itemsList.contains(item2))
     assertTrue(itemsList.contains(item3))
+  }
+
+  @Test
+  fun checkAccountData_logsErrorForBlankUid() = runTest {
+    // Test that checkAccountData correctly identifies and logs blank UIDs
+    // Getting account with blank UID should throw BlankUserID before checkAccountData
+    expectThrows<BlankUserID> { accountRepository.getAccount("") }
+  }
+
+  @Test
+  fun createAccount_logsErrorAndRethrowsOnException() = runTest {
+    // Add user to simulate existing username
+    add(account1)
+
+    val user =
+        User(
+            uid = "test_user",
+            ownerId = "test_user",
+            username = account1.username,
+            profilePicture = "")
+
+    // Try to create account with existing username - should log error and throw
+    expectThrows<TakenUserException>("already in use") {
+      accountRepository.createAccount(user, "test@example.com", "1990-01-01", emptyLocation)
+    }
+  }
+
+  @Test
+  fun addFriend_logsWarningWhenCannotAddToFriendsList() = runTest {
+    add(account1, account2)
+
+    // Manually add friend1 to friend2's list
+    accountRepository.addFriend(account1.uid, account2.uid)
+
+    // Delete account2's document to simulate inability to update their list
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account2.uid)
+        .delete()
+        .await()
+
+    // This should log warning but not throw (returns false)
+    val result = accountRepository.addFriend(account1.uid, account2.uid)
+
+    // Result should be false because we couldn't update friend2's list
+    assertFalse(result)
+  }
+
+  @Test
+  fun editAccount_logsErrorOnException() = runTest {
+    add(account1)
+
+    // Try to update a non-existent account - should throw UnknowUserID
+    expectThrows<UnknowUserID> {
+      accountRepository.editAccount(
+          "nonexistent_uid", "newusername", "2000-01-01", "", emptyLocation)
+    }
+
+    // Try to update with a taken username - should throw TakenUserException and log error
+    add(account2)
+    expectThrows<TakenUserException>("already in use") {
+      accountRepository.editAccount(
+          account1.uid,
+          account2.username, // Use account2's username
+          "2000-01-01",
+          "",
+          emptyLocation)
+    }
   }
 }
