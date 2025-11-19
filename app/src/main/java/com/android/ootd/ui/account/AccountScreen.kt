@@ -1,14 +1,13 @@
 package com.android.ootd.ui.account
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -22,15 +21,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.R
 import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.utils.DisplayUserPosts
+import com.android.ootd.utils.LoadingScreen
+import com.android.ootd.utils.OOTDTopBar
 import com.android.ootd.utils.ProfilePicture
-import com.android.ootd.utils.TextField
+import com.android.ootd.utils.SettingsButton
+import com.android.ootd.utils.ShowText
 
 object AccountPageTestTags {
   const val TITLE_TEXT = "accountPageTitleText"
@@ -40,7 +42,6 @@ object AccountPageTestTags {
   const val USERNAME_TEXT = "accountPageUsernameText"
   const val FRIEND_COUNT_TEXT = "accountPageFriendCountText"
   const val LOADING = "accountPageLoading"
-
   const val YOUR_POST_SECTION = "yourPostsStart"
   const val POST_TAG = "postTag"
 }
@@ -62,7 +63,7 @@ fun AccountPage(
   }
 
   if (uiState.isLoading) {
-    LoadingOverlay()
+      LoadingScreen(modifier = Modifier.testTag(AccountPageTestTags.LOADING), contentDescription = "Loading profile")
   } else {
     AccountPageContent(uiState, onEditAccount, onPostClick)
   }
@@ -78,6 +79,7 @@ fun AccountPageContent(
   val friendListSize = friendList.size
   val username = uiState.username
   val posts = uiState.posts
+    val profilePicture = uiState.profilePicture
   val scrollState = rememberScrollState()
 
   Column(
@@ -87,17 +89,27 @@ fun AccountPageContent(
               .verticalScroll(scrollState)
               .padding(horizontal = 22.dp, vertical = 10.dp)) {
         // Setting button
-        EditButton(onEditAccount, Modifier.align(Alignment.End))
-
+      OOTDTopBar(
+          modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
+          rightComposable = {
+              SettingsButton(
+                  onEditAccount = onEditAccount,
+                  modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
+                  size = 32.dp
+              )
+          },
+          leftComposable = { }
+      )
         Spacer(modifier = Modifier.height(36.dp))
 
         // Avatar
         ProfilePicture(
-            size = 150.dp, profilePicture = uiState.profilePicture, username = uiState.username)
+            modifier = Modifier.testTag(AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() } ?: AccountPageTestTags.AVATAR_IMAGE),
+            size = 150.dp, profilePicture = profilePicture, username = uiState.username, shape = CircleShape)
 
         Spacer(modifier = Modifier.height(18.dp))
         // Username
-        TextField(
+        ShowText(
             text = username,
             style = typography.displayLarge,
             modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
@@ -106,14 +118,14 @@ fun AccountPageContent(
         Spacer(modifier = Modifier.height(9.dp))
 
         // Friend count
-        TextField(
+        ShowText(
             text = "$friendListSize friends",
             style = typography.bodyLarge,
             modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        TextField(
+        ShowText(
             text = "Your posts :",
             style = typography.bodyLarge,
             modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
@@ -131,46 +143,23 @@ fun AccountPageContent(
       }
 }
 
+@Preview(showBackground = true)
 @Composable
-private fun LoadingOverlay() {
-  Box(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(colorScheme.background.copy(alpha = 0.95f))
-              .testTag(AccountPageTestTags.LOADING),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          Image(
-              painter = painterResource(id = R.drawable.hanger),
-              contentDescription = "Loading feed",
-              modifier = Modifier.size(72.dp))
-          Spacer(modifier = Modifier.height(16.dp))
-          CircularProgressIndicator(color = colorScheme.primary)
-        }
-      }
-}
+fun AccountPagePreview() {
+    val sampleState = AccountPageViewState(
+        username = "JohnDoe",
+        profilePicture = "",
+        friends = listOf("friend1", "friend2", "friend3"),
+        posts = listOf(),
+        isLoading = false,
+        errorMsg = null
+    )
 
-@Composable
-private fun EditButton(onEditAccount: () -> Unit, modifier: Modifier) {
-  IconButton(
-      onClick = onEditAccount, modifier = modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON)) {
-        Icon(
-            imageVector = Icons.Default.Settings,
-            contentDescription = "Settings",
-            tint = colorScheme.onBackground,
-            modifier = Modifier.size(32.dp))
-      }
-
-  Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = "Your account",
-            style = typography.displayMedium,
-            fontFamily = Bodoni,
-            color = colorScheme.primary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT))
-      }
+    OOTDTheme {
+        AccountPageContent(
+            uiState = sampleState,
+            onEditAccount = {},
+            onPostClick = {}
+        )
+    }
 }
