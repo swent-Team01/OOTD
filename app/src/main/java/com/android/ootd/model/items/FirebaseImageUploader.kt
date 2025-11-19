@@ -15,7 +15,7 @@ import kotlinx.coroutines.withTimeout
  */
 object FirebaseImageUploader {
 
-  private val TAG = "FirebaseImageUploader"
+  private const val TAG = "FirebaseImageUploader"
 
   private val storage by lazy {
     try {
