@@ -8,6 +8,8 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
 
 class FakeItemsRepository : ItemsRepository {
+  var lastAddedItem: Item? = null
+
   override fun getNewItemId(): String = "fake-item"
 
   override suspend fun getAllItems(): List<Item> = emptyList()
@@ -21,7 +23,7 @@ class FakeItemsRepository : ItemsRepository {
   override suspend fun getAssociatedItems(postUuid: String): List<Item> = emptyList()
 
   override suspend fun addItem(item: Item) {
-    // no-op
+    lastAddedItem = item
   }
 
   override suspend fun editItem(itemUUID: String, newItem: Item) {

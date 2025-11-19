@@ -4,7 +4,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.android.ootd.ui.post.items.ConditionDropdown
@@ -31,8 +32,14 @@ class ItemFieldsComponentsTest {
           options = options)
     }
 
-    composeTestRule.onNodeWithTag("conditionDropdown", useUnmergedTree = true).performClick()
-    composeTestRule.onNodeWithText("Used").performClick()
+    composeTestRule.onNodeWithContentDescription("Toggle condition options").performClick()
+    composeTestRule.waitUntil(5_000) {
+      composeTestRule
+          .onAllNodesWithText("Used", useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeTestRule.onNodeWithText("Used", useUnmergedTree = true).performClick()
     composeTestRule.runOnIdle { assertEquals("Used", selectedState.value) }
   }
 
@@ -50,8 +57,14 @@ class ItemFieldsComponentsTest {
           options = options)
     }
 
-    composeTestRule.onNodeWithTag("currencyField", useUnmergedTree = true).performClick()
-    composeTestRule.onNodeWithText("USD").performClick()
+    composeTestRule.onNodeWithContentDescription("Toggle currency options").performClick()
+    composeTestRule.waitUntil(5_000) {
+      composeTestRule
+          .onAllNodesWithText("USD", useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeTestRule.onNodeWithText("USD", useUnmergedTree = true).performClick()
     composeTestRule.runOnIdle { assertEquals("USD", selectedState.value) }
   }
 }
