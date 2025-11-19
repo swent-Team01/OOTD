@@ -20,6 +20,7 @@ import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
+import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
@@ -69,9 +70,15 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * navigate from Splash to the Authentication screen.
    */
   fun launchFullAppWaitForLogin() {
+    initTestNavController()
     composeTestRule.setContent {
-      OOTDApp(context = context, credentialManager = fakeCredentialManager, overridePhoto = true)
+      OOTDApp(
+          context = context,
+          credentialManager = fakeCredentialManager,
+          overridePhoto = true,
+          testNavController = testNavController)
     }
+    waitForRoute(Screen.Authentication.route)
     verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
     verifySignInScreenAppears(composeTestRule)
   }
@@ -104,6 +111,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * - The user account doesn't exist in the database (userExists returns false)
    */
   fun waitNavigationRegisterScreen() {
+    waitForRoute(Screen.RegisterUsername.route)
     verifyElementAppearsWithTimer(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE)
   }
 
@@ -207,14 +215,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     // Ensure the Save button is visible by scrolling to it if necessary
     clickWithWait(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE, shouldScroll = true)
 
-    // More robust waiting with better error handling
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.SCREEN)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
+    waitForRoute(Screen.Feed.route)
     verifyFeedScreenAppears(composeTestRule)
     composeTestRule.waitForIdle()
   }
@@ -258,6 +259,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    */
   fun navigateToSearchScreen() {
     clickWithWait(composeTestRule, NavigationTestTags.SEARCH_TAB)
+    waitForRoute(Screen.SearchScreen.route)
     verifyElementAppearsWithTimer(composeTestRule, SearchScreenTestTags.SEARCH_SCREEN)
   }
 
@@ -312,6 +314,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
 
     clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
     clickWithWait(composeTestRule, FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
+    waitForRoute(Screen.NotificationsScreen.route)
     verifyElementAppearsWithTimer(composeTestRule, NotificationsScreenTestTags.NOTIFICATIONS_SCREEN)
     verifyElementAppearsWithTimer(composeTestRule, NotificationsScreenTestTags.NOTIFICATION_ITEM)
   }
@@ -332,6 +335,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    */
   fun navigateToInventoryAndCheckAddItemButton() {
     clickWithWait(composeTestRule, NavigationTestTags.INVENTORY_TAB)
+    waitForRoute(Screen.InventoryScreen.route)
     verifyInventoryScreenAppears(composeTestRule)
     verifyElementAppearsWithTimer(composeTestRule, InventoryScreenTestTags.EMPTY_STATE)
     verifyElementAppearsWithTimer(composeTestRule, InventoryScreenTestTags.ADD_ITEM_FAB)
@@ -355,6 +359,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     clickWithWait(composeTestRule, NavigationTestTags.ACCOUNT_TAB)
     clickWithWait(composeTestRule, AccountPageTestTags.SETTINGS_BUTTON)
     clickWithWait(composeTestRule, UiTestTags.TAG_SIGNOUT_BUTTON, shouldScroll = true)
+    waitForRoute(Screen.Authentication.route)
     verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
     verifySignInScreenAppears(composeTestRule)
   }
