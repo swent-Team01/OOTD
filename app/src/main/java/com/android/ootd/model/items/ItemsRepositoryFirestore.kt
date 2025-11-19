@@ -1,5 +1,6 @@
 package com.android.ootd.model.items
 
+import android.util.Log
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -111,7 +112,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     return try {
       val data = doc.data ?: return null
       ItemsMappers.parseItem(data)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       null
     }
   }

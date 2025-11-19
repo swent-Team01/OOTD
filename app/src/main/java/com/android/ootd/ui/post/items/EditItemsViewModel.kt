@@ -163,31 +163,6 @@ open class EditItemsViewModel(
                 FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
             else state.image
 
-      val updatedItem =
-          Item(
-              itemUuid = state.itemId,
-              postUuids = state.postUuids,
-              image = finalImage,
-              category = state.category,
-              type = state.type,
-              brand = state.brand,
-              price = state.price,
-              currency = state.currency,
-              material = state.material,
-              link = state.link,
-              ownerId = state.ownerId,
-              condition = state.condition,
-              size = state.size,
-              fitType = state.fitType,
-              style = state.style,
-              notes = state.notes,
-          )
-        if (finalImage.imageUrl.isEmpty()) {
-          setErrorMsg("Please select a photo.")
-          _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
-          return@launch
-        }
-
         val updatedItem =
             Item(
                 itemUuid = state.itemId,
@@ -197,9 +172,21 @@ open class EditItemsViewModel(
                 type = state.type,
                 brand = state.brand,
                 price = state.price,
+                currency = state.currency,
                 material = state.material,
                 link = state.link,
-                ownerId = state.ownerId)
+                ownerId = state.ownerId,
+                condition = state.condition,
+                size = state.size,
+                fitType = state.fitType,
+                style = state.style,
+                notes = state.notes,
+            )
+        if (finalImage.imageUrl.isEmpty()) {
+          setErrorMsg("Please select a photo.")
+          _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
+          return@launch
+        }
 
         // Call editItem directly in this coroutine (not nested launch)
         // The cache update in editItem() happens synchronously before Firestore .await()
