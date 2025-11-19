@@ -123,12 +123,14 @@ class OutfitPreviewViewModel(
         _uiState.value = state.copy(isLoading = true)
         try {
 
+          // Compress image before upload
           val compressedImage =
               imageCompressor.compressImage(
                   state.imageUri.toUri(),
                   compressionThreshold = COMPRESS_THRESHOLD,
                   context = context)
 
+          // Check compression result
           if (compressedImage == null) {
             setErrorMessage("Failed to compress image")
             _uiState.value = state.copy(isLoading = false)

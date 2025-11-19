@@ -151,13 +151,16 @@ open class EditItemsViewModel(
       try {
         val finalImage =
             if (state.localPhotoUri != null) {
+              // Compress and upload new image
               val compressedImage =
                   imageCompressor.compressImage(state.localPhotoUri, COMPRESS_THRESHOLD, context)
+              // Handle compression failure
               if (compressedImage == null) {
                 setErrorMsg("Failed to compress image.")
                 _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
                 return@launch
               }
+              // Upload compressed image and get ImageData
               FirebaseImageUploader.uploadImage(compressedImage, state.itemId, state.localPhotoUri)
             } else state.image
 

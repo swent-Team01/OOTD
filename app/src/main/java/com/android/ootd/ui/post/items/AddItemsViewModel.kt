@@ -157,10 +157,12 @@ open class AddItemsViewModel(
   ): ImageData? {
     if (localUri == null) return null
 
+    // Compress image if above threshold
     val compressedImage =
         imageCompressor.compressImage(
             contentUri = localUri, compressionThreshold = COMPRESS_THRESHOLD, context = context)
 
+    // Abort if compression failed
     if (compressedImage == null) return null
 
     val uploadedImage = FirebaseImageUploader.uploadImage(compressedImage, itemUuid, localUri)
@@ -295,12 +297,16 @@ open class AddItemsViewModel(
         when (trimmedCategory.lowercase()) {
           "clothes",
           "clothing" -> "Clothing"
+
           "shoes",
           "shoe" -> "Shoes"
+
           "bags",
           "bag" -> "Bags"
+
           "accessories",
           "accessory" -> "Accessories"
+
           else -> trimmedCategory
         }
     val isExactMatch = categories.any { it.equals(normalized, ignoreCase = true) }
@@ -330,12 +336,16 @@ open class AddItemsViewModel(
         when (trimmedCategory.lowercase()) {
           "clothes",
           "clothing" -> "Clothing"
+
           "shoes",
           "shoe" -> "Shoes"
+
           "bags",
           "bag" -> "Bags"
+
           "accessories",
           "accessory" -> "Accessories"
+
           else -> trimmedCategory
         }
     val error =
@@ -343,6 +353,7 @@ open class AddItemsViewModel(
           trimmedCategory.isEmpty() -> null
           !categories.any { it.equals(normalized, ignoreCase = true) } ->
               "Please enter one of: Clothing, Accessories, Shoes, or Bags."
+
           else -> null
         }
     _uiState.value = state.copy(invalidCategory = error)
