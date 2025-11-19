@@ -48,7 +48,7 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
 
     val postId = createPost(user)
 
-    val like = Like(postId = postId, postLikerUserId = user, timestamp = System.currentTimeMillis())
+    val like = Like(postId = postId, postLikerId = user, timestamp = System.currentTimeMillis())
 
     repo.likePost(like)
 
@@ -121,14 +121,14 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
     val postId = createPost(userA)
 
     repo.likePost(
-        Like(postId = postId, postLikerUserId = userA, timestamp = System.currentTimeMillis()))
+        Like(postId = postId, postLikerId = userA, timestamp = System.currentTimeMillis()))
 
     val likes = repo.getLikesForPost(postId)
 
     assertEquals(1, likes.size)
     val like = likes.first()
     assertEquals(postId, like.postId)
-    assertEquals(userA, like.postLikerUserId)
+    assertEquals(userA, like.postLikerId)
   }
 
   @Test
@@ -150,7 +150,7 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
     val invalidLike =
         Like(
             postId = "bad/id", // Firestore does not allow ids with '/'
-            postLikerUserId = uid,
+            postLikerId = uid,
             timestamp = System.currentTimeMillis())
 
     assertThrows(Exception::class.java) { runTest { repo.likePost(invalidLike) } }

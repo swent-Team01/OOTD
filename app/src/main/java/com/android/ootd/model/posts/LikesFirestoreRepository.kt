@@ -14,11 +14,11 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
       db.collection(LIKE_COLLECTION_PATH)
           .document(like.postId)
           .collection("users")
-          .document(like.postLikerUserId)
+          .document(like.postLikerId)
           .set(
               mapOf(
                   "postId" to like.postId,
-                  "likerUserId" to like.postLikerUserId,
+                  "likerUserId" to like.postLikerId,
                   "timestamp" to like.timestamp),
           )
           .await()
@@ -68,7 +68,7 @@ class LikesFirestoreRepository(private val db: FirebaseFirestore) : LikesReposit
         try {
           Like(
               postId = postId,
-              postLikerUserId = doc.getString("likerUserId") ?: return@mapNotNull null,
+              postLikerId = doc.getString("likerUserId") ?: return@mapNotNull null,
               timestamp = doc.getLong("timestamp") ?: 0L)
         } catch (e: Exception) {
           Log.e(TAG_LIKE_REPOSITORY, "Invalid like document ${doc.id}", e)
