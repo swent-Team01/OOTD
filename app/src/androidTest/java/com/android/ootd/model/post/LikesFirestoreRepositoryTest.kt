@@ -111,4 +111,22 @@ class LikesFirestoreRepositoryTest : FirestoreTest() {
 
     assertEquals(1, repo.getLikeCount(postId))
   }
+
+  @Test
+  fun getLikesForPost_returnsAllLikesForPost() = runTest {
+    FirebaseEmulator.auth.signInAnonymously().await()
+    val userA = FirebaseEmulator.auth.currentUser!!.uid
+
+    val postId = createPost(userA)
+
+    repo.likePost(
+        Like(postId = postId, likerUserId = userA, timestamp = System.currentTimeMillis()))
+
+    val likes = repo.getLikesForPost(postId)
+
+    assertEquals(1, likes.size)
+    val like = likes.first()
+    assertEquals(postId, like.postId)
+    assertEquals(userA, like.likerUserId)
+  }
 }
