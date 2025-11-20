@@ -37,6 +37,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -458,7 +460,7 @@ fun EmptyStateText(message: String, modifier: Modifier = Modifier) {
 @Composable
 fun CircularIconButton(
     onClick: () -> Unit,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     contentDescription: String,
     modifier: Modifier = Modifier,
     backgroundColor: Color = Primary.copy(alpha = 0.5f),
@@ -480,7 +482,6 @@ fun CircularIconButton(
  * Shows a centered message explaining why permission is needed, with buttons to grant permission or
  * cancel.
  *
- * @param permissionName The name of the permission being requested (e.g., "Camera").
  * @param message The message explaining why the permission is needed.
  * @param onRequestPermission Callback invoked when user clicks to grant permission.
  * @param onCancel Callback invoked when user cancels the permission request.
@@ -488,7 +489,6 @@ fun CircularIconButton(
  */
 @Composable
 fun PermissionRequestScreen(
-    permissionName: String,
     message: String,
     onRequestPermission: () -> Unit,
     onCancel: () -> Unit,
@@ -516,9 +516,7 @@ fun PermissionRequestScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        androidx.compose.material3.TextButton(onClick = onCancel) {
-          Text("Cancel", color = Secondary)
-        }
+        TextButton(onClick = onCancel) { Text("Cancel", color = Secondary) }
       }
 }
 

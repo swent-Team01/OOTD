@@ -52,12 +52,12 @@ fun tabToScreen(tab: Tab): Screen = tab.destination
 @Composable
 fun BottomNavigationBar(
     modifier: Modifier = Modifier,
-    tabs: List<Tab> = com.android.ootd.ui.navigation.tabs,
+    tabList: List<Tab> = tabs,
     selectedRoute: String,
     onTabSelected: (Screen) -> Unit,
 ) {
   // Map current route string to a Tab; default to Feed
-  val selectedTab = tabs.find { it.destination.route == selectedRoute }
+  val selectedTab = tabList.find { it.destination.route == selectedRoute }
   BottomNavigationMenu(
       tabs = com.android.ootd.ui.navigation.tabs,
       selectedTab = selectedTab,
