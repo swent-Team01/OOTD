@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">OOTD</string>
-    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_main">OOTD</string>
     <string name="default_web_client_id">510496448447-usp6pg3m2thd4sh57tac9u5i7uanmd5l.apps.googleusercontent.com</string>
 
 </resources>

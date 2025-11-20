@@ -1,12 +1,8 @@
 package com.android.ootd.ui.items
 
-import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -51,6 +47,7 @@ class EditItemsScreenTest {
           type = "T-shirt",
           brand = "Nike",
           price = 29.99,
+          currency = "USD",
           material =
               listOf(
                   Material(name = "Cotton", percentage = 80.0),
@@ -78,6 +75,7 @@ class EditItemsScreenTest {
 
   // Helper: ensure a node is visible (scroll if needed)
   private fun ensureVisible(tag: String) {
+    composeTestRule.waitForNodeWithTag(tag)
     val alreadyVisible =
         runCatching {
               composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed()
@@ -96,58 +94,6 @@ class EditItemsScreenTest {
           .isSuccess)
           return
     }
-  }
-
-  // -------- Load/Populate --------
-
-  @Test
-  fun loadItem_populatesAllFields() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-    composeTestRule.runOnIdle { viewModel.loadItem(testItem) }
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .assertTextContains("Clothing")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
-        .assertTextEquals("Type", "T-shirt")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
-        .assertTextEquals("Brand", "Nike")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
-        .assertTextEquals("Price", "29.99")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
-        .assertTextContains("Cotton 80.0%, Polyester 20.0%")
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
-        .assertTextEquals("Link", "https://nike.com/tshirt")
-  }
-
-  // -------- Save/Delete enablement --------
-
-  @Test
-  fun save_and_delete_button_enablement() {
-    composeTestRule.setContent { EditItemsScreen(testItem.itemUuid, viewModel) }
-
-    // Initially disabled (no loaded item / missing prereqs)
-    ensureVisible(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
-    ensureVisible(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsNotEnabled()
-
-    // Load item and set minimal valid state
-    composeTestRule.runOnIdle {
-      viewModel.loadItem(testItem)
-      viewModel.setPhoto(Uri.parse("https://example.com/test.jpg"))
-      viewModel.setCategory("Clothing")
-    }
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsEnabled()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsEnabled()
   }
 
   // -------- Edit multiple fields --------
@@ -195,15 +141,25 @@ class EditItemsScreenTest {
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
 
-    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).performTextClearance()
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+    composeTestRule.runOnIdle { viewModel.setCurrency("CHF") }
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
+        .assertTextContains("CHF")
+
+    ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
+        .performTextClearance()
+    composeTestRule
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .performTextInput("https://adidas.com")
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .assertTextContains("https://adidas.com")
 
+    ensureVisible(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)

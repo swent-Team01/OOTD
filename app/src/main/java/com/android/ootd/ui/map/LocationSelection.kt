@@ -286,6 +286,7 @@ fun LocationSelectionSection(
 }
 
 /** Preview of [LocationSelectionSection] with sample data. */
+@Suppress("ViewModelConstructorInComposable")
 @Preview(showBackground = true)
 @Composable
 private fun LocationSelectionSectionPreview() {

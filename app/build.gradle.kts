@@ -181,6 +181,10 @@ dependencies {
   implementation(platform(libs.compose.bom))
   implementation(libs.androidx.datastore.core)
   implementation(libs.play.services.location)
+  implementation(libs.androidx.foundation.layout)
+  implementation(libs.androidx.foundation)
+  implementation(libs.androidx.animation)
+  implementation(libs.androidx.material3)
 
   // Firebase
   // Use Firebase BOM from version catalog for maintainability

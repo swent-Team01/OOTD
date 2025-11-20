@@ -4,6 +4,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -27,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +47,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -60,12 +64,22 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_TYPE = "inputItemType"
   const val INPUT_ITEM_BRAND = "inputItemBrand"
   const val INPUT_ITEM_PRICE = "inputItemPrice"
+  const val INPUT_ITEM_CURRENCY = "inputItemCurrency"
   const val INPUT_ITEM_MATERIAL = "inputItemMaterial"
   const val INPUT_ITEM_LINK = "inputItemLink"
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
   const val ALL_FIELDS = "allFields"
   const val TYPE_SUGGESTIONS = "typeSuggestions"
+  const val ADDITIONAL_DETAILS_TOGGLE = "edit_additionalDetailsToggle"
+  const val ADDITIONAL_DETAILS_SECTION = "edit_additionalDetailsSection"
+  const val INPUT_ITEM_CONDITION = "edit_inputItemCondition"
+  const val INPUT_ITEM_SIZE = "edit_inputItemSize"
+  const val INPUT_ITEM_FIT_TYPE = "edit_inputItemFitType"
+  const val INPUT_ITEM_STYLE = "edit_inputItemStyle"
+  const val INPUT_ITEM_NOTES = "edit_inputItemNotes"
+  const val STYLE_SUGGESTIONS = "edit_styleSuggestions"
+  const val FIT_TYPE_SUGGESTIONS = "edit_fitTypeSuggestions"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -126,7 +140,7 @@ fun EditItemsScreen(
                   Modifier.fillMaxSize()
                       .padding(innerPadding)
                       .nestedScroll(nestedScrollConnection)) {
-                _root_ide_package_.com.android.ootd.ui.post.items.FieldsList(
+                FieldsList(
                     modifier =
                         Modifier.fillMaxWidth()
                             .padding(16.dp)
@@ -147,8 +161,8 @@ fun EditItemsScreen(
                     onBrandChange = editItemsViewModel::setBrand,
                     price = itemsUIState.price,
                     onPriceChange = editItemsViewModel::setPrice,
-                    material = itemsUIState.materialText,
-                    onMaterialChange = editItemsViewModel::setMaterial,
+                    currency = itemsUIState.currency,
+                    onCurrencyChange = editItemsViewModel::setCurrency,
                     link = itemsUIState.link,
                     onLinkChange = editItemsViewModel::setLink,
                     isDeleteEnabled = itemsUIState.itemId.isNotEmpty(),
@@ -158,6 +172,19 @@ fun EditItemsScreen(
                             itemsUIState.image.imageUrl.isNotEmpty()) &&
                             itemsUIState.category.isNotEmpty(),
                     onSave = editItemsViewModel::onSaveItemClick,
+                    // Additional
+                    condition = itemsUIState.condition,
+                    onConditionChange = editItemsViewModel::setCondition,
+                    size = itemsUIState.size,
+                    onSizeChange = editItemsViewModel::setSize,
+                    fitType = itemsUIState.fitType,
+                    onFitTypeChange = editItemsViewModel::setFitType,
+                    style = itemsUIState.style,
+                    onStyleChange = editItemsViewModel::setStyle,
+                    notes = itemsUIState.notes,
+                    onNotesChange = editItemsViewModel::setNotes,
+                    material = itemsUIState.materialText,
+                    onMaterialChange = editItemsViewModel::setMaterial,
                 )
 
                 // Image preview overlay
@@ -225,14 +252,29 @@ private fun FieldsList(
     onBrandChange: (String) -> Unit,
     price: Double,
     onPriceChange: (Double) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
+    currency: String,
+    onCurrencyChange: (String) -> Unit,
     link: String,
     onLinkChange: (String) -> Unit,
     isDeleteEnabled: Boolean,
     onDelete: () -> Unit,
     isSaveEnabled: Boolean,
     onSave: () -> Unit,
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
+    // Preview flags
+    additionalExpandedPreview: Boolean = false,
+    conditionMenuExpandedPreview: Boolean = false,
 ) {
   LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
     item { ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera) }
@@ -252,21 +294,37 @@ private fun FieldsList(
           onFocus = onTypeFocus)
     }
     item {
-      BrandField(
+      ItemPrimaryFields(
           brand = brand,
-          onChange = onBrandChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND)
+          onBrandChange = onBrandChange,
+          brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
+          price = price,
+          onPriceChange = onPriceChange,
+          priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
+          currency = currency,
+          onCurrencyChange = onCurrencyChange,
+          currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
+          size = size,
+          onSizeChange = onSizeChange,
+          sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
+          link = link,
+          onLinkChange = onLinkChange,
+          linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
     }
-    item { PriceField(price = price, onChange = onPriceChange) }
     item {
-      MaterialField(
-          materialText = material,
-          onChange = onMaterialChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
-    }
-    item {
-      LinkField(
-          link = link, onChange = onLinkChange, testTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+      AdditionalDetailsSectionEdit(
+          condition = condition,
+          onConditionChange = onConditionChange,
+          material = material,
+          onMaterialChange = onMaterialChange,
+          fitType = fitType,
+          onFitTypeChange = onFitTypeChange,
+          style = style,
+          onStyleChange = onStyleChange,
+          notes = notes,
+          onNotesChange = onNotesChange,
+          expandedInitially = additionalExpandedPreview,
+          condExpandedInitially = conditionMenuExpandedPreview)
     }
     item {
       SaveDeleteRow(
@@ -295,20 +353,6 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
           Text("Take a new picture")
         }
   }
-}
-
-@Composable
-private fun PriceField(price: Double, onChange: (Double) -> Unit) {
-  val text = if (price == 0.0) "" else price.toString()
-  OutlinedTextField(
-      value = text,
-      onValueChange = { onChange(it.toDoubleOrNull() ?: 0.0) },
-      label = { Text("Price") },
-      placeholder = { Text("e.g., 49.99") },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE))
 }
 
 @Composable
@@ -346,5 +390,148 @@ private fun SaveDeleteRow(
         colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
           Text("Save Changes")
         }
+  }
+}
+
+@Composable
+private fun AdditionalDetailsSectionEdit(
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    expandedInitially: Boolean = false,
+    condExpandedInitially: Boolean = false,
+) {
+  var expanded by remember { mutableStateOf(expandedInitially) }
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp)
+                .testTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+          Icon(
+              imageVector =
+                  if (expanded) Icons.Filled.KeyboardArrowDown
+                  else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+              contentDescription = if (expanded) "Collapse" else "Expand",
+              tint = MaterialTheme.colorScheme.primary)
+          Text(
+              text = "Enter additional details",
+              style =
+                  MaterialTheme.typography.bodyLarge.copy(
+                      color = MaterialTheme.colorScheme.primary))
+        }
+
+    AnimatedVisibility(visible = expanded) {
+      Column {
+        ConditionDropdown(
+            condition = condition,
+            onConditionChange = onConditionChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_CONDITION,
+            expandedInitially = condExpandedInitially)
+        MaterialField(
+            materialText = material,
+            onChange = onMaterialChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
+        FitTypeField(
+            fitType = fitType,
+            onChange = onFitTypeChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE,
+            dropdownTestTag = EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS)
+        StyleField(
+            style = style,
+            onChange = onStyleChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_STYLE,
+            dropdownTestTag = EditItemsScreenTestTags.STYLE_SUGGESTIONS)
+        NotesField(
+            notes = notes,
+            onChange = onNotesChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_NOTES)
+      }
+    }
+  }
+}
+
+@Preview(name = "Edit Items", showBackground = true)
+@Composable
+fun EditItemsScreenSmallPreview() {
+  MaterialTheme {
+    val maxImageSize = 180.dp
+    val minImageSize = 80.dp
+
+    val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
+    val imageScaleState = remember { mutableFloatStateOf(1f) }
+
+    val nestedScrollConnection =
+        _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+            currentImageSize = currentImageSizeState,
+            imageScale = imageScaleState,
+            minImageSize = minImageSize,
+            maxImageSize = maxImageSize)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+      Scaffold(
+          topBar = { EditTopBar(goBack = {}) },
+          content = { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
+              FieldsList(
+                  modifier =
+                      Modifier.fillMaxWidth().padding(16.dp).offset {
+                        IntOffset(0, currentImageSizeState.value.roundToPx())
+                      },
+                  onPickFromGallery = {},
+                  onOpenCamera = {},
+                  category = "Tops",
+                  onCategoryChange = {},
+                  type = "Hoodie",
+                  suggestions = listOf("Hoodie", "Jacket", "T-Shirt"),
+                  onTypeChange = {},
+                  onTypeFocus = {},
+                  brand = "BrandY",
+                  onBrandChange = {},
+                  price = 49.9,
+                  onPriceChange = {},
+                  currency = "EUR",
+                  onCurrencyChange = {},
+                  link = "https://example.com/item",
+                  onLinkChange = {},
+                  isDeleteEnabled = true,
+                  onDelete = {},
+                  isSaveEnabled = true,
+                  onSave = {},
+                  condition = "New",
+                  onConditionChange = {},
+                  size = "M",
+                  onSizeChange = {},
+                  fitType = "Regular",
+                  onFitTypeChange = {},
+                  style = "Casual",
+                  onStyleChange = {},
+                  notes = "Great condition",
+                  onNotesChange = {},
+                  material = "Cotton 80%, Wool 20%",
+                  onMaterialChange = {},
+                  additionalExpandedPreview = true,
+                  conditionMenuExpandedPreview = true)
+
+              ItemsImagePreview(
+                  localUri = null,
+                  remoteUrl = "",
+                  maxImageSize = maxImageSize,
+                  imageScale = imageScaleState.floatValue,
+                  currentSize = currentImageSizeState.value,
+                  testTag = EditItemsScreenTestTags.PLACEHOLDER_PICTURE)
+            }
+          })
+    }
   }
 }

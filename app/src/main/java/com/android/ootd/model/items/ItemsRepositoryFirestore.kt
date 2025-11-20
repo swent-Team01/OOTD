@@ -14,6 +14,10 @@ const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged i
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
 
+  // In-memory cache for items - updated optimistically for offline support
+  // ConcurrentHashMap ensures thread-safe reads/writes across coroutines
+  private val itemsCache = java.util.concurrent.ConcurrentHashMap<String, Item>()
+
   override fun getNewItemId(): String {
     return db.collection(ITEMS_COLLECTION).document().id
   }
@@ -39,8 +43,17 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun getItemById(uuid: String): Item {
+    // Check memory cache first
+    itemsCache[uuid]?.let {
+      Log.d("ItemsRepositoryFirestore", "Returning item $uuid from memory cache")
+      return it
+    }
+
     val doc = db.collection(ITEMS_COLLECTION).document(uuid).get().await()
-    return mapToItem(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
+    val item = mapToItem(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
+    // Update cache
+    itemsCache[uuid] = item
+    return item
   }
 
   override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
@@ -48,32 +61,127 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val ownerId = Firebase.auth.currentUser?.uid ?: throw Exception(NOT_LOGGED_IN_EXCEPTION)
 
-    // Batch of 10 item for each querries
-    val items = mutableListOf<Item>()
-    uuids.chunked(10).forEach { batch ->
-      val snapshot =
-          db.collection(ITEMS_COLLECTION)
-              .whereIn("itemUuid", batch)
-              .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
-              .get()
-              .await()
-      items.addAll(snapshot.mapNotNull { mapToItem(it) })
+    // First check memory cache for all requested items
+    val cachedItems = uuids.mapNotNull { itemsCache[it] }
+    if (cachedItems.size == uuids.size) {
+      Log.d("ItemsRepositoryFirestore", "Returning all ${uuids.size} items from memory cache")
+      return cachedItems
     }
+
+    // If some items in cache, still return them even if not all
+    if (cachedItems.isNotEmpty()) {
+      Log.d(
+          "ItemsRepositoryFirestore",
+          "Found ${cachedItems.size}/${uuids.size} items in cache, fetching rest")
+    }
+
+    // Fetch missing items from Firestore with timeout
+    val items = mutableListOf<Item>()
+    items.addAll(cachedItems) // Start with cached items
+
+    val missingUuids = uuids.filter { !itemsCache.containsKey(it) }
+    if (missingUuids.isNotEmpty()) {
+      try {
+        kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+          missingUuids.chunked(10).forEach { batch ->
+            val snapshot =
+                db.collection(ITEMS_COLLECTION)
+                    .whereIn("itemUuid", batch)
+                    .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
+                    .get()
+                    .await()
+            val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
+            // Update cache with fetched items
+            fetchedItems.forEach { itemsCache[it.itemUuid] = it }
+            items.addAll(fetchedItems)
+          }
+        }
+        Log.d(
+            "ItemsRepositoryFirestore",
+            "Fetched ${items.size - cachedItems.size} items from Firestore")
+      } catch (e: Exception) {
+        Log.w("ItemsRepositoryFirestore", "Failed to fetch missing items (offline): ${e.message}")
+        // Return whatever we have in cache
+      }
+    }
+
     return items
   }
 
+  private fun mapToItem(doc: DocumentSnapshot): Item? {
+    return try {
+      val data = doc.data ?: return null
+      ItemsMappers.parseItem(data)
+    } catch (_: Exception) {
+      null
+    }
+  }
+
   override suspend fun addItem(item: Item) {
-    db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
+    // Optimistically update memory cache immediately
+    itemsCache[item.itemUuid] = item
+    Log.d("ItemsRepositoryFirestore", "Added item ${item.itemUuid} to memory cache")
+
+    // Queue Firestore update with timeout
+    try {
+      kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+        db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
+      }
+      Log.d("ItemsRepositoryFirestore", "Item added to Firestore (or queued if offline)")
+    } catch (e: Exception) {
+      Log.w("ItemsRepositoryFirestore", "Firestore add queued (offline): ${e.message}")
+    }
   }
 
   override suspend fun editItem(itemUUID: String, newItem: Item) {
-    val doc = db.collection(ITEMS_COLLECTION).document(itemUUID).get().await()
-    if (!doc.exists()) throw Exception("Item $itemUUID not found")
-    db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await()
+    // Determine if item exists (cache fast-path, then Firestore with timeout)
+    val existedInCache = itemsCache.containsKey(itemUUID)
+    var existedInStore = false
+    if (!existedInCache) {
+      try {
+        existedInStore =
+            kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+              db.collection(ITEMS_COLLECTION).document(itemUUID).get().await().exists()
+            } ?: false
+      } catch (e: Exception) {
+        // Offline / timeout: treat as not found in store for contract purposes
+        existedInStore = false
+        Log.w("ItemsRepositoryFirestore", "Existence check timed out/offline: ${e.message}")
+      }
+    }
+    if (!existedInCache && !existedInStore) {
+      throw Exception("ItemsRepositoryFirestore: Item not found")
+    }
+
+    // Optimistically update memory cache immediately (synchronous, instant)
+    itemsCache[itemUUID] = newItem
+    Log.d("ItemsRepositoryFirestore", "Updated item $itemUUID in memory cache")
+
+    // Queue Firestore update with timeout (will sync when online, doesn't block)
+    try {
+      kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+        db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await()
+      }
+      Log.d("ItemsRepositoryFirestore", "Item edited in Firestore (or queued if offline)")
+    } catch (e: Exception) {
+      Log.w("ItemsRepositoryFirestore", "Firestore edit queued (offline): ${e.message}")
+    }
   }
 
   override suspend fun deleteItem(uuid: String) {
-    db.collection(ITEMS_COLLECTION).document(uuid).delete().await()
+    // Optimistically remove from memory cache immediately
+    itemsCache.remove(uuid)
+    Log.d("ItemsRepositoryFirestore", "Removed item $uuid from memory cache")
+
+    // Queue Firestore delete with timeout
+    try {
+      kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+        db.collection(ITEMS_COLLECTION).document(uuid).delete().await()
+      }
+      Log.d("ItemsRepositoryFirestore", "Item deleted from Firestore (or queued if offline)")
+    } catch (e: Exception) {
+      Log.w("ItemsRepositoryFirestore", "Firestore delete queued (offline): ${e.message}")
+    }
   }
 
   override suspend fun deletePostItems(postUuid: String) {
@@ -91,58 +199,14 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     }
   }
 
-  override suspend fun getFriendItemsForPost(postUuid: String, friendUid: String): List<Item> {
+  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
     val snapshot =
         db.collection(ITEMS_COLLECTION)
             .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
-            .whereEqualTo(OWNER_ATTRIBUTE_NAME, friendUid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, friendId)
             .get()
             .await()
 
     return snapshot.mapNotNull { mapToItem(it) }
-  }
-}
-
-private fun mapToItem(doc: DocumentSnapshot): Item? {
-  return try {
-    val uuid = doc.getString("itemUuid") ?: return null
-    val postUuidList = doc[POST_ATTRIBUTE_NAME] as? List<*>
-    val postUuids = postUuidList?.mapNotNull { it as? String } ?: emptyList()
-    val imageMap = doc["image"] as? Map<*, *> ?: return null
-    val imageUri =
-        ImageData(
-            imageId = imageMap["imageId"] as? String ?: "",
-            imageUrl = imageMap["imageUrl"] as? String ?: "",
-        )
-    val category = doc.getString("category") ?: return null
-    val type = doc.getString("type") ?: return null
-    val brand = doc.getString("brand") ?: return null
-    val price = doc.getDouble("price") ?: return null
-    val link = doc.getString("link") ?: return null
-    val ownerId = doc.getString(OWNER_ATTRIBUTE_NAME) ?: return null
-    val materialList = doc["material"] as? List<*>
-    val material =
-        materialList?.mapNotNull { item ->
-          (item as? Map<*, *>)?.let {
-            Material(
-                name = it["name"] as? String ?: "",
-                percentage = (it["percentage"] as? Number)?.toDouble() ?: 0.0)
-          }
-        } ?: emptyList()
-
-    Item(
-        itemUuid = uuid,
-        postUuids = postUuids,
-        image = imageUri,
-        category = category,
-        type = type,
-        brand = brand,
-        price = price,
-        material = material,
-        link = link,
-        ownerId = ownerId)
-  } catch (e: Exception) {
-    Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
-    null
   }
 }

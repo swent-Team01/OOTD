@@ -217,6 +217,10 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
       invalidPhotoMsg: String?
   ): T
 
+  protected fun updateSimpleField(update: (T) -> T) {
+    _uiState.value = update(_uiState.value)
+  }
+
   /**
    * Sets the photo in the UI state.
    *

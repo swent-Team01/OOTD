@@ -1,11 +1,18 @@
 package com.android.ootd.ui.feed
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
@@ -16,6 +23,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.coEvery
 import io.mockk.mockk
+import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -48,7 +56,12 @@ class SeeFitScreenTest {
           price = 29.99,
           material = listOf(Material("Cotton", 100.0)),
           link = "https://example.com/tshirt",
-          ownerId = "owner1")
+          ownerId = "owner1",
+          condition = "Like new",
+          size = "M",
+          fitType = "Regular",
+          style = "Casual",
+          notes = "Made by grandma")
 
   private val testItem2 =
       Item(
@@ -61,7 +74,12 @@ class SeeFitScreenTest {
           price = 89.99,
           material = listOf(Material("Leather", 80.0), Material("Rubber", 20.0)),
           link = "https://example.com/sneakers",
-          ownerId = "owner1")
+          ownerId = "owner1",
+          condition = "Used",
+          size = "42",
+          fitType = "Slim",
+          style = "Sporty",
+          notes = "Limited edition")
 
   private val testPost1 =
       OutfitPost(
@@ -202,15 +220,83 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertDoesNotExist()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertDoesNotExist()
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_CONDITION).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_SIZE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES).assertDoesNotExist()
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1)).performClick()
     composeTestRule.waitForIdle()
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_LINK, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG)
+        .performScrollToNode(hasTestTag(SeeFitScreenTestTags.ITEM_NOTES))
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG)
+        .performScrollToNode(hasTestTag(SeeFitScreenTestTags.ITEM_LINK))
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_PRICE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_MATERIAL, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_BRAND, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CONDITION, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_SIZE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_FIT_TYPE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_STYLE, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY, useUnmergedTree = true)
+        .assertIsDisplayed()
+
+    val clipboard =
+        ApplicationProvider.getApplicationContext<Context>()
+            .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_NOTES_COPY, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.runOnIdle {
+      assertEquals("Made by grandma", clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: "")
+    }
+
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_LINK_COPY, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.runOnIdle {
+      assertEquals(
+          "https://example.com/tshirt", clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: "")
+    }
   }
 
   @Test
