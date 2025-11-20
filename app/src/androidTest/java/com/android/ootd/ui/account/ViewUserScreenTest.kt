@@ -120,18 +120,29 @@ class ViewUserScreenTest {
   }
 
   @Test
-  fun screen_displays_follow_button_when_not_friend() {
+  fun screen_displays_correctly_when_not_friend() {
     uiStateFlow.value = ViewUserData(username = "testuser", isFriend = false, isLoading = false)
     setContent()
 
     composeTestRule.onNodeWithTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG).assertTextContains("Follow")
     composeTestRule.onNodeWithText("This user is not your friend").assertIsDisplayed()
+
+    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG)
+        .assertTextContains("Add this user as a friend to see their posts")
+    composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(0)
   }
 
   @Test
-  fun screen_displays_unfollow_button_when_friend() {
-    uiStateFlow.value = ViewUserData(username = "testuser", isFriend = true, isLoading = false)
+  fun screen_displays_correctly_when_friend() {
+    uiStateFlow.value =
+        ViewUserData(
+            username = "testuser",
+            isFriend = true,
+            friendPosts = listOf(testPost1, testPost2, testPost3),
+            isLoading = false)
     setContent()
 
     composeTestRule.onNodeWithTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG).assertIsDisplayed()
@@ -139,6 +150,12 @@ class ViewUserScreenTest {
         .onNodeWithTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG)
         .assertTextContains("Unfollow")
     composeTestRule.onNodeWithText("This user is your friend").assertIsDisplayed()
+
+    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG)
+        .assertTextContains("Posts :")
+    composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(3)
   }
 
   @Test
@@ -151,46 +168,6 @@ class ViewUserScreenTest {
     composeTestRule
         .onNodeWithTag(ViewUserScreenTags.FRIEND_COUNT_TAG)
         .assertTextContains("42 friends")
-  }
-
-  @Test
-  fun screen_displays_posts_when_friend() {
-    uiStateFlow.value =
-        ViewUserData(
-            username = "testuser",
-            isFriend = true,
-            friendPosts = listOf(testPost1, testPost2, testPost3),
-            isLoading = false)
-    setContent()
-
-    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG)
-        .assertTextContains("Posts :")
-    composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(3)
-  }
-
-  @Test
-  fun screen_displays_add_friend_message_when_not_friend() {
-    uiStateFlow.value = ViewUserData(username = "testuser", isFriend = false, isLoading = false)
-    setContent()
-
-    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG)
-        .assertTextContains("Add this user as a friend to see their posts")
-    composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(0)
-  }
-
-  @Test
-  fun screen_displays_no_posts_when_friend_has_no_posts() {
-    uiStateFlow.value =
-        ViewUserData(
-            username = "testuser", isFriend = true, friendPosts = emptyList(), isLoading = false)
-    setContent()
-
-    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
-    composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(0)
   }
 
   @Test
