@@ -3,6 +3,9 @@ package com.android.ootd.utils
 import android.content.Context
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.credentials.CredentialManager
+import androidx.navigation.compose.ComposeNavigator
+import androidx.navigation.compose.DialogNavigator
+import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
@@ -51,6 +54,7 @@ open class BaseEnd2EndTest {
   lateinit var testUsername: String
   lateinit var fakeGoogleIdToken: String
   lateinit var fakeCredentialManager: CredentialManager
+  lateinit var testNavController: TestNavHostController
 
   // If you want to add a new repository, you need to make sure to add it here.
   @Before
@@ -144,5 +148,20 @@ open class BaseEnd2EndTest {
             timestamp = System.currentTimeMillis(),
             version = "1.0")
     coEvery { mockConsentRepository.getConsentByUserId(any()) } returns mockConsent
+  }
+
+  fun initTestNavController() {
+    testNavController =
+        TestNavHostController(context).apply {
+          navigatorProvider.addNavigator(ComposeNavigator())
+          navigatorProvider.addNavigator(DialogNavigator())
+        }
+  }
+
+  fun waitForRoute(route: String, timeoutMillis: Long = 10_000) {
+    if (!::testNavController.isInitialized) return
+    composeTestRule.waitUntil(timeoutMillis) {
+      testNavController.currentDestination?.route == route
+    }
   }
 }

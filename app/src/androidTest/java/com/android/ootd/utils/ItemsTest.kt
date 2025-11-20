@@ -1,15 +1,15 @@
 package com.android.ootd.utils
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeUp
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
@@ -30,17 +30,8 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.ensureVisible(tag: String) {
-    val alreadyVisible =
-        runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess
-    if (alreadyVisible) return
-    repeat(5) {
-      onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performTouchInput {
-        swipeUp(startY = bottom, endY = top)
-      }
-      waitForIdle()
-      if (runCatching { onNodeWithTag(tag, useUnmergedTree = true).assertIsDisplayed() }.isSuccess)
-          return
-    }
+    onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performScrollToNode(hasTestTag(tag))
+    onNodeWithTag(tag, useUnmergedTree = true).assertExists()
   }
 
   fun ComposeTestRule.enterAddItemType(type: String) {
@@ -76,8 +67,19 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.enterAddItemMaterial(material: String) {
+    val materialVisible =
+        runCatching {
+              onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
+                  .assertIsDisplayed()
+            }
+            .isSuccess
 
-    ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
+    if (!materialVisible) {
+      ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
+      onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE, useUnmergedTree = true)
+          .performClick()
+      ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
+    }
 
     onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
         .performTextReplacement(material)

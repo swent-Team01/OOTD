@@ -15,6 +15,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.slot
 import kotlin.collections.emptyList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,6 +67,7 @@ class EditItemsViewModelTest {
     assertEquals("", state.type)
     assertEquals("", state.brand)
     assertEquals(0.0, state.price, 0.0)
+    assertEquals("CHF", state.currency)
     assertEquals(emptyList<Material>(), state.material)
     assertEquals("", state.materialText)
     assertEquals("", state.link)
@@ -73,6 +75,11 @@ class EditItemsViewModelTest {
     assertNull(state.invalidPhotoMsg)
     assertNull(state.invalidCategory)
     assertEquals(emptyList<String>(), state.suggestions)
+    assertEquals("", state.condition)
+    assertEquals("", state.size)
+    assertEquals("", state.fitType)
+    assertEquals("", state.style)
+    assertEquals("", state.notes)
     assertFalse(state.isSaveSuccessful)
   }
 
@@ -175,6 +182,11 @@ class EditItemsViewModelTest {
 
     val state = viewModel.uiState.value
     assertEquals(49.99, state.price, 0.0)
+
+    // also verify currency can be set
+    viewModel.setCurrency("EUR")
+    val state2 = viewModel.uiState.value
+    assertEquals("EUR", state2.currency)
   }
 
   @Test
@@ -188,6 +200,22 @@ class EditItemsViewModelTest {
     assertEquals(80.0, state.material[0].percentage, 0.0)
     assertEquals("Wool", state.material[1].name)
     assertEquals(20.0, state.material[1].percentage, 0.0)
+  }
+
+  @Test
+  fun `additional detail setters update state`() {
+    viewModel.setCondition("Like new")
+    viewModel.setSize("M")
+    viewModel.setFitType("Slim")
+    viewModel.setStyle("Formal")
+    viewModel.setNotes("Dry clean only")
+
+    val state = viewModel.uiState.value
+    assertEquals("Like new", state.condition)
+    assertEquals("M", state.size)
+    assertEquals("Slim", state.fitType)
+    assertEquals("Formal", state.style)
+    assertEquals("Dry clean only", state.notes)
   }
 
   @Test
@@ -256,9 +284,15 @@ class EditItemsViewModelTest {
             type = "T-shirt",
             brand = "Nike",
             price = 49.99,
+            currency = "USD",
             material = materials,
             link = "https://example.com",
-            ownerId = "ownerId")
+            ownerId = "ownerId",
+            condition = "Like new",
+            size = "M",
+            fitType = "Relaxed",
+            style = "Streetwear",
+            notes = "Only worn twice")
 
     viewModel.loadItem(item)
 
@@ -269,9 +303,15 @@ class EditItemsViewModelTest {
     assertEquals("T-shirt", state.type)
     assertEquals("Nike", state.brand)
     assertEquals(49.99, state.price, 0.0)
+    assertEquals("USD", state.currency)
     assertEquals(materials, state.material)
     assertEquals("Cotton 100.0%", state.materialText)
     assertEquals("https://example.com", state.link)
+    assertEquals("Like new", state.condition)
+    assertEquals("M", state.size)
+    assertEquals("Relaxed", state.fitType)
+    assertEquals("Streetwear", state.style)
+    assertEquals("Only worn twice", state.notes)
   }
 
   @Test
@@ -285,6 +325,7 @@ class EditItemsViewModelTest {
             type = null,
             brand = null,
             price = null,
+            currency = null,
             material = emptyList(),
             link = null,
             ownerId = "ownerId")
@@ -298,8 +339,15 @@ class EditItemsViewModelTest {
     assertEquals("", state.type)
     assertEquals("", state.brand)
     assertEquals(0.0, state.price, 0.0)
+    // default currency applied
+    assertEquals("CHF", state.currency)
     assertEquals("", state.materialText)
     assertEquals("", state.link)
+    assertEquals("", state.condition)
+    assertEquals("", state.size)
+    assertEquals("", state.fitType)
+    assertEquals("", state.style)
+    assertEquals("", state.notes)
   }
 
   @Test
@@ -385,315 +433,359 @@ class EditItemsViewModelTest {
   }
 
   @Test
-  fun `onSaveItemClick succeeds even when repository throws (offline optimistic)`() = runTest {
-    coEvery { mockRepository.editItem(any(), any()) } throws Exception("Update failed")
+  fun `onSaveItemClick persists updated additional details`() = runTest {
+    coEvery { mockRepository.editItem(any(), any()) } returns Unit
 
     viewModel.loadItem(
         Item(
-            itemUuid = "test-id",
-            postUuids = listOf("test_post_uuid"),
-            image = ImageData("test-image-id", "https://example.com/test.jpg"),
+            itemUuid = "detail-id",
+            postUuids = listOf("post"),
+            image = ImageData("img", "url"),
             category = "Clothing",
-            type = "T-shirt",
-            brand = "Nike",
-            price = 49.99,
+            type = "Jacket",
+            brand = "Brand",
+            price = 99.0,
             material = emptyList(),
             link = "https://example.com",
-            ownerId = "ownerId"))
+            ownerId = "owner",
+            condition = "Used",
+            size = "L",
+            fitType = "Relaxed",
+            style = "Casual",
+            notes = "Old notes"))
+
+    viewModel.setCondition("Like new")
+    viewModel.setSize("M")
+    viewModel.setFitType("Slim")
+    viewModel.setStyle("Formal")
+    viewModel.setNotes("Dry clean only")
 
     viewModel.onSaveItemClick()
-
     advanceUntilIdle()
 
-    val state = viewModel.uiState.value
-    // Offline optimistic pattern: error swallowed, success reported
-    assertNull(state.errorMessage)
-    assertTrue(state.isSaveSuccessful)
+    val savedItemSlot = slot<Item>()
+    coVerify { mockRepository.editItem("detail-id", capture(savedItemSlot)) }
+
+    val saved = savedItemSlot.captured
+    assertEquals("Like new", saved.condition)
+    assertEquals("M", saved.size)
+    assertEquals("Slim", saved.fitType)
+    assertEquals("Formal", saved.style)
+    assertEquals("Dry clean only", saved.notes)
   }
 
   @Test
-  fun `deleteItem calls repository when itemId is not empty`() = runTest {
-    mockkObject(FirebaseImageUploader)
-    coEvery { FirebaseImageUploader.deleteImage(any()) } returns true
-    coEvery { mockAccountRepository.removeItem(any()) } returns true
+  fun `onSaveItemClick handles exception`() = runTest {
+    fun `onSaveItemClick succeeds even when repository throws (offline optimistic)`() = runTest {
+      coEvery { mockRepository.editItem(any(), any()) } throws Exception("Update failed")
 
-    viewModel.loadItem(
-        Item(
-            itemUuid = "test-id",
-            postUuids = listOf("test_post_uuid"),
-            image = ImageData("test-image-id", "https://example.com/test.jpg"),
-            category = "Clothing",
-            type = null,
-            brand = null,
-            price = null,
-            material = emptyList(),
-            link = null,
-            ownerId = "ownerId"))
-    viewModel.deleteItem()
+      viewModel.loadItem(
+          Item(
+              itemUuid = "test-id",
+              postUuids = listOf("test_post_uuid"),
+              image = ImageData("test-image-id", "https://example.com/test.jpg"),
+              category = "Clothing",
+              type = "T-shirt",
+              brand = "Nike",
+              price = 49.99,
+              material = emptyList(),
+              link = "https://example.com",
+              ownerId = "ownerId"))
 
-    advanceUntilIdle()
+      viewModel.onSaveItemClick()
 
-    coVerify { mockRepository.deleteItem("test-id") }
-    coVerify { mockAccountRepository.removeItem("test-id") }
-    val state = viewModel.uiState.value
-    assertTrue(state.isDeleteSuccessful)
-    assertNull(state.errorMessage)
-  }
+      advanceUntilIdle()
 
-  @Test
-  fun `deleteItem does not call repository when itemId is empty`() = runTest {
-    viewModel.deleteItem()
+      val state = viewModel.uiState.value
+      // Offline optimistic pattern: error swallowed, success reported
+      assertNull(state.errorMessage)
+      assertTrue(state.isSaveSuccessful)
+    }
 
-    advanceUntilIdle()
+    @Test
+    fun `deleteItem calls repository when itemId is not empty`() = runTest {
+      mockkObject(FirebaseImageUploader)
+      coEvery { FirebaseImageUploader.deleteImage(any()) } returns true
+      coEvery { mockAccountRepository.removeItem(any()) } returns true
 
-    coVerify(exactly = 0) { mockRepository.deleteItem(any()) }
-    val state = viewModel.uiState.value
-    assertEquals("No item to delete.", state.errorMessage)
-  }
+      viewModel.loadItem(
+          Item(
+              itemUuid = "test-id",
+              postUuids = listOf("test_post_uuid"),
+              image = ImageData("test-image-id", "https://example.com/test.jpg"),
+              category = "Clothing",
+              type = null,
+              brand = null,
+              price = null,
+              material = emptyList(),
+              link = null,
+              ownerId = "ownerId"))
+      viewModel.deleteItem()
 
-  @Test
-  fun `deleteItem optimistic success even when repository throws`() = runTest {
-    coEvery { mockAccountRepository.removeItem(any()) } returns true
-    coEvery { mockRepository.deleteItem(any()) } throws Exception("Delete failed")
+      advanceUntilIdle()
 
-    viewModel.loadItem(
-        Item(
-            itemUuid = "test-id",
-            postUuids = listOf("test_post_uuid"),
-            image = ImageData("test-image-id", "https://example.com/test.jpg"),
-            category = "Clothing",
-            type = null,
-            brand = null,
-            price = null,
-            material = emptyList(),
-            link = null,
-            ownerId = "ownerId"))
-    viewModel.deleteItem()
+      coVerify { mockRepository.deleteItem("test-id") }
+      coVerify { mockAccountRepository.removeItem("test-id") }
+      val state = viewModel.uiState.value
+      assertTrue(state.isDeleteSuccessful)
+      assertNull(state.errorMessage)
+    }
 
-    advanceUntilIdle()
+    @Test
+    fun `deleteItem does not call repository when itemId is empty`() = runTest {
+      viewModel.deleteItem()
 
-    val state = viewModel.uiState.value
-    // Optimistic delete reports success
-    assertNull(state.errorMessage)
-    assertTrue(state.isDeleteSuccessful)
-  }
+      advanceUntilIdle()
 
-  @Test
-  fun `deleteItem still proceeds when inventory removal fails (optimistic)`() = runTest {
-    coEvery { mockAccountRepository.removeItem(any()) } returns false
+      coVerify(exactly = 0) { mockRepository.deleteItem(any()) }
+      val state = viewModel.uiState.value
+      assertEquals("No item to delete.", state.errorMessage)
+    }
 
-    viewModel.loadItem(
-        Item(
-            itemUuid = "test-id",
-            postUuids = listOf("test_post_uuid"),
-            image = ImageData("test-image-id", "https://example.com/test.jpg"),
-            category = "Clothing",
-            type = null,
-            brand = null,
-            price = null,
-            material = emptyList(),
-            link = null,
-            ownerId = "ownerId"))
+    @Test
+    fun `deleteItem optimistic success even when repository throws`() = runTest {
+      coEvery { mockAccountRepository.removeItem(any()) } returns true
+      coEvery { mockRepository.deleteItem(any()) } throws Exception("Delete failed")
 
-    viewModel.deleteItem()
+      viewModel.loadItem(
+          Item(
+              itemUuid = "test-id",
+              postUuids = listOf("test_post_uuid"),
+              image = ImageData("test-image-id", "https://example.com/test.jpg"),
+              category = "Clothing",
+              type = null,
+              brand = null,
+              price = null,
+              material = emptyList(),
+              link = null,
+              ownerId = "ownerId"))
+      viewModel.deleteItem()
 
-    advanceUntilIdle()
+      advanceUntilIdle()
 
-    // Optimistic pattern: still attempts repository deletion and reports success
-    val state = viewModel.uiState.value
-    assertNull(state.errorMessage)
-    assertTrue(state.isDeleteSuccessful)
-    coVerify { mockRepository.deleteItem(any()) }
-  }
+      val state = viewModel.uiState.value
+      // Optimistic delete reports success
+      assertNull(state.errorMessage)
+      assertTrue(state.isDeleteSuccessful)
+    }
 
-  @Test
-  fun `deleteItem logs warning when image deletion fails`() = runTest {
-    mockkObject(FirebaseImageUploader)
+    @Test
+    fun `deleteItem still proceeds when inventory removal fails (optimistic)`() = runTest {
+      coEvery { mockAccountRepository.removeItem(any()) } returns false
 
-    // Mock successful repository deletion but failed image deletion
-    coEvery { mockRepository.deleteItem(any()) } returns Unit
-    coEvery { mockAccountRepository.removeItem(any()) } returns true
-    coEvery { FirebaseImageUploader.deleteImage(any()) } returns false
+      viewModel.loadItem(
+          Item(
+              itemUuid = "test-id",
+              postUuids = listOf("test_post_uuid"),
+              image = ImageData("test-image-id", "https://example.com/test.jpg"),
+              category = "Clothing",
+              type = null,
+              brand = null,
+              price = null,
+              material = emptyList(),
+              link = null,
+              ownerId = "ownerId"))
 
-    viewModel.loadItem(
-        Item(
-            itemUuid = "test-id",
-            postUuids = listOf("test_post_uuid"),
-            image = ImageData("test-image-id", "https://example.com/test.jpg"),
-            category = "Clothing",
-            type = null,
-            brand = null,
-            price = null,
-            material = emptyList(),
-            link = null,
-            ownerId = "ownerId"))
+      viewModel.deleteItem()
 
-    viewModel.deleteItem()
+      advanceUntilIdle()
 
-    advanceUntilIdle()
+      // Optimistic pattern: still attempts repository deletion and reports success
+      val state = viewModel.uiState.value
+      assertNull(state.errorMessage)
+      assertTrue(state.isDeleteSuccessful)
+      coVerify { mockRepository.deleteItem(any()) }
+    }
 
-    // Verify the item deletion was successful despite image deletion failure
-    val state = viewModel.uiState.value
-    assertTrue(state.isDeleteSuccessful)
-    assertNull(state.errorMessage)
+    @Test
+    fun `deleteItem logs warning when image deletion fails`() = runTest {
+      mockkObject(FirebaseImageUploader)
 
-    // Verify image deletion was attempted
-    coVerify { FirebaseImageUploader.deleteImage("test-image-id") }
-  }
+      // Mock successful repository deletion but failed image deletion
+      coEvery { mockRepository.deleteItem(any()) } returns Unit
+      coEvery { mockAccountRepository.removeItem(any()) } returns true
+      coEvery { FirebaseImageUploader.deleteImage(any()) } returns false
 
-  @Test
-  fun `initTypeSuggestions loads suggestions from context`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.loadItem(
+          Item(
+              itemUuid = "test-id",
+              postUuids = listOf("test_post_uuid"),
+              image = ImageData("test-image-id", "https://example.com/test.jpg"),
+              category = "Clothing",
+              type = null,
+              brand = null,
+              price = null,
+              material = emptyList(),
+              link = null,
+              ownerId = "ownerId"))
 
-    viewModel.initTypeSuggestions(context)
+      viewModel.deleteItem()
 
-    // After initialization, suggestions should be available
-    viewModel.setCategory("Clothing")
-    viewModel.updateTypeSuggestions("")
+      advanceUntilIdle()
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
+      // Verify the item deletion was successful despite image deletion failure
+      val state = viewModel.uiState.value
+      assertTrue(state.isDeleteSuccessful)
+      assertNull(state.errorMessage)
 
-  @Test
-  fun `updateTypeSuggestions filters by input`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      // Verify image deletion was attempted
+      coVerify { FirebaseImageUploader.deleteImage("test-image-id") }
+    }
 
-    viewModel.setCategory("Clothing")
-    viewModel.updateTypeSuggestions("T")
+    @Test
+    fun `initTypeSuggestions loads suggestions from context`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.all { it.startsWith("T", ignoreCase = true) })
-  }
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions returns all suggestions when input is blank`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      // After initialization, suggestions should be available
+      viewModel.setCategory("Clothing")
+      viewModel.updateTypeSuggestions("")
 
-    viewModel.setCategory("Clothing")
-    viewModel.updateTypeSuggestions("")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isNotEmpty())
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
+    @Test
+    fun `updateTypeSuggestions filters by input`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions works with valid category - Clothing`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("Clothing")
+      viewModel.updateTypeSuggestions("T")
 
-    viewModel.setCategory("Clothing")
-    viewModel.updateTypeSuggestions("")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.all { it.startsWith("T", ignoreCase = true) })
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
+    @Test
+    fun `updateTypeSuggestions returns all suggestions when input is blank`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions works with valid category - Shoes`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("Clothing")
+      viewModel.updateTypeSuggestions("")
 
-    viewModel.setCategory("Shoes")
-    viewModel.updateTypeSuggestions("")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isNotEmpty())
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
+    @Test
+    fun `updateTypeSuggestions works with valid category - Clothing`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions works with valid category - Bags`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("Clothing")
+      viewModel.updateTypeSuggestions("")
 
-    viewModel.setCategory("Bags")
-    viewModel.updateTypeSuggestions("")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isNotEmpty())
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
+    @Test
+    fun `updateTypeSuggestions works with valid category - Shoes`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions works with valid category - Accessories`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("Shoes")
+      viewModel.updateTypeSuggestions("")
 
-    viewModel.setCategory("Accessories")
-    viewModel.updateTypeSuggestions("")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isNotEmpty())
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isNotEmpty())
-  }
+    @Test
+    fun `updateTypeSuggestions works with valid category - Bags`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions returns empty list for invalid category`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("Bags")
+      viewModel.updateTypeSuggestions("")
 
-    viewModel.setCategory("InvalidCategory")
-    viewModel.updateTypeSuggestions("")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isNotEmpty())
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.isEmpty())
-  }
+    @Test
+    fun `updateTypeSuggestions works with valid category - Accessories`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateTypeSuggestions filters case insensitive`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("Accessories")
+      viewModel.updateTypeSuggestions("")
 
-    viewModel.setCategory("Clothing")
-    viewModel.updateTypeSuggestions("t-shirt")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isNotEmpty())
+    }
 
-    val state = viewModel.uiState.value
-    assertTrue(state.suggestions.any { it.equals("T-shirt", ignoreCase = true) })
-  }
+    @Test
+    fun `updateTypeSuggestions returns empty list for invalid category`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `updateCategorySuggestions does not modify state in EditItemsViewModel`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    viewModel.initTypeSuggestions(context)
+      viewModel.setCategory("InvalidCategory")
+      viewModel.updateTypeSuggestions("")
 
-    val initialState = viewModel.uiState.value
-    viewModel.updateCategorySuggestions("Cloth")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.isEmpty())
+    }
 
-    val finalState = viewModel.uiState.value
-    // In EditItemsViewModel, updateCategorySuggestionsState returns state unchanged
-    assertEquals(initialState.suggestions, finalState.suggestions)
-  }
+    @Test
+    fun `updateTypeSuggestions filters case insensitive`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-  @Test
-  fun `onSaveItemClick sets error when image upload fails`() = runTest {
-    mockkObject(FirebaseImageUploader)
-    val mockUri = mockk<Uri>()
-    every { mockUri.toString() } returns "content://test"
+      viewModel.setCategory("Clothing")
+      viewModel.updateTypeSuggestions("t-shirt")
 
-    // Mock image upload to return empty URL (failure case)
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("test-id", "")
+      val state = viewModel.uiState.value
+      assertTrue(state.suggestions.any { it.equals("T-shirt", ignoreCase = true) })
+    }
 
-    viewModel.loadItem(
-        Item(
-            itemUuid = "test-id",
-            postUuids = listOf("test_post_uuid"),
-            image = ImageData("", ""),
-            category = "Clothing",
-            type = "T-shirt",
-            brand = "Nike",
-            price = 49.99,
-            material = emptyList(),
-            link = "https://example.com",
-            ownerId = "ownerId"))
+    @Test
+    fun `updateCategorySuggestions does not modify state in EditItemsViewModel`() {
+      val context = ApplicationProvider.getApplicationContext<Context>()
+      viewModel.initTypeSuggestions(context)
 
-    viewModel.setPhoto(mockUri)
-    viewModel.onSaveItemClick()
+      val initialState = viewModel.uiState.value
+      viewModel.updateCategorySuggestions("Cloth")
 
-    advanceUntilIdle()
+      val finalState = viewModel.uiState.value
+      // In EditItemsViewModel, updateCategorySuggestionsState returns state unchanged
+      assertEquals(initialState.suggestions, finalState.suggestions)
+    }
 
-    val state = viewModel.uiState.value
-    assertEquals("Please select a photo.", state.errorMessage)
-    assertFalse(state.isSaveSuccessful)
-    coVerify(exactly = 0) { mockRepository.editItem(any(), any()) }
+    @Test
+    fun `onSaveItemClick sets error when image upload fails`() = runTest {
+      mockkObject(FirebaseImageUploader)
+      val mockUri = mockk<Uri>()
+      every { mockUri.toString() } returns "content://test"
+
+      // Mock image upload to return empty URL (failure case)
+      coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("test-id", "")
+
+      viewModel.loadItem(
+          Item(
+              itemUuid = "test-id",
+              postUuids = listOf("test_post_uuid"),
+              image = ImageData("", ""),
+              category = "Clothing",
+              type = "T-shirt",
+              brand = "Nike",
+              price = 49.99,
+              material = emptyList(),
+              link = "https://example.com",
+              ownerId = "ownerId"))
+
+      viewModel.setPhoto(mockUri)
+      viewModel.onSaveItemClick()
+
+      advanceUntilIdle()
+
+      val state = viewModel.uiState.value
+      assertEquals("Please select a photo.", state.errorMessage)
+      assertFalse(state.isSaveSuccessful)
+      coVerify(exactly = 0) { mockRepository.editItem(any(), any()) }
+    }
   }
 }
