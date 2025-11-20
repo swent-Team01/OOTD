@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,12 +39,21 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
+  const val LIKE_BUTTON = "likeButton"
+  const val LIKE_COUNT = "likeCount"
 }
 
+/**
+ * Composable displaying the profile section of the outfit post card, including profile picture,
+ * username, and remaining lifetime indicator.
+ *
+ * @param post The outfit post data.
+ */
 @Composable
 private fun ProfileSection(post: OutfitPost) {
   val totalLifetime = 24 * 60 * 60 * 1000L // 24h in ms
   val now = System.currentTimeMillis()
+  // Calculate remaining lifetime
   val elapsed = (now - post.timestamp).coerceAtLeast(0L)
   val remainingMs = totalLifetime - elapsed
   val remainingFraction = (remainingMs.toFloat() / totalLifetime.toFloat()).coerceIn(0f, 1f)
@@ -57,6 +68,7 @@ private fun ProfileSection(post: OutfitPost) {
           strokeWidth = 3.dp,
           modifier = Modifier.size(44.dp))
 
+      // Profile picture or initial if no profile picture set
       if (post.userProfilePicURL.isNotBlank()) {
         AsyncImage(
             model = post.userProfilePicURL,
@@ -92,7 +104,7 @@ private fun ProfileSection(post: OutfitPost) {
           color = MaterialTheme.colorScheme.primary,
           modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
 
-      // ---- Remaining lifetime label ----
+      // Remaining lifetime label
       val (remainingText, tag) =
           when {
             remainingMs <= 0L -> {
@@ -117,6 +129,46 @@ private fun ProfileSection(post: OutfitPost) {
   }
 }
 
+/**
+ * Composable displaying the like button and like count.
+ *
+ * @param isLiked Whether the post is liked by the current user.
+ * @param likeCount The total number of likes for the post.
+ * @param enabled Whether the like button is enabled(disabled when post is blurred).
+ * @param onClick Callback when the like button is clicked.
+ */
+@Composable
+private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick: () -> Unit) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        IconButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_BUTTON)) {
+              Icon(
+                  imageVector =
+                      if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                  contentDescription = if (isLiked) "Unlike" else "Like",
+                  tint =
+                      if (isLiked) MaterialTheme.colorScheme.error // nice "Instagram-ish" red
+                      else MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+
+        Text(
+            text = likeCount.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
+      }
+}
+
+/**
+ * Composable displaying the outfit post image, with optional blur effect.
+ *
+ * @param post The outfit post data.
+ * @param isBlurred Whether the post image should be blurred (locked).
+ */
 @Composable
 private fun PostImage(post: OutfitPost, isBlurred: Boolean) {
   Box(
@@ -138,6 +190,13 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean) {
       }
 }
 
+/**
+ * Composable displaying the post description and "See fit" button.
+ *
+ * @param post The outfit post data.
+ * @param isBlurred Whether the post image is blurred (locked).
+ * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
+ */
 @Composable
 private fun DescriptionAndButton(
     post: OutfitPost,
@@ -183,11 +242,26 @@ private fun DescriptionAndButton(
       }
 }
 
+/**
+ * Composable displaying an outfit post card with profile section, image, description, "See fit"
+ * button, and like functionality. Supports blurring for locked posts.
+ *
+ * @param post The outfit post data.
+ * @param isBlurred Whether the post image should be blurred (locked).
+ * @param modifier Optional modifier for the card.
+ * @param isLiked Whether the current user has liked the post.
+ * @param likeCount The total number of likes for the post.
+ * @param onLikeClick Callback when the like button is clicked, passing the post UID.
+ * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
+ */
 @Composable
 fun OutfitPostCard(
     post: OutfitPost,
     isBlurred: Boolean,
     modifier: Modifier = Modifier,
+    isLiked: Boolean,
+    likeCount: Int,
+    onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {}
 ) {
   Box(
@@ -207,9 +281,18 @@ fun OutfitPostCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 PostImage(post, isBlurred)
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LikeRow(
+                    isLiked = isLiked,
+                    likeCount = likeCount,
+                    enabled = !isBlurred,
+                    onClick = { onLikeClick(post.postUID) })
               }
             }
-        // ---- Overlay for blur + message ----
+
+        // Blur overlay for locked posts
         if (isBlurred) {
           Box(
               modifier = Modifier.matchParentSize().testTag(OutfitPostCardTestTags.BLUR_OVERLAY),
