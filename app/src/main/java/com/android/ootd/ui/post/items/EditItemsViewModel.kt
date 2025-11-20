@@ -29,6 +29,7 @@ data class EditItemsUIState(
     val type: String = "",
     val brand: String = "",
     val price: Double = 0.0,
+    val currency: String = "CHF",
     val material: List<Material> = emptyList(),
     val materialText: String = "",
     val link: String = "",
@@ -39,7 +40,12 @@ data class EditItemsUIState(
     val isSaveSuccessful: Boolean = false,
     val isDeleteSuccessful: Boolean = false,
     val ownerId: String = "",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val condition: String = "",
+    val size: String = "",
+    val fitType: String = "",
+    val style: String = "",
+    val notes: String = "",
 ) {
   val isEditValid: Boolean
     get() =
@@ -116,10 +122,17 @@ open class EditItemsViewModel(
             type = item.type ?: "",
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
+            currency = item.currency ?: "CHF",
             material = item.material.filterNotNull(),
             materialText = materialText,
             link = item.link ?: "",
-            ownerId = item.ownerId)
+            ownerId = item.ownerId,
+            condition = item.condition ?: "",
+            size = item.size ?: "",
+            fitType = item.fitType ?: "",
+            style = item.style ?: "",
+            notes = item.notes ?: "",
+        )
   }
 
   /** Loads an item by its UUID directly from the repository. */
@@ -164,12 +177,6 @@ open class EditItemsViewModel(
               FirebaseImageUploader.uploadImage(compressedImage, state.itemId, state.localPhotoUri)
             } else state.image
 
-        if (finalImage.imageUrl.isEmpty()) {
-          setErrorMsg("Please select a photo.")
-          _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
-          return@launch
-        }
-
         val updatedItem =
             Item(
                 itemUuid = state.itemId,
@@ -179,9 +186,21 @@ open class EditItemsViewModel(
                 type = state.type,
                 brand = state.brand,
                 price = state.price,
+                currency = state.currency,
                 material = state.material,
                 link = state.link,
-                ownerId = state.ownerId)
+                ownerId = state.ownerId,
+                condition = state.condition,
+                size = state.size,
+                fitType = state.fitType,
+                style = state.style,
+                notes = state.notes,
+            )
+        if (finalImage.imageUrl.isEmpty()) {
+          setErrorMsg("Please select a photo.")
+          _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
+          return@launch
+        }
 
         // Call editItem directly in this coroutine (not nested launch)
         // The cache update in editItem() happens synchronously before Firestore .await()
@@ -266,7 +285,18 @@ open class EditItemsViewModel(
    *
    * @param price The price value.
    */
-  fun setPrice(price: Double) {
-    _uiState.value = _uiState.value.copy(price = price)
-  }
+  fun setPrice(price: Double) = updateSimpleField { it.copy(price = price) }
+
+  /** Sets the currency (UI only). */
+  fun setCurrency(currency: String) = updateSimpleField { it.copy(currency = currency) }
+
+  fun setCondition(value: String) = updateSimpleField { it.copy(condition = value) }
+
+  fun setSize(value: String) = updateSimpleField { it.copy(size = value) }
+
+  fun setFitType(value: String) = updateSimpleField { it.copy(fitType = value) }
+
+  fun setStyle(value: String) = updateSimpleField { it.copy(style = value) }
+
+  fun setNotes(value: String) = updateSimpleField { it.copy(notes = value) }
 }

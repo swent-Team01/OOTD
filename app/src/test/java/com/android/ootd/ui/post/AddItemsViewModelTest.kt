@@ -106,8 +106,8 @@ class AddItemsViewModelTest {
 
   @Test
   fun `setPrice updates price`() {
-    viewModel.setPrice("50")
-    assertEquals("50", viewModel.uiState.value.price)
+    viewModel.setPrice(50.0)
+    assertEquals(50.0, viewModel.uiState.value.price, 0.0)
   }
 
   @Test
@@ -249,7 +249,7 @@ class AddItemsViewModelTest {
     viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
     viewModel.setPhoto(mockUri)
     viewModel.setCategory("Clothing")
-    viewModel.setPrice("invalid")
+    viewModel.setPrice(0.0)
     viewModel.onAddItemClick(context)
     advanceUntilIdle()
 

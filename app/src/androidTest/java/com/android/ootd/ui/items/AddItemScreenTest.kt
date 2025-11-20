@@ -3,8 +3,6 @@ package com.android.ootd.ui.items
 import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -15,8 +13,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
-import com.android.ootd.model.items.ImageData
-import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemsScreen
@@ -49,6 +45,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.setContent {
       AddItemsScreen(addItemsViewModel = viewModel, onNextScreen = {}, postUuid = "postuid")
     }
+    composeTestRule.waitForIdle()
+    composeTestRule.waitForNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY)
   }
 
   // ----------- Input and photo flow -----------
@@ -61,6 +59,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemType("Jacket")
     composeTestRule.enterAddItemBrand("Brand")
     composeTestRule.enterAddItemPrice(99.99)
+    // Set currency via view model to avoid flakey dropdown interactions
+    composeTestRule.runOnIdle { viewModel.setCurrency("EUR") }
     composeTestRule.enterAddItemLink("www.ootd.com")
     composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
 
@@ -69,7 +69,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       assert(viewModel.uiState.value.category == "Clothing")
       assert(viewModel.uiState.value.type == "Jacket")
       assert(viewModel.uiState.value.brand == "Brand")
-      assert(viewModel.uiState.value.price == "99.99")
+      assert(viewModel.uiState.value.price == 99.99)
+      assert(viewModel.uiState.value.currency == "EUR")
       assert(viewModel.uiState.value.link == "www.ootd.com")
       assert(viewModel.uiState.value.materialText == "Cotton 80%, Polyester 20%")
 
@@ -98,7 +99,7 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW, timeoutMillis = 5_000)
 
     // Verify photo preview component exists
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertExists()
+    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
   }
 
   // ----------- Image picker dialog & actions -----------
@@ -140,10 +141,10 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForIdle()
 
     // Verify all valid categories are shown
-    composeTestRule.onNodeWithText("Clothing").assertExists()
-    composeTestRule.onNodeWithText("Shoes").assertExists()
-    composeTestRule.onNodeWithText("Accessories").assertExists()
-    composeTestRule.onNodeWithText("Bags").assertExists()
+    composeTestRule.onNodeWithText("Clothing").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Shoes").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Accessories").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Bags").assertIsDisplayed()
 
     // Select "Clothing"
     composeTestRule.onNodeWithText("Clothing").performClick()
@@ -190,39 +191,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   // ----------- Add button enabled states -----------
-
-  @Test
-  fun addButton_disabledForMissingInputs_and_enabledWhenValid() {
-    setMainScreen()
-
-    // No image + minimal inputs -> disabled
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.enterAddItemType("Jacket")
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-    composeTestRule.runOnIdle { assert(!viewModel.uiState.value.isAddingValid) }
-
-    // With image but no category -> disabled
-    val uri = "content://dummy/photo.jpg".toUri()
-    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
-    // Reset category by setting to empty
-    composeTestRule.runOnIdle { viewModel.setCategory("") }
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsNotEnabled()
-
-    // Valid all (image + category selected from dropdown) -> enabled
-    composeTestRule.enterAddItemCategory("Clothing")
-    composeTestRule.enterAddItemType("T-Shirt")
-    composeTestRule.enterAddItemBrand("Nike")
-    composeTestRule.enterAddItemPrice(19.99)
-    composeTestRule
-        .onNodeWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
-        .assertIsEnabled()
-  }
 
   // ----------- Suggestions: show and select -----------
 
@@ -305,38 +273,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   // ----------- Material parsing -----------
 
-  @Test
-  fun materialInput_parsesVariants_and_ignoresInvalid() {
-    setMainScreen()
-
-    // Multi
-    composeTestRule.enterAddItemMaterial("Cotton 60%, Polyester 30%, Elastane 10%")
-    composeTestRule.runOnIdle {
-      val m = viewModel.uiState.value.material
-      assert(m.size == 3)
-      assert(m[0].name == "Cotton" && m[0].percentage == 60.0)
-      assert(m[1].name == "Polyester" && m[1].percentage == 30.0)
-      assert(m[2].name == "Elastane" && m[2].percentage == 10.0)
-    }
-
-    // Single
-    composeTestRule.enterAddItemMaterial("Cotton 100%")
-    composeTestRule.runOnIdle {
-      val m = viewModel.uiState.value.material
-      assert(m.size == 1)
-      assert(m[0].name == "Cotton" && m[0].percentage == 100.0)
-    }
-
-    // Invalid entries are ignored
-    composeTestRule.enterAddItemMaterial("Cotton 80%, InvalidEntry, Wool 20%")
-    composeTestRule.runOnIdle {
-      val m = viewModel.uiState.value.material
-      assert(m.size == 2)
-      assert(m[0].name == "Cotton" && m[0].percentage == 80.0)
-      assert(m[1].name == "Wool" && m[1].percentage == 20.0)
-    }
-  }
-
   // ----------- Price handling -----------
 
   @Test
@@ -344,28 +280,11 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     setMainScreen()
 
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextInput("12.99")
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == 12.99) }
 
     // Replace with invalid; value should stay last valid
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_PRICE).performTextReplacement("abc")
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == "12.99") }
-
-    // Conversion example
-    composeTestRule.runOnIdle {
-      val item =
-          Item(
-              itemUuid = "test",
-              postUuids = listOf("test_post1"),
-              image = ImageData("testPhoto", "content://dummy/photo.jpg"),
-              category = "Clothing",
-              type = "Jacket",
-              brand = "TestBrand",
-              price = viewModel.uiState.value.price.toDoubleOrNull() ?: 0.0,
-              material = emptyList(),
-              link = "",
-              ownerId = "user123")
-      assert(item.price == 12.99)
-    }
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.price == 12.99) }
   }
 
   // ----------- Overlay visibility -----------

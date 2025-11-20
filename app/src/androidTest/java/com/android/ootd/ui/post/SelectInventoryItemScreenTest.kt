@@ -52,6 +52,7 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
           "Shirt",
           "Brand",
           10.0,
+          "CHF",
           emptyList(),
           null,
           "user1")
