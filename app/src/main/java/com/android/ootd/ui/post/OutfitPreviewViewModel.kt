@@ -11,6 +11,8 @@ import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
@@ -34,7 +36,8 @@ data class PreviewUIState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val isLoading: Boolean = false,
-    val isPublished: Boolean = false
+    val isPublished: Boolean = false,
+    val location: Location = emptyLocation
 )
 
 /* Compression threshold for images before upload */
@@ -64,15 +67,16 @@ class OutfitPreviewViewModel(
   val uiState: StateFlow<PreviewUIState> = _uiState.asStateFlow()
 
   /**
-   * Initialises state from FitCheck screen (receives imageUri and description) Generates a new
-   * postUuid if not already set
+   * Initialises state from FitCheck screen (receives imageUri, description, and location) Generates
+   * a new postUuid if not already set
    */
-  fun initFromFitCheck(imageUri: String, description: String) {
+  fun initFromFitCheck(imageUri: String, description: String, location: Location) {
     // the state will generate a new postUuid if not already set
     val newUuid = _uiState.value.postUuid.ifEmpty { postRepository.getNewPostId() }
 
     _uiState.value =
-        _uiState.value.copy(postUuid = newUuid, imageUri = imageUri, description = description)
+        _uiState.value.copy(
+            postUuid = newUuid, imageUri = imageUri, description = description, location = location)
 
     loadItemsForPost()
   }
@@ -161,7 +165,8 @@ class OutfitPreviewViewModel(
                   outfitURL = outfitPhotoUrl,
                   description = state.description,
                   itemsID = itemIds,
-                  timestamp = System.currentTimeMillis())
+                  timestamp = System.currentTimeMillis(),
+                  location = state.location)
 
           postRepository.savePostToFirestore(post)
 

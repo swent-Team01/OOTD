@@ -1,6 +1,8 @@
 package com.android.ootd.model.post
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
@@ -41,7 +43,8 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
       outfit: String = "https://fake.com/outfit.jpg",
       description: String = "Cool outfit",
       items: List<String> = emptyList(),
-      ts: Long = System.currentTimeMillis()
+      ts: Long = System.currentTimeMillis(),
+      location: Location = emptyLocation
   ) =
       OutfitPost(
           postUID = id,
@@ -51,7 +54,8 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
           outfitURL = outfit,
           description = description,
           itemsID = items,
-          timestamp = ts)
+          timestamp = ts,
+          location = location)
 
   private suspend inline fun <reified T : Throwable> expectThrows(
       messageContains: String? = null,
@@ -88,6 +92,51 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertEquals(post.name, fetched?.name)
     Assert.assertEquals(post.description, fetched?.description)
     Assert.assertEquals(post.itemsID, fetched?.itemsID)
+    Assert.assertEquals(post.location, fetched?.location)
+  }
+
+  @Test
+  fun saveAndRetrievePost_withLocation_worksCorrectly() = runTest {
+    val newId = newId()
+    val uid = uid()
+    ensureUser(uid)
+
+    val location = Location(46.5197, 6.6323, "EPFL")
+    val post = post(id = newId, owner = uid, location = location)
+    outfitPostRepository.savePostToFirestore(post)
+
+    val fetched = outfitPostRepository.getPostById(newId)
+    Assert.assertNotNull(fetched)
+    Assert.assertEquals(location.latitude, fetched?.location?.latitude)
+    Assert.assertEquals(location.longitude, fetched?.location?.longitude)
+    Assert.assertEquals(location.name, fetched?.location?.name)
+  }
+
+  @Test
+  fun getPostById_withoutLocation_defaultsToEmptyLocation() = runTest {
+    val newId = newId()
+
+    // Manually create post without location field
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(newId)
+        .set(
+            mapOf(
+                "postUID" to newId,
+                "name" to "Old Post",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L
+                // No location field
+                ))
+        .await()
+
+    val fetched = outfitPostRepository.getPostById(newId)
+    Assert.assertNotNull(fetched)
+    Assert.assertEquals(emptyLocation, fetched?.location)
   }
 
   @Test
@@ -122,6 +171,9 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val newId = newId()
     ensureUser()
 
+    val location1 = Location(46.5197, 6.6323, "EPFL")
+    val location2 = Location(46.2044, 6.1432, "Geneva")
+
     val post1 =
         post(
             id = newId,
@@ -129,8 +181,9 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             profile = "https://example.com/a.jpg",
             outfit = "https://example.com/outfit1.jpg",
             description = "First",
-            ts = 1L)
-    val post2 = post1.copy(name = "User B", description = "Updated")
+            ts = 1L,
+            location = location1)
+    val post2 = post1.copy(name = "User B", description = "Updated", location = location2)
 
     outfitPostRepository.savePostToFirestore(post1)
     outfitPostRepository.savePostToFirestore(post2)
@@ -138,6 +191,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val fetched = outfitPostRepository.getPostById(newId)
     Assert.assertEquals("User B", fetched?.name)
     Assert.assertEquals("Updated", fetched?.description)
+    Assert.assertEquals(location2, fetched?.location)
   }
 
   @Test
@@ -170,6 +224,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val result = outfitPostRepository.getPostById(newId)
     Assert.assertNotNull(result)
     Assert.assertEquals("", result?.name)
+    Assert.assertEquals(emptyLocation, result?.location)
   }
 
   @Test
@@ -177,13 +232,15 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val newId = newId()
     ensureUser()
 
+    val location = Location(46.5197, 6.6323, "EPFL")
     val post =
         post(
             id = newId,
             name = "Integration Test User",
             profile = "https://fake.com/user.jpg",
             outfit = "https://fake.com/outfit.jpg",
-            description = "Lifecycle test")
+            description = "Lifecycle test",
+            location = location)
 
     outfitPostRepository.savePostToFirestore(post)
 
@@ -191,6 +248,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertNotNull("Post should be saved and retrievable", added)
     Assert.assertEquals(post.name, added?.name)
     Assert.assertEquals(post.description, added?.description)
+    Assert.assertEquals(location, added?.location)
 
     try {
       outfitPostRepository.deletePost(newId)
@@ -209,6 +267,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     ensureUser(uid)
 
     val fakeUri = "file:///tmp/fake_photo.jpg"
+    val location = Location(46.5197, 6.6323, "EPFL")
 
     val saved =
         outfitPostRepository.savePostWithMainPhoto(
@@ -216,13 +275,15 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             name = "Partial Save Tester",
             userProfilePicURL = "https://example.com/profile.jpg",
             localPath = fakeUri,
-            description = "Test post with photo")
+            description = "Test post with photo",
+            location = location)
 
     val fetched = outfitPostRepository.getPostById(saved.postUID)
     Assert.assertNotNull(fetched)
     Assert.assertEquals("Partial Save Tester", fetched!!.name)
     Assert.assertEquals("Test post with photo", fetched.description)
     Assert.assertTrue(fetched.outfitURL.isNotBlank())
+    Assert.assertEquals(location, fetched.location)
   }
 
   @Test
@@ -269,7 +330,8 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             outfitURL = "",
             description = "This will fail",
             itemsID = emptyList(),
-            timestamp = System.currentTimeMillis())
+            timestamp = System.currentTimeMillis(),
+            location = emptyLocation)
 
     expectThrows<Exception> { outfitPostRepository.savePostToFirestore(badPost) }
   }
@@ -290,6 +352,7 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     val uid = uid()
 
     val invalidPath = "not_a_valid_uri"
+    val location = Location(46.5197, 6.6323, "EPFL")
 
     val saved =
         outfitPostRepository.savePostWithMainPhoto(
@@ -297,14 +360,17 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             name = "Fallback Upload",
             userProfilePicURL = "https://example.com/profile.jpg",
             localPath = invalidPath,
-            description = "Fallback triggered")
+            description = "Fallback triggered",
+            location = location)
 
     Assert.assertTrue(saved.outfitURL.startsWith("https://fake.storage/"))
     Assert.assertTrue(saved.outfitURL.contains(saved.postUID))
+    Assert.assertEquals(location, saved.location)
 
     val fetched = outfitPostRepository.getPostById(saved.postUID)
     Assert.assertNotNull(fetched)
     Assert.assertEquals("Fallback Upload", fetched?.name)
+    Assert.assertEquals(location, fetched?.location)
   }
 
   @Test

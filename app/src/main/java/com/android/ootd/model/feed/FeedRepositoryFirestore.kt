@@ -1,6 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
+import com.android.ootd.model.map.locationFromMap
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -141,6 +142,8 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val name = doc.getString("name") ?: ""
       val outfitUrl = doc.getString("outfitURL") ?: ""
       val userProfilePicture = doc.getString("userProfilePicURL") ?: ""
+      val location = locationFromMap(doc["location"] as? Map<*, *>)
+
       OutfitPost(
           postUID = postUuid,
           ownerId = ownerId,
@@ -149,7 +152,8 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           itemsID = itemUuids,
           name = name,
           outfitURL = outfitUrl,
-          userProfilePicURL = userProfilePicture)
+          userProfilePicURL = userProfilePicture,
+          location = location)
     } catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
       null

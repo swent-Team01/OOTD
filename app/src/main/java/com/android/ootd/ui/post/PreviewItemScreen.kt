@@ -76,6 +76,7 @@ import com.android.ootd.R
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
+import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
 
 object PreviewItemScreenTestTags {
@@ -101,6 +102,7 @@ fun PreviewItemScreen(
     outfitPreviewViewModel: OutfitPreviewViewModel = viewModel(),
     imageUri: String,
     description: String,
+    location: Location,
     onEditItem: (String) -> Unit = {},
     onAddItem: (String) -> Unit = {}, // now takes postUuid
     onSelectFromInventory: (String) -> Unit = {}, // new callback for inventory selection
@@ -118,7 +120,9 @@ fun PreviewItemScreen(
 
   // Initialise ViewModel with args and generate a new postUuid if needed
   if (!enablePreview) {
-    LaunchedEffect(Unit) { outfitPreviewViewModel.initFromFitCheck(imageUri, description) }
+    LaunchedEffect(Unit) {
+      outfitPreviewViewModel.initFromFitCheck(imageUri, description, location)
+    }
 
     // Reload items when coming back from other screens (e.g., after adding an item from inventory)
     DisposableEffect(lifecycleOwner) {

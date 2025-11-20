@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.android.ootd.model.map.Location
@@ -36,7 +37,7 @@ fun ComposeTestRule.enterDate(date: String) {
 }
 
 fun ComposeTestRule.enterLocation(text: String) {
-  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performScrollTo().performClick()
   onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performTextInput(text)
   waitForIdle()
 }
@@ -47,7 +48,7 @@ fun ComposeTestRule.enterLocation(text: String) {
  */
 fun ComposeTestRule.testLocationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused() {
   // Arrange: focus the location field first
-  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performScrollTo().performClick()
   waitForIdle()
 
   // Act: type to trigger search (assumes mock repository is configured)
@@ -99,7 +100,7 @@ fun ComposeTestRule.testLocationDropdown_hidesWhenLosingFocus(blurTargetTag: Str
   waitForIdle()
 
   // Act: click another field to lose focus
-  onNodeWithTag(blurTargetTag).performClick()
+  onNodeWithTag(blurTargetTag).performScrollTo().performClick()
   waitForIdle()
 
   // Assert: dropdown should be hidden
@@ -120,11 +121,11 @@ fun ComposeTestRule.testLocationDropdown_showsAgain_whenRefocusingWithExistingSu
   waitForIdle()
 
   // Focus another field first
-  onNodeWithTag(blurTargetTag).performClick()
+  onNodeWithTag(blurTargetTag).performScrollTo().performClick()
   waitForIdle()
 
   // Act: refocus location field
-  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+  onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performScrollTo().performClick()
   waitForIdle()
 
   // Assert: dropdown should show again
