@@ -4,11 +4,13 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
@@ -275,5 +277,54 @@ class NotificationRepositoryFirestoreTest {
     verify { mockQuery.get() }
     verify { mockCollection.document("firebaseDocId123") }
     verify { mockDocumentReference.delete() }
+  }
+
+  @Test
+  fun listenForUnpushedNotificationsInvokesCallbackAndMarksAsPushed() {
+    val receiverId = "receiver123"
+
+    // Mock components
+    val listenerSlot = slot<EventListener<QuerySnapshot>>()
+
+    val mockDocSnapshot = mockk<DocumentSnapshot>(relaxed = true)
+    val mockSnapshot = mockk<QuerySnapshot>(relaxed = true)
+
+    // Valid DTO from Firestore
+    every { mockDocSnapshot.toObject(NotificationDto::class.java) } returns
+        NotificationDto(
+            uid = "notif123",
+            senderId = "sender1",
+            receiverId = receiverId,
+            type = "follow",
+            content = "hello",
+            wasPushed = false)
+
+    every { mockSnapshot.documents } returns listOf(mockDocSnapshot)
+
+    val mockDocRef = mockk<DocumentReference>(relaxed = true)
+    every { mockCollection.document("notif123") } returns mockDocRef
+    every { mockDocRef.update("wasPushed", true) } returns Tasks.forResult(null)
+
+    // Capture Java EventListener<QuerySnapshot>
+    every {
+      mockCollection
+          .whereEqualTo(RECEIVER_ID, receiverId)
+          .whereEqualTo("wasPushed", false)
+          .addSnapshotListener(capture(listenerSlot))
+    } returns mockk(relaxed = true)
+
+    var callbackNotification: Notification? = null
+
+    // Start listener (this registers the captured event listener)
+    repository.listenForUnpushedNotifications(receiverId) { callbackNotification = it }
+
+    // Simulate Firestore firing the listener
+    listenerSlot.captured.onEvent(mockSnapshot, null)
+
+    // Assertions
+    assertNotNull(callbackNotification)
+    assertEquals("notif123", callbackNotification!!.uid)
+
+    verify { mockDocRef.update("wasPushed", true) }
   }
 }

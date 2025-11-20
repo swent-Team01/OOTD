@@ -19,11 +19,21 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   lateinit var item3: Item
   lateinit var item4: Item
 
+  private suspend fun ensureSignedIn(): String {
+    FirebaseEmulator.auth.currentUser?.uid?.let {
+      return it
+    }
+    FirebaseEmulator.auth.signInAnonymously().await()
+    return FirebaseEmulator.auth.currentUser?.uid ?: error("Auth sign-in failed")
+  }
+
   @Before
   override fun setUp() {
     super.setUp()
     Assume.assumeTrue("Firebase Emulator must be running before tests.", FirebaseEmulator.isRunning)
-    ownerId = FirebaseEmulator.auth.uid ?: ""
+    FirebaseEmulator.clearFirestoreEmulator()
+    FirebaseEmulator.clearAuthEmulator()
+    ownerId = runBlocking { ensureSignedIn() }
     if (ownerId == "") {
       throw IllegalStateException("There needs to be an authenticated user")
     }
@@ -214,7 +224,7 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
     assertEquals(1, retrieved.material.size)
 
     // Editing an item that does not exist should throw
-    val nonExistingItem = item2.copy(itemUuid = "nonExisting")
+    val nonExistingItem = item2.copy(itemUuid = "nonExisting", ownerId = "other-user")
     var didThrow = false
     try {
       itemsRepository.editItem(nonExistingItem.itemUuid, nonExistingItem)

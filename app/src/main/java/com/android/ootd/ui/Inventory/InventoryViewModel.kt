@@ -45,22 +45,37 @@ class InventoryViewModel(
   private val _uiState = MutableStateFlow(InventoryUIState())
   val uiState: StateFlow<InventoryUIState> = _uiState.asStateFlow()
 
+  companion object {
+    private const val FIRESTORE_TIMEOUT_MS = 2_000L
+  }
+
   init {
     loadInventory()
   }
 
-  /** Loads the user's inventory items. */
+  /**
+   * Loads the user's inventory items using offline-first pattern.
+   *
+   * Uses short timeout (5 seconds) for local cache reads. With Firestore persistence, reads from
+   * cache complete quickly even offline.
+   */
   fun loadInventory() {
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
         val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
 
-        // Get the list of item IDs from the account
-        val itemIds = accountRepository.getItemsList(currentUserId)
+        // Get the list of item IDs from the account (with timeout for offline)
+        val itemIds =
+            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+              accountRepository.getItemsList(currentUserId)
+            } ?: emptyList()
 
-        // Fetch all items using the batch method
-        val items = itemsRepository.getItemsByIds(itemIds)
+        // Fetch all items using the batch method (with timeout for offline)
+        val items =
+            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+              itemsRepository.getItemsByIds(itemIds)
+            } ?: emptyList()
 
         // Sort items by category using the predefined order
         val sortedItems = sortItemsByCategory(items)

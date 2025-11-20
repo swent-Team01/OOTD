@@ -1,8 +1,6 @@
 package com.android.ootd.ui.register
 
-import android.Manifest
 import android.util.Log
-import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.AccountRepository
@@ -11,19 +9,14 @@ import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.account.TakenUserException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
-import com.android.ootd.model.map.Location
-import com.android.ootd.model.map.LocationRepository
-import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
-import com.android.ootd.utils.LocationUtils
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,10 +50,6 @@ data class RegisterUserViewModel(
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false,
-    val locationQuery: String = "",
-    val selectedLocation: Location? = null,
-    val locationSuggestions: List<Location> = emptyList(),
-    val isLoadingLocations: Boolean = false,
 )
 
 /**
@@ -71,18 +60,19 @@ data class RegisterUserViewModel(
  *
  * @property userRepository The repository used to create new users. Defaults to the provided
  *   instance.
+ * @property accountRepository The repository used to create accounts.
+ * @property locationSelectionViewModel The ViewModel handling location selection logic.
+ * @property auth Firebase authentication instance.
  */
 class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val accountService: AccountService = AccountServiceFirebase(),
-    private val locationRepository: LocationRepository = LocationRepositoryProvider.repository,
+    val locationSelectionViewModel: LocationSelectionViewModel = LocationSelectionViewModel(),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(RegisterUserViewModel())
-  // Add this property to track the search job
-  private var searchJob: Job? = null
 
   /**
    * A [StateFlow] representing the current registration UI state. Observers can collect this flow
@@ -185,7 +175,7 @@ class RegisterViewModel(
         val userId = auth.currentUser!!.uid
         val user = User(uid = userId, ownerId = userId, username = username)
         val email = auth.currentUser!!.email.orEmpty()
-        val location = uiState.value.selectedLocation ?: emptyLocation
+        val location = locationSelectionViewModel.uiState.value.selectedLocation ?: emptyLocation
         if (location == emptyLocation) throw MissingLocationException()
         accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
         userRepository.createUser(
@@ -231,120 +221,19 @@ class RegisterViewModel(
     }
   }
 
-  // ----------------- Location-related helpers -----------------
-  /**
-   * Selects a location and updates the UI state.
-   *
-   * @param location The chosen Location; also sets the location query to the location's name.
-   */
-  fun setLocation(location: Location) {
-    _uiState.value = _uiState.value.copy(selectedLocation = location, locationQuery = location.name)
-  }
-
-  /**
-   * Updates the location search query and fetches suggestions.
-   *
-   * If the query is non-empty a background search is started and the resulting suggestions are
-   * stored in the UI state; otherwise suggestions are cleared.
-   *
-   * Disclaimer: This method has been adapted from the bootcamp week 3 solution
-   *
-   * @param query The new location query string.
-   */
-  fun setLocationQuery(query: String) {
-    _uiState.value = _uiState.value.copy(locationQuery = query, selectedLocation = null)
-
-    // Cancel any pending search
-    searchJob?.cancel()
-
-    if (query.isNotEmpty()) {
-      _uiState.value = _uiState.value.copy(isLoadingLocations = true)
-      searchJob =
-          viewModelScope.launch {
-            delay(500) // Wait 500ms after user stops typing in order to not flood nomatim.
-            try {
-              val results = locationRepository.search(query)
-              _uiState.value =
-                  _uiState.value.copy(locationSuggestions = results, isLoadingLocations = false)
-            } catch (e: Exception) {
-              Log.e("RegisterViewModel", "Error fetching location suggestions", e)
-              _uiState.value =
-                  _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)
-            }
-          }
-    } else {
-      _uiState.value =
-          _uiState.value.copy(locationSuggestions = emptyList(), isLoadingLocations = false)
-    }
-  }
-
-  /**
-   * Clears the location suggestions from the UI state.
-   *
-   * This method can be called to reset the location suggestions, for example, when the user clears
-   * the location query.
-   */
-  fun clearLocationSuggestions() {
-    _uiState.value = _uiState.value.copy(locationSuggestions = emptyList())
-  }
-
-  /**
-   * Sets location suggestions directly in the UI state.
-   *
-   * This is primarily used for testing purposes to inject mock location data.
-   *
-   * @param suggestions The list of locations to set as suggestions.
-   */
-  fun setLocationSuggestions(suggestions: List<Location>) {
-    _uiState.value = _uiState.value.copy(locationSuggestions = suggestions)
-  }
-
-  fun isLoadingLocations(): Boolean {
-    return uiState.value.locationSuggestions.isEmpty() && uiState.value.locationQuery.isNotEmpty()
-  }
-
-  /**
-   * Called when location permission is granted by the user. Initiates GPS location retrieval and
-   * updates the selected location.
-   */
-  @Suppress("MissingPermission") // Permission is checked by the caller (permission launcher)
+  // ----------------- GPS Location helpers -----------------
+  /** Called when location permission is granted by the user. Initiates GPS location retrieval. */
+  @Suppress("MissingPermission")
   fun onLocationPermissionGranted() {
-    Log.d("RegisterViewModel", "Location permission granted")
-    setGPSLocation()
+    locationSelectionViewModel.onLocationPermissionGranted(
+        onError = { errorMessage -> _uiState.value = _uiState.value.copy(errorMsg = errorMessage) })
   }
 
-  /**
-   * Retrieves the current GPS location and sets it as the selected location.
-   *
-   * Uses FusedLocationProviderClient to get the device's current location with balanced power
-   * accuracy. Handles both success and failure cases with appropriate user feedback.
-   */
-  @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-  private fun setGPSLocation() {
-    _uiState.value = _uiState.value.copy(isLoadingLocations = true)
-
-    LocationUtils.getCurrentGPSLocation(
-        onSuccess = { location ->
-          setLocation(location)
-          _uiState.value = _uiState.value.copy(isLoadingLocations = false)
-        },
-        onFailure = { errorMessage ->
-          emitError(errorMessage)
-          _uiState.value = _uiState.value.copy(isLoadingLocations = false)
-        })
-  }
-
-  /** Formats a Double coordinate to 4 decimal places for display. */
-  private fun Double.format(): String = "%.4f".format(this)
-
-  /**
-   * Called when location permission is denied by the user. Shows an error message to inform the
-   * user they need to search manually.
-   */
+  /** Called when location permission is denied by the user. */
   fun onLocationPermissionDenied() {
-    Log.d("RegisterViewModel", "Location permission denied")
-    emitError(
-        "Location permission denied. Please search for your location manually if you want" +
-            "to add your location.")
+    locationSelectionViewModel.onLocationPermissionDenied(
+        onDenied = {
+          _uiState.value = _uiState.value.copy(errorMsg = "Location permission is required")
+        })
   }
 }

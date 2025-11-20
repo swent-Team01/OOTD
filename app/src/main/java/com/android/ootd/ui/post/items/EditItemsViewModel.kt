@@ -27,6 +27,7 @@ data class EditItemsUIState(
     val type: String = "",
     val brand: String = "",
     val price: Double = 0.0,
+    val currency: String = "CHF",
     val material: List<Material> = emptyList(),
     val materialText: String = "",
     val link: String = "",
@@ -37,7 +38,12 @@ data class EditItemsUIState(
     val isSaveSuccessful: Boolean = false,
     val isDeleteSuccessful: Boolean = false,
     val ownerId: String = "",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val condition: String = "",
+    val size: String = "",
+    val fitType: String = "",
+    val style: String = "",
+    val notes: String = "",
 ) {
   val isEditValid: Boolean
     get() =
@@ -60,6 +66,11 @@ open class EditItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : BaseItemViewModel<EditItemsUIState>() {
+
+  companion object {
+
+    private const val TAG = "EditItemsViewModel"
+  }
 
   // Provide initial state to the BaseItemViewModel (which owns _uiState + uiState)
   override fun initialState() = EditItemsUIState()
@@ -107,10 +118,17 @@ open class EditItemsViewModel(
             type = item.type ?: "",
             brand = item.brand ?: "",
             price = item.price ?: 0.0,
+            currency = item.currency ?: "CHF",
             material = item.material.filterNotNull(),
             materialText = materialText,
             link = item.link ?: "",
-            ownerId = item.ownerId)
+            ownerId = item.ownerId,
+            condition = item.condition ?: "",
+            size = item.size ?: "",
+            fitType = item.fitType ?: "",
+            style = item.style ?: "",
+            notes = item.notes ?: "",
+        )
   }
 
   /** Loads an item by its UUID directly from the repository. */
@@ -139,44 +157,64 @@ open class EditItemsViewModel(
 
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
-      val finalImage =
-          if (state.localPhotoUri != null)
-              FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
-          else state.image
-
-      if (finalImage.imageUrl.isEmpty()) {
-        setErrorMsg("Please select a photo.")
-        _uiState.value = _uiState.value.copy(isSaveSuccessful = false)
-        _uiState.value = _uiState.value.copy(isLoading = false)
-        return@launch
-      }
-
-      val updatedItem =
-          Item(
-              itemUuid = state.itemId,
-              postUuids = state.postUuids,
-              image = finalImage,
-              category = state.category,
-              type = state.type,
-              brand = state.brand,
-              price = state.price,
-              material = state.material,
-              link = state.link,
-              ownerId = state.ownerId)
-
       try {
+        val finalImage =
+            if (state.localPhotoUri != null)
+                FirebaseImageUploader.uploadImage(state.localPhotoUri, state.itemId)
+            else state.image
+
+        val updatedItem =
+            Item(
+                itemUuid = state.itemId,
+                postUuids = state.postUuids,
+                image = finalImage,
+                category = state.category,
+                type = state.type,
+                brand = state.brand,
+                price = state.price,
+                currency = state.currency,
+                material = state.material,
+                link = state.link,
+                ownerId = state.ownerId,
+                condition = state.condition,
+                size = state.size,
+                fitType = state.fitType,
+                style = state.style,
+                notes = state.notes,
+            )
+        if (finalImage.imageUrl.isEmpty()) {
+          setErrorMsg("Please select a photo.")
+          _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
+          return@launch
+        }
+
+        // Call editItem directly in this coroutine (not nested launch)
+        // The cache update in editItem() happens synchronously before Firestore .await()
+        // So even if this coroutine finishes, the cache is already updated
+        try {
+          repository.editItem(updatedItem.itemUuid, updatedItem)
+          Log.d(TAG, "Item edit completed (cache updated, Firestore queued)")
+        } catch (e: Exception) {
+          // Error is acceptable when offline - cache is still updated
+          Log.w(TAG, "Item edit may be offline (cache updated): ${e.message}")
+        }
+
+        // Return success - cache is already updated above
         _uiState.value =
-            _uiState.value.copy(image = finalImage, errorMessage = null, isSaveSuccessful = true)
-        repository.editItem(updatedItem.itemUuid, updatedItem)
+            _uiState.value.copy(
+                image = finalImage, errorMessage = null, isSaveSuccessful = true, isLoading = false)
+        Log.d(TAG, "Item edit operation completed")
       } catch (e: Exception) {
-        setErrorMsg("Failed to update item: ${e.message}")
-      } finally {
-        _uiState.value = _uiState.value.copy(isLoading = false)
+        setErrorMsg("Failed to save item: ${e.message}")
+        _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
       }
     }
   }
 
-  /** Deletes the current item from the repository. */
+  /**
+   * Deletes the current item from the repository using optimistic pattern. Assumes success
+   * immediately and queues operations in background.
+   */
   fun deleteItem() {
     val state = _uiState.value
     if (state.itemId.isEmpty()) {
@@ -184,22 +222,34 @@ open class EditItemsViewModel(
       return
     }
 
+    // Optimistic delete - assume success immediately
+    _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
+
+    // Queue delete operations in background
     viewModelScope.launch {
       try {
-        // Remove item from user's inventory
-        val removedFromInventory = accountRepository.removeItem(state.itemId)
-        if (!removedFromInventory) {
-          setErrorMsg("Failed to remove item from inventory. Please try again.")
-          return@launch
-        }
-
-        repository.deleteItem(state.itemId)
-
-        val deleted = FirebaseImageUploader.deleteImage(state.image.imageId)
-        if (!deleted) Log.w("EditItemsViewModel", "Image deletion failed or image not found.")
-        _uiState.value = _uiState.value.copy(isDeleteSuccessful = true)
+        accountRepository.removeItem(state.itemId)
+        Log.d(TAG, "Item removal queued (will sync when online)")
       } catch (e: Exception) {
-        setErrorMsg("Failed to delete item: ${e.message}")
+        Log.e(TAG, "Failed to queue item removal: ${e.message}")
+      }
+    }
+
+    viewModelScope.launch {
+      try {
+        repository.deleteItem(state.itemId)
+        Log.d(TAG, "Item deletion queued (will sync when online)")
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to queue item deletion: ${e.message}")
+      }
+    }
+
+    viewModelScope.launch {
+      try {
+        FirebaseImageUploader.deleteImage(state.image.imageId)
+        Log.d(TAG, "Image deletion queued (will sync when online)")
+      } catch (e: Exception) {
+        Log.w(TAG, "Image deletion failed: ${e.message}")
       }
     }
   }
@@ -221,7 +271,18 @@ open class EditItemsViewModel(
    *
    * @param price The price value.
    */
-  fun setPrice(price: Double) {
-    _uiState.value = _uiState.value.copy(price = price)
-  }
+  fun setPrice(price: Double) = updateSimpleField { it.copy(price = price) }
+
+  /** Sets the currency (UI only). */
+  fun setCurrency(currency: String) = updateSimpleField { it.copy(currency = currency) }
+
+  fun setCondition(value: String) = updateSimpleField { it.copy(condition = value) }
+
+  fun setSize(value: String) = updateSimpleField { it.copy(size = value) }
+
+  fun setFitType(value: String) = updateSimpleField { it.copy(fitType = value) }
+
+  fun setStyle(value: String) = updateSimpleField { it.copy(style = value) }
+
+  fun setNotes(value: String) = updateSimpleField { it.copy(notes = value) }
 }

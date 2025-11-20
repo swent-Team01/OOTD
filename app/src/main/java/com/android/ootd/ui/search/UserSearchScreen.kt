@@ -77,6 +77,7 @@ fun UserSearchScreen(
       }
 }
 
+@Suppress("ViewModelConstructorInComposable")
 @Preview(showBackground = true)
 @Composable
 fun UserSearchScreenPreview() {
