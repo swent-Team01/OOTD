@@ -692,4 +692,21 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
     }
   }
+
+  @Test
+  fun viewUserScreen_navigateAndGoBack_workCorrectly() {
+    composeRule.runOnIdle {
+      // Start from Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to ViewUser screen with userId
+      navigation.navigateTo(Screen.ViewUser(userId = "test-user-123"))
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
 }
