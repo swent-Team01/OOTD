@@ -294,8 +294,7 @@ fun OOTDTopBar(
       },
       navigationIcon = { leftComposable() },
       actions = { rightComposable() },
-      colors =
-          TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background))
+      colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background))
 }
 
 /**
