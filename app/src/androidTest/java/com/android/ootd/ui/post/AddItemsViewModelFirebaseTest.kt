@@ -306,7 +306,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setStyle("Minimalist")
     viewModel.setNotes("Worn twice")
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     kotlinx.coroutines.delay(2000)
 
     assertTrue(viewModel.addOnSuccess.first())
