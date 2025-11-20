@@ -7,6 +7,7 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -35,6 +36,8 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
   private lateinit var accountService: AccountService
   private lateinit var testUserRepository: UserRepository
   private lateinit var realUid: String
+
+  val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
 
   @Before
   override fun setUp() {
@@ -108,9 +111,10 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
   fun publishPost_withValidData_successfullySavesPostAndUpdatesState() = runBlocking {
     val imageUri = createReadableUri()
     val description = "My awesome outfit for today!"
+    val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
 
     val beforeTimestamp = System.currentTimeMillis()
-    viewModel.initFromFitCheck(imageUri.toString(), description)
+    viewModel.initFromFitCheck(imageUri.toString(), description, testLocation)
     delay(500)
 
     val state = viewModel.uiState.first()
@@ -124,6 +128,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
 
     val stateWithItems = viewModel.uiState.first()
     assertEquals(2, stateWithItems.items.size)
+    assertEquals(testLocation, stateWithItems.location)
 
     viewModel.publishPost()
     delay(3000)
@@ -144,11 +149,13 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertEquals(realUid, savedPost.ownerId)
     assertNotNull(savedPost.name)
     assertTrue(savedPost.outfitURL.isNotEmpty())
+    assertEquals(testLocation, savedPost.location)
   }
 
   @Test
   fun publishPost_withMissingRequiredData_failsWithErrorMessage() = runBlocking {
-    viewModel.initFromFitCheck("", "Test description")
+    val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
+    viewModel.initFromFitCheck("", "Test description", testLocation)
     delay(500)
 
     val state1 = viewModel.uiState.first()
@@ -182,8 +189,9 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
   fun publishPost_withNoItems_stillSucceeds() = runBlocking {
     val imageUri = createReadableUri()
     val description = "Outfit with no items"
+    val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
 
-    viewModel.initFromFitCheck(imageUri.toString(), description)
+    viewModel.initFromFitCheck(imageUri.toString(), description, testLocation)
     delay(500)
 
     viewModel.publishPost()
@@ -196,6 +204,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     val savedPost = postRepository.getPostById(finalState.postUuid)
     assertNotNull(savedPost)
     assertEquals(0, savedPost!!.itemsID.size)
+    assertEquals(testLocation, savedPost.location)
   }
 
   @Test
@@ -210,13 +219,14 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     val imageUri = createReadableUri()
     val description = "Init test"
 
-    viewModel.initFromFitCheck(imageUri.toString(), description)
+    viewModel.initFromFitCheck(imageUri.toString(), description, testLocation)
     delay(500)
 
     val stateAfterInit = viewModel.uiState.first()
     assertTrue(stateAfterInit.postUuid.isNotEmpty())
     assertEquals(imageUri.toString(), stateAfterInit.imageUri)
     assertEquals(description, stateAfterInit.description)
+    assertEquals(testLocation, stateAfterInit.location)
     assertEquals(0, stateAfterInit.items.size)
 
     val postUuid = stateAfterInit.postUuid

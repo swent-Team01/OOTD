@@ -1,5 +1,6 @@
 package com.android.ootd.model.post
 
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
 
 interface OutfitPostRepository {
@@ -53,7 +54,8 @@ interface OutfitPostRepository {
       name: String,
       userProfilePicURL: String,
       localPath: String,
-      description: String
+      description: String,
+      location: Location
   ): OutfitPost
 
   /**

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +31,7 @@ import kotlinx.coroutines.launch
 data class FitCheckUIState(
     val image: Uri = Uri.EMPTY,
     val description: String = "",
+    val location: Location = emptyLocation,
     val errorMessage: String? = null,
     val invalidPhotoMsg: String? = null,
     val isLoading: Boolean = false,
@@ -92,6 +95,15 @@ class FitCheckViewModel(
    */
   fun setDescription(description: String) {
     _uiState.value = _uiState.value.copy(description = description)
+  }
+
+  /**
+   * Updates the location selected by the user.
+   *
+   * @param location The location selected by the user, or emptyLocation if none selected.
+   */
+  fun setLocation(location: Location) {
+    _uiState.value = _uiState.value.copy(location = location)
   }
 
   /**

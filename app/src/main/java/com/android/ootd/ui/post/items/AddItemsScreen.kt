@@ -4,6 +4,12 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,7 +37,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,6 +70,7 @@ object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"
   const val INPUT_BRAND = "inputItemBrand"
   const val INPUT_PRICE = "inputItemPrice"
+  const val INPUT_CURRENCY = "inputItemCurrency"
   const val INPUT_LINK = "inputItemLink"
   const val INPUT_MATERIAL = "inputItemMaterial"
   const val INPUT_CATEGORY = "inputItemCategory"
@@ -70,18 +78,23 @@ object AddItemScreenTestTags {
   const val ERROR_MESSAGE = "errorMessage"
   const val IMAGE_PICKER = "itemImagePicker"
   const val IMAGE_PREVIEW = "itemImagePreview"
-
   const val GO_BACK_BUTTON = "goBackButton"
-
   const val IMAGE_PICKER_DIALOG = "imagePickerDialog"
-
   const val TITLE_ADD = "titleAddItem"
   const val PICK_FROM_GALLERY = "pickFromGallery"
   const val TAKE_A_PHOTO = "takeAPhoto"
-
   const val TYPE_SUGGESTIONS = "typeSuggestion"
   const val CATEGORY_SUGGESTION = "categorySuggestion"
   const val ALL_FIELDS = "allFields"
+  const val ADDITIONAL_DETAILS_TOGGLE = "additionalDetailsToggle"
+  const val ADDITIONAL_DETAILS_SECTION = "additionalDetailsSection"
+  const val INPUT_CONDITION = "inputItemCondition"
+  const val INPUT_SIZE = "inputItemSize"
+  const val INPUT_FIT_TYPE = "inputItemFitType"
+  const val INPUT_STYLE = "inputItemStyle"
+  const val INPUT_NOTES = "inputItemNotes"
+  const val STYLE_SUGGESTIONS = "styleSuggestions"
+  const val FIT_TYPE_SUGGESTIONS = "fitTypeSuggestions"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -179,11 +192,13 @@ fun AddItemsScreen(
                   addItemsViewModel.updateTypeSuggestions(it)
                 },
 
-                // brand / price / link / material
+                // brand / price / link / material / currency
                 brand = itemsUIState.brand,
                 onBrandChange = addItemsViewModel::setBrand,
                 price = itemsUIState.price,
                 onPriceChange = addItemsViewModel::setPrice,
+                currency = itemsUIState.currency,
+                onCurrencyChange = addItemsViewModel::setCurrency,
                 link = itemsUIState.link,
                 onLinkChange = addItemsViewModel::setLink,
                 material = itemsUIState.materialText,
@@ -192,6 +207,16 @@ fun AddItemsScreen(
                 // add
                 isAddEnabled = overridePhoto || itemsUIState.isAddingValid,
                 onAddClick = addItemsViewModel::onAddItemClick,
+                condition = itemsUIState.condition,
+                onConditionChange = addItemsViewModel::setCondition,
+                size = itemsUIState.size,
+                onSizeChange = addItemsViewModel::setSize,
+                fitType = itemsUIState.fitType,
+                onFitTypeChange = addItemsViewModel::setFitType,
+                style = itemsUIState.style,
+                onStyleChange = addItemsViewModel::setStyle,
+                notes = itemsUIState.notes,
+                onNotesChange = addItemsViewModel::setNotes,
             )
 
             // top image preview overlays the list
@@ -257,14 +282,29 @@ private fun FieldsList(
     onTypeChange: (String) -> Unit,
     brand: String,
     onBrandChange: (String) -> Unit,
-    price: String,
-    onPriceChange: (String) -> Unit,
+    price: Double,
+    onPriceChange: (Double) -> Unit,
+    currency: String,
+    onCurrencyChange: (String) -> Unit,
     link: String,
     onLinkChange: (String) -> Unit,
     material: String,
     onMaterialChange: (String) -> Unit,
     isAddEnabled: Boolean,
     onAddClick: () -> Unit,
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    size: String,
+    onSizeChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    // Preview-only flags (default false for runtime)
+    additionalExpandedPreview: Boolean = false,
+    conditionMenuExpandedPreview: Boolean = false,
 ) {
   LazyColumn(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     item {
@@ -297,21 +337,38 @@ private fun FieldsList(
     }
 
     item {
-      BrandField(
-          brand = brand, onChange = onBrandChange, testTag = AddItemScreenTestTags.INPUT_BRAND)
+      ItemPrimaryFields(
+          brand = brand,
+          onBrandChange = onBrandChange,
+          brandTag = AddItemScreenTestTags.INPUT_BRAND,
+          price = price,
+          onPriceChange = onPriceChange,
+          priceTag = AddItemScreenTestTags.INPUT_PRICE,
+          currency = currency,
+          onCurrencyChange = onCurrencyChange,
+          currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
+          size = size,
+          onSizeChange = onSizeChange,
+          sizeTag = AddItemScreenTestTags.INPUT_SIZE,
+          link = link,
+          onLinkChange = onLinkChange,
+          linkTag = AddItemScreenTestTags.INPUT_LINK)
     }
 
-    item { PriceField(price = price, onChange = onPriceChange) }
-
     item {
-      LinkField(link = link, onChange = onLinkChange, testTag = AddItemScreenTestTags.INPUT_LINK)
-    }
-
-    item {
-      MaterialField(
-          materialText = material,
-          onChange = onMaterialChange,
-          testTag = AddItemScreenTestTags.INPUT_MATERIAL)
+      AdditionalDetailsSection(
+          condition = condition,
+          onConditionChange = onConditionChange,
+          material = material,
+          onMaterialChange = onMaterialChange,
+          fitType = fitType,
+          onFitTypeChange = onFitTypeChange,
+          style = style,
+          onStyleChange = onStyleChange,
+          notes = notes,
+          onNotesChange = onNotesChange,
+          expandedInitially = additionalExpandedPreview,
+          condExpandedInitially = conditionMenuExpandedPreview)
     }
 
     item {
@@ -372,19 +429,6 @@ private fun ImagePickerRow(
 }
 
 @Composable
-private fun PriceField(price: String, onChange: (String) -> Unit) {
-  OutlinedTextField(
-      value = price,
-      onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) onChange(it) },
-      label = { Text("Item price") },
-      placeholder = { Text("Enter the item price") },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-      colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(AddItemScreenTestTags.INPUT_PRICE))
-}
-
-@Composable
 private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
   Button(
       onClick = onClick,
@@ -404,6 +448,80 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
               Text(text = "Add Item", modifier = Modifier.align(Alignment.CenterVertically))
             }
       }
+}
+
+@Composable
+private fun AdditionalDetailsSection(
+    condition: String,
+    onConditionChange: (String) -> Unit,
+    material: String,
+    onMaterialChange: (String) -> Unit,
+    fitType: String,
+    onFitTypeChange: (String) -> Unit,
+    style: String,
+    onStyleChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
+    expandedInitially: Boolean = false,
+    condExpandedInitially: Boolean = false,
+) {
+  var expanded by remember { mutableStateOf(expandedInitially) }
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp)
+                .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+          Icon(
+              imageVector =
+                  if (expanded) Icons.Filled.KeyboardArrowDown
+                  else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+              contentDescription = if (expanded) "Collapse" else "Expand",
+              tint = MaterialTheme.colorScheme.primary)
+          Text(
+              text = "Enter additional details",
+              style =
+                  MaterialTheme.typography.bodyLarge.copy(
+                      color = MaterialTheme.colorScheme.primary))
+        }
+
+    AnimatedVisibility(
+        visible = expanded,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()) {
+          Column(
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION)) {
+                ConditionDropdown(
+                    condition = condition,
+                    onConditionChange = onConditionChange,
+                    testTag = AddItemScreenTestTags.INPUT_CONDITION,
+                    expandedInitially = condExpandedInitially)
+                MaterialField(
+                    materialText = material,
+                    onChange = onMaterialChange,
+                    testTag = AddItemScreenTestTags.INPUT_MATERIAL)
+                FitTypeField(
+                    fitType = fitType,
+                    onChange = onFitTypeChange,
+                    testTag = AddItemScreenTestTags.INPUT_FIT_TYPE,
+                    dropdownTestTag = AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS)
+                StyleField(
+                    style = style,
+                    onChange = onStyleChange,
+                    testTag = AddItemScreenTestTags.INPUT_STYLE,
+                    dropdownTestTag = AddItemScreenTestTags.STYLE_SUGGESTIONS)
+                NotesField(
+                    notes = notes,
+                    onChange = onNotesChange,
+                    testTag = AddItemScreenTestTags.INPUT_NOTES)
+              }
+        }
+  }
 }
 
 @Preview(name = "Add Items", showBackground = true)
@@ -448,14 +566,28 @@ fun AddItemsScreenSmallPreview() {
                   onTypeChange = {},
                   brand = "BrandX",
                   onBrandChange = {},
-                  price = "19.99",
+                  price = 19.99,
                   onPriceChange = {},
+                  currency = "CHF",
+                  onCurrencyChange = {},
                   link = "https://example.com/item",
                   onLinkChange = {},
                   material = "Cotton",
                   onMaterialChange = {},
                   isAddEnabled = true,
-                  onAddClick = {})
+                  onAddClick = {},
+                  condition = "New",
+                  onConditionChange = {},
+                  size = "M",
+                  onSizeChange = {},
+                  fitType = "Regular",
+                  onFitTypeChange = {},
+                  style = "Casual",
+                  onStyleChange = {},
+                  notes = "Great condition",
+                  onNotesChange = {},
+                  additionalExpandedPreview = true,
+                  conditionMenuExpandedPreview = true)
               ItemsImagePreview(
                   localUri = null,
                   remoteUrl = "",

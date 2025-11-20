@@ -50,13 +50,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     val account = Account(uid, uid, "bob", friendUids = emptyList())
     FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
-    // Give the auth listener time to pick up the account
-    delay(1000)
-
-    // Wait for the account to be loaded by the auth listener
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      viewModel.uiState.value.currentAccount != null
-    }
+    viewModel.setCurrentAccount(account)
 
     viewModel.refreshFeedFromFirestore()
     delay(500)

@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
 
 object OutfitPostCardTestTags {
@@ -39,6 +41,8 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
+
+  const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"
 }
@@ -277,6 +281,7 @@ fun OutfitPostCard(
                 ProfileSection(post)
                 Spacer(modifier = Modifier.height(8.dp))
                 PostImage(post, isBlurred)
+                PostLocation(post.location)
                 LikeRow(
                     isLiked = isLiked,
                     likeCount = likeCount,
@@ -313,4 +318,32 @@ fun OutfitPostCard(
               }
         }
       }
+}
+
+/**
+ * Displays a post's geographic location below the outfit image when available.
+ *
+ * @param location the Location to display; only rendered when valid
+ */
+@Composable
+fun PostLocation(location: Location) {
+  if (isValidLocation(location)) {
+    val displayName =
+        if (location.name.length > 50) {
+          location.name.take(47) + "..."
+        } else {
+          location.name
+        }
+
+    Text(
+        text = displayName,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.tertiary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(top = 4.dp)
+                .testTag(OutfitPostCardTestTags.POST_LOCATION))
+  }
 }

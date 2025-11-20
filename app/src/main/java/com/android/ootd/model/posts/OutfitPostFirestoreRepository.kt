@@ -2,6 +2,11 @@ package com.android.ootd.model.post
 
 import android.util.Log
 import androidx.core.net.toUri
+import com.android.ootd.model.account.MissingLocationException
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.map.locationFromMap
+import com.android.ootd.model.map.mapFromLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -58,6 +63,7 @@ class OutfitPostRepositoryFirestore(
             "description" to post.description,
             "itemsID" to post.itemsID,
             "timestamp" to post.timestamp,
+            "location" to mapFromLocation(post.location),
         )
 
     try {
@@ -93,7 +99,8 @@ class OutfitPostRepositoryFirestore(
       name: String,
       userProfilePicURL: String,
       localPath: String,
-      description: String
+      description: String,
+      location: Location
   ): OutfitPost {
     val postId = getNewPostId()
     val imageUrl =
@@ -112,7 +119,9 @@ class OutfitPostRepositoryFirestore(
             outfitURL = imageUrl,
             description = description,
             itemsID = emptyList(),
-            timestamp = System.currentTimeMillis())
+            timestamp = System.currentTimeMillis(),
+            location = location,
+        )
 
     savePostToFirestore(post)
     return post
@@ -126,6 +135,15 @@ class OutfitPostRepositoryFirestore(
       val rawItemsList = doc["itemsID"] as? List<*> ?: emptyList<Any>()
       val itemsID = rawItemsList.mapNotNull { it as? String }
 
+      // Parse location if present, otherwise throw MissingLocationException
+      val locationRaw = doc["location"]
+      val location =
+          when {
+            locationRaw == null -> emptyLocation
+            locationRaw is Map<*, *> -> locationFromMap(locationRaw)
+            else -> throw MissingLocationException()
+          }
+
       OutfitPost(
           postUID = doc.getString("postUID") ?: "",
           name = doc.getString("name") ?: "",
@@ -134,7 +152,8 @@ class OutfitPostRepositoryFirestore(
           outfitURL = doc.getString("outfitURL") ?: "",
           description = doc.getString("description") ?: "",
           itemsID = itemsID,
-          timestamp = doc.getLong("timestamp") ?: 0L)
+          timestamp = doc.getLong("timestamp") ?: 0L,
+          location = location)
     } catch (e: Exception) {
       Log.e("OutfitPostRepository", "Error converting document ${doc.id} to OutfitPost", e)
       null

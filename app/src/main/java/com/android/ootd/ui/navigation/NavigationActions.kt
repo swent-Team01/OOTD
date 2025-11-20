@@ -2,6 +2,7 @@ package com.android.ootd.ui.navigation
 
 import android.net.Uri
 import androidx.navigation.NavHostController
+import com.android.ootd.model.map.Location
 
 /**
  * Represents a navigation destination in the app.
@@ -57,13 +58,18 @@ sealed class Screen(
     }
   }
 
-  data class PreviewItemScreen(val imageUri: String, val description: String) :
+  data class PreviewItemScreen(
+      val imageUri: String,
+      val description: String,
+      val location: Location
+  ) :
       Screen(
           route =
-              "overview?imageUri=${Uri.encode(imageUri)}&description=${Uri.encode(description)}",
+              "overview?imageUri=${Uri.encode(imageUri)}&description=${Uri.encode(description)}&locationLat=${location.latitude}&locationLon=${location.longitude}&locationName=${Uri.encode(location.name)}",
           name = "Overview") {
     companion object {
-      const val route = "overview?imageUri={imageUri}&description={description}"
+      const val route =
+          "overview?imageUri={imageUri}&description={description}&locationLat={locationLat}&locationLon={locationLon}&locationName={locationName}"
     }
   }
 
