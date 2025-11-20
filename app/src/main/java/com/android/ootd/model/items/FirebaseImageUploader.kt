@@ -15,7 +15,9 @@ import kotlinx.coroutines.tasks.await
 object FirebaseImageUploader {
 
   private const val TAG = "FirebaseImageUploader"
-  private const val UPLOAD_TIMEOUT_MS = 1_000L
+
+  // Timeout duration for upload operations to Firebase Storage
+  private const val UPLOAD_TIMEOUT_MS = 1000L // 1 seconds
 
   private val storage by lazy {
     try {
@@ -36,10 +38,11 @@ object FirebaseImageUploader {
    *
    * @param localUri The local URI of the image to upload.
    * @param fileName The desired file name (without extension) for the uploaded image.
+   * @param imageData The image data as a ByteArray.
    * @return An [ImageData] object containing the image ID and download URL (or local URI if
    *   offline).
    */
-  suspend fun uploadImage(localUri: Uri, fileName: String): ImageData {
+  suspend fun uploadImage(imageData: ByteArray, fileName: String, localUri: Uri): ImageData {
     val ref = storage ?: return fallbackImageData(localUri, fileName)
 
     return try {
@@ -47,12 +50,12 @@ object FirebaseImageUploader {
       kotlinx.coroutines.withTimeout(UPLOAD_TIMEOUT_MS) {
         val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
         val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
-        imageRef.putFile(localUri).await()
+        imageRef.putBytes(imageData).await()
         val downloadUrl = imageRef.downloadUrl.await()
         ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
       }
     } catch (e: Exception) {
-      Log.w(TAG, "Image upload failed (likely offline or invalid): ${e.message}")
+      Log.e(TAG, "Image upload failed (likely offline or invalid): ${e.message}")
       fallbackImageData(localUri, fileName)
     }
   }

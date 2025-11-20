@@ -4,7 +4,6 @@ import android.net.Uri
 import com.android.ootd.utils.FirestoreTest
 import java.io.File
 import java.util.UUID
-import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.runBlocking
@@ -26,6 +25,24 @@ class FirebaseImageUploaderTest : FirestoreTest() {
     return Uri.fromFile(tempFile)
   }
 
+  private fun createTestImageData(): ByteArray {
+    // Create a small valid JPEG byte array (JPEG header + minimal data)
+    return byteArrayOf(
+        0xFF.toByte(),
+        0xD8.toByte(),
+        0xFF.toByte(),
+        0xE0.toByte(), // JPEG header
+        0x00,
+        0x10,
+        0x4A,
+        0x46,
+        0x49,
+        0x46,
+        0x00,
+        0x01 // JFIF marker
+        ) + ByteArray(512) { 0xAB.toByte() } // Dummy data
+  }
+
   private fun assertUploadResultConsistent(fileName: String, result: ImageData) {
     // When Firebase Storage isn't initialized in tests: returns empty strings
     // When it is available: returns original fileName and non-empty URL
@@ -37,10 +54,11 @@ class FirebaseImageUploaderTest : FirestoreTest() {
   @Test
   fun uploadAndDeleteSmoke() = runBlocking {
     val uri = createRealTestFile()
+    val imageData = createTestImageData()
     val fileName = "test_upload_${System.currentTimeMillis()}"
 
     // Upload
-    val uploadResult = FirebaseImageUploader.uploadImage(uri, fileName)
+    val uploadResult = FirebaseImageUploader.uploadImage(imageData, fileName, uri)
     assertUploadResultConsistent(fileName, uploadResult)
 
     // Delete once (should be true whether object exists or not)
@@ -57,31 +75,79 @@ class FirebaseImageUploaderTest : FirestoreTest() {
     // Empty id delete -> false
     assertFalse(FirebaseImageUploader.deleteImage(""))
 
-    // Invalid content URI upload -> empty
-    val invalidUri = Uri.parse("content://invalid/nonexistent/file.jpg")
-    val resInvalid = FirebaseImageUploader.uploadImage(invalidUri, "invalid_uri")
-    assertEquals("", resInvalid.imageId)
-    assertEquals("", resInvalid.imageUrl)
-
-    // Non existent file URI upload -> empty
-    val nonExistentFile = Uri.parse("file:///path/to/nonexistent/file.jpg")
-    val resNonExist = FirebaseImageUploader.uploadImage(nonExistentFile, "non_exist")
-    assertEquals("", resNonExist.imageId)
-    assertEquals("", resNonExist.imageUrl)
+    // Empty byte array upload -> should handle gracefully
+    val emptyData = ByteArray(0)
+    val emptyUri = createRealTestFile()
+    val resEmpty = FirebaseImageUploader.uploadImage(emptyData, "empty_data", emptyUri)
+    // Should either succeed with empty result or return valid result
+    assertTrue(
+        "Empty data upload should return empty or valid result",
+        (resEmpty.imageId.isEmpty() && resEmpty.imageUrl.isEmpty()) ||
+            (resEmpty.imageId == "empty_data" && resEmpty.imageUrl.isNotEmpty()))
 
     // A small batch to ensure no exceptions and consistent behavior
     val names =
         listOf("img1", "img 2 with space", "file-name-with-hyphens", UUID.randomUUID().toString())
+    val testUri = createRealTestFile()
     val uploads =
         names.map { name ->
-          val local = createRealTestFile()
-          name to FirebaseImageUploader.uploadImage(local, name)
+          val imageData = createTestImageData()
+          name to FirebaseImageUploader.uploadImage(imageData, name, testUri)
         }
 
     uploads.forEach { (name, result) -> assertUploadResultConsistent(name, result) }
 
     // Deletes should be true (except empty id which we already covered)
     names.forEach { name -> assertTrue(FirebaseImageUploader.deleteImage(name)) }
+  }
+
+  @Test
+  fun uploadWithLargeImageData() = runBlocking {
+    val uri = createRealTestFile()
+    // Test with a larger image (1MB)
+    val largeImageData =
+        byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte()) +
+            ByteArray(1024 * 1024) { (it % 256).toByte() }
+
+    val fileName = "large_image_${System.currentTimeMillis()}"
+    val result = FirebaseImageUploader.uploadImage(largeImageData, fileName, uri)
+
+    assertUploadResultConsistent(fileName, result)
+
+    // Clean up
+    val deleted = FirebaseImageUploader.deleteImage(fileName)
+    assertTrue(deleted)
+  }
+
+  @Test
+  fun uploadWithSpecialCharactersInFileName() = runBlocking {
+    val uri = createRealTestFile()
+    val imageData = createTestImageData()
+    val specialNames =
+        listOf(
+            "file name with spaces",
+            "file-with-dashes",
+            "file_with_underscores",
+            "file.with.dots",
+            "file@with#special")
+
+    specialNames.forEach { name ->
+      val result = FirebaseImageUploader.uploadImage(imageData, name, uri)
+      assertUploadResultConsistent(name, result)
+
+      // Clean up
+      val deleted = FirebaseImageUploader.deleteImage(name)
+      assertTrue(deleted)
+    }
+  }
+
+  @Test
+  fun deleteNonExistentImage() = runBlocking {
+    val nonExistentId = "non_existent_image_${System.currentTimeMillis()}"
+
+    // Delete should return true even if image doesn't exist (idempotent)
+    val result = FirebaseImageUploader.deleteImage(nonExistentId)
+    assertTrue("Delete should be idempotent", result)
   }
 
   @Test
