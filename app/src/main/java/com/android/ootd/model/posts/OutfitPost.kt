@@ -1,6 +1,8 @@
 package com.android.ootd.model.posts
 
 import androidx.annotation.Keep
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 
 /**
  * Represents a single post in the feed
@@ -13,6 +15,7 @@ import androidx.annotation.Keep
  * @property description Optional post caption
  * @property itemsID of the items the user is wearing
  * @property timestamp time passed since posting
+ * @property location user's location
  */
 @Keep
 data class OutfitPost(
@@ -23,7 +26,8 @@ data class OutfitPost(
     val outfitURL: String = "",
     val description: String = "",
     val itemsID: List<String> = emptyList(),
-    val timestamp: Long = 0L
+    val timestamp: Long = 0L,
+    val location: Location = emptyLocation,
 
     // val reactionList - for when we implement reactions/commentaries to posts
     // val location - for when we implement location

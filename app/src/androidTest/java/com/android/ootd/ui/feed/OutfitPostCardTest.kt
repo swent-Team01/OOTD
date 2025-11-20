@@ -2,12 +2,18 @@ package com.android.ootd.ui.feed
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.posts.OutfitPost
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-/** UI tests for OutfitPostCard kept minimal but meaningful. */
+/**
+ * UI tests for OutfitPostCard kept minimal but meaningful.
+ *
+ * Disclaimer: Some parts of the tests were written with the help of AI
+ */
 class OutfitPostCardTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -27,7 +33,8 @@ class OutfitPostCardTest {
   private fun post(
       name: String = "Test User",
       description: String = "Test description",
-      profilePic: String = ""
+      profilePic: String = "",
+      location: Location = emptyLocation
   ) =
       OutfitPost(
           postUID = "id",
@@ -37,7 +44,8 @@ class OutfitPostCardTest {
           timestamp = 0L,
           outfitURL = "",
           userProfilePicURL = profilePic,
-          itemsID = emptyList())
+          itemsID = emptyList(),
+          location = location)
 
   // Tests
 
@@ -141,5 +149,49 @@ class OutfitPostCardTest {
 
     n(OutfitPostCardTestTags.EXPIRED_INDICATOR).assertIsDisplayed()
     n(OutfitPostCardTestTags.REMAINING_TIME).assertDoesNotExist()
+  }
+
+  @Test
+  fun showsLocation_whenValidLocationProvided() {
+    val location = Location(46.5191, 6.5668, "EPFL, Lausanne")
+    setCard(post(name = "User", description = "Test", location = location))
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
+    n(OutfitPostCardTestTags.POST_LOCATION).assertTextEquals("EPFL, Lausanne")
+  }
+
+  @Test
+  fun hidesLocation_whenLocationIsEmpty_or_whenLocationNameIsBlank() {
+    setCard(post(name = "User", description = "Test", location = emptyLocation))
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
+  }
+
+  @Test
+  fun hidesLocation_whenLocationNameIsBlank() {
+    val blankLocation = Location(46.5191, 6.5668, "")
+    setCard(post(name = "User", description = "Test", location = blankLocation))
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
+  }
+
+  @Test
+  fun hidesLocation_whenLocationHasInvalidCoordinates() {
+    val invalidLocation = Location(Double.NaN, Double.NaN, "Invalid Place")
+    setCard(post(name = "User", description = "Test", location = invalidLocation))
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
+  }
+
+  @Test
+  fun truncatesLongLocationNames() {
+    val longName = "VeryLongLocationName_".repeat(4) // > 50 chars
+    val location = Location(46.0, 6.0, longName)
+    val expected = if (longName.length > 50) longName.take(47) + "..." else longName
+
+    setCard(post(name = "User", description = "Test", location = location))
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
+    n(OutfitPostCardTestTags.POST_LOCATION).assertTextEquals(expected)
   }
 }
