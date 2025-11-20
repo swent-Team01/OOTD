@@ -17,7 +17,6 @@ import com.android.ootd.ui.authentication.*
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.utils.FakeCredentialManager
 import com.android.ootd.utils.FakeJwtGenerator
-import com.android.ootd.utils.LoadingScreen
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
@@ -379,7 +378,7 @@ class AuthenticationExtensiveTest {
 
   @Test
   fun splashScreen_displaysContent() {
-    composeTestRule.setContent { LoadingScreen() }
+    composeTestRule.setContent { SplashScreen() }
 
     composeTestRule.onNodeWithTag("splashLogo").assertIsDisplayed()
     composeTestRule.onNodeWithTag("splashProgress").assertIsDisplayed()

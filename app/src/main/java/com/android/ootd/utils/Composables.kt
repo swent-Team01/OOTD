@@ -70,6 +70,7 @@ import com.android.ootd.ui.theme.Secondary
  * Displays a back arrow icon button.
  *
  * @param onBackClick Callback invoked when the back arrow is clicked.
+ * @param modifier The modifier to be applied to the icon button.
  */
 @Composable
 fun BackArrow(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -118,7 +119,8 @@ fun ShowText(
  * @param size The size of the profile picture.
  * @param profilePicture The URL of the profile picture to display.
  * @param username The username, used to display the first letter as a fallback.
- * @param shape The shape of the profile picture container.
+ * @param textStyle The text style for the username letter. Defaults to typography.headlineLarge.
+ * @param shape The shape of the profile picture container. Defaults to CircleShape.
  */
 @Composable
 fun ProfilePicture(
@@ -209,39 +211,22 @@ fun DisplayUserPosts(
  * @param contentDescription The content description for the hanger icon.
  */
 @Composable
-fun LoadingScreen(modifier: Modifier = Modifier, contentDescription: String? = null) {
+fun LoadingScreen(
+    modifier: Modifier = Modifier,
+    loadingModifier: Modifier = modifier,
+    contentDescription: String? = null
+) {
   Box(
-      modifier = modifier.fillMaxSize().background(colorScheme.background.copy(alpha = 0.95f)),
+      modifier = Modifier.fillMaxSize().background(colorScheme.background.copy(alpha = 0.95f)),
       contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Image(
               painter = painterResource(id = R.drawable.hanger),
               contentDescription = contentDescription,
-              modifier = Modifier.size(72.dp))
+              modifier = modifier.size(72.dp))
           Spacer(modifier = Modifier.height(16.dp))
-          CircularProgressIndicator(color = colorScheme.primary)
+          CircularProgressIndicator(modifier = loadingModifier, color = colorScheme.primary)
         }
-      }
-}
-
-/**
- * Displays a floating action button with customizable composable content.
- *
- * @param onButtonClick Callback invoked when the button is clicked, receives null.
- * @param modifier The modifier to be applied to the floating action button.
- * @param buttonText The composable content to display inside the button.
- */
-@Composable
-fun FloatingButton(
-    onButtonClick: (String?) -> Unit,
-    modifier: Modifier = Modifier,
-    buttonText: @Composable () -> Unit
-) {
-  androidx.compose.material3.FloatingActionButton(
-      onClick = { onButtonClick(null) },
-      containerColor = colorScheme.primary,
-      modifier = modifier) {
-        buttonText()
       }
 }
 
@@ -282,7 +267,8 @@ fun ActionButton(
  * The center displays the app name or custom text. Left and right slots can contain composables
  * like back arrows, action buttons, or other icons.
  *
- * @param modifier The modifier to be applied to the title text.
+ * @param modifier The modifier to be applied to the top app bar container.
+ * @param textModifier The modifier to be applied to the title text.
  * @param centerText The text to display in the center of the top bar. Defaults to "OOTD".
  * @param leftComposable The composable to display on the left side (navigation icon slot).
  * @param rightComposable The composable to display on the right side (actions slot).
@@ -381,6 +367,13 @@ fun SettingsButton(onEditAccount: () -> Unit, modifier: Modifier = Modifier, siz
   }
 }
 
+/**
+ * Displays a notification icon button.
+ *
+ * @param onNotificationIconClick Callback invoked when the notification button is clicked.
+ * @param modifier The modifier to be applied to the icon button.
+ * @param size The size of the notification icon.
+ */
 @Composable
 fun NotificationButton(
     onNotificationIconClick: () -> Unit,
@@ -431,23 +424,6 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
           Text(text = "Sign in with Google", style = typography.titleLarge, color = Primary)
         }
       }
-}
-
-/**
- * Displays an error message text with consistent styling.
- *
- * @param errorMessage The error message to display.
- * @param modifier The modifier to be applied to the text.
- * @param textAlign The text alignment. Defaults to Center.
- */
-@Composable
-fun ErrorText(errorMessage: String, modifier: Modifier = Modifier, textAlign: TextAlign = Center) {
-  Text(
-      text = errorMessage,
-      style = typography.bodyLarge,
-      color = colorScheme.error,
-      textAlign = textAlign,
-      modifier = modifier.fillMaxWidth().padding(16.dp))
 }
 
 /**
@@ -547,8 +523,16 @@ fun PermissionRequestScreen(
       }
 }
 
+/**
+ * Displays a centered loading state with a circular progress indicator and optional message.
+ *
+ * Used to show a loading state in the center of a screen with an optional descriptive message.
+ *
+ * @param modifier The modifier to be applied to the container.
+ * @param message The optional message to display below the progress indicator.
+ */
 @Composable
-fun CenteredLoadingState(message: String? = null, modifier: Modifier = Modifier) {
+fun CenteredLoadingState(modifier: Modifier = Modifier, message: String? = null) {
   Column(
       modifier = modifier.fillMaxSize(),
       verticalArrangement = Arrangement.Center,
@@ -582,40 +566,4 @@ fun CenteredEmptyState(message: String, modifier: Modifier = Modifier) {
             textAlign = Center,
             modifier = Modifier.padding(32.dp))
       }
-}
-
-/**
- * Displays a profile picture with a circular progress indicator.
- *
- * Used for showing user profiles with time-based progress indicators (e.g., story-like features).
- *
- * @param profilePictureUrl URL of the profile picture to display.
- * @param username Username for fallback initial display.
- * @param progressFraction Progress value between 0 and 1 for the circular indicator.
- * @param modifier The modifier to be applied to the container.
- * @param size The size of the profile picture and progress indicator.
- */
-@Composable
-fun ProfilePictureWithProgress(
-    profilePictureUrl: String,
-    username: String,
-    progressFraction: Float,
-    modifier: Modifier = Modifier,
-    size: Dp = 44.dp
-) {
-  Box(modifier = modifier, contentAlignment = Alignment.Center) {
-    // Circular progress indicator
-    CircularProgressIndicator(
-        progress = { progressFraction.coerceIn(0f, 1f) },
-        color = colorScheme.primary,
-        trackColor = colorScheme.surfaceVariant,
-        strokeWidth = 3.dp,
-        modifier = Modifier.size(size))
-    ProfilePicture(
-        modifier = modifier,
-        size = size,
-        profilePicture = profilePictureUrl,
-        username = username,
-        shape = CircleShape)
-  }
 }

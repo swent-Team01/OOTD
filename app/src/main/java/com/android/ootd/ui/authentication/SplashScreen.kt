@@ -4,12 +4,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.utils.LoadingScreen
 import kotlinx.coroutines.delay
 
 private const val SPLASH_TIMEOUT = 1000L
+
+private val splashProgressTab = "splashProgress"
+private val splashLogoTag = "splashLogo"
 
 /**
  * Full splash screen entry point used in the running app.
@@ -31,7 +35,10 @@ fun SplashScreen(
     onNotSignedIn: () -> Unit = {},
     viewModel: SplashViewModel = viewModel()
 ) {
-  LoadingScreen(modifier, contentDescription = "Loading app")
+  LoadingScreen(
+      modifier.testTag(splashLogoTag),
+      loadingModifier = modifier.testTag(splashProgressTab),
+      contentDescription = "Loading app")
 
   LaunchedEffect(Unit) {
     delay(SPLASH_TIMEOUT)
