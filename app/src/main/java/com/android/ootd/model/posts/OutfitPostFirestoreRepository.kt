@@ -5,6 +5,8 @@ import androidx.core.net.toUri
 import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.map.locationFromMap
+import com.android.ootd.model.map.mapFromLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -61,11 +63,7 @@ class OutfitPostRepositoryFirestore(
             "description" to post.description,
             "itemsID" to post.itemsID,
             "timestamp" to post.timestamp,
-            "location" to
-                mapOf(
-                    "latitude" to post.location.latitude,
-                    "longitude" to post.location.longitude,
-                    "name" to post.location.name),
+            "location" to mapFromLocation(post.location),
         )
 
     try {
@@ -142,12 +140,7 @@ class OutfitPostRepositoryFirestore(
       val location =
           when {
             locationRaw == null -> emptyLocation
-            locationRaw is Map<*, *> -> {
-              val lat = (locationRaw["latitude"] as? Number)?.toDouble() ?: 0.0
-              val lon = (locationRaw["longitude"] as? Number)?.toDouble() ?: 0.0
-              val name = locationRaw["name"] as? String ?: ""
-              Location(lat, lon, name)
-            }
+            locationRaw is Map<*, *> -> locationFromMap(locationRaw)
             else -> throw MissingLocationException()
           }
 

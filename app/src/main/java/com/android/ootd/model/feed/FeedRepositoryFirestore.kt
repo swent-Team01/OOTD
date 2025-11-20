@@ -1,8 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
-import com.android.ootd.model.map.Location
-import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.map.locationFromMap
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -143,18 +142,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val name = doc.getString("name") ?: ""
       val outfitUrl = doc.getString("outfitURL") ?: ""
       val userProfilePicture = doc.getString("userProfilePicURL") ?: ""
-
-      // Read location from Firestore
-      val locationMap = doc["location"] as? Map<*, *>
-      val location =
-          if (locationMap != null) {
-            Location(
-                latitude = (locationMap["latitude"] as? Number)?.toDouble() ?: 0.0,
-                longitude = (locationMap["longitude"] as? Number)?.toDouble() ?: 0.0,
-                name = locationMap["name"] as? String ?: "")
-          } else {
-            emptyLocation
-          }
+      val location = locationFromMap(doc["location"] as? Map<*, *>)
 
       OutfitPost(
           postUID = postUuid,
