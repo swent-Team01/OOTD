@@ -166,7 +166,13 @@ class FeedScreenTest : FirestoreTest() {
     val post = OutfitPost("id", "user1", "https://example.com/img.jpg")
 
     composeTestRule.setContent {
-      OutfitPostCard(post = post, isBlurred = false, onSeeFitClick = {})
+      OutfitPostCard(
+          post = post,
+          isBlurred = false,
+          onSeeFitClick = {},
+          onLikeClick = {},
+          isLiked = false,
+          likeCount = 0)
     }
 
     composeTestRule.onRoot().assertExists()

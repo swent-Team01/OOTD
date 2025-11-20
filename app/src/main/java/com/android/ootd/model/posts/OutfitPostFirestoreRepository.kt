@@ -2,6 +2,11 @@ package com.android.ootd.model.post
 
 import android.util.Log
 import androidx.core.net.toUri
+import com.android.ootd.model.account.MissingLocationException
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.map.locationFromMap
+import com.android.ootd.model.map.mapFromLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -11,7 +16,8 @@ import kotlinx.coroutines.tasks.await
 
 /** Firestore collection name for outfit posts* */
 const val POSTS_COLLECTION = "posts"
-
+/** Tag for logging in OutfitPostRepository * */
+const val OUTFITPOST_TAG = "OutfitPostRepository"
 /** Firestore collection name for outfit images * */
 const val POSTS_IMAGES_FOLDER = "images/posts"
 
@@ -41,9 +47,22 @@ class OutfitPostRepositoryFirestore(
       ref.putFile(fileUri).await()
       ref.downloadUrl.await().toString()
     } catch (e: Exception) {
-      Log.w(
-          "OutfitPostRepository", "Upload failed (test or offline env): ${e.javaClass.simpleName}")
+      Log.w(OUTFITPOST_TAG, "Upload failed (test or offline env): ${e.javaClass.simpleName}")
       "https://fake.storage/$postId.jpg"
+    }
+  }
+
+  override suspend fun uploadOutfitWithCompressedPhoto(
+      imageData: ByteArray,
+      postId: String
+  ): String {
+    return try {
+      val ref = storage.reference.child("$POSTS_IMAGES_FOLDER/$postId.jpg")
+      ref.putBytes(imageData).await()
+      ref.downloadUrl.await().toString()
+    } catch (e: Exception) {
+      Log.e(OUTFITPOST_TAG, "Upload failed (test or offline env): ${e.javaClass.simpleName}")
+      ""
     }
   }
 
@@ -58,6 +77,7 @@ class OutfitPostRepositoryFirestore(
             "description" to post.description,
             "itemsID" to post.itemsID,
             "timestamp" to post.timestamp,
+            "location" to mapFromLocation(post.location),
         )
 
     try {
@@ -93,7 +113,8 @@ class OutfitPostRepositoryFirestore(
       name: String,
       userProfilePicURL: String,
       localPath: String,
-      description: String
+      description: String,
+      location: Location
   ): OutfitPost {
     val postId = getNewPostId()
     val imageUrl =
@@ -112,7 +133,9 @@ class OutfitPostRepositoryFirestore(
             outfitURL = imageUrl,
             description = description,
             itemsID = emptyList(),
-            timestamp = System.currentTimeMillis())
+            timestamp = System.currentTimeMillis(),
+            location = location,
+        )
 
     savePostToFirestore(post)
     return post
@@ -126,6 +149,15 @@ class OutfitPostRepositoryFirestore(
       val rawItemsList = doc["itemsID"] as? List<*> ?: emptyList<Any>()
       val itemsID = rawItemsList.mapNotNull { it as? String }
 
+      // Parse location if present, otherwise throw MissingLocationException
+      val locationRaw = doc["location"]
+      val location =
+          when {
+            locationRaw == null -> emptyLocation
+            locationRaw is Map<*, *> -> locationFromMap(locationRaw)
+            else -> throw MissingLocationException()
+          }
+
       OutfitPost(
           postUID = doc.getString("postUID") ?: "",
           name = doc.getString("name") ?: "",
@@ -134,9 +166,10 @@ class OutfitPostRepositoryFirestore(
           outfitURL = doc.getString("outfitURL") ?: "",
           description = doc.getString("description") ?: "",
           itemsID = itemsID,
-          timestamp = doc.getLong("timestamp") ?: 0L)
+          timestamp = doc.getLong("timestamp") ?: 0L,
+          location = location)
     } catch (e: Exception) {
-      Log.e("OutfitPostRepository", "Error converting document ${doc.id} to OutfitPost", e)
+      Log.e(OUTFITPOST_TAG, "Error converting document ${doc.id} to OutfitPost", e)
       null
     }
   }

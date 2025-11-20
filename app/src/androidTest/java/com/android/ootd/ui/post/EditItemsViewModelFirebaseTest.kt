@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -30,6 +31,8 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
   private lateinit var repository: ItemsRepositoryFirestore
   private lateinit var mockAccountRepository: AccountRepository
 
+  private lateinit var context: Context
+
   var ownerId = ""
 
   @Before
@@ -45,6 +48,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     if (ownerId == "") {
       throw IllegalStateException("There needs to be an authenticated user")
     }
+    context = InstrumentationRegistry.getInstrumentation().targetContext
   }
 
   private fun createTempImageFile(): File {
@@ -88,7 +92,6 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onSaveItemClick_withValidChanges_updatesFirestore() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     // Create an existing item
@@ -110,7 +113,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setPhoto(newPhotoUri)
 
     // Save changes
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
 
     kotlinx.coroutines.delay(1000)
 
@@ -134,7 +137,6 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onSaveItemClick_validationFailures_returnErrorMessages() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val existingItem = createTestItem()
@@ -143,7 +145,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.loadItem(existingItem)
     viewModel.setPhoto(Uri.EMPTY)
     viewModel.setCategory("Bags")
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     kotlinx.coroutines.delay(500)
     assertFalse(viewModel.uiState.first().isSaveSuccessful)
     assertNotNull(viewModel.uiState.first().errorMessage)
@@ -151,7 +153,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     // Case 2: invalid URL -> validation fails with URL message
     viewModel.loadItem(existingItem)
     viewModel.setLink("not-a-valid-url")
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     kotlinx.coroutines.delay(500)
     assertNotNull(viewModel.uiState.first().errorMessage)
     assertFalse(viewModel.uiState.first().isSaveSuccessful)
@@ -160,7 +162,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     // Case 3: missing category -> validation fails with required fields message
     viewModel.loadItem(existingItem)
     viewModel.setCategory("")
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     kotlinx.coroutines.delay(500)
     assertNotNull(viewModel.uiState.first().errorMessage)
     assertFalse(viewModel.uiState.first().isSaveSuccessful)
@@ -169,7 +171,6 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onSaveItemClick_multipleEdits_persistsLatestChanges() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val existingItem = createTestItem()
@@ -178,14 +179,14 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     // First edit
     viewModel.setBrand("FirstBrand")
     viewModel.setPrice(100.0)
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     kotlinx.coroutines.delay(1000)
 
     // Second edit
     viewModel.setBrand("SecondBrand")
     viewModel.setPrice(200.0)
     viewModel.setMaterial("Wool 60%, Cotton 30%, Elastane 10%")
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
     kotlinx.coroutines.delay(1000)
 
     assertTrue(viewModel.uiState.first().isSaveSuccessful)
@@ -202,7 +203,6 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onSaveItemClick_withExistingImageAndNoNewPhoto_keepsOriginalImage() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val existingItem = createTestItem()
@@ -214,7 +214,7 @@ class EditItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("UpdatedBrand")
     viewModel.setPrice(150.0)
 
-    viewModel.onSaveItemClick()
+    viewModel.onSaveItemClick(context)
 
     kotlinx.coroutines.delay(1000)
 

@@ -3,6 +3,8 @@ package com.android.ootd.model.account
 import android.util.Log
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
+import com.android.ootd.model.map.locationFromMap
+import com.android.ootd.model.map.mapFromLocation
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
@@ -34,11 +36,7 @@ private fun Account.toFirestoreMap(): Map<String, Any> =
         "friendUids" to friendUids,
         "isPrivate" to isPrivate,
         "ownerId" to ownerId,
-        "location" to
-            mapOf(
-                "latitude" to location.latitude,
-                "longitude" to location.longitude,
-                "name" to location.name),
+        "location" to mapFromLocation(location),
         "itemsUids" to itemsUids)
 
 /** Convert Firestore DocumentSnapshot to domain Account (uses document id as uid) */
@@ -65,12 +63,7 @@ private fun DocumentSnapshot.toAccount(): Account {
   val location =
       when {
         locationRaw == null -> throw MissingLocationException()
-        locationRaw is Map<*, *> -> {
-          val lat = (locationRaw["latitude"] as? Number)?.toDouble() ?: 0.0
-          val lon = (locationRaw["longitude"] as? Number)?.toDouble() ?: 0.0
-          val name = locationRaw["name"] as? String ?: ""
-          Location(lat, lon, name)
-        }
+        locationRaw is Map<*, *> -> locationFromMap(locationRaw)
         else -> throw MissingLocationException()
       }
 
@@ -363,11 +356,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
                   "username" to newUsername,
                   "birthday" to newBirthDate,
                   "profilePicture" to newProfilePic,
-                  "location" to
-                      mapOf(
-                          "latitude" to newLocation.latitude,
-                          "longitude" to newLocation.longitude,
-                          "name" to newLocation.name)))
+                  "location" to mapFromLocation(newLocation)))
           .await()
 
       Log.d(

@@ -1,6 +1,8 @@
 package com.android.ootd.ui.items
 
+import android.content.Context
 import android.net.Uri
+import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Material
@@ -36,6 +38,8 @@ class AddItemsViewModelTest {
   private val fakeAccountRepository = FakeAccountRepository()
   private val testDispatcher = StandardTestDispatcher()
   private lateinit var viewModel: AddItemsViewModel
+  private lateinit var context: Context
+  private lateinit var compressor: ImageCompressor
 
   private fun seedCategories(vararg categories: String) {
     val field =
@@ -49,11 +53,16 @@ class AddItemsViewModelTest {
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
+    context = mockk<Context>(relaxed = true)
+    compressor = mockk<ImageCompressor>(relaxed = true)
+    // Mock the suspend function with coEvery
+    coEvery { compressor.compressImage(any(), any(), any()) } returns ByteArray(10)
     viewModel =
         AddItemsViewModel(
             repository = fakeRepository,
             accountRepository = fakeAccountRepository,
-            overridePhoto = false)
+            overridePhoto = false,
+            imageCompressor = compressor)
   }
 
   @After
@@ -73,7 +82,8 @@ class AddItemsViewModelTest {
     every { mockAuth.currentUser } returns mockUser
     every { mockUser.uid } returns "uid"
     mockkObject(FirebaseImageUploader)
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
 
     seedCategories("Clothing")
     viewModel.setCategory("Clothing")
@@ -93,7 +103,7 @@ class AddItemsViewModelTest {
     val mockUri = mockk<Uri>(relaxed = true)
     viewModel.setPhoto(mockUri)
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     val state = viewModel.uiState.value
@@ -126,14 +136,15 @@ class AddItemsViewModelTest {
     every { mockAuth.currentUser } returns mockUser
     every { mockUser.uid } returns "uid"
     mockkObject(FirebaseImageUploader)
-    coEvery { FirebaseImageUploader.uploadImage(any(), any()) } returns ImageData("id", "url")
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "url")
 
     seedCategories("Clothing")
     viewModel.setCategory("")
     val mockUri = mockk<Uri>(relaxed = true)
     viewModel.setPhoto(mockUri)
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     advanceUntilIdle()
 
     val state = viewModel.uiState.value

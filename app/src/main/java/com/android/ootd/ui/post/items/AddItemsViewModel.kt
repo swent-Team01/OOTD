@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post.items
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -7,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -81,10 +83,13 @@ class AddItemsViewModelFactory(private val overridePhoto: Boolean) : ViewModelPr
 open class AddItemsViewModel(
     private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val overridePhoto: Boolean = false
+    private val overridePhoto: Boolean = false,
+    private val imageCompressor: ImageCompressor = ImageCompressor()
 ) : BaseItemViewModel<AddItemsUIState>() {
 
   companion object {
+
+    private const val COMPRESS_THRESHOLD = 200 * 1024L // 200 KB
     private const val TAG = "AddItemsViewModel"
   }
 
@@ -143,24 +148,30 @@ open class AddItemsViewModel(
     return when {
       state.localPhotoUri == null && state.image.imageUrl.isEmpty() ->
           "Please upload a photo before adding the item."
+
       state.category.isBlank() -> "Please enter a category before adding the item."
       state.invalidCategory != null -> "Please select a valid category."
       else -> null
     }
   }
 
-  /**
-   * Uploads image and returns the uploaded ImageData.
-   *
-   * Returns null only if localUri is null. Accepts both cloud URLs and local URIs (for offline
-   * mode).
-   */
-  private suspend fun uploadItemImage(localUri: Uri?, itemUuid: String): ImageData? {
+  /** Uploads image and returns the uploaded ImageData, or null if upload fails */
+  private suspend fun uploadItemImage(
+      localUri: Uri?,
+      itemUuid: String,
+      context: Context
+  ): ImageData? {
     if (localUri == null) return null
 
-    // FirebaseImageUploader returns local URI as fallback when offline
-    val uploadedImage = FirebaseImageUploader.uploadImage(localUri, itemUuid)
-    // Accept both cloud URLs and local URIs - empty URL means actual failure
+    // Compress image if above threshold
+    val compressedImage =
+        imageCompressor.compressImage(
+            contentUri = localUri, compressionThreshold = COMPRESS_THRESHOLD, context = context)
+
+    // Abort if compression failed
+    if (compressedImage == null) return null
+
+    val uploadedImage = FirebaseImageUploader.uploadImage(compressedImage, itemUuid, localUri)
     return if (uploadedImage.imageUrl.isEmpty()) null else uploadedImage
   }
 
@@ -230,7 +241,7 @@ open class AddItemsViewModel(
     }
   }
 
-  fun onAddItemClick() {
+  fun onAddItemClick(context: Context) {
     val state = _uiState.value
 
     if (overridePhoto) {
@@ -253,7 +264,7 @@ open class AddItemsViewModel(
         val itemUuid = repository.getNewItemId()
 
         // Upload image (uses local URI when offline)
-        val uploadedImage = uploadItemImage(state.localPhotoUri, itemUuid)
+        val uploadedImage = uploadItemImage(state.localPhotoUri, itemUuid, context)
         if (uploadedImage == null) {
           setErrorMsg("Please select a photo before adding the item.")
           _addOnSuccess.value = false
@@ -299,12 +310,16 @@ open class AddItemsViewModel(
         when (trimmedCategory.lowercase()) {
           "clothes",
           "clothing" -> "Clothing"
+
           "shoes",
           "shoe" -> "Shoes"
+
           "bags",
           "bag" -> "Bags"
+
           "accessories",
           "accessory" -> "Accessories"
+
           else -> trimmedCategory
         }
     val isExactMatch = categories.any { it.equals(normalized, ignoreCase = true) }
@@ -344,12 +359,16 @@ open class AddItemsViewModel(
         when (trimmedCategory.lowercase()) {
           "clothes",
           "clothing" -> "Clothing"
+
           "shoes",
           "shoe" -> "Shoes"
+
           "bags",
           "bag" -> "Bags"
+
           "accessories",
           "accessory" -> "Accessories"
+
           else -> trimmedCategory
         }
     val error =
@@ -357,6 +376,7 @@ open class AddItemsViewModel(
           trimmedCategory.isEmpty() -> null
           !categories.any { it.equals(normalized, ignoreCase = true) } ->
               "Please enter one of: Clothing, Accessories, Shoes, or Bags."
+
           else -> null
         }
     _uiState.value = state.copy(invalidCategory = error)

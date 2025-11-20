@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -24,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -39,6 +37,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.ui.Inventory.InventoryScreen
@@ -330,9 +329,9 @@ fun OOTDApp(
 
                       FitCheckScreen(
                           postUuid = postUuid,
-                          onNextClick = { imageUri, description ->
+                          onNextClick = { imageUri, description, location ->
                             navigationActions.navigateTo(
-                                Screen.PreviewItemScreen(imageUri, description))
+                                Screen.PreviewItemScreen(imageUri, description, location))
                           },
                           onBackClick = {
                             // later we'll use postUuid to delete items
@@ -356,14 +355,28 @@ fun OOTDApp(
                     arguments =
                         listOf(
                             navArgument("imageUri") { type = NavType.StringType },
-                            navArgument("description") { type = NavType.StringType })) {
+                            navArgument("description") { type = NavType.StringType },
+                            navArgument("locationLat") { type = NavType.FloatType },
+                            navArgument("locationLon") { type = NavType.FloatType },
+                            navArgument("locationName") { type = NavType.StringType })) {
                         backStackEntry ->
                       val imageUri = backStackEntry.arguments?.getString("imageUri") ?: ""
                       val description = backStackEntry.arguments?.getString("description") ?: ""
+                      val locationLat = backStackEntry.arguments?.getFloat("locationLat") ?: 0.0
+                      val locationLon = backStackEntry.arguments?.getFloat("locationLon") ?: 0.0
+                      val locationName = backStackEntry.arguments?.getString("locationName") ?: ""
+
+                      // Reconstruct Location object from navigation arguments
+                      val location =
+                          Location(
+                              latitude = locationLat.toDouble(),
+                              longitude = locationLon.toDouble(),
+                              name = locationName)
 
                       PreviewItemScreen(
                           imageUri = imageUri,
                           description = description,
+                          location = location,
                           onAddItem = { postUuid ->
                             navController.navigate(Screen.AddItemScreen(postUuid).route)
                           },
@@ -380,12 +393,7 @@ fun OOTDApp(
                               launchSingleTop = true
                             }
                           },
-                          onGoBack = { postUuid ->
-                            navController.navigate(Screen.FitCheck(postUuid).route) {
-                              popUpTo(Screen.Feed.route) { inclusive = false }
-                              launchSingleTop = true
-                            }
-                          },
+                          onGoBack = { navController.popBackStack() },
                           overridePhoto = testMode)
                     }
 
@@ -439,10 +447,4 @@ fun OOTDApp(
               }
             }
       }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-  OOTDTheme { Text("Preview") }
 }

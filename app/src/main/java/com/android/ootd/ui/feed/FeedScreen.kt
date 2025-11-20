@@ -56,7 +56,10 @@ fun FeedScreen(
       onClearError = { feedViewModel.setErrorMessage(null) },
       onAddPostClick = onAddPostClick,
       onNotificationIconClick = onNotificationIconClick,
-      onSeeFitClick = onSeeFitClick)
+      onSeeFitClick = onSeeFitClick,
+      likes = uiState.likes,
+      likeCounts = uiState.likeCounts,
+      onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +72,10 @@ private fun FeedScaffold(
     onClearError: () -> Unit,
     onAddPostClick: () -> Unit,
     onNotificationIconClick: () -> Unit = {},
-    onSeeFitClick: (String) -> Unit = {}
+    onSeeFitClick: (String) -> Unit = {},
+    likes: Map<String, Boolean> = emptyMap(),
+    likeCounts: Map<String, Int> = emptyMap(),
+    onLikeClick: (OutfitPost) -> Unit = {}
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -117,7 +123,10 @@ private fun FeedScaffold(
               FeedList(
                   isBlurred = !hasPostedToday,
                   posts = posts,
-                  onSeeFitClick = { post -> onSeeFitClick(post.postUID) })
+                  likes = likes,
+                  likeCounts = likeCounts,
+                  onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
+                  onLikeClick = onLikeClick)
 
               // Loading overlay
               if (isLoading) {
@@ -148,11 +157,23 @@ private fun FeedScaffold(
 fun FeedList(
     posts: List<OutfitPost>,
     isBlurred: Boolean,
-    onSeeFitClick: (OutfitPost) -> Unit = {}
+    likes: Map<String, Boolean> = emptyMap(),
+    likeCounts: Map<String, Int> = emptyMap(),
+    onSeeFitClick: (OutfitPost) -> Unit = {},
+    onLikeClick: (OutfitPost) -> Unit = {}
 ) {
   LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
     items(posts) { post ->
-      OutfitPostCard(post = post, isBlurred, onSeeFitClick = { onSeeFitClick(post) })
+      val isLiked = likes[post.postUID] ?: false
+      val count = likeCounts[post.postUID] ?: 0
+
+      OutfitPostCard(
+          post = post,
+          isBlurred = isBlurred,
+          isLiked = isLiked,
+          likeCount = count,
+          onLikeClick = { onLikeClick(post) },
+          onSeeFitClick = { onSeeFitClick(post) })
     }
   }
 }
@@ -190,6 +211,9 @@ fun FeedScreenPreview() {
         errorMessage = null,
         onClearError = {},
         onAddPostClick = {},
-        onNotificationIconClick = {})
+        onNotificationIconClick = {},
+        likes = emptyMap(),
+        likeCounts = emptyMap(),
+        onLikeClick = {})
   }
 }
