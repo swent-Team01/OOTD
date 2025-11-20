@@ -17,7 +17,7 @@ object FirebaseImageUploader {
   private const val TAG = "FirebaseImageUploader"
 
   // Timeout duration for upload operations to Firebase Storage
-  private const val UPLOAD_TIMEOUT_MS = 10_000L // 10 seconds
+  private const val UPLOAD_TIMEOUT_MS = 1000L // 1 seconds
 
   private val storage by lazy {
     try {
@@ -55,7 +55,7 @@ object FirebaseImageUploader {
         ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
       }
     } catch (e: Exception) {
-      Log.w(TAG, "Image upload failed (likely offline or invalid): ${e.message}")
+      Log.e(TAG, "Image upload failed (likely offline or invalid): ${e.message}")
       fallbackImageData(localUri, fileName)
     }
   }
