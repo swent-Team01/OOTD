@@ -91,7 +91,7 @@ fun NotificationsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (!isNotificationsPermissionGranted && !testMode) {
+        if (!isNotificationsPermissionGranted) {
           Text(
               modifier =
                   Modifier.fillMaxWidth()
@@ -101,7 +101,11 @@ fun NotificationsScreen(
               fontSize = 16.sp,
               color = MaterialTheme.colorScheme.primary)
           Button(
-              onClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+              onClick = {
+                if (!testMode) {
+                  permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+              },
               modifier =
                   Modifier.fillMaxWidth()
                       .testTag(NotificationsScreenTestTags.ENABLE_PUSH_NOTIFICATIONS)) {
