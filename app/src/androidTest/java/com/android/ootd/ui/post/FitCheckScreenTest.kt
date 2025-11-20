@@ -7,8 +7,21 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.map.LocationRepository
+import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.screen.enterLocation
+import com.android.ootd.screen.testLocationDropdown_hidesWhenLosingFocus
+import com.android.ootd.screen.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions
+import com.android.ootd.screen.testLocationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused
+import com.android.ootd.ui.map.LocationSelectionTestTags
+import com.android.ootd.ui.map.LocationSelectionViewModel
+import io.mockk.coEvery
+import io.mockk.mockk
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -26,17 +39,36 @@ class FitCheckScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private lateinit var viewModel: FitCheckViewModel
+  private lateinit var locationViewModel: LocationSelectionViewModel
+  private lateinit var mockLocationRepository: LocationRepository
 
   @Before
   fun setUp() {
     viewModel = FitCheckViewModel()
-    composeTestRule.setContent { FitCheckScreen(fitCheckViewModel = viewModel) }
+    mockLocationRepository = mockk(relaxed = true)
+    locationViewModel = LocationSelectionViewModel(locationRepository = mockLocationRepository)
+
+    // Mock location repository to return suggestions
+    coEvery { mockLocationRepository.search(any()) } returns
+        listOf(
+            Location(47.3769, 8.5417, "Zürich, Switzerland"),
+            Location(46.2044, 6.1432, "Lausanne, Switzerland"))
+
+    composeTestRule.setContent {
+      FitCheckScreen(fitCheckViewModel = viewModel, locationSelectionViewModel = locationViewModel)
+    }
   }
 
   @Test
   fun fitCheckScreen_showsPlaceholder_andAddPhotoButton() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.PLACEHOLDER_ICON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.PLACEHOLDER_ICON)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
   }
 
   @Test
@@ -47,20 +79,29 @@ class FitCheckScreenTest {
 
   @Test
   fun clickingAddPhotoButton_opensDialog() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ALERT_DIALOG).assertIsDisplayed()
   }
 
   @Test
   fun dialog_containsCameraAndGalleryButtons() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).assertIsDisplayed()
   }
 
   @Test
   fun clickingChooseFromGallery_dismissesDialog() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
@@ -69,7 +110,10 @@ class FitCheckScreenTest {
 
   @Test
   fun clickingAddPhotoButton_thenTakePhoto_closesDialogAndKeepsInvalidState() {
-    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+        .performScrollTo()
+        .performClick()
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
@@ -110,6 +154,201 @@ class FitCheckScreenTest {
     composeTestRule.runOnIdle {
       val actualLength = viewModel.uiState.value.description.length
       assert(actualLength == 100) { "Expected capped at 100, but got $actualLength" }
+    }
+  }
+
+  // ========== Location Tests ==========
+
+  @Test
+  fun locationSection_isDisplayed() {
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun locationField_hasOptionalLabel() {
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).assertExists()
+    // The field should exist and be interactable
+    composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).performClick()
+    composeTestRule.waitForIdle()
+  }
+
+  @Test
+  fun enteringLocation_updatesLocationViewModel() {
+    composeTestRule.enterLocation("Zürich")
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      assertEquals("Zürich", locationViewModel.uiState.value.locationQuery)
+    }
+  }
+
+  @Test
+  fun selectingLocation_updatesViewModelState() {
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    composeTestRule.runOnIdle {
+      locationViewModel.setLocation(testLocation)
+      viewModel.setLocation(testLocation)
+    }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      assertEquals(testLocation, viewModel.uiState.value.location)
+      assertEquals(testLocation.name, locationViewModel.uiState.value.locationQuery)
+    }
+  }
+
+  @Test
+  fun locationIsOptional_defaultIsEmptyLocation() {
+    composeTestRule.runOnIdle { assertEquals(emptyLocation, viewModel.uiState.value.location) }
+  }
+
+  @Test
+  fun clearingLocation_resetsToEmptyLocation() {
+    val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    composeTestRule.runOnIdle { viewModel.setLocation(testLocation) }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle { viewModel.setLocation(emptyLocation) }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle { assertEquals(emptyLocation, viewModel.uiState.value.location) }
+  }
+
+  @Test
+  fun gpsButton_isClickable() {
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
+        .performClick()
+    composeTestRule.waitForIdle()
+  }
+
+  @Test
+  fun locationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused() {
+    composeTestRule.testLocationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused()
+  }
+
+  @Test
+  fun locationDropdown_hidesWhenLosingFocus() {
+    composeTestRule.testLocationDropdown_hidesWhenLosingFocus(
+        blurTargetTag = FitCheckScreenTestTags.DESCRIPTION_INPUT)
+  }
+
+  @Test
+  fun locationDropdown_showsAgain_whenRefocusingWithExistingSuggestions() {
+    composeTestRule.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions(
+        locationSelectionViewModel = locationViewModel,
+        blurTargetTag = FitCheckScreenTestTags.DESCRIPTION_INPUT)
+  }
+
+  @Test
+  fun selectingLocationFromDropdown_updatesViewModels() {
+    composeTestRule.enterLocation("Zur")
+    composeTestRule.waitForIdle()
+
+    // Wait for suggestions to appear
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+          .fetchSemanticsNodes()
+          .size >= 1
+    }
+
+    // Click the first suggestion
+    composeTestRule
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      val selectedLocation = locationViewModel.uiState.value.selectedLocation
+      assert(selectedLocation != null)
+      assert(selectedLocation?.name?.contains("Zürich") == true)
+    }
+  }
+
+  @Test
+  fun defaultEpflLocation_isDisplayedAndClickable() {
+    composeTestRule
+        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
+        .performScrollTo()
+        .assertIsDisplayed()
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      val selectedLocation = locationViewModel.uiState.value.selectedLocation
+      assert(selectedLocation != null)
+      assert(
+          selectedLocation?.name == "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
+    }
+  }
+
+  // ========== Combined Workflow Tests ==========
+
+  @Test
+  fun fullWorkflow_photoDescriptionAndLocation_allUpdated() {
+    val uri = Uri.parse("content://dummy/photo.jpg")
+    val description = "Summer vibes at Zürich"
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+
+    composeTestRule.runOnIdle { viewModel.setPhoto(uri) }
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
+        .performTextInput(description)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      locationViewModel.setLocation(location)
+      viewModel.setLocation(location)
+    }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      val state = viewModel.uiState.value
+      assertEquals(uri, state.image)
+      assertEquals(description, state.description)
+      assertEquals(location, state.location)
+    }
+  }
+
+  @Test
+  fun photoDescriptionAndLocation_canBeSetIndependently() {
+    // Set photo only
+    composeTestRule.runOnIdle { viewModel.setPhoto(Uri.parse("content://test/photo.jpg")) }
+    composeTestRule.waitForIdle()
+    composeTestRule.runOnIdle {
+      assert(viewModel.uiState.value.description.isEmpty())
+      assertEquals(emptyLocation, viewModel.uiState.value.location)
+    }
+
+    // Add description
+    composeTestRule
+        .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
+        .performTextInput("Test description")
+    composeTestRule.waitForIdle()
+    composeTestRule.runOnIdle { assertEquals(emptyLocation, viewModel.uiState.value.location) }
+
+    // Add location
+    val location = Location(47.3769, 8.5417, "Zürich, Switzerland")
+    composeTestRule.runOnIdle { viewModel.setLocation(location) }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.runOnIdle {
+      assertEquals(location, viewModel.uiState.value.location)
+      assertEquals("Test description", viewModel.uiState.value.description)
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.android.ootd.model.post
 
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
 
 interface OutfitPostRepository {
@@ -53,7 +54,8 @@ interface OutfitPostRepository {
       name: String,
       userProfilePicURL: String,
       localPath: String,
-      description: String
+      description: String,
+      location: Location
   ): OutfitPost
 
   /**
@@ -62,4 +64,14 @@ interface OutfitPostRepository {
    * @param postId The ID of the post to delete.
    */
   suspend fun deletePost(postId: String)
+
+  /**
+   * Uploads the outfit photo as a byte array to Firebase Storage and returns its download URL as a
+   * String.
+   *
+   * @param imageData Byte array of the image data.
+   * @param postId The unique ID of the post (used as the filename).
+   * @return Download URL of the uploaded image.
+   */
+  suspend fun uploadOutfitWithCompressedPhoto(imageData: ByteArray, postId: String): String
 }

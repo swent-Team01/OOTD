@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.android.ootd.model.map.Location
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
@@ -33,6 +34,9 @@ class NavigationTest {
 
   private lateinit var navController: NavHostController
   private lateinit var navigation: NavigationActions
+
+  // Helper for creating test location
+  private val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
 
   @Composable
   private fun TestNavHost() {
@@ -250,7 +254,9 @@ class NavigationTest {
       // Navigate to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Navigate to AddItemScreen
@@ -265,7 +271,9 @@ class NavigationTest {
       // Navigate to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Navigate to AddItemScreen
@@ -284,7 +292,9 @@ class NavigationTest {
       // Navigate to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Navigate to EditItem with a specific item ID
@@ -304,7 +314,9 @@ class NavigationTest {
       // Navigate to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       // Navigate to EditItem
       navigation.navigateTo(Screen.EditItem("item-1"))
       assertTrue(navigation.currentRoute().contains("editItem"))
@@ -325,7 +337,9 @@ class NavigationTest {
       // Navigate to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
 
       // Navigate to AddItemScreen
@@ -344,7 +358,9 @@ class NavigationTest {
       // Navigate to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       // Edit first item
       navigation.navigateTo(Screen.EditItem("item-1"))
       assertEquals(Screen.EditItem.route, navigation.currentRoute())
@@ -376,7 +392,9 @@ class NavigationTest {
       // Navigate directly to PreviewItemScreen
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       assertEquals(Screen.PreviewItemScreen.route, navigation.currentRoute())
     }
   }
@@ -388,7 +406,9 @@ class NavigationTest {
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(
           Screen.PreviewItemScreen(
-              imageUri = "content://another_uri", description = "Another Test Outfit Description"))
+              imageUri = "content://another_uri",
+              description = "Another Test Outfit Description",
+              location = testLocation))
       navigation.navigateTo(Screen.AddItemScreen("test_post_id"))
 
       assertEquals(Screen.AddItemScreen.route, navigation.currentRoute())

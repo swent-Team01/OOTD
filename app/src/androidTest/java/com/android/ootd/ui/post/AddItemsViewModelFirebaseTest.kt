@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -22,6 +23,7 @@ import org.junit.Test
 
 class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
+  private lateinit var context: Context
   private lateinit var viewModel: AddItemsViewModel
   private lateinit var repository: ItemsRepositoryFirestore
   private lateinit var mockAccountRepository: AccountRepository
@@ -34,6 +36,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     // Mock successful inventory operations by default
     coEvery { mockAccountRepository.addItem(any()) } returns true
     viewModel = AddItemsViewModel(repository, mockAccountRepository)
+    context = InstrumentationRegistry.getInstrumentation().targetContext
   }
 
   private fun createTempImageFile(): File {
@@ -54,7 +57,6 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onAddItemClick_withValidData_uploadsImageAndAddsToFirestore() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val uri = createReadableUri()
@@ -69,7 +71,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setLink("https://example.com/tshirt")
 
     // Trigger add
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     // Wait for async operation
     kotlinx.coroutines.delay(2000)
@@ -97,7 +99,6 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onAddItemClick_withoutPhoto_failsWithError() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     // Set fields but NO photo
@@ -106,7 +107,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Adidas")
     viewModel.setPrice(89.99)
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     kotlinx.coroutines.delay(500)
 
@@ -128,7 +129,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Zara")
     viewModel.setPrice(120.00)
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     kotlinx.coroutines.delay(500)
 
@@ -141,7 +142,6 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onAddItemClick_withInvalidCategory_failsWithError() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val uri = createReadableUri()
@@ -152,7 +152,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Brand")
     viewModel.setPrice(50.00)
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     kotlinx.coroutines.delay(500)
 
@@ -164,7 +164,6 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onAddItemClick_withMaterialData_storesCorrectly() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val uri = createReadableUri()
@@ -176,7 +175,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setPrice(45.00)
     viewModel.setMaterial("Cotton 80%, Polyester 20%")
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     kotlinx.coroutines.delay(2000)
 
@@ -195,7 +194,6 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onAddItemClick_multipleItems_addsAllToFirestore() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     // Add first item
@@ -206,7 +204,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Nike")
     viewModel.setPrice(79.99)
     viewModel.setCurrency("USD")
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     kotlinx.coroutines.delay(2000)
 
     assertTrue(viewModel.addOnSuccess.first())
@@ -223,7 +221,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel2.setBrand("Puma")
     viewModel2.setPrice(25.00)
     viewModel2.setCurrency("CHF")
-    viewModel2.onAddItemClick()
+    viewModel2.onAddItemClick(context)
     kotlinx.coroutines.delay(2000)
 
     assertTrue(viewModel2.addOnSuccess.first())
@@ -244,8 +242,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
   }
 
   @Test
-  fun onAddItemClick_withoutSettingPrice_defaultsToZero() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
+  fun onAddItemClick_withEmptyPrice_defaultsToZero() = runBlocking {
     viewModel.initTypeSuggestions(context)
 
     val uri = createReadableUri()
@@ -256,7 +253,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Generic")
     // Intentionally do not call setPrice; default should be 0.0
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     kotlinx.coroutines.delay(2000)
 
@@ -269,7 +266,6 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
 
   @Test
   fun onAddItemClick_withExactCategoryFromDropdown_addsSuccessfully() = runBlocking {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
     viewModel.initTypeSuggestions(context)
 
     val uri = createReadableUri()
@@ -280,7 +276,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setBrand("Levi's")
     viewModel.setPrice(60.00)
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
 
     kotlinx.coroutines.delay(2000)
 
@@ -310,7 +306,7 @@ class AddItemsViewModelFirebaseTest : FirestoreTest() {
     viewModel.setStyle("Minimalist")
     viewModel.setNotes("Worn twice")
 
-    viewModel.onAddItemClick()
+    viewModel.onAddItemClick(context)
     kotlinx.coroutines.delay(2000)
 
     assertTrue(viewModel.addOnSuccess.first())

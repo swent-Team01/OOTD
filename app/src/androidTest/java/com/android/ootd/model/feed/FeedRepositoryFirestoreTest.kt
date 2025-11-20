@@ -284,6 +284,51 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     assertEquals(now, retrieved?.timestamp)
   }
 
+  @Test
+  fun getPostById_retrievesLocationCorrectly() = runBlocking {
+    val testLocation =
+        com.android.ootd.model.map.Location(latitude = 46.5197, longitude = 6.5659, name = "EPFL")
+    val postWithLocation =
+        OutfitPost(
+            postUID = "post-with-location",
+            name = "Location Test",
+            ownerId = currentUid,
+            userProfilePicURL = "https://example.com/pic.jpg",
+            outfitURL = "https://example.com/outfit.jpg",
+            description = "Testing location retrieval",
+            itemsID = listOf("item1"),
+            timestamp = System.currentTimeMillis(),
+            location = testLocation)
+    feedRepository.addPost(postWithLocation)
+
+    val retrieved = feedRepository.getPostById("post-with-location")
+
+    assertEquals(46.5197, retrieved?.location?.latitude)
+    assertEquals(6.5659, retrieved?.location?.longitude)
+    assertEquals("EPFL", retrieved?.location?.name)
+  }
+
+  @Test
+  fun getPostById_handlesPostWithoutLocation() = runBlocking {
+    val postWithoutLocation =
+        OutfitPost(
+            postUID = "post-no-location",
+            name = "No Location",
+            ownerId = currentUid,
+            userProfilePicURL = "",
+            outfitURL = "",
+            description = "No location",
+            itemsID = emptyList(),
+            timestamp = System.currentTimeMillis()
+            // location defaults to emptyLocation
+            )
+    feedRepository.addPost(postWithoutLocation)
+
+    val retrieved = feedRepository.getPostById("post-no-location")
+
+    assertEquals(com.android.ootd.model.map.emptyLocation, retrieved?.location)
+  }
+
   // -------- Helpers --------
 
   private fun samplePost(id: String, ts: Long) =

@@ -306,7 +306,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.enterAddItemPrice(19.99)
 
     // Trigger add; even if image upload fails in tests, overlay should hide afterward
-    composeTestRule.runOnIdle { viewModel.onAddItemClick() }
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+    composeTestRule.runOnIdle { viewModel.onAddItemClick(context) }
     composeTestRule.waitForIdle()
     kotlinx.coroutines.delay(1000)
 
