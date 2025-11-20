@@ -75,7 +75,7 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
       OOTDApp(
           context = context,
           credentialManager = fakeCredentialManager,
-          overridePhoto = true,
+          testMode = true,
           testNavController = testNavController)
     }
     waitForRoute(Screen.Authentication.route)
@@ -298,7 +298,8 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 1. Waits for the notification icon to be initialized and visible
    * 2. Clicks the notification icon to navigate to the notifications screen
    * 3. Waits for the UI to stabilize
-   * 4. Tests to see that there is a follow notification for the user on the screen
+   * 4. Enables push notifications
+   * 5. Tests to see that there is a follow notification for the user on the screen
    */
   fun openNotificationsScreen() {
     coEvery { mockNotificationRepository.getNotificationsForReceiver(any()) } returns
@@ -311,10 +312,12 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
                   type = "FOLLOW_REQUEST",
                   content = "Wants to follow you"))
         }
-
     clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
     clickWithWait(composeTestRule, FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
     waitForRoute(Screen.NotificationsScreen.route)
+    verifyElementAppearsWithTimer(
+        composeTestRule, NotificationsScreenTestTags.PUSH_NOTIFICATIONS_INSTRUCTIONS)
+    clickWithWait(composeTestRule, NotificationsScreenTestTags.ENABLE_PUSH_NOTIFICATIONS)
     verifyElementAppearsWithTimer(composeTestRule, NotificationsScreenTestTags.NOTIFICATIONS_SCREEN)
     verifyElementAppearsWithTimer(composeTestRule, NotificationsScreenTestTags.NOTIFICATION_ITEM)
   }

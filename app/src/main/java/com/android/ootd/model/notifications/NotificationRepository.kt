@@ -1,4 +1,5 @@
 import com.android.ootd.model.notifications.Notification
+import com.google.firebase.firestore.ListenerRegistration
 
 interface NotificationRepository {
   fun getNewUid(): String
@@ -12,4 +13,9 @@ interface NotificationRepository {
   suspend fun deleteNotification(notification: Notification)
 
   fun getFollowNotificationId(senderId: String, receiverId: String): String
+
+  fun listenForUnpushedNotifications(
+      receiverId: String,
+      onNewNotification: (Notification) -> Unit
+  ): ListenerRegistration
 }
