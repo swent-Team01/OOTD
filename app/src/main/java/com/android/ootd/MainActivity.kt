@@ -378,7 +378,7 @@ fun OOTDApp(
                               launchSingleTop = true
                             }
                           },
-                          onGoBack = { postUuid -> navController.popBackStack() },
+                          onGoBack = { navController.popBackStack() },
                           overridePhoto = testMode)
                     }
 
