@@ -42,6 +42,13 @@ object SeeFitScreenTestTags {
   const val ITEM_PRICE = "seeFitItemPrice"
   const val ITEM_MATERIAL = "seeFitItemMaterial"
   const val ITEM_LINK = "seeFitItemLink"
+  const val ITEM_CONDITION = "seeFitItemCondition"
+  const val ITEM_SIZE = "seeFitItemSize"
+  const val ITEM_FIT_TYPE = "seeFitItemFitType"
+  const val ITEM_STYLE = "seeFitItemStyle"
+  const val ITEM_NOTES = "seeFitItemNotes"
+  const val ITEM_LINK_COPY = "seeFitItemLinkCopy"
+  const val ITEM_NOTES_COPY = "seeFitItemNotesCopy"
 
   fun getTestTagForItem(item: Item): String {
     return "seeFitItemCard_${item.itemUuid}"

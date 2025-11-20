@@ -30,7 +30,8 @@ data class AddItemsUIState(
     val category: String = "",
     val type: String = "",
     val brand: String = "",
-    val price: String = "",
+    val price: Double = 0.0,
+    val currency: String = "CHF",
     val material: List<Material> = emptyList(),
     val link: String = "",
     val errorMessage: String? = null,
@@ -40,7 +41,12 @@ data class AddItemsUIState(
     val categorySuggestion: List<String> = emptyList(),
     val materialText: String = "",
     val isLoading: Boolean = false,
-    val overridePhoto: Boolean = false
+    val overridePhoto: Boolean = false,
+    val condition: String = "",
+    val size: String = "",
+    val fitType: String = "",
+    val style: String = "",
+    val notes: String = ""
 ) {
   val isAddingValid: Boolean
     get() =
@@ -172,10 +178,17 @@ open class AddItemsViewModel(
         category = state.category,
         type = state.type,
         brand = state.brand,
-        price = state.price.toDoubleOrNull() ?: 0.0,
+        price = state.price,
+        currency = state.currency,
         material = state.material,
         link = state.link,
-        ownerId = ownerId)
+        ownerId = ownerId,
+        condition = state.condition.ifBlank { null },
+        size = state.size.ifBlank { null },
+        fitType = state.fitType.ifBlank { null },
+        style = state.style.ifBlank { null },
+        notes = state.notes.ifBlank { null },
+    )
   }
 
   /**
@@ -309,9 +322,19 @@ open class AddItemsViewModel(
                 })
   }
 
-  fun setPrice(price: String) {
-    _uiState.value = _uiState.value.copy(price = price)
-  }
+  fun setPrice(price: Double) = updateSimpleField { it.copy(price = price) }
+
+  fun setCurrency(currency: String) = updateSimpleField { it.copy(currency = currency) }
+
+  fun setCondition(value: String) = updateSimpleField { it.copy(condition = value) }
+
+  fun setSize(value: String) = updateSimpleField { it.copy(size = value) }
+
+  fun setFitType(value: String) = updateSimpleField { it.copy(fitType = value) }
+
+  fun setStyle(value: String) = updateSimpleField { it.copy(style = value) }
+
+  fun setNotes(value: String) = updateSimpleField { it.copy(notes = value) }
 
   fun validateCategory() {
     val state = _uiState.value
