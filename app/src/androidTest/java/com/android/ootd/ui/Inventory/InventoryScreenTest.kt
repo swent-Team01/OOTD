@@ -68,6 +68,9 @@ class InventoryScreenTest {
               link = null,
               ownerId = testUserId))
 
+  private fun createInventoryViewModel(): InventoryViewModel =
+      InventoryViewModel(mockAccountRepository, mockItemsRepository)
+
   @Before
   fun setup() {
     mockAccountRepository = mockk(relaxed = true)
@@ -94,10 +97,12 @@ class InventoryScreenTest {
     coEvery { mockAccountRepository.getItemsList(any()) } returns emptyList()
     coEvery { mockItemsRepository.getItemsByIds(any()) } returns emptyList()
 
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
     composeTestRule.setContent {
       OOTDTheme {
-        viewModel = InventoryViewModel(mockAccountRepository, mockItemsRepository)
-        InventoryScreen(inventoryViewModel = viewModel, navigationActions = mockNavigationActions)
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
       }
     }
 
@@ -126,10 +131,12 @@ class InventoryScreenTest {
     coEvery { mockAccountRepository.getItemsList(any()) } returns emptyList()
     coEvery { mockItemsRepository.getItemsByIds(any()) } returns emptyList()
 
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
     composeTestRule.setContent {
       OOTDTheme {
-        viewModel = InventoryViewModel(mockAccountRepository, mockItemsRepository)
-        InventoryScreen(inventoryViewModel = viewModel, navigationActions = mockNavigationActions)
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
       }
     }
 
@@ -148,10 +155,12 @@ class InventoryScreenTest {
     coEvery { mockAccountRepository.getItemsList(any()) } returns listOf("item1", "item2")
     coEvery { mockItemsRepository.getItemsByIds(any()) } returns testItems
 
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
     composeTestRule.setContent {
       OOTDTheme {
-        viewModel = InventoryViewModel(mockAccountRepository, mockItemsRepository)
-        InventoryScreen(inventoryViewModel = viewModel, navigationActions = mockNavigationActions)
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
       }
     }
 
@@ -172,10 +181,12 @@ class InventoryScreenTest {
     coEvery { mockAccountRepository.getItemsList(any()) } returns listOf("item1")
     coEvery { mockItemsRepository.getItemsByIds(any()) } returns listOf(testItems[0])
 
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
     composeTestRule.setContent {
       OOTDTheme {
-        viewModel = InventoryViewModel(mockAccountRepository, mockItemsRepository)
-        InventoryScreen(inventoryViewModel = viewModel, navigationActions = mockNavigationActions)
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
       }
     }
 
@@ -196,11 +207,10 @@ class InventoryScreenTest {
     coEvery { mockAccountRepository.getItemsList(any()) } returns emptyList()
     coEvery { mockItemsRepository.getItemsByIds(any()) } returns emptyList()
 
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
     composeTestRule.setContent {
-      OOTDTheme {
-        viewModel = InventoryViewModel(mockAccountRepository, mockItemsRepository)
-        InventoryScreen(inventoryViewModel = viewModel, navigationActions = null)
-      }
+      OOTDTheme { InventoryScreen(inventoryViewModel = testViewModel, navigationActions = null) }
     }
 
     // Should not crash when navigationActions is null

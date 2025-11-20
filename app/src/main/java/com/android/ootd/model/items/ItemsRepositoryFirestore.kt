@@ -108,6 +108,15 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     return items
   }
 
+  private fun mapToItem(doc: DocumentSnapshot): Item? {
+    return try {
+      val data = doc.data ?: return null
+      ItemsMappers.parseItem(data)
+    } catch (_: Exception) {
+      null
+    }
+  }
+
   override suspend fun addItem(item: Item) {
     // Optimistically update memory cache immediately
     itemsCache[item.itemUuid] = item
@@ -190,58 +199,14 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     }
   }
 
-  override suspend fun getFriendItemsForPost(postUuid: String, friendUid: String): List<Item> {
+  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
     val snapshot =
         db.collection(ITEMS_COLLECTION)
             .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
-            .whereEqualTo(OWNER_ATTRIBUTE_NAME, friendUid)
+            .whereEqualTo(OWNER_ATTRIBUTE_NAME, friendId)
             .get()
             .await()
 
     return snapshot.mapNotNull { mapToItem(it) }
-  }
-}
-
-private fun mapToItem(doc: DocumentSnapshot): Item? {
-  return try {
-    val uuid = doc.getString("itemUuid") ?: return null
-    val postUuidList = doc[POST_ATTRIBUTE_NAME] as? List<*>
-    val postUuids = postUuidList?.mapNotNull { it as? String } ?: emptyList()
-    val imageMap = doc["image"] as? Map<*, *> ?: return null
-    val imageUri =
-        ImageData(
-            imageId = imageMap["imageId"] as? String ?: "",
-            imageUrl = imageMap["imageUrl"] as? String ?: "",
-        )
-    val category = doc.getString("category") ?: return null
-    val type = doc.getString("type") ?: return null
-    val brand = doc.getString("brand") ?: return null
-    val price = doc.getDouble("price") ?: return null
-    val link = doc.getString("link") ?: return null
-    val ownerId = doc.getString(OWNER_ATTRIBUTE_NAME) ?: return null
-    val materialList = doc["material"] as? List<*>
-    val material =
-        materialList?.mapNotNull { item ->
-          (item as? Map<*, *>)?.let {
-            Material(
-                name = it["name"] as? String ?: "",
-                percentage = (it["percentage"] as? Number)?.toDouble() ?: 0.0)
-          }
-        } ?: emptyList()
-
-    Item(
-        itemUuid = uuid,
-        postUuids = postUuids,
-        image = imageUri,
-        category = category,
-        type = type,
-        brand = brand,
-        price = price,
-        material = material,
-        link = link,
-        ownerId = ownerId)
-  } catch (e: Exception) {
-    Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
-    null
   }
 }
