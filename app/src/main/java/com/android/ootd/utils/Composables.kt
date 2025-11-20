@@ -213,7 +213,7 @@ fun DisplayUserPosts(
 @Composable
 fun LoadingScreen(
     modifier: Modifier = Modifier,
-    loadingModifier: Modifier = modifier,
+    loadingModifier: Modifier = Modifier,
     contentDescription: String? = null
 ) {
   Box(
