@@ -139,28 +139,25 @@ private fun ProfileSection(post: OutfitPost) {
  */
 @Composable
 private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick: () -> Unit) {
-  Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        IconButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_BUTTON)) {
-              Icon(
-                  imageVector =
-                      if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                  contentDescription = if (isLiked) "Unlike" else "Like",
-                  tint =
-                      if (isLiked) MaterialTheme.colorScheme.error // nice "Instagram-ish" red
-                      else MaterialTheme.colorScheme.onSecondaryContainer)
-            }
-
-        Text(
-            text = likeCount.toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
-      }
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_BUTTON)) {
+          Icon(
+              imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+              contentDescription = if (isLiked) "Liked" else "Unliked",
+              tint =
+                  if (isLiked) MaterialTheme.colorScheme.error
+                  else MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+    Spacer(modifier = Modifier.width(1.dp))
+    Text(
+        text = likeCount.toString(),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
+  }
 }
 
 /**
@@ -280,16 +277,15 @@ fun OutfitPostCard(
                 ProfileSection(post)
                 Spacer(modifier = Modifier.height(8.dp))
                 PostImage(post, isBlurred)
-                DescriptionAndButton(post, isBlurred, onSeeFitClick)
-
-                Spacer(modifier = Modifier.height(8.dp))
-
                 LikeRow(
                     isLiked = isLiked,
                     likeCount = likeCount,
                     enabled = !isBlurred,
                     onClick = { onLikeClick(post.postUID) })
+                DescriptionAndButton(post, isBlurred, onSeeFitClick)
               }
+
+              Spacer(modifier = Modifier.height(8.dp))
             }
 
         // Blur overlay for locked posts

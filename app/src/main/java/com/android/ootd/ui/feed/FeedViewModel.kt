@@ -106,7 +106,7 @@ open class FeedViewModel(
             likesMap[postId] = isLiked
             countsMap[postId] = count
           } catch (e: Exception) {
-            Log.w("FeedViewModel", "Failed to load likes for post $postId", e)
+            Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
           }
         }
 

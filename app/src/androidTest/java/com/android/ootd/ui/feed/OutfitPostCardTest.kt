@@ -163,7 +163,7 @@ class OutfitPostCardTest {
 
     n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
     // Check contentDescription
-    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Unlike")
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Liked")
   }
 
   @Test
@@ -171,6 +171,6 @@ class OutfitPostCardTest {
     setCard(post(), isLiked = false)
 
     n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
-    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Like")
+    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Unliked")
   }
 }
