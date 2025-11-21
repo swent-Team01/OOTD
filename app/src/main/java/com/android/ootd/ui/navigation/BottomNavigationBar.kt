@@ -1,9 +1,5 @@
 package com.android.ootd.ui.navigation
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
@@ -15,19 +11,12 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.android.ootd.utils.BottomNavigationMenu
 
 /** Tabs used by the bottom navigation. Each tab points to a `Screen` destination. */
 sealed class Tab(
@@ -59,55 +48,18 @@ fun routeToTab(route: String): Tab = tabs.find { it.destination.route == route }
 
 fun tabToScreen(tab: Tab): Screen = tab.destination
 
-@Composable
-fun BottomNavigationMenu(
-    selectedTab: Tab?,
-    onTabSelected: (Tab) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-  NavigationBar(
-      modifier =
-          modifier
-              .fillMaxWidth()
-              .height(80.dp)
-              .border(
-                  width = 0.5.dp,
-                  color = Color.LightGray.copy(alpha = 0.3f),
-              )
-              .padding(top = 4.dp)
-              .testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
-      containerColor = MaterialTheme.colorScheme.background,
-  ) {
-    tabs.forEach { tab ->
-      val isSelected = tab == selectedTab
-      NavigationBarItem(
-          icon = {
-            Icon(
-                imageVector = if (isSelected) tab.filledIcon else tab.outlinedIcon,
-                contentDescription = "Navigate to ${tab.name}")
-          },
-          selected = isSelected,
-          onClick = { onTabSelected(tab) },
-          colors =
-              NavigationBarItemDefaults.colors(
-                  selectedIconColor = MaterialTheme.colorScheme.primary,
-                  unselectedIconColor = MaterialTheme.colorScheme.onBackground,
-                  indicatorColor = Color.Transparent),
-          modifier = Modifier.padding(top = 8.dp).testTag(NavigationTestTags.getTabTestTag(tab)))
-    }
-  }
-}
-
 /** Maps route -> Tab and forwards clicks by emitting the Tab's destination Screen. */
 @Composable
 fun BottomNavigationBar(
+    modifier: Modifier = Modifier,
+    tabList: List<Tab> = tabs,
     selectedRoute: String,
     onTabSelected: (Screen) -> Unit,
-    modifier: Modifier = Modifier
 ) {
   // Map current route string to a Tab; default to Feed
-  val selectedTab = tabs.find { it.destination.route == selectedRoute }
+  val selectedTab = tabList.find { it.destination.route == selectedRoute }
   BottomNavigationMenu(
+      tabs = com.android.ootd.ui.navigation.tabs,
       selectedTab = selectedTab,
       onTabSelected = { tab -> onTabSelected(tab.destination) },
       modifier = modifier)
@@ -116,5 +68,5 @@ fun BottomNavigationBar(
 @Preview(showBackground = true)
 @Composable
 fun BottomNavigationMenuPreview() {
-  Surface { BottomNavigationMenu(selectedTab = Tab.Feed, onTabSelected = {}) }
+  Surface { BottomNavigationMenu(selectedTab = Tab.Feed, onTabSelected = {}, tabs = tabs) }
 }

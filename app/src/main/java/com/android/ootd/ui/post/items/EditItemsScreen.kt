@@ -171,7 +171,7 @@ fun EditItemsScreen(
                         (itemsUIState.localPhotoUri != null ||
                             itemsUIState.image.imageUrl.isNotEmpty()) &&
                             itemsUIState.category.isNotEmpty(),
-                    onSave = editItemsViewModel::onSaveItemClick,
+                    onSave = { editItemsViewModel.onSaveItemClick(context) },
                     // Additional
                     condition = itemsUIState.condition,
                     onConditionChange = editItemsViewModel::setCondition,

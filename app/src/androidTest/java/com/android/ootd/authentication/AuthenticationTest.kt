@@ -378,7 +378,7 @@ class AuthenticationExtensiveTest {
 
   @Test
   fun splashScreen_displaysContent() {
-    composeTestRule.setContent { SplashScreenContent() }
+    composeTestRule.setContent { SplashScreen() }
 
     composeTestRule.onNodeWithTag("splashLogo").assertIsDisplayed()
     composeTestRule.onNodeWithTag("splashProgress").assertIsDisplayed()

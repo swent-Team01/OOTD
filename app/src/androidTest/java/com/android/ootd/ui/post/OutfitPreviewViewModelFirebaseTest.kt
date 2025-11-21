@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -37,6 +38,8 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
   private lateinit var testUserRepository: UserRepository
   private lateinit var realUid: String
 
+  private lateinit var context: Context
+
   val testLocation = Location(46.5197, 6.5682, "Lausanne, Switzerland")
 
   @Before
@@ -61,6 +64,8 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
             postRepository = postRepository,
             userRepository = testUserRepository,
             accountService = accountService)
+
+    context = InstrumentationRegistry.getInstrumentation().targetContext
   }
 
   /** Creates a fake Firestore user so userRepository.getUser() works and passes rules. */
@@ -130,7 +135,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     assertEquals(2, stateWithItems.items.size)
     assertEquals(testLocation, stateWithItems.location)
 
-    viewModel.publishPost()
+    viewModel.publishPost(context = context)
     delay(3000)
 
     val finalState = viewModel.uiState.first()
@@ -161,7 +166,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     val state1 = viewModel.uiState.first()
     createTestItem(state1.postUuid)
 
-    viewModel.publishPost()
+    viewModel.publishPost(context = context)
     delay(500)
 
     val finalState1 = viewModel.uiState.first()
@@ -176,7 +181,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     delay(100)
 
     val viewModel2 = OutfitPreviewViewModel(itemsRepository, postRepository)
-    viewModel2.publishPost()
+    viewModel2.publishPost(context = context)
     delay(500)
 
     val finalState2 = viewModel2.uiState.first()
@@ -194,7 +199,7 @@ class OutfitPreviewViewModelFirebaseTest : FirestoreTest() {
     viewModel.initFromFitCheck(imageUri.toString(), description, testLocation)
     delay(500)
 
-    viewModel.publishPost()
+    viewModel.publishPost(context = context)
     delay(3000)
 
     val finalState = viewModel.uiState.first()

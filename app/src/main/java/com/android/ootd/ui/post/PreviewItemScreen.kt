@@ -165,7 +165,8 @@ fun PreviewItemScreen(
       onAddItem = onAddItem,
       onSelectFromInventory = onSelectFromInventory,
       onPublish = {
-        if (!enablePreview) outfitPreviewViewModel.publishPost(overridePhoto = overridePhoto)
+        if (!enablePreview)
+            outfitPreviewViewModel.publishPost(overridePhoto = overridePhoto, context = context)
       },
       onGoBack = onGoBack,
       enablePreview = enablePreview,

@@ -206,7 +206,7 @@ fun AddItemsScreen(
 
                 // add
                 isAddEnabled = overridePhoto || itemsUIState.isAddingValid,
-                onAddClick = addItemsViewModel::onAddItemClick,
+                onAddClick = { addItemsViewModel.onAddItemClick(context = context) },
                 condition = itemsUIState.condition,
                 onConditionChange = addItemsViewModel::setCondition,
                 size = itemsUIState.size,

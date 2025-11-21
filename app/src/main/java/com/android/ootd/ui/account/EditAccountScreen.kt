@@ -20,8 +20,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
@@ -47,16 +45,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -65,17 +58,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
-import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.BackArrow
 import com.android.ootd.utils.LocationUtils
+import com.android.ootd.utils.ProfilePicture
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -198,8 +190,7 @@ private fun AccountScreenContent(
               .verticalScroll(scrollState)
               .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 72.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
-        BackButton(onBack = onBack)
-
+        BackArrow(onBackClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK))
         AccountTitle()
 
         Box(modifier = contentModifier) {
@@ -310,38 +301,20 @@ private fun AvatarSection(
 ) {
   val colors = LightColorScheme
   val typography = Typography
-  val defaultAvatarPainter = rememberVectorPainter(Icons.Default.AccountCircle)
 
   Column(
       modifier = modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).fillMaxWidth(),
       horizontalAlignment = Alignment.CenterHorizontally) {
         // Avatar image/letter
-        if (avatarUri.isNotBlank()) {
-          AsyncImage(
-              model = avatarUri,
-              contentDescription = "Avatar",
-              placeholder = defaultAvatarPainter,
-              error = defaultAvatarPainter,
-              contentScale = ContentScale.Crop,
-              modifier =
-                  Modifier.size(120.dp)
-                      .clip(CircleShape)
-                      .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE))
-        } else {
-          Box(
-              modifier =
-                  Modifier.size(120.dp)
-                      .clip(CircleShape)
-                      .background(Primary)
-                      .pointerHoverIcon(icon = PointerIcon.Hand),
-              contentAlignment = Alignment.Center) {
-                Text(
-                    text = username.firstOrNull()?.uppercase() ?: "",
-                    style = typography.headlineMedium.copy(fontFamily = Bodoni),
-                    color = Secondary,
-                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER))
-              }
-        }
+        val tag =
+            UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE.takeIf { avatarUri.isNotBlank() }
+                ?: UiTestTags.TAG_ACCOUNT_AVATAR_LETTER
+        ProfilePicture(
+            Modifier.testTag(tag),
+            120.dp,
+            avatarUri,
+            username,
+            typography.headlineMedium.copy(fontFamily = Bodoni))
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -565,20 +538,6 @@ private fun LocationField(
       isError = hasLocationError,
       onFocusChanged = viewModel::onLocationFieldFocusChanged,
       modifier = Modifier.testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
-}
-
-@Composable
-private fun BackButton(onBack: () -> Unit) {
-  val colors = LightColorScheme
-  Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-    IconButton(onClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK)) {
-      Icon(
-          imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-          contentDescription = "Back",
-          tint = colors.onBackground,
-          modifier = Modifier.size(48.dp))
-    }
-  }
 }
 
 @Composable

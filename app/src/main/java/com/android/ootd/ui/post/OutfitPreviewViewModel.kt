@@ -1,10 +1,13 @@
 package com.android.ootd.ui.post
 
+import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
@@ -37,6 +40,9 @@ data class PreviewUIState(
     val location: Location = emptyLocation
 )
 
+/* Compression threshold for images before upload */
+private const val COMPRESS_THRESHOLD = 200 * 1024L // 200 KB
+
 /**
  * ViewModel for the PreviewScreen.
  *
@@ -44,12 +50,17 @@ data class PreviewUIState(
  * [ItemsRepository]
  *
  * @property itemsRepository The repository used to fetch and manage items.
+ * @property postRepository The repository used to manage outfit posts.
+ * @property userRepository The repository used to fetch user data.
+ * @property accountService The service used to manage user accounts.
+ * @property imageCompressor The utility used to compress images before upload.
  */
 class OutfitPreviewViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
     private val postRepository: OutfitPostRepository = OutfitPostRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
-    private val accountService: AccountService = AccountServiceFirebase()
+    private val accountService: AccountService = AccountServiceFirebase(),
+    private val imageCompressor: ImageCompressor = ImageCompressor()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(PreviewUIState())
@@ -99,7 +110,7 @@ class OutfitPreviewViewModel(
    * @param overridePhoto: Whether to override the checks for the image appearing in testing when we
    *   cannot create images.
    */
-  fun publishPost(overridePhoto: Boolean = false) {
+  fun publishPost(overridePhoto: Boolean = false, context: Context) {
     if (overridePhoto) {
       _uiState.value =
           _uiState.value.copy(
@@ -111,9 +122,25 @@ class OutfitPreviewViewModel(
         return
       }
 
+      // returns a byte array of the compressed image
       viewModelScope.launch {
         _uiState.value = state.copy(isLoading = true)
         try {
+
+          // Compress image before upload
+          val compressedImage =
+              imageCompressor.compressImage(
+                  state.imageUri.toUri(),
+                  compressionThreshold = COMPRESS_THRESHOLD,
+                  context = context)
+
+          // Check compression result
+          if (compressedImage == null) {
+            setErrorMessage("Failed to compress image")
+            _uiState.value = state.copy(isLoading = false)
+            return@launch
+          }
+
           // Fetch current user id
           val currentUserId = accountService.currentUserId
           // Fetch user data
@@ -121,7 +148,8 @@ class OutfitPreviewViewModel(
 
           // Upload main outfit image
           val outfitPhotoUrl =
-              postRepository.uploadOutfitPhoto(localPath = state.imageUri, postId = state.postUuid)
+              postRepository.uploadOutfitWithCompressedPhoto(
+                  imageData = compressedImage, postId = state.postUuid)
 
           // Fetch all items for this post
           val items = itemsRepository.getAssociatedItems(state.postUuid)
