@@ -114,7 +114,6 @@ fun CameraScreen(
             else -> {
               // Show permission request UI
               PermissionRequestScreen(
-                  permissionName = "Camera",
                   message = "Camera permission is required to take your fit checks photos !",
                   onRequestPermission = { cameraPermissionState.launchPermissionRequest() },
                   onCancel = {
