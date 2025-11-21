@@ -37,8 +37,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.camera.ImageOrientationHelper
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.utils.CircularIconButton
+import com.android.ootd.utils.PermissionRequestScreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -112,37 +113,14 @@ fun CameraScreen(
             }
             else -> {
               // Show permission request UI
-              Column(
-                  modifier = Modifier.fillMaxSize().padding(32.dp),
-                  horizontalAlignment = Alignment.CenterHorizontally,
-                  verticalArrangement = Arrangement.Center) {
-                    Text(
-                        "Camera permission is required to take your fit checks photos !",
-                        color = White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier =
-                            Modifier.padding(16.dp)
-                                .testTag(CameraScreenTestTags.PERMISSION_DENIED_MESSAGE))
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { cameraPermissionState.launchPermissionRequest() },
-                        modifier =
-                            Modifier.testTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON)) {
-                          Text("Grant Permission !")
-                        }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    TextButton(
-                        onClick = {
-                          cameraViewModel.reset()
-                          onDismiss()
-                        }) {
-                          Text("Cancel", color = Secondary)
-                        }
-                  }
+              PermissionRequestScreen(
+                  message = "Camera permission is required to take your fit checks photos !",
+                  onRequestPermission = { cameraPermissionState.launchPermissionRequest() },
+                  onCancel = {
+                    cameraViewModel.reset()
+                    onDismiss()
+                  },
+                  modifier = Modifier.testTag(CameraScreenTestTags.PERMISSION_DENIED_MESSAGE))
             }
           }
         }
@@ -191,19 +169,17 @@ private fun CameraView(
             })
 
     // Close button (top-left)
-    IconButton(
+    CircularIconButton(
         onClick = onClose,
+        icon = Icons.Default.Close,
+        contentDescription = "Close Camera",
         modifier =
             Modifier.align(Alignment.TopStart)
                 .padding(16.dp)
-                .background(Primary.copy(alpha = 0.5f), CircleShape)
-                .testTag(CameraScreenTestTags.CLOSE_BUTTON)) {
-          Icon(
-              imageVector = Icons.Default.Close,
-              contentDescription = "Close Camera",
-              tint = White,
-              modifier = Modifier.size(36.dp))
-        }
+                .testTag(CameraScreenTestTags.CLOSE_BUTTON),
+        backgroundColor = Primary.copy(alpha = 0.5f),
+        iconTint = White,
+        iconSize = 36.dp)
 
     // Bottom controls
     Column(
@@ -382,19 +358,17 @@ private fun ImagePreviewScreen(
         }
 
         // Close button
-        IconButton(
+        CircularIconButton(
             onClick = onClose,
+            icon = Icons.Default.Close,
+            contentDescription = "Close Preview",
             modifier =
                 Modifier.align(Alignment.TopStart)
                     .padding(16.dp)
-                    .background(Primary.copy(alpha = 0.5f), CircleShape)
-                    .testTag(CameraScreenTestTags.CLOSE_BUTTON)) {
-              Icon(
-                  imageVector = Icons.Default.Close,
-                  contentDescription = "Close Preview",
-                  tint = White,
-                  modifier = Modifier.size(36.dp))
-            }
+                    .testTag(CameraScreenTestTags.CLOSE_BUTTON),
+            backgroundColor = Primary.copy(alpha = 0.5f),
+            iconTint = White,
+            iconSize = 36.dp)
 
         // Bottom action buttons
         Box(

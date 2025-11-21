@@ -3,7 +3,6 @@ package com.android.ootd.ui.feed
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -29,6 +28,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.utils.ProfilePicture
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
@@ -73,30 +73,16 @@ private fun ProfileSection(post: OutfitPost) {
           modifier = Modifier.size(44.dp))
 
       // Profile picture or initial if no profile picture set
-      if (post.userProfilePicURL.isNotBlank()) {
-        AsyncImage(
-            model = post.userProfilePicURL,
-            contentDescription = "Profile picture",
-            contentScale = ContentScale.Crop,
-            modifier =
-                Modifier.size(36.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .testTag(OutfitPostCardTestTags.PROFILE_PIC))
-      } else {
-        Box(
-            modifier =
-                Modifier.size(36.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .testTag(OutfitPostCardTestTags.PROFILE_INITIAL),
-            contentAlignment = Alignment.Center) {
-              Text(
-                  text = post.name.firstOrNull()?.uppercase() ?: "",
-                  style = MaterialTheme.typography.titleMedium,
-                  color = MaterialTheme.colorScheme.onPrimary)
-            }
-      }
+      val profilePic = post.userProfilePicURL
+      val testTag =
+          OutfitPostCardTestTags.PROFILE_PIC.takeIf { profilePic.isNotBlank() }
+              ?: OutfitPostCardTestTags.PROFILE_INITIAL
+      ProfilePicture(
+          modifier = Modifier.testTag(testTag),
+          size = 36.dp,
+          profilePicture = profilePic,
+          username = post.name,
+          textStyle = MaterialTheme.typography.titleMedium)
     }
 
     Spacer(modifier = Modifier.width(8.dp))
