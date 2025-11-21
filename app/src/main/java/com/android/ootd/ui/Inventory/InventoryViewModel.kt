@@ -56,31 +56,52 @@ class InventoryViewModel(
   /**
    * Loads the user's inventory items using offline-first pattern.
    *
-   * Uses short timeout (5 seconds) for local cache reads. With Firestore persistence, reads from
-   * cache complete quickly even offline.
+   * First loads from cache immediately (non-blocking), then fetches fresh data in the background.
+   * This provides instant UI updates from cache while ensuring data freshness.
    */
   fun loadInventory() {
     viewModelScope.launch {
-      _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+      _uiState.value = _uiState.value.copy(errorMessage = null)
       try {
         val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
 
-        // Get the list of item IDs from the account (with timeout for offline)
-        val itemIds =
-            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
-              accountRepository.getItemsList(currentUserId)
-            } ?: emptyList()
+        val cachedItemIds = accountRepository.getItemsList(currentUserId)
 
-        // Fetch all items using the batch method (with timeout for offline)
-        val items =
-            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
-              itemsRepository.getItemsByIds(itemIds)
-            } ?: emptyList()
+        if (cachedItemIds.isNotEmpty()) {
+          val cachedItems = itemsRepository.getItemsByIds(cachedItemIds)
 
-        // Sort items by category using the predefined order
-        val sortedItems = sortItemsByCategory(items)
+          if (cachedItems.isNotEmpty()) {
+            // Display cached items immediately
+            val sortedCachedItems = sortItemsByCategory(cachedItems)
+            _uiState.value = _uiState.value.copy(items = sortedCachedItems, isLoading = false)
+          }
+        }
 
-        _uiState.value = _uiState.value.copy(items = sortedItems, isLoading = false)
+        viewModelScope.launch {
+          try {
+            val freshItemIds =
+                kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+                  accountRepository.getItemsList(currentUserId)
+                } ?: cachedItemIds
+
+            val freshItems =
+                kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+                  itemsRepository.getItemsByIds(freshItemIds)
+                } ?: emptyList()
+
+            if (freshItems.isNotEmpty() && freshItems != _uiState.value.items) {
+              val sortedFreshItems = sortItemsByCategory(freshItems)
+              _uiState.value = _uiState.value.copy(items = sortedFreshItems, isLoading = false)
+            }
+          } catch (e: Exception) {
+            // Silently fail background refresh -> user already sees cached data
+            if (_uiState.value.items.isEmpty()) {
+              _uiState.value =
+                  _uiState.value.copy(
+                      isLoading = false, errorMessage = "Failed to load inventory: ${e.message}")
+            }
+          }
+        }
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(
