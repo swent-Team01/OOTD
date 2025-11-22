@@ -4,12 +4,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,13 +16,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
 
@@ -133,7 +125,7 @@ fun AddItemsScreen(
   val imageScaleState = remember { mutableFloatStateOf(1f) }
 
   val nestedScrollConnection =
-      _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+      rememberImageResizeScrollConnection(
           currentImageSize = currentImageSizeState,
           imageScale = imageScaleState,
           minImageSize = minImageSize,
@@ -306,78 +298,86 @@ private fun FieldsList(
     additionalExpandedPreview: Boolean = false,
     conditionMenuExpandedPreview: Boolean = false,
 ) {
-  LazyColumn(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-    item {
-      ImagePickerRow(
-          onOpenDialog = { onShowDialogChange(true) },
-          showDialog = showDialog,
-          onDismissDialog = { onShowDialogChange(false) },
-          onTakePhoto = onTakePhoto,
-          onPickFromGallery = onPickFromGallery)
-    }
+  val detailsTags =
+      AdditionalDetailsTags(
+          toggle = AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE,
+          section = AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION,
+          conditionField = AddItemScreenTestTags.INPUT_CONDITION,
+          materialField = AddItemScreenTestTags.INPUT_MATERIAL,
+          fitTypeField = AddItemScreenTestTags.INPUT_FIT_TYPE,
+          fitTypeDropdown = AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS,
+          styleField = AddItemScreenTestTags.INPUT_STYLE,
+          styleDropdown = AddItemScreenTestTags.STYLE_SUGGESTIONS,
+          notesField = AddItemScreenTestTags.INPUT_NOTES)
 
-    item {
-      CategoryField(
-          category = category,
-          onChange = onCategoryChange,
-          testTag = AddItemScreenTestTags.INPUT_CATEGORY,
-          invalidCategory = invalidCategory,
-          onValidate = onCategoryValidate,
-          dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
-    }
-
-    item {
-      TypeField(
-          type = type,
-          suggestions = typeSuggestions,
-          onChange = onTypeChange,
-          testTag = AddItemScreenTestTags.INPUT_TYPE,
-          dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
-          expandOnChange = true)
-    }
-
-    item {
-      ItemPrimaryFields(
-          brand = brand,
-          onBrandChange = onBrandChange,
-          brandTag = AddItemScreenTestTags.INPUT_BRAND,
-          price = price,
-          onPriceChange = onPriceChange,
-          priceTag = AddItemScreenTestTags.INPUT_PRICE,
-          currency = currency,
-          onCurrencyChange = onCurrencyChange,
-          currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
-          size = size,
-          onSizeChange = onSizeChange,
-          sizeTag = AddItemScreenTestTags.INPUT_SIZE,
-          link = link,
-          onLinkChange = onLinkChange,
-          linkTag = AddItemScreenTestTags.INPUT_LINK)
-    }
-
-    item {
-      AdditionalDetailsSection(
-          condition = condition,
-          onConditionChange = onConditionChange,
-          material = material,
-          onMaterialChange = onMaterialChange,
-          fitType = fitType,
-          onFitTypeChange = onFitTypeChange,
-          style = style,
-          onStyleChange = onStyleChange,
-          notes = notes,
-          onNotesChange = onNotesChange,
-          expandedInitially = additionalExpandedPreview,
-          condExpandedInitially = conditionMenuExpandedPreview)
-    }
-
-    item {
-      Spacer(modifier = Modifier.height(24.dp))
-      AddItemButton(enabled = isAddEnabled, onClick = onAddClick)
-    }
-
-    item { Spacer(modifier = Modifier.height(100.dp)) }
-  }
+  ItemFieldsListLayout(
+      modifier = modifier,
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Top,
+      imagePickerContent = {
+        ImagePickerRow(
+            onOpenDialog = { onShowDialogChange(true) },
+            showDialog = showDialog,
+            onDismissDialog = { onShowDialogChange(false) },
+            onTakePhoto = onTakePhoto,
+            onPickFromGallery = onPickFromGallery)
+      },
+      categoryFieldContent = {
+        CategoryField(
+            category = category,
+            onChange = onCategoryChange,
+            testTag = AddItemScreenTestTags.INPUT_CATEGORY,
+            invalidCategory = invalidCategory,
+            onValidate = onCategoryValidate,
+            dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
+      },
+      typeFieldContent = {
+        TypeField(
+            type = type,
+            suggestions = typeSuggestions,
+            onChange = onTypeChange,
+            testTag = AddItemScreenTestTags.INPUT_TYPE,
+            dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
+            expandOnChange = true)
+      },
+      primaryFieldsContent = {
+        ItemPrimaryFields(
+            brand = brand,
+            onBrandChange = onBrandChange,
+            brandTag = AddItemScreenTestTags.INPUT_BRAND,
+            price = price,
+            onPriceChange = onPriceChange,
+            priceTag = AddItemScreenTestTags.INPUT_PRICE,
+            currency = currency,
+            onCurrencyChange = onCurrencyChange,
+            currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
+            size = size,
+            onSizeChange = onSizeChange,
+            sizeTag = AddItemScreenTestTags.INPUT_SIZE,
+            link = link,
+            onLinkChange = onLinkChange,
+            linkTag = AddItemScreenTestTags.INPUT_LINK)
+      },
+      additionalDetailsContent = {
+        AdditionalDetailsSection(
+            condition = condition,
+            onConditionChange = onConditionChange,
+            material = material,
+            onMaterialChange = onMaterialChange,
+            fitType = fitType,
+            onFitTypeChange = onFitTypeChange,
+            style = style,
+            onStyleChange = onStyleChange,
+            notes = notes,
+            onNotesChange = onNotesChange,
+            tags = detailsTags,
+            expandedInitially = additionalExpandedPreview,
+            condExpandedInitially = conditionMenuExpandedPreview)
+      },
+      actionButtonsContent = {
+        Spacer(modifier = Modifier.height(24.dp))
+        AddItemButton(enabled = isAddEnabled, onClick = onAddClick)
+      })
 }
 
 @Composable
@@ -450,80 +450,6 @@ private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
       }
 }
 
-@Composable
-private fun AdditionalDetailsSection(
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
-    fitType: String,
-    onFitTypeChange: (String) -> Unit,
-    style: String,
-    onStyleChange: (String) -> Unit,
-    notes: String,
-    onNotesChange: (String) -> Unit,
-    expandedInitially: Boolean = false,
-    condExpandedInitially: Boolean = false,
-) {
-  var expanded by remember { mutableStateOf(expandedInitially) }
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(vertical = 8.dp)
-                .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-          Icon(
-              imageVector =
-                  if (expanded) Icons.Filled.KeyboardArrowDown
-                  else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-              contentDescription = if (expanded) "Collapse" else "Expand",
-              tint = MaterialTheme.colorScheme.primary)
-          Text(
-              text = "Enter additional details",
-              style =
-                  MaterialTheme.typography.bodyLarge.copy(
-                      color = MaterialTheme.colorScheme.primary))
-        }
-
-    AnimatedVisibility(
-        visible = expanded,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()) {
-          Column(
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .testTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION)) {
-                ConditionDropdown(
-                    condition = condition,
-                    onConditionChange = onConditionChange,
-                    testTag = AddItemScreenTestTags.INPUT_CONDITION,
-                    expandedInitially = condExpandedInitially)
-                MaterialField(
-                    materialText = material,
-                    onChange = onMaterialChange,
-                    testTag = AddItemScreenTestTags.INPUT_MATERIAL)
-                FitTypeField(
-                    fitType = fitType,
-                    onChange = onFitTypeChange,
-                    testTag = AddItemScreenTestTags.INPUT_FIT_TYPE,
-                    dropdownTestTag = AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS)
-                StyleField(
-                    style = style,
-                    onChange = onStyleChange,
-                    testTag = AddItemScreenTestTags.INPUT_STYLE,
-                    dropdownTestTag = AddItemScreenTestTags.STYLE_SUGGESTIONS)
-                NotesField(
-                    notes = notes,
-                    onChange = onNotesChange,
-                    testTag = AddItemScreenTestTags.INPUT_NOTES)
-              }
-        }
-  }
-}
-
 @Preview(name = "Add Items", showBackground = true)
 @Composable
 fun AddItemsScreenSmallPreview() {
@@ -536,7 +462,7 @@ fun AddItemsScreenSmallPreview() {
     val imageScaleState = remember { mutableFloatStateOf(1f) }
 
     val nestedScrollConnection =
-        _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+        rememberImageResizeScrollConnection(
             currentImageSize = currentImageSizeState,
             imageScale = imageScaleState,
             minImageSize = minImageSize,
@@ -587,7 +513,7 @@ fun AddItemsScreenSmallPreview() {
                   notes = "Great condition",
                   onNotesChange = {},
                   additionalExpandedPreview = true,
-                  conditionMenuExpandedPreview = true)
+                  conditionMenuExpandedPreview = false)
               ItemsImagePreview(
                   localUri = null,
                   remoteUrl = "",

@@ -4,8 +4,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,13 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -53,6 +48,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 
@@ -110,7 +106,7 @@ fun EditItemsScreen(
   val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
   val imageScaleState = remember { mutableFloatStateOf(1f) }
   val nestedScrollConnection =
-      _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+      rememberImageResizeScrollConnection(
           currentImageSize = currentImageSizeState,
           imageScale = imageScaleState,
           minImageSize = minImageSize,
@@ -276,65 +272,81 @@ private fun FieldsList(
     additionalExpandedPreview: Boolean = false,
     conditionMenuExpandedPreview: Boolean = false,
 ) {
-  LazyColumn(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-    item { ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera) }
-    item {
-      CategoryField(
-          category = category,
-          onChange = onCategoryChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-    }
-    item {
-      TypeField(
-          type = type,
-          suggestions = suggestions,
-          onChange = onTypeChange,
-          testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
-          dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
-          onFocus = onTypeFocus)
-    }
-    item {
-      ItemPrimaryFields(
-          brand = brand,
-          onBrandChange = onBrandChange,
-          brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
-          price = price,
-          onPriceChange = onPriceChange,
-          priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
-          currency = currency,
-          onCurrencyChange = onCurrencyChange,
-          currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
-          size = size,
-          onSizeChange = onSizeChange,
-          sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
-          link = link,
-          onLinkChange = onLinkChange,
-          linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
-    }
-    item {
-      AdditionalDetailsSectionEdit(
-          condition = condition,
-          onConditionChange = onConditionChange,
-          material = material,
-          onMaterialChange = onMaterialChange,
-          fitType = fitType,
-          onFitTypeChange = onFitTypeChange,
-          style = style,
-          onStyleChange = onStyleChange,
-          notes = notes,
-          onNotesChange = onNotesChange,
-          expandedInitially = additionalExpandedPreview,
-          condExpandedInitially = conditionMenuExpandedPreview)
-    }
-    item {
-      SaveDeleteRow(
-          isDeleteEnabled = isDeleteEnabled,
-          onDelete = onDelete,
-          isSaveEnabled = isSaveEnabled,
-          onSave = onSave)
-    }
-    item { Spacer(modifier = Modifier.height(100.dp)) }
-  }
+  val detailsTags =
+      AdditionalDetailsTags(
+          toggle = EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE,
+          section = EditItemsScreenTestTags.ADDITIONAL_DETAILS_SECTION,
+          conditionField = EditItemsScreenTestTags.INPUT_ITEM_CONDITION,
+          materialField = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL,
+          fitTypeField = EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE,
+          fitTypeDropdown = EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS,
+          styleField = EditItemsScreenTestTags.INPUT_ITEM_STYLE,
+          styleDropdown = EditItemsScreenTestTags.STYLE_SUGGESTIONS,
+          notesField = EditItemsScreenTestTags.INPUT_ITEM_NOTES)
+
+  ItemFieldsListLayout(
+      modifier = modifier,
+      horizontalAlignment = Alignment.Start,
+      verticalArrangement = Arrangement.spacedBy(10.dp),
+      imagePickerContent = {
+        ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera)
+      },
+      categoryFieldContent = {
+        CategoryField(
+            category = category,
+            onChange = onCategoryChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
+      },
+      typeFieldContent = {
+        TypeField(
+            type = type,
+            suggestions = suggestions,
+            onChange = onTypeChange,
+            testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
+            dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
+            onFocus = onTypeFocus)
+      },
+      primaryFieldsContent = {
+        ItemPrimaryFields(
+            brand = brand,
+            onBrandChange = onBrandChange,
+            brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
+            price = price,
+            onPriceChange = onPriceChange,
+            priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
+            currency = currency,
+            onCurrencyChange = onCurrencyChange,
+            currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
+            size = size,
+            onSizeChange = onSizeChange,
+            sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
+            link = link,
+            onLinkChange = onLinkChange,
+            linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+      },
+      additionalDetailsContent = {
+        AdditionalDetailsSection(
+            condition = condition,
+            onConditionChange = onConditionChange,
+            material = material,
+            onMaterialChange = onMaterialChange,
+            fitType = fitType,
+            onFitTypeChange = onFitTypeChange,
+            style = style,
+            onStyleChange = onStyleChange,
+            notes = notes,
+            onNotesChange = onNotesChange,
+            tags = detailsTags,
+            expandedInitially = additionalExpandedPreview,
+            condExpandedInitially = conditionMenuExpandedPreview)
+      },
+      actionButtonsContent = {
+        SaveDeleteRow(
+            isDeleteEnabled = isDeleteEnabled,
+            onDelete = onDelete,
+            isSaveEnabled = isSaveEnabled,
+            onSave = onSave)
+      })
 }
 
 @Composable
@@ -393,74 +405,6 @@ private fun SaveDeleteRow(
   }
 }
 
-@Composable
-private fun AdditionalDetailsSectionEdit(
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
-    fitType: String,
-    onFitTypeChange: (String) -> Unit,
-    style: String,
-    onStyleChange: (String) -> Unit,
-    notes: String,
-    onNotesChange: (String) -> Unit,
-    expandedInitially: Boolean = false,
-    condExpandedInitially: Boolean = false,
-) {
-  var expanded by remember { mutableStateOf(expandedInitially) }
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(vertical = 8.dp)
-                .testTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-          Icon(
-              imageVector =
-                  if (expanded) Icons.Filled.KeyboardArrowDown
-                  else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-              contentDescription = if (expanded) "Collapse" else "Expand",
-              tint = MaterialTheme.colorScheme.primary)
-          Text(
-              text = "Enter additional details",
-              style =
-                  MaterialTheme.typography.bodyLarge.copy(
-                      color = MaterialTheme.colorScheme.primary))
-        }
-
-    AnimatedVisibility(visible = expanded) {
-      Column {
-        ConditionDropdown(
-            condition = condition,
-            onConditionChange = onConditionChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_CONDITION,
-            expandedInitially = condExpandedInitially)
-        MaterialField(
-            materialText = material,
-            onChange = onMaterialChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL)
-        FitTypeField(
-            fitType = fitType,
-            onChange = onFitTypeChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE,
-            dropdownTestTag = EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS)
-        StyleField(
-            style = style,
-            onChange = onStyleChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_STYLE,
-            dropdownTestTag = EditItemsScreenTestTags.STYLE_SUGGESTIONS)
-        NotesField(
-            notes = notes,
-            onChange = onNotesChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_NOTES)
-      }
-    }
-  }
-}
-
 @Preview(name = "Edit Items", showBackground = true)
 @Composable
 fun EditItemsScreenSmallPreview() {
@@ -472,7 +416,7 @@ fun EditItemsScreenSmallPreview() {
     val imageScaleState = remember { mutableFloatStateOf(1f) }
 
     val nestedScrollConnection =
-        _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+        rememberImageResizeScrollConnection(
             currentImageSize = currentImageSizeState,
             imageScale = imageScaleState,
             minImageSize = minImageSize,
@@ -521,7 +465,7 @@ fun EditItemsScreenSmallPreview() {
                   material = "Cotton 80%, Wool 20%",
                   onMaterialChange = {},
                   additionalExpandedPreview = true,
-                  conditionMenuExpandedPreview = true)
+                  conditionMenuExpandedPreview = false)
 
               ItemsImagePreview(
                   localUri = null,
