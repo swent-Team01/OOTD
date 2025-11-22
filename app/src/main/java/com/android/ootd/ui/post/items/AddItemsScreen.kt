@@ -312,72 +312,78 @@ private fun FieldsList(
 
   ItemFieldsListLayout(
       modifier = modifier,
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Top,
-      imagePickerContent = {
-        ImagePickerRow(
-            onOpenDialog = { onShowDialogChange(true) },
-            showDialog = showDialog,
-            onDismissDialog = { onShowDialogChange(false) },
-            onTakePhoto = onTakePhoto,
-            onPickFromGallery = onPickFromGallery)
-      },
-      categoryFieldContent = {
-        CategoryField(
-            category = category,
-            onChange = onCategoryChange,
-            testTag = AddItemScreenTestTags.INPUT_CATEGORY,
-            invalidCategory = invalidCategory,
-            onValidate = onCategoryValidate,
-            dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
-      },
-      typeFieldContent = {
-        TypeField(
-            type = type,
-            suggestions = typeSuggestions,
-            onChange = onTypeChange,
-            testTag = AddItemScreenTestTags.INPUT_TYPE,
-            dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
-            expandOnChange = true)
-      },
-      primaryFieldsContent = {
-        ItemPrimaryFields(
-            brand = brand,
-            onBrandChange = onBrandChange,
-            brandTag = AddItemScreenTestTags.INPUT_BRAND,
-            price = price,
-            onPriceChange = onPriceChange,
-            priceTag = AddItemScreenTestTags.INPUT_PRICE,
-            currency = currency,
-            onCurrencyChange = onCurrencyChange,
-            currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
-            size = size,
-            onSizeChange = onSizeChange,
-            sizeTag = AddItemScreenTestTags.INPUT_SIZE,
-            link = link,
-            onLinkChange = onLinkChange,
-            linkTag = AddItemScreenTestTags.INPUT_LINK)
-      },
-      additionalDetailsContent = {
-        AdditionalDetailsSection(
-            condition = condition,
-            onConditionChange = onConditionChange,
-            material = material,
-            onMaterialChange = onMaterialChange,
-            fitType = fitType,
-            onFitTypeChange = onFitTypeChange,
-            style = style,
-            onStyleChange = onStyleChange,
-            notes = notes,
-            onNotesChange = onNotesChange,
-            tags = detailsTags,
-            expandedInitially = additionalExpandedPreview,
-            condExpandedInitially = conditionMenuExpandedPreview)
-      },
-      actionButtonsContent = {
-        Spacer(modifier = Modifier.height(24.dp))
-        AddItemButton(enabled = isAddEnabled, onClick = onAddClick)
-      })
+      layoutConfig =
+          ItemFieldsLayoutConfig(
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.Top),
+      slots =
+          ItemFieldsListSlots(
+              imagePicker = {
+                ImagePickerRow(
+                    onOpenDialog = { onShowDialogChange(true) },
+                    showDialog = showDialog,
+                    onDismissDialog = { onShowDialogChange(false) },
+                    onTakePhoto = onTakePhoto,
+                    onPickFromGallery = onPickFromGallery)
+              },
+              categoryField = {
+                CategoryField(
+                    category = category,
+                    onChange = onCategoryChange,
+                    testTag = AddItemScreenTestTags.INPUT_CATEGORY,
+                    invalidCategory = invalidCategory,
+                    onValidate = onCategoryValidate,
+                    dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
+              },
+              typeField = {
+                TypeField(
+                    type = type,
+                    suggestions = typeSuggestions,
+                    onChange = onTypeChange,
+                    testTag = AddItemScreenTestTags.INPUT_TYPE,
+                    dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
+                    expandOnChange = true)
+              },
+              primaryFields = {
+                ItemPrimaryFields(
+                    brand = brand,
+                    onBrandChange = onBrandChange,
+                    brandTag = AddItemScreenTestTags.INPUT_BRAND,
+                    price = price,
+                    onPriceChange = onPriceChange,
+                    priceTag = AddItemScreenTestTags.INPUT_PRICE,
+                    currency = currency,
+                    onCurrencyChange = onCurrencyChange,
+                    currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
+                    size = size,
+                    onSizeChange = onSizeChange,
+                    sizeTag = AddItemScreenTestTags.INPUT_SIZE,
+                    link = link,
+                    onLinkChange = onLinkChange,
+                    linkTag = AddItemScreenTestTags.INPUT_LINK)
+              },
+              additionalDetails = {
+                AdditionalDetailsSection(
+                    state =
+                        AdditionalDetailsState(
+                            condition = condition,
+                            onConditionChange = onConditionChange,
+                            material = material,
+                            onMaterialChange = onMaterialChange,
+                            fitType = fitType,
+                            onFitTypeChange = onFitTypeChange,
+                            style = style,
+                            onStyleChange = onStyleChange,
+                            notes = notes,
+                            onNotesChange = onNotesChange,
+                            expandedInitially = additionalExpandedPreview,
+                            condExpandedInitially = conditionMenuExpandedPreview),
+                    tags = detailsTags)
+              },
+              actionButtons = {
+                Spacer(modifier = Modifier.height(24.dp))
+                AddItemButton(enabled = isAddEnabled, onClick = onAddClick)
+              }))
 }
 
 @Composable

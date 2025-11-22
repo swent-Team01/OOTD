@@ -286,67 +286,73 @@ private fun FieldsList(
 
   ItemFieldsListLayout(
       modifier = modifier,
-      horizontalAlignment = Alignment.Start,
-      verticalArrangement = Arrangement.spacedBy(10.dp),
-      imagePickerContent = {
-        ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera)
-      },
-      categoryFieldContent = {
-        CategoryField(
-            category = category,
-            onChange = onCategoryChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-      },
-      typeFieldContent = {
-        TypeField(
-            type = type,
-            suggestions = suggestions,
-            onChange = onTypeChange,
-            testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
-            dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
-            onFocus = onTypeFocus)
-      },
-      primaryFieldsContent = {
-        ItemPrimaryFields(
-            brand = brand,
-            onBrandChange = onBrandChange,
-            brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
-            price = price,
-            onPriceChange = onPriceChange,
-            priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
-            currency = currency,
-            onCurrencyChange = onCurrencyChange,
-            currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
-            size = size,
-            onSizeChange = onSizeChange,
-            sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
-            link = link,
-            onLinkChange = onLinkChange,
-            linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
-      },
-      additionalDetailsContent = {
-        AdditionalDetailsSection(
-            condition = condition,
-            onConditionChange = onConditionChange,
-            material = material,
-            onMaterialChange = onMaterialChange,
-            fitType = fitType,
-            onFitTypeChange = onFitTypeChange,
-            style = style,
-            onStyleChange = onStyleChange,
-            notes = notes,
-            onNotesChange = onNotesChange,
-            tags = detailsTags,
-            expandedInitially = additionalExpandedPreview,
-            condExpandedInitially = conditionMenuExpandedPreview)
-      },
-      actionButtonsContent = {
-        SaveDeleteRow(
-            isDeleteEnabled = isDeleteEnabled,
-            onDelete = onDelete,
-            isSaveEnabled = isSaveEnabled,
-            onSave = onSave)
-      })
+      layoutConfig =
+          ItemFieldsLayoutConfig(
+              horizontalAlignment = Alignment.Start,
+              verticalArrangement = Arrangement.spacedBy(10.dp)),
+      slots =
+          ItemFieldsListSlots(
+              imagePicker = {
+                ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera)
+              },
+              categoryField = {
+                CategoryField(
+                    category = category,
+                    onChange = onCategoryChange,
+                    testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
+              },
+              typeField = {
+                TypeField(
+                    type = type,
+                    suggestions = suggestions,
+                    onChange = onTypeChange,
+                    testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
+                    dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
+                    onFocus = onTypeFocus)
+              },
+              primaryFields = {
+                ItemPrimaryFields(
+                    brand = brand,
+                    onBrandChange = onBrandChange,
+                    brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
+                    price = price,
+                    onPriceChange = onPriceChange,
+                    priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
+                    currency = currency,
+                    onCurrencyChange = onCurrencyChange,
+                    currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
+                    size = size,
+                    onSizeChange = onSizeChange,
+                    sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
+                    link = link,
+                    onLinkChange = onLinkChange,
+                    linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+              },
+              additionalDetails = {
+                AdditionalDetailsSection(
+                    state =
+                        AdditionalDetailsState(
+                            condition = condition,
+                            onConditionChange = onConditionChange,
+                            material = material,
+                            onMaterialChange = onMaterialChange,
+                            fitType = fitType,
+                            onFitTypeChange = onFitTypeChange,
+                            style = style,
+                            onStyleChange = onStyleChange,
+                            notes = notes,
+                            onNotesChange = onNotesChange,
+                            expandedInitially = additionalExpandedPreview,
+                            condExpandedInitially = conditionMenuExpandedPreview),
+                    tags = detailsTags)
+              },
+              actionButtons = {
+                SaveDeleteRow(
+                    isDeleteEnabled = isDeleteEnabled,
+                    onDelete = onDelete,
+                    isSaveEnabled = isSaveEnabled,
+                    onSave = onSave)
+              }))
 }
 
 @Composable

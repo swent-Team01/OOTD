@@ -175,11 +175,13 @@ fun TypeField(
   SuggestionsDropdownField(
       value = type,
       onValueChange = onChange,
-      label = "Type",
-      placeholder = "Enter a type",
       suggestions = suggestions,
-      testTag = testTag,
-      dropdownTestTag = dropdownTestTag,
+      visuals =
+          SuggestionsDropdownVisuals(
+              label = "Type",
+              placeholder = "Enter a type",
+              textFieldTag = testTag,
+              dropdownTestTag = dropdownTestTag),
       onFocus = onFocus,
       expandOnChange = expandOnChange,
       filter = { input, options ->
@@ -256,11 +258,13 @@ fun StyleField(
   SuggestionsDropdownField(
       value = style,
       onValueChange = onChange,
-      label = "Item style",
-      placeholder = "e.g., Streetwear, Formal",
       suggestions = suggestions,
-      testTag = testTag,
-      dropdownTestTag = dropdownTestTag)
+      visuals =
+          SuggestionsDropdownVisuals(
+              label = "Item style",
+              placeholder = "e.g., Streetwear, Formal",
+              textFieldTag = testTag,
+              dropdownTestTag = dropdownTestTag))
 }
 
 /** Autocomplete-style field for item fit type suggestions. */
@@ -275,11 +279,13 @@ fun FitTypeField(
   SuggestionsDropdownField(
       value = fitType,
       onValueChange = onChange,
-      label = "Item fit type",
-      placeholder = "e.g., oversized, slim",
       suggestions = suggestions,
-      testTag = testTag,
-      dropdownTestTag = dropdownTestTag)
+      visuals =
+          SuggestionsDropdownVisuals(
+              label = "Item fit type",
+              placeholder = "e.g., oversized, slim",
+              textFieldTag = testTag,
+              dropdownTestTag = dropdownTestTag))
 }
 
 /** Reusable text field for link input */
@@ -333,12 +339,14 @@ fun CurrencyField(
   SelectionDropdownField(
       value = currency,
       onOptionSelected = onChange,
-      label = label,
-      placeholder = "Select currency",
-      testTag = testTag,
-      dropdownTestTag = dropdownTestTag,
       options = options,
-      toggleContentDescription = "Toggle currency options")
+      visuals =
+          SelectionDropdownVisuals(
+              label = label,
+              placeholder = "Select currency",
+              textFieldTag = testTag,
+              toggleContentDescription = "Toggle currency options",
+              dropdownTestTag = dropdownTestTag))
 }
 
 /** Shared condition dropdown used by add/edit screens. */
@@ -353,14 +361,15 @@ fun ConditionDropdown(
   SelectionDropdownField(
       value = condition.ifEmpty { "" },
       onOptionSelected = onConditionChange,
-      label = "Condition",
-      placeholder = "Select condition",
-      testTag = testTag,
+      visuals =
+          SelectionDropdownVisuals(
+              label = "Condition",
+              placeholder = "Select condition",
+              textFieldTag = testTag,
+              toggleContentDescription = "Toggle condition options",
+              clearOptionLabel = "Clear condition"),
       options = options,
-      expandedInitially = expandedInitially,
-      toggleContentDescription = "Toggle condition options",
-      showClearOption = true,
-      clearLabel = "Clear condition")
+      expandedInitially = expandedInitially)
 }
 
 /** Reusable multi-line notes field sharing the same styling as other inputs. */
@@ -466,15 +475,9 @@ fun commonTextFieldColors() =
 private fun SelectionDropdownField(
     value: String,
     onOptionSelected: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    testTag: String,
     options: List<String>,
-    toggleContentDescription: String,
-    dropdownTestTag: String? = null,
-    expandedInitially: Boolean = false,
-    showClearOption: Boolean = false,
-    clearLabel: String = "Clear selection"
+    visuals: SelectionDropdownVisuals,
+    expandedInitially: Boolean = false
 ) {
   var expanded by remember { mutableStateOf(expandedInitially) }
   Column(Modifier.fillMaxWidth()) {
@@ -482,27 +485,28 @@ private fun SelectionDropdownField(
         value = value,
         onValueChange = {},
         readOnly = true,
-        label = { Text(label) },
-        placeholder = { Text(placeholder) },
+        label = { Text(visuals.label) },
+        placeholder = { Text(visuals.placeholder) },
         trailingIcon = {
           IconButton(onClick = { expanded = !expanded }) {
             Icon(
                 imageVector =
                     if (expanded) Icons.Filled.KeyboardArrowDown
                     else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = toggleContentDescription,
+                contentDescription = visuals.toggleContentDescription,
                 tint = MaterialTheme.colorScheme.primary)
           }
         },
         textStyle =
             MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
         colors = commonTextFieldColors(),
-        modifier = Modifier.fillMaxWidth().testTag(testTag))
+        modifier = Modifier.fillMaxWidth().testTag(visuals.textFieldTag))
     val menuModifier =
-        dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) } ?: Modifier.fillMaxWidth()
+        visuals.dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
+            ?: Modifier.fillMaxWidth()
     DropdownMenu(
         expanded = expanded, onDismissRequest = { expanded = false }, modifier = menuModifier) {
-          if (showClearOption) {
+          visuals.clearOptionLabel?.let { clearLabel ->
             DropdownMenuItem(
                 text = {
                   Text(
@@ -538,11 +542,8 @@ private fun SelectionDropdownField(
 private fun SuggestionsDropdownField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
     suggestions: List<String>,
-    testTag: String,
-    dropdownTestTag: String,
+    visuals: SuggestionsDropdownVisuals,
     onFocus: (() -> Unit)? = null,
     expandOnChange: Boolean = false,
     filter: (String, List<String>) -> List<String> = ::filterDropdownSuggestions,
@@ -560,10 +561,10 @@ private fun SuggestionsDropdownField(
           onValueChange(it)
           expanded = if (expandOnChange) it.isNotBlank() else true
         },
-        label = { Text(label) },
-        placeholder = { Text(placeholder) },
+        label = { Text(visuals.label) },
+        placeholder = { Text(visuals.placeholder) },
         modifier =
-            Modifier.fillMaxWidth().testTag(testTag).onFocusChanged { focusState ->
+            Modifier.fillMaxWidth().testTag(visuals.textFieldTag).onFocusChanged { focusState ->
               if (focusState.isFocused) {
                 onFocus?.invoke()
                 expanded = focusExpansion(true, filtered.isNotEmpty())
@@ -579,7 +580,7 @@ private fun SuggestionsDropdownField(
     DropdownMenu(
         expanded = expanded && filtered.isNotEmpty(),
         onDismissRequest = { expanded = false },
-        modifier = Modifier.fillMaxWidth().testTag(dropdownTestTag),
+        modifier = Modifier.fillMaxWidth().testTag(visuals.dropdownTestTag),
         properties = PopupProperties(focusable = false)) {
           filtered.forEach { suggestion ->
             DropdownMenuItem(
@@ -598,3 +599,19 @@ private fun SuggestionsDropdownField(
         }
   }
 }
+
+private data class SelectionDropdownVisuals(
+    val label: String,
+    val placeholder: String,
+    val textFieldTag: String,
+    val toggleContentDescription: String,
+    val dropdownTestTag: String? = null,
+    val clearOptionLabel: String? = null
+)
+
+private data class SuggestionsDropdownVisuals(
+    val label: String,
+    val placeholder: String,
+    val textFieldTag: String,
+    val dropdownTestTag: String
+)

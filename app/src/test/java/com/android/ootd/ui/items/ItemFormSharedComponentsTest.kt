@@ -14,8 +14,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.post.items.AdditionalDetailsSection
+import com.android.ootd.ui.post.items.AdditionalDetailsState
 import com.android.ootd.ui.post.items.AdditionalDetailsTags
+import com.android.ootd.ui.post.items.ItemFieldsLayoutConfig
 import com.android.ootd.ui.post.items.ItemFieldsListLayout
+import com.android.ootd.ui.post.items.ItemFieldsListSlots
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,16 +45,18 @@ class ItemFormSharedComponentsTest {
   fun additionalDetailsSection_collapsesAndExpandsOnToggle() {
     composeTestRule.setContent {
       AdditionalDetailsSection(
-          condition = "New",
-          onConditionChange = {},
-          material = "Cotton 80%",
-          onMaterialChange = {},
-          fitType = "Regular",
-          onFitTypeChange = {},
-          style = "Casual",
-          onStyleChange = {},
-          notes = "Great condition",
-          onNotesChange = {},
+          state =
+              AdditionalDetailsState(
+                  condition = "New",
+                  onConditionChange = {},
+                  material = "Cotton 80%",
+                  onMaterialChange = {},
+                  fitType = "Regular",
+                  onFitTypeChange = {},
+                  style = "Casual",
+                  onStyleChange = {},
+                  notes = "Great condition",
+                  onNotesChange = {}),
           tags = tags)
     }
 
@@ -66,19 +71,21 @@ class ItemFormSharedComponentsTest {
   fun additionalDetailsSection_respectsInitialExpansion() {
     composeTestRule.setContent {
       AdditionalDetailsSection(
-          condition = "Used",
-          onConditionChange = {},
-          material = "Wool",
-          onMaterialChange = {},
-          fitType = "Slim",
-          onFitTypeChange = {},
-          style = "Formal",
-          onStyleChange = {},
-          notes = "",
-          onNotesChange = {},
-          tags = tags,
-          expandedInitially = true,
-          condExpandedInitially = true)
+          state =
+              AdditionalDetailsState(
+                  condition = "Used",
+                  onConditionChange = {},
+                  material = "Wool",
+                  onMaterialChange = {},
+                  fitType = "Slim",
+                  onFitTypeChange = {},
+                  style = "Formal",
+                  onStyleChange = {},
+                  notes = "",
+                  onNotesChange = {},
+                  expandedInitially = true,
+                  condExpandedInitially = true),
+          tags = tags)
     }
 
     composeTestRule.onNodeWithTag(tags.conditionField).assertIsDisplayed()
@@ -89,14 +96,19 @@ class ItemFormSharedComponentsTest {
     composeTestRule.setContent {
       ItemFieldsListLayout(
           modifier = Modifier,
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(8.dp),
-          imagePickerContent = { Box(Modifier.size(1.dp).testTag("imageSlot")) },
-          categoryFieldContent = { Box(Modifier.size(1.dp).testTag("categorySlot")) },
-          typeFieldContent = { Box(Modifier.size(1.dp).testTag("typeSlot")) },
-          primaryFieldsContent = { Box(Modifier.size(1.dp).testTag("primarySlot")) },
-          additionalDetailsContent = { Box(Modifier.size(1.dp).testTag("detailsSlot")) },
-          actionButtonsContent = { Box(Modifier.size(1.dp).testTag("actionsSlot")) })
+          layoutConfig =
+              ItemFieldsLayoutConfig(
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                  verticalArrangement = Arrangement.spacedBy(8.dp),
+                  bottomSpacer = 0.dp),
+          slots =
+              ItemFieldsListSlots(
+                  imagePicker = { Box(Modifier.size(1.dp).testTag("imageSlot")) },
+                  categoryField = { Box(Modifier.size(1.dp).testTag("categorySlot")) },
+                  typeField = { Box(Modifier.size(1.dp).testTag("typeSlot")) },
+                  primaryFields = { Box(Modifier.size(1.dp).testTag("primarySlot")) },
+                  additionalDetails = { Box(Modifier.size(1.dp).testTag("detailsSlot")) },
+                  actionButtons = { Box(Modifier.size(1.dp).testTag("actionsSlot")) }))
     }
 
     composeTestRule.onNodeWithTag("imageSlot").assertIsDisplayed()

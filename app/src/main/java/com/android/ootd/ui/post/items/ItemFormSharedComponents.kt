@@ -44,24 +44,28 @@ data class AdditionalDetailsTags(
     val notesField: String,
 )
 
+data class AdditionalDetailsState(
+    val condition: String,
+    val onConditionChange: (String) -> Unit,
+    val material: String,
+    val onMaterialChange: (String) -> Unit,
+    val fitType: String,
+    val onFitTypeChange: (String) -> Unit,
+    val style: String,
+    val onStyleChange: (String) -> Unit,
+    val notes: String,
+    val onNotesChange: (String) -> Unit,
+    val expandedInitially: Boolean = false,
+    val condExpandedInitially: Boolean = false
+)
+
 @Composable
 fun AdditionalDetailsSection(
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
-    fitType: String,
-    onFitTypeChange: (String) -> Unit,
-    style: String,
-    onStyleChange: (String) -> Unit,
-    notes: String,
-    onNotesChange: (String) -> Unit,
+    state: AdditionalDetailsState,
     tags: AdditionalDetailsTags,
-    expandedInitially: Boolean = false,
-    condExpandedInitially: Boolean = false,
     title: String = "Enter additional details"
 ) {
-  var expanded by remember { mutableStateOf(expandedInitially) }
+  var expanded by remember { mutableStateOf(state.expandedInitially) }
   Column(modifier = Modifier.fillMaxWidth()) {
     Row(
         modifier =
@@ -91,51 +95,62 @@ fun AdditionalDetailsSection(
         exit = fadeOut() + shrinkVertically()) {
           Column(modifier = Modifier.fillMaxWidth().testTag(tags.section)) {
             ConditionDropdown(
-                condition = condition,
-                onConditionChange = onConditionChange,
+                condition = state.condition,
+                onConditionChange = state.onConditionChange,
                 testTag = tags.conditionField,
-                expandedInitially = condExpandedInitially)
+                expandedInitially = state.condExpandedInitially)
             MaterialField(
-                materialText = material, onChange = onMaterialChange, testTag = tags.materialField)
+                materialText = state.material,
+                onChange = state.onMaterialChange,
+                testTag = tags.materialField)
             FitTypeField(
-                fitType = fitType,
-                onChange = onFitTypeChange,
+                fitType = state.fitType,
+                onChange = state.onFitTypeChange,
                 testTag = tags.fitTypeField,
                 dropdownTestTag = tags.fitTypeDropdown)
             StyleField(
-                style = style,
-                onChange = onStyleChange,
+                style = state.style,
+                onChange = state.onStyleChange,
                 testTag = tags.styleField,
                 dropdownTestTag = tags.styleDropdown)
-            NotesField(notes = notes, onChange = onNotesChange, testTag = tags.notesField)
+            NotesField(
+                notes = state.notes, onChange = state.onNotesChange, testTag = tags.notesField)
           }
         }
   }
 }
 
+data class ItemFieldsLayoutConfig(
+    val horizontalAlignment: Alignment.Horizontal,
+    val verticalArrangement: Arrangement.Vertical,
+    val bottomSpacer: Dp = 100.dp
+)
+
+data class ItemFieldsListSlots(
+    val imagePicker: @Composable () -> Unit,
+    val categoryField: @Composable () -> Unit,
+    val typeField: @Composable () -> Unit,
+    val primaryFields: @Composable () -> Unit,
+    val additionalDetails: @Composable () -> Unit,
+    val actionButtons: @Composable () -> Unit
+)
+
 @Composable
 fun ItemFieldsListLayout(
     modifier: Modifier,
-    horizontalAlignment: Alignment.Horizontal,
-    verticalArrangement: Arrangement.Vertical,
-    imagePickerContent: @Composable () -> Unit,
-    categoryFieldContent: @Composable () -> Unit,
-    typeFieldContent: @Composable () -> Unit,
-    primaryFieldsContent: @Composable () -> Unit,
-    additionalDetailsContent: @Composable () -> Unit,
-    actionButtonsContent: @Composable () -> Unit,
-    bottomSpacer: Dp = 100.dp
+    layoutConfig: ItemFieldsLayoutConfig,
+    slots: ItemFieldsListSlots
 ) {
   LazyColumn(
       modifier = modifier,
-      horizontalAlignment = horizontalAlignment,
-      verticalArrangement = verticalArrangement) {
-        item { imagePickerContent() }
-        item { categoryFieldContent() }
-        item { typeFieldContent() }
-        item { primaryFieldsContent() }
-        item { additionalDetailsContent() }
-        item { actionButtonsContent() }
-        item { Spacer(modifier = Modifier.height(bottomSpacer)) }
+      horizontalAlignment = layoutConfig.horizontalAlignment,
+      verticalArrangement = layoutConfig.verticalArrangement) {
+        item { slots.imagePicker() }
+        item { slots.categoryField() }
+        item { slots.typeField() }
+        item { slots.primaryFields() }
+        item { slots.additionalDetails() }
+        item { slots.actionButtons() }
+        item { Spacer(modifier = Modifier.height(layoutConfig.bottomSpacer)) }
       }
 }
