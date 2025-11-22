@@ -3,7 +3,9 @@ package com.android.ootd
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -81,6 +83,7 @@ object HttpClientProvider {
 }
 
 const val OOTD_CHANNEL_ID = "ootd_channel"
+const val NOTIFICATION_CLICK_ACTION = "com.android.ootd.NOTIFICATION_CLICK"
 
 /** Function to create the notification channel for push notifications */
 fun createNotificationChannel(context: Context) {
@@ -115,10 +118,17 @@ class MainActivity : ComponentActivity() {
         Surface(
             modifier = Modifier.fillMaxSize(),
         ) {
-          OOTDApp()
+          // Check if activity was launched from notification
+          val shouldNavigateToNotifications = intent?.action == NOTIFICATION_CLICK_ACTION
+          OOTDApp(shouldNavigateToNotifications = shouldNavigateToNotifications)
         }
       }
     }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
   }
 }
 
@@ -132,6 +142,7 @@ class MainActivity : ComponentActivity() {
  * @param context Compose-provided [Context], defaults to [LocalContext].
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
  * @param testMode Used for overriding permission screens for testing mode
+ * @param shouldNavigateToNotifications Whether to navigate to notifications screen on launch
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -140,11 +151,23 @@ fun OOTDApp(
     credentialManager: CredentialManager = CredentialManager.create(context),
     testNavController: NavHostController? = null,
     testStartDestination: String? = null,
-    testMode: Boolean = false
+    testMode: Boolean = false,
+    shouldNavigateToNotifications: Boolean = false
 ) {
   val navController = testNavController ?: rememberNavController()
   val navigationActions = remember { NavigationActions(navController) }
   val startDestination = testStartDestination ?: Screen.Splash.route
+
+  // Navigate to notifications screen if launched from notification
+  LaunchedEffect(shouldNavigateToNotifications) {
+    if (shouldNavigateToNotifications) {
+      // Wait for navigation to be ready and user to be authenticated
+      navController.navigate(Screen.NotificationsScreen.route) {
+        // Don't pop the back stack, allow user to navigate back normally
+        launchSingleTop = true
+      }
+    }
+  }
 
   // Observe nav backstack to reactively show the bottom bar
   val navBackStackEntry = navController.currentBackStackEntryAsState()
@@ -167,7 +190,9 @@ fun OOTDApp(
       testMode ||
           ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
               PackageManager.PERMISSION_GRANTED
-  var listenerRegistration: ListenerRegistration? = null
+
+  // Use remember to persist listener across recompositions
+  val listenerRegistration = remember { mutableListOf<ListenerRegistration?>().apply { add(null) } }
 
   /**
    * Pushes given notification
@@ -179,11 +204,27 @@ fun OOTDApp(
   fun sendLocalNotification(notification: Notification) {
     val manager = NotificationManagerCompat.from(context)
 
+    // Create intent to open MainActivity with notification click action
+    val intent =
+        Intent(context, MainActivity::class.java).apply {
+          action = NOTIFICATION_CLICK_ACTION
+          flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+    val pendingIntent =
+        PendingIntent.getActivity(
+            context,
+            notification.uid.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
     val builder =
         NotificationCompat.Builder(context, "ootd_channel")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(notification.getNotificationMessage())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true) // Dismiss notification when clicked
 
     manager.notify(notification.uid.hashCode(), builder.build())
   }
@@ -194,7 +235,7 @@ fun OOTDApp(
    * If a listener was already created, it does nothing.
    */
   fun observeUnpushedNotifications(userId: String) {
-    if (listenerRegistration != null) return
+    if (listenerRegistration[0] != null) return
 
     if (testMode) {
       sendLocalNotification(
@@ -202,14 +243,15 @@ fun OOTDApp(
               uid = "", senderId = "", receiverId = "", type = "", content = "", wasPushed = false))
     }
 
-    listenerRegistration =
+    listenerRegistration[0] =
         NotificationRepositoryProvider.repository.listenForUnpushedNotifications(
             receiverId = userId) { notification ->
               sendLocalNotification(notification)
             }
   }
 
-  LaunchedEffect(Unit) {
+  // Watch for permission changes and create listener when granted
+  LaunchedEffect(isNotificationsPermissionGranted) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: ""
     if ((testMode || currentUserId.isNotEmpty()) && isNotificationsPermissionGranted) {
       createNotificationChannel(context)

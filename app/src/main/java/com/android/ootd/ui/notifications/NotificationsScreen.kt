@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -57,12 +60,18 @@ fun NotificationsScreen(
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
 
-  val permissionLauncher =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+  // Track permission state to trigger recomposition
+  var isNotificationsPermissionGranted by remember {
+    mutableStateOf(
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED)
+  }
 
-  val isNotificationsPermissionGranted =
-      ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-          PackageManager.PERMISSION_GRANTED
+  val permissionLauncher =
+      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        // Update state when permission result comes back
+        isNotificationsPermissionGranted = isGranted
+      }
 
   Column(
       modifier =
