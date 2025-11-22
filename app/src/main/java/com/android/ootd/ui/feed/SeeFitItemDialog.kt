@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -31,8 +32,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
@@ -79,128 +82,88 @@ fun SeeItemDetailsDialog(
                     error = painterResource(R.drawable.ic_photo_placeholder),
                     contentScale = ContentScale.Crop)
 
-                Text(
-                    text = item.category,
-                    style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CATEGORY))
+                DetailTextRow(
+                    label = "Category",
+                    value = item.category,
+                    tag = SeeFitScreenTestTags.ITEM_CATEGORY)
 
                 item.type
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      Text(
-                          text = it,
-                          style =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
-                          textAlign = TextAlign.Center,
-                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_TYPE))
+                      DetailTextRow(
+                          label = "Type", value = it, tag = SeeFitScreenTestTags.ITEM_TYPE)
                     }
 
                 item.brand
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      Text(
-                          text = it,
-                          style =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
-                          textAlign = TextAlign.Center,
-                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_BRAND))
+                      DetailTextRow(
+                          label = "Brand", value = it, tag = SeeFitScreenTestTags.ITEM_BRAND)
                     }
 
                 item.price?.let {
                   val c = item.currency ?: "CHF"
-                  Text(
-                      text = "$c ${String.format("%.2f", it)}",
-                      style =
-                          MaterialTheme.typography.bodyLarge.copy(
-                              color = MaterialTheme.colorScheme.onSurfaceVariant),
-                      textAlign = TextAlign.Center,
-                      modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_PRICE))
+                  DetailTextRow(
+                      label = "Price",
+                      value = "${String.format("%.2f", it)} $c",
+                      tag = SeeFitScreenTestTags.ITEM_PRICE)
                 }
 
                 if (item.material.isNotEmpty()) {
                   val materialText =
                       item.material
                           .mapNotNull { material ->
-                            material?.let { material ->
-                              val percentage =
-                                  material.percentage.let { String.format("%.0f %%", it) }
-                              listOfNotNull(material.name, percentage).joinToString(" ")
+                            material?.let { entry ->
+                              val percentage = entry.percentage.let { String.format("%.0f %%", it) }
+                              listOfNotNull(entry.name, percentage).joinToString(" ")
                             }
                           }
                           .joinToString(separator = " - ")
 
-                  Text(
-                      text = materialText,
-                      style =
-                          MaterialTheme.typography.bodyLarge.copy(
-                              color = MaterialTheme.colorScheme.onSurfaceVariant),
-                      textAlign = TextAlign.Center,
-                      modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_MATERIAL))
+                  DetailTextRow(
+                      label = "Material",
+                      value = materialText,
+                      tag = SeeFitScreenTestTags.ITEM_MATERIAL)
                 }
 
                 item.condition
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      Text(
-                          text = "Condition: $it",
-                          style =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
-                          textAlign = TextAlign.Center,
-                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CONDITION))
+                      DetailTextRow(
+                          label = "Condition",
+                          value = it,
+                          tag = SeeFitScreenTestTags.ITEM_CONDITION)
                     }
 
                 item.size
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      Text(
-                          text = "Size: $it",
-                          style =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
-                          textAlign = TextAlign.Center,
-                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_SIZE))
+                      DetailTextRow(
+                          label = "Size", value = it, tag = SeeFitScreenTestTags.ITEM_SIZE)
                     }
 
                 item.fitType
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      Text(
-                          text = "Fit: $it",
-                          style =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
-                          textAlign = TextAlign.Center,
-                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_FIT_TYPE))
+                      DetailTextRow(
+                          label = "Fit", value = it, tag = SeeFitScreenTestTags.ITEM_FIT_TYPE)
                     }
 
                 item.style
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      Text(
-                          text = "Style: $it",
-                          style =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
-                          textAlign = TextAlign.Center,
-                          modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_STYLE))
+                      DetailTextRow(
+                          label = "Style", value = it, tag = SeeFitScreenTestTags.ITEM_STYLE)
                     }
 
                 item.notes
                     ?.takeUnless { it.isBlank() }
                     ?.let { notes ->
                       CopyableDetailRow(
-                          text = notes,
+                          label = "Notes",
+                          value = notes,
                           textTag = SeeFitScreenTestTags.ITEM_NOTES,
                           copyTag = SeeFitScreenTestTags.ITEM_NOTES_COPY,
-                          textStyle =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant),
                           onCopy = { clipboardManager.setText(AnnotatedString(notes)) })
                     }
 
@@ -209,12 +172,11 @@ fun SeeItemDetailsDialog(
                     ?.let { link ->
                       val context = LocalContext.current
                       CopyableDetailRow(
-                          text = link,
+                          label = "Link",
+                          value = link,
                           textTag = SeeFitScreenTestTags.ITEM_LINK,
                           copyTag = SeeFitScreenTestTags.ITEM_LINK_COPY,
-                          textStyle =
-                              MaterialTheme.typography.bodyLarge.copy(
-                                  color = Primary, textAlign = TextAlign.Center),
+                          isLink = true,
                           onTextClick = {
                             val intent =
                                 android.content.Intent(
@@ -230,29 +192,74 @@ fun SeeItemDetailsDialog(
 
 @Composable
 private fun CopyableDetailRow(
-    text: String,
+    label: String,
+    value: String,
     textTag: String,
     copyTag: String,
-    textStyle: androidx.compose.ui.text.TextStyle,
     onCopy: () -> Unit,
-    onTextClick: (() -> Unit)? = null
+    onTextClick: (() -> Unit)? = null,
+    isLink: Boolean = false
 ) {
-  Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-      verticalAlignment = Alignment.CenterVertically) {
-        var textModifier: Modifier = Modifier.weight(1f)
-        if (onTextClick != null) {
-          textModifier = textModifier.clickable { onTextClick() }
-        }
-        textModifier = textModifier.testTag(textTag)
-        Text(text = text, style = textStyle, textAlign = TextAlign.Center, modifier = textModifier)
-        IconButton(onClick = onCopy, modifier = Modifier.size(32.dp).testTag(copyTag)) {
-          Icon(
-              imageVector = Icons.Filled.ContentCopy,
-              contentDescription = "Copy",
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.size(16.dp))
-        }
+  val baseColor = MaterialTheme.colorScheme.onSurfaceVariant
+  val valueColor = if (isLink) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+  val linkFontSize =
+      when {
+        !isLink -> MaterialTheme.typography.bodyMedium.fontSize
+        value.length > 80 -> 10.sp
+        value.length > 60 -> 12.sp
+        value.length > 40 -> 13.sp
+        else -> MaterialTheme.typography.bodyMedium.fontSize
+      }
+
+  Column(
+      modifier = Modifier.fillMaxWidth().testTag(textTag),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center) {
+              Text(
+                  text = label,
+                  style =
+                      MaterialTheme.typography.bodyMedium.copy(
+                          fontWeight = FontWeight.Bold,
+                          color = MaterialTheme.colorScheme.onSurfaceVariant))
+              IconButton(onClick = onCopy, modifier = Modifier.size(32.dp).testTag(copyTag)) {
+                Icon(
+                    imageVector = Icons.Filled.ContentCopy,
+                    contentDescription = "Copy",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp))
+              }
+            }
+        val clickableModifier =
+            if (onTextClick != null) Modifier.padding(top = 2.dp).clickable { onTextClick() }
+            else Modifier.padding(top = 2.dp)
+        Text(
+            text = value,
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = valueColor, fontSize = linkFontSize),
+            textAlign = TextAlign.Center,
+            modifier = clickableModifier.heightIn(min = 32.dp))
+      }
+}
+
+@Composable
+private fun DetailTextRow(label: String, value: String, tag: String) {
+  Column(
+      modifier = Modifier.fillMaxWidth().testTag(tag),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant))
+        Text(
+            text = value,
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            textAlign = TextAlign.Center)
       }
 }
