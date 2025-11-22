@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +49,10 @@ object InventoryScreenTestTags {
   const val ITEMS_GRID = "inventoryItemsGrid"
   const val ITEM_CARD = "inventoryItemCard"
   const val ADD_ITEM_FAB = "inventoryAddItemFab"
+  const val SEARCH_FAB = "inventorySearchFab"
+  const val SEARCH_BAR = "inventorySearchBar"
+  const val SEARCH_FIELD = "inventorySearchField"
+  const val CLOSE_SEARCH_BUTTON = "inventoryCloseSearchButton"
 }
 
 /**
@@ -113,45 +118,62 @@ fun InventoryScreen(
           Spacer(modifier.padding(10.dp))
 
           FloatingActionButton(
-              onClick = {},
+              onClick = { inventoryViewModel.toggleSearch() },
               containerColor = Primary,
-              modifier = Modifier.testTag(InventoryScreenTestTags.ADD_ITEM_FAB)) {
+              modifier = Modifier.testTag(InventoryScreenTestTags.SEARCH_FAB)) {
                 Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search Item",
+                    imageVector =
+                        if (uiState.isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                    contentDescription =
+                        if (uiState.isSearchActive) "Close Search" else "Search Item",
                     tint = MaterialTheme.colorScheme.onPrimary)
               }
         }
       },
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          when {
-            uiState.isLoading -> {
-              // Loading state
-              Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    modifier = Modifier.testTag(InventoryScreenTestTags.LOADING_INDICATOR),
-                    color = Primary)
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+          // Search bar (shown when search is active)
+          if (uiState.isSearchActive) {
+            InventorySearchBar(
+                searchQuery = uiState.searchQuery,
+                onSearchQueryChange = { inventoryViewModel.updateSearchQuery(it) })
+          }
+
+          // Content area
+          Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+            when {
+              uiState.isLoading -> {
+                // Loading state
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                  CircularProgressIndicator(
+                      modifier = Modifier.testTag(InventoryScreenTestTags.LOADING_INDICATOR),
+                      color = Primary)
+                }
               }
-            }
-            uiState.items.isEmpty() -> {
-              Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text =
-                        "No items in your inventory yet.\n Add new items to your inventory and you will see them here!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp).testTag(InventoryScreenTestTags.EMPTY_STATE))
+              uiState.items.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                  Text(
+                      text =
+                          if (uiState.isSearchActive && uiState.searchQuery.isNotEmpty()) {
+                            "No items match your search.\nTry a different search term."
+                          } else {
+                            "No items in your inventory yet.\n Add new items to your inventory and you will see them here!"
+                          },
+                      style = MaterialTheme.typography.bodyLarge,
+                      color = Color.Gray,
+                      textAlign = TextAlign.Center,
+                      modifier =
+                          Modifier.padding(32.dp).testTag(InventoryScreenTestTags.EMPTY_STATE))
+                }
               }
-            }
-            else -> {
-              // Items grid
-              InventoryGrid(
-                  items = uiState.items,
-                  onItemClick = { item ->
-                    navigationActions?.navigateTo(Screen.EditItem(item.itemUuid))
-                  })
+              else -> {
+                // Items grid
+                InventoryGrid(
+                    items = uiState.items,
+                    onItemClick = { item ->
+                      navigationActions?.navigateTo(Screen.EditItem(item.itemUuid))
+                    })
+              }
             }
           }
         }
