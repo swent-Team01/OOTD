@@ -2,24 +2,17 @@ package com.android.ootd.ui.authentication
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,9 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
-import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.GoogleSignInButton
 
 object SignInScreenTestTags {
   const val APP_LOGO = "appLogo"
@@ -136,32 +129,4 @@ fun SignInScreen(
           Spacer(modifier = Modifier.height(24.dp))
         }
   }
-}
-
-@Composable
-fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-  OutlinedButton(
-      onClick = onClick,
-      shape = RoundedCornerShape(50),
-      modifier = modifier,
-      border = androidx.compose.foundation.BorderStroke(1.dp, Primary),
-      colors = ButtonDefaults.outlinedButtonColors(containerColor = Background)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Box(
-              modifier =
-                  Modifier.size(28.dp)
-                      .background(Background, shape = CircleShape)
-                      .border(1.dp, Primary, CircleShape),
-              contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = R.drawable.google_logo),
-                    contentDescription = "Google logo",
-                    modifier = Modifier.size(18.dp))
-              }
-
-          Spacer(modifier = Modifier.size(12.dp))
-
-          Text(text = "Sign in with Google", style = Typography.titleLarge, color = Primary)
-        }
-      }
 }
