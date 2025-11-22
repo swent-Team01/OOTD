@@ -280,4 +280,32 @@ class InventoryViewModelTest {
 
     Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
   }
+
+  @Test
+  fun `background refresh updates items if different`() = runTest {
+    val newItems = listOf(testItems[0])
+    coEvery { accountRepository.getItemsList(testUserId) } returnsMany
+        listOf(testItemIds, listOf("item1"))
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    coEvery { itemsRepository.getItemsByIds(listOf("item1")) } returns newItems
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    Assert.assertEquals(newItems, viewModel.uiState.value.items)
+  }
+
+  @Test
+  fun `background refresh failure is silent if cache exists`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns
+        testItemIds andThenThrows
+        Exception("Network")
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    Assert.assertEquals(testItems, viewModel.uiState.value.items)
+    Assert.assertNull(viewModel.uiState.value.errorMessage)
+  }
 }

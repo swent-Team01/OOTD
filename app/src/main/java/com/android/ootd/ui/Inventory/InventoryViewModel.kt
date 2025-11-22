@@ -81,7 +81,13 @@ class InventoryViewModel(
             // Display cached items immediately
             val sortedCachedItems = sortItemsByCategory(cachedItems)
             allItems = sortedCachedItems
-            _uiState.value = _uiState.value.copy(items = sortedCachedItems, isLoading = false)
+            val displayItems =
+                if (_uiState.value.isSearchActive) {
+                  filterItems(sortedCachedItems, _uiState.value.searchQuery)
+                } else {
+                  sortedCachedItems
+                }
+            _uiState.value = _uiState.value.copy(items = displayItems, isLoading = false)
           }
         }
 

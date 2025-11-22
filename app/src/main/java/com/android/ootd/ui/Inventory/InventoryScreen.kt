@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -119,7 +120,7 @@ fun InventoryScreen(
 
           FloatingActionButton(
               onClick = { inventoryViewModel.toggleSearch() },
-              containerColor = Primary,
+              containerColor = if (uiState.isSearchActive) Red else Primary,
               modifier = Modifier.testTag(InventoryScreenTestTags.SEARCH_FAB)) {
                 Icon(
                     imageVector =
