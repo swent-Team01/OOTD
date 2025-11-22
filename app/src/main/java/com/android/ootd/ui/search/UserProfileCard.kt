@@ -1,6 +1,5 @@
 package com.android.ootd.ui.search
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,23 +22,19 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.ColorPainter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_IMAGE
+import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_LETTER
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.ProfilePicture
 
 object UserProfileCardTestTags {
   const val USER_FOLLOW_BUTTON = "userFollowButton"
@@ -100,6 +93,12 @@ fun UserProfileCard(
     onUserClick: (String) -> Unit,
     onErrorDismiss: () -> Unit
 ) {
+  val followText =
+      when {
+        isSelectedUserFollowed -> "Unfollow"
+        hasRequestPending -> "Request Sent"
+        else -> "Follow"
+      }
   Card(
       modifier = modifier.testTag(UserProfileCardTestTags.PROFILE_CARD),
       shape = RoundedCornerShape(16.dp),
@@ -118,32 +117,14 @@ fun UserProfileCard(
                 if (selectedUser != null && errorMessage == null) {
                   val profilePicture = selectedUser.profilePicture
                   val username = selectedUser.username
-                  val color = colorScheme
-                  val defaultAvatarPainter =
-                      remember(color.tertiary) { ColorPainter(color.tertiary) }
+                  val tag = AVATAR_IMAGE.takeIf { profilePicture.isNotBlank() } ?: AVATAR_LETTER
                   Box {
-                    if (profilePicture.isNotBlank()) {
-                      AsyncImage(
-                          model = profilePicture,
-                          contentDescription = "Profile Picture",
-                          placeholder = defaultAvatarPainter,
-                          error = defaultAvatarPainter,
-                          contentScale = ContentScale.Crop,
-                          modifier =
-                              Modifier.size(50.dp)
-                                  .clip(CircleShape)
-                                  .testTag(UserProfileCardTestTags.AVATAR_IMAGE))
-                    } else {
-                      Box(
-                          modifier = Modifier.size(50.dp).clip(CircleShape).background(Primary),
-                          contentAlignment = Alignment.Center) {
-                            Text(
-                                text = username.firstOrNull()?.uppercase() ?: "",
-                                style = typography.bodySmall,
-                                color = Secondary,
-                                modifier = Modifier.testTag(UserProfileCardTestTags.AVATAR_LETTER))
-                          }
-                    }
+                    ProfilePicture(
+                        modifier = Modifier.testTag(tag),
+                        size = 50.dp,
+                        profilePicture = profilePicture,
+                        username = username,
+                        textStyle = typography.bodySmall)
                   }
                 }
 
@@ -175,15 +156,7 @@ fun UserProfileCard(
                   ButtonDefaults.buttonColors(
                       containerColor = colorScheme.primary,
                       disabledContainerColor = colorScheme.primary.copy(alpha = 0.6f))) {
-                Text(
-                    text =
-                        when {
-                          isSelectedUserFollowed -> "Unfollow"
-                          hasRequestPending -> "Request Sent"
-                          else -> "Follow"
-                        },
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium)
+                Text(text = followText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
               }
 
           // Error message display
