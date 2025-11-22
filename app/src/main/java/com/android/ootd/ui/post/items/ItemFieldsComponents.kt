@@ -358,7 +358,9 @@ fun ConditionDropdown(
       testTag = testTag,
       options = options,
       expandedInitially = expandedInitially,
-      toggleContentDescription = "Toggle condition options")
+      toggleContentDescription = "Toggle condition options",
+      showClearOption = true,
+      clearLabel = "Clear condition")
 }
 
 /** Reusable multi-line notes field sharing the same styling as other inputs. */
@@ -470,7 +472,9 @@ private fun SelectionDropdownField(
     options: List<String>,
     toggleContentDescription: String,
     dropdownTestTag: String? = null,
-    expandedInitially: Boolean = false
+    expandedInitially: Boolean = false,
+    showClearOption: Boolean = false,
+    clearLabel: String = "Clear selection"
 ) {
   var expanded by remember { mutableStateOf(expandedInitially) }
   Column(Modifier.fillMaxWidth()) {
@@ -498,6 +502,20 @@ private fun SelectionDropdownField(
         dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) } ?: Modifier.fillMaxWidth()
     DropdownMenu(
         expanded = expanded, onDismissRequest = { expanded = false }, modifier = menuModifier) {
+          if (showClearOption) {
+            DropdownMenuItem(
+                text = {
+                  Text(
+                      clearLabel,
+                      style =
+                          MaterialTheme.typography.bodyMedium.copy(
+                              color = MaterialTheme.colorScheme.primary))
+                },
+                onClick = {
+                  onOptionSelected("")
+                  expanded = false
+                })
+          }
           options.forEach { opt ->
             DropdownMenuItem(
                 text = {
