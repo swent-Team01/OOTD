@@ -438,7 +438,7 @@ class AccountRepositoryFirestore(
           } catch (e: Exception) {
             Log.w(TAG, "Cache read failed, trying default source: ${e.message}")
             // If cache fails, try with default source (network or cache) with timeout
-            kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+            withTimeoutOrNull(2_000L) {
               db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
             }
           }
@@ -473,7 +473,7 @@ class AccountRepositoryFirestore(
         val currentList =
             try {
               // Try to get from cache first with short timeout
-              kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+              withTimeoutOrNull(1_000L) {
                 val doc =
                     db.collection(ACCOUNT_COLLECTION_PATH)
                         .document(currentUserId)

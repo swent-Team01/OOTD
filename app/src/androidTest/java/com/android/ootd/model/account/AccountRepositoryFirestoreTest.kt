@@ -1,6 +1,9 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.items.ImageData
+import com.android.ootd.model.items.Item
 import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
@@ -152,6 +155,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
                   user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
             }
             .exceptionOrNull()
+    assert(exception != null)
 
     expectThrows<TakenUserException>("already in use") {
       accountRepository.createAccount(
@@ -400,6 +404,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     assertTrue(storageException != null)
   }
 
+  // Test done partially with the help of AI
   @Test
   fun deleteAccount_successfullyDeletesAccountAndAssociatedData() = runTest {
     // Create account
@@ -419,10 +424,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     itemImageRef.putBytes(itemImageData).await()
 
     val item =
-        com.android.ootd.model.items.Item(
+        Item(
             itemUuid = itemId,
             postUuids = emptyList(),
-            image = com.android.ootd.model.items.ImageData(itemId, ""),
+            image = ImageData(itemId, ""),
             category = "clothes",
             ownerId = account1.uid)
     itemsRepository.addItem(item)
@@ -434,7 +439,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     postImageRef.putBytes(postImageData).await()
 
     val post =
-        com.android.ootd.model.posts.OutfitPost(
+        OutfitPost(
             postUID = postId,
             name = account1.username,
             ownerId = account1.uid,
