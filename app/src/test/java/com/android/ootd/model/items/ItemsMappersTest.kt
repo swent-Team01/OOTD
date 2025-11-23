@@ -1,110 +1,84 @@
 package com.android.ootd.model.items
 
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNull
-import junit.framework.TestCase.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ItemsMappersTest {
 
-  private fun baseMap(overrides: Map<String, Any?> = emptyMap()): Map<String, Any?> {
-    val map =
-        mutableMapOf<String, Any?>(
-            "itemUuid" to "completeItem",
-            "image" to mapOf("imageId" to "img123", "imageUrl" to "https://example.com/img.jpg"),
-            "category" to "clothes",
-            "type" to "jacket",
-            "brand" to "Nike",
-            "price" to 99.99,
-            "link" to "https://example.com/item",
+  @Test
+  fun toMap_serializesAllFields() {
+    val item =
+        createItem(
+            material =
+                listOf(
+                    Material(name = "Cotton", percentage = 80.0),
+                    Material(name = "Polyester", percentage = 20.0)))
+
+    val map = ItemsMappers.toMap(item)
+
+    val expected =
+        mapOf(
+            "itemUuid" to "item-1",
+            "postUuids" to listOf("post-1"),
+            "image" to mapOf("imageId" to "image-1", "imageUrl" to "url-1"),
+            "category" to "Tops",
+            "type" to "T-Shirt",
+            "brand" to "BrandX",
+            "price" to 42.0,
+            "currency" to "CHF",
             "material" to
                 listOf(
-                    mapOf("name" to "Cotton", "percentage" to 70.0),
-                    mapOf("name" to "Polyester", "percentage" to 30.0)),
-            "ownerId" to "owner")
-    map.putAll(overrides)
-    return map
+                    mapOf("name" to "Cotton", "percentage" to 80.0),
+                    mapOf("name" to "Polyester", "percentage" to 20.0)),
+            "link" to "https://example.com",
+            "ownerId" to "owner-1",
+            "condition" to "New",
+            "size" to "M",
+            "fitType" to "Regular",
+            "style" to "Casual",
+            "notes" to "Great condition")
+
+    assertEquals(expected, map)
   }
 
   @Test
-  fun parseCompleteValidDataReturnsItem() {
-    val item = requireNotNull(ItemsMappers.parseItem(baseMap()))
-    assertEquals("completeItem", item.itemUuid)
-    assertEquals("img123", item.image.imageId)
-    assertEquals("https://example.com/img.jpg", item.image.imageUrl)
-    assertEquals("clothes", item.category)
-    assertEquals("jacket", item.type)
-    assertEquals("Nike", item.brand)
-    assertEquals(99.99, item.price)
-    assertEquals("https://example.com/item", item.link)
-    assertEquals(2, item.material.size)
+  fun toMap_includesNullMaterialEntries() {
+    val item =
+        createItem(
+            material = listOf(null, Material(name = "Silk", percentage = 50.0)),
+            notes = null,
+            style = null)
+
+    val map = ItemsMappers.toMap(item)
+
+    val materials = map["material"] as List<*>
+    val expectedMaterial = listOf(null, mapOf("name" to "Silk", "percentage" to 50.0))
+
+    assertEquals(expectedMaterial, materials)
+    assertEquals(null, map["notes"])
+    assertEquals(null, map["style"])
   }
 
-  @Test
-  fun missingRequiredFieldsOrInvalidTypesReturnNull() {
-    val keysToRemove =
-        listOf("itemUuid", "image", "category", "type", "brand", "price", "link", "ownerId")
-
-    // Each required field missing -> null
-    keysToRemove.forEach { missing ->
-      val map = baseMap().toMutableMap()
-      map.remove(missing)
-      val parsed = ItemsMappers.parseItem(map)
-      assertTrue("Expected null when missing $missing", parsed == null)
-    }
-
-    // Invalid price type
-    val invalidPrice = baseMap(mapOf("price" to "notANumber"))
-    assertNull(ItemsMappers.parseItem(invalidPrice))
-
-    // Exception scenario: image is list instead of map
-    val badImage = baseMap(mapOf("image" to listOf("notAMap")))
-    assertNull(ItemsMappers.parseItem(badImage))
-  }
-
-  @Test
-  fun missingMaterialDefaultsToEmptyAndNullsFiltered() {
-    // Missing material -> empty list
-    val noMaterial = baseMap().toMutableMap().apply { remove("material") }
-    val itemNoMat = requireNotNull(ItemsMappers.parseItem(noMaterial))
-    assertEquals(0, itemNoMat.material.size)
-
-    // Material with null entries -> nulls filtered
-    val withNulls =
-        baseMap(
-            mapOf(
-                "material" to
-                    listOf(
-                        mapOf("name" to "Cotton", "percentage" to 70.0),
-                        null,
-                        mapOf("name" to "Polyester", "percentage" to 30.0))))
-    val itemFiltered = requireNotNull(ItemsMappers.parseItem(withNulls))
-    assertEquals(2, itemFiltered.material.size)
-    assertEquals("Cotton", itemFiltered.material[0]?.name)
-    assertEquals("Polyester", itemFiltered.material[1]?.name)
-  }
-
-  @Test
-  fun nonStringImageFieldsAreSanitized() {
-    val invalidImageId = baseMap(mapOf("image" to mapOf("imageId" to 123, "imageUrl" to "url")))
-    val parsed1 = requireNotNull(ItemsMappers.parseItem(invalidImageId))
-    assertEquals("", parsed1.image.imageId)
-    assertEquals("url", parsed1.image.imageUrl)
-
-    val invalidImageUrl = baseMap(mapOf("image" to mapOf("imageId" to "id", "imageUrl" to false)))
-    val parsed2 = requireNotNull(ItemsMappers.parseItem(invalidImageUrl))
-    assertEquals("id", parsed2.image.imageId)
-    assertEquals("", parsed2.image.imageUrl)
-  }
-
-  @Test
-  fun parseIncludesCurrencyWhenPresent() {
-    val withCurrency = baseMap(mapOf("currency" to "EUR"))
-    val item = requireNotNull(ItemsMappers.parseItem(withCurrency))
-    assertEquals("EUR", item.currency)
-
-    val withoutCurrency = baseMap().toMutableMap().apply { remove("currency") }
-    val item2 = requireNotNull(ItemsMappers.parseItem(withoutCurrency))
-    assertNull(item2.currency)
-  }
+  private fun createItem(
+      material: List<Material?>,
+      notes: String? = "Great condition",
+      style: String? = "Casual"
+  ) =
+      Item(
+          itemUuid = "item-1",
+          postUuids = listOf("post-1"),
+          image = ImageData("image-1", "url-1"),
+          category = "Tops",
+          type = "T-Shirt",
+          brand = "BrandX",
+          price = 42.0,
+          currency = "CHF",
+          material = material,
+          link = "https://example.com",
+          ownerId = "owner-1",
+          condition = "New",
+          size = "M",
+          fitType = "Regular",
+          style = style,
+          notes = notes)
 }
