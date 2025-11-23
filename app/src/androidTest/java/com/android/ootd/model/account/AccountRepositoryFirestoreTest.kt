@@ -485,8 +485,21 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun deleteAccount_throwsWhenAccountNotFound() = runTest {
+  fun deleteAccount_throwsOnlyWhenUserIsNotFound() = runTest {
+    // No user
     expectThrows<UnknowUserID> { accountRepository.deleteAccount("nonexistent") }
+
+    // no posts nor items
+    accountRepository.addAccount(account1)
+
+    val account = accountRepository.getAccount(account1.uid)
+    val posts = feedRepository.getFeedForUids(listOf(account1.uid))
+    assert(account.itemsUids.isEmpty())
+    assert(posts.isEmpty())
+    // Shouldn't throw
+    runCatching { accountRepository.deleteAccount(account1.uid) }
+    // Make sure account has been deleted
+    assert(!accountRepository.accountExists(account1.uid))
   }
 
   @Test
