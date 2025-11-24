@@ -155,13 +155,14 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
     val listeners = mutableListOf<ListenerRegistration>()
     val allPosts = mutableMapOf<String, OutfitPost>()
-    var listenersInitialized = 0
+    val listenersInitializedSet = mutableSetOf<Int>()
+    val lock = Any()
 
     try {
       // divide in chunks as firestore only allows whereIn with max 10 elements
       val chunks = cleaned.chunked(10)
 
-      for (chunk in chunks) {
+      chunks.forEachIndexed { chunkIndex, chunk ->
         val listener =
             db.collection(POSTS_COLLECTION_PATH)
                 .whereIn(ownerAttributeName, chunk)
@@ -173,33 +174,38 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
                   }
 
                   if (snapshot != null) {
-                    // Process document changes
-                    snapshot.documentChanges.forEach { change ->
-                      val post = mapToPost(change.document)
-                      if (post != null) {
-                        when (change.type) {
-                          DocumentChange.Type.ADDED,
-                          DocumentChange.Type.MODIFIED -> {
-                            allPosts[post.postUID] = post
-                          }
-                          DocumentChange.Type.REMOVED -> {
-                            allPosts.remove(post.postUID)
+                    var shouldEmit = false
+
+                    synchronized(lock) {
+                      // Process document changes
+                      snapshot.documentChanges.forEach { change ->
+                        val post = mapToPost(change.document)
+                        if (post != null) {
+                          when (change.type) {
+                            DocumentChange.Type.ADDED,
+                            DocumentChange.Type.MODIFIED -> {
+                              allPosts[post.postUID] = post
+                            }
+                            DocumentChange.Type.REMOVED -> {
+                              allPosts.remove(post.postUID)
+                            }
                           }
                         }
                       }
+
+                      // Track initialization - each listener's first snapshot counts
+                      val wasNotInitialized = listenersInitializedSet.add(chunkIndex)
+
+                      // Emit if all listeners initialized OR if this is an update after
+                      // initialization
+                      shouldEmit =
+                          listenersInitializedSet.size >= chunks.size ||
+                              (!wasNotInitialized && snapshot.documentChanges.isNotEmpty())
                     }
 
-                    // Track initialization - first snapshot always counts as initialized
-                    val wasNotInitialized = listenersInitialized < chunks.size
-                    if (wasNotInitialized) {
-                      listenersInitialized++
-                    }
-
-                    // Always emit when all listeners are initialized, or when we receive updates
-                    // after initialization
-                    val shouldEmit = listenersInitialized >= chunks.size
                     if (shouldEmit) {
-                      val sortedPosts = allPosts.values.sortedByDescending { it.timestamp }
+                      val sortedPosts =
+                          synchronized(lock) { allPosts.values.sortedByDescending { it.timestamp } }
                       trySend(sortedPosts)
                     }
                   }
