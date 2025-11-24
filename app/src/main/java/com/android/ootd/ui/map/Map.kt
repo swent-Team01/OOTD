@@ -96,13 +96,14 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize().testTag(MapScreenTestTags.GOOGLE_MAP_SCREEN),
                     cameraPositionState = cameraPositionState) {
-                      uiState.posts.forEach { post ->
+                      viewModel.getPostsWithAdjustedLocations().forEach { postWithLocation ->
                         ProfilePictureMarker(
-                            username = post.name,
-                            imageUrl = post.userProfilePicURL,
-                            location = post.location,
-                            tag = getTestTagForPostMarker(post.postUID),
-                            onClick = { TODO("Handle marker click") })
+                            username = postWithLocation.post.name,
+                            imageUrl = postWithLocation.post.userProfilePicURL,
+                            location = postWithLocation.adjustedLocation,
+                            tag = getTestTagForPostMarker(postWithLocation.post.postUID),
+                            overlappingCount = postWithLocation.overlappingCount,
+                            onClick = { /* TODO: Handle marker click if needed */ })
                       }
                     }
               }
