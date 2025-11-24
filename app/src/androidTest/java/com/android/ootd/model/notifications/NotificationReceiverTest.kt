@@ -2,7 +2,6 @@ package com.android.ootd.model.notifications
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.Account
@@ -68,10 +67,9 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
         }
 
     receiver.onReceive(mockContext, intent)
-    Thread.sleep(300)
+    Thread.sleep(1500)
 
     val result = notificationsRepository.getNotificationsForReceiver(currentUser.uid)
-    Log.d("InstrTest", "$result")
     assert(result.isEmpty())
 
     verify { mockManager.cancel(notif.uid.hashCode()) }
@@ -99,7 +97,7 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
         }
 
     receiver.onReceive(mockContext, intent)
-    Thread.sleep(200)
+    Thread.sleep(1500)
 
     val result = notificationsRepository.getNotificationsForReceiver(currentUser.uid)
     assert(result.isEmpty())

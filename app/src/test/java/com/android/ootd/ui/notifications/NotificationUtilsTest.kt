@@ -61,7 +61,7 @@ class NotificationUtilsTest {
             type = "FOLLOW_REQUEST",
             content = "",
             wasPushed = false,
-            senderName = "")
-    assert(followNotification.getNotificationMessage() == "New follow request")
+            senderName = "Stefan")
+    assert(followNotification.getNotificationMessage() == "Stefan wants to follow you")
   }
 }
