@@ -22,8 +22,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.model.map.toLatLng
+import com.android.ootd.ui.map.MapScreenTestTags.getTestTagForPostMarker
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 
 object MapScreenTestTags {
@@ -34,6 +39,8 @@ object MapScreenTestTags {
   const val TOP_BAR_TITLE = "topBarTitle"
   const val BACK_BUTTON = "backButton"
   const val CONTENT_BOX = "contentBox"
+
+  fun getTestTagForPostMarker(postId: String): String = "postMarker_$postId"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,9 +90,23 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                   position = CameraPosition.fromLatLngZoom(viewModel.getUserLatLng(), 12f)
                 }
 
+                // Update camera position when user location changes
+                androidx.compose.runtime.LaunchedEffect(uiState.userLocation) {
+                  cameraPositionState.animate(
+                      CameraUpdateFactory.newLatLngZoom(viewModel.getUserLatLng(), 12f))
+                }
+
                 GoogleMap(
                     modifier = Modifier.fillMaxSize().testTag(MapScreenTestTags.GOOGLE_MAP_SCREEN),
-                    cameraPositionState = cameraPositionState)
+                    cameraPositionState = cameraPositionState) {
+                      uiState.posts.forEach { post ->
+                        Marker(
+                            state = MarkerState(position = post.location.toLatLng()),
+                            title = post.name,
+                            snippet = "Posted by ${post.name}",
+                            tag = getTestTagForPostMarker(post.postUID))
+                      }
+                    }
               }
             }
       })
