@@ -5,9 +5,9 @@ import androidx.core.net.toUri
 import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
-import com.android.ootd.model.map.locationFromMap
-import com.android.ootd.model.map.mapFromLocation
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.utils.LocationUtils.locationFromMap
+import com.android.ootd.utils.LocationUtils.mapFromLocation
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions

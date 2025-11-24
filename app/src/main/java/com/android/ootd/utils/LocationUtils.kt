@@ -10,6 +10,7 @@ import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
+import com.android.ootd.model.map.emptyLocation
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
@@ -83,6 +84,30 @@ object LocationUtils {
           onFailure("Failed to get current location: ${exception.message ?: "Unknown error"}")
           cancellationTokenSource.cancel()
         }
+  }
+
+  /**
+   * Converts a Firestore-stored map (or null) to a [Location]. If the map is null or missing
+   * fields, returns [emptyLocation]. This mirrors existing behavior in repositories that treat
+   * missing or malformed location data as emptyLocation.
+   */
+  fun locationFromMap(map: Map<*, *>?): Location {
+    if (map == null) return emptyLocation
+    val lat = (map["latitude"] as? Number)?.toDouble() ?: 0.0
+    val lon = (map["longitude"] as? Number)?.toDouble() ?: 0.0
+    val name = map["name"] as? String ?: ""
+    return Location(latitude = lat, longitude = lon, name = name)
+  }
+
+  /**
+   * Converts a [Location] to a Firestore-friendly map with keys `latitude`, `longitude` and `name`.
+   */
+  fun mapFromLocation(location: Location): Map<String, Any> {
+    return mapOf(
+        "latitude" to location.latitude,
+        "longitude" to location.longitude,
+        "name" to location.name,
+    )
   }
 
   /** Formats a Double coordinate to 4 decimal places for display. */
