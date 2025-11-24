@@ -45,7 +45,13 @@ class NotificationUtilsTest {
   fun `get notification message`() {
     val randomNotification =
         Notification(
-            uid = "", senderId = "", receiverId = "", type = "", content = "", wasPushed = false)
+            uid = "",
+            senderId = "",
+            receiverId = "",
+            type = "",
+            content = "",
+            wasPushed = false,
+            senderName = "")
     assert(randomNotification.getNotificationMessage() == "New notification available")
     val followNotification =
         Notification(
@@ -54,7 +60,8 @@ class NotificationUtilsTest {
             receiverId = "",
             type = "FOLLOW_REQUEST",
             content = "",
-            wasPushed = false)
+            wasPushed = false,
+            senderName = "")
     assert(followNotification.getNotificationMessage() == "New follow request")
   }
 }

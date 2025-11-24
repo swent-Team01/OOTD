@@ -82,7 +82,8 @@ class NotificationRepositoryFirestoreTest {
             senderId = "sender123",
             receiverId = "receiver456",
             type = "follow",
-            content = "started following you")
+            content = "started following you",
+            senderName = "")
 
     val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
     every { mockQuerySnapshot.documents } returns emptyList()
@@ -107,7 +108,8 @@ class NotificationRepositoryFirestoreTest {
             senderId = "sender123",
             receiverId = "receiver456",
             type = "follow",
-            content = "started following you")
+            content = "started following you",
+            senderName = "")
 
     val mockDocSnapshot: DocumentSnapshot = mockk(relaxed = true)
     val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
@@ -233,7 +235,8 @@ class NotificationRepositoryFirestoreTest {
             senderId = "sender123",
             receiverId = "receiver456",
             type = "follow",
-            content = "started following you")
+            content = "started following you",
+            senderName = "")
 
     val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
     every { mockQuerySnapshot.documents } returns emptyList()
@@ -254,7 +257,8 @@ class NotificationRepositoryFirestoreTest {
             senderId = "sender123",
             receiverId = "receiver456",
             type = "follow",
-            content = "started following you")
+            content = "started following you",
+            senderName = "")
 
     val mockDoc: DocumentSnapshot = mockk(relaxed = true)
     val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)

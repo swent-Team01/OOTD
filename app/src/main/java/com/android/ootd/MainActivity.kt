@@ -40,7 +40,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.notifications.NOTIFICATION_ACTION_ACCEPT
+import com.android.ootd.model.notifications.NOTIFICATION_ACTION_DELETE
 import com.android.ootd.model.notifications.Notification
+import com.android.ootd.model.notifications.NotificationActionReceiver
 import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountPage

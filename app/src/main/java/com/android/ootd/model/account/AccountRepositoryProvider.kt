@@ -8,9 +8,10 @@ import com.google.firebase.firestore.firestore
  * testing purposes.
  */
 object AccountRepositoryProvider {
-  private val _repository: AccountRepository by lazy {
-    AccountRepositoryFirestore(Firebase.firestore)
+
+  private fun defaultRepository(): AccountRepository {
+    return AccountRepositoryFirestore(Firebase.firestore)
   }
 
-  var repository: AccountRepository = _repository
+  var repository: AccountRepository = defaultRepository()
 }

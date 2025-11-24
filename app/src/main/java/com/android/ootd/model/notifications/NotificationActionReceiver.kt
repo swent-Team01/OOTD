@@ -1,4 +1,4 @@
-package com.android.ootd
+package com.android.ootd.model.notifications
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -6,7 +6,6 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import com.android.ootd.model.account.AccountRepositoryProvider
-import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
