@@ -43,14 +43,11 @@ class NominatimLocationRepository(private val client: OkHttpClient) : LocationRe
                 .addQueryParameter("format", "json")
                 .build()
 
-        // Create the request with a custom User-Agent and optional Referer
+        // Create the request with a custom User-Agent
         val request =
             Request.Builder()
                 .url(url)
-                .header(
-                    "User-Agent",
-                    "YourAppName/1.0 (your-email@example.com)") // Set a proper User-Agent
-                .header("Referer", "https://yourapp.com") // Optionally add a Referer
+                .header("User-Agent", "Outfit Of The Day (ooftheday56@gmail.com)")
                 .build()
 
         try {
