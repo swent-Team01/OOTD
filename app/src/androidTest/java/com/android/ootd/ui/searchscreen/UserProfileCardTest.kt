@@ -35,12 +35,15 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   fun assertCardIsDisplayed(composeTestRule: ComposeContentTestRule) {
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
+        .assertIsDisplayed()
   }
 
   fun setCustomProfileCard(
       composeTestRule: ComposeContentTestRule,
       onFollowClick: () -> Unit,
+      onUserClick: (String) -> Unit,
       selectedUser: User? = null
   ) {
     composeTestRule.setContent {
@@ -51,13 +54,14 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
           hasRequestPending = false,
           onErrorDismiss = {},
           errorMessage = null,
+          onUserClick = onUserClick,
           onFollowClick = onFollowClick)
     }
   }
 
   @Test
   fun followButtonAlwaysAppears() {
-    setCustomProfileCard(composeTestRule, {}, User(uid = uid, username = name))
+    setCustomProfileCard(composeTestRule, {}, {}, User(uid = uid, username = name))
     assertCardIsDisplayed(composeTestRule)
   }
 
@@ -76,17 +80,32 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   @Test
   fun onClickIsCalled() {
     var clickCount = 0
+    var clickUser = 0
     setCustomProfileCard(
-        composeTestRule, { clickCount = clickCount + 1 }, User(uid = uid, username = name))
+        composeTestRule, { clickCount += 1 }, { clickUser += 1 }, User(uid = uid, username = name))
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
+        .performClick()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.AVATAR_LETTER, useUnmergedTree = true)
+        .performClick()
+    assert(clickUser == 2)
     assert(clickCount == 1)
   }
 
   @Test
   fun onClickIsNotCalledWhenUserIsNull() {
     var clickCount = 0
-    setCustomProfileCard(composeTestRule, { clickCount++ }, null)
+    setCustomProfileCard(composeTestRule, { clickCount++ }, { clickCount++ }, null)
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
+        .performClick()
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.AVATAR_LETTER, useUnmergedTree = true)
+        .assertDoesNotExist()
+
     assert(clickCount == 0) // Should not be called when user is null
   }
 }
