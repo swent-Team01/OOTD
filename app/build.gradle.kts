@@ -295,6 +295,7 @@ dependencies {
   implementation(libs.maps.compose)
   implementation(libs.maps.compose.utils)
   implementation(libs.play.services.auth)
+  implementation("javax.annotation:javax.annotation-api:1.3.2")
   testImplementation(kotlin("test"))
 }
 
