@@ -3,17 +3,14 @@ package com.android.ootd.model.feed
 import android.util.Log
 import com.android.ootd.model.map.locationFromMap
 import com.android.ootd.model.posts.OutfitPost
-import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
@@ -136,89 +133,23 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     return mapToPost(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
   }
 
-  override fun observeRecentFeedForUids(uids: List<String>): Flow<List<OutfitPost>> = callbackFlow {
-    if (uids.isEmpty()) {
-      trySend(emptyList())
-      close()
-      return@callbackFlow
-    }
+  override fun observeRecentFeedForUids(uids: List<String>): Flow<List<OutfitPost>> = flow {
+    // Emit initial state immediately
+    val initialPosts = getRecentFeedForUids(uids)
+    emit(initialPosts)
 
-    val cleaned = uids.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
-    if (cleaned.isEmpty()) {
-      trySend(emptyList())
-      close()
-      return@callbackFlow
-    }
-
-    val now = System.currentTimeMillis()
-    val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS
-
-    val listeners = mutableListOf<ListenerRegistration>()
-    val allPosts = mutableMapOf<String, OutfitPost>()
-    val listenersInitializedSet = mutableSetOf<Int>()
-    val lock = Any()
-
-    try {
-      // divide in chunks as firestore only allows whereIn with max 10 elements
-      val chunks = cleaned.chunked(10)
-
-      chunks.forEachIndexed { chunkIndex, chunk ->
-        val listener =
-            db.collection(POSTS_COLLECTION_PATH)
-                .whereIn(ownerAttributeName, chunk)
-                .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
-                .addSnapshotListener { snapshot, error ->
-                  if (error != null) {
-                    Log.e("FeedRepositoryFirestore", "Error observing posts", error)
-                    return@addSnapshotListener
-                  }
-
-                  if (snapshot != null) {
-                    var shouldEmit = false
-
-                    synchronized(lock) {
-                      // Process document changes
-                      snapshot.documentChanges.forEach { change ->
-                        val post = mapToPost(change.document)
-                        if (post != null) {
-                          when (change.type) {
-                            DocumentChange.Type.ADDED,
-                            DocumentChange.Type.MODIFIED -> {
-                              allPosts[post.postUID] = post
-                            }
-                            DocumentChange.Type.REMOVED -> {
-                              allPosts.remove(post.postUID)
-                            }
-                          }
-                        }
-                      }
-
-                      // Track initialization - each listener's first snapshot counts
-                      val wasNotInitialized = listenersInitializedSet.add(chunkIndex)
-
-                      // Emit if all listeners initialized OR if this is an update after
-                      // initialization
-                      shouldEmit =
-                          listenersInitializedSet.size >= chunks.size ||
-                              (!wasNotInitialized && snapshot.documentChanges.isNotEmpty())
-                    }
-
-                    if (shouldEmit) {
-                      val sortedPosts =
-                          synchronized(lock) { allPosts.values.sortedByDescending { it.timestamp } }
-                      trySend(sortedPosts)
-                    }
-                  }
-                }
-
-        listeners.add(listener)
+    // For Firestore, we poll every 30 seconds
+    // This could be replaced with real snapshot listeners if needed
+    while (true) {
+      kotlinx.coroutines.delay(30_000)
+      try {
+        val posts = getRecentFeedForUids(uids)
+        emit(posts)
+      } catch (e: Exception) {
+        Log.e("FeedRepositoryFirestore", "Error polling posts", e)
+        // Continue polling even on error
       }
-    } catch (e: Exception) {
-      Log.e("FeedRepositoryFirestore", "Error setting up observers", e)
-      trySend(emptyList())
     }
-
-    awaitClose { listeners.forEach { it.remove() } }
   }
 
   private fun mapToPost(doc: DocumentSnapshot): OutfitPost? {
