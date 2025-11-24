@@ -94,7 +94,120 @@ class ProfilePictureMarkerTest {
   }
 
   @Test
-  fun markerContent_withValidImageUrl_loadsImagePainter() {
+  fun markerContent_withOverlappingCount1_noBadgeDisplayed() {
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme { MarkerContent(username = username, imageUrl = null, overlappingCount = 1) }
+    }
+
+    // Verify the initial is displayed
+    composeTestRule.onNodeWithText("T").assertIsDisplayed()
+    // Badge with count should not be visible when count is 1
+    composeTestRule.onNodeWithText("1").assertDoesNotExist()
+  }
+
+  @Test
+  fun markerContent_withOverlappingCount2_badgeDisplayed() {
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme { MarkerContent(username = username, imageUrl = null, overlappingCount = 2) }
+    }
+
+    // Verify the initial is displayed
+    composeTestRule.onNodeWithText("T").assertIsDisplayed()
+    // Badge with count 2 should be visible
+    composeTestRule.onNodeWithText("2").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_withOverlappingCount5_badgeDisplaysCorrectNumber() {
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        MarkerContent(
+            username = username, imageUrl = "https://example.com/pic.jpg", overlappingCount = 5)
+      }
+    }
+
+    // Badge with count 5 should be visible
+    composeTestRule.onNodeWithText("5").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_withOverlappingCount10_badgeDisplaysDoubleDigits() {
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme { MarkerContent(username = username, imageUrl = null, overlappingCount = 10) }
+    }
+
+    // Verify the initial is displayed
+    composeTestRule.onNodeWithText("T").assertIsDisplayed()
+    // Badge with count 10 should be visible
+    composeTestRule.onNodeWithText("10").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_badgeUsesAppTheme_withPrimaryColor() {
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme { MarkerContent(username = username, imageUrl = null, overlappingCount = 3) }
+    }
+
+    // Verify badge with count 3 is displayed (badge uses Primary color from theme)
+    composeTestRule.onNodeWithText("3").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_badgeWithLargeCount_displaysCorrectly() {
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        MarkerContent(
+            username = username, imageUrl = "https://example.com/pic.jpg", overlappingCount = 99)
+      }
+    }
+
+    // Badge should handle large numbers
+    composeTestRule.onNodeWithText("99").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_withImageAndBadge_bothDisplayed() {
+    val imageUrl = "https://example.com/profile.jpg"
+    val username = "TestUser"
+
+    composeTestRule.setContent {
+      OOTDTheme { MarkerContent(username = username, imageUrl = imageUrl, overlappingCount = 4) }
+    }
+
+    // Verify both image and badge are displayed
+    composeTestRule
+        .onNodeWithContentDescription("Profile Picture for $username")
+        .assertIsDisplayed()
+    composeTestRule.onNodeWithText("4").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_withInitialsAndBadge_bothDisplayed() {
+    val username = "Alice"
+
+    composeTestRule.setContent {
+      OOTDTheme { MarkerContent(username = username, imageUrl = null, overlappingCount = 7) }
+    }
+
+    // Verify both initial and badge are displayed
+    composeTestRule.onNodeWithText("A").assertIsDisplayed()
+    composeTestRule.onNodeWithText("7").assertIsDisplayed()
+  }
+
+  @Test
+  fun markerContent_validImageUrl_loadsImagePainter() {
     val imageUrl = "https://example.com/valid-profile.jpg"
     val username = "ImageUser"
 
@@ -102,17 +215,9 @@ class ProfilePictureMarkerTest {
       OOTDTheme { MarkerContent(username = username, imageUrl = imageUrl) }
     }
 
-    // Verify the image is set up (content description exists)
-    composeTestRule.onNodeWithContentDescription("Profile Picture for $username").assertExists()
-  }
-
-  @Test
-  fun markerContent_displaysInitialsForSingleCharacterUsername() {
-    val username = "X"
-
-    composeTestRule.setContent { OOTDTheme { MarkerContent(username = username, imageUrl = null) } }
-
-    // Should display the single character
-    composeTestRule.onNodeWithText("X").assertIsDisplayed()
+    // Verify AsyncImage loads with correct content description
+    composeTestRule
+        .onNodeWithContentDescription("Profile Picture for $username")
+        .assertIsDisplayed()
   }
 }

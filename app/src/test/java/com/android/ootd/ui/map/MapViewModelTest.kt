@@ -173,4 +173,271 @@ class MapViewModelTest {
     assertEquals(1, uiState.posts.size)
     assertEquals(validPost, uiState.posts[0])
   }
+
+  @Test
+  fun getPostsWithAdjustedLocations_singlePost_noOffset() = runTest {
+    val post =
+        OutfitPost(
+            postUID = "post1",
+            ownerId = "friend1",
+            name = "User One",
+            location = Location(46.5197, 6.6323, "EPFL"))
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(listOf(post))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    assertEquals(1, adjustedPosts.size)
+    assertEquals(post.location, adjustedPosts[0].adjustedLocation)
+    assertEquals(1, adjustedPosts[0].overlappingCount)
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_twoPostsSameLocation_offsetsApplied() = runTest {
+    val location = Location(46.5197, 6.6323, "EPFL")
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    assertEquals(2, adjustedPosts.size)
+    // Both should have overlapping count of 2
+    assertEquals(2, adjustedPosts[0].overlappingCount)
+    assertEquals(2, adjustedPosts[1].overlappingCount)
+    // Locations should be different (offset applied)
+    assertFalse(
+        adjustedPosts[0].adjustedLocation.latitude == adjustedPosts[1].adjustedLocation.latitude &&
+            adjustedPosts[0].adjustedLocation.longitude ==
+                adjustedPosts[1].adjustedLocation.longitude)
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_threePostsSameLocation_circularOffset() = runTest {
+    val location = Location(46.5197, 6.6323, "EPFL")
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location)
+    val post3 =
+        OutfitPost(postUID = "post3", ownerId = "friend3", name = "User Three", location = location)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2, post3))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    assertEquals(3, adjustedPosts.size)
+    // All should have overlapping count of 3
+    adjustedPosts.forEach { assertEquals(3, it.overlappingCount) }
+    // All locations should be different
+    val locations =
+        adjustedPosts.map { "${it.adjustedLocation.latitude},${it.adjustedLocation.longitude}" }
+    assertEquals(3, locations.distinct().size)
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_mixedLocations_correctGrouping() = runTest {
+    val location1 = Location(46.5197, 6.6323, "EPFL")
+    val location2 = Location(46.5198, 6.6324, "Lausanne")
+
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location1)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location1)
+    val post3 =
+        OutfitPost(
+            postUID = "post3", ownerId = "friend3", name = "User Three", location = location2)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2, post3))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    assertEquals(3, adjustedPosts.size)
+
+    // Posts at location1 should have overlapping count of 2
+    val postsAtLocation1 =
+        adjustedPosts.filter { it.post.postUID == "post1" || it.post.postUID == "post2" }
+    postsAtLocation1.forEach { assertEquals(2, it.overlappingCount) }
+
+    // Post at location2 should have overlapping count of 1
+    val postAtLocation2 = adjustedPosts.first { it.post.postUID == "post3" }
+    assertEquals(1, postAtLocation2.overlappingCount)
+    assertEquals(location2, postAtLocation2.adjustedLocation)
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_offsetStaysNearOriginal() = runTest {
+    val location = Location(46.5197, 6.6323, "EPFL")
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    // Verify offsets are small (within 0.001 degrees, approximately 100m)
+    adjustedPosts.forEach { adjusted ->
+      val latDiff = kotlin.math.abs(adjusted.adjustedLocation.latitude - location.latitude)
+      val lonDiff = kotlin.math.abs(adjusted.adjustedLocation.longitude - location.longitude)
+      assertTrue(latDiff < 0.001)
+      assertTrue(lonDiff < 0.001)
+    }
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_verifyBadgeCountForOverlappingMarkers() = runTest {
+    val location = Location(46.5197, 6.6323, "EPFL")
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location)
+    val post3 =
+        OutfitPost(postUID = "post3", ownerId = "friend3", name = "User Three", location = location)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2, post3))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    // All posts at the same location should have overlapping count of 3
+    // This ensures the badge will display "3" on all three markers
+    adjustedPosts.forEach { assertEquals(3, it.overlappingCount) }
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_ensuresBadgeVisibilityForAllOverlappingPosts() = runTest {
+    val sharedLocation = Location(46.5197, 6.6323, "EPFL")
+    val posts =
+        (1..5).map { i ->
+          OutfitPost(
+              postUID = "post$i", ownerId = "friend$i", name = "User $i", location = sharedLocation)
+        }
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(posts)
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    assertEquals(5, adjustedPosts.size)
+    // All 5 posts should have overlapping count of 5 for badge display
+    adjustedPosts.forEach { assertEquals(5, it.overlappingCount) }
+
+    // All adjusted locations should be unique (circular offset applied)
+    val uniqueLocations =
+        adjustedPosts
+            .map { "${it.adjustedLocation.latitude},${it.adjustedLocation.longitude}" }
+            .distinct()
+    assertEquals(5, uniqueLocations.size)
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_multipleGroups_correctBadgeCounts() = runTest {
+    val location1 = Location(46.5197, 6.6323, "EPFL")
+    val location2 = Location(46.5198, 6.6324, "Lausanne")
+
+    // 3 posts at location1
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location1)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location1)
+    val post3 =
+        OutfitPost(
+            postUID = "post3", ownerId = "friend3", name = "User Three", location = location1)
+
+    // 2 posts at location2
+    val post4 =
+        OutfitPost(postUID = "post4", ownerId = "friend4", name = "User Four", location = location2)
+    val post5 =
+        OutfitPost(postUID = "post5", ownerId = "friend5", name = "User Five", location = location2)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2, post3, post4, post5))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    assertEquals(5, adjustedPosts.size)
+
+    // Posts at location1 should have badge count of 3
+    val postsAtLocation1 =
+        adjustedPosts.filter { it.post.postUID in listOf("post1", "post2", "post3") }
+    postsAtLocation1.forEach { assertEquals(3, it.overlappingCount) }
+
+    // Posts at location2 should have badge count of 2
+    val postsAtLocation2 = adjustedPosts.filter { it.post.postUID in listOf("post4", "post5") }
+    postsAtLocation2.forEach { assertEquals(2, it.overlappingCount) }
+  }
+
+  @Test
+  fun getPostsWithAdjustedLocations_singlePostNoBadge_correctCount() = runTest {
+    val location1 = Location(46.5197, 6.6323, "EPFL")
+    val location2 = Location(46.5198, 6.6324, "Lausanne")
+
+    // 2 posts at location1
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "friend1", name = "User One", location = location1)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "friend2", name = "User Two", location = location1)
+
+    // 1 post at location2 (should not show badge)
+    val post3 =
+        OutfitPost(
+            postUID = "post3", ownerId = "friend3", name = "User Three", location = location2)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(post1, post2, post3))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+
+    // Posts at location1 should have count of 2 (badge shown)
+    val postsAtLocation1 = adjustedPosts.filter { it.post.postUID in listOf("post1", "post2") }
+    postsAtLocation1.forEach { assertEquals(2, it.overlappingCount) }
+
+    // Post at location2 should have count of 1 (no badge shown)
+    val postAtLocation2 = adjustedPosts.first { it.post.postUID == "post3" }
+    assertEquals(1, postAtLocation2.overlappingCount)
+  }
 }
