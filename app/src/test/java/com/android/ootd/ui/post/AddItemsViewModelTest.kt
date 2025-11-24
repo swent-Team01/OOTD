@@ -318,4 +318,26 @@ class AddItemsViewModelTest {
 
     assertTrue(viewModel.addOnSuccess.value)
   }
+
+  @Test
+  fun `updateCategorySuggestions returns all when input blank`() {
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.updateCategorySuggestions("")
+    val suggestions = viewModel.uiState.value.categorySuggestion
+    assertTrue(suggestions.size >= 6)
+  }
+
+  @Test
+  fun `updateCategorySuggestions filters by prefix`() {
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.updateCategorySuggestions("Sho")
+    assertEquals(listOf("Shoes"), viewModel.uiState.value.categorySuggestion)
+  }
+
+  @Test
+  fun `updateCategorySuggestions case insensitive`() {
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.updateCategorySuggestions("bag")
+    assertEquals(listOf("Bags"), viewModel.uiState.value.categorySuggestion)
+  }
 }

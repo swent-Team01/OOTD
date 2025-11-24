@@ -420,12 +420,12 @@ private fun ImagePickerRow(
             TextButton(
                 onClick = onTakePhoto,
                 modifier = Modifier.testTag(AddItemScreenTestTags.TAKE_A_PHOTO)) {
-                  Text("📸 Take a Photo")
+                  Text("Take a Photo")
                 }
             TextButton(
                 onClick = onPickFromGallery,
                 modifier = Modifier.testTag(AddItemScreenTestTags.PICK_FROM_GALLERY)) {
-                  Text("🖼️ Choose from Gallery")
+                  Text("Choose from Gallery")
                 }
           }
         },

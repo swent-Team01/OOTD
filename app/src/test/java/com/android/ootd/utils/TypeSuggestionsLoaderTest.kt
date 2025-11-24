@@ -296,6 +296,8 @@ class TypeSuggestionsLoaderTest {
     assertTrue("Should have Shoes category", suggestions.containsKey("Shoes"))
     assertTrue("Should have Bags category", suggestions.containsKey("Bags"))
     assertTrue("Should have Accessories category", suggestions.containsKey("Accessories"))
+    assertTrue("Should have Jewelry category", suggestions.containsKey("Jewelry"))
+    assertTrue("Should have Sportswear category", suggestions.containsKey("Sportswear"))
   }
 
   @Test
@@ -374,17 +376,47 @@ class TypeSuggestionsLoaderTest {
             "Gloves",
             "Sunglasses",
             "Watch",
-            "Bracelet",
-            "Necklace",
-            "Earrings",
             "Tie",
             "Beanie",
-            "Cap")
+            "Cap",
+            "Hair Clip",
+            "Headband",
+            "Pocket Square",
+            "Umbrella")
 
     expectedItems.forEach { expectedItem ->
       assertTrue(
           "Accessories should contain $expectedItem",
           accessoriesItems.any { it.equals(expectedItem, ignoreCase = true) })
+    }
+  }
+
+  @Test
+  fun `fallback Jewelry suggestions are complete`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val jewelryItems = suggestions["Jewelry"]!!
+    val expectedItems =
+        listOf("Ring", "Necklace", "Bracelet", "Earrings", "Cufflinks", "Anklet", "Pendant")
+    expectedItems.forEach { expectedItem ->
+      assertTrue(
+          "Jewelry should contain $expectedItem",
+          jewelryItems.any { it.equals(expectedItem, ignoreCase = true) })
+    }
+  }
+
+  @Test
+  fun `fallback Sportswear suggestions are complete`() {
+    val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
+
+    val sportswearItems = suggestions["Sportswear"]!!
+    val expectedItems =
+        listOf("Sports Bra", "Tracksuit", "Gym Shorts", "Rash Guard", "Yoga Pants", "Jersey")
+
+    expectedItems.forEach { expectedItem ->
+      assertTrue(
+          "Sportswear should contain $expectedItem",
+          sportswearItems.any { it.equals(expectedItem, ignoreCase = true) })
     }
   }
 
@@ -418,7 +450,7 @@ class TypeSuggestionsLoaderTest {
     val suggestions = TypeSuggestionsLoader.loadTypeSuggestions(context)
 
     // Verify the number of categories matches the documented default
-    assertTrue("Should have at least 4 categories", suggestions.size >= 4)
+    assertTrue("Should have at least 6 categories", suggestions.size >= 6)
 
     // Verify minimum items per category based on documentation
     val clothingKey = suggestions.keys.find { it.equals("Clothing", ignoreCase = true) }
