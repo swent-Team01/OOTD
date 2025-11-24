@@ -242,7 +242,8 @@ class NotificationRepositoryFirestoreTest {
     every { mockQuery.whereEqualTo("uid", notification.uid) } returns mockQuery
     every { mockQuery.get() } returns Tasks.forResult(mockQuerySnapshot)
 
-    repository.deleteNotification(notification)
+    repository.deleteNotification(
+        notificationId = notification.uid, receiverId = notification.receiverId)
   }
 
   @Test
@@ -272,7 +273,8 @@ class NotificationRepositoryFirestoreTest {
     every { mockCollection.document("firebaseDocId123") } returns mockDocumentReference
     every { mockDocumentReference.delete() } returns Tasks.forResult(null)
 
-    repository.deleteNotification(notification)
+    repository.deleteNotification(
+        notificationId = notification.uid, receiverId = notification.receiverId)
 
     verify { mockQuery.get() }
     verify { mockCollection.document("firebaseDocId123") }

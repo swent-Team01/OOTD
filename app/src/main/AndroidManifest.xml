@@ -42,7 +42,9 @@
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
-
+        <receiver
+            android:name=".NotificationActionReceiver"
+            android:exported="true"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

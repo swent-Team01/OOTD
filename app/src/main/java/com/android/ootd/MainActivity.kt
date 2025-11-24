@@ -204,27 +204,67 @@ fun OOTDApp(
   fun sendLocalNotification(notification: Notification) {
     val manager = NotificationManagerCompat.from(context)
 
-    // Create intent to open MainActivity with notification click action
-    val intent =
+    val mainIntent =
         Intent(context, MainActivity::class.java).apply {
           action = NOTIFICATION_CLICK_ACTION
           flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
-    val pendingIntent =
+    val mainPendingIntent =
         PendingIntent.getActivity(
             context,
             notification.uid.hashCode(),
-            intent,
+            mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
+    // --- ACCEPT ACTION ---
+    val acceptIntent =
+        Intent(context, NotificationActionReceiver::class.java).apply {
+          action = NOTIFICATION_ACTION_ACCEPT
+          putExtra("notificationUid", notification.uid)
+          putExtra("senderId", notification.senderId)
+          putExtra("receiverId", notification.receiverId)
+        }
+
+    val acceptPendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            ("${notification.uid}_accept").hashCode(),
+            acceptIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    // --- DELETE ACTION ---
+    val deleteIntent =
+        Intent(context, NotificationActionReceiver::class.java).apply {
+          action = NOTIFICATION_ACTION_DELETE
+          putExtra("notificationUid", notification.uid)
+          putExtra("senderId", notification.senderId)
+          putExtra("receiverId", notification.receiverId)
+        }
+
+    val deletePendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            ("${notification.uid}_delete").hashCode(),
+            deleteIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    // BUILD NOTIFICATION
     val builder =
-        NotificationCompat.Builder(context, "ootd_channel")
+        NotificationCompat.Builder(context, OOTD_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(notification.getNotificationMessage())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true) // Dismiss notification when clicked
+            .setContentIntent(mainPendingIntent)
+            .setAutoCancel(true)
+            .addAction(
+                R.drawable.ic_check, // accept icon
+                "Accept",
+                acceptPendingIntent)
+            .addAction(
+                R.drawable.ic_delete, // delete icon
+                "Delete",
+                deletePendingIntent)
 
     manager.notify(notification.uid.hashCode(), builder.build())
   }

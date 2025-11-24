@@ -102,18 +102,11 @@ class NotificationsViewModel(
           _uiState.value = _uiState.value.copy(errorMessage = "User not authenticated")
           return@launch
         }
-
-        // Add the sender as a friend
-        val wasAddedToBoth =
-            accountRepository.addFriend(currentUserId, followRequestItem.notification.senderId)
-
-        // If I could not update both friend lists
-        // I throw an exception such that the notification does not disappear.
-        // This will also help with offline mode
-        check(wasAddedToBoth) { "Could not update both friend lists" }
-        // Delete the notification
-        notificationRepository.deleteNotification(followRequestItem.notification)
-
+        notificationRepository.acceptFollowNotification(
+            senderId = followRequestItem.notification.senderId,
+            receiverId = currentUserId,
+            notificationId = followRequestItem.notification.uid,
+            accountRepository = accountRepository)
         // Remove from UI state
         _uiState.value =
             _uiState.value.copy(
@@ -134,7 +127,9 @@ class NotificationsViewModel(
     viewModelScope.launch {
       try {
         // Delete the notification
-        notificationRepository.deleteNotification(followRequestItem.notification)
+        notificationRepository.deleteNotification(
+            notificationId = followRequestItem.notification.uid,
+            receiverId = followRequestItem.notification.receiverId)
 
         // Remove from UI state
         _uiState.value =

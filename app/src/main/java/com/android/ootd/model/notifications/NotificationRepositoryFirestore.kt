@@ -3,6 +3,7 @@ package com.android.ootd.model.notifications
 import NotificationRepository
 import android.util.Log
 import androidx.annotation.Keep
+import com.android.ootd.model.account.AccountRepository
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -180,20 +181,20 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     }
   }
 
-  override suspend fun deleteNotification(notification: Notification) {
+  override suspend fun deleteNotification(notificationId: String, receiverId: String) {
     try {
       // At this point in time I consider that only receivers can delete notifications
       // This is because for following this is all that is needed.
       // Can be modified in future PRs.
       val documentList =
           db.collection(NOTIFICATION_COLLECTION_PATH)
-              .whereEqualTo(RECEIVER_ID, notification.receiverId)
-              .whereEqualTo("uid", notification.uid)
+              .whereEqualTo(RECEIVER_ID, receiverId)
+              .whereEqualTo("uid", notificationId)
               .get()
               .await()
 
       if (documentList.documents.isEmpty()) {
-        throw NoSuchElementException("Notification with ID ${notification.uid} not found")
+        throw NoSuchElementException("Notification with ID $notificationId not found")
       }
 
       db.collection(NOTIFICATION_COLLECTION_PATH)
@@ -204,5 +205,23 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       Log.e("NotificationRepositoryFirestore", "Error deleting notification: ${e.message}", e)
       throw e
     }
+  }
+
+  override suspend fun acceptFollowNotification(
+      senderId: String,
+      notificationId: String,
+      receiverId: String,
+      accountRepository: AccountRepository
+  ) {
+
+    // Add the sender as a friend
+    val wasAddedToBoth = accountRepository.addFriend(receiverId, senderId)
+
+    // If I could not update both friend lists
+    // I throw an exception such that the notification does not disappear.
+    // This will also help with offline mode
+    check(wasAddedToBoth) { "Could not update both friend lists" }
+    // Delete the notification
+    deleteNotification(notificationId = notificationId, receiverId = receiverId)
   }
 }
