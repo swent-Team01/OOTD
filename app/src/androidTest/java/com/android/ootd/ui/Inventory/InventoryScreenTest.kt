@@ -216,4 +216,61 @@ class InventoryScreenTest {
     // Should not crash when navigationActions is null
     composeTestRule.onNodeWithTag(InventoryScreenTestTags.SCREEN).assertIsDisplayed()
   }
+
+  @Test
+  fun searchFabIsDisplayed() {
+    coEvery { mockAccountRepository.getItemsList(any()) } returns emptyList()
+    coEvery { mockItemsRepository.getItemsByIds(any()) } returns emptyList()
+
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
+    composeTestRule.setContent {
+      OOTDTheme {
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
+      }
+    }
+
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_FAB).assertIsDisplayed()
+  }
+
+  @Test
+  fun searchBarAppearsWhenSearchFabClicked() {
+    coEvery { mockAccountRepository.getItemsList(any()) } returns emptyList()
+    coEvery { mockItemsRepository.getItemsByIds(any()) } returns emptyList()
+
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
+    composeTestRule.setContent {
+      OOTDTheme {
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
+      }
+    }
+
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_FAB).performClick()
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_BAR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_FIELD).assertIsDisplayed()
+  }
+
+  @Test
+  fun searchBarDisappearsWhenSearchFabClickedAgain() {
+    coEvery { mockAccountRepository.getItemsList(any()) } returns emptyList()
+    coEvery { mockItemsRepository.getItemsByIds(any()) } returns emptyList()
+
+    val testViewModel = createInventoryViewModel()
+    viewModel = testViewModel
+    composeTestRule.setContent {
+      OOTDTheme {
+        InventoryScreen(
+            inventoryViewModel = testViewModel, navigationActions = mockNavigationActions)
+      }
+    }
+
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_FAB).performClick()
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_BAR).assertIsDisplayed()
+
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_FAB).performClick()
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_BAR).assertDoesNotExist()
+  }
 }

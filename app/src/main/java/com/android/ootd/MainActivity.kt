@@ -45,6 +45,7 @@ import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
+import com.android.ootd.ui.account.ViewUserProfile
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.consent.BetaConsentScreen
@@ -338,7 +339,13 @@ fun OOTDApp(
                       })
                 }
 
-                composable(Screen.SearchScreen.route) { UserSearchScreen() }
+                composable(Screen.SearchScreen.route) {
+                  UserSearchScreen(
+                      onUserClick = { userId ->
+                        navigationActions.navigateTo(Screen.ViewUser(userId))
+                      })
+                }
+
                 composable(Screen.AccountView.route) {
                   AccountPage(
                       onEditAccount = { navigationActions.navigateTo(Screen.AccountEdit) },
@@ -352,8 +359,6 @@ fun OOTDApp(
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
                 composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
-
-                composable(Screen.SearchScreen.route) { UserSearchScreen() }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)
@@ -469,6 +474,21 @@ fun OOTDApp(
 
                       if (postId != null) {
                         PostViewScreen(postId = postId, onBack = { navigationActions.goBack() })
+                      }
+                    }
+
+                composable(
+                    route = Screen.ViewUser.ROUTE,
+                    arguments = listOf(navArgument("userId") { type = NavType.StringType })) {
+                        navBackStackEntry ->
+                      val userId = navBackStackEntry.arguments?.getString("userId")
+                      if (userId != null) {
+                        ViewUserProfile(
+                            userId = userId,
+                            onBackButton = { navigationActions.goBack() },
+                            onPostClick = { postId ->
+                              navigationActions.navigateTo(Screen.PostView(postId))
+                            })
                       }
                     }
 

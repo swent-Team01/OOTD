@@ -21,11 +21,15 @@ import kotlinx.coroutines.launch
  * @property items List of items in the user's inventory
  * @property isLoading Whether the items are currently being loaded
  * @property errorMessage Error message if loading failed
+ * @property searchQuery Current search query text
+ * @property isSearchActive Whether search mode is active
  */
 data class InventoryUIState(
     val items: List<Item> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val searchQuery: String = "",
+    val isSearchActive: Boolean = false
 )
 
 /**
@@ -45,6 +49,9 @@ class InventoryViewModel(
   private val _uiState = MutableStateFlow(InventoryUIState())
   val uiState: StateFlow<InventoryUIState> = _uiState.asStateFlow()
 
+  // Store all items separately for filtering
+  private var allItems: List<Item> = emptyList()
+
   companion object {
     private const val FIRESTORE_TIMEOUT_MS = 2_000L
   }
@@ -56,31 +63,67 @@ class InventoryViewModel(
   /**
    * Loads the user's inventory items using offline-first pattern.
    *
-   * Uses short timeout (5 seconds) for local cache reads. With Firestore persistence, reads from
-   * cache complete quickly even offline.
+   * First loads from cache immediately (non-blocking), then fetches fresh data in the background.
+   * This provides instant UI updates from cache while ensuring data freshness.
    */
   fun loadInventory() {
     viewModelScope.launch {
-      _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+      _uiState.value = _uiState.value.copy(errorMessage = null)
       try {
         val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
 
-        // Get the list of item IDs from the account (with timeout for offline)
-        val itemIds =
-            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
-              accountRepository.getItemsList(currentUserId)
-            } ?: emptyList()
+        val cachedItemIds = accountRepository.getItemsList(currentUserId)
 
-        // Fetch all items using the batch method (with timeout for offline)
-        val items =
-            kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
-              itemsRepository.getItemsByIds(itemIds)
-            } ?: emptyList()
+        if (cachedItemIds.isNotEmpty()) {
+          val cachedItems = itemsRepository.getItemsByIds(cachedItemIds)
 
-        // Sort items by category using the predefined order
-        val sortedItems = sortItemsByCategory(items)
+          if (cachedItems.isNotEmpty()) {
+            // Display cached items immediately
+            val sortedCachedItems = sortItemsByCategory(cachedItems)
+            allItems = sortedCachedItems
+            val displayItems =
+                if (_uiState.value.isSearchActive) {
+                  filterItems(sortedCachedItems, _uiState.value.searchQuery)
+                } else {
+                  sortedCachedItems
+                }
+            _uiState.value = _uiState.value.copy(items = displayItems, isLoading = false)
+          }
+        }
 
-        _uiState.value = _uiState.value.copy(items = sortedItems, isLoading = false)
+        viewModelScope.launch {
+          try {
+            val freshItemIds =
+                kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+                  accountRepository.getItemsList(currentUserId)
+                } ?: cachedItemIds
+
+            val freshItems =
+                kotlinx.coroutines.withTimeoutOrNull(FIRESTORE_TIMEOUT_MS) {
+                  itemsRepository.getItemsByIds(freshItemIds)
+                } ?: emptyList()
+
+            if (freshItems.isNotEmpty() && freshItems != allItems) {
+              val sortedFreshItems = sortItemsByCategory(freshItems)
+              allItems = sortedFreshItems
+              // Apply current search filter if active
+              val displayItems =
+                  if (_uiState.value.isSearchActive) {
+                    filterItems(sortedFreshItems, _uiState.value.searchQuery)
+                  } else {
+                    sortedFreshItems
+                  }
+              _uiState.value = _uiState.value.copy(items = displayItems, isLoading = false)
+            }
+          } catch (e: Exception) {
+            // Silently fail background refresh -> user already sees cached data
+            if (_uiState.value.items.isEmpty()) {
+              _uiState.value =
+                  _uiState.value.copy(
+                      isLoading = false, errorMessage = "Failed to load inventory: ${e.message}")
+            }
+          }
+        }
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(
@@ -100,5 +143,38 @@ class InventoryViewModel(
   /** Clears the error message. */
   fun clearError() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
+  }
+
+  /** Toggles search mode on/off. */
+  fun toggleSearch() {
+    val newSearchActive = !_uiState.value.isSearchActive
+    _uiState.value =
+        _uiState.value.copy(
+            isSearchActive = newSearchActive,
+            searchQuery = if (newSearchActive) _uiState.value.searchQuery else "",
+            items =
+                if (newSearchActive) filterItems(allItems, _uiState.value.searchQuery)
+                else allItems)
+  }
+
+  /** Updates the search query and filters items. */
+  fun updateSearchQuery(query: String) {
+    _uiState.value = _uiState.value.copy(searchQuery = query, items = filterItems(allItems, query))
+  }
+
+  /**
+   * Filters items based on search query. Searches across brand, type, category, style, and notes.
+   */
+  private fun filterItems(items: List<Item>, query: String): List<Item> {
+    if (query.isBlank()) return items
+
+    val lowerQuery = query.lowercase().trim()
+    return items.filter { item ->
+      item.brand?.lowercase()?.contains(lowerQuery) == true ||
+          item.type?.lowercase()?.contains(lowerQuery) == true ||
+          item.category.lowercase().contains(lowerQuery) ||
+          item.style?.lowercase()?.contains(lowerQuery) == true ||
+          item.notes?.lowercase()?.contains(lowerQuery) == true
+    }
   }
 }

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -19,6 +20,9 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
+import com.android.ootd.ui.post.items.EditItemsScreen
+import com.android.ootd.ui.post.items.EditItemsScreenSmallPreview
+import com.android.ootd.ui.post.items.EditItemsScreenTestTags
 import com.android.ootd.ui.post.items.EditItemsViewModel
 import io.mockk.every
 import io.mockk.mockk
@@ -44,17 +48,13 @@ class EditItemsScreenTest {
         runCatching {
               composeTestRule
                   .onNodeWithTag(
-                      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                          .INPUT_ITEM_MATERIAL,
-                      useUnmergedTree = true)
+                      EditItemsScreenTestTags.INPUT_ITEM_MATERIAL, useUnmergedTree = true)
                   .assertExists()
             }
             .isSuccess
     if (!alreadyVisible) {
       composeTestRule
-          .onNodeWithTag(
-              _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                  .ADDITIONAL_DETAILS_TOGGLE)
+          .onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
           .performClick()
       composeTestRule.waitForIdle()
     }
@@ -70,123 +70,61 @@ class EditItemsScreenTest {
 
   @Test
   fun `screen displays all UI components`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule.onNodeWithText("EDIT ITEMS").assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .PLACEHOLDER_PICTURE)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ADD_PICTURE_GALLERY)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ADD_PICTURE_CAMERA)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_CATEGORY)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_TYPE)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_BRAND)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_PRICE)
-        .assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE).assertExists()
     ensureAdditionalDetailsVisible()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .ADDITIONAL_DETAILS_TOGGLE)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .ADDITIONAL_DETAILS_TOGGLE)
-        .performClick()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
     composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
+  }
+
+  @Test
+  fun `edit preview keeps additional details collapsed by default`() {
+    composeTestRule.setContent { EditItemsScreenSmallPreview() }
+
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).assertExists()
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .ADDITIONAL_DETAILS_TOGGLE)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .BUTTON_SAVE_CHANGES)
-        .assertExists()
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .BUTTON_DELETE_ITEM)
-        .assertExists()
+        .onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_SECTION, useUnmergedTree = true)
+        .assertIsNotDisplayed()
   }
 
   @Test
   fun `gallery button is clickable`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ADD_PICTURE_GALLERY)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY)
         .assertHasClickAction()
         .assertIsDisplayed()
   }
 
   @Test
   fun `camera button is clickable`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ADD_PICTURE_CAMERA)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA)
         .assertHasClickAction()
         .assertIsDisplayed()
   }
 
   @Test
   fun `save button is disabled when required fields are empty`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .BUTTON_SAVE_CHANGES)
-        .assertIsNotEnabled()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
   }
 
   @Test
@@ -197,30 +135,16 @@ class EditItemsScreenTest {
     mockViewModel.setPhoto(mockUri)
     mockViewModel.setCategory("Clothing")
 
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .BUTTON_SAVE_CHANGES)
-        .assertIsEnabled()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsEnabled()
   }
 
   @Test
   fun `delete button is disabled when itemId is empty`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .BUTTON_DELETE_ITEM)
-        .assertIsNotEnabled()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsNotEnabled()
   }
 
   @Test
@@ -238,122 +162,74 @@ class EditItemsScreenTest {
             link = null,
             ownerId = "ownerID"))
 
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .BUTTON_DELETE_ITEM)
-        .assertIsEnabled()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsEnabled()
   }
 
   @Test
   fun `category dropdown shows and selects option`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     // Click to open dropdown
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_CATEGORY)
-        .performClick()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).performClick()
 
     // Select an option
     composeTestRule.onNodeWithText("Clothing").performClick()
 
     // Verify selection
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_CATEGORY)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
         .assertTextContains("Clothing")
   }
 
   @Test
   fun `type field accepts text input`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_TYPE)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .performTextInput("T-shirt")
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_TYPE)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .assertTextContains("T-shirt")
   }
 
   @Test
   fun `brand field accepts text input`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
+
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).performTextInput("Nike")
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_BRAND)
-        .performTextInput("Nike")
-
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_BRAND)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
         .assertTextContains("Nike")
   }
 
   @Test
   fun `price field accepts numeric input`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_PRICE)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .performTextInput("49.99")
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_PRICE)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
   }
 
   @Test
   fun `link field accepts text input`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK,
-            useUnmergedTree = true)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .performTextInput("https://example.com")
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK,
-            useUnmergedTree = true)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .assertTextContains("https://example.com")
   }
 
@@ -381,42 +257,24 @@ class EditItemsScreenTest {
 
     mockViewModel.loadItem(item)
 
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_CATEGORY)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
         .assertTextContains("Clothing")
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_TYPE)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .assertTextContains("T-shirt")
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_BRAND)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND)
         .assertTextContains("Nike")
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_PRICE)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .ADDITIONAL_DETAILS_TOGGLE)
-        .performClick()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
     composeTestRule.waitForIdle()
     composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_LINK,
-            useUnmergedTree = true)
+        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK, useUnmergedTree = true)
         .assertTextContains("https://example.com")
   }
 
@@ -424,8 +282,7 @@ class EditItemsScreenTest {
   fun `goBack is called when back button is clicked`() {
     var backCalled = false
     composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel, goBack = { backCalled = true })
+      EditItemsScreen(editItemsViewModel = mockViewModel, goBack = { backCalled = true })
     }
 
     composeTestRule.onNodeWithContentDescription("Back").performClick()
@@ -435,27 +292,17 @@ class EditItemsScreenTest {
 
   @Test
   fun `placeholder is shown when no image is selected`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule.onNodeWithText("No picture yet").assertIsDisplayed()
   }
 
   @Test
   fun `all input fields have proper labels`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     // Category is now a dropdown, so check it exists with different assertion
-    composeTestRule
-        .onNodeWithTag(
-            _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreenTestTags
-                .INPUT_ITEM_CATEGORY)
-        .assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
     composeTestRule.onNodeWithText("Type").assertExists()
     composeTestRule.onNodeWithText("Brand").assertExists()
     composeTestRule.onNodeWithText("Item price").assertExists()
@@ -464,10 +311,7 @@ class EditItemsScreenTest {
 
   @Test
   fun `buttons have proper text labels`() {
-    composeTestRule.setContent {
-      _root_ide_package_.com.android.ootd.ui.post.items.EditItemsScreen(
-          editItemsViewModel = mockViewModel)
-    }
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
     composeTestRule.onNodeWithText("Select from Gallery").assertExists()
     composeTestRule.onNodeWithText("Take a new picture").assertExists()

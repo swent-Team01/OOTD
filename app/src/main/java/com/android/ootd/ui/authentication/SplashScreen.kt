@@ -1,64 +1,26 @@
 package com.android.ootd.ui.authentication
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.R
-import com.android.ootd.ui.theme.Background
-import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.LoadingScreen
 import kotlinx.coroutines.delay
 
 private const val SPLASH_TIMEOUT = 1000L
+
 private val splashProgressTab = "splashProgress"
 private val splashLogoTag = "splashLogo"
 
 /**
- * UI content for the app splash screen.
- *
- * This composable is intentionally stateless and contains only layout and visual elements so it can
- * be safely used inside `@Preview` functions. It centers the app's hanger image and a progress
- * indicator vertically and horizontally.
- *
- * @param modifier Optional [Modifier] to be applied to the root container. Defaults to [Modifier].
- */
-@Composable
-fun SplashScreenContent(modifier: Modifier = Modifier) {
-  Column(
-      modifier =
-          modifier
-              .fillMaxWidth()
-              .fillMaxHeight()
-              .background(Background)
-              .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(
-            painter = painterResource(id = R.drawable.hanger),
-            contentDescription = null,
-            modifier = Modifier.size(128.dp).padding(bottom = 16.dp).testTag(splashLogoTag))
-
-        CircularProgressIndicator(color = Primary, modifier = Modifier.testTag(splashProgressTab))
-      }
-}
-
-/**
  * Full splash screen entry point used in the running app.
  *
- * This composable composes [SplashScreenContent] and performs production side effects such as
- * notifying the [SplashViewModel] that the app started and delaying for [SPLASH_TIMEOUT]
- * milliseconds before continuing navigation.
+ * This composable composes [LoadingScreen] and performs production side effects such as notifying
+ * the [SplashViewModel] that the app started and delaying for [SPLASH_TIMEOUT] milliseconds before
+ * continuing navigation.
  *
  * @param modifier Optional [Modifier] applied to the content container.
  * @param onSignedIn: Navigation callback invoked if the user is signed in.
@@ -73,7 +35,10 @@ fun SplashScreen(
     onNotSignedIn: () -> Unit = {},
     viewModel: SplashViewModel = viewModel()
 ) {
-  SplashScreenContent(modifier)
+  LoadingScreen(
+      modifier.testTag(splashLogoTag),
+      loadingModifier = modifier.testTag(splashProgressTab),
+      contentDescription = "Loading app")
 
   LaunchedEffect(Unit) {
     delay(SPLASH_TIMEOUT)
@@ -84,11 +49,11 @@ fun SplashScreen(
 /**
  * Preview of the splash screen UI.
  *
- * This preview uses the stateless [SplashScreenContent] so it can be rendered inside Android
- * Studio's Preview tooling without requiring a `ViewModelStoreOwner` or lifecycle.
+ * This preview uses the stateless [LoadingScreen] so it can be rendered inside Android Studio's
+ * Preview tooling without requiring a `ViewModelStoreOwner` or lifecycle.
  */
 @Preview(showBackground = true)
 @Composable
 fun SplashScreenPreview() {
-  SplashScreenContent(modifier = Modifier.fillMaxSize())
+  LoadingScreen(modifier = Modifier.fillMaxSize())
 }
