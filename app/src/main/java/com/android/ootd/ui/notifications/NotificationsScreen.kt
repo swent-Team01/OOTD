@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.NOTIFICATION_LIST
+import javax.annotation.processing.Generated
 
 object NotificationsScreenTestTags {
   const val NOTIFICATIONS_SCREEN = "notificationsScreen"
@@ -50,6 +51,11 @@ object NotificationsScreenTestTags {
   const val PUSH_NOTIFICATIONS_INSTRUCTIONS = "pushNotificationsInstructions"
   const val ENABLE_PUSH_NOTIFICATIONS = "enablePushNotifications"
 }
+
+@Generated("jacoco ignore")
+@Composable
+fun rememberPermissionLauncher(onResult: (Boolean) -> Unit) =
+    rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission(), onResult)
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -67,11 +73,7 @@ fun NotificationsScreen(
             PackageManager.PERMISSION_GRANTED)
   }
 
-  val permissionLauncher =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        // Update state when permission result comes back
-        isNotificationsPermissionGranted = isGranted
-      }
+  val permissionLauncher = rememberPermissionLauncher { isNotificationsPermissionGranted = it }
 
   Column(
       modifier =
