@@ -42,23 +42,8 @@ class ItemFormSharedComponentsTest {
           notesField = "notesField")
 
   @Test
-  fun additionalDetailsSection_collapsesAndExpandsOnToggle() {
-    composeTestRule.setContent {
-      AdditionalDetailsSection(
-          state =
-              AdditionalDetailsState(
-                  condition = "New",
-                  onConditionChange = {},
-                  material = "Cotton 80%",
-                  onMaterialChange = {},
-                  fitType = "Regular",
-                  onFitTypeChange = {},
-                  style = "Casual",
-                  onStyleChange = {},
-                  notes = "Great condition",
-                  onNotesChange = {}),
-          tags = tags)
-    }
+  fun additionalDetailsSection_collapsesByDefault_andExpandsOnToggle() {
+    composeTestRule.setContent { AdditionalDetailsSection(state = sampleState(), tags = tags) }
 
     composeTestRule.onAllNodesWithTag(tags.section, useUnmergedTree = true).assertCountEquals(0)
     composeTestRule.onNodeWithTag(tags.toggle).performClick()
@@ -68,24 +53,10 @@ class ItemFormSharedComponentsTest {
   }
 
   @Test
-  fun additionalDetailsSection_respectsInitialExpansion() {
+  fun additionalDetailsSection_respectsInitialExpansionFlag() {
     composeTestRule.setContent {
       AdditionalDetailsSection(
-          state =
-              AdditionalDetailsState(
-                  condition = "Used",
-                  onConditionChange = {},
-                  material = "Wool",
-                  onMaterialChange = {},
-                  fitType = "Slim",
-                  onFitTypeChange = {},
-                  style = "Formal",
-                  onStyleChange = {},
-                  notes = "",
-                  onNotesChange = {},
-                  expandedInitially = true,
-                  condExpandedInitially = true),
-          tags = tags)
+          state = sampleState(expandedInitially = true, condExpandedInitially = true), tags = tags)
     }
 
     composeTestRule.onNodeWithTag(tags.conditionField).assertIsDisplayed()
@@ -118,4 +89,22 @@ class ItemFormSharedComponentsTest {
     composeTestRule.onNodeWithTag("detailsSlot").assertIsDisplayed()
     composeTestRule.onNodeWithTag("actionsSlot").assertIsDisplayed()
   }
+
+  private fun sampleState(
+      expandedInitially: Boolean = false,
+      condExpandedInitially: Boolean = false
+  ) =
+      AdditionalDetailsState(
+          condition = "Sample",
+          onConditionChange = {},
+          material = "Cotton",
+          onMaterialChange = {},
+          fitType = "Regular",
+          onFitTypeChange = {},
+          style = "Casual",
+          onStyleChange = {},
+          notes = "Notes",
+          onNotesChange = {},
+          expandedInitially = expandedInitially,
+          condExpandedInitially = condExpandedInitially)
 }
