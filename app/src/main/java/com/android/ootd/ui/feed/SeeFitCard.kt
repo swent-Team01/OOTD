@@ -86,7 +86,7 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
                             shape = RoundedCornerShape(12.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)) {
                   Text(
-                      text = "${item.price?.toInt()} ${item.currency}",
+                      text = "${item.price.toInt()} ${item.currency}",
                       style =
                           MaterialTheme.typography.labelMedium.copy(
                               color = MaterialTheme.colorScheme.onSurfaceVariant))

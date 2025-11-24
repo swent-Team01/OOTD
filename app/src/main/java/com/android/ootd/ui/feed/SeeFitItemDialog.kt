@@ -203,7 +203,6 @@ private fun CopyableDetailRow(
     onTextClick: (() -> Unit)? = null,
     isLink: Boolean = false
 ) {
-  val baseColor = MaterialTheme.colorScheme.onSurfaceVariant
   val valueColor = if (isLink) Primary else MaterialTheme.colorScheme.onSurfaceVariant
   val linkFontSize =
       when {
