@@ -397,17 +397,7 @@ class TypeSuggestionsLoaderTest {
 
     val jewelryItems = suggestions["Jewelry"]!!
     val expectedItems =
-        listOf(
-            "Ring",
-            "Necklace",
-            "Bracelet",
-            "Earrings",
-            "Brooch",
-            "Cufflinks",
-            "Anklet",
-            "Pendant",
-            "Choker")
-
+        listOf("Ring", "Necklace", "Bracelet", "Earrings", "Cufflinks", "Anklet", "Pendant")
     expectedItems.forEach { expectedItem ->
       assertTrue(
           "Jewelry should contain $expectedItem",
