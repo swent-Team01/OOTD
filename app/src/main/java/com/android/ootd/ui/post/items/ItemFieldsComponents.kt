@@ -68,6 +68,10 @@ fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<St
   return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
 }
 
+/**
+ * Groups the main item inputs (brand, price/currency, size, and link) with consistent spacing so
+ * screens can drop in the entire block without wiring each field manually.
+ */
 @Composable
 fun ItemPrimaryFields(
     brand: String,
@@ -471,6 +475,10 @@ fun commonTextFieldColors() =
         focusedTextColor = MaterialTheme.colorScheme.primary,
         unfocusedTextColor = MaterialTheme.colorScheme.primary)
 
+/**
+ * Shared dropdown used by condition/currency pickers, wiring label, placeholder, and optional
+ * "clear" action while keeping the same Material styling everywhere.
+ */
 @Composable
 private fun SelectionDropdownField(
     value: String,
@@ -538,6 +546,10 @@ private fun SelectionDropdownField(
   }
 }
 
+/**
+ * Text input with autocomplete suggestions (type/style/fit). It centralizes the menu behavior,
+ * filtering, and test tags so every field behaves identically.
+ */
 @Composable
 private fun SuggestionsDropdownField(
     value: String,
