@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
@@ -32,11 +31,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -78,6 +74,10 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.ActionIconButton
+import com.android.ootd.utils.BackArrow
+import com.android.ootd.utils.CenteredLoadingState
+import com.android.ootd.utils.OOTDTopBar
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
@@ -193,34 +193,46 @@ private fun PreviewItemScreenContent(
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
-          CenterAlignedTopAppBar(
-              title = {
-                Text(
-                    text = "OOTD",
-                    style =
-                        MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
-              },
-              navigationIcon = {
-                IconButton(
-                    onClick = { onGoBack(ui.postUuid) },
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
-                      Icon(
-                          Icons.AutoMirrored.Outlined.ArrowBack,
-                          contentDescription = "go back",
-                          tint = MaterialTheme.colorScheme.tertiary)
-                    }
-              },
-              colors =
-                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-                      containerColor = MaterialTheme.colorScheme.background,
-                      scrolledContainerColor = MaterialTheme.colorScheme.background,
-                      titleContentColor = Primary,
-                      navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-              scrollBehavior = scrollBehavior)
-        },
+          OOTDTopBar(
+              textModifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
+              leftComposable = {
+                BackArrow(
+                    onBackClick = { onGoBack(ui.postUuid) },
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON))
+              })
+        }
+        //            {
+        //          CenterAlignedTopAppBar(
+        //              title = {
+        //                Text(
+        //                    text = "OOTD",
+        //                    style =
+        //                        MaterialTheme.typography.displayLarge.copy(
+        //                            fontWeight = FontWeight.Bold,
+        //                            color = MaterialTheme.colorScheme.primary),
+        //                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
+        //              },
+        //              navigationIcon = {
+        //                IconButton(
+        //                    onClick = { onGoBack(ui.postUuid) },
+        //                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON))
+        // {
+        //                      Icon(
+        //                          Icons.AutoMirrored.Outlined.ArrowBack,
+        //                          contentDescription = "go back",
+        //                          tint = MaterialTheme.colorScheme.tertiary)
+        //                    }
+        //              },
+        //              colors =
+        //                  TopAppBarDefaults.centerAlignedTopAppBarColors(
+        //                      containerColor = MaterialTheme.colorScheme.background,
+        //                      scrolledContainerColor = MaterialTheme.colorScheme.background,
+        //                      titleContentColor = Primary,
+        //                      navigationIconContentColor =
+        // MaterialTheme.colorScheme.onSurfaceVariant),
+        //              scrollBehavior = scrollBehavior)
+        //        }
+        ,
         bottomBar = {
           Row(
               modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -348,14 +360,7 @@ private fun PreviewItemScreenContent(
       Box(
           modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
           contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-              CircularProgressIndicator(color = Primary)
-              Spacer(modifier = Modifier.height(12.dp))
-              Text(
-                  text = "Publishing your outfit...",
-                  color = White,
-                  style = MaterialTheme.typography.bodyLarge)
-            }
+            CenteredLoadingState(message = "Publishing your outfit...", textColor = White)
           }
     }
   }
@@ -365,7 +370,8 @@ private fun PreviewItemScreenContent(
 @Composable
 fun OutfitItem(item: Item, onClick: (String) -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
-
+  val expandIcon =
+      if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
   Card(
       modifier =
           Modifier.fillMaxWidth()
@@ -441,26 +447,18 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
           Row(
               modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(
+                ActionIconButton(
                     onClick = { onClick(item.itemUuid) },
+                    icon = Icons.Default.Edit,
+                    contentDescription = "Edit item",
                     modifier =
-                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.Default.Edit,
-                          contentDescription = "Edit item",
-                          tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                IconButton(
+                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON),
+                    tint = MaterialTheme.colorScheme.onSurface)
+                ActionIconButton(
                     onClick = { isExpanded = !isExpanded },
-                    modifier =
-                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EXPAND_ICON)) {
-                      Icon(
-                          imageVector =
-                              if (isExpanded) Icons.Default.KeyboardArrowUp
-                              else Icons.Default.KeyboardArrowDown,
-                          contentDescription = if (isExpanded) "Collapse" else "Expand",
-                          tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    icon = expandIcon,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurface)
               }
         }
       }

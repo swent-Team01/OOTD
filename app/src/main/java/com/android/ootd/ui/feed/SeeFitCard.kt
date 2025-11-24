@@ -13,18 +13,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
+import com.android.ootd.utils.ShowText
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -70,19 +69,17 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
                           .padding(8.dp),
                   horizontalAlignment = Alignment.CenterHorizontally,
                   verticalArrangement = Arrangement.Center) {
-                    Text(
+                    ShowText(
                         text = item.category,
                         style =
                             MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant),
-                        textAlign = TextAlign.Center,
                         modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
-                    Text(
+                    ShowText(
                         text = item.type ?: "",
                         style =
                             MaterialTheme.typography.bodyLarge.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant),
-                        textAlign = TextAlign.Center,
                         modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
                   }
             }

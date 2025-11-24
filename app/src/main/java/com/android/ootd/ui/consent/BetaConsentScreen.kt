@@ -15,11 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.ShowText
 
 object BetaConsentScreenTestTags {
   const val SCREEN = "betaConsentScreen"
@@ -75,21 +75,17 @@ fun BetaConsentScreen(
               Spacer(modifier = Modifier.height(12.dp))
 
               // Title
-              Text(
+              ShowText(
                   text = "OOTD Beta Program",
                   style = typography.headlineMedium,
-                  fontWeight = FontWeight.Bold,
-                  color = colors.primary,
-                  textAlign = TextAlign.Center,
                   modifier = Modifier.testTag(BetaConsentScreenTestTags.TITLE))
 
               Spacer(modifier = Modifier.height(4.dp))
 
-              Text(
+              ShowText(
                   text = "Data Collection & Usage Agreement",
                   style = typography.titleSmall,
-                  color = colors.onSurfaceVariant,
-                  textAlign = TextAlign.Center)
+                  color = colors.onSurfaceVariant)
 
               Spacer(modifier = Modifier.height(16.dp))
 

@@ -152,10 +152,9 @@ fun ProfilePicture(
     Box(
         modifier = Modifier.size(size).clip(shape).background(Primary),
         contentAlignment = Alignment.Center) {
-          Text(
+          ShowText(
               text = username.firstOrNull()?.uppercase() ?: "",
               style = textStyle,
-              fontFamily = Bodoni,
               color = Secondary,
               modifier = modifier) // Only test tag
         }
@@ -176,6 +175,7 @@ fun DisplayUserPosts(
     posts: List<OutfitPost>,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    displayPerRow: Int = 3,
     padding: Dp,
     spacing: Dp
 ) {
@@ -189,7 +189,7 @@ fun DisplayUserPosts(
   val totalHeight = rowCount * itemHeight.value + (rowCount - 1) * spacing.value
 
   LazyVerticalGrid(
-      columns = GridCells.Fixed(3),
+      columns = GridCells.Fixed(displayPerRow),
       horizontalArrangement = Arrangement.spacedBy(spacing),
       verticalArrangement = Arrangement.spacedBy(spacing),
       modifier = Modifier.fillMaxWidth().height(totalHeight.dp)) {
@@ -533,7 +533,11 @@ fun PermissionRequestScreen(
  * @param message The optional message to display below the progress indicator.
  */
 @Composable
-fun CenteredLoadingState(modifier: Modifier = Modifier, message: String? = null) {
+fun CenteredLoadingState(
+    modifier: Modifier = Modifier,
+    message: String? = null,
+    textColor: Color = colorScheme.onSurfaceVariant
+) {
   Column(
       modifier = modifier.fillMaxSize(),
       verticalArrangement = Arrangement.Center,
@@ -541,7 +545,7 @@ fun CenteredLoadingState(modifier: Modifier = Modifier, message: String? = null)
         CircularProgressIndicator(color = colorScheme.primary)
         if (message != null) {
           Spacer(modifier = Modifier.height(12.dp))
-          Text(text = message, style = typography.bodyLarge, color = colorScheme.onSurfaceVariant)
+          Text(text = message, style = typography.bodyLarge, color = textColor)
         }
       }
 }
@@ -555,17 +559,27 @@ fun CenteredLoadingState(modifier: Modifier = Modifier, message: String? = null)
  * @param modifier The modifier to be applied to the container.
  */
 @Composable
-fun CenteredEmptyState(message: String, modifier: Modifier = Modifier) {
+fun CenteredEmptyState(
+    message: String,
+    icon: @Composable (() -> Unit)? = null,
+    spacer: Dp = 8.dp,
+    modifier: Modifier = Modifier,
+    textColor: Color = colorScheme.onSurfaceVariant
+) {
   Column(
       modifier = modifier.fillMaxSize(),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally) {
+        if (icon != null) {
+          icon.invoke()
+          Spacer(modifier = Modifier.height(spacer))
+        }
         Text(
             text = message,
             style = typography.bodyLarge,
-            color = colorScheme.onSurfaceVariant,
+            color = textColor,
             textAlign = Center,
-            modifier = Modifier.padding(32.dp))
+            modifier = Modifier.padding(spacer * 2))
       }
 }
 
