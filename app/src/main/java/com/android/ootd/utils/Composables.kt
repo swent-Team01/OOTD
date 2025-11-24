@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
@@ -36,6 +38,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -63,6 +66,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
+import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Primary
@@ -563,4 +567,63 @@ fun CenteredEmptyState(message: String, modifier: Modifier = Modifier) {
             textAlign = Center,
             modifier = Modifier.padding(32.dp))
       }
+}
+
+/**
+ * Displays a standard icon button with customizable icon, color, and size.
+ *
+ * @param onClick Callback invoked when the button is clicked.
+ * @param icon The icon to display.
+ * @param contentDescription The content description for accessibility.
+ * @param modifier The modifier to be applied to the button.
+ * @param tint The tint color of the icon. Defaults to Primary.
+ * @param size The size of the icon. Defaults to 24.dp.
+ */
+@Composable
+fun ActionIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    tint: Color = colorScheme.primary,
+    size: Dp = 24.dp
+) {
+  IconButton(onClick = onClick, modifier = modifier) {
+    Icon(
+        imageVector = icon,
+        contentDescription = contentDescription,
+        tint = tint,
+        modifier = Modifier.size(size))
+  }
+}
+
+/** Reusable generic text field with common styling */
+@Composable
+fun CommonTextField(
+    value: String,
+    onChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    readOnly: Boolean = false,
+    isError: Boolean = false,
+    keyBoardActions: KeyboardActions = KeyboardActions.Default,
+    keyBoardOptions: KeyboardOptions = KeyboardOptions.Default,
+    trailingIcon: @Composable (() -> Unit)? = null,
+) {
+  OutlinedTextField(
+      value = value,
+      onValueChange = onChange,
+      label = { Text(label) },
+      placeholder = { Text(placeholder) },
+      textStyle = typography.bodyMedium.copy(color = colorScheme.primary),
+      singleLine = singleLine,
+      readOnly = readOnly,
+      isError = isError,
+      keyboardActions = keyBoardActions,
+      keyboardOptions = keyBoardOptions,
+      trailingIcon = trailingIcon,
+      colors = commonTextFieldColors(),
+      modifier = modifier.fillMaxWidth())
 }

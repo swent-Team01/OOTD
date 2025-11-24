@@ -1,13 +1,11 @@
 package com.android.ootd.ui.map
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
@@ -18,8 +16,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +41,7 @@ import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.CommonTextField
 
 // Test tags for location selection UI
 object LocationSelectionTestTags {
@@ -203,34 +200,35 @@ fun LocationSelectionSection(
 
     // Manual Input Field with dropdown
     Box {
-      OutlinedTextField(
+      CommonTextField(
           value = locationUiState.locationQuery,
-          onValueChange = {
+          onChange = {
             viewModel.setLocationQuery(it)
             if (isFocused) {
               showDropdown = true
             }
           },
-          textStyle = typography.bodyLarge.copy(fontFamily = Bodoni, color = colors.primary),
-          label = {
-            Box(
-                modifier =
-                    Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)) {
-                  Text(
-                      text = textLocationField,
-                      style = typography.bodySmall.copy(fontFamily = Bodoni),
-                      color = colors.tertiary)
-                }
-          },
-          placeholder = {
-            Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
-          },
-          colors =
-              OutlinedTextFieldDefaults.colors(
-                  focusedTextColor = colors.primary,
-                  unfocusedTextColor = colors.primary,
-                  cursorColor = colors.primary),
+          label = textLocationField,
+          //              {
+          //            Box(
+          //                modifier =
+          //                    Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
+          //                        .padding(horizontal = 8.dp, vertical = 4.dp)) {
+          //                  Text(
+          //                      text = textLocationField,
+          //                      style = typography.bodySmall.copy(fontFamily = Bodoni),
+          //                      color = colors.tertiary)
+          //                }
+          //          },
+          placeholder = "Or enter address manually",
+          //              {
+          //            Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
+          //          },
+          //          colors =
+          //              OutlinedTextFieldDefaults.colors(
+          //                  focusedTextColor = colors.primary,
+          //                  unfocusedTextColor = colors.primary,
+          //                  cursorColor = colors.primary),
           trailingIcon = {
             LocationInputTrailingIcon(
                 isLoadingLocation = locationUiState.isLoadingLocations,
