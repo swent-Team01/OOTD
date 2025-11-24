@@ -26,6 +26,42 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 
 /**
+ * Marker content that displays a profile picture or initials. Extracted for testability - this can
+ * be tested without Google Maps rendering.
+ *
+ * @param username Name of the user, used for initials
+ * @param imageUrl URL of the profile picture; if null or empty, initials will be shown instead
+ */
+@Composable
+fun MarkerContent(username: String, imageUrl: String?) {
+  val shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 0.dp)
+  val painter =
+      rememberAsyncImagePainter(
+          ImageRequest.Builder(LocalContext.current).data(imageUrl).allowHardware(false).build())
+
+  Box(
+      modifier =
+          Modifier.size(48.dp)
+              .clip(shape)
+              .background(MaterialTheme.colorScheme.secondary)
+              .padding(4.dp),
+      contentAlignment = Alignment.Center) {
+        if (!imageUrl.isNullOrEmpty()) {
+          Image(
+              painter = painter,
+              contentDescription = "Profile Picture for $username",
+              modifier = Modifier.fillMaxSize().clip(shape),
+              contentScale = ContentScale.Crop)
+        } else {
+          Text(
+              text = username.take(1).uppercase(),
+              color = MaterialTheme.colorScheme.primary,
+              style = MaterialTheme.typography.bodyLarge)
+        }
+      }
+}
+
+/**
  * Marker composable that displays a profile picture or initials at a given location.
  *
  * Disclaimer: Inspiration for this code comes from
@@ -46,13 +82,9 @@ fun ProfilePictureMarker(
     onClick: () -> Unit
 ) {
   val markerState = remember { MarkerState(position = location.toLatLng()) }
-  val shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 0.dp)
-  val painter =
-      rememberAsyncImagePainter(
-          ImageRequest.Builder(LocalContext.current).data(imageUrl).allowHardware(false).build())
 
   MarkerComposable(
-      keys = arrayOf(username, painter.state),
+      keys = arrayOf(username, imageUrl ?: ""),
       state = markerState,
       title = username,
       tag = tag,
@@ -61,25 +93,6 @@ fun ProfilePictureMarker(
         onClick()
         true
       }) {
-        Box(
-            modifier =
-                Modifier.size(48.dp)
-                    .clip(shape)
-                    .background(MaterialTheme.colorScheme.secondary)
-                    .padding(4.dp),
-            contentAlignment = Alignment.Center) {
-              if (!imageUrl.isNullOrEmpty()) {
-                Image(
-                    painter = painter,
-                    contentDescription = "Profile Picture for $username",
-                    modifier = Modifier.fillMaxSize().clip(shape),
-                    contentScale = ContentScale.Crop)
-              } else {
-                Text(
-                    text = username.take(1).uppercase(),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyLarge)
-              }
-            }
+        MarkerContent(username = username, imageUrl = imageUrl)
       }
 }
