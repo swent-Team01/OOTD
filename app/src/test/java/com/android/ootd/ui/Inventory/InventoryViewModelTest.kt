@@ -159,22 +159,6 @@ class InventoryViewModelTest {
   }
 
   @Test
-  fun `loadInventory can be called manually`() = runTest {
-    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
-    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
-    viewModel = InventoryViewModel(accountRepository, itemsRepository)
-    advanceUntilIdle()
-
-    coEvery { accountRepository.getItemsList(testUserId) } returns emptyList()
-    coEvery { itemsRepository.getItemsByIds(emptyList()) } returns emptyList()
-    viewModel.loadInventory()
-    advanceUntilIdle()
-
-    Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
-    coVerify(exactly = 2) { accountRepository.getItemsList(testUserId) }
-  }
-
-  @Test
   fun `user not logged in throws exception`() = runTest {
     every { mockAuth.currentUser } returns null
 
@@ -185,42 +169,143 @@ class InventoryViewModelTest {
   }
 
   @Test
-  fun `loadInventory uses empty list when getItemsList times out`() = runTest {
-    // Simulate timeout by making getItemsList suspend indefinitely
-    coEvery { accountRepository.getItemsList(testUserId) } coAnswers
-        {
-          kotlinx.coroutines.delay(5000) // Longer than the 2s timeout
-          testItemIds
-        }
-    coEvery { itemsRepository.getItemsByIds(emptyList()) } returns emptyList()
-
+  fun `toggleSearch activates search mode`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
     viewModel = InventoryViewModel(accountRepository, itemsRepository)
     advanceUntilIdle()
+    Assert.assertFalse(viewModel.uiState.value.isSearchActive)
 
-    Assert.assertFalse(viewModel.uiState.value.isLoading)
-    Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
-    Assert.assertNull(viewModel.uiState.value.errorMessage)
-    coVerify { accountRepository.getItemsList(testUserId) }
-    coVerify { itemsRepository.getItemsByIds(emptyList()) }
+    viewModel.toggleSearch()
+
+    Assert.assertTrue(viewModel.uiState.value.isSearchActive)
   }
 
   @Test
-  fun `loadInventory uses empty list when getItemsByIds times out`() = runTest {
+  fun `toggleSearch deactivates search mode and clears query`() = runTest {
     coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
-    // Simulate timeout by making getItemsByIds suspend indefinitely
-    coEvery { itemsRepository.getItemsByIds(testItemIds) } coAnswers
-        {
-          kotlinx.coroutines.delay(5000) // Longer than the 2s timeout
-          testItems
-        }
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+    viewModel.updateSearchQuery("Nike")
+
+    viewModel.toggleSearch()
+
+    Assert.assertFalse(viewModel.uiState.value.isSearchActive)
+    Assert.assertEquals("", viewModel.uiState.value.searchQuery)
+    Assert.assertEquals(testItems.size, viewModel.uiState.value.items.size)
+  }
+
+  @Test
+  fun `updateSearchQuery filters by brand`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+
+    viewModel.updateSearchQuery("Nike")
+
+    Assert.assertEquals("Nike", viewModel.uiState.value.searchQuery)
+    Assert.assertEquals(1, viewModel.uiState.value.items.size)
+    Assert.assertEquals("Nike", viewModel.uiState.value.items[0].brand)
+  }
+
+  @Test
+  fun `updateSearchQuery filters by type`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+
+    viewModel.updateSearchQuery("Sneakers")
+
+    Assert.assertEquals(1, viewModel.uiState.value.items.size)
+    Assert.assertEquals("Sneakers", viewModel.uiState.value.items[0].type)
+  }
+
+  @Test
+  fun `updateSearchQuery filters by category`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+
+    viewModel.updateSearchQuery("Clothing")
+
+    Assert.assertEquals(1, viewModel.uiState.value.items.size)
+    Assert.assertEquals("Clothing", viewModel.uiState.value.items[0].category)
+  }
+
+  @Test
+  fun `updateSearchQuery is case insensitive`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+
+    viewModel.updateSearchQuery("nike")
+
+    Assert.assertEquals(1, viewModel.uiState.value.items.size)
+    Assert.assertEquals("Nike", viewModel.uiState.value.items[0].brand)
+  }
+
+  @Test
+  fun `updateSearchQuery with empty string shows all items`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+    viewModel.updateSearchQuery("Nike")
+
+    viewModel.updateSearchQuery("")
+
+    Assert.assertEquals(testItems.size, viewModel.uiState.value.items.size)
+  }
+
+  @Test
+  fun `updateSearchQuery with no matches returns empty list`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns testItemIds
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+    viewModel.toggleSearch()
+
+    viewModel.updateSearchQuery("NonExistentBrand")
+
+    Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
+  }
+
+  @Test
+  fun `background refresh updates items if different`() = runTest {
+    val newItems = listOf(testItems[0])
+    coEvery { accountRepository.getItemsList(testUserId) } returnsMany
+        listOf(testItemIds, listOf("item1"))
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+    coEvery { itemsRepository.getItemsByIds(listOf("item1")) } returns newItems
 
     viewModel = InventoryViewModel(accountRepository, itemsRepository)
     advanceUntilIdle()
 
-    Assert.assertFalse(viewModel.uiState.value.isLoading)
-    Assert.assertTrue(viewModel.uiState.value.items.isEmpty())
+    Assert.assertEquals(newItems, viewModel.uiState.value.items)
+  }
+
+  @Test
+  fun `background refresh failure is silent if cache exists`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns
+        testItemIds andThenThrows
+        Exception("Network")
+    coEvery { itemsRepository.getItemsByIds(testItemIds) } returns testItems
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    Assert.assertEquals(testItems, viewModel.uiState.value.items)
     Assert.assertNull(viewModel.uiState.value.errorMessage)
-    coVerify { accountRepository.getItemsList(testUserId) }
-    coVerify { itemsRepository.getItemsByIds(testItemIds) }
   }
 }

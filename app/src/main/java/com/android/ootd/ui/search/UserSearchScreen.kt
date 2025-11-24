@@ -22,7 +22,10 @@ object SearchScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
+fun UserSearchScreen(
+    viewModel: UserSearchViewModel = viewModel(),
+    onUserClick: (String) -> Unit = {}
+) {
   val uiState by viewModel.uiState.collectAsState()
 
   Column(
@@ -68,6 +71,7 @@ fun UserSearchScreen(viewModel: UserSearchViewModel = viewModel()) {
               hasRequestPending = uiState.hasRequestPending,
               errorMessage = uiState.errorMessage,
               onFollowClick = { viewModel.pressFollowButton() },
+              onUserClick = { onUserClick(uiState.selectedUser!!.uid) },
               onErrorDismiss = { viewModel.clearError() })
         }
       }
@@ -83,6 +87,6 @@ fun UserSearchScreenPreview() {
             userRepository = UserRepositoryInMemory(),
             accountRepository = AccountRepositoryInMemory(),
             overrideUser = true)
-    UserSearchScreen(viewModel = mockViewModel)
+    UserSearchScreen(viewModel = mockViewModel, onUserClick = {})
   }
 }
