@@ -21,6 +21,10 @@ interface NotificationRepository {
       accountRepository: AccountRepository
   )
 
+  suspend fun getUnpushedNotifications(receiverId: String): List<Notification>
+
+  suspend fun markNotificationAsPushed(notificationId: String)
+
   fun getFollowNotificationId(senderId: String, receiverId: String): String
 
   fun listenForUnpushedNotifications(

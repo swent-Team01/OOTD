@@ -185,6 +185,7 @@ dependencies {
   implementation(libs.androidx.foundation)
   implementation(libs.androidx.animation)
   implementation(libs.androidx.material3)
+  implementation(libs.androidx.work.runtime.ktx)
 
   // Firebase
   // Use Firebase BOM from version catalog for maintainability

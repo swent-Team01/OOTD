@@ -97,6 +97,39 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     return "${senderId}_follow_${receiverId}"
   }
 
+  override suspend fun getUnpushedNotifications(receiverId: String): List<Notification> {
+    return try {
+      val querySnapshot =
+          db.collection(NOTIFICATION_COLLECTION_PATH)
+              .whereEqualTo(RECEIVER_ID, receiverId)
+              .whereEqualTo("wasPushed", false)
+              .get()
+              .await()
+
+      querySnapshot.documents.mapNotNull { document -> transformNotificationDocument(document) }
+    } catch (e: Exception) {
+      Log.e(
+          "NotificationRepositoryFirestore",
+          "Error getting unpushed notifications: ${e.message}",
+          e)
+      emptyList()
+    }
+  }
+
+  override suspend fun markNotificationAsPushed(notificationId: String) {
+    try {
+      db.collection(NOTIFICATION_COLLECTION_PATH)
+          .document(notificationId)
+          .update("wasPushed", true)
+          .await()
+    } catch (e: Exception) {
+      Log.e(
+          "NotificationRepositoryFirestore",
+          "Error marking notification as pushed: ${e.message}",
+          e)
+    }
+  }
+
   /** Adds a listener directly to the firebase for notifications that have not been pushed yet. */
   override fun listenForUnpushedNotifications(
       receiverId: String,
@@ -106,17 +139,13 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
         .whereEqualTo(RECEIVER_ID, receiverId)
         .whereEqualTo("wasPushed", false)
         .addSnapshotListener { snapshot, error ->
-          if (error != null) {
-            Log.e("TAG = NotificationRepo", "Listener error: ${error.message}")
-            return@addSnapshotListener
-          }
+          if (error != null) return@addSnapshotListener
 
           snapshot?.documents?.forEach { doc ->
             val notification = transformNotificationDocument(doc)
             if (notification != null) {
               onNewNotification(notification)
 
-              // Mark as pushed
               db.collection(NOTIFICATION_COLLECTION_PATH)
                   .document(notification.uid)
                   .update("wasPushed", true)
