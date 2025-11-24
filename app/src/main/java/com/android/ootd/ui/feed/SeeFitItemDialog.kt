@@ -34,13 +34,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import com.android.ootd.R
+import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 
 /**
@@ -262,4 +265,30 @@ private fun DetailTextRow(label: String, value: String, tag: String) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant),
             textAlign = TextAlign.Center)
       }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SeeItemDetailsDialogPreview() {
+  OOTDTheme {
+    SeeItemDetailsDialog(
+        item =
+            Item(
+                itemUuid = "preview-item",
+                postUuids = emptyList(),
+                image = ImageData(imageId = "preview", imageUrl = ""),
+                category = "Outerwear",
+                type = "Leather Jacket",
+                brand = "Retro Co.",
+                price = 199.99,
+                currency = "USD",
+                material = emptyList(),
+                link = "https://example.com/item/very-long-link-to-show-scaling",
+                ownerId = "demo",
+                condition = "Like new",
+                size = "M",
+                fitType = "Regular",
+                style = "Casual",
+                notes = "Worn twice, stored properly."))
+  }
 }
