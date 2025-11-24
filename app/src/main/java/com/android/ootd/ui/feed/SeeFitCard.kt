@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.theme.Secondary
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -82,8 +83,7 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
                     Modifier.align(Alignment.TopEnd)
                         .padding(8.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
-                            shape = RoundedCornerShape(12.dp))
+                            color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)) {
                   Text(
                       text = "${item.price.toInt()} ${item.currency}",
