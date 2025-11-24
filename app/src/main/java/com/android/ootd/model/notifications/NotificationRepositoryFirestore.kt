@@ -22,7 +22,8 @@ data class NotificationDto(
     val receiverId: String = "",
     val type: String = "",
     val content: String = "",
-    val wasPushed: Boolean = false
+    val wasPushed: Boolean = false,
+    val senderName: String = ""
 )
 
 private fun Notification.toDto(): NotificationDto {
@@ -32,7 +33,8 @@ private fun Notification.toDto(): NotificationDto {
       receiverId = this.receiverId,
       type = this.type,
       content = this.content,
-      wasPushed = this.wasPushed)
+      wasPushed = this.wasPushed,
+      senderName = this.senderName)
 }
 
 private fun NotificationDto.toDomain(): Notification {
@@ -42,7 +44,8 @@ private fun NotificationDto.toDomain(): Notification {
       receiverId = this.receiverId,
       type = this.type,
       content = this.content,
-      wasPushed = this.wasPushed)
+      wasPushed = this.wasPushed,
+      senderName = this.senderName)
 }
 
 class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : NotificationRepository {

@@ -280,7 +280,13 @@ fun OOTDApp(
     if (testMode) {
       sendLocalNotification(
           Notification(
-              uid = "", senderId = "", receiverId = "", type = "", content = "", wasPushed = false))
+              uid = "",
+              senderId = "",
+              receiverId = "",
+              type = "",
+              content = "",
+              wasPushed = false,
+              senderName = ""))
     }
 
     listenerRegistration[0] =
