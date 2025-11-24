@@ -157,7 +157,8 @@ class UserSearchViewModel(
                 senderId = myUID,
                 receiverId = friendID,
                 type = NOTIFICATION_TYPE_FOLLOW_REQUEST,
-                content = "wants to follow you")
+                content = "wants to follow you",
+                senderName = accountRepository.getAccount(myUID).username)
 
         notificationRepository.addNotification(notification)
         _uiState.value = _uiState.value.copy(hasRequestPending = true, errorMessage = null)

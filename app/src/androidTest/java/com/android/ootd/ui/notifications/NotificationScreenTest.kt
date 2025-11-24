@@ -60,7 +60,13 @@ class NotificationsScreenTest : FirestoreTest() {
       mockViewModel.deleteFollowRequest(
           FollowRequestItem(
               notification =
-                  Notification(uid = "", senderId = "", receiverId = "", type = "", content = ""),
+                  Notification(
+                      uid = "",
+                      senderId = "",
+                      receiverId = "",
+                      type = "",
+                      content = "",
+                      senderName = ""),
               User()))
     }
     composeTestRule.setContent { NotificationsScreen(viewModel = mockViewModel, testMode = false) }
@@ -98,7 +104,8 @@ class NotificationsScreenTest : FirestoreTest() {
             senderId = currentUser.uid,
             receiverId = currentUser.uid,
             type = "FOLLOW_REQUEST",
-            content = "wants to follow you")
+            content = "wants to follow you",
+            senderName = "")
 
     val notification2 =
         Notification(
@@ -106,7 +113,8 @@ class NotificationsScreenTest : FirestoreTest() {
             senderId = currentUser.uid,
             receiverId = currentUser.uid,
             type = "FOLLOW_REQUEST",
-            content = "wants to follow you")
+            content = "wants to follow you",
+            senderName = "")
 
     notificationRepository.addNotification(notification1)
     notificationRepository.addNotification(notification2)
@@ -129,7 +137,8 @@ class NotificationsScreenTest : FirestoreTest() {
             senderId = currentUser.uid,
             receiverId = currentUser.uid,
             type = "FOLLOW_REQUEST",
-            content = "wants to follow you")
+            content = "wants to follow you",
+            senderName = "")
 
     val notification2 =
         Notification(
@@ -137,7 +146,8 @@ class NotificationsScreenTest : FirestoreTest() {
             senderId = currentUser.uid,
             receiverId = currentUser.uid,
             type = "FOLLOW_REQUEST",
-            content = "wants to follow you")
+            content = "wants to follow you",
+            senderName = "")
 
     notificationRepository.addNotification(notification1)
     notificationRepository.addNotification(notification2)
