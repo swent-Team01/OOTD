@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 
@@ -472,7 +473,7 @@ fun EditItemsScreenSmallPreview() {
     val imageScaleState = remember { mutableFloatStateOf(1f) }
 
     val nestedScrollConnection =
-        _root_ide_package_.com.android.ootd.ui.post.rememberImageResizeScrollConnection(
+        rememberImageResizeScrollConnection(
             currentImageSize = currentImageSizeState,
             imageScale = imageScaleState,
             minImageSize = minImageSize,
