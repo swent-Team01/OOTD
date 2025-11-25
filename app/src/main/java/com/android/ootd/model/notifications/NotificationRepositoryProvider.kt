@@ -6,11 +6,9 @@ import com.google.firebase.firestore.firestore
 
 object NotificationRepositoryProvider {
 
-  /** Default repository (real Firebase) */
-  private fun defaultRepository(): NotificationRepository {
-    return NotificationRepositoryFirestore(Firebase.firestore)
+  private val _repository: NotificationRepository by lazy {
+    NotificationRepositoryFirestore(Firebase.firestore)
   }
 
-  /** Mutable so JVM tests can override it */
-  var repository: NotificationRepository = defaultRepository()
+  var repository: NotificationRepository = _repository
 }
