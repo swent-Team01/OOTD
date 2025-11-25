@@ -99,7 +99,6 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                       uiState.posts.forEach { post ->
                         ProfilePictureMarker(
                             username = post.name,
-                            imageUrl = post.userProfilePicURL,
                             location = post.location,
                             tag = getTestTagForPostMarker(post.postUID),
                             onClick = { TODO("Handle marker click") })
