@@ -122,8 +122,9 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxSize(),
         ) {
           // Check if activity was launched from notification
-          val shouldNavigateToNotifications = intent?.action == NOTIFICATION_CLICK_ACTION
-          OOTDApp(shouldNavigateToNotifications = shouldNavigateToNotifications)
+          val shouldNavigateToUserProfile = intent?.action == NOTIFICATION_CLICK_ACTION
+          val senderId = intent.getStringExtra("senderId") ?: ""
+          OOTDApp(shouldNavigateToUserProfile = shouldNavigateToUserProfile, senderId = senderId)
         }
       }
     }
@@ -145,7 +146,8 @@ class MainActivity : ComponentActivity() {
  * @param context Compose-provided [Context], defaults to [LocalContext].
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
  * @param testMode Used for overriding permission screens for testing mode
- * @param shouldNavigateToNotifications Whether to navigate to notifications screen on launch
+ * @param shouldNavigateToUserProfile Whether to navigate to the sender of the follow request on
+ *   launch
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -155,19 +157,25 @@ fun OOTDApp(
     testNavController: NavHostController? = null,
     testStartDestination: String? = null,
     testMode: Boolean = false,
-    shouldNavigateToNotifications: Boolean = false
+    shouldNavigateToUserProfile: Boolean = false,
+    senderId: String = ""
 ) {
   val navController = testNavController ?: rememberNavController()
   val navigationActions = remember { NavigationActions(navController) }
   val startDestination = testStartDestination ?: Screen.Splash.route
 
   // Navigate to notifications screen if launched from notification
-  LaunchedEffect(shouldNavigateToNotifications) {
-    if (shouldNavigateToNotifications) {
+  LaunchedEffect(shouldNavigateToUserProfile) {
+    if (shouldNavigateToUserProfile) {
       // Wait for navigation to be ready and user to be authenticated
-      navController.navigate(Screen.NotificationsScreen.route) {
-        // Don't pop the back stack, allow user to navigate back normally
-        launchSingleTop = true
+      if (senderId != "") {
+        navigationActions.navigateTo(Screen.ViewUser(senderId))
+      } else {
+        // If there is no user, we just bring them to the notifications screen
+        navController.navigate(Screen.NotificationsScreen.route) {
+          // Don't pop the back stack, allow user to navigate back normally
+          launchSingleTop = true
+        }
       }
     }
   }
@@ -210,6 +218,7 @@ fun OOTDApp(
     val mainIntent =
         Intent(context, MainActivity::class.java).apply {
           action = NOTIFICATION_CLICK_ACTION
+          putExtra("senderId", notification.senderId)
           flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
