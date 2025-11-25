@@ -16,7 +16,16 @@ object CategoryNormalizer {
    * - Category sorting order in inventory
    * - Category grouping in inventory display
    */
-  val VALID_CATEGORIES = listOf("Clothing", "Shoes", "Accessories", "Bags", "Others")
+  val VALID_CATEGORIES =
+      listOf(
+          "Clothing",
+          "Shoes",
+          "Accessories",
+          "Jewelry",
+          "Bags",
+          "Sportswear",
+          "Underwear",
+          "Others")
 
   /**
    * Checks if a category name is valid.
