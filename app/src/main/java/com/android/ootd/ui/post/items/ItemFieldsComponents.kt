@@ -64,6 +64,15 @@ val STYLE_SUGGESTIONS =
 val FIT_TYPE_SUGGESTIONS =
     listOf("Slim", "Regular", "Relaxed", "Oversized", "Skinny", "Tailored", "Boxy", "Loose")
 
+private const val BRAND_MAX_LENGTH = 20
+private const val MATERIAL_MAX_LENGTH = 100
+private const val SIZE_MAX_LENGTH = 20
+private const val LINK_MAX_LENGTH = 160
+private const val NOTES_MAX_LENGTH = 250
+private const val TYPE_MAX_LENGTH = 40
+private const val STYLE_MAX_LENGTH = 40
+private const val FIT_TYPE_MAX_LENGTH = 30
+
 fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<String> {
   return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
 }
@@ -194,7 +203,8 @@ fun TypeField(
             else options.filter { it.startsWith(input, ignoreCase = true) }
         base.take(5)
       },
-      focusExpansion = { isFocused, _ -> isFocused })
+      focusExpansion = { isFocused, _ -> isFocused },
+      maxChars = TYPE_MAX_LENGTH)
 }
 
 /** Reusable generic text field with common styling */
@@ -204,16 +214,25 @@ private fun CommonTextField(
     onChange: (String) -> Unit,
     label: String,
     placeholder: String,
-    testTag: String
+    testTag: String,
+    maxChars: Int? = null
 ) {
   OutlinedTextField(
       value = value,
-      onValueChange = onChange,
+      onValueChange = {
+        if (maxChars == null || it.length <= maxChars) {
+          onChange(it)
+        }
+      },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
+      supportingText =
+          maxChars?.let {
+            { Text(text = "${value.length}/$it", style = MaterialTheme.typography.labelSmall) }
+          },
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
 
@@ -225,7 +244,8 @@ fun BrandField(brand: String, onChange: (String) -> Unit, testTag: String) {
       onChange = onChange,
       label = "Brand",
       placeholder = "Enter a brand",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = BRAND_MAX_LENGTH)
 }
 
 /** Reusable text field for material input */
@@ -236,7 +256,8 @@ fun MaterialField(materialText: String, onChange: (String) -> Unit, testTag: Str
       onChange = onChange,
       label = "Material",
       placeholder = "E.g., Cotton 80%, Wool 20%",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = MATERIAL_MAX_LENGTH)
 }
 
 /** Reusable text field for size input */
@@ -247,7 +268,8 @@ fun SizeField(size: String, onChange: (String) -> Unit, testTag: String) {
       onChange = onChange,
       label = "Size",
       placeholder = "e.g., M, 42, One-size",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = SIZE_MAX_LENGTH)
 }
 
 /** Autocomplete-style field for item style suggestions. */
@@ -268,7 +290,8 @@ fun StyleField(
               label = "Item style",
               placeholder = "e.g., Streetwear, Formal",
               textFieldTag = testTag,
-              dropdownTestTag = dropdownTestTag))
+              dropdownTestTag = dropdownTestTag),
+      maxChars = STYLE_MAX_LENGTH)
 }
 
 /** Autocomplete-style field for item fit type suggestions. */
@@ -289,7 +312,8 @@ fun FitTypeField(
               label = "Item fit type",
               placeholder = "e.g., oversized, slim",
               textFieldTag = testTag,
-              dropdownTestTag = dropdownTestTag))
+              dropdownTestTag = dropdownTestTag),
+      maxChars = FIT_TYPE_MAX_LENGTH)
 }
 
 /** Reusable text field for link input */
@@ -300,7 +324,8 @@ fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
       onChange = onChange,
       label = "Link",
       placeholder = "e.g., https://example.com",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = LINK_MAX_LENGTH)
 }
 
 /** Shared price field that always exposes a Double value. */
@@ -386,12 +411,20 @@ fun NotesField(
 ) {
   OutlinedTextField(
       value = notes,
-      onValueChange = onChange,
+      onValueChange = {
+        if (it.length <= NOTES_MAX_LENGTH) {
+          onChange(it)
+        }
+      },
       label = { Text("Notes") },
       placeholder = { Text(placeholder) },
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
+      supportingText = {
+        Text(
+            text = "${notes.length}/$NOTES_MAX_LENGTH", style = MaterialTheme.typography.labelSmall)
+      },
       modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).testTag(testTag),
       maxLines = 5)
 }
@@ -561,7 +594,8 @@ private fun SuggestionsDropdownField(
     filter: (String, List<String>) -> List<String> = ::filterDropdownSuggestions,
     focusExpansion: (Boolean, Boolean) -> Boolean = { isFocused, hasSuggestions ->
       isFocused && hasSuggestions
-    }
+    },
+    maxChars: Int? = null
 ) {
   var expanded by remember { mutableStateOf(false) }
   val filtered = remember(value, suggestions) { filter(value, suggestions) }
@@ -570,8 +604,10 @@ private fun SuggestionsDropdownField(
     OutlinedTextField(
         value = value,
         onValueChange = {
-          onValueChange(it)
-          expanded = if (expandOnChange) it.isNotBlank() else true
+          if (maxChars == null || it.length <= maxChars) {
+            onValueChange(it)
+            expanded = if (expandOnChange) it.isNotBlank() else true
+          }
         },
         label = { Text(visuals.label) },
         placeholder = { Text(visuals.placeholder) },
@@ -587,7 +623,11 @@ private fun SuggestionsDropdownField(
         singleLine = true,
         textStyle =
             MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-        colors = commonTextFieldColors())
+        colors = commonTextFieldColors(),
+        supportingText =
+            maxChars?.let {
+              { Text("${value.length}/$it", style = MaterialTheme.typography.labelSmall) }
+            })
 
     DropdownMenu(
         expanded = expanded && filtered.isNotEmpty(),

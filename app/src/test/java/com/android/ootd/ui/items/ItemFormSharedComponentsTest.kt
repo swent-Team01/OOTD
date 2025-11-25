@@ -3,6 +3,9 @@ package com.android.ootd.ui.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -12,13 +15,17 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.post.items.AdditionalDetailsSection
 import com.android.ootd.ui.post.items.AdditionalDetailsState
 import com.android.ootd.ui.post.items.AdditionalDetailsTags
+import com.android.ootd.ui.post.items.BrandField
 import com.android.ootd.ui.post.items.ItemFieldsLayoutConfig
 import com.android.ootd.ui.post.items.ItemFieldsListLayout
 import com.android.ootd.ui.post.items.ItemFieldsListSlots
+import com.android.ootd.ui.post.items.NotesField
+import kotlin.test.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,6 +95,32 @@ class ItemFormSharedComponentsTest {
     composeTestRule.onNodeWithTag("primarySlot").assertIsDisplayed()
     composeTestRule.onNodeWithTag("detailsSlot").assertIsDisplayed()
     composeTestRule.onNodeWithTag("actionsSlot").assertIsDisplayed()
+  }
+
+  @Test
+  fun brandField_enforcesCharacterLimit() {
+    val fieldTag = "brandField"
+    var brand by mutableStateOf("")
+    composeTestRule.setContent {
+      BrandField(brand = brand, onChange = { brand = it }, testTag = fieldTag)
+    }
+
+    val expected = "B".repeat(20)
+    repeat(30) { composeTestRule.onNodeWithTag(fieldTag).performTextInput("B") }
+    composeTestRule.runOnIdle { assertEquals(expected, brand) }
+  }
+
+  @Test
+  fun notesField_enforcesCharacterLimit() {
+    val fieldTag = "notesField"
+    var notes by mutableStateOf("")
+    composeTestRule.setContent {
+      NotesField(notes = notes, onChange = { notes = it }, testTag = fieldTag)
+    }
+
+    val expected = "N".repeat(250)
+    repeat(300) { composeTestRule.onNodeWithTag(fieldTag).performTextInput("N") }
+    composeTestRule.runOnIdle { assertEquals(expected, notes) }
   }
 
   private fun sampleState(
