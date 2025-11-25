@@ -33,7 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -67,10 +66,12 @@ import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.post.items.commonTextFieldColors
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 
 /**
  * Displays a back arrow icon button.
@@ -134,7 +135,7 @@ fun ProfilePicture(
     size: Dp,
     profilePicture: String,
     username: String,
-    textStyle: TextStyle = typography.headlineLarge,
+    textStyle: TextStyle = Typography.headlineLarge,
     shape: RoundedCornerShape = CircleShape
 ) {
   val color = colorScheme
@@ -259,10 +260,7 @@ fun ActionButton(
       colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
       modifier = modifier) {
         if (buttonText != null) {
-          Text(
-              text = buttonText,
-              color = colors.onPrimary,
-              style = typography.titleMedium.copy(fontFamily = Bodoni))
+          Text(text = buttonText, color = colors.onPrimary, style = Typography.titleMedium)
         }
       }
 }
@@ -295,12 +293,11 @@ fun OOTDTopBar(
             modifier = textModifier,
             text = centerText,
             style =
-                typography.displayLarge.copy(
-                    fontWeight = FontWeight.ExtraBold, color = colorScheme.primary))
+                Typography.displayLarge.copy(fontWeight = FontWeight.ExtraBold, color = Primary))
       },
       navigationIcon = { leftComposable() },
       actions = { rightComposable() },
-      colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background))
+      colors = TopAppBarDefaults.topAppBarColors(containerColor = Background))
 }
 
 /**
@@ -426,7 +423,7 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
           Spacer(modifier = Modifier.size(12.dp))
 
-          Text(text = "Sign in with Google", style = typography.titleLarge, color = Primary)
+          Text(text = "Sign in with Google", style = Typography.titleLarge, color = Primary)
         }
       }
 }
@@ -441,7 +438,7 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 fun EmptyStateText(message: String, modifier: Modifier = Modifier) {
   Text(
       text = message,
-      style = typography.bodyLarge,
+      style = Typography.bodyLarge,
       color = Color.Gray,
       textAlign = Center,
       modifier = modifier.fillMaxWidth().padding(32.dp))
@@ -505,7 +502,7 @@ fun PermissionRequestScreen(
         Text(
             text = message,
             color = colorScheme.onBackground,
-            style = typography.bodyLarge,
+            style = Typography.bodyLarge,
             textAlign = Center,
             modifier = Modifier.padding(16.dp))
 
@@ -545,7 +542,7 @@ fun CenteredLoadingState(
         CircularProgressIndicator(color = colorScheme.primary)
         if (message != null) {
           Spacer(modifier = Modifier.height(12.dp))
-          Text(text = message, style = typography.bodyLarge, color = textColor)
+          Text(text = message, style = Typography.bodyLarge, color = textColor)
         }
       }
 }
@@ -576,7 +573,7 @@ fun CenteredEmptyState(
         }
         Text(
             text = message,
-            style = typography.bodyLarge,
+            style = Typography.bodyLarge,
             color = textColor,
             textAlign = Center,
             modifier = Modifier.padding(spacer * 2))
@@ -631,7 +628,7 @@ fun CommonTextField(
       onValueChange = onChange,
       label = { Text(label) },
       placeholder = { Text(placeholder) },
-      textStyle = typography.bodyMedium.copy(color = colorScheme.primary),
+      textStyle = Typography.bodyMedium.copy(color = Primary),
       singleLine = singleLine,
       readOnly = readOnly,
       isError = isError,

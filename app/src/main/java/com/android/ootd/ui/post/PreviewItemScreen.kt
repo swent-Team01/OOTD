@@ -458,6 +458,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
                     onClick = { isExpanded = !isExpanded },
                     icon = expandIcon,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.EXPAND_ICON),
                     tint = MaterialTheme.colorScheme.onSurface)
               }
         }

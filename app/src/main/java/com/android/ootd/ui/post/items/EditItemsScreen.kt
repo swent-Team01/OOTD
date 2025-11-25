@@ -16,15 +16,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -41,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -51,6 +47,9 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.utils.BackArrow
+import com.android.ootd.utils.CenteredLoadingState
+import com.android.ootd.utils.OOTDTopBar
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -129,7 +128,10 @@ fun EditItemsScreen(
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
-        topBar = { EditTopBar(goBack) },
+        topBar = {
+          OOTDTopBar(
+              centerText = "EDIT ITEMS", leftComposable = { BackArrow(onBackClick = goBack) })
+        },
         content = { innerPadding ->
           Box(
               modifier =
@@ -205,34 +207,13 @@ fun EditItemsScreen(
               }
         })
 
-    LoadingOverlay(visible = itemsUIState.isLoading)
+    if (itemsUIState.isLoading) {
+      CenteredLoadingState(message = "Uploading item...")
+    }
   }
 }
 
 // --- Extracted composables to reduce cognitive complexity ---
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditTopBar(goBack: () -> Unit) {
-  CenterAlignedTopAppBar(
-      title = {
-        Text(
-            "EDIT ITEMS",
-            style =
-                MaterialTheme.typography.displayLarge.copy(
-                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
-      },
-      navigationIcon = {
-        Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-          IconButton(onClick = { goBack() }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.tertiary)
-          }
-        }
-      })
-}
-
 @Composable
 private fun FieldsList(
     modifier: Modifier,
@@ -430,7 +411,9 @@ fun EditItemsScreenSmallPreview() {
 
     Box(modifier = Modifier.fillMaxSize()) {
       Scaffold(
-          topBar = { EditTopBar(goBack = {}) },
+          topBar = {
+            OOTDTopBar(centerText = "EDIT ITEMS", leftComposable = { BackArrow(onBackClick = {}) })
+          },
           content = { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
               FieldsList(
