@@ -126,7 +126,8 @@ fun SelectInventoryItemScreen(
                   onItemClick = { item -> selectInventoryItemViewModel.addItemToPost(item) },
                   starredItemIds = emptySet(),
                   onToggleStar = {},
-                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.ITEMS_GRID))
+                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.ITEMS_GRID),
+                  showStarToggle = false)
             }
           }
         }

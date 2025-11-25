@@ -43,7 +43,8 @@ fun InventoryItemCard(
     onClick: () -> Unit,
     isStarred: Boolean,
     onToggleStar: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showStarIcon: Boolean = true
 ) {
   Box(
       modifier =
@@ -75,12 +76,14 @@ fun InventoryItemCard(
               }
         }
 
-        IconButton(
-            onClick = onToggleStar, modifier = Modifier.align(Alignment.TopEnd).padding(2.dp)) {
-              Icon(
-                  imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                  contentDescription = if (isStarred) "Remove from starred" else "Add to starred",
-                  tint = StarYellow)
-            }
+        if (showStarIcon) {
+          IconButton(
+              onClick = onToggleStar, modifier = Modifier.align(Alignment.TopEnd).padding(2.dp)) {
+                Icon(
+                    imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = if (isStarred) "Remove from starred" else "Add to starred",
+                    tint = StarYellow)
+              }
+        }
       }
 }

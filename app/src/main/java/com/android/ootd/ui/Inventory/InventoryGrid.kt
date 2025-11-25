@@ -33,7 +33,8 @@ fun InventoryGrid(
     onItemClick: (Item) -> Unit,
     starredItemIds: Set<String>,
     onToggleStar: (Item) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showStarToggle: Boolean = true
 ) {
   // Group items by category
   val groupedItems = items.groupBy { it.category }
@@ -68,7 +69,8 @@ fun InventoryGrid(
                   item = item,
                   onClick = { onItemClick(item) },
                   isStarred = starredItemIds.contains(item.itemUuid),
-                  onToggleStar = { onToggleStar(item) })
+                  onToggleStar = { onToggleStar(item) },
+                  showStarIcon = showStarToggle)
             }
           }
         }
@@ -94,7 +96,8 @@ fun InventoryGrid(
                 item = item,
                 onClick = { onItemClick(item) },
                 isStarred = starredItemIds.contains(item.itemUuid),
-                onToggleStar = { onToggleStar(item) })
+                onToggleStar = { onToggleStar(item) },
+                showStarIcon = showStarToggle)
           }
         }
       }
