@@ -3,7 +3,6 @@ package com.android.ootd.model.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import com.android.ootd.model.account.AccountRepositoryProvider
 import kotlinx.coroutines.CoroutineScope
@@ -19,7 +18,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     when (intent.action) {
       NOTIFICATION_ACTION_ACCEPT -> {
-        Log.d("NotifActions", "Accept tapped for $notificationId")
         CoroutineScope(Dispatchers.IO).launch {
           NotificationRepositoryProvider.repository.acceptFollowNotification(
               notificationId = notificationId,
@@ -30,7 +28,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
       }
 
       NOTIFICATION_ACTION_DELETE -> {
-        Log.d("NotifActions", "Delete tapped for $notificationId")
         CoroutineScope(Dispatchers.IO).launch {
           NotificationRepositoryProvider.repository.deleteNotification(
               notificationId = notificationId, receiverId = receiverId)
