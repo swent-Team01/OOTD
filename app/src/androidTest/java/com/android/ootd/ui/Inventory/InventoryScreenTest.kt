@@ -198,8 +198,9 @@ class InventoryScreenTest {
     }
 
     composeTestRule.onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item1").performClick()
+    composeTestRule.waitForIdle()
 
-    verify { mockNavigationActions.navigateTo(Screen.EditItem("item1")) }
+    verify(timeout = 2_000) { mockNavigationActions.navigateTo(Screen.EditItem("item1")) }
   }
 
   @Test
