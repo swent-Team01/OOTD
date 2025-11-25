@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,12 +23,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
-import com.android.ootd.utils.ShowText
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.ShowText
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -92,43 +94,21 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
                 }
           }
 
-              Column(
-                  modifier =
-                      Modifier.weight(0.3f)
-                          .fillMaxWidth()
-                          .background(MaterialTheme.colorScheme.secondary)
-                          .padding(8.dp),
-                  horizontalAlignment = Alignment.CenterHorizontally,
-                  verticalArrangement = Arrangement.Center) {
-                    ShowText(
-                        text = item.category,
-                        style =
-                            MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant),
-                        modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
-                    ShowText(
-                        text = item.type ?: "",
-                        style =
-                            MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant),
-                        modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
           Column(
               modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp),
-              horizontalAlignment = Alignment.Start) {
-                Text(
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.Center) {
+                ShowText(
                     text = item.category.uppercase(),
                     style =
-                        MaterialTheme.typography.labelLarge.copy(
-                            color = Color.White.copy(alpha = 0.9f)),
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
-
-                Text(
+                ShowText(
                     text = item.type.orEmpty(),
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            color = Color.White,
-                            fontSize = MaterialTheme.typography.titleLarge.fontSize),
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant),
                     textAlign = TextAlign.Start,
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
 

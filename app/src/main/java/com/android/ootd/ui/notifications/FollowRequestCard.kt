@@ -25,11 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.ootd.utils.ProfilePicture
 
 @Composable
 fun FollowRequestCard(
@@ -58,12 +58,11 @@ fun FollowRequestCard(
                           .clip(CircleShape)
                           .background(MaterialTheme.colorScheme.primary),
                   contentAlignment = Alignment.Center) {
-                    Text(
-                        text =
-                            followRequestItem.senderUser.username.firstOrNull()?.uppercase() ?: "?",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold)
+                    ProfilePicture(
+                        size = 48.dp,
+                        profilePicture = followRequestItem.senderUser.profilePicture,
+                        username = followRequestItem.senderUser.username,
+                        textStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp))
                   }
 
               Spacer(modifier = Modifier.width(12.dp))
