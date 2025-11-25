@@ -173,7 +173,9 @@ fun InventoryScreen(
                     items = uiState.items,
                     onItemClick = { item ->
                       navigationActions?.navigateTo(Screen.EditItem(item.itemUuid))
-                    })
+                    },
+                    starredItemIds = uiState.starredItemIds,
+                    onToggleStar = { item -> inventoryViewModel.toggleStar(item.itemUuid) })
               }
             }
           }

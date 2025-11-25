@@ -13,6 +13,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -29,7 +30,8 @@ data class InventoryUIState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val searchQuery: String = "",
-    val isSearchActive: Boolean = false
+    val isSearchActive: Boolean = false,
+    val starredItemIds: Set<String> = emptySet()
 )
 
 /**
@@ -68,6 +70,7 @@ class InventoryViewModel(
    */
   fun loadInventory() {
     viewModelScope.launch {
+      refreshStarredItems()
       _uiState.value = _uiState.value.copy(errorMessage = null)
       try {
         val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
@@ -129,6 +132,32 @@ class InventoryViewModel(
             _uiState.value.copy(
                 isLoading = false, errorMessage = "Failed to load inventory: ${e.message}")
       }
+    }
+  }
+
+  fun refreshStarredItems() {
+    viewModelScope.launch {
+      try {
+        val currentUserId = Firebase.auth.currentUser?.uid ?: return@launch
+        val starredIds = accountRepository.getStarredItems(currentUserId).toSet()
+        _uiState.update { it.copy(starredItemIds = starredIds) }
+      } catch (_: Exception) {
+        // Ignore - best-effort
+      }
+    }
+  }
+
+  fun toggleStar(itemUid: String) {
+    viewModelScope.launch {
+      try {
+        val isStarred = _uiState.value.starredItemIds.contains(itemUid)
+        val success =
+            if (isStarred) accountRepository.removeStarredItem(itemUid)
+            else accountRepository.addStarredItem(itemUid)
+        if (success) {
+          refreshStarredItems()
+        }
+      } catch (_: Exception) {}
     }
   }
 

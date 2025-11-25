@@ -28,7 +28,13 @@ import com.android.ootd.utils.CategoryNormalizer
  * @param modifier Modifier for styling
  */
 @Composable
-fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modifier = Modifier) {
+fun InventoryGrid(
+    items: List<Item>,
+    onItemClick: (Item) -> Unit,
+    starredItemIds: Set<String>,
+    onToggleStar: (Item) -> Unit,
+    modifier: Modifier = Modifier
+) {
   // Group items by category
   val groupedItems = items.groupBy { it.category }
 
@@ -58,7 +64,11 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
 
             // Items in this category
             items(categoryItems) { item ->
-              InventoryItemCard(item = item, onClick = { onItemClick(item) })
+              InventoryItemCard(
+                  item = item,
+                  onClick = { onItemClick(item) },
+                  isStarred = starredItemIds.contains(item.itemUuid),
+                  onToggleStar = { onToggleStar(item) })
             }
           }
         }
@@ -80,7 +90,11 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
           }
 
           items(unknownItems) { item ->
-            InventoryItemCard(item = item, onClick = { onItemClick(item) })
+            InventoryItemCard(
+                item = item,
+                onClick = { onItemClick(item) },
+                isStarred = starredItemIds.contains(item.itemUuid),
+                onToggleStar = { onToggleStar(item) })
           }
         }
       }

@@ -125,4 +125,13 @@ interface AccountRepository {
    * @return True if the item was removed successfully, false otherwise
    */
   suspend fun removeItem(itemUid: String): Boolean
+
+  /** Returns the list of starred item IDs for the current user. */
+  suspend fun getStarredItems(userID: String): List<String>
+
+  /** Adds the given item to the starred list (wishlist). */
+  suspend fun addStarredItem(itemUid: String): Boolean
+
+  /** Removes the given item from the starred list. */
+  suspend fun removeStarredItem(itemUid: String): Boolean
 }

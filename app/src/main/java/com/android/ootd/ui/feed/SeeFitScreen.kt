@@ -49,6 +49,7 @@ object SeeFitScreenTestTags {
   const val ITEM_NOTES = "seeFitItemNotes"
   const val ITEM_LINK_COPY = "seeFitItemLinkCopy"
   const val ITEM_NOTES_COPY = "seeFitItemNotesCopy"
+  const val ITEM_STAR_BUTTON = "seeFitItemStarButton"
 
   fun getTestTagForItem(item: Item): String {
     return "seeFitItemCard_${item.itemUuid}"
