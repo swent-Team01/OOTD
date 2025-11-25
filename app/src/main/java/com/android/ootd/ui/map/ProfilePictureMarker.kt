@@ -16,6 +16,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.toLatLng
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 
@@ -30,15 +32,11 @@ fun MarkerContent(username: String) {
   val shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 0.dp)
 
   Box(
-      modifier =
-          Modifier.size(48.dp)
-              .clip(shape)
-              .background(MaterialTheme.colorScheme.secondary)
-              .padding(4.dp),
+      modifier = Modifier.size(48.dp).clip(shape).background(Primary).padding(4.dp),
       contentAlignment = Alignment.Center) {
         Text(
             text = username.take(1).uppercase(),
-            color = MaterialTheme.colorScheme.primary,
+            color = Secondary,
             style = MaterialTheme.typography.bodyLarge)
       }
 }
