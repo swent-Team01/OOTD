@@ -8,6 +8,8 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.map.locationFromMap
 import com.android.ootd.model.map.mapFromLocation
+import com.android.ootd.model.post.OutfitPostRepository
+import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.post.POSTS_COLLECTION
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.USER_COLLECTION_PATH
@@ -101,7 +103,8 @@ private fun DocumentSnapshot.toAccount(): Account {
 
 class AccountRepositoryFirestore(
     private val db: FirebaseFirestore,
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
+    private val outfitPostRepository: OutfitPostRepository = OutfitPostRepositoryProvider.repository
 ) : AccountRepository {
 
   // In-memory cache for items list - updated optimistically for offline support
@@ -321,15 +324,9 @@ class AccountRepositoryFirestore(
   override suspend fun deleteAccount(userID: String) {
     try {
       if (userID.isBlank()) throw BlankUserID()
-      getAccount(userID)
 
       // 1. Delete profile picture from storage (ignore if missing)
-      try {
-        storage.reference.child("$PROFILE_PICTURE_PATH/$userID.jpg").delete().await()
-        Log.d(TAG, "Successfully deleted profile picture from storage for user: $userID")
-      } catch (e: Exception) {
-        Log.w(TAG, "Could not delete profile picture from storage (may not exist): ${e.message}")
-      }
+      deleteProfilePicture(userID)
 
       // 2. Delete all posts from user
       deleteUserPosts(userID)
@@ -570,20 +567,13 @@ class AccountRepositoryFirestore(
         val postId = doc.id
         // Delete Firestore doc
         try {
-          doc.reference.delete().await()
+          outfitPostRepository.deletePost(postId)
         } catch (e: Exception) {
-          Log.w(TAG, "Failed deleting post doc $postId: ${e.message}")
-        }
-        // Delete associated image
-        try {
-          storage.reference.child("$POSTS_PATH/$postId.jpg").delete().await()
-        } catch (e: Exception) {
-          Log.w(TAG, "Failed deleting post image $postId.jpg: ${e.message}")
+          Log.w(TAG, "Error querying posts for user deletion (continuing): ${e.message}")
         }
       }
-      Log.d(TAG, "Deleted ${postsQuery.size()} posts for user $userID")
     } catch (e: Exception) {
-      Log.w(TAG, "Error querying posts for user deletion (continuing): ${e.message}")
+      Log.w(TAG, "Error deleting user's posts ${e.message}")
     }
   }
 
@@ -599,7 +589,7 @@ class AccountRepositoryFirestore(
       for (doc in itemsQuery.documents) {
         val itemId = doc.id
         // Extract imageId if present to delete storage file
-        val imageMap = doc.get("image") as? Map<*, *>
+        val imageMap = doc["image"] as? Map<*, *>
         val rawImageId = imageMap?.get("imageId") as? String ?: ""
         val sanitizedImageId = ImageFilenameSanitizer.sanitize(rawImageId)
         // Delete Firestore doc
