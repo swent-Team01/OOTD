@@ -25,9 +25,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
-private const val PROFILE_PICTURE_PATH = "profile_pictures"
 private const val ITEMS_PATH = "images/items"
-private const val POSTS_PATH = "images/posts"
 
 // Custom exception for taken user scenario
 class TakenUserException(message: String) : Exception(message)
