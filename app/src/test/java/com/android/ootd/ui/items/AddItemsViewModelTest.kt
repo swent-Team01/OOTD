@@ -157,9 +157,7 @@ class AddItemsViewModelTest {
     seedCategories("Clothing")
     viewModel.setCategory("InvalidCategory")
     viewModel.validateCategory()
-    assertEquals(
-        "Please enter one of: Clothing, Accessories, Shoes, or Bags.",
-        viewModel.uiState.value.invalidCategory)
+    assertEquals("Please enter a valid category.", viewModel.uiState.value.invalidCategory)
   }
 
   @Test
