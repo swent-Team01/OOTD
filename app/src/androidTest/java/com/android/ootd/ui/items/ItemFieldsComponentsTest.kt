@@ -44,6 +44,24 @@ class ItemFieldsComponentsTest {
   }
 
   @Test
+  fun conditionDropdown_clearsSelection_whenClearChosen() {
+    val options = listOf("New", "Used")
+    lateinit var selectedState: MutableState<String>
+    composeTestRule.setContent {
+      selectedState = remember { mutableStateOf("New") }
+      ConditionDropdown(
+          condition = selectedState.value,
+          onConditionChange = { selectedState.value = it },
+          testTag = "conditionDropdown",
+          expandedInitially = true,
+          options = options)
+    }
+
+    composeTestRule.onNodeWithText("Clear condition", useUnmergedTree = true).performClick()
+    composeTestRule.runOnIdle { assertEquals("", selectedState.value) }
+  }
+
+  @Test
   fun currencyField_updatesSelection_whenCurrencyChosen() {
     val options = listOf("CHF", "USD")
     lateinit var selectedState: MutableState<String>

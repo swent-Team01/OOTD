@@ -332,10 +332,10 @@ class SeeFitScreenTest {
 
     // Scroll to last and verify its content is displayed
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEMS_GRID).performScrollToIndex(9)
-    composeTestRule.onNodeWithText("Category 10").assertIsDisplayed()
+    composeTestRule.onNodeWithText("CATEGORY 10").assertIsDisplayed()
 
     // Scroll back to the first and verify
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEMS_GRID).performScrollToIndex(0)
-    composeTestRule.onNodeWithText("Category 1").assertIsDisplayed()
+    composeTestRule.onNodeWithText("CATEGORY 1").assertIsDisplayed()
   }
 }
