@@ -1,5 +1,7 @@
 package com.android.ootd.model.map
 
+import com.google.android.gms.maps.model.LatLng
+
 /**
  * Utility helpers for converting between Firestore location map structures and the app's [Location]
  * data class.
@@ -27,4 +29,9 @@ fun mapFromLocation(location: Location): Map<String, Any> {
       "longitude" to location.longitude,
       "name" to location.name,
   )
+}
+
+/** Converts a [Location] to a Google Maps [LatLng] for map display. */
+fun Location.toLatLng(): LatLng {
+  return LatLng(latitude, longitude)
 }

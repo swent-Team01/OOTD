@@ -9,6 +9,8 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
@@ -129,6 +131,25 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
   override suspend fun getPostById(postUuid: String): OutfitPost? {
     val doc = db.collection(POSTS_COLLECTION_PATH).document(postUuid).get().await()
     return mapToPost(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
+  }
+
+  override fun observeRecentFeedForUids(uids: List<String>): Flow<List<OutfitPost>> = flow {
+    // Emit initial state immediately
+    val initialPosts = getRecentFeedForUids(uids)
+    emit(initialPosts)
+
+    // For Firestore, we poll every 30 seconds
+    // This could be replaced with real snapshot listeners if needed
+    while (true) {
+      kotlinx.coroutines.delay(30_000)
+      try {
+        val posts = getRecentFeedForUids(uids)
+        emit(posts)
+      } catch (e: Exception) {
+        Log.e("FeedRepositoryFirestore", "Error polling posts", e)
+        // Continue polling even on error
+      }
+    }
   }
 
   private fun mapToPost(doc: DocumentSnapshot): OutfitPost? {

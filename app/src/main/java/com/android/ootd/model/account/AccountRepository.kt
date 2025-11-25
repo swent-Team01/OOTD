@@ -2,6 +2,7 @@ package com.android.ootd.model.account
 
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
+import kotlinx.coroutines.flow.Flow
 
 /** Repository interface for managing account-related operations. */
 interface AccountRepository {
@@ -125,4 +126,12 @@ interface AccountRepository {
    * @return True if the item was removed successfully, false otherwise
    */
   suspend fun removeItem(itemUid: String): Boolean
+
+  /**
+   * Observes real-time updates to the account corresponding to [userID].
+   *
+   * @param userID The ID of the user whose account changes are to be observed.
+   * @return A Flow that emits the updated Account whenever it changes in Firebase.
+   */
+  fun observeAccount(userID: String): Flow<Account>
 }

@@ -14,6 +14,8 @@ import com.android.ootd.utils.ItemsTest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -59,7 +61,7 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
 
   private val fakeAccountRepo =
       object : AccountRepository {
-        override suspend fun getItemsList(uid: String) = listOf("1", "2", "3")
+        override suspend fun getItemsList(userID: String) = listOf("1", "2", "3")
 
         override suspend fun createAccount(
             user: com.android.ootd.model.user.User,
@@ -97,6 +99,9 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun addItem(itemUid: String) = true
 
         override suspend fun removeItem(itemUid: String) = true
+
+        override fun observeAccount(userID: String): Flow<com.android.ootd.model.account.Account> =
+            flowOf(com.android.ootd.model.account.Account())
       }
 
   private fun fakeItemsRepo(items: List<Item>, postItems: List<Item> = emptyList()) =
