@@ -13,6 +13,7 @@ import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.map.emptyLocation
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,6 +30,52 @@ object LocationUtils {
   fun hasLocationPermission(context: Context): Boolean {
     return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED
+  }
+
+  /**
+   * Processes an Android location and converts it to our app's Location model. This internal
+   * function is exposed for testing purposes.
+   *
+   * @param androidLocation The Android location to process (can be null)
+   * @param locationRepository The repository to use for reverse geocoding
+   * @param onSuccess Callback invoked with the retrieved Location on success
+   * @param onFailure Callback invoked with an error message on failure
+   * @param dispatcher The coroutine dispatcher to use (default: Dispatchers.IO)
+   */
+  internal fun processAndroidLocation(
+      androidLocation: android.location.Location?,
+      locationRepository: LocationRepository,
+      onSuccess: (Location) -> Unit,
+      onFailure: (String) -> Unit,
+      dispatcher: CoroutineContext = Dispatchers.IO
+  ) {
+    if (androidLocation != null) {
+      // Try to reverse geocode the location to get a human-readable name
+      CoroutineScope(dispatcher).launch {
+        val locationName =
+            try {
+              val reverseGeocodedLocation =
+                  locationRepository.reverseGeocode(
+                      androidLocation.latitude, androidLocation.longitude)
+              reverseGeocodedLocation.name
+            } catch (e: Exception) {
+              Log.w("LocationUtils", "Reverse geocoding failed, using coordinates", e)
+              "Current Location (${androidLocation.latitude.format()}, ${androidLocation.longitude.format()})"
+            }
+
+        // Convert Android Location to our app's Location model
+        val appLocation =
+            Location(
+                latitude = androidLocation.latitude,
+                longitude = androidLocation.longitude,
+                name = locationName)
+        onSuccess(appLocation)
+      }
+    } else {
+      Log.w("LocationUtils", "getCurrentLocation returned null")
+      onFailure(
+          "Unable to get current location. Please enable location services or search manually.")
+    }
   }
 
   /**
@@ -50,33 +97,7 @@ object LocationUtils {
         .getCurrentLocation(
             Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationTokenSource.token)
         .addOnSuccessListener { androidLocation: android.location.Location? ->
-          if (androidLocation != null) {
-            // Try to reverse geocode the location to get a human-readable name
-            CoroutineScope(Dispatchers.IO).launch {
-              val locationName =
-                  try {
-                    val reverseGeocodedLocation =
-                        locationRepository.reverseGeocode(
-                            androidLocation.latitude, androidLocation.longitude)
-                    reverseGeocodedLocation.name
-                  } catch (e: Exception) {
-                    Log.w("LocationUtils", "Reverse geocoding failed, using coordinates", e)
-                    "Current Location (${androidLocation.latitude.format()}, ${androidLocation.longitude.format()})"
-                  }
-
-              // Convert Android Location to our app's Location model
-              val appLocation =
-                  Location(
-                      latitude = androidLocation.latitude,
-                      longitude = androidLocation.longitude,
-                      name = locationName)
-              onSuccess(appLocation)
-            }
-          } else {
-            Log.w("LocationUtils", "getCurrentLocation returned null")
-            onFailure(
-                "Unable to get current location. Please enable location services or search manually.")
-          }
+          processAndroidLocation(androidLocation, locationRepository, onSuccess, onFailure)
           cancellationTokenSource.cancel()
         }
         .addOnFailureListener { exception ->
