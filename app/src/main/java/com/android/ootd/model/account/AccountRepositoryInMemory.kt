@@ -3,6 +3,11 @@ package com.android.ootd.model.account
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.user.User
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 class AccountRepositoryInMemory : AccountRepository {
   var currentUser = "user1"
@@ -53,6 +58,9 @@ class AccountRepositoryInMemory : AccountRepository {
                   profilePicture = "u0.jpg",
                   friendUids = listOf()))
 
+  // StateFlow to track account changes for real-time observation
+  private val accountUpdates = MutableStateFlow<Pair<String, Account?>>(Pair("", null))
+
   override suspend fun createAccount(
       user: User,
       userEmail: String,
@@ -81,6 +89,7 @@ class AccountRepositoryInMemory : AccountRepository {
       "Account with UID ${account.uid} already exists"
     }
     accounts[account.uid] = account
+    accountUpdates.value = Pair(account.uid, account)
   }
 
   override suspend fun getAccount(userID: String): Account {
@@ -109,7 +118,9 @@ class AccountRepositoryInMemory : AccountRepository {
     }
 
     val updatedFriendUids = account.friendUids + friendID
-    accounts[userID] = account.copy(friendUids = updatedFriendUids)
+    val updatedAccount = account.copy(friendUids = updatedFriendUids)
+    accounts[userID] = updatedAccount
+    accountUpdates.value = Pair(userID, updatedAccount)
     return true
   }
 
@@ -126,7 +137,9 @@ class AccountRepositoryInMemory : AccountRepository {
     }
 
     val updatedFriendUids = account.friendUids - friendID
-    accounts[userID] = account.copy(friendUids = updatedFriendUids)
+    val updatedAccount = account.copy(friendUids = updatedFriendUids)
+    accounts[userID] = updatedAccount
+    accountUpdates.value = Pair(userID, updatedAccount)
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
@@ -154,23 +167,28 @@ class AccountRepositoryInMemory : AccountRepository {
       location: Location
   ) {
     val acc = getAccount(userID)
-    accounts[userID] =
+    val updatedAccount =
         acc.copy(
             username = username.takeIf { it.isNotBlank() } ?: acc.username,
             birthday = birthDay.takeIf { it.isNotBlank() } ?: acc.birthday,
             profilePicture = picture.takeIf { it.isNotBlank() } ?: acc.profilePicture,
             location = location.takeIf { isValidLocation(it) } ?: acc.location)
+    accounts[userID] = updatedAccount
+    accountUpdates.value = Pair(userID, updatedAccount)
   }
 
   override suspend fun deleteProfilePicture(userID: String) {
     val user = getAccount(userID)
-    accounts[userID] = user.copy(profilePicture = "")
+    val updatedAccount = user.copy(profilePicture = "")
+    accounts[userID] = updatedAccount
+    accountUpdates.value = Pair(userID, updatedAccount)
   }
 
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)
     accounts[userID] = updatedAccount
+    accountUpdates.value = Pair(userID, updatedAccount)
     return updatedAccount.isPrivate
   }
 
@@ -188,7 +206,9 @@ class AccountRepositoryInMemory : AccountRepository {
       }
 
       val updatedItemsUids = account.itemsUids + itemUid
-      accounts[currentUser] = account.copy(itemsUids = updatedItemsUids)
+      val updatedAccount = account.copy(itemsUids = updatedItemsUids)
+      accounts[currentUser] = updatedAccount
+      accountUpdates.value = Pair(currentUser, updatedAccount)
       true
     } catch (_: Exception) {
       false
@@ -204,11 +224,27 @@ class AccountRepositoryInMemory : AccountRepository {
       }
 
       val updatedItemsUids = account.itemsUids - itemUid
-      accounts[currentUser] = account.copy(itemsUids = updatedItemsUids)
+      val updatedAccount = account.copy(itemsUids = updatedItemsUids)
+      accounts[currentUser] = updatedAccount
+      accountUpdates.value = Pair(currentUser, updatedAccount)
       true
     } catch (_: Exception) {
       false
     }
+  }
+
+  override fun observeAccount(userID: String): Flow<Account> {
+    // Emit initial account state
+    val initialAccount =
+        accounts[userID] ?: throw NoSuchElementException("Account with ID $userID not found")
+
+    // Return a flow that emits the initial account and then updates for this specific user
+    return accountUpdates
+        .filter { (uid, _) -> uid == userID }
+        .map { (_, account) ->
+          account ?: throw NoSuchElementException("Account with ID $userID not found")
+        }
+        .onStart { emit(initialAccount) }
   }
 
   override suspend fun getStarredItems(userID: String): List<String> {

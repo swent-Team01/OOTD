@@ -6,6 +6,8 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 class FakeItemsRepository : ItemsRepository {
   var lastAddedItem: Item? = null
@@ -95,6 +97,10 @@ class FakeAccountRepository : AccountRepository {
   override suspend fun addItem(itemUid: String): Boolean = true
 
   override suspend fun removeItem(itemUid: String): Boolean = true
+
+  override fun observeAccount(userID: String): Flow<Account> {
+    return flowOf()
+  }
 
   override suspend fun getStarredItems(userID: String): List<String> = emptyList()
 

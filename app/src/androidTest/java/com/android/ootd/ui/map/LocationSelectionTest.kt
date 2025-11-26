@@ -22,6 +22,10 @@ class LocationSelectionTest {
           Location(name = "Test Location 1", latitude = 0.0, longitude = 0.0),
           Location(name = "Test Location 2", latitude = 0.0, longitude = 0.0))
     }
+
+    override suspend fun reverseGeocode(latitude: Double, longitude: Double): Location {
+      return Location(name = "Mock Location", latitude = latitude, longitude = longitude)
+    }
   }
 
   // --- Location Selection Tag Tests ---
