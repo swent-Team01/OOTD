@@ -1,8 +1,8 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
-import com.android.ootd.model.map.locationFromMap
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.Duration
