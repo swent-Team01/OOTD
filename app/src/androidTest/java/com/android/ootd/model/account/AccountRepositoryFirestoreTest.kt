@@ -1,8 +1,8 @@
 package com.android.ootd.model.account
 
+import android.util.Log
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
-import android.util.Log
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.BlankUserID
