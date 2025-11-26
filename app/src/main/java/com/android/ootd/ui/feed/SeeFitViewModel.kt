@@ -8,6 +8,8 @@ import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,8 +29,12 @@ import kotlinx.coroutines.launch
 data class SeeFitUIState(
     val items: List<Item> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
-)
+    val errorMessage: String? = null,
+    val postOwnerId: String = ""
+) {
+  val isOwner: Boolean
+    get() = Firebase.auth.currentUser?.uid == postOwnerId
+}
 
 class SeeFitViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
@@ -52,9 +58,11 @@ class SeeFitViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
-        val friendId = feedRepository.getPostById(postUuid)?.ownerId
-        val items = itemsRepository.getFriendItemsForPost(postUuid, friendId ?: "")
-        _uiState.value = _uiState.value.copy(items = items, isLoading = false, errorMessage = null)
+        val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
+        val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
+        _uiState.value =
+            _uiState.value.copy(
+                items = items, postOwnerId = postOwner, isLoading = false, errorMessage = null)
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(

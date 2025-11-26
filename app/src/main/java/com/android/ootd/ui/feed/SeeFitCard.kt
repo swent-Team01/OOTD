@@ -43,7 +43,7 @@ import com.android.ootd.ui.theme.Secondary
  * @param onClick Callback when the item is clicked
  */
 @Composable
-fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit) {
+fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit, isOwner: Boolean) {
   val hasPrice = item.price != null && item.currency != null
   val brandText = item.brand.orEmpty()
   Card(
@@ -97,23 +97,25 @@ fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit) {
                               color = MaterialTheme.colorScheme.onSurfaceVariant))
                 }
           }
-          // Edit button (bottom-right)
-          Box(
-              modifier =
-                  Modifier.align(Alignment.BottomEnd)
-                      .padding(8.dp)
-                      .size(32.dp)
-                      .background(
-                          color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
-                      .testTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON)) {
-                IconButton(onClick = { onEditClick(item.itemUuid) }) {
-                  Icon(
-                      imageVector = Icons.Default.Edit,
-                      contentDescription = "Edit item",
-                      tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                      modifier = Modifier.size(16.dp))
+          // Edit button (bottom-right) visible only to the owner
+          if (isOwner) {
+            Box(
+                modifier =
+                    Modifier.align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .size(32.dp)
+                        .background(
+                            color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
+                        .testTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON)) {
+                  IconButton(onClick = { onEditClick(item.itemUuid) }) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit item",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp))
+                  }
                 }
-              }
+          }
 
           Column(
               modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),

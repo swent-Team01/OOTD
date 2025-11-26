@@ -115,7 +115,8 @@ fun SeeFitScreen(
         ItemGridScreen(
             items = items,
             modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
-            onEditItem = onEditItem)
+            onEditItem = onEditItem,
+            isOwner = uiState.isOwner)
       }
     }
   }
