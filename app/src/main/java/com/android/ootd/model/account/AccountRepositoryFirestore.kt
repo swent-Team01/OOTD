@@ -21,6 +21,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
+const val USER_NOT_LOGGED = "User not logged in"
 
 // Custom exception for taken user scenario
 class TakenUserException(message: String) : Exception(message)
@@ -443,7 +444,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addItem(itemUid: String): Boolean {
     return try {
-      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
 
       // Optimistically update memory cache immediately (synchronous)
       if (!itemsListCache.containsKey(currentUserId)) {
@@ -495,7 +496,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun removeItem(itemUid: String): Boolean {
     return try {
-      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
 
       // Optimistically update memory cache immediately
       itemsListCache[currentUserId]?.remove(itemUid)?.let {
@@ -533,7 +534,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun addStarredItem(itemUid: String): Boolean {
     return try {
-      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
       val starred = ensureStarredCache(currentUserId)
       if (!starred.contains(itemUid)) {
         starred.add(itemUid)
@@ -555,7 +556,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
   override suspend fun removeStarredItem(itemUid: String): Boolean {
     return try {
-      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+      val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
       starredListCache[currentUserId]?.remove(itemUid)
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
       try {
@@ -573,7 +574,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   }
 
   override suspend fun toggleStarredItem(itemUid: String): List<String> {
-    val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
+    val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
     val currentList = ensureStarredCache(currentUserId)
     val isStarred = currentList.contains(itemUid)
     if (isStarred) currentList.remove(itemUid) else currentList.add(itemUid)
@@ -612,7 +613,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
               }
           if (document != null && document.exists()) {
             @Suppress("UNCHECKED_CAST")
-            (document.get("starredItemUids") as? List<String>) ?: emptyList()
+            (document.data?.get("starredItemUids") as? List<String>) ?: emptyList()
           } else {
             emptyList()
           }

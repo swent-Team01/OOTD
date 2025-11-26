@@ -234,8 +234,7 @@ private fun CommonTextField(
           if (shouldShowCounter) {
             {
               Text(
-                  text = "${value.length}/${maxChars!!}",
-                  style = MaterialTheme.typography.labelSmall)
+                  text = "${value.length}/${maxChars}", style = MaterialTheme.typography.labelSmall)
             }
           } else {
             null
@@ -620,58 +619,93 @@ private fun SuggestionsDropdownField(
   var isFocused by remember { mutableStateOf(false) }
   val filtered = remember(value, suggestions) { filter(value, suggestions) }
   val showCounter = maxChars != null && isFocused
+  val supportingText: (@Composable () -> Unit)? =
+      if (showCounter && maxChars != null) {
+        { Text("${value.length}/$maxChars", style = MaterialTheme.typography.labelSmall) }
+      } else null
 
   Box(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
+    SuggestionInputField(
         value = value,
-        onValueChange = {
-          if (maxChars == null || it.length <= maxChars) {
-            onValueChange(it)
-            expanded = if (expandOnChange) it.isNotBlank() else true
+        visuals = visuals,
+        supportingText = supportingText,
+        onValueChanged = { input ->
+          if (maxChars == null || input.length <= maxChars) {
+            onValueChange(input)
+            expanded = if (expandOnChange) input.isNotBlank() else true
           }
         },
-        label = { Text(visuals.label) },
-        placeholder = { Text(visuals.placeholder) },
-        modifier =
-            Modifier.fillMaxWidth().testTag(visuals.textFieldTag).onFocusChanged { focusState ->
-              isFocused = focusState.isFocused
-              if (focusState.isFocused) {
-                onFocus?.invoke()
-                expanded = focusExpansion(true, filtered.isNotEmpty())
-              } else {
-                expanded = false
-              }
-            },
-        singleLine = true,
-        textStyle =
-            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-        colors = commonTextFieldColors(),
-        supportingText =
-            if (showCounter) {
-              { Text("${value.length}/${maxChars!!}", style = MaterialTheme.typography.labelSmall) }
-            } else null)
-
-    DropdownMenu(
-        expanded = expanded && filtered.isNotEmpty(),
-        onDismissRequest = { expanded = false },
-        modifier = Modifier.fillMaxWidth().testTag(visuals.dropdownTestTag),
-        properties = PopupProperties(focusable = false)) {
-          filtered.forEach { suggestion ->
-            DropdownMenuItem(
-                text = {
-                  Text(
-                      suggestion,
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              color = MaterialTheme.colorScheme.primary))
-                },
-                onClick = {
-                  onValueChange(suggestion)
-                  expanded = false
-                })
+        onFocusChanged = { focused ->
+          isFocused = focused
+          if (focused) {
+            onFocus?.invoke()
+            expanded = focusExpansion(true, filtered.isNotEmpty())
+          } else {
+            expanded = false
           }
-        }
+        })
+
+    SuggestionsMenu(
+        showMenu = expanded && filtered.isNotEmpty(),
+        options = filtered,
+        dropdownTag = visuals.dropdownTestTag,
+        onSelect = {
+          onValueChange(it)
+          expanded = false
+        },
+        onDismiss = { expanded = false })
   }
+}
+
+@Composable
+private fun SuggestionInputField(
+    value: String,
+    visuals: SuggestionsDropdownVisuals,
+    supportingText: (@Composable () -> Unit)?,
+    onValueChanged: (String) -> Unit,
+    onFocusChanged: (Boolean) -> Unit
+) {
+  OutlinedTextField(
+      value = value,
+      onValueChange = onValueChanged,
+      label = { Text(visuals.label) },
+      placeholder = { Text(visuals.placeholder) },
+      modifier =
+          Modifier.fillMaxWidth().testTag(visuals.textFieldTag).onFocusChanged {
+            onFocusChanged(it.isFocused)
+          },
+      singleLine = true,
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
+      supportingText = supportingText)
+}
+
+@Composable
+private fun SuggestionsMenu(
+    showMenu: Boolean,
+    options: List<String>,
+    dropdownTag: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+  DropdownMenu(
+      expanded = showMenu,
+      onDismissRequest = onDismiss,
+      modifier = Modifier.fillMaxWidth().testTag(dropdownTag),
+      properties = PopupProperties(focusable = false)) {
+        options.forEach { suggestion ->
+          DropdownMenuItem(
+              text = {
+                Text(
+                    suggestion,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary))
+              },
+              onClick = { onSelect(suggestion) })
+        }
+      }
 }
 
 private data class SelectionDropdownVisuals(

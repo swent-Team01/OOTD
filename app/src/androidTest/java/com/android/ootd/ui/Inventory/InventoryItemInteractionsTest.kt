@@ -72,4 +72,25 @@ class InventoryItemInteractionsTest {
 
     composeRule.runOnIdle { assertEquals(items[0], clicked) }
   }
+
+  @Test
+  fun inventoryGrid_unknownCategory_showsOtherSection() {
+    val unknownItem = sampleItem.copy(itemUuid = "mystery", category = "Vintage Finds")
+
+    composeRule.setContent {
+      OOTDTheme {
+        InventoryGrid(
+            items = listOf(unknownItem),
+            onItemClick = {},
+            starredItemIds = emptySet(),
+            onToggleStar = {},
+            showStarToggle = false)
+      }
+    }
+
+    composeRule.onNodeWithTag("categoryHeader_Other").assertIsDisplayed()
+    composeRule
+        .onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_${unknownItem.itemUuid}")
+        .assertIsDisplayed()
+  }
 }

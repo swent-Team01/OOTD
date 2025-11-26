@@ -49,4 +49,22 @@ class AccountRepositoryInMemoryTest {
 
     assertEquals(listOf("item-2"), starred)
   }
+
+  @Test
+  fun `toggleStarredItem removesExistingEntry`() = runBlocking {
+    repository.addStarredItem("item-1")
+
+    val updated = repository.toggleStarredItem("item-1")
+
+    assertTrue("Expected toggle to remove existing entry", "item-1" !in updated)
+    assertTrue(repository.getStarredItems("user1").isEmpty())
+  }
+
+  @Test
+  fun `toggleStarredItem addsNewEntry`() = runBlocking {
+    val updated = repository.toggleStarredItem("item-42")
+
+    assertEquals(listOf("item-42"), updated)
+    assertEquals(listOf("item-42"), repository.getStarredItems("user1"))
+  }
 }
