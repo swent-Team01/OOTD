@@ -106,8 +106,8 @@ class ItemFormSharedComponentsTest {
       BrandField(brand = brand, onChange = { brand = it }, testTag = fieldTag)
     }
 
-    val expected = "B".repeat(20)
-    repeat(30) { composeTestRule.onNodeWithTag(fieldTag).performTextInput("B") }
+    val expected = "B".repeat(40)
+    repeat(50) { composeTestRule.onNodeWithTag(fieldTag).performTextInput("B") }
     composeTestRule.runOnIdle { assertEquals(expected, brand) }
   }
 
@@ -118,7 +118,7 @@ class ItemFormSharedComponentsTest {
 
     composeTestRule.onNodeWithTag(fieldTag).performClick()
     composeTestRule.waitForIdle()
-    composeTestRule.onNode(hasText("${0}/${20}"), useUnmergedTree = true).assertIsDisplayed()
+    composeTestRule.onNode(hasText("${0}/${40}"), useUnmergedTree = true).assertIsDisplayed()
   }
 
   @Test
