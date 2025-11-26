@@ -6,14 +6,14 @@ import com.android.ootd.model.items.ImageFilenameSanitizer
 import com.android.ootd.model.items.OWNER_ATTRIBUTE_NAME
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
-import com.android.ootd.model.map.locationFromMap
-import com.android.ootd.model.map.mapFromLocation
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.post.POSTS_COLLECTION
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
+import com.android.ootd.utils.LocationUtils.locationFromMap
+import com.android.ootd.utils.LocationUtils.mapFromLocation
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue

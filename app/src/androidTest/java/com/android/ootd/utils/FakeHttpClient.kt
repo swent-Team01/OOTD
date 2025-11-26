@@ -29,6 +29,7 @@ object FakeHttpClient {
 
   private const val NOMINATIM_HOST = "nominatim.openstreetmap.org"
   private const val SEARCH_PATH = "search"
+  private const val REVERSE_PATH = "reverse"
   private val QUERY_PARAMETERS =
       mapOf("q" to FakeLocation.entries.map { it.queryName }.toSet(), "format" to setOf("json"))
 
@@ -50,6 +51,15 @@ object FakeHttpClient {
                       0.0,
                       "This is a very long location name designed to test how the application handles location names that exceed typical lengths, ensuring that text wrapping, truncation, or overflow behaviors are correctly implemented in the UI components that display location information."))
         }
+
+  // Helper to get location by coordinates for reverse geocoding
+  fun getLocationByCoordinates(lat: Double, lon: Double): Location? {
+    return when {
+      lat == 46.5221982 && lon == 6.5661540 -> FakeLocation.EPFL.locationSuggestions[0]
+      lat == 46.5196535 && lon == 6.6322734 -> FakeLocation.LAUSANNE.locationSuggestions[0]
+      else -> null
+    }
+  }
 
   val FakeLocation.getRequestURL: String
     get() = "https://nominatim.openstreetmap.org/search?q=${queryName}&format=json"
@@ -82,6 +92,29 @@ object FakeHttpClient {
             } +
             "]"
 
+  fun Location.toReverseGeocodeJson(): String =
+      """{
+        "place_id": 0,
+        "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+        "osm_type": "node",
+        "osm_id": 0,
+        "lat": "$latitude",
+        "lon": "$longitude",
+        "class": "railway",
+        "type": "station",
+        "place_rank": 0,
+        "importance": 0.5,
+        "addresstype": "railway",
+        "name": "$name",
+        "display_name": "$name",
+        "boundingbox": [
+          "${latitude - 0.1}",
+          "${latitude + 0.1}",
+          "${longitude - 0.1}",
+          "${longitude + 0.1}"
+        ]
+      }"""
+
   private class NominatimAPIInterceptor(val checkUrl: Boolean) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
       val request = chain.request()
@@ -91,12 +124,50 @@ object FakeHttpClient {
       if (checkUrl) {
         assertTrue("Request must use HTTPS", request.url.isHttps)
         assertTrue("Invalid host in $url", request.url.host.contains("nominatim.openstreetmap.org"))
-        assertNotNull(request.url.queryParameter("q"))
         assertEquals("json", request.url.queryParameter("format"))
       }
+
+      // Handle reverse geocoding endpoint
+      if (request.url.host == NOMINATIM_HOST && request.url.pathSegments.contains(REVERSE_PATH)) {
+        val lat = request.url.queryParameter("lat")?.toDoubleOrNull()
+        val lon = request.url.queryParameter("lon")?.toDoubleOrNull()
+
+        if (lat != null && lon != null) {
+          val location = getLocationByCoordinates(lat, lon)
+          if (location != null) {
+            Log.d("MockInterceptor", "Matched reverse geocode: $lat, $lon")
+            return Response.Builder()
+                .code(200)
+                .message("OK")
+                .request(request)
+                .protocol(Protocol.HTTP_1_1)
+                .body(
+                    location
+                        .toReverseGeocodeJson()
+                        .toResponseBody("application/json".toMediaType()))
+                .build()
+          }
+        }
+        // Return 404 for unknown coordinates
+        Log.d("MockInterceptor", "No location found for coordinates: $lat, $lon")
+        return Response.Builder()
+            .code(404)
+            .message("Not Found")
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .body(
+                "{\"error\":\"Unable to geocode\"}"
+                    .toResponseBody("application/json".toMediaType()))
+            .build()
+      }
+
+      // Handle search endpoint
       if (request.url.host == NOMINATIM_HOST &&
           request.url.pathSegments.contains(SEARCH_PATH) &&
           QUERY_PARAMETERS.all { (k, v) -> v.contains(request.url.queryParameter(k)) }) {
+        if (checkUrl) {
+          assertNotNull(request.url.queryParameter("q"))
+        }
         val location =
             FakeLocation.entries.find { request.url.queryParameter("q") == it.queryName }!!
         Log.d("MockInterceptor", "Matched FakeLocation: ${location.queryName}")
