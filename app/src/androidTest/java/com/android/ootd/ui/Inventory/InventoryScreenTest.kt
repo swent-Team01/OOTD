@@ -3,12 +3,14 @@ package com.android.ootd.ui.Inventory
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.center
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToLog
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ImageData
@@ -205,6 +207,10 @@ class InventoryScreenTest {
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
+
+    composeTestRule
+        .onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item1")
+        .printToLog("InventoryScreenTest")
 
     composeTestRule.onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item1").performTouchInput {
       click(center)

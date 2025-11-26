@@ -151,31 +151,34 @@ fun AccountPageContent(
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        TabRow(selectedTabIndex = selectedIndex) {
-          tabs.forEach { tab ->
-            Tab(
-                selected = tab == uiState.selectedTab,
-                onClick = { onSelectTab(tab) },
-                modifier =
-                    Modifier.testTag(
-                        if (tab == AccountTab.Posts) AccountPageTestTags.POSTS_TAB
-                        else AccountPageTestTags.STARRED_TAB),
-                text = {
-                  if (tab == AccountTab.Starred) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                      Icon(
-                          imageVector = Icons.Filled.Star,
-                          contentDescription = "Starred Tab",
-                          tint = colorScheme.primary)
-                      Spacer(modifier = Modifier.width(6.dp))
-                      Text("Starred")
-                    }
-                  } else {
-                    Text("Posts")
-                  }
-                })
-          }
-        }
+        TabRow(
+            selectedTabIndex = selectedIndex,
+            containerColor = colorScheme.secondary,
+            contentColor = colorScheme.onSecondaryContainer) {
+              tabs.forEach { tab ->
+                Tab(
+                    selected = tab == uiState.selectedTab,
+                    onClick = { onSelectTab(tab) },
+                    modifier =
+                        Modifier.testTag(
+                            if (tab == AccountTab.Posts) AccountPageTestTags.POSTS_TAB
+                            else AccountPageTestTags.STARRED_TAB),
+                    text = {
+                      if (tab == AccountTab.Starred) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                          Icon(
+                              imageVector = Icons.Filled.Star,
+                              contentDescription = "Starred Tab",
+                              tint = colorScheme.primary)
+                          Spacer(modifier = Modifier.width(6.dp))
+                          Text("Starred")
+                        }
+                      } else {
+                        Text("Posts")
+                      }
+                    })
+              }
+            }
 
         Spacer(modifier = Modifier.height(16.dp))
 
