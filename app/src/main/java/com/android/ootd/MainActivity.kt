@@ -292,6 +292,9 @@ fun OOTDApp(
                       onNotificationIconClick = {
                         navigationActions.navigateTo(Screen.NotificationsScreen)
                       },
+                      onOpenPost = { postId ->
+                        navigationActions.navigateTo(Screen.PostView(postId))
+                      },
                       onSeeFitClick = { postUuid ->
                         navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
                       })
