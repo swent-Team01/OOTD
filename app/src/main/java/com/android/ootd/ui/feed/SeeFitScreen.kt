@@ -67,7 +67,8 @@ object SeeFitScreenTestTags {
 fun SeeFitScreen(
     seeFitViewModel: SeeFitViewModel = viewModel(),
     postUuid: String = "",
-    goBack: () -> Unit = {}
+    goBack: () -> Unit = {},
+    onEditItem: (String) -> Unit = {}
 ) {
 
   val context = LocalContext.current
@@ -110,7 +111,9 @@ fun SeeFitScreen(
 
       else -> {
         ItemGridScreen(
-            items = items, modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding))
+            items = items,
+            modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
+            onEditItem = onEditItem)
       }
     }
   }

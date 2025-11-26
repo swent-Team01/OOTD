@@ -22,7 +22,7 @@ import com.android.ootd.model.items.Item
  * @param items List of items to display in the grid
  */
 @Composable
-fun ItemGridScreen(items: List<Item>, modifier: Modifier = Modifier) {
+fun ItemGridScreen(items: List<Item>, modifier: Modifier = Modifier, onEditItem: (String) -> Unit) {
 
   var selectedItem by remember { mutableStateOf<Item?>(null) }
 
@@ -33,7 +33,12 @@ fun ItemGridScreen(items: List<Item>, modifier: Modifier = Modifier) {
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-          items(items) { item -> ItemCard(item = item, onClick = { selectedItem = item }) }
+          items(items) { item ->
+            ItemCard(
+                item = item,
+                onClick = { selectedItem = item },
+                onEditClick = { onEditItem(item.itemUuid) })
+          }
         }
 
     selectedItem?.let { item ->
