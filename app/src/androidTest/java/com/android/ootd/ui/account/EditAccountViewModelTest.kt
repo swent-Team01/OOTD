@@ -11,6 +11,7 @@ import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.map.LocationSelectionViewModel
+import com.android.ootd.utils.LocationUtils
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.Runs
@@ -20,7 +21,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -488,30 +491,28 @@ class EditAccountViewModelTest {
 
   @Test
   fun onLocationPermissionGranted_retrievesGPS_andSavesLocation() = runTest {
+    // Mock LocationUtils to avoid the async Dispatchers.IO issue
+    mockkObject(LocationUtils)
+
+    val expectedLocation = Location(46.5191, 6.5668, "Lausanne, Switzerland")
+
+    // Capture the callbacks and invoke onSuccess synchronously
+    val onSuccessSlot = slot<(Location) -> Unit>()
+    val onFailureSlot = slot<(String) -> Unit>()
+
+    every {
+      LocationUtils.getCurrentGPSLocation(
+          locationRepository = any(),
+          onSuccess = capture(onSuccessSlot),
+          onFailure = capture(onFailureSlot))
+    } answers
+        {
+          // Immediately invoke the success callback with our test location
+          onSuccessSlot.captured.invoke(expectedLocation)
+        }
+
     initVM()
     signInAs(mockFirebaseUser)
-
-    // Mock GPS location retrieval
-    val mockAndroidLocation = mockk<android.location.Location>(relaxed = true)
-    every { mockAndroidLocation.latitude } returns 46.5191
-    every { mockAndroidLocation.longitude } returns 6.5668
-
-    val mockLocationTask =
-        mockk<com.google.android.gms.tasks.Task<android.location.Location>>(relaxed = true)
-    val successListenerSlot =
-        slot<com.google.android.gms.tasks.OnSuccessListener<android.location.Location>>()
-    every { mockLocationTask.addOnSuccessListener(capture(successListenerSlot)) } answers
-        {
-          successListenerSlot.captured.onSuccess(mockAndroidLocation)
-          mockLocationTask
-        }
-    every {
-      mockLocationTask.addOnFailureListener(any<com.google.android.gms.tasks.OnFailureListener>())
-    } returns mockLocationTask
-    every {
-      LocationProvider.fusedLocationClient.getCurrentLocation(
-          any<Int>(), any<com.google.android.gms.tasks.CancellationToken>())
-    } returns mockLocationTask
 
     viewModel.onLocationPermissionGranted()
     advanceUntilIdle()
@@ -521,9 +522,11 @@ class EditAccountViewModelTest {
     assertNotNull(location)
     assertEquals(46.5191, location.latitude, 0.0001)
     assertEquals(6.5668, location.longitude, 0.0001)
-    assertTrue(location.name.contains("Current Location"))
+    assertEquals("Lausanne, Switzerland", location.name)
     coVerify { accountRepository.editAccount("test-uid", any(), any(), any(), location) }
     assertFalse(viewModel.locationSelectionViewModel.uiState.value.isLoadingLocations)
+
+    unmockkObject(LocationUtils)
   }
 
   @Test

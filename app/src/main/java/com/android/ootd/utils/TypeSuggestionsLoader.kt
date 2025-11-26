@@ -70,79 +70,11 @@ object TypeSuggestionsLoader {
 
       cachedSuggestions = suggestions
     } catch (e: Exception) {
-      // If .yml loading fails, return default suggestions
-      return getDefaultSuggestions()
+      // If .yml loading fails, return empty map
+      return emptyMap()
     }
 
     return suggestions
-  }
-
-  /**
-   * Fallback method providing default suggestions if .yml loading fails. Same lists as the .yml as
-   * of the 2025-10-07
-   */
-  private fun getDefaultSuggestions(): Map<String, List<String>> {
-    return mapOf(
-        "Clothing" to
-            listOf(
-                "T-shirt",
-                "Shirt",
-                "Jeans",
-                "Jacket",
-                "Dress",
-                "Skirt",
-                "Shorts",
-                "Sweater",
-                "Coat",
-                "Blouse",
-                "Suit",
-                "Hoodie",
-                "Cardigan",
-                "Pants",
-                "Leggings",
-                "Overalls",
-                "Jumpsuit"),
-        "Shoes" to
-            listOf(
-                "Sneakers",
-                "Boots",
-                "Sandals",
-                "Heels",
-                "Flats",
-                "Loafers",
-                "Oxfords",
-                "Slippers",
-                "Wedges",
-                "Espadrilles",
-                "Ballerinas",
-                "Moccasins",
-                "Sports Shoes"),
-        "Accessories" to
-            listOf(
-                "Hat",
-                "Scarf",
-                "Belt",
-                "Gloves",
-                "Sunglasses",
-                "Watch",
-                "Bracelet",
-                "Necklace",
-                "Earrings",
-                "Tie",
-                "Beanie",
-                "Cap"),
-        "Bags" to
-            listOf(
-                "Backpack",
-                "Handbag",
-                "Tote",
-                "Clutch",
-                "Messenger Bag",
-                "Duffel Bag",
-                "Satchel",
-                "Crossbody Bag",
-                "Shopper",
-                "Wallet"))
   }
 
   /** Clears the cached suggestions. */

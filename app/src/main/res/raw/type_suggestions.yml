@@ -1,4 +1,4 @@
-# V.1: Last update: 7.10.2025
+# V.2: Last update: 24.11.2025
 Clothing:
   - T-shirt
   - Shirt
@@ -17,6 +17,13 @@ Clothing:
   - Leggings
   - Overalls
   - Jumpsuit
+  - Blazer
+  - Vest
+  - Polo
+  - Tank Top
+  - Swimwear
+  - Pajamas
+  - Robe
 
 Shoes:
   - Sneakers
@@ -32,6 +39,10 @@ Shoes:
   - Ballerinas
   - Moccasins
   - Sports Shoes
+  - Flip Flops
+  - Hiking Boots
+  - Rain Boots
+  - Ankle Boots
 
 Accessories:
   - Hat
@@ -40,12 +51,22 @@ Accessories:
   - Gloves
   - Sunglasses
   - Watch
-  - Bracelet
-  - Necklace
-  - Earrings
   - Tie
   - Beanie
   - Cap
+  - Hair Clip
+  - Headband
+  - Pocket Square
+  - Umbrella
+
+Jewelry:
+  - Ring
+  - Necklace
+  - Bracelet
+  - Earrings
+  - Cufflinks
+  - Anklet
+  - Pendant
 
 Bags:
   - Backpack
@@ -58,5 +79,32 @@ Bags:
   - Crossbody Bag
   - Shopper
   - Wallet
+  - Briefcase
+  - Suitcase
+
+Sportswear:
+  - Sports Bra
+  - Tracksuit
+  - Gym Shorts
+  - Rash Guard
+  - Yoga Pants
+  - Jersey
+
+Underwear:
+  - Socks
+  - Tights
+  - Underpants
+  - Undershirts
+  - Bathrobes
+  - Slip
+  - Boxers
+  - Bras
+  - Panties
+  - Thongs
+  - Briefs
+  - Camisoles
+  - Chemises
+  - Corsets
+  - Bodysuits
 
 Others:

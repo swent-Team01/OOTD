@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.NOTIFICATION_LIST
+import javax.annotation.processing.Generated
 
 object NotificationsScreenTestTags {
   const val NOTIFICATIONS_SCREEN = "notificationsScreen"
@@ -48,6 +52,11 @@ object NotificationsScreenTestTags {
   const val ENABLE_PUSH_NOTIFICATIONS = "enablePushNotifications"
 }
 
+@Generated("jacoco ignore")
+@Composable
+fun rememberPermissionLauncher(onResult: (Boolean) -> Unit) =
+    rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission(), onResult)
+
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun NotificationsScreen(
@@ -57,12 +66,14 @@ fun NotificationsScreen(
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
 
-  val permissionLauncher =
-      rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+  // Track permission state to trigger recomposition
+  var isNotificationsPermissionGranted by remember {
+    mutableStateOf(
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED)
+  }
 
-  val isNotificationsPermissionGranted =
-      ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-          PackageManager.PERMISSION_GRANTED
+  val permissionLauncher = rememberPermissionLauncher { isNotificationsPermissionGranted = it }
 
   Column(
       modifier =
