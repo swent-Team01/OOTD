@@ -134,4 +134,20 @@ interface AccountRepository {
    * @return A Flow that emits the updated Account whenever it changes in Firebase.
    */
   fun observeAccount(userID: String): Flow<Account>
+
+  /** Returns the list of starred item IDs for the current user. */
+  suspend fun getStarredItems(userID: String): List<String>
+
+  /** Adds the given item to the starred list (wishlist). */
+  suspend fun addStarredItem(itemUid: String): Boolean
+
+  /** Removes the given item from the starred list. */
+  suspend fun removeStarredItem(itemUid: String): Boolean
+
+  /**
+   * Toggles whether the given item is starred for the current user.
+   *
+   * @return The updated list of starred item IDs after the toggle.
+   */
+  suspend fun toggleStarredItem(itemUid: String): List<String>
 }

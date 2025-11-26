@@ -102,6 +102,14 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
 
         override fun observeAccount(userID: String): Flow<com.android.ootd.model.account.Account> =
             flowOf(com.android.ootd.model.account.Account())
+
+        override suspend fun getStarredItems(userID: String): List<String> = emptyList()
+
+        override suspend fun addStarredItem(itemUid: String): Boolean = true
+
+        override suspend fun removeStarredItem(itemUid: String): Boolean = true
+
+        override suspend fun toggleStarredItem(itemUid: String): List<String> = emptyList()
       }
 
   private fun fakeItemsRepo(items: List<Item>, postItems: List<Item> = emptyList()) =
