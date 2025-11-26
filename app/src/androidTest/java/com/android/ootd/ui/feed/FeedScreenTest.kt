@@ -63,7 +63,7 @@ class FeedScreenTest : FirestoreTest() {
             OutfitPost("1", "user1", "https://example.com/1.jpg"),
             OutfitPost("2", "user2", "https://example.com/2.jpg"))
 
-    composeTestRule.setContent { FeedList(posts = posts, isBlurred = false) }
+    composeTestRule.setContent { FeedList(posts = posts, isBlurred = false, onPostClick = {}) }
 
     composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
   }
