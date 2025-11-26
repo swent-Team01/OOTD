@@ -54,7 +54,7 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
   }
 
   @Test
-  fun testAcceptActionTriggersRepositoryCall() = runTest {
+  fun testAcceptAction() = runTest {
     val notif =
         Notification(
             uid = "notif123",
@@ -83,5 +83,37 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
     assert(result.isEmpty())
 
     verify { mockManager.cancel(notif.uid.hashCode()) }
+  }
+
+  @Test
+  fun testDeleteAction() = runTest {
+    val notif =
+        Notification(
+            uid = "notif123",
+            senderId = currentUser.uid,
+            receiverId = currentUser.uid,
+            type = "FOLLOW_REQUEST",
+            content = "hello",
+            senderName = "")
+
+    notificationsRepository.addNotification(notif)
+
+    val intent =
+        Intent().apply {
+          action = NOTIFICATION_ACTION_DELETE
+          putExtra("notificationUid", notif.uid)
+          putExtra("senderId", notif.senderId)
+          putExtra("receiverId", notif.receiverId)
+        }
+
+    receiver.onReceive(mockContext, intent)
+
+    // Advance time to allow coroutines to complete
+    advanceUntilIdle()
+    val result = notificationsRepository.getNotificationsForReceiver(currentUser.uid)
+    assert(result.isEmpty())
+    verify {
+      mockManager.cancel(notif.uid.hashCode())
+    } // Make sure that the notification was canceled
   }
 }

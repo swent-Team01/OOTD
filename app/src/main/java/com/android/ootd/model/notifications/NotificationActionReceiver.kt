@@ -5,9 +5,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
 import com.android.ootd.model.account.AccountRepositoryProvider
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class NotificationActionReceiver : BroadcastReceiver() {
 
@@ -18,7 +17,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     when (intent.action) {
       NOTIFICATION_ACTION_ACCEPT -> {
-        CoroutineScope(Dispatchers.IO).launch {
+        runBlocking(Dispatchers.IO) {
           NotificationRepositoryProvider.repository.acceptFollowNotification(
               notificationId = notificationId,
               senderId = senderId,
@@ -28,7 +27,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
       }
 
       NOTIFICATION_ACTION_DELETE -> {
-        CoroutineScope(Dispatchers.IO).launch {
+        runBlocking(Dispatchers.IO) {
           NotificationRepositoryProvider.repository.deleteNotification(
               notificationId = notificationId, receiverId = receiverId)
         }
