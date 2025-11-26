@@ -47,7 +47,6 @@ class NominatimLocationRepository(private val client: OkHttpClient) : LocationRe
           val response = client.newCall(request).execute()
           response.use {
             if (!response.isSuccessful) {
-              Log.d(TAG, "Unexpected code $response")
               throw Exception("Unexpected code $response")
             }
             response.body?.string()
@@ -72,10 +71,8 @@ class NominatimLocationRepository(private val client: OkHttpClient) : LocationRe
     try {
       val body = executeRequest(url)
       return if (body != null) {
-        Log.d(TAG, "Search body: $body")
         parseBody(body)
       } else {
-        Log.d(TAG, "Empty body")
         emptyList()
       }
     } catch (e: IOException) {
@@ -97,10 +94,8 @@ class NominatimLocationRepository(private val client: OkHttpClient) : LocationRe
 
     val body = executeRequest(url)
     return if (body != null) {
-      Log.d(TAG, "Reverse geocode body: $body")
       parseLocationFromJson(JSONObject(body))
     } else {
-      Log.d(TAG, "Empty body")
       throw Exception("Empty response from reverse geocoding")
     }
   }
