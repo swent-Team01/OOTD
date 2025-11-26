@@ -2,12 +2,15 @@ package com.android.ootd.model.account
 
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
+import android.util.Log
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
 import com.android.ootd.utils.FirebaseEmulator
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -917,5 +920,189 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
           "",
           emptyLocation)
     }
+  }
+
+  // -------- Real-time observation tests (observeAccount) --------
+
+  @Test
+  fun observeAccount_blankUserID_closesWithException() = runBlocking {
+    val emissions = mutableListOf<Account>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        accountRepository.observeAccount("").collect {
+          Log.d("AccountTest", "Collected emission: ${it.uid}")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("AccountTest", "Error collecting", e)
+      }
+    }
+
+    kotlinx.coroutines.delay(500)
+    job.cancel()
+
+    assertTrue("Should fail with BlankUserID", error is BlankUserID)
+    assertTrue("Should not emit any values", emissions.isEmpty())
+  }
+
+  @Test
+  fun observeAccount_emitsInitialAccount() = runBlocking {
+    // Add account and wait for write to complete
+    accountRepository.addAccount(account1)
+    kotlinx.coroutines.delay(1000)
+
+    // Verify account exists before starting observation
+    val saved = accountRepository.getAccount(account1.uid)
+    Log.d("AccountTest", "Saved account: ${saved.uid}, username: ${saved.username}")
+    assertEquals(
+        "Account should be saved before testing observe", account1.username, saved.username)
+
+    val emissions = mutableListOf<Account>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        accountRepository.observeAccount(account1.uid).collect {
+          Log.d("AccountTest", "Collected emission: ${it.uid}, username: ${it.username}")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("AccountTest", "Error collecting", e)
+      }
+    }
+
+    // Snapshot listeners need significant time to register and emit
+    kotlinx.coroutines.delay(3000)
+    job.cancel()
+
+    error?.let { throw it }
+
+    // Log what we actually got
+    Log.d("AccountTest", "Total emissions received: ${emissions.size}")
+    if (emissions.isNotEmpty()) {
+      Log.d("AccountTest", "First emission username: ${emissions.first().username}")
+    }
+
+    assertTrue("Should emit at least once", emissions.isNotEmpty())
+    val account = emissions.first()
+    assertEquals(account1.uid, account.uid)
+    assertEquals(account1.username, account.username)
+  }
+
+  @Test
+  fun observeAccount_emitsUpdates() = runBlocking {
+    // Add account and wait for write
+    accountRepository.addAccount(account1)
+    kotlinx.coroutines.delay(1000)
+
+    val emissions = mutableListOf<Account>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        accountRepository.observeAccount(account1.uid).collect {
+          Log.d("AccountTest", "Collected emission: ${it.username}")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("AccountTest", "Error collecting", e)
+      }
+    }
+
+    // Wait for initial emission
+    kotlinx.coroutines.delay(3000)
+
+    // Update the account
+    accountRepository.editAccount(
+        account1.uid, "new_username", account1.birthday, account1.profilePicture, account1.location)
+
+    // Wait for update emission
+    kotlinx.coroutines.delay(2000)
+    job.cancel()
+
+    error?.let { throw it }
+
+    Log.d("AccountTest", "Total emissions: ${emissions.size}")
+    emissions.forEachIndexed { index, acc ->
+      Log.d("AccountTest", "Emission $index: ${acc.username}")
+    }
+
+    assertTrue("Should emit at least twice (initial + update)", emissions.size >= 2)
+    val latest = emissions.last()
+    assertEquals("new_username", latest.username)
+  }
+
+  @Test
+  fun observeAccount_nonExistentAccount_doesNotEmit() = runBlocking {
+    val emissions = mutableListOf<Account>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        accountRepository.observeAccount("nonexistent").collect {
+          Log.d("AccountTest", "Unexpected emission: ${it.uid}")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("AccountTest", "Error (expected): ${e.message}", e)
+      }
+    }
+
+    kotlinx.coroutines.delay(2000)
+    job.cancel()
+
+    // For non-existent accounts, Firestore security rules cause permission denied error
+    // or simply not emit anything depending on security rules
+    Log.d("AccountTest", "Error type: ${error?.javaClass?.simpleName}")
+    Log.d("AccountTest", "Emissions count: ${emissions.size}")
+
+    assertTrue("Should not emit any values", emissions.isEmpty())
+  }
+
+  @Test
+  fun observeAccount_handlesCorruptedDocument() = runBlocking {
+    // First create a valid account so we have permission to read it
+    accountRepository.addAccount(account1)
+    kotlinx.coroutines.delay(1000)
+
+    val emissions = mutableListOf<Account>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        accountRepository.observeAccount(account1.uid).collect {
+          Log.d("AccountTest", "Collected emission: ${it.username}")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("AccountTest", "Error collecting", e)
+      }
+    }
+
+    // Wait for initial emission
+    kotlinx.coroutines.delay(3000)
+
+    Log.d("AccountTest", "Emissions before corruption: ${emissions.size}")
+
+    // Now corrupt the document while observer is active
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .update(mapOf("friendUids" to 12345)) // Invalid type
+        .await()
+
+    kotlinx.coroutines.delay(2000)
+    job.cancel()
+
+    // Should have emitted the initial valid account, then failed to transform corrupted one
+    assertTrue("Should emit initial valid account", emissions.size >= 1)
+    assertEquals(account1.username, emissions.first().username)
   }
 }

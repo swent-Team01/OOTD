@@ -21,6 +21,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -609,5 +612,36 @@ class AccountRepositoryFirestore(
     } catch (e: Exception) {
       Log.w(TAG, "Error querying items for user deletion (continuing): ${e.message}")
     }
+  }
+
+  override fun observeAccount(userID: String): Flow<Account> = callbackFlow {
+    if (userID.isBlank()) {
+      close(BlankUserID())
+      return@callbackFlow
+    }
+
+    val listener =
+        db.collection(ACCOUNT_COLLECTION_PATH).document(userID).addSnapshotListener {
+            snapshot,
+            error ->
+          if (error != null) {
+            Log.e(TAG, "Error observing account $userID", error)
+            close(error)
+            return@addSnapshotListener
+          }
+
+          if (snapshot != null && snapshot.exists()) {
+            val account = transformAccountDocument(snapshot)
+            if (account != null) {
+              trySend(account)
+            } else {
+              Log.e(TAG, "Failed to transform account document for $userID")
+            }
+          } else {
+            Log.w(TAG, "Account document $userID does not exist")
+          }
+        }
+
+    awaitClose { listener.remove() }
   }
 }

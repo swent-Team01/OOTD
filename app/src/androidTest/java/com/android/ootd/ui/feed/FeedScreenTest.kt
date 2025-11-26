@@ -79,6 +79,11 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> =
               emptyList<OutfitPost>()
 
+          override fun observeRecentFeedForUids(
+              uids: List<String>
+          ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> =
+              kotlinx.coroutines.flow.flowOf(emptyList())
+
           override suspend fun addPost(post: OutfitPost) {}
 
           override fun getNewPostId() = "fake-id"
@@ -109,6 +114,10 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun getFeedForUids(uids: List<String>) = posts
 
           override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> = posts
+
+          override fun observeRecentFeedForUids(
+              uids: List<String>
+          ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> = kotlinx.coroutines.flow.flowOf(posts)
 
           override suspend fun addPost(post: OutfitPost) {}
 
@@ -242,6 +251,11 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun getFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
 
           override suspend fun getRecentFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
+
+          override fun observeRecentFeedForUids(
+              uids: List<String>
+          ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> =
+              kotlinx.coroutines.flow.flowOf(emptyList())
 
           override suspend fun addPost(post: OutfitPost) {}
 
