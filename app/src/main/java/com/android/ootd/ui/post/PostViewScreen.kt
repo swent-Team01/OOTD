@@ -102,6 +102,12 @@ fun PostViewScreen(
       }
 }
 
+/**
+ * Composable displaying the details of a post
+ *
+ * @ param uiState The current UI state of the post view @ param onToggleLike Callback when the like
+ * button is toggled @ param modifier Modifier for styling
+ */
 @Composable
 fun PostDetailsContent(
     uiState: PostViewUiState,
@@ -130,6 +136,12 @@ fun PostDetailsContent(
   }
 }
 
+/**
+ * Composable displaying the post owner's profile picture and username
+ *
+ * @ param username The username of the post owner @ param profilePicture The URL of the post
+ * owner's profile picture
+ */
 @Composable
 fun PostOwnerSection(
     username: String?,
@@ -151,6 +163,11 @@ fun PostOwnerSection(
   }
 }
 
+/**
+ * Composable displaying the post image
+ *
+ * @ param imageUrl The URL of the post image
+ */
 @Composable
 fun PostImage(imageUrl: String) {
   AsyncImage(
@@ -160,6 +177,12 @@ fun PostImage(imageUrl: String) {
       modifier = Modifier.fillMaxWidth().height(300.dp).testTag(PostViewTestTags.POST_IMAGE))
 }
 
+/**
+ * Composable displaying the like button and like count
+ *
+ * @ param isLiked Whether the post is liked by the current user @ param likeCount The total number
+ * of likes on the post @ param onToggleLike Callback when the like button is toggled
+ */
 @Composable
 fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
@@ -178,6 +201,11 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
   }
 }
 
+/**
+ * Composable displaying the post description
+ *
+ * @ param description The description text of the post
+ */
 @Composable
 fun PostDescription(description: String) {
   if (description.isNotBlank()) {

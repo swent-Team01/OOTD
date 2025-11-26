@@ -49,7 +49,11 @@ class PostViewViewModel(
     }
   }
 
-  /** Load all post related data from multiple repositories */
+  /**
+   * Load all post related data from multiple repositories
+   *
+   * @param postId ID of the post to load
+   */
   fun loadPost(postId: String) {
     _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
@@ -94,6 +98,7 @@ class PostViewViewModel(
     }
   }
 
+  /** Toggles the like status of the post for the current user */
   fun toggleLike() {
     val userId = currentUserId ?: return
     val post = _uiState.value.post ?: return
