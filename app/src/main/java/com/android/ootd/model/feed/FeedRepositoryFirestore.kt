@@ -15,6 +15,8 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
 const val POSTS_COLLECTION_PATH = "posts"
+
+const val REFRESH_INTERVAL_MILLIS = 60_000L
 private val MILLIS_IN_24_HOURS = Duration.ofHours(24).toMillis()
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
@@ -138,10 +140,10 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     val initialPosts = getRecentFeedForUids(uids)
     emit(initialPosts)
 
-    // For Firestore, we poll every 30 seconds
+    // For Firestore, we poll every 60 seconds
     // This could be replaced with real snapshot listeners if needed
     while (true) {
-      kotlinx.coroutines.delay(30_000)
+      kotlinx.coroutines.delay(REFRESH_INTERVAL_MILLIS)
       try {
         val posts = getRecentFeedForUids(uids)
         emit(posts)
