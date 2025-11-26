@@ -620,7 +620,7 @@ private fun SuggestionsDropdownField(
   val filtered = remember(value, suggestions) { filter(value, suggestions) }
   val showCounter = maxChars != null && isFocused
   val supportingText: (@Composable () -> Unit)? =
-      if (showCounter && maxChars != null) {
+      if (showCounter) {
         { Text("${value.length}/$maxChars", style = MaterialTheme.typography.labelSmall) }
       } else null
 
