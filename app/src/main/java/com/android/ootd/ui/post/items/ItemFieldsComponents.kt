@@ -62,7 +62,7 @@ val STYLE_SUGGESTIONS =
 val FIT_TYPE_SUGGESTIONS =
     listOf("Slim", "Regular", "Relaxed", "Oversized", "Skinny", "Tailored", "Boxy", "Loose")
 
-private const val BRAND_MAX_LENGTH = 20
+private const val BRAND_MAX_LENGTH = 40
 private const val MATERIAL_MAX_LENGTH = 100
 private const val SIZE_MAX_LENGTH = 20
 private const val LINK_MAX_LENGTH = 160
