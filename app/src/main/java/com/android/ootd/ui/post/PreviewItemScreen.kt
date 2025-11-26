@@ -59,7 +59,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,10 +73,12 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.ActionIconButton
 import com.android.ootd.utils.BackArrow
 import com.android.ootd.utils.CenteredLoadingState
 import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.utils.ShowText
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
@@ -200,39 +201,7 @@ private fun PreviewItemScreenContent(
                     onBackClick = { onGoBack(ui.postUuid) },
                     modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON))
               })
-        }
-        //            {
-        //          CenterAlignedTopAppBar(
-        //              title = {
-        //                Text(
-        //                    text = "OOTD",
-        //                    style =
-        //                        MaterialTheme.typography.displayLarge.copy(
-        //                            fontWeight = FontWeight.Bold,
-        //                            color = MaterialTheme.colorScheme.primary),
-        //                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
-        //              },
-        //              navigationIcon = {
-        //                IconButton(
-        //                    onClick = { onGoBack(ui.postUuid) },
-        //                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON))
-        // {
-        //                      Icon(
-        //                          Icons.AutoMirrored.Outlined.ArrowBack,
-        //                          contentDescription = "go back",
-        //                          tint = MaterialTheme.colorScheme.tertiary)
-        //                    }
-        //              },
-        //              colors =
-        //                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-        //                      containerColor = MaterialTheme.colorScheme.background,
-        //                      scrolledContainerColor = MaterialTheme.colorScheme.background,
-        //                      titleContentColor = Primary,
-        //                      navigationIconContentColor =
-        // MaterialTheme.colorScheme.onSurfaceVariant),
-        //              scrollBehavior = scrollBehavior)
-        //        }
-        ,
+        },
         bottomBar = {
           Row(
               modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -301,26 +270,24 @@ private fun PreviewItemScreenContent(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center) {
-                  Text(
+                  ShowText(
                       modifier =
                           Modifier.widthIn(220.dp)
                               .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
                       text = "What are you wearing today ?",
                       style =
-                          MaterialTheme.typography.titleLarge.copy(
+                          Typography.titleLarge.copy(
                               fontSize = 20.sp,
                               fontWeight = FontWeight.Medium,
                               color = MaterialTheme.colorScheme.onSurfaceVariant),
-                      textAlign = TextAlign.Center,
                       color = MaterialTheme.colorScheme.onSurfaceVariant)
                   Spacer(Modifier.height(12.dp))
-                  Text(
+                  ShowText(
                       text = "Don't forget to add your items",
                       style =
-                          MaterialTheme.typography.bodyMedium.copy(
+                          Typography.bodyMedium.copy(
                               fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.primary),
-                      textAlign = TextAlign.Center)
+                              color = MaterialTheme.colorScheme.primary))
                 }
           }
         }

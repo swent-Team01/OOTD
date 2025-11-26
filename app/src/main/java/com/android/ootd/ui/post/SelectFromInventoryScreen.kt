@@ -2,8 +2,6 @@ package com.android.ootd.ui.post
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,13 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.Inventory.InventoryGrid
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.BackArrow
+import com.android.ootd.utils.OOTDTopBar
 
 object SelectInventoryItemScreenTestTags {
   const val SCREEN = "selectInventoryItemScreen"
@@ -73,27 +72,14 @@ fun SelectInventoryItemScreen(
   Scaffold(
       modifier = Modifier.fillMaxSize().testTag(SelectInventoryItemScreenTestTags.SCREEN),
       topBar = {
-        CenterAlignedTopAppBar(
+        OOTDTopBar(
             modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.TOP_APP_BAR),
-            title = {
-              Text(
-                  text = "INVENTORY",
-                  style =
-                      MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold, color = Primary),
-                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.TITLE))
-            },
-            navigationIcon = {
-              Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-                IconButton(
-                    onClick = onGoBack,
-                    modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.GO_BACK_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                          contentDescription = "Back",
-                          tint = MaterialTheme.colorScheme.tertiary)
-                    }
-              }
+            textModifier = Modifier.testTag(SelectInventoryItemScreenTestTags.TITLE),
+            centerText = "INVENTORY",
+            leftComposable = {
+              BackArrow(
+                  onBackClick = onGoBack,
+                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.GO_BACK_BUTTON))
             })
       }) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {

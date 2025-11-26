@@ -11,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,7 +33,11 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.utils.BackArrow
+import com.android.ootd.utils.CommonTextField
 import com.android.ootd.utils.LocationUtils
+import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.utils.ShowText
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -88,24 +90,21 @@ private fun DescriptionInputField(description: String, onDescriptionChange: (Str
   val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
 
   Column(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
+    CommonTextField(
         value = description,
-        onValueChange = { newValue ->
+        onChange = { newValue ->
           if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
             onDescriptionChange(newValue)
           }
         },
-        label = { Text("Description") },
-        placeholder = { Text("Add a short caption for your FitCheck") },
+        label = "Description",
+        placeholder = "Add a short caption for your FitCheck",
         modifier = Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
         singleLine = false,
-        maxLines = 2,
-        shape = RoundedCornerShape(12.dp))
-
-    Text(
+        maxLines = 2)
+    ShowText(
         text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.primary,
         modifier =
             Modifier.align(Alignment.End)
                 .padding(top = 4.dp, end = 4.dp)
@@ -243,26 +242,14 @@ private fun FitCheckScreenContent(
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
       topBar = {
-        CenterAlignedTopAppBar(
+        OOTDTopBar(
             modifier = Modifier.testTag(FitCheckScreenTestTags.TOP_BAR),
-            title = {
-              Text(
-                  text = "FitCheck",
-                  style =
-                      MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
-            },
-            navigationIcon = {
-              IconButton(
-                  onClick = { onBackClick() },
-                  modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.tertiary)
-                  }
-            },
-        )
+            centerText = "FitCheck",
+            leftComposable = {
+              BackArrow(
+                  onBackClick = onBackClick,
+                  modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON))
+            })
       },
       bottomBar = {
         Button(

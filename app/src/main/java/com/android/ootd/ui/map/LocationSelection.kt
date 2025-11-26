@@ -209,26 +209,7 @@ fun LocationSelectionSection(
             }
           },
           label = textLocationField,
-          //              {
-          //            Box(
-          //                modifier =
-          //                    Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
-          //                        .padding(horizontal = 8.dp, vertical = 4.dp)) {
-          //                  Text(
-          //                      text = textLocationField,
-          //                      style = typography.bodySmall.copy(fontFamily = Bodoni),
-          //                      color = colors.tertiary)
-          //                }
-          //          },
           placeholder = "Or enter address manually",
-          //              {
-          //            Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
-          //          },
-          //          colors =
-          //              OutlinedTextFieldDefaults.colors(
-          //                  focusedTextColor = colors.primary,
-          //                  unfocusedTextColor = colors.primary,
-          //                  cursorColor = colors.primary),
           trailingIcon = {
             LocationInputTrailingIcon(
                 isLoadingLocation = locationUiState.isLoadingLocations,
