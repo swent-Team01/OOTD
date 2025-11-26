@@ -310,7 +310,8 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
                   senderId = userId,
                   receiverId = userId,
                   type = "FOLLOW_REQUEST",
-                  content = "Wants to follow you"))
+                  content = "Wants to follow you",
+                  senderName = ""))
         }
     clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
     clickWithWait(composeTestRule, FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)

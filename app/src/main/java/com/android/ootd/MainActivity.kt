@@ -3,7 +3,9 @@ package com.android.ootd
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -38,7 +40,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.LocationProvider.fusedLocationClient
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.notifications.NOTIFICATION_ACTION_ACCEPT
+import com.android.ootd.model.notifications.NOTIFICATION_ACTION_DELETE
 import com.android.ootd.model.notifications.Notification
+import com.android.ootd.model.notifications.NotificationActionReceiver
 import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountPage
@@ -81,6 +86,7 @@ object HttpClientProvider {
 }
 
 const val OOTD_CHANNEL_ID = "ootd_channel"
+const val NOTIFICATION_CLICK_ACTION = "com.android.ootd.NOTIFICATION_CLICK"
 
 /** Function to create the notification channel for push notifications */
 fun createNotificationChannel(context: Context) {
@@ -115,10 +121,18 @@ class MainActivity : ComponentActivity() {
         Surface(
             modifier = Modifier.fillMaxSize(),
         ) {
-          OOTDApp()
+          // Check if activity was launched from notification
+          val shouldNavigateToUserProfile = intent?.action == NOTIFICATION_CLICK_ACTION
+          val senderId = intent.getStringExtra("senderId") ?: ""
+          OOTDApp(shouldNavigateToUserProfile = shouldNavigateToUserProfile, senderId = senderId)
         }
       }
     }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
   }
 }
 
@@ -132,6 +146,8 @@ class MainActivity : ComponentActivity() {
  * @param context Compose-provided [Context], defaults to [LocalContext].
  * @param credentialManager Default [CredentialManager] instance for authentication flows.
  * @param testMode Used for overriding permission screens for testing mode
+ * @param shouldNavigateToUserProfile Whether to navigate to the sender of the follow request on
+ *   launch
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -140,11 +156,29 @@ fun OOTDApp(
     credentialManager: CredentialManager = CredentialManager.create(context),
     testNavController: NavHostController? = null,
     testStartDestination: String? = null,
-    testMode: Boolean = false
+    testMode: Boolean = false,
+    shouldNavigateToUserProfile: Boolean = false,
+    senderId: String = ""
 ) {
   val navController = testNavController ?: rememberNavController()
   val navigationActions = remember { NavigationActions(navController) }
   val startDestination = testStartDestination ?: Screen.Splash.route
+
+  // Navigate to notifications screen if launched from notification
+  LaunchedEffect(shouldNavigateToUserProfile) {
+    if (shouldNavigateToUserProfile) {
+      // Wait for navigation to be ready and user to be authenticated
+      if (senderId != "") {
+        navigationActions.navigateTo(Screen.ViewUser(senderId))
+      } else {
+        // If there is no user, we just bring them to the notifications screen
+        navController.navigate(Screen.NotificationsScreen.route) {
+          // Don't pop the back stack, allow user to navigate back normally
+          launchSingleTop = true
+        }
+      }
+    }
+  }
 
   // Observe nav backstack to reactively show the bottom bar
   val navBackStackEntry = navController.currentBackStackEntryAsState()
@@ -167,7 +201,9 @@ fun OOTDApp(
       testMode ||
           ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
               PackageManager.PERMISSION_GRANTED
-  var listenerRegistration: ListenerRegistration? = null
+
+  // Use remember to persist listener across recompositions
+  val listenerRegistration = remember { mutableListOf<ListenerRegistration?>().apply { add(null) } }
 
   /**
    * Pushes given notification
@@ -179,11 +215,68 @@ fun OOTDApp(
   fun sendLocalNotification(notification: Notification) {
     val manager = NotificationManagerCompat.from(context)
 
+    val mainIntent =
+        Intent(context, MainActivity::class.java).apply {
+          action = NOTIFICATION_CLICK_ACTION
+          putExtra("senderId", notification.senderId)
+          flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+    val mainPendingIntent =
+        PendingIntent.getActivity(
+            context,
+            notification.uid.hashCode(),
+            mainIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    // --- ACCEPT ACTION ---
+    val acceptIntent =
+        Intent(context, NotificationActionReceiver::class.java).apply {
+          action = NOTIFICATION_ACTION_ACCEPT
+          putExtra("notificationUid", notification.uid)
+          putExtra("senderId", notification.senderId)
+          putExtra("receiverId", notification.receiverId)
+        }
+
+    val acceptPendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            ("${notification.uid}_accept").hashCode(),
+            acceptIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    // --- DELETE ACTION ---
+    val deleteIntent =
+        Intent(context, NotificationActionReceiver::class.java).apply {
+          action = NOTIFICATION_ACTION_DELETE
+          putExtra("notificationUid", notification.uid)
+          putExtra("senderId", notification.senderId)
+          putExtra("receiverId", notification.receiverId)
+        }
+
+    val deletePendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            ("${notification.uid}_delete").hashCode(),
+            deleteIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    // BUILD NOTIFICATION
     val builder =
-        NotificationCompat.Builder(context, "ootd_channel")
+        NotificationCompat.Builder(context, OOTD_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(notification.getNotificationMessage())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(mainPendingIntent)
+            .setAutoCancel(true)
+            .addAction(
+                R.drawable.ic_check, // accept icon
+                "Accept",
+                acceptPendingIntent)
+            .addAction(
+                R.drawable.ic_delete, // delete icon
+                "Delete",
+                deletePendingIntent)
 
     manager.notify(notification.uid.hashCode(), builder.build())
   }
@@ -194,22 +287,29 @@ fun OOTDApp(
    * If a listener was already created, it does nothing.
    */
   fun observeUnpushedNotifications(userId: String) {
-    if (listenerRegistration != null) return
+    if (listenerRegistration[0] != null) return
 
     if (testMode) {
       sendLocalNotification(
           Notification(
-              uid = "", senderId = "", receiverId = "", type = "", content = "", wasPushed = false))
+              uid = "",
+              senderId = "",
+              receiverId = "",
+              type = "",
+              content = "",
+              wasPushed = false,
+              senderName = ""))
     }
 
-    listenerRegistration =
+    listenerRegistration[0] =
         NotificationRepositoryProvider.repository.listenForUnpushedNotifications(
             receiverId = userId) { notification ->
               sendLocalNotification(notification)
             }
   }
 
-  LaunchedEffect(Unit) {
+  // Watch for permission changes and create listener when granted
+  LaunchedEffect(isNotificationsPermissionGranted) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: ""
     if ((testMode || currentUserId.isNotEmpty()) && isNotificationsPermissionGranted) {
       createNotificationChannel(context)
