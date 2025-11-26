@@ -17,7 +17,7 @@ object FirebaseImageUploader {
   private const val TAG = "FirebaseImageUploader"
 
   // Timeout duration for upload operations to Firebase Storage
-  private const val UPLOAD_TIMEOUT_MS = 1000L // 1 seconds
+  private const val UPLOAD_TIMEOUT_MS = 2000L // 2 seconds
 
   private val storage by lazy {
     try {
@@ -64,9 +64,10 @@ object FirebaseImageUploader {
     // If local file exists, keep offline URI; else return empty to signal invalid selection
     return try {
       val isFile = localUri.scheme == "file"
+      val isContent = localUri.scheme == "content"
       val path = localUri.path
       val fileExists = isFile && path != null && java.io.File(path).exists()
-      if (fileExists) ImageData(imageId = fileName, imageUrl = localUri.toString())
+      if (fileExists || isContent) ImageData(imageId = fileName, imageUrl = localUri.toString())
       else ImageData("", "")
     } catch (_: Exception) {
       ImageData("", "")
