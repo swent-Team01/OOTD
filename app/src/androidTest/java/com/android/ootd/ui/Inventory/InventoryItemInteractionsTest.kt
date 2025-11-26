@@ -1,11 +1,9 @@
 package com.android.ootd.ui.Inventory
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.center
-import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -47,7 +45,7 @@ class InventoryItemInteractionsTest {
     composeRule
         .onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_${sampleItem.itemUuid}")
         .assertIsDisplayed()
-        .performTouchInput { click(center) }
+        .performClick()
 
     composeRule.runOnIdle { assertTrue(clicked) }
   }
@@ -62,14 +60,15 @@ class InventoryItemInteractionsTest {
             items = items,
             onItemClick = { clicked = it },
             starredItemIds = emptySet(),
-            onToggleStar = {})
+            onToggleStar = {},
+            showStarToggle = false)
       }
     }
 
     composeRule
         .onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_${items[0].itemUuid}")
         .assertIsDisplayed()
-        .performTouchInput { click(center) }
+        .performClick()
 
     composeRule.runOnIdle { assertEquals(items[0], clicked) }
   }
