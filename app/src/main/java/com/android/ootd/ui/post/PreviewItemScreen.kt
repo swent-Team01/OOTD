@@ -74,11 +74,11 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.ActionIconButton
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.CenteredLoadingState
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.ActionIconButton
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"

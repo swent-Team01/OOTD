@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Secondary
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.ShowText
 
 object BetaConsentScreenTestTags {
   const val SCREEN = "betaConsentScreen"

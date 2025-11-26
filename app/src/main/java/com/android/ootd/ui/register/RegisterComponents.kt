@@ -36,7 +36,7 @@ import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
-import com.android.ootd.utils.CommonTextField
+import com.android.ootd.utils.composables.CommonTextField
 
 // Error messages (kept as constants to avoid repetition)
 internal const val ERROR_USERNAME = "Please enter a valid username"

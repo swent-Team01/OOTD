@@ -53,9 +53,9 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.CenteredLoadingState
-import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.OOTDTopBar
 
 object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"

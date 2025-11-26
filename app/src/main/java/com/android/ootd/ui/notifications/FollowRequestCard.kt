@@ -29,7 +29,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.utils.composables.ProfilePicture
 
 @Composable
 fun FollowRequestCard(

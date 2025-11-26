@@ -29,7 +29,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Secondary
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.ShowText
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of

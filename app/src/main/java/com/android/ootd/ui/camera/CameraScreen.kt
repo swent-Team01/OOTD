@@ -38,8 +38,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.camera.ImageOrientationHelper
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
-import com.android.ootd.utils.CircularIconButton
-import com.android.ootd.utils.PermissionRequestScreen
+import com.android.ootd.utils.composables.CircularIconButton
+import com.android.ootd.utils.composables.PermissionRequestScreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState

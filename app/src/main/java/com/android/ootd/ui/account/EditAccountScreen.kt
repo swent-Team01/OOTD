@@ -59,13 +59,13 @@ import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.ActionButton
-import com.android.ootd.utils.ActionIconButton
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.CommonTextField
 import com.android.ootd.utils.LocationUtils
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.utils.composables.ActionButton
+import com.android.ootd.utils.composables.ActionIconButton
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CommonTextField
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
 
 // Test tag constants for UI tests
 object UiTestTags {

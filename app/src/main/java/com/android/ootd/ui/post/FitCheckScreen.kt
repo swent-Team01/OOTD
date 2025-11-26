@@ -33,11 +33,11 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.CommonTextField
 import com.android.ootd.utils.LocationUtils
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CommonTextField
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"

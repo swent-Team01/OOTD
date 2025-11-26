@@ -34,7 +34,7 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_IMAGE
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_LETTER
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.utils.composables.ProfilePicture
 
 object UserProfileCardTestTags {
   const val USER_FOLLOW_BUTTON = "userFollowButton"

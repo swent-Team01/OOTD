@@ -17,11 +17,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.ActionButton
-import com.android.ootd.utils.LoadingScreen
-import com.android.ootd.utils.NotificationButton
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.ActionButton
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.NotificationButton
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"

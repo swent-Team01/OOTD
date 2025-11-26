@@ -28,8 +28,11 @@ import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.utils.CenteredEmptyState
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.CenteredEmptyState
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ShowText
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
@@ -286,7 +289,6 @@ fun OutfitPostCard(
               modifier = Modifier.matchParentSize().testTag(OutfitPostCardTestTags.BLUR_OVERLAY),
               contentAlignment = Alignment.Center) {
                 CenteredEmptyState(
-                    message = "Do a fit check to unlock today's feed",
                     icon = {
                       Icon(
                           imageVector = Icons.Default.PhotoCamera,
@@ -294,7 +296,12 @@ fun OutfitPostCard(
                           tint = Color.White,
                           modifier = Modifier.size(48.dp))
                     },
-                    textColor = Color.White)
+                    text = {
+                      ShowText(
+                          text = "Do a fit check to unlock today's feed",
+                          style = Typography.bodyLarge,
+                          color = OnSurface)
+                    })
               }
         }
       }

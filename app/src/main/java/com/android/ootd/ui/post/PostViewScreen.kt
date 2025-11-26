@@ -18,8 +18,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.OOTDTopBar
 
 object PostViewTestTags {
   const val SCREEN = "postViewScreen"

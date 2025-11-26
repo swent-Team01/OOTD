@@ -41,7 +41,7 @@ import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.CommonTextField
+import com.android.ootd.utils.composables.CommonTextField
 
 // Test tags for location selection UI
 object LocationSelectionTestTags {

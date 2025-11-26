@@ -38,7 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.utils.composables.OOTDTopBar
 
 object InventoryScreenTestTags {
   const val SCREEN = "inventoryScreen"

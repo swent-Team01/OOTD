@@ -504,7 +504,8 @@ fun OOTDApp(
                     }
 
                 composable(route = Screen.NotificationsScreen.route) {
-                  NotificationsScreen(testMode = testMode)
+                  NotificationsScreen(
+                      testMode = testMode, onBackClick = { navigationActions.goBack() })
                 }
               }
             }
