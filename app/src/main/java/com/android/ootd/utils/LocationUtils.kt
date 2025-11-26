@@ -12,6 +12,7 @@ import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
 import com.android.ootd.model.map.emptyLocation
 import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
@@ -133,4 +134,9 @@ object LocationUtils {
 
   /** Formats a Double coordinate to 4 decimal places for display. */
   private fun Double.format(): String = "%.4f".format(this)
+
+  /** Converts a [Location] to a Google Maps [LatLng] for map display. */
+  fun Location.toLatLng(): LatLng {
+    return LatLng(latitude, longitude)
+  }
 }

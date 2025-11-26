@@ -2,13 +2,19 @@ package com.android.ootd.ui.map
 
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
-import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.posts.OutfitPost
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -28,6 +34,7 @@ import org.junit.Test
  * - Loading user location from account
  * - Converting location to LatLng
  * - Error handling when account loading fails
+ * - Real-time observation of account and posts
  *
  * Disclaimer: This test was written with the assistance of AI.
  */
@@ -35,21 +42,44 @@ import org.junit.Test
 class MapViewModelTest {
 
   private lateinit var viewModel: MapViewModel
-  private lateinit var mockAccountService: AccountService
   private lateinit var mockAccountRepository: AccountRepository
+  private lateinit var mockFeedRepository: FeedRepository
+  private lateinit var mockFirebaseAuth: FirebaseAuth
+  private lateinit var mockFirebaseUser: FirebaseUser
   private val testDispatcher = StandardTestDispatcher()
 
   private val testUserId = "testUser123"
   private val testLocation = Location(46.5197, 6.6323, "Lausanne")
   private val testAccount =
       Account(
-          uid = testUserId, ownerId = testUserId, username = "testUser", location = testLocation)
+          uid = testUserId,
+          ownerId = testUserId,
+          username = "testUser",
+          location = testLocation,
+          friendUids = listOf("friend1", "friend2"))
 
   @Before
   fun setUp() {
     Dispatchers.setMain(testDispatcher)
-    mockAccountService = mockk(relaxed = true)
+
     mockAccountRepository = mockk(relaxed = true)
+    mockFeedRepository = mockk(relaxed = true)
+    mockFirebaseAuth = mockk(relaxed = true)
+    mockFirebaseUser = mockk(relaxed = true)
+
+    // Mock Firebase
+    mockkStatic(FirebaseAuth::class)
+    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
+    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
+    every { mockFirebaseUser.uid } returns testUserId
+
+    //  Mock addAuthStateListener to invoke the callback immediately
+    every { mockFirebaseAuth.addAuthStateListener(any()) } answers
+        {
+          val listener = firstArg<FirebaseAuth.AuthStateListener>()
+          listener.onAuthStateChanged(mockFirebaseAuth)
+          mockk(relaxed = true) // Return a mock listener registration
+        }
   }
 
   @After
@@ -59,20 +89,20 @@ class MapViewModelTest {
 
   @Test
   fun initialState_isLoading() {
-    coEvery { mockAccountService.currentUserId } returns testUserId
-    coEvery { mockAccountRepository.getAccount(testUserId) } returns testAccount
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
 
-    viewModel = MapViewModel(mockAccountService, mockAccountRepository)
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
 
     assertTrue(viewModel.uiState.value.isLoading)
   }
 
   @Test
-  fun loadUserLocation_setsLocationFromAccount() = runTest {
-    coEvery { mockAccountService.currentUserId } returns testUserId
-    coEvery { mockAccountRepository.getAccount(testUserId) } returns testAccount
+  fun observeAccount_setsLocationFromAccount() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
 
-    viewModel = MapViewModel(mockAccountService, mockAccountRepository)
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
     val uiState = viewModel.uiState.value
@@ -80,14 +110,15 @@ class MapViewModelTest {
     assertEquals(testLocation.latitude, uiState.userLocation.latitude, 0.0001)
     assertEquals(testLocation.longitude, uiState.userLocation.longitude, 0.0001)
     assertEquals(testLocation.name, uiState.userLocation.name)
+    assertEquals(testAccount, uiState.currentAccount)
   }
 
   @Test
   fun getUserLatLng_returnsCorrectLatLng() = runTest {
-    coEvery { mockAccountService.currentUserId } returns testUserId
-    coEvery { mockAccountRepository.getAccount(testUserId) } returns testAccount
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
 
-    viewModel = MapViewModel(mockAccountService, mockAccountRepository)
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
     val latLng = viewModel.getUserLatLng()
@@ -96,11 +127,10 @@ class MapViewModelTest {
   }
 
   @Test
-  fun loadUserLocation_onError_usesEmptyLocation() = runTest {
-    coEvery { mockAccountService.currentUserId } returns testUserId
-    coEvery { mockAccountRepository.getAccount(testUserId) } throws Exception("Network error")
+  fun observeAccount_onError_usesEmptyLocation() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } throws Exception("Network error")
 
-    viewModel = MapViewModel(mockAccountService, mockAccountRepository)
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
     val uiState = viewModel.uiState.value
@@ -110,14 +140,37 @@ class MapViewModelTest {
 
   @Test
   fun getUserLatLng_withEmptyLocation_returnsZeroCoordinates() = runTest {
-    coEvery { mockAccountService.currentUserId } returns testUserId
-    coEvery { mockAccountRepository.getAccount(testUserId) } throws Exception("Error")
+    coEvery { mockAccountRepository.observeAccount(testUserId) } throws Exception("Error")
 
-    viewModel = MapViewModel(mockAccountService, mockAccountRepository)
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
     val latLng = viewModel.getUserLatLng()
     assertEquals(0.0, latLng.latitude, 0.0001)
     assertEquals(0.0, latLng.longitude, 0.0001)
+  }
+
+  @Test
+  fun observePosts_filtersPostsWithValidLocations() = runTest {
+    val validPost =
+        OutfitPost(
+            postUID = "post1",
+            ownerId = "friend1",
+            name = "Friend One",
+            location = Location(46.5, 6.5, "Valid Location"))
+    val invalidPost =
+        OutfitPost(
+            postUID = "post2", ownerId = "friend2", name = "Friend Two", location = emptyLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(validPost, invalidPost))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    assertEquals(1, uiState.posts.size)
+    assertEquals(validPost, uiState.posts[0])
   }
 }
