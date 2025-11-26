@@ -54,11 +54,7 @@ class InventoryItemInteractionsTest {
 
   @Test
   fun inventoryGrid_clickingItemPropagatesCallback() {
-    val items =
-        listOf(
-            sampleItem,
-            sampleItem.copy(itemUuid = "sample2", category = "Shoes"),
-        )
+    val items = listOf(sampleItem)
     var clicked: Item? = null
     composeRule.setContent {
       OOTDTheme {
