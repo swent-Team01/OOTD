@@ -1,3 +1,4 @@
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.notifications.Notification
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -10,7 +11,15 @@ interface NotificationRepository {
 
   suspend fun getNotificationsForSender(senderId: String): List<Notification>
 
-  suspend fun deleteNotification(notification: Notification)
+  suspend fun deleteNotification(notificationId: String, receiverId: String)
+
+  /** Accepts follow notification from sender* */
+  suspend fun acceptFollowNotification(
+      senderId: String,
+      notificationId: String,
+      receiverId: String,
+      accountRepository: AccountRepository
+  )
 
   fun getFollowNotificationId(senderId: String, receiverId: String): String
 

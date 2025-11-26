@@ -76,14 +76,16 @@ class NotificationsViewModelTest {
             senderId = "sender1",
             receiverId = "user1",
             type = "FOLLOW_REQUEST",
-            content = "follows you")
+            content = "follows you",
+            senderName = "")
     val notification2 =
         Notification(
             uid = "notif2",
             senderId = "sender2",
             receiverId = "user1",
             type = "FOLLOW_REQUEST",
-            content = "follows you")
+            content = "follows you",
+            senderName = "")
     val user2 = User(uid = "sender2", username = "user2")
 
     coEvery { mockNotificationRepository.getNotificationsForReceiver("user1") } returns
@@ -158,7 +160,8 @@ class NotificationsViewModelTest {
             senderId = "sender1",
             receiverId = "user1",
             type = "FOLLOW_REQUEST",
-            content = "follows you")
+            content = "follows you",
+            senderName = "")
     val user = User(uid = "sender1", username = "sender")
     val followRequestItem = FollowRequestItem(notification, user)
 
@@ -166,8 +169,10 @@ class NotificationsViewModelTest {
         listOf(notification)
     coEvery { mockUserRepository.getUser("sender1") } returns user
     coEvery { mockAccountRepository.addFriend("user1", "sender1") } returns true
-    coEvery { mockNotificationRepository.deleteNotification(notification) } throws
-        Exception("Delete failed")
+
+    coEvery {
+      mockNotificationRepository.acceptFollowNotification(any(), any(), any(), any())
+    } throws Exception("Delete failed")
 
     viewModel =
         NotificationsViewModel(
@@ -195,14 +200,18 @@ class NotificationsViewModelTest {
             senderId = "sender1",
             receiverId = "user1",
             type = "FOLLOW_REQUEST",
-            content = "follows you")
+            content = "follows you",
+            senderName = "")
     val user = User(uid = "sender1", username = "sender")
     val followRequestItem = FollowRequestItem(notification, user)
 
     coEvery { mockNotificationRepository.getNotificationsForReceiver("user1") } returns
         listOf(notification)
     coEvery { mockUserRepository.getUser("sender1") } returns user
-    coEvery { mockNotificationRepository.deleteNotification(notification) } returns Unit
+    coEvery {
+      mockNotificationRepository.deleteNotification(
+          notificationId = notification.uid, receiverId = notification.receiverId)
+    } returns Unit
 
     viewModel =
         NotificationsViewModel(
@@ -217,7 +226,10 @@ class NotificationsViewModelTest {
     viewModel.deleteFollowRequest(followRequestItem)
     advanceUntilIdle()
 
-    coVerify { mockNotificationRepository.deleteNotification(notification) }
+    coVerify {
+      mockNotificationRepository.deleteNotification(
+          notificationId = notification.uid, receiverId = notification.receiverId)
+    }
     coVerify(exactly = 0) { mockAccountRepository.addFriend(any(), any()) }
 
     val state = viewModel.uiState.value
@@ -233,15 +245,18 @@ class NotificationsViewModelTest {
             senderId = "sender1",
             receiverId = "user1",
             type = "FOLLOW_REQUEST",
-            content = "follows you")
+            content = "follows you",
+            senderName = "")
     val user = User(uid = "sender1", username = "sender")
     val followRequestItem = FollowRequestItem(notification, user)
 
     coEvery { mockNotificationRepository.getNotificationsForReceiver("user1") } returns
         listOf(notification)
     coEvery { mockUserRepository.getUser("sender1") } returns user
-    coEvery { mockNotificationRepository.deleteNotification(notification) } throws
-        Exception("Delete failed")
+    coEvery {
+      mockNotificationRepository.deleteNotification(
+          notificationId = notification.uid, receiverId = notification.receiverId)
+    } throws Exception("Delete failed")
 
     viewModel =
         NotificationsViewModel(
