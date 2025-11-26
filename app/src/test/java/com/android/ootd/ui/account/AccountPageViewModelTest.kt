@@ -84,7 +84,7 @@ class AccountPageViewModelTest {
   @Test
   fun `toggleStar removes existing starred entry`() = runTest {
     stubCommonRepositories(ArrayDeque(listOf(listOf(starredItem.itemUuid), emptyList())))
-    coEvery { accountRepository.removeStarredItem(starredItem.itemUuid) } returns true
+    coEvery { accountRepository.toggleStarredItem(starredItem.itemUuid) } returns emptyList()
 
     createViewModel()
     advanceUntilIdle()
@@ -93,13 +93,14 @@ class AccountPageViewModelTest {
     advanceUntilIdle()
 
     assertTrue(viewModel.uiState.value.starredItems.isEmpty())
-    coVerify { accountRepository.removeStarredItem(starredItem.itemUuid) }
+    coVerify { accountRepository.toggleStarredItem(starredItem.itemUuid) }
   }
 
   @Test
   fun `toggleStar adds new starred entry`() = runTest {
     stubCommonRepositories(ArrayDeque(listOf(emptyList(), listOf(starredItem.itemUuid))))
-    coEvery { accountRepository.addStarredItem(starredItem.itemUuid) } returns true
+    coEvery { accountRepository.toggleStarredItem(starredItem.itemUuid) } returns
+        listOf(starredItem.itemUuid)
 
     createViewModel()
     advanceUntilIdle()
@@ -108,7 +109,7 @@ class AccountPageViewModelTest {
     advanceUntilIdle()
 
     assertEquals(listOf(starredItem), viewModel.uiState.value.starredItems)
-    coVerify { accountRepository.addStarredItem(starredItem.itemUuid) }
+    coVerify { accountRepository.toggleStarredItem(starredItem.itemUuid) }
   }
 
   private fun createViewModel() {

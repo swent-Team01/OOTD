@@ -3,10 +3,12 @@ package com.android.ootd.ui.Inventory
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ImageData
@@ -174,6 +176,13 @@ class InventoryScreenTest {
     composeTestRule.onNodeWithTag(InventoryScreenTestTags.ITEMS_GRID).assertIsDisplayed()
     composeTestRule.onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item1").assertIsDisplayed()
     composeTestRule.onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item2").assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag("${InventoryScreenTestTags.ITEM_STAR_BUTTON}_item1")
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag("${InventoryScreenTestTags.ITEM_STAR_BUTTON}_item2")
+        .assertIsDisplayed()
   }
 
   @Test
@@ -197,7 +206,9 @@ class InventoryScreenTest {
           .isNotEmpty()
     }
 
-    composeTestRule.onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item1").performClick()
+    composeTestRule.onNodeWithTag("${InventoryScreenTestTags.ITEM_CARD}_item1").performTouchInput {
+      click(center)
+    }
     composeTestRule.waitForIdle()
 
     verify(timeout = 2_000) { mockNavigationActions.navigateTo(Screen.EditItem("item1")) }

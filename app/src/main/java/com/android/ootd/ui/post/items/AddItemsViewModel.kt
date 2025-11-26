@@ -238,13 +238,8 @@ open class AddItemsViewModel(
   fun onAddItemClick(context: Context) {
     val state = _uiState.value
 
-    if (overridePhoto) {
-      _addOnSuccess.value = true
-      return
-    }
-
-    // Validate state
-    if (!state.isAddingValid) {
+    // Validate state when not overriding photo requirements
+    if (!overridePhoto && !state.isAddingValid) {
       val error = validateAddItemState(state) ?: "Some required fields are missing."
       setErrorMsg(error)
       _addOnSuccess.value = false
@@ -257,13 +252,19 @@ open class AddItemsViewModel(
       try {
         val itemUuid = repository.getNewItemId()
 
-        // Upload image (uses local URI when offline)
-        val uploadedImage = uploadItemImage(state.localPhotoUri, itemUuid, context)
-        if (uploadedImage == null) {
-          setErrorMsg("Please select a photo before adding the item.")
-          _addOnSuccess.value = false
-          return@launch
-        }
+        val uploadedImage =
+            if (overridePhoto) {
+              ImageData(itemUuid, state.image.imageUrl.ifEmpty { "override://$itemUuid" })
+            } else {
+              // Upload image (uses local URI when offline)
+              val uploaded = uploadItemImage(state.localPhotoUri, itemUuid, context)
+              if (uploaded == null) {
+                setErrorMsg("Please select a photo before adding the item.")
+                _addOnSuccess.value = false
+                return@launch
+              }
+              uploaded
+            }
 
         // Create item
         val item = createItemFromState(state, itemUuid, uploadedImage, ownerId)

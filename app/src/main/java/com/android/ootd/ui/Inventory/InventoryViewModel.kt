@@ -159,14 +159,11 @@ class InventoryViewModel(
   fun toggleStar(itemUid: String) {
     viewModelScope.launch {
       try {
-        val isStarred = _uiState.value.starredItemIds.contains(itemUid)
-        val success =
-            if (isStarred) accountRepository.removeStarredItem(itemUid)
-            else accountRepository.addStarredItem(itemUid)
-        if (success) {
-          refreshStarredItems()
-        }
-      } catch (_: Exception) {}
+        val updatedIds = accountRepository.toggleStarredItem(itemUid)
+        _uiState.update { it.copy(starredItemIds = updatedIds.toSet()) }
+      } catch (_: Exception) {
+        // Ignore failures
+      }
     }
   }
 

@@ -134,4 +134,11 @@ interface AccountRepository {
 
   /** Removes the given item from the starred list. */
   suspend fun removeStarredItem(itemUid: String): Boolean
+
+  /**
+   * Toggles whether the given item is starred for the current user.
+   *
+   * @return The updated list of starred item IDs after the toggle.
+   */
+  suspend fun toggleStarredItem(itemUid: String): List<String>
 }

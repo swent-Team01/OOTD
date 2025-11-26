@@ -237,4 +237,16 @@ class AccountRepositoryInMemory : AccountRepository {
       false
     }
   }
+
+  override suspend fun toggleStarredItem(itemUid: String): List<String> {
+    val account = getAccount(currentUser)
+    val updatedList =
+        if (account.starredItemUids.contains(itemUid)) {
+          account.starredItemUids - itemUid
+        } else {
+          account.starredItemUids + itemUid
+        }
+    accounts[currentUser] = account.copy(starredItemUids = updatedList)
+    return updatedList
+  }
 }

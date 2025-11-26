@@ -103,6 +103,8 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun addStarredItem(itemUid: String): Boolean = true
 
         override suspend fun removeStarredItem(itemUid: String): Boolean = true
+
+        override suspend fun toggleStarredItem(itemUid: String): List<String> = emptyList()
       }
 
   private fun fakeItemsRepo(items: List<Item>, postItems: List<Item> = emptyList()) =

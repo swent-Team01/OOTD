@@ -101,4 +101,6 @@ class FakeAccountRepository : AccountRepository {
   override suspend fun addStarredItem(itemUid: String): Boolean = true
 
   override suspend fun removeStarredItem(itemUid: String): Boolean = true
+
+  override suspend fun toggleStarredItem(itemUid: String): List<String> = emptyList()
 }

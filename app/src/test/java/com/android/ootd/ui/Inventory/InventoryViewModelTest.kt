@@ -7,7 +7,6 @@ import com.android.ootd.model.items.ItemsRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.*
-import kotlin.collections.ArrayDeque
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -319,14 +318,9 @@ class InventoryViewModelTest {
 
   @Test
   fun `toggleStar removes existing items and refreshes starred set`() = runTest {
-    val starredResponses = ArrayDeque(listOf(listOf("item1"), emptyList<String>()))
     coEvery { accountRepository.getItemsList(testUserId) } returns emptyList()
     coEvery { itemsRepository.getItemsByIds(any()) } returns emptyList()
-    coEvery { accountRepository.getStarredItems(testUserId) } answers
-        {
-          starredResponses.removeFirstOrNull() ?: emptyList()
-        }
-    coEvery { accountRepository.removeStarredItem("item1") } returns true
+    coEvery { accountRepository.toggleStarredItem("item1") } returns emptyList()
 
     viewModel = InventoryViewModel(accountRepository, itemsRepository)
     advanceUntilIdle()
@@ -335,24 +329,14 @@ class InventoryViewModelTest {
     advanceUntilIdle()
 
     Assert.assertFalse(viewModel.uiState.value.starredItemIds.contains("item1"))
-    coVerify { accountRepository.removeStarredItem("item1") }
+    coVerify { accountRepository.toggleStarredItem("item1") }
   }
 
   @Test
   fun `toggleStar adds items when not starred`() = runTest {
-    val starredResponses =
-        ArrayDeque(
-            listOf(
-                emptyList<String>(),
-                listOf("item2"),
-            ))
     coEvery { accountRepository.getItemsList(testUserId) } returns emptyList()
     coEvery { itemsRepository.getItemsByIds(any()) } returns emptyList()
-    coEvery { accountRepository.getStarredItems(testUserId) } answers
-        {
-          starredResponses.removeFirstOrNull() ?: emptyList()
-        }
-    coEvery { accountRepository.addStarredItem("item2") } returns true
+    coEvery { accountRepository.toggleStarredItem("item2") } returns listOf("item2")
 
     viewModel = InventoryViewModel(accountRepository, itemsRepository)
     advanceUntilIdle()
@@ -361,6 +345,6 @@ class InventoryViewModelTest {
     advanceUntilIdle()
 
     Assert.assertTrue(viewModel.uiState.value.starredItemIds.contains("item2"))
-    coVerify { accountRepository.addStarredItem("item2") }
+    coVerify { accountRepository.toggleStarredItem("item2") }
   }
 }

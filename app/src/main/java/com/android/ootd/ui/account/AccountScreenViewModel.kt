@@ -137,15 +137,10 @@ class AccountPageViewModel(
       try {
         val currentUserID = accountService.currentUserId
         if (currentUserID.isBlank()) return@launch
-        val isStarred = _uiState.value.starredItems.any { it.itemUuid == item.itemUuid }
-        val success =
-            if (isStarred) accountRepository.removeStarredItem(item.itemUuid)
-            else accountRepository.addStarredItem(item.itemUuid)
-        if (success) {
-          val ids = accountRepository.getStarredItems(currentUserID)
-          val starredItems = if (ids.isEmpty()) emptyList() else itemsRepository.getItemsByIds(ids)
-          _uiState.update { it.copy(starredItems = starredItems) }
-        }
+        val updatedIds = accountRepository.toggleStarredItem(item.itemUuid)
+        val starredItems =
+            if (updatedIds.isEmpty()) emptyList() else itemsRepository.getItemsByIds(updatedIds)
+        _uiState.update { it.copy(starredItems = starredItems) }
       } catch (e: Exception) {
         Log.e(currentLog, "Failed to toggle starred item: ${e.message}")
       }
