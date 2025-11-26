@@ -104,8 +104,8 @@ fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit) {
                       .padding(8.dp)
                       .size(32.dp)
                       .background(
-                          color = Secondary.copy(alpha = 0.9f),
-                          shape = RoundedCornerShape(12.dp))) {
+                          color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
+                      .testTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON)) {
                 IconButton(onClick = { onEditClick(item.itemUuid) }) {
                   Icon(
                       imageVector = Icons.Default.Edit,

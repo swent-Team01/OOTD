@@ -338,4 +338,65 @@ class SeeFitScreenTest {
     composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEMS_GRID).performScrollToIndex(0)
     composeTestRule.onNodeWithText("CATEGORY 1").assertIsDisplayed()
   }
+
+  @Test
+  fun itemCard_editButtonIsDisplayed() {
+    setScreen(items = listOf(testItem1))
+    composeTestRule.waitForIdle()
+
+    // Verify the card is displayed
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1))
+        .assertIsDisplayed()
+
+    // Verify the edit button is displayed on the card
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+        .assertIsDisplayed()
+
+    composeTestRule.waitForIdle()
+
+    // Verify the details dialog is NOT displayed
+    composeTestRule.onNodeWithTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun itemCard_editButtonWithMultipleItems_triggersCorrectCallback() {
+    var editedItemUuid = ""
+
+    // Mock repositories
+    coEvery { mockFeedRepository.getPostById("test-post-1") } returns testPost1
+    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "owner1") } returns
+        listOf(testItem1, testItem2)
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        SeeFitScreen(
+            seeFitViewModel = viewModel,
+            postUuid = "test-post-1",
+            goBack = { goBackCalled = true },
+            onEditItem = { itemUuid -> editedItemUuid = itemUuid })
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Verify both cards are displayed
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1))
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem2))
+        .assertIsDisplayed()
+
+    // Click edit button on second item
+    composeTestRule
+        .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)[1]
+        .performClick()
+
+    composeTestRule.waitForIdle()
+
+    // Verify the correct item UUID was passed
+    assertEquals(testItem2.itemUuid, editedItemUuid)
+  }
 }

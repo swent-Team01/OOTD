@@ -33,6 +33,8 @@ object SeeFitScreenTestTags {
   const val ITEM_CARD_CATEGORY = "seeFitItemCardCategory"
   const val ITEM_CARD_TYPE = "seeFitItemCardType"
 
+  const val ITEM_CARD_EDIT_BUTTON = "seeFitItemCardEditButton"
+
   // Dialog
   const val ITEM_DETAILS_DIALOG = "seeFitItemDetailsDialog"
   const val ITEM_IMAGE = "seeFitItemImage"
