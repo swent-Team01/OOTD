@@ -10,8 +10,8 @@ import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.map.isValidLocation
-import com.android.ootd.model.map.toLatLng
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.utils.LocationUtils.toLatLng
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth

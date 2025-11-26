@@ -15,9 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.map.Location
-import com.android.ootd.model.map.toLatLng
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.LocationUtils.toLatLng
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 
