@@ -42,14 +42,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
-import androidx.constraintlayout.solver.widgets.Optimizer.enabled
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
@@ -217,6 +215,9 @@ private fun CommonTextField(
     testTag: String,
     maxChars: Int? = null
 ) {
+  var isFocused by remember { mutableStateOf(false) }
+  val shouldShowCounter = maxChars != null && isFocused
+
   OutlinedTextField(
       value = value,
       onValueChange = {
@@ -230,10 +231,17 @@ private fun CommonTextField(
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
       supportingText =
-          maxChars?.let {
-            { Text(text = "${value.length}/$it", style = MaterialTheme.typography.labelSmall) }
+          if (shouldShowCounter) {
+            {
+              Text(
+                  text = "${value.length}/${maxChars!!}",
+                  style = MaterialTheme.typography.labelSmall)
+            }
+          } else {
+            null
           },
-      modifier = Modifier.fillMaxWidth().testTag(testTag))
+      modifier =
+          Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused }.testTag(testTag))
 }
 
 /** Reusable text field for brand input */
@@ -409,6 +417,9 @@ fun NotesField(
     testTag: String,
     placeholder: String = "Optional notes"
 ) {
+  var isFocused by remember { mutableStateOf(false) }
+  val showCounter = isFocused
+
   OutlinedTextField(
       value = notes,
       onValueChange = {
@@ -421,11 +432,19 @@ fun NotesField(
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
-      supportingText = {
-        Text(
-            text = "${notes.length}/$NOTES_MAX_LENGTH", style = MaterialTheme.typography.labelSmall)
-      },
-      modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).testTag(testTag),
+      supportingText =
+          if (showCounter) {
+            {
+              Text(
+                  text = "${notes.length}/$NOTES_MAX_LENGTH",
+                  style = MaterialTheme.typography.labelSmall)
+            }
+          } else null,
+      modifier =
+          Modifier.fillMaxWidth()
+              .heightIn(min = 80.dp)
+              .onFocusChanged { isFocused = it.isFocused }
+              .testTag(testTag),
       maxLines = 5)
 }
 
@@ -598,7 +617,9 @@ private fun SuggestionsDropdownField(
     maxChars: Int? = null
 ) {
   var expanded by remember { mutableStateOf(false) }
+  var isFocused by remember { mutableStateOf(false) }
   val filtered = remember(value, suggestions) { filter(value, suggestions) }
+  val showCounter = maxChars != null && isFocused
 
   Box(modifier = Modifier.fillMaxWidth()) {
     OutlinedTextField(
@@ -613,6 +634,7 @@ private fun SuggestionsDropdownField(
         placeholder = { Text(visuals.placeholder) },
         modifier =
             Modifier.fillMaxWidth().testTag(visuals.textFieldTag).onFocusChanged { focusState ->
+              isFocused = focusState.isFocused
               if (focusState.isFocused) {
                 onFocus?.invoke()
                 expanded = focusExpansion(true, filtered.isNotEmpty())
@@ -625,9 +647,9 @@ private fun SuggestionsDropdownField(
             MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
         colors = commonTextFieldColors(),
         supportingText =
-            maxChars?.let {
-              { Text("${value.length}/$it", style = MaterialTheme.typography.labelSmall) }
-            })
+            if (showCounter) {
+              { Text("${value.length}/${maxChars!!}", style = MaterialTheme.typography.labelSmall) }
+            } else null)
 
     DropdownMenu(
         expanded = expanded && filtered.isNotEmpty(),

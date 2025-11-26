@@ -529,7 +529,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
             db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.CACHE).await()
           } catch (e: Exception) {
             Log.w(TAG, "Cache read failed for starred items, trying default source: ${e.message}")
-            kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+            withTimeoutOrNull(2_000L) {
               db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
             }
           }
@@ -552,7 +552,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       if (!starredListCache.containsKey(currentUserId)) {
         val currentList =
             try {
-              kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+              withTimeoutOrNull(1_000L) {
                 val doc =
                     db.collection(ACCOUNT_COLLECTION_PATH)
                         .document(currentUserId)

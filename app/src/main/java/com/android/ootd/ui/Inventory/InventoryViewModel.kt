@@ -135,6 +135,11 @@ class InventoryViewModel(
     }
   }
 
+  /**
+   * Refreshes the set of starred item IDs from the account repository and updates the UI state.
+   * This is a best-effort call: failures are ignored because the starred badge is purely
+   * informational.
+   */
   fun refreshStarredItems() {
     viewModelScope.launch {
       try {
@@ -147,6 +152,10 @@ class InventoryViewModel(
     }
   }
 
+  /**
+   * Adds or removes the given item from the user's starred list. On success the starred set is
+   * reloaded so the UI reflects the change.
+   */
   fun toggleStar(itemUid: String) {
     viewModelScope.launch {
       try {

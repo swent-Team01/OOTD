@@ -78,7 +78,11 @@ fun InventoryItemCard(
 
         if (showStarIcon) {
           IconButton(
-              onClick = onToggleStar, modifier = Modifier.align(Alignment.TopEnd).padding(2.dp)) {
+              onClick = onToggleStar,
+              modifier =
+                  Modifier.align(Alignment.TopEnd)
+                      .padding(2.dp)
+                      .testTag("${InventoryScreenTestTags.ITEM_STAR_BUTTON}_${item.itemUuid}")) {
                 Icon(
                     imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
                     contentDescription = if (isStarred) "Remove from starred" else "Add to starred",

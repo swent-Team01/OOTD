@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -108,6 +109,16 @@ class ItemFormSharedComponentsTest {
     val expected = "B".repeat(20)
     repeat(30) { composeTestRule.onNodeWithTag(fieldTag).performTextInput("B") }
     composeTestRule.runOnIdle { assertEquals(expected, brand) }
+  }
+
+  @Test
+  fun brandField_counterVisibleOnlyWhenFocused() {
+    val fieldTag = "brandField"
+    composeTestRule.setContent { BrandField(brand = "", onChange = {}, testTag = fieldTag) }
+
+    composeTestRule.onNodeWithTag(fieldTag).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNode(hasText("${0}/${20}"), useUnmergedTree = true).assertIsDisplayed()
   }
 
   @Test
