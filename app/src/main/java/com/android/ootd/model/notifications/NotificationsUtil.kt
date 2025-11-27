@@ -31,6 +31,7 @@ fun sendLocalNotification(context: Context, notification: Notification) {
   val mainIntent =
       Intent(context, MainActivity::class.java).apply {
         action = NOTIFICATION_CLICK_ACTION
+        putExtra("senderId", notification.senderId)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
       }
 
