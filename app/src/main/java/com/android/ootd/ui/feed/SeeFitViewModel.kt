@@ -59,9 +59,12 @@ class SeeFitViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
+        // Gets the post owner ID
         val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
         val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
+        // Get the current user ID to determine ownership
         val currentUserId = accountService.currentUserId
+        // Determine if the current user is the owner of the post
         val isOwner = currentUserId.isNotEmpty() && currentUserId == postOwner
         _uiState.value =
             _uiState.value.copy(
