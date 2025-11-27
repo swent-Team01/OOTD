@@ -25,9 +25,9 @@ import coil.compose.AsyncImage
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
-import com.android.ootd.utils.ProfilePicture
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
 
 object PostViewTestTags {
   const val SCREEN = "postViewScreen"
