@@ -14,6 +14,7 @@ import kotlinx.coroutines.tasks.await
 const val NOTIFICATION_COLLECTION_PATH = "notifications"
 const val SENDER_ID = "senderId"
 const val RECEIVER_ID = "receiverId"
+const val TAG = "NotificationRepositoryFirestore"
 
 @Keep
 data class NotificationDto(
@@ -48,6 +49,8 @@ private fun NotificationDto.toDomain(): Notification {
       senderName = this.senderName)
 }
 
+private const val WAS_PUSHED = "wasPushed"
+
 class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : NotificationRepository {
 
   /** Helper method to check notification data as firestore might add the default values */
@@ -57,9 +60,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
         notification.receiverId.isBlank() ||
         notification.type.isBlank() ||
         notification.content.isBlank()) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Invalid notification data: one or more fields are blank")
+      Log.e(TAG, "Invalid notification data: one or more fields are blank")
       return null
     }
     return notification
@@ -71,16 +72,13 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       val notificationDto = document.toObject<NotificationDto>()
       if (notificationDto == null) {
         Log.e(
-            "NotificationRepositoryFirestore",
+            TAG,
             "Failed to deserialize document ${document.id} to Notification object. Data: ${document.data}")
         return null
       }
       checkNotificationData(notificationDto.toDomain())
     } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error transforming document ${document.id}: ${e.message}",
-          e)
+      Log.e(TAG, "Error transforming document ${document.id}: ${e.message}", e)
       return null
     }
   }
@@ -102,16 +100,13 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       val querySnapshot =
           db.collection(NOTIFICATION_COLLECTION_PATH)
               .whereEqualTo(RECEIVER_ID, receiverId)
-              .whereEqualTo("wasPushed", false)
+              .whereEqualTo(WAS_PUSHED, false)
               .get()
               .await()
 
       querySnapshot.documents.mapNotNull { document -> transformNotificationDocument(document) }
     } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error getting unpushed notifications: ${e.message}",
-          e)
+      Log.e(TAG, "Error getting unpushed notifications: ${e.message}", e)
       emptyList()
     }
   }
@@ -120,13 +115,10 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
     try {
       db.collection(NOTIFICATION_COLLECTION_PATH)
           .document(notificationId)
-          .update("wasPushed", true)
+          .update(WAS_PUSHED, true)
           .await()
     } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error marking notification as pushed: ${e.message}",
-          e)
+      Log.e(TAG, "Error marking notification as pushed: ${e.message}", e)
     }
   }
 
@@ -137,7 +129,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
   ): ListenerRegistration {
     return db.collection(NOTIFICATION_COLLECTION_PATH)
         .whereEqualTo(RECEIVER_ID, receiverId)
-        .whereEqualTo("wasPushed", false)
+        .whereEqualTo(WAS_PUSHED, false)
         .addSnapshotListener { snapshot, error ->
           if (error != null) return@addSnapshotListener
 
@@ -148,7 +140,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
 
               db.collection(NOTIFICATION_COLLECTION_PATH)
                   .document(notification.uid)
-                  .update("wasPushed", true)
+                  .update(WAS_PUSHED, true)
             }
           }
         }
@@ -172,7 +164,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
           .set(notification.toDto())
           .await()
     } catch (e: Exception) {
-      Log.e("NotificationRepositoryFirestore", "Error adding notification: ${e.message}", e)
+      Log.e(TAG, "Error adding notification: ${e.message}", e)
       throw e
     }
   }
@@ -187,10 +179,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
 
       querySnapshot.documents.mapNotNull { document -> transformNotificationDocument(document) }
     } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error getting notifications for receiver $receiverId: ${e.message}",
-          e)
+      Log.e(TAG, "Error getting notifications for receiver $receiverId: ${e.message}", e)
       throw e
     }
   }
@@ -205,10 +194,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
 
       querySnapshot.documents.mapNotNull { document -> transformNotificationDocument(document) }
     } catch (e: Exception) {
-      Log.e(
-          "NotificationRepositoryFirestore",
-          "Error getting notifications for sender $senderId: ${e.message}",
-          e)
+      Log.e(TAG, "Error getting notifications for sender $senderId: ${e.message}", e)
       throw e
     }
   }
@@ -234,7 +220,7 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
           .delete()
           .await()
     } catch (e: Exception) {
-      Log.e("NotificationRepositoryFirestore", "Error deleting notification: ${e.message}", e)
+      Log.e(TAG, "Error deleting notification: ${e.message}", e)
       throw e
     }
   }
