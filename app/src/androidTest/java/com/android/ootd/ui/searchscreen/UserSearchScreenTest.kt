@@ -48,7 +48,8 @@ class UserSearchScreenTest : FirestoreTest() {
         composable(Screen.Feed.route) {
           FeedScreen(
               onAddPostClick = { /* TODO: handle add post */ }, // this will go to AddItemScreen
-              onNotificationIconClick = { /* TODO: show user profile page */ })
+              onNotificationIconClick = { /* TODO: show user profile page */ },
+          )
         }
         composable(Screen.SearchScreen.route) { UserSearchScreen() }
       }

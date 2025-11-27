@@ -246,4 +246,43 @@ class AccountRepositoryInMemory : AccountRepository {
         }
         .onStart { emit(initialAccount) }
   }
+
+  override suspend fun getStarredItems(userID: String): List<String> {
+    val account = getAccount(userID)
+    return account.starredItemUids
+  }
+
+  override suspend fun addStarredItem(itemUid: String): Boolean {
+    return try {
+      val account = getAccount(currentUser)
+      if (account.starredItemUids.contains(itemUid)) return true
+      accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids + itemUid)
+      true
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  override suspend fun removeStarredItem(itemUid: String): Boolean {
+    return try {
+      val account = getAccount(currentUser)
+      if (!account.starredItemUids.contains(itemUid)) return true
+      accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids - itemUid)
+      true
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  override suspend fun toggleStarredItem(itemUid: String): List<String> {
+    val account = getAccount(currentUser)
+    val updatedList =
+        if (account.starredItemUids.contains(itemUid)) {
+          account.starredItemUids - itemUid
+        } else {
+          account.starredItemUids + itemUid
+        }
+    accounts[currentUser] = account.copy(starredItemUids = updatedList)
+    return updatedList
+  }
 }

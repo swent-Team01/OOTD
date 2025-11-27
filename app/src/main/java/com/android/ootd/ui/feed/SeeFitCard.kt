@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +43,7 @@ import com.android.ootd.ui.theme.Secondary
  * @param onClick Callback when the item is clicked
  */
 @Composable
-fun ItemCard(item: Item, onClick: () -> Unit) {
+fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit, isOwner: Boolean) {
   val hasPrice = item.price != null && item.currency != null
   val brandText = item.brand.orEmpty()
   Card(
@@ -90,6 +95,25 @@ fun ItemCard(item: Item, onClick: () -> Unit) {
                       style =
                           MaterialTheme.typography.labelMedium.copy(
                               color = MaterialTheme.colorScheme.onSurfaceVariant))
+                }
+          }
+          // Edit button (bottom-right) visible only to the owner
+          if (isOwner) {
+            Box(
+                modifier =
+                    Modifier.align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .size(32.dp)
+                        .background(
+                            color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
+                        .testTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON)) {
+                  IconButton(onClick = { onEditClick(item.itemUuid) }) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit item",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp))
+                  }
                 }
           }
 

@@ -243,7 +243,14 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
 
     composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
-    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON, shouldScroll = true)
+    verifyElementAppearsWithTimer(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
 
     verifyFeedScreenAppears(composeTestRule)
@@ -310,7 +317,8 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
                   senderId = userId,
                   receiverId = userId,
                   type = "FOLLOW_REQUEST",
-                  content = "Wants to follow you"))
+                  content = "Wants to follow you",
+                  senderName = ""))
         }
     clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
     clickWithWait(composeTestRule, FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN)
