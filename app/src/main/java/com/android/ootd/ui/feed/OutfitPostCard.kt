@@ -268,15 +268,22 @@ fun OutfitPostCard(
               Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 ProfileSection(post)
                 Spacer(modifier = Modifier.height(8.dp))
-                PostImage(
-                    post, isBlurred, modifier = Modifier.clickable { onCardClick(post.postUID) })
+
+                // Click to get details enabled only when not blurred
+                val clickableModifier =
+                    if (isBlurred) {
+                      Modifier
+                    } else {
+                      Modifier.clickable { onCardClick(post.postUID) }
+                    }
+                PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location)
+                DescriptionAndButton(post, isBlurred, onSeeFitClick)
                 LikeRow(
                     isLiked = isLiked,
                     likeCount = likeCount,
                     enabled = !isBlurred,
                     onClick = { onLikeClick(post.postUID) })
-                DescriptionAndButton(post, isBlurred, onSeeFitClick)
               }
 
               Spacer(modifier = Modifier.height(8.dp))
