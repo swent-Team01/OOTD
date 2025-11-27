@@ -3,6 +3,8 @@ package com.android.ootd.ui.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.Item
@@ -23,16 +25,21 @@ import kotlinx.coroutines.launch
  * @property postUuid The unique identifier for the outfit post.
  * @property isLoading Indicates whether a background operation (e.g. fetching data) is ongoing.
  * @property errorMessage An optional error message displayed to the user.
+ * @property postOwnerId The owner ID of the post
+ * @property isOwner Whether the current user owns the post
  */
 data class SeeFitUIState(
     val items: List<Item> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val postOwnerId: String = "",
+    val isOwner: Boolean = false
 )
 
 class SeeFitViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
-    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository
+    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
+    private val accountService: AccountService = AccountServiceFirebase()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
@@ -52,13 +59,26 @@ class SeeFitViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
-        val friendId = feedRepository.getPostById(postUuid)?.ownerId
-        val items = itemsRepository.getFriendItemsForPost(postUuid, friendId ?: "")
-        _uiState.value = _uiState.value.copy(items = items, isLoading = false, errorMessage = null)
-      } catch (e: Exception) {
+        // Gets the post owner ID otherwise it throws an exception caught below
+        val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
+        val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
+        // Get the current user ID to determine ownership
+        val currentUserId = accountService.currentUserId
+        // Determine if the current user is the owner of the post
+        val isOwner = currentUserId.isNotEmpty() && currentUserId == postOwner
         _uiState.value =
             _uiState.value.copy(
-                isLoading = false, errorMessage = "Failed to load items: ${e.message}")
+                items = items,
+                postOwnerId = postOwner,
+                isOwner = isOwner,
+                isLoading = false,
+                errorMessage = null)
+      } catch (e: Exception) {
+        Log.e("SeeFitViewModel", "Failed to load items for post", e)
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = false,
+                errorMessage = "Unable to load this fit. Please try again later.")
       }
     }
   }

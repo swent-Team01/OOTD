@@ -455,7 +455,12 @@ fun OOTDApp(
                       val postUuid = navBackStackEntry.arguments?.getString("postUuid") ?: ""
 
                       // Placeholder for SeeFitScreen
-                      SeeFitScreen(postUuid = postUuid, goBack = { navigationActions.goBack() })
+                      SeeFitScreen(
+                          postUuid = postUuid,
+                          goBack = { navigationActions.goBack() },
+                          onEditItem = { itemUuid ->
+                            navController.navigate(Screen.EditItem(itemUuid).route)
+                          })
                     }
 
                 composable(
