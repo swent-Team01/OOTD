@@ -11,9 +11,11 @@ import androidx.work.WorkerParameters
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
-class NotificationSyncWorker(context: Context, workerParams: WorkerParameters) :
-    CoroutineWorker(context, workerParams) {
-
+class NotificationSyncWorker(
+    context: Context,
+    workerParams: WorkerParameters,
+    val testing: Boolean = false
+) : CoroutineWorker(context, workerParams) {
   @RequiresApi(Build.VERSION_CODES.TIRAMISU)
   override suspend fun doWork(): Result {
     val userId = Firebase.auth.currentUser?.uid ?: return Result.success()
@@ -24,7 +26,7 @@ class NotificationSyncWorker(context: Context, workerParams: WorkerParameters) :
             applicationContext, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
 
-    if (!hasPermission) {
+    if (!hasPermission && !testing) {
       return Result.success()
     }
 
