@@ -161,13 +161,14 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
  * @param isBlurred Whether the post image should be blurred (locked).
  */
 @Composable
-private fun PostImage(post: OutfitPost, isBlurred: Boolean) {
+private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier = Modifier) {
   Box(
       modifier =
           Modifier.fillMaxWidth()
               .height(260.dp)
               .clip(RoundedCornerShape(12.dp))
-              .background(Color.White)) {
+              .background(Color.White)
+              .then(modifier)) {
         AsyncImage(
             model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
@@ -253,7 +254,8 @@ fun OutfitPostCard(
     isLiked: Boolean,
     likeCount: Int,
     onLikeClick: (String) -> Unit,
-    onSeeFitClick: (String) -> Unit = {}
+    onSeeFitClick: (String) -> Unit = {},
+    onCardClick: (String) -> Unit = {}
 ) {
   Box(
       modifier =
@@ -270,14 +272,22 @@ fun OutfitPostCard(
               Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 ProfileSection(post)
                 Spacer(modifier = Modifier.height(8.dp))
-                PostImage(post, isBlurred)
+
+                // Click to get details enabled only when not blurred
+                val clickableModifier =
+                    if (isBlurred) {
+                      Modifier
+                    } else {
+                      Modifier.clickable { onCardClick(post.postUID) }
+                    }
+                PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location)
+                DescriptionAndButton(post, isBlurred, onSeeFitClick)
                 LikeRow(
                     isLiked = isLiked,
                     likeCount = likeCount,
                     enabled = !isBlurred,
                     onClick = { onLikeClick(post.postUID) })
-                DescriptionAndButton(post, isBlurred, onSeeFitClick)
               }
 
               Spacer(modifier = Modifier.height(8.dp))

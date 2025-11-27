@@ -3,6 +3,7 @@ package com.android.ootd.model.account
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.User
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -394,5 +395,55 @@ class AccountRepositoryInMemoryTest {
     assertTrue("item1" !in repository.getAccount("user1").itemsUids)
     assertTrue(repository.removeItem("item1")) // no-op
     assertEquals(1, repository.getAccount("user1").itemsUids.size)
+  }
+
+  @Test
+  fun observeAccount_emitsInitialAccountImmediately() = runTest {
+    val initialAccount = repository.observeAccount("user1").first()
+
+    assertEquals("user1", initialAccount.uid)
+    assertEquals("alice_wonder", initialAccount.username)
+  }
+
+  @Test
+  fun observeAccount_throwsWhenAccountNotFound() = runTest {
+    expectThrows<NoSuchElementException>("Account with ID nonexistent not found") {
+      repository.observeAccount("nonexistent").first()
+    }
+  }
+
+  @Test
+  fun observeAccount_reflectsAccountUpdates() = runTest {
+    // Get initial state
+    val initial = repository.observeAccount("user1").first()
+    assertEquals("alice_wonder", initial.username)
+
+    // Update the account
+    repository.editAccount(
+        "user1",
+        username = "updated_alice",
+        birthDay = "2000-01-01",
+        picture = "new.jpg",
+        location = EPFL_LOCATION)
+
+    // Verify the observation reflects the update
+    val updated = repository.observeAccount("user1").first()
+    assertEquals("updated_alice", updated.username)
+  }
+
+  @Test
+  fun observeAccount_filtersToSpecificUser() = runTest {
+    // Update a different account
+    repository.editAccount(
+        "user2",
+        username = "updated_bob",
+        birthDay = "1990-01-01",
+        picture = "bob.jpg",
+        location = EPFL_LOCATION)
+
+    // Verify observing user1 still returns user1 data (not user2)
+    val user1Account = repository.observeAccount("user1").first()
+    assertEquals("user1", user1Account.uid)
+    assertEquals("alice_wonder", user1Account.username)
   }
 }

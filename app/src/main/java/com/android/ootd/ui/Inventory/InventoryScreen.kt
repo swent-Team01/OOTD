@@ -50,6 +50,7 @@ object InventoryScreenTestTags {
   const val EMPTY_STATE = "inventoryEmptyState"
   const val ITEMS_GRID = "inventoryItemsGrid"
   const val ITEM_CARD = "inventoryItemCard"
+  const val ITEM_STAR_BUTTON = "inventoryItemStarButton"
   const val ADD_ITEM_FAB = "inventoryAddItemFab"
   const val SEARCH_FAB = "inventorySearchFab"
   const val SEARCH_BAR = "inventorySearchBar"
@@ -174,7 +175,9 @@ fun InventoryScreen(
                     items = uiState.items,
                     onItemClick = { item ->
                       navigationActions?.navigateTo(Screen.EditItem(item.itemUuid))
-                    })
+                    },
+                    starredItemIds = uiState.starredItemIds,
+                    onToggleStar = { item -> inventoryViewModel.toggleStar(item.itemUuid) })
               }
             }
           }

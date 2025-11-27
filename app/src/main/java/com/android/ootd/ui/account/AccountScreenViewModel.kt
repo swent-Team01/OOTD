@@ -10,6 +10,9 @@ import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -36,8 +39,15 @@ data class AccountPageViewState(
     val posts: List<OutfitPost> = emptyList(),
     val friends: List<String> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMsg: String? = null
+    val errorMsg: String? = null,
+    val starredItems: List<Item> = emptyList(),
+    val selectedTab: AccountTab = AccountTab.Posts
 )
+
+enum class AccountTab {
+  Posts,
+  Starred
+}
 
 private const val currentLog = "AccountPageViewModel"
 
@@ -56,7 +66,8 @@ class AccountPageViewModel(
     private val accountService: AccountService = AccountServiceFirebase(),
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
-    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository
+    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
+    private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(AccountPageViewState())
   val uiState: StateFlow<AccountPageViewState> = _uiState.asStateFlow()
@@ -81,12 +92,16 @@ class AccountPageViewModel(
         val account = accountRepository.getAccount(currentUserID)
         val usersPosts =
             feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
+        val starredIds = accountRepository.getStarredItems(currentUserID)
+        val starredItems =
+            if (starredIds.isEmpty()) emptyList() else itemsRepository.getItemsByIds(starredIds)
         _uiState.update {
           it.copy(
               username = user.username,
               profilePicture = user.profilePicture,
               posts = usersPosts,
               friends = account.friendUids,
+              starredItems = starredItems,
               isLoading = false)
         }
         clearErrorMsg()
@@ -111,5 +126,24 @@ class AccountPageViewModel(
    */
   fun clearErrorMsg() {
     _uiState.update { it.copy(errorMsg = null) }
+  }
+
+  fun selectTab(tab: AccountTab) {
+    _uiState.update { it.copy(selectedTab = tab) }
+  }
+
+  fun toggleStar(item: Item) {
+    viewModelScope.launch {
+      try {
+        val currentUserID = accountService.currentUserId
+        if (currentUserID.isBlank()) return@launch
+        val updatedIds = accountRepository.toggleStarredItem(item.itemUuid)
+        val starredItems =
+            if (updatedIds.isEmpty()) emptyList() else itemsRepository.getItemsByIds(updatedIds)
+        _uiState.update { it.copy(starredItems = starredItems) }
+      } catch (e: Exception) {
+        Log.e(currentLog, "Failed to toggle starred item: ${e.message}")
+      }
+    }
   }
 }

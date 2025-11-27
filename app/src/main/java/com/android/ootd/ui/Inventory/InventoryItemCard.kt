@@ -10,6 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.ui.theme.StarYellow
 
 /**
  * Individual item card displaying a small rounded square with the item's image.
@@ -32,7 +39,14 @@ import com.android.ootd.ui.theme.Typography
  * @param modifier Modifier for styling
  */
 @Composable
-fun InventoryItemCard(item: Item, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun InventoryItemCard(
+    item: Item,
+    onClick: () -> Unit,
+    isStarred: Boolean,
+    onToggleStar: () -> Unit,
+    modifier: Modifier = Modifier,
+    showStarIcon: Boolean = true
+) {
   Box(
       modifier =
           modifier
@@ -60,6 +74,20 @@ fun InventoryItemCard(item: Item, onClick: () -> Unit, modifier: Modifier = Modi
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(4.dp))
+              }
+        }
+
+        if (showStarIcon) {
+          IconButton(
+              onClick = onToggleStar,
+              modifier =
+                  Modifier.align(Alignment.TopEnd)
+                      .padding(2.dp)
+                      .testTag("${InventoryScreenTestTags.ITEM_STAR_BUTTON}_${item.itemUuid}")) {
+                Icon(
+                    imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = if (isStarred) "Remove from starred" else "Add to starred",
+                    tint = StarYellow)
               }
         }
       }

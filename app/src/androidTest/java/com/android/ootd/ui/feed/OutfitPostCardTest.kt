@@ -25,7 +25,8 @@ class OutfitPostCardTest {
       isLiked: Boolean = false,
       likeCount: Int = 0,
       onLikeClick: (String) -> Unit = {},
-      onSeeFitClick: (String) -> Unit = {}
+      onSeeFitClick: (String) -> Unit = {},
+      onCardClick: (String) -> Unit = {}
   ) =
       composeTestRule.setContent {
         OutfitPostCard(
@@ -34,7 +35,8 @@ class OutfitPostCardTest {
             isLiked = isLiked,
             likeCount = likeCount,
             onLikeClick = onLikeClick,
-            onSeeFitClick = onSeeFitClick)
+            onSeeFitClick = onSeeFitClick,
+            onCardClick = onCardClick)
       }
 
   private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
