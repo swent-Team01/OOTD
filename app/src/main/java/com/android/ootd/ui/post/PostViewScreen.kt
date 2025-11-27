@@ -2,6 +2,7 @@ package com.android.ootd.ui.post
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,9 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.model.user.User
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.utils.ProfilePicture
@@ -133,6 +137,8 @@ fun PostDetailsContent(
         isLiked = uiState.isLikedByCurrentUser,
         likeCount = uiState.likedByUsers.size,
         onToggleLike = onToggleLike)
+
+    LikedUsersRow(likedUsers = uiState.likedByUsers)
   }
 }
 
@@ -214,4 +220,38 @@ fun PostDescription(description: String) {
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.primary)
   }
+}
+
+/**
+ * Composable displaying a horizontal row of users who liked the post
+ *
+ * @ param likedUsers List of users who liked the post
+ */
+@Composable
+fun LikedUsersRow(likedUsers: List<User>) {
+  LazyRow(
+      horizontalArrangement = Arrangement.spacedBy(16.dp),
+      modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        items(likedUsers.size) { index ->
+          val user = likedUsers[index]
+
+          Column(
+              horizontalAlignment = Alignment.CenterHorizontally,
+              modifier = Modifier.width(64.dp)) {
+                ProfilePicture(
+                    size = 48.dp,
+                    profilePicture = user.profilePicture,
+                    username = user.username,
+                    textStyle = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = user.username,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center)
+              }
+        }
+      }
 }
