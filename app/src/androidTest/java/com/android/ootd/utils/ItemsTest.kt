@@ -78,9 +78,10 @@ interface ItemsTest {
       ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
       onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE, useUnmergedTree = true)
           .performClick()
+
       waitForIdle()
-      // Wait for the additional details section to appear
-      waitForNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION, timeoutMillis = 5_000)
+
+      // Scroll to the INPUT_MATERIAL node after expanding additional details
       ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
     }
 
