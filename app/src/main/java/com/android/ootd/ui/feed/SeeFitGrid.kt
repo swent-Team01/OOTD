@@ -25,7 +25,7 @@ import com.android.ootd.model.items.Item
 fun ItemGridScreen(
     items: List<Item>,
     modifier: Modifier = Modifier,
-    onEditItem: (String) -> Unit,
+    onEditItem: (String) -> Unit = {},
     isOwner: Boolean = false
 ) {
 

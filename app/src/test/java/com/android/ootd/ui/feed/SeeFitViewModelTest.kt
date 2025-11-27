@@ -234,7 +234,7 @@ class SeeFitViewModelTest {
     val state = viewModel.uiState.value
     assertTrue(state.items.isEmpty())
     assertFalse(state.isLoading)
-    assertTrue(state.errorMessage?.contains(errorMessage) == true)
+    assertNotNull(state.errorMessage)
   }
 
   @Test
@@ -251,7 +251,7 @@ class SeeFitViewModelTest {
     val state = viewModel.uiState.value
     assertTrue(state.items.isEmpty())
     assertFalse(state.isLoading)
-    assertTrue(state.errorMessage?.contains(errorMessage) == true)
+    assertNotNull(state.errorMessage)
   }
 
   @Test

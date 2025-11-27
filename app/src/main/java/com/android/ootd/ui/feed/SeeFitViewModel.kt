@@ -59,7 +59,7 @@ class SeeFitViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
-        // Gets the post owner ID
+        // Gets the post owner ID otherwise it throws an exception caught below
         val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
         val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
         // Get the current user ID to determine ownership
@@ -74,9 +74,11 @@ class SeeFitViewModel(
                 isLoading = false,
                 errorMessage = null)
       } catch (e: Exception) {
+        Log.e("SeeFitViewModel", "Failed to load items for post", e)
         _uiState.value =
             _uiState.value.copy(
-                isLoading = false, errorMessage = "Failed to load items: ${e.message}")
+                isLoading = false,
+                errorMessage = "Unable to load this fit. Please try again later.")
       }
     }
   }
