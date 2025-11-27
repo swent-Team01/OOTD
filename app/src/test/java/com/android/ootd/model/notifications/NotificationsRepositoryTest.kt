@@ -333,4 +333,146 @@ class NotificationRepositoryFirestoreTest {
 
     verify { mockDocRef.update("wasPushed", true) }
   }
+
+  // NEW TESTS for getUnpushedNotifications
+
+  @Test
+  fun getUnpushedNotificationsReturnsListOfNotifications() = runTest {
+    val receiverId = "receiver123"
+
+    val mockDoc1: DocumentSnapshot = mockk(relaxed = true)
+    val mockDoc2: DocumentSnapshot = mockk(relaxed = true)
+
+    every { mockDoc1.toObject(NotificationDto::class.java) } returns
+        NotificationDto(
+            uid = "notif1",
+            senderId = "sender1",
+            receiverId = receiverId,
+            type = "follow",
+            content = "followed you",
+            wasPushed = false)
+
+    every { mockDoc2.toObject(NotificationDto::class.java) } returns
+        NotificationDto(
+            uid = "notif2",
+            senderId = "sender2",
+            receiverId = receiverId,
+            type = "like",
+            content = "liked your post",
+            wasPushed = false)
+
+    val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
+    every { mockQuerySnapshot.documents } returns listOf(mockDoc1, mockDoc2)
+
+    every { mockCollection.whereEqualTo(RECEIVER_ID, receiverId) } returns mockQuery
+    every { mockQuery.whereEqualTo("wasPushed", false) } returns mockQuery
+    every { mockQuery.get() } returns Tasks.forResult(mockQuerySnapshot)
+
+    val result = repository.getUnpushedNotifications(receiverId)
+
+    assertEquals(2, result.size)
+    assertEquals("notif1", result[0].uid)
+    assertEquals("notif2", result[1].uid)
+    verify { mockCollection.whereEqualTo(RECEIVER_ID, receiverId) }
+    verify { mockQuery.whereEqualTo("wasPushed", false) }
+  }
+
+  @Test
+  fun getUnpushedNotificationsReturnsEmptyListWhenNoNotificationsFound() = runTest {
+    val receiverId = "receiver123"
+    val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
+
+    every { mockQuerySnapshot.documents } returns emptyList()
+    every { mockCollection.whereEqualTo(RECEIVER_ID, receiverId) } returns mockQuery
+    every { mockQuery.whereEqualTo("wasPushed", false) } returns mockQuery
+    every { mockQuery.get() } returns Tasks.forResult(mockQuerySnapshot)
+
+    val result = repository.getUnpushedNotifications(receiverId)
+
+    assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun getUnpushedNotificationsFiltersOutInvalidNotifications() = runTest {
+    val receiverId = "receiver123"
+
+    val mockDoc1: DocumentSnapshot = mockk(relaxed = true)
+    val mockDoc2: DocumentSnapshot = mockk(relaxed = true)
+    val mockDoc3: DocumentSnapshot = mockk(relaxed = true)
+
+    every { mockDoc1.toObject(NotificationDto::class.java) } returns
+        NotificationDto(
+            uid = "notif1",
+            senderId = "sender1",
+            receiverId = receiverId,
+            type = "follow",
+            content = "followed you",
+            wasPushed = false)
+
+    every { mockDoc2.toObject(NotificationDto::class.java) } returns
+        NotificationDto(
+            uid = "",
+            senderId = "sender2",
+            receiverId = receiverId,
+            type = "like",
+            content = "liked your post",
+            wasPushed = false)
+
+    every { mockDoc3.toObject(NotificationDto::class.java) } returns null
+
+    val mockQuerySnapshot: QuerySnapshot = mockk(relaxed = true)
+    every { mockQuerySnapshot.documents } returns listOf(mockDoc1, mockDoc2, mockDoc3)
+
+    every { mockCollection.whereEqualTo(RECEIVER_ID, receiverId) } returns mockQuery
+    every { mockQuery.whereEqualTo("wasPushed", false) } returns mockQuery
+    every { mockQuery.get() } returns Tasks.forResult(mockQuerySnapshot)
+
+    val result = repository.getUnpushedNotifications(receiverId)
+
+    assertEquals(1, result.size)
+    assertEquals("notif1", result[0].uid)
+  }
+
+  @Test
+  fun getUnpushedNotificationsReturnsEmptyListOnException() = runTest {
+    val receiverId = "receiver123"
+
+    every { mockCollection.whereEqualTo(RECEIVER_ID, receiverId) } returns mockQuery
+    every { mockQuery.whereEqualTo("wasPushed", false) } returns mockQuery
+    every { mockQuery.get() } returns Tasks.forException(Exception("Firestore error"))
+
+    val result = repository.getUnpushedNotifications(receiverId)
+
+    assertTrue(result.isEmpty())
+  }
+
+  // NEW TESTS for markNotificationAsPushed
+
+  @Test
+  fun markNotificationAsPushedUpdatesFieldSuccessfully() = runTest {
+    val notificationId = "notif123"
+
+    every { mockCollection.document(notificationId) } returns mockDocumentRef
+    every { mockDocumentRef.update("wasPushed", true) } returns Tasks.forResult(null)
+
+    repository.markNotificationAsPushed(notificationId)
+
+    verify { mockCollection.document(notificationId) }
+    verify { mockDocumentRef.update("wasPushed", true) }
+  }
+
+  @Test
+  fun markNotificationAsPushedHandlesExceptionGracefully() = runTest {
+    val notificationId = "notif123"
+
+    every { mockCollection.document(notificationId) } returns mockDocumentRef
+    every { mockDocumentRef.update("wasPushed", true) } returns
+        Tasks.forException(Exception("Update failed"))
+
+    // Should not throw exception - it's caught internally
+    repository.markNotificationAsPushed(notificationId)
+
+    verify { mockCollection.document(notificationId) }
+    verify { mockDocumentRef.update("wasPushed", true) }
+  }
 }
