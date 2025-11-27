@@ -81,7 +81,7 @@ class PostViewViewModel(
             }
 
         // Determine if current user liked this post
-        val isLikedByMe = currentUserId?.let { uid -> likerUserIds.contains(uid) } ?: false
+        val isLikedByMe = currentUserId.let { uid -> likerUserIds.contains(uid) }
 
         _uiState.value =
             PostViewUiState(
@@ -100,7 +100,7 @@ class PostViewViewModel(
 
   /** Toggles the like status of the post for the current user */
   fun toggleLike() {
-    val userId = currentUserId ?: return
+    val userId = currentUserId
     val post = _uiState.value.post ?: return
 
     viewModelScope.launch {
@@ -119,7 +119,7 @@ class PostViewViewModel(
         // Reload to update like count + liker list + like state
         loadPost(postId)
       } catch (e: Exception) {
-        // Optional: log or handle error
+        setError(e.message ?: "Failed to toggle like status")
       }
     }
   }
