@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.theme.Typography
 
 /**
  * Individual item card displaying a small rounded square with the item's image.
@@ -56,7 +56,7 @@ fun InventoryItemCard(item: Item, onClick: () -> Unit, modifier: Modifier = Modi
               verticalArrangement = Arrangement.Center) {
                 Text(
                     text = item.category,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(4.dp))

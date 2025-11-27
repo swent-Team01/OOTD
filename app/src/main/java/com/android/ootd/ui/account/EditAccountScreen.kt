@@ -374,7 +374,7 @@ private fun UsernameField(
       value = if (isEditing) editedValue else username,
       placeholder = "Change your username",
       onChange = onValueChange,
-      label = username,
+      label = "Username",
       readOnly = !isEditing,
       singleLine = true,
       keyBoardActions =

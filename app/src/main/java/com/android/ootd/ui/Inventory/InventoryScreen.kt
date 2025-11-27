@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.OOTDTopBar
 
 object InventoryScreenTestTags {
@@ -160,7 +161,7 @@ fun InventoryScreen(
                           } else {
                             "No items in your inventory yet.\n Add new items to your inventory and you will see them here!"
                           },
-                      style = MaterialTheme.typography.bodyLarge,
+                      style = Typography.bodyLarge,
                       color = Color.Gray,
                       textAlign = TextAlign.Center,
                       modifier =

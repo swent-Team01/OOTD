@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -144,7 +145,7 @@ fun DisplayUserPosts(
 ) {
   val color = colorScheme
   val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
-  val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+  val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
   val itemWidth = (screenWidth - padding - (spacing * 2)) / 3 // subtract padding and spacing
   val itemHeight = itemWidth
