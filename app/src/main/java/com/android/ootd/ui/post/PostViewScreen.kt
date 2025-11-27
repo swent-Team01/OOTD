@@ -7,13 +7,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -24,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.utils.ProfilePicture
@@ -35,7 +44,15 @@ object PostViewTestTags {
   const val POST_IMAGE = "postViewImage"
   const val LOADING_INDICATOR = "postViewLoading"
   const val ERROR_TEXT = "postViewError"
+  const val DROPDOWN_OPTIONS_MENU = "dropdownOptionsMenu"
+  const val DESCRIPTION_COUNTER = "descriptionCounter"
+  const val EDIT_DESCRIPTION_OPTION = "editDescriptionOption"
+  const val DELETE_POST_OPTION = "deletePostOption"
+  const val SAVE_EDITED_DESCRIPTION_BUTTON = "saveEditedDescriptionButton"
+  const val CANCEL_EDITING_BUTTON = "cancelEditingButton"
 }
+
+private const val MAX_DESCRIPTION_LENGTH = 100
 
 /**
  * Screen for viewing a single post in full detail
@@ -86,6 +103,7 @@ fun PostViewScreen(
                   modifier =
                       Modifier.align(Alignment.Center).testTag(PostViewTestTags.LOADING_INDICATOR))
             }
+
             uiState.error != null -> {
               Text(
                   text = uiState.error ?: "Unknown error",
@@ -95,11 +113,13 @@ fun PostViewScreen(
                           .padding(16.dp)
                           .testTag(PostViewTestTags.ERROR_TEXT))
             }
+
             uiState.post != null -> {
               PostDetailsContent(
                   uiState = uiState,
                   onToggleLike = { viewModel.toggleLike() },
-                  modifier = Modifier.fillMaxSize())
+                  modifier = Modifier.fillMaxSize(),
+                  viewModel = viewModel)
             }
           }
         }
@@ -116,12 +136,20 @@ fun PostViewScreen(
 fun PostDetailsContent(
     uiState: PostViewUiState,
     onToggleLike: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: PostViewViewModel
 ) {
   val post = uiState.post!!
 
+  var isEditing by remember { mutableStateOf(false) }
+  var editedDescription by remember { mutableStateOf(post.description) }
+
   Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
-    PostOwnerSection(username = uiState.ownerUsername, profilePicture = uiState.ownerProfilePicture)
+    PostOwnerSection(
+        username = uiState.ownerUsername,
+        profilePicture = uiState.ownerProfilePicture,
+        onEditClicked = { isEditing = true },
+        isOwner = uiState.isOwner)
 
     Spacer(Modifier.height(16.dp))
 
@@ -129,7 +157,57 @@ fun PostDetailsContent(
 
     Spacer(Modifier.height(16.dp))
 
-    PostDescription(post.description)
+    // If the user wants to edit the description, show a text field to edit it
+    if (isEditing) {
+      TextField(
+          value = editedDescription,
+          onValueChange = { description ->
+            // Limit description length
+            if (description.length <= MAX_DESCRIPTION_LENGTH) {
+              editedDescription = description
+            }
+          },
+          modifier = Modifier.fillMaxWidth(),
+          colors = commonTextFieldColors(),
+          trailingIcon = {
+            Row {
+              // Save edited description button
+              IconButton(
+                  onClick = {
+                    isEditing = false
+                    viewModel.saveDescription(editedDescription)
+                  },
+                  modifier = Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON)) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Save editing",
+                        tint = Primary,
+                    )
+                  }
+
+              // Cancel button the editing description phase
+              IconButton(
+                  onClick = { isEditing = false },
+                  modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON)) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Cancel editing",
+                        tint = MaterialTheme.colorScheme.error)
+                  }
+            }
+          })
+      // Character counter that shows how many characters are left
+      Text(
+          text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.primary,
+          modifier =
+              Modifier.align(Alignment.End)
+                  .padding(top = 4.dp, end = 4.dp)
+                  .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
+    } else {
+      PostDescription(post.description)
+    }
 
     Spacer(Modifier.height(16.dp))
 
@@ -152,20 +230,84 @@ fun PostDetailsContent(
 fun PostOwnerSection(
     username: String?,
     profilePicture: String?,
+    onEditClicked: () -> Unit,
+    isOwner: Boolean
 ) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    ProfilePicture(
-        size = 48.dp,
-        profilePicture = profilePicture ?: "",
-        username = username ?: "",
-        textStyle = MaterialTheme.typography.titleMedium)
+  Box(Modifier.fillMaxWidth()) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      ProfilePicture(
+          size = 48.dp,
+          profilePicture = profilePicture ?: "",
+          username = username ?: "",
+          textStyle = MaterialTheme.typography.titleMedium)
 
-    Spacer(Modifier.width(12.dp))
+      Spacer(Modifier.width(12.dp))
 
-    Text(
-        text = username ?: "Unknown User",
-        style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.primary)
+      Text(
+          text = username ?: "Unknown User",
+          style = MaterialTheme.typography.titleLarge,
+          color = MaterialTheme.colorScheme.primary)
+
+      Spacer(Modifier.weight(1f))
+
+      // Dropdown menu for post options
+      if (isOwner) DropdownMenuWithDetails(onEditClicked)
+    }
+  }
+}
+
+/**
+ * Composable displaying a dropdown menu with post options
+ *
+ * @param onEditClicked Callback when the edit option is clicked
+ */
+@Composable
+fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  Box(modifier = Modifier.size(32.dp).padding(8.dp).fillMaxWidth()) {
+    IconButton(
+        onClick = { expanded = !expanded },
+        modifier = Modifier.testTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)) {
+          Icon(
+              Icons.Default.MoreHoriz,
+              contentDescription = "More options",
+              tint = MaterialTheme.colorScheme.onSurface,
+              modifier = Modifier.size(24.dp))
+        }
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      // Edit option section
+      DropdownMenuItem(
+          text = { Text("Edit") },
+          leadingIcon = {
+            Icon(
+                Icons.Outlined.Edit,
+                contentDescription = "Edit description",
+            )
+          },
+          onClick = {
+            onEditClicked()
+            expanded = false
+          },
+          colors =
+              MenuDefaults.itemColors(
+                  textColor = MaterialTheme.colorScheme.onSurface,
+                  leadingIconColor = MaterialTheme.colorScheme.onSurface),
+          modifier = Modifier.testTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION))
+
+      HorizontalDivider()
+
+      // Delete option section
+      DropdownMenuItem(
+          text = { Text("Delete post") },
+          leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = "Delete post") },
+          onClick = { expanded = false /* delete logic implemented later */ },
+          colors =
+              MenuDefaults.itemColors(
+                  textColor = MaterialTheme.colorScheme.error,
+                  leadingIconColor = MaterialTheme.colorScheme.error),
+          modifier = Modifier.testTag(PostViewTestTags.DELETE_POST_OPTION))
+    }
   }
 }
 
