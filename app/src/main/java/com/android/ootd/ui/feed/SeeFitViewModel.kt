@@ -3,13 +3,13 @@ package com.android.ootd.ui.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,20 +25,21 @@ import kotlinx.coroutines.launch
  * @property postUuid The unique identifier for the outfit post.
  * @property isLoading Indicates whether a background operation (e.g. fetching data) is ongoing.
  * @property errorMessage An optional error message displayed to the user.
+ * @property postOwnerId The owner ID of the post
+ * @property isOwner Whether the current user owns the post
  */
 data class SeeFitUIState(
     val items: List<Item> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val postOwnerId: String = ""
-) {
-  val isOwner: Boolean
-    get() = Firebase.auth.currentUser?.uid == postOwnerId
-}
+    val postOwnerId: String = "",
+    val isOwner: Boolean = false
+)
 
 class SeeFitViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
-    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository
+    private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
+    private val accountService: AccountService = AccountServiceFirebase()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
@@ -60,9 +61,15 @@ class SeeFitViewModel(
       try {
         val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
         val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
+        val currentUserId = accountService.currentUserId
+        val isOwner = currentUserId.isNotEmpty() && currentUserId == postOwner
         _uiState.value =
             _uiState.value.copy(
-                items = items, postOwnerId = postOwner, isLoading = false, errorMessage = null)
+                items = items,
+                postOwnerId = postOwner,
+                isOwner = isOwner,
+                isLoading = false,
+                errorMessage = null)
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(

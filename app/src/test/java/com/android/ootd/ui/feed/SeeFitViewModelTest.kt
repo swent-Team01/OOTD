@@ -1,5 +1,6 @@
 package com.android.ootd.ui.feed
 
+import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -37,6 +38,8 @@ class SeeFitViewModelTest {
   private lateinit var viewModel: SeeFitViewModel
   private lateinit var mockItemsRepository: ItemsRepository
   private lateinit var mockFeedRepository: FeedRepository
+
+  private lateinit var mockAccountService: AccountService
   private val testDispatcher = StandardTestDispatcher()
 
   private val testItem1 =
@@ -92,8 +95,12 @@ class SeeFitViewModelTest {
     Dispatchers.setMain(testDispatcher)
     mockItemsRepository = mockk(relaxed = true)
     mockFeedRepository = mockk(relaxed = true)
+    mockAccountService = mockk(relaxed = true)
     viewModel =
-        SeeFitViewModel(itemsRepository = mockItemsRepository, feedRepository = mockFeedRepository)
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
   }
 
   @After
