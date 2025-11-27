@@ -246,6 +246,12 @@ class NotificationRepositoryFirestore(private val db: FirebaseFirestore) : Notif
       accountRepository: AccountRepository
   ) {
 
+    val areFriends = accountRepository.getAccount(receiverId).friendUids.contains(senderId)
+    if (areFriends) {
+      // Already friends, just delete notification
+      deleteNotification(notificationId, receiverId)
+      return
+    }
     // Add the sender as a friend
     val wasAddedToBoth = accountRepository.addFriend(receiverId, senderId)
 

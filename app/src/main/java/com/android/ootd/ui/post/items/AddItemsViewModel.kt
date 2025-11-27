@@ -15,7 +15,6 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
-import com.android.ootd.utils.CategoryNormalizer
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,12 +55,7 @@ data class AddItemsUIState(
             (invalidPhotoMsg == null &&
                 invalidCategory == null &&
                 (localPhotoUri != null || image.imageUrl.isNotEmpty()) &&
-                category.isNotEmpty() &&
-                isCategoryValid())
-
-  private fun isCategoryValid(): Boolean {
-    return CategoryNormalizer.isValid(category)
-  }
+                category.isNotEmpty())
 }
 
 /** Factory used to pass parameter to the view model for testing. */
@@ -244,13 +238,8 @@ open class AddItemsViewModel(
   fun onAddItemClick(context: Context) {
     val state = _uiState.value
 
-    if (overridePhoto) {
-      _addOnSuccess.value = true
-      return
-    }
-
-    // Validate state
-    if (!state.isAddingValid) {
+    // Validate state when not overriding photo requirements
+    if (!overridePhoto && !state.isAddingValid) {
       val error = validateAddItemState(state) ?: "Some required fields are missing."
       setErrorMsg(error)
       _addOnSuccess.value = false
@@ -263,13 +252,19 @@ open class AddItemsViewModel(
       try {
         val itemUuid = repository.getNewItemId()
 
-        // Upload image (uses local URI when offline)
-        val uploadedImage = uploadItemImage(state.localPhotoUri, itemUuid, context)
-        if (uploadedImage == null) {
-          setErrorMsg("Please select a photo before adding the item.")
-          _addOnSuccess.value = false
-          return@launch
-        }
+        val uploadedImage =
+            if (overridePhoto) {
+              ImageData(itemUuid, state.image.imageUrl.ifEmpty { "override://$itemUuid" })
+            } else {
+              // Upload image (uses local URI when offline)
+              val uploaded = uploadItemImage(state.localPhotoUri, itemUuid, context)
+              if (uploaded == null) {
+                setErrorMsg("Please select a photo before adding the item.")
+                _addOnSuccess.value = false
+                return@launch
+              }
+              uploaded
+            }
 
         // Create item
         val item = createItemFromState(state, itemUuid, uploadedImage, ownerId)
@@ -306,24 +301,8 @@ open class AddItemsViewModel(
   fun setCategory(category: String) {
     val categories = typeSuggestions.keys.toList()
     val trimmedCategory = category.trim()
-    val normalized =
-        when (trimmedCategory.lowercase()) {
-          "clothes",
-          "clothing" -> "Clothing"
 
-          "shoes",
-          "shoe" -> "Shoes"
-
-          "bags",
-          "bag" -> "Bags"
-
-          "accessories",
-          "accessory" -> "Accessories"
-
-          else -> trimmedCategory
-        }
-    val isExactMatch = categories.any { it.equals(normalized, ignoreCase = true) }
-    val isPotentialMatch = categories.any { it.lowercase().startsWith(trimmedCategory.lowercase()) }
+    val isExactMatch = categories.any { it.equals(trimmedCategory, ignoreCase = true) }
 
     _uiState.value =
         _uiState.value.copy(
@@ -332,8 +311,7 @@ open class AddItemsViewModel(
                 when {
                   category.isBlank() -> null
                   isExactMatch -> null
-                  isPotentialMatch -> null
-                  else -> "Please enter one of: Clothing, Accessories, Shoes, or Bags."
+                  else -> "Please enter a valid category."
                 })
   }
 
@@ -355,27 +333,12 @@ open class AddItemsViewModel(
     val state = _uiState.value
     val categories = typeSuggestions.keys.toList()
     val trimmedCategory = state.category.trim()
-    val normalized =
-        when (trimmedCategory.lowercase()) {
-          "clothes",
-          "clothing" -> "Clothing"
 
-          "shoes",
-          "shoe" -> "Shoes"
-
-          "bags",
-          "bag" -> "Bags"
-
-          "accessories",
-          "accessory" -> "Accessories"
-
-          else -> trimmedCategory
-        }
     val error =
         when {
           trimmedCategory.isEmpty() -> null
-          !categories.any { it.equals(normalized, ignoreCase = true) } ->
-              "Please enter one of: Clothing, Accessories, Shoes, or Bags."
+          !categories.any { it.equals(trimmedCategory, ignoreCase = true) } ->
+              "Please enter a valid category."
 
           else -> null
         }

@@ -1,6 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.content.Context
+import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.posts.OutfitPost
@@ -11,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestoreSettings
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.runTest
@@ -327,6 +329,183 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     val retrieved = feedRepository.getPostById("post-no-location")
 
     assertEquals(com.android.ootd.model.map.emptyLocation, retrieved?.location)
+  }
+
+  // -------- Real-time observation tests (observeRecentFeedForUids) --------
+
+  @Test
+  fun observeRecentFeedForUids_emptyList_emitsEmptyImmediately() = runBlocking {
+    val emissions = mutableListOf<List<OutfitPost>>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        feedRepository.observeRecentFeedForUids(emptyList()).collect {
+          Log.d("FeedTest", "Collected emission: ${it.size} posts")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("FeedTest", "Error collecting", e)
+      }
+    }
+
+    // Should emit immediately
+    kotlinx.coroutines.delay(500)
+    job.cancel()
+
+    error?.let { throw it }
+    assertTrue("Should emit at least once", emissions.isNotEmpty())
+    assertTrue("Empty list should emit empty", emissions.first().isEmpty())
+  }
+
+  @Test
+  fun observeRecentFeedForUids_withPosts_emitsInitialData() = runBlocking {
+    val now = System.currentTimeMillis()
+
+    // Add posts before starting observation
+    feedRepository.addPost(samplePost("post-1", ts = now - 3000))
+    feedRepository.addPost(samplePost("post-2", ts = now - 1000))
+    feedRepository.addPost(samplePost("post-3", ts = now - 2000))
+
+    // Wait for writes to complete
+    kotlinx.coroutines.delay(1000)
+
+    val emissions = mutableListOf<List<OutfitPost>>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        feedRepository.observeRecentFeedForUids(listOf(currentUid)).collect {
+          Log.d("FeedTest", "Collected emission: ${it.size} posts")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("FeedTest", "Error collecting", e)
+      }
+    }
+
+    // Give time for initial emission (calls getRecentFeedForUids which can take time)
+    kotlinx.coroutines.delay(3000)
+    job.cancel()
+
+    error?.let { throw it }
+    assertTrue("Should emit at least once", emissions.isNotEmpty())
+    val posts = emissions.first()
+    assertEquals("Should have 3 posts", 3, posts.size)
+
+    // Verify descending order (most recent first)
+    assertEquals("Most recent first", "post-2", posts[0].postUID)
+    assertEquals("Second most recent", "post-3", posts[1].postUID)
+    assertEquals("Oldest last", "post-1", posts[2].postUID)
+  }
+
+  @Test
+  fun observeRecentFeedForUids_filters24Hours() = runBlocking {
+    val now = System.currentTimeMillis()
+
+    // Add recent and old posts
+    feedRepository.addPost(samplePost("recent", ts = now - 1000))
+    feedRepository.addPost(samplePost("old", ts = now - 26 * 60 * 60 * 1000)) // 26 hours old
+
+    kotlinx.coroutines.delay(1000)
+
+    val emissions = mutableListOf<List<OutfitPost>>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        feedRepository.observeRecentFeedForUids(listOf(currentUid)).collect {
+          Log.d("FeedTest", "Collected emission: ${it.size} posts")
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("FeedTest", "Error collecting", e)
+      }
+    }
+
+    kotlinx.coroutines.delay(3000)
+    job.cancel()
+
+    error?.let { throw it }
+    assertTrue("Should emit", emissions.isNotEmpty())
+    val posts = emissions.first()
+
+    // Should only have the recent post
+    assertEquals("Should have 1 post", 1, posts.size)
+    assertEquals("Should be the recent post", "recent", posts[0].postUID)
+    assertTrue("Old post should be filtered out", posts.none { it.postUID == "old" })
+  }
+
+  @Test
+  fun observeRecentFeedForUids_multipleUsers() = runBlocking {
+    // Clear any existing posts first to ensure clean state
+    val existingPosts =
+        db.collection(POSTS_COLLECTION_PATH).whereEqualTo("ownerId", currentUid).get().await()
+    existingPosts.documents.forEach { it.reference.delete().await() }
+    kotlinx.coroutines.delay(500)
+
+    // Use timestamps that are safely within 24 hours and won't age out during the test
+    val safeTimestamp = System.currentTimeMillis() - (1 * 60 * 60 * 1000) // 1 hour ago
+    val user1 = currentUid
+
+    // Create posts with safe timestamps
+    feedRepository.addPost(samplePost("user1-post-a", ts = safeTimestamp).copy(ownerId = user1))
+    feedRepository.addPost(
+        samplePost("user1-post-b", ts = safeTimestamp - 1000).copy(ownerId = user1))
+
+    // Wait for writes to complete
+    kotlinx.coroutines.delay(2000)
+
+    // Verify posts were actually saved BEFORE starting the flow
+    val savedPosts = feedRepository.getRecentFeedForUids(listOf(user1))
+    Log.d("FeedTest", "Saved posts count: ${savedPosts.size}")
+    savedPosts.forEach {
+      Log.d("FeedTest", "Saved post: ${it.postUID}, timestamp: ${it.timestamp}")
+    }
+
+    // If this fails, the problem is in addPost/getRecentFeedForUids, not observeRecentFeedForUids
+    assertEquals("Posts should be saved before testing observe", 2, savedPosts.size)
+
+    val emissions = mutableListOf<List<OutfitPost>>()
+    var error: Throwable? = null
+
+    val job = launch {
+      try {
+        // Request posts for current user only (simplified test)
+        feedRepository.observeRecentFeedForUids(listOf(user1)).collect {
+          Log.d("FeedTest", "Collected emission: ${it.size} posts at ${System.currentTimeMillis()}")
+          it.forEach { post ->
+            Log.d("FeedTest", "Emission contains: ${post.postUID}, timestamp: ${post.timestamp}")
+          }
+          emissions.add(it)
+        }
+      } catch (e: Exception) {
+        error = e
+        Log.e("FeedTest", "Error collecting", e)
+      }
+    }
+
+    // Wait much longer for the initial emission - getRecentFeedForUids might take time
+    kotlinx.coroutines.delay(5000)
+    job.cancel()
+
+    error?.let { throw it }
+
+    // Log what we actually got
+    Log.d("FeedTest", "Total emissions received: ${emissions.size}")
+    if (emissions.isNotEmpty()) {
+      Log.d("FeedTest", "First emission had: ${emissions.first().size} posts")
+    }
+
+    assertTrue("Should emit at least once", emissions.isNotEmpty())
+
+    val posts = emissions.first()
+    assertEquals("Should have 2 posts (savedPosts had ${savedPosts.size})", 2, posts.size)
+    assertTrue("Should include first post", posts.any { it.postUID == "user1-post-a" })
+    assertTrue("Should include second post", posts.any { it.postUID == "user1-post-b" })
   }
 
   // -------- Helpers --------

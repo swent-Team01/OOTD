@@ -46,4 +46,34 @@ class NominatimLocationRepositoryTest {
     assertEquals(expected.size, results.size)
     assertTrue(results.size > 1)
   }
+
+  @Test
+  fun reverseGeocodeReturnsLocationForValidCoordinates() = runTest {
+    val repository = NominatimLocationRepository(FakeHttpClient.getClient())
+    val expected = FakeHttpClient.FakeLocation.EPFL.locationSuggestions[0]
+
+    val result = repository.reverseGeocode(expected.latitude, expected.longitude)
+
+    assertEquals(expected.name, result.name)
+    assertEquals(expected.latitude, result.latitude, 0.0001)
+    assertEquals(expected.longitude, result.longitude, 0.0001)
+  }
+
+  @Test
+  fun reverseGeocodeHandlesDifferentLocations() = runTest {
+    val repository = NominatimLocationRepository(FakeHttpClient.getClient())
+    val expectedLausanne = FakeHttpClient.FakeLocation.LAUSANNE.locationSuggestions[0]
+
+    val result = repository.reverseGeocode(expectedLausanne.latitude, expectedLausanne.longitude)
+
+    assertEquals(expectedLausanne.name, result.name)
+    assertEquals(expectedLausanne.latitude, result.latitude, 0.0001)
+    assertEquals(expectedLausanne.longitude, result.longitude, 0.0001)
+  }
+
+  @Test(expected = Exception::class)
+  fun reverseGeocodeThrowsExceptionForUnknownCoordinates() = runTest {
+    val repository = NominatimLocationRepository(FakeHttpClient.getClient())
+    repository.reverseGeocode(0.0, 0.0) // Unknown coordinates
+  }
 }

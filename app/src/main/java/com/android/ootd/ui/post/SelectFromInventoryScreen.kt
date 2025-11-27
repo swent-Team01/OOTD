@@ -124,7 +124,10 @@ fun SelectInventoryItemScreen(
               InventoryGrid(
                   items = uiState.availableItems,
                   onItemClick = { item -> selectInventoryItemViewModel.addItemToPost(item) },
-                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.ITEMS_GRID))
+                  starredItemIds = emptySet(),
+                  onToggleStar = {},
+                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.ITEMS_GRID),
+                  showStarToggle = false)
             }
           }
         }

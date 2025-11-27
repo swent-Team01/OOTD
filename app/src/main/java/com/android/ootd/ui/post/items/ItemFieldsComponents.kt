@@ -42,14 +42,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
-import androidx.constraintlayout.solver.widgets.Optimizer.enabled
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
@@ -63,6 +61,15 @@ val STYLE_SUGGESTIONS =
         "Casual", "Formal", "Streetwear", "Vintage", "Business", "Sporty", "Smart casual", "Chic")
 val FIT_TYPE_SUGGESTIONS =
     listOf("Slim", "Regular", "Relaxed", "Oversized", "Skinny", "Tailored", "Boxy", "Loose")
+
+private const val BRAND_MAX_LENGTH = 40
+private const val MATERIAL_MAX_LENGTH = 100
+private const val SIZE_MAX_LENGTH = 20
+private const val LINK_MAX_LENGTH = 160
+private const val NOTES_MAX_LENGTH = 250
+private const val TYPE_MAX_LENGTH = 40
+private const val STYLE_MAX_LENGTH = 40
+private const val FIT_TYPE_MAX_LENGTH = 30
 
 fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<String> {
   return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
@@ -194,7 +201,8 @@ fun TypeField(
             else options.filter { it.startsWith(input, ignoreCase = true) }
         base.take(5)
       },
-      focusExpansion = { isFocused, _ -> isFocused })
+      focusExpansion = { isFocused, _ -> isFocused },
+      maxChars = TYPE_MAX_LENGTH)
 }
 
 /** Reusable generic text field with common styling */
@@ -204,17 +212,35 @@ private fun CommonTextField(
     onChange: (String) -> Unit,
     label: String,
     placeholder: String,
-    testTag: String
+    testTag: String,
+    maxChars: Int? = null
 ) {
+  var isFocused by remember { mutableStateOf(false) }
+  val shouldShowCounter = maxChars != null && isFocused
+
   OutlinedTextField(
       value = value,
-      onValueChange = onChange,
+      onValueChange = {
+        if (maxChars == null || it.length <= maxChars) {
+          onChange(it)
+        }
+      },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().testTag(testTag))
+      supportingText =
+          if (shouldShowCounter) {
+            {
+              Text(
+                  text = "${value.length}/${maxChars}", style = MaterialTheme.typography.labelSmall)
+            }
+          } else {
+            null
+          },
+      modifier =
+          Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused }.testTag(testTag))
 }
 
 /** Reusable text field for brand input */
@@ -225,7 +251,8 @@ fun BrandField(brand: String, onChange: (String) -> Unit, testTag: String) {
       onChange = onChange,
       label = "Brand",
       placeholder = "Enter a brand",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = BRAND_MAX_LENGTH)
 }
 
 /** Reusable text field for material input */
@@ -236,7 +263,8 @@ fun MaterialField(materialText: String, onChange: (String) -> Unit, testTag: Str
       onChange = onChange,
       label = "Material",
       placeholder = "E.g., Cotton 80%, Wool 20%",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = MATERIAL_MAX_LENGTH)
 }
 
 /** Reusable text field for size input */
@@ -247,7 +275,8 @@ fun SizeField(size: String, onChange: (String) -> Unit, testTag: String) {
       onChange = onChange,
       label = "Size",
       placeholder = "e.g., M, 42, One-size",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = SIZE_MAX_LENGTH)
 }
 
 /** Autocomplete-style field for item style suggestions. */
@@ -268,7 +297,8 @@ fun StyleField(
               label = "Item style",
               placeholder = "e.g., Streetwear, Formal",
               textFieldTag = testTag,
-              dropdownTestTag = dropdownTestTag))
+              dropdownTestTag = dropdownTestTag),
+      maxChars = STYLE_MAX_LENGTH)
 }
 
 /** Autocomplete-style field for item fit type suggestions. */
@@ -289,7 +319,8 @@ fun FitTypeField(
               label = "Item fit type",
               placeholder = "e.g., oversized, slim",
               textFieldTag = testTag,
-              dropdownTestTag = dropdownTestTag))
+              dropdownTestTag = dropdownTestTag),
+      maxChars = FIT_TYPE_MAX_LENGTH)
 }
 
 /** Reusable text field for link input */
@@ -300,7 +331,8 @@ fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
       onChange = onChange,
       label = "Link",
       placeholder = "e.g., https://example.com",
-      testTag = testTag)
+      testTag = testTag,
+      maxChars = LINK_MAX_LENGTH)
 }
 
 /** Shared price field that always exposes a Double value. */
@@ -384,15 +416,34 @@ fun NotesField(
     testTag: String,
     placeholder: String = "Optional notes"
 ) {
+  var isFocused by remember { mutableStateOf(false) }
+  val showCounter = isFocused
+
   OutlinedTextField(
       value = notes,
-      onValueChange = onChange,
+      onValueChange = {
+        if (it.length <= NOTES_MAX_LENGTH) {
+          onChange(it)
+        }
+      },
       label = { Text("Notes") },
       placeholder = { Text(placeholder) },
       textStyle =
           MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
-      modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).testTag(testTag),
+      supportingText =
+          if (showCounter) {
+            {
+              Text(
+                  text = "${notes.length}/$NOTES_MAX_LENGTH",
+                  style = MaterialTheme.typography.labelSmall)
+            }
+          } else null,
+      modifier =
+          Modifier.fillMaxWidth()
+              .heightIn(min = 80.dp)
+              .onFocusChanged { isFocused = it.isFocused }
+              .testTag(testTag),
       maxLines = 5)
 }
 
@@ -561,55 +612,100 @@ private fun SuggestionsDropdownField(
     filter: (String, List<String>) -> List<String> = ::filterDropdownSuggestions,
     focusExpansion: (Boolean, Boolean) -> Boolean = { isFocused, hasSuggestions ->
       isFocused && hasSuggestions
-    }
+    },
+    maxChars: Int? = null
 ) {
   var expanded by remember { mutableStateOf(false) }
+  var isFocused by remember { mutableStateOf(false) }
   val filtered = remember(value, suggestions) { filter(value, suggestions) }
+  val showCounter = maxChars != null && isFocused
+  val supportingText: (@Composable () -> Unit)? =
+      if (showCounter) {
+        { Text("${value.length}/$maxChars", style = MaterialTheme.typography.labelSmall) }
+      } else null
 
   Box(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
+    SuggestionInputField(
         value = value,
-        onValueChange = {
-          onValueChange(it)
-          expanded = if (expandOnChange) it.isNotBlank() else true
-        },
-        label = { Text(visuals.label) },
-        placeholder = { Text(visuals.placeholder) },
-        modifier =
-            Modifier.fillMaxWidth().testTag(visuals.textFieldTag).onFocusChanged { focusState ->
-              if (focusState.isFocused) {
-                onFocus?.invoke()
-                expanded = focusExpansion(true, filtered.isNotEmpty())
-              } else {
-                expanded = false
-              }
-            },
-        singleLine = true,
-        textStyle =
-            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
-        colors = commonTextFieldColors())
-
-    DropdownMenu(
-        expanded = expanded && filtered.isNotEmpty(),
-        onDismissRequest = { expanded = false },
-        modifier = Modifier.fillMaxWidth().testTag(visuals.dropdownTestTag),
-        properties = PopupProperties(focusable = false)) {
-          filtered.forEach { suggestion ->
-            DropdownMenuItem(
-                text = {
-                  Text(
-                      suggestion,
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              color = MaterialTheme.colorScheme.primary))
-                },
-                onClick = {
-                  onValueChange(suggestion)
-                  expanded = false
-                })
+        visuals = visuals,
+        supportingText = supportingText,
+        onValueChanged = { input ->
+          if (maxChars == null || input.length <= maxChars) {
+            onValueChange(input)
+            expanded = if (expandOnChange) input.isNotBlank() else true
           }
-        }
+        },
+        onFocusChanged = { focused ->
+          isFocused = focused
+          if (focused) {
+            onFocus?.invoke()
+            expanded = focusExpansion(true, filtered.isNotEmpty())
+          } else {
+            expanded = false
+          }
+        })
+
+    SuggestionsMenu(
+        showMenu = expanded && filtered.isNotEmpty(),
+        options = filtered,
+        dropdownTag = visuals.dropdownTestTag,
+        onSelect = {
+          onValueChange(it)
+          expanded = false
+        },
+        onDismiss = { expanded = false })
   }
+}
+
+@Composable
+private fun SuggestionInputField(
+    value: String,
+    visuals: SuggestionsDropdownVisuals,
+    supportingText: (@Composable () -> Unit)?,
+    onValueChanged: (String) -> Unit,
+    onFocusChanged: (Boolean) -> Unit
+) {
+  OutlinedTextField(
+      value = value,
+      onValueChange = onValueChanged,
+      label = { Text(visuals.label) },
+      placeholder = { Text(visuals.placeholder) },
+      modifier =
+          Modifier.fillMaxWidth().testTag(visuals.textFieldTag).onFocusChanged {
+            onFocusChanged(it.isFocused)
+          },
+      singleLine = true,
+      textStyle =
+          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      colors = commonTextFieldColors(),
+      supportingText = supportingText)
+}
+
+@Composable
+private fun SuggestionsMenu(
+    showMenu: Boolean,
+    options: List<String>,
+    dropdownTag: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+  DropdownMenu(
+      expanded = showMenu,
+      onDismissRequest = onDismiss,
+      modifier = Modifier.fillMaxWidth().testTag(dropdownTag),
+      properties = PopupProperties(focusable = false)) {
+        options.forEach { suggestion ->
+          DropdownMenuItem(
+              text = {
+                Text(
+                    suggestion,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary))
+              },
+              onClick = { onSelect(suggestion) })
+        }
+      }
 }
 
 private data class SelectionDropdownVisuals(

@@ -1,6 +1,7 @@
 package com.android.ootd.model.feed
 
 import com.android.ootd.model.posts.OutfitPost
+import kotlinx.coroutines.flow.Flow
 
 /** Repository that manages the posts on the feed */
 interface FeedRepository {
@@ -44,4 +45,13 @@ interface FeedRepository {
    * @return The outfit post with the specified identifier, or null if not found.
    */
   suspend fun getPostById(postUuid: String): OutfitPost?
+
+  /**
+   * Observes posts authored by any of the provided user IDs within the last 24 hours. Returns a
+   * Flow that emits the updated list whenever the posts change in Firebase.
+   *
+   * @param uids List of user IDs whose recent posts are to be observed
+   * @return Flow emitting lists of recent posts
+   */
+  fun observeRecentFeedForUids(uids: List<String>): Flow<List<OutfitPost>>
 }

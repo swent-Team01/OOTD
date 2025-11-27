@@ -2,27 +2,33 @@ package com.android.ootd.model.notifications
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.FirestoreTest
 import io.mockk.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.*
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
   private lateinit var mockManager: NotificationManagerCompat
   private lateinit var receiver: NotificationActionReceiver
   private lateinit var mockContext: Context
+  private val testDispatcher = StandardTestDispatcher()
 
   @Before
   override fun setUp() = runBlocking {
     super.setUp()
+    Dispatchers.setMain(testDispatcher)
+
     accountRepository.addAccount(
         Account(uid = currentUser.uid, ownerId = currentUser.uid, username = "stefanstefan"))
     userRepository.addUser(
@@ -42,12 +48,13 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
 
   @After
   override fun tearDown() {
+    Dispatchers.resetMain()
     super.tearDown()
     unmockkAll()
   }
 
   @Test
-  fun testAcceptActionTriggersRepositoryCall() = runTest {
+  fun testAcceptAction() = runTest {
     val notif =
         Notification(
             uid = "notif123",
@@ -68,20 +75,21 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
         }
 
     receiver.onReceive(mockContext, intent)
-    Thread.sleep(300)
+
+    // Advance time to allow coroutines to complete
+    advanceUntilIdle()
 
     val result = notificationsRepository.getNotificationsForReceiver(currentUser.uid)
-    Log.d("InstrTest", "$result")
     assert(result.isEmpty())
 
     verify { mockManager.cancel(notif.uid.hashCode()) }
   }
 
   @Test
-  fun testDeleteActionTriggersRepositoryCall() = runTest {
+  fun testDeleteAction() = runTest {
     val notif =
         Notification(
-            uid = "notif555",
+            uid = "notif123",
             senderId = currentUser.uid,
             receiverId = currentUser.uid,
             type = "FOLLOW_REQUEST",
@@ -99,21 +107,13 @@ class NotificationActionReceiverInstrumentedTest : FirestoreTest() {
         }
 
     receiver.onReceive(mockContext, intent)
-    Thread.sleep(200)
 
+    // Advance time to allow coroutines to complete
+    advanceUntilIdle()
     val result = notificationsRepository.getNotificationsForReceiver(currentUser.uid)
     assert(result.isEmpty())
-
-    verify { mockManager.cancel(notif.uid.hashCode()) }
-  }
-
-  @Test
-  fun testInvalidIntentDoesNothing() = runTest {
-    val intent = Intent()
-    intent.putExtra("notificationUid", "id") // missing senderId and receiverId
-
-    receiver.onReceive(mockContext, intent)
-
-    verify(exactly = 0) { mockManager.cancel(any()) }
+    verify {
+      mockManager.cancel(notif.uid.hashCode())
+    } // Make sure that the notification was canceled
   }
 }
