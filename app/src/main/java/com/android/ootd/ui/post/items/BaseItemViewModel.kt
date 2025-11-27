@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Material
-import com.android.ootd.utils.CategoryNormalizer
 import com.android.ootd.utils.TypeSuggestionsLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,9 +101,10 @@ abstract class BaseItemViewModel<T : Any> : ViewModel() {
    * @param input The input string to filter suggestions.
    */
   fun updateCategorySuggestions(input: String) {
+    val categories = typeSuggestions.keys.toList()
     val filtered =
-        if (input.isBlank()) CategoryNormalizer.VALID_CATEGORIES
-        else CategoryNormalizer.VALID_CATEGORIES.filter { it.startsWith(input, ignoreCase = true) }
+        if (input.isBlank()) categories
+        else categories.filter { it.startsWith(input, ignoreCase = true) }
     updateState { updateCategorySuggestionsState(it, filtered) }
   }
 

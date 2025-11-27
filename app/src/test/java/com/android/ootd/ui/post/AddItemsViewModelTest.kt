@@ -129,6 +129,20 @@ class AddItemsViewModelTest {
   @Test
   fun `onAddItemClick with overridePhoto succeeds`() = runTest {
     val vm = AddItemsViewModel(mockRepository, mockAccountRepository, true)
+    vm.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    vm.setCategory("Clothing")
+
+    mockkStatic(FirebaseAuth::class)
+    val mockAuth = mockk<FirebaseAuth>()
+    val mockUser = mockk<FirebaseUser>()
+    every { FirebaseAuth.getInstance() } returns mockAuth
+    every { mockAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "uid"
+
+    coEvery { mockRepository.getNewItemId() } returns "id"
+    coEvery { mockRepository.addItem(any()) } returns Unit
+    coEvery { mockAccountRepository.addItem(any()) } returns true
+
     vm.onAddItemClick(context)
     advanceUntilIdle()
     assertTrue(vm.addOnSuccess.value)
@@ -317,5 +331,27 @@ class AddItemsViewModelTest {
     advanceUntilIdle()
 
     assertTrue(viewModel.addOnSuccess.value)
+  }
+
+  @Test
+  fun `updateCategorySuggestions returns all when input blank`() {
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.updateCategorySuggestions("")
+    val suggestions = viewModel.uiState.value.categorySuggestion
+    assertTrue(suggestions.size >= 6)
+  }
+
+  @Test
+  fun `updateCategorySuggestions filters by prefix`() {
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.updateCategorySuggestions("Sho")
+    assertEquals(listOf("Shoes"), viewModel.uiState.value.categorySuggestion)
+  }
+
+  @Test
+  fun `updateCategorySuggestions case insensitive`() {
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    viewModel.updateCategorySuggestions("bag")
+    assertEquals(listOf("Bags"), viewModel.uiState.value.categorySuggestion)
   }
 }

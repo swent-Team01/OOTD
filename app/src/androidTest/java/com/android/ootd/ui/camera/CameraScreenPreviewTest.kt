@@ -291,10 +291,13 @@ class CameraScreenPreviewTest {
 
     composeTestRule.waitForIdle()
 
-    // Wait a bit for bitmap to load
-    Thread.sleep(1500)
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(CameraScreenTestTags.IMAGE_PREVIEW)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
-    // Verify the image preview is displayed (bitmap != null branch)
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.IMAGE_PREVIEW).assertExists()
+    composeTestRule.onNodeWithTag(CameraScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
   }
 }

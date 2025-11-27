@@ -13,6 +13,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -29,7 +30,8 @@ data class InventoryUIState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val searchQuery: String = "",
-    val isSearchActive: Boolean = false
+    val isSearchActive: Boolean = false,
+    val starredItemIds: Set<String> = emptySet()
 )
 
 /**
@@ -68,6 +70,7 @@ class InventoryViewModel(
    */
   fun loadInventory() {
     viewModelScope.launch {
+      refreshStarredItems()
       _uiState.value = _uiState.value.copy(errorMessage = null)
       try {
         val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception("User not logged in")
@@ -128,6 +131,38 @@ class InventoryViewModel(
         _uiState.value =
             _uiState.value.copy(
                 isLoading = false, errorMessage = "Failed to load inventory: ${e.message}")
+      }
+    }
+  }
+
+  /**
+   * Refreshes the set of starred item IDs from the account repository and updates the UI state.
+   * This is a best-effort call: failures are ignored because the starred badge is purely
+   * informational.
+   */
+  fun refreshStarredItems() {
+    viewModelScope.launch {
+      try {
+        val currentUserId = Firebase.auth.currentUser?.uid ?: return@launch
+        val starredIds = accountRepository.getStarredItems(currentUserId).toSet()
+        _uiState.update { it.copy(starredItemIds = starredIds) }
+      } catch (_: Exception) {
+        // Ignore - best-effort
+      }
+    }
+  }
+
+  /**
+   * Adds or removes the given item from the user's starred list. On success the starred set is
+   * reloaded so the UI reflects the change.
+   */
+  fun toggleStar(itemUid: String) {
+    viewModelScope.launch {
+      try {
+        val updatedIds = accountRepository.toggleStarredItem(itemUid)
+        _uiState.update { it.copy(starredItemIds = updatedIds.toSet()) }
+      } catch (_: Exception) {
+        // Ignore failures
       }
     }
   }

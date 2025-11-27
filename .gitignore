@@ -6,6 +6,7 @@
 /captures
 .externalNativeBuild
 .cxx
+.salive
 local.properties
 
 # Node.js / npm
