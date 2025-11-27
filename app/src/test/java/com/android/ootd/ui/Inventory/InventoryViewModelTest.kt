@@ -6,12 +6,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
+import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -307,5 +302,49 @@ class InventoryViewModelTest {
 
     Assert.assertEquals(testItems, viewModel.uiState.value.items)
     Assert.assertNull(viewModel.uiState.value.errorMessage)
+  }
+
+  @Test
+  fun `refreshStarredItems populates state`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns emptyList()
+    coEvery { itemsRepository.getItemsByIds(any()) } returns emptyList()
+    coEvery { accountRepository.getStarredItems(testUserId) } returns listOf("fav1", "fav2")
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    Assert.assertEquals(setOf("fav1", "fav2"), viewModel.uiState.value.starredItemIds)
+  }
+
+  @Test
+  fun `toggleStar removes existing items and refreshes starred set`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns emptyList()
+    coEvery { itemsRepository.getItemsByIds(any()) } returns emptyList()
+    coEvery { accountRepository.toggleStarredItem("item1") } returns emptyList()
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    viewModel.toggleStar("item1")
+    advanceUntilIdle()
+
+    Assert.assertFalse(viewModel.uiState.value.starredItemIds.contains("item1"))
+    coVerify { accountRepository.toggleStarredItem("item1") }
+  }
+
+  @Test
+  fun `toggleStar adds items when not starred`() = runTest {
+    coEvery { accountRepository.getItemsList(testUserId) } returns emptyList()
+    coEvery { itemsRepository.getItemsByIds(any()) } returns emptyList()
+    coEvery { accountRepository.toggleStarredItem("item2") } returns listOf("item2")
+
+    viewModel = InventoryViewModel(accountRepository, itemsRepository)
+    advanceUntilIdle()
+
+    viewModel.toggleStar("item2")
+    advanceUntilIdle()
+
+    Assert.assertTrue(viewModel.uiState.value.starredItemIds.contains("item2"))
+    coVerify { accountRepository.toggleStarredItem("item2") }
   }
 }

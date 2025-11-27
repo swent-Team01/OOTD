@@ -101,4 +101,12 @@ class FakeAccountRepository : AccountRepository {
   override fun observeAccount(userID: String): Flow<Account> {
     return flowOf()
   }
+
+  override suspend fun getStarredItems(userID: String): List<String> = emptyList()
+
+  override suspend fun addStarredItem(itemUid: String): Boolean = true
+
+  override suspend fun removeStarredItem(itemUid: String): Boolean = true
+
+  override suspend fun toggleStarredItem(itemUid: String): List<String> = emptyList()
 }

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.credentials.CredentialManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -13,9 +14,12 @@ import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.items.ImageData
+import com.android.ootd.model.items.Item
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.Inventory.InventoryScreenTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -110,6 +114,20 @@ class AccountScreenTest {
             accountModel = viewModel,
             onEditAccount = { onEditAccountCalled = true },
             onPostClick = { postId -> onPostClickCalledWithId = postId })
+      }
+    }
+    composeTestRule.waitForIdle()
+  }
+
+  private fun setContent(state: AccountPageViewState) {
+    composeTestRule.setContent {
+      OOTDTheme {
+        AccountPageContent(
+            uiState = state,
+            onEditAccount = {},
+            onPostClick = {},
+            onSelectTab = {},
+            onToggleStar = {})
       }
     }
     composeTestRule.waitForIdle()
@@ -233,5 +251,42 @@ class AccountScreenTest {
         .fetchSemanticsNodes()
         .size
         .let { count -> assert(count == 20) { "Expected 20 posts, found $count" } }
+  }
+
+  @Test
+  fun starredTab_showsEmptyMessage_whenNoItems() {
+    val state =
+        AccountPageViewState(
+            username = "starUser",
+            selectedTab = AccountTab.Starred,
+            starredItems = emptyList(),
+            posts = emptyList())
+
+    setContent(state)
+
+    composeTestRule
+        .onNodeWithText("Star items from your inventory to build your wishlist.")
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun starredTab_displaysInventoryGrid_whenItemsExist() {
+    val starredItem =
+        Item(
+            itemUuid = "item-1",
+            postUuids = emptyList(),
+            image = ImageData("img", ""),
+            category = "Unknown Category",
+            ownerId = "starUser")
+    val state =
+        AccountPageViewState(
+            username = "starUser",
+            selectedTab = AccountTab.Starred,
+            starredItems = listOf(starredItem),
+            posts = emptyList())
+
+    setContent(state)
+
+    composeTestRule.onNodeWithTag(InventoryScreenTestTags.ITEMS_GRID).assertIsDisplayed()
   }
 }
