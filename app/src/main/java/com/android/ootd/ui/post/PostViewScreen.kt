@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
@@ -26,9 +25,9 @@ import coil.compose.AsyncImage
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
+import com.android.ootd.utils.ProfilePicture
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
-import com.android.ootd.utils.ProfilePicture
 
 object PostViewTestTags {
   const val SCREEN = "postViewScreen"

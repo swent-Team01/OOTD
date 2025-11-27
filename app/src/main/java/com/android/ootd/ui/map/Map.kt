@@ -13,9 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.ui.map.MapScreenTestTags.getTestTagForPostMarker
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
-import com.android.ootd.ui.map.MapScreenTestTags.getTestTagForPostMarker
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.GoogleMap
