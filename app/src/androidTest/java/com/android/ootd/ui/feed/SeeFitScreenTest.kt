@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
@@ -21,12 +22,9 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OOTDTheme
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -46,11 +44,10 @@ class SeeFitScreenTest {
 
   private lateinit var mockItemsRepository: ItemsRepository
   private lateinit var mockFeedRepository: FeedRepository
-  private lateinit var mockFirebaseAuth: FirebaseAuth
-  private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var viewModel: SeeFitViewModel
   private var goBackCalled = false
 
+  private lateinit var mockAccountService: AccountService
   private val testItem1 =
       Item(
           itemUuid = "item1",
@@ -100,27 +97,31 @@ class SeeFitScreenTest {
 
   @Before
   fun setup() {
+    mockAccountService = mockk(relaxed = true)
     mockItemsRepository = mockk(relaxed = true)
     mockFeedRepository = mockk(relaxed = true)
-    mockFirebaseAuth = mockk(relaxed = true)
-    mockFirebaseUser = mockk(relaxed = true)
 
-    // Mock Firebase auth
-    mockkStatic(FirebaseAuth::class)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
-    every { mockFirebaseAuth.currentUser } returns mockFirebaseUser
+    every { mockAccountService.currentUserId } returns "test-uid"
 
     viewModel =
-        SeeFitViewModel(itemsRepository = mockItemsRepository, feedRepository = mockFeedRepository)
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
     goBackCalled = false
   }
 
-  private fun setScreen(postUuid: String = "test-post-1", items: List<Item> = emptyList()) {
-    // Mock feedRepository to return the post with owner ID
-    coEvery { mockFeedRepository.getPostById(postUuid) } returns testPost1.copy(postUID = postUuid)
+  private fun setScreen(
+      postUuid: String = "test-post-1",
+      items: List<Item> = emptyList(),
+      postOwnerId: String = "test-uid"
+  ) {
+    // Mock feedRepository to return the post with specified owner ID
+    coEvery { mockFeedRepository.getPostById(postUuid) } returns
+        testPost1.copy(postUID = postUuid, ownerId = postOwnerId)
 
-    // Mock itemsRepository to return the items for that friend
-    coEvery { mockItemsRepository.getFriendItemsForPost(postUuid, "owner1") } returns items
+    // Mock itemsRepository to return the items for that owner
+    coEvery { mockItemsRepository.getFriendItemsForPost(postUuid, postOwnerId) } returns items
 
     composeTestRule.setContent {
       OOTDTheme {
@@ -354,11 +355,9 @@ class SeeFitScreenTest {
   }
 
   @Test
-  fun itemCard_editButtonIsDisplayed_whenUserIsOwner() {
-    // Mock current user as owner
-    every { mockFirebaseUser.uid } returns "owner1"
-
-    setScreen(items = listOf(testItem1))
+  fun itemCard_editButtonNotDisplayed_whenUserIsNotOwner() {
+    // Set post owner to a different user ID (not the current user)
+    setScreen(items = listOf(testItem1), postOwnerId = "different-owner-id")
     composeTestRule.waitForIdle()
 
     // Verify the card is displayed
@@ -366,64 +365,125 @@ class SeeFitScreenTest {
         .onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1))
         .assertIsDisplayed()
 
-    // Verify the edit button is displayed on the card
-    composeTestRule
-        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
-        .assertIsDisplayed()
-  }
-
-  @Test
-  fun itemCard_noEditButtonsVisible_whenUserIsNotOwner() {
-    // Mock current user as NOT the owner
-    every { mockFirebaseUser.uid } returns "different-user-id"
-
-    val items =
-        (1..5).map { index ->
-          Item(
-              itemUuid = "item-$index",
-              postUuids = listOf("post-1"),
-              image = ImageData("img$index", "https://example.com/img$index.jpg"),
-              category = "Category $index",
-              type = "Type $index",
-              brand = "Brand $index",
-              price = index * 10.0,
-              material = emptyList(),
-              link = "https://example.com/item$index",
-              ownerId = "owner1")
-        }
-
-    setScreen(items = items)
-    composeTestRule.waitForIdle()
-
-    // Verify NO edit buttons are present (user is not owner)
+    // Verify the edit button is NOT displayed (user is not the owner)
     composeTestRule
         .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
         .assertDoesNotExist()
   }
 
   @Test
-  fun itemCard_editButtonWithMultipleItems_triggersCorrectCallback_whenUserIsOwner() {
+  fun itemCard_editButtonIsDisplayed_whenUserIsOwner() {
+    // Mock the account service to return the same user ID as the post owner
+
+    // Set the post owner to match the current user
+    setScreen(items = listOf(testItem1), postOwnerId = "test-uid")
+
+    // Wait for UI to update
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Verify the card is displayed
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem1))
+        .assertIsDisplayed()
+
+    // Verify the edit button IS displayed on the card
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun itemCard_editButtonTriggersCallback_whenUserIsOwner() {
     var editedItemUuid = ""
 
-    // Mock current user as owner
-    every { mockFirebaseUser.uid } returns "owner1"
+    // Mock the account service to return a specific user ID
+    every { mockAccountService.currentUserId } returns "owner-user-123"
 
-    // Mock repositories
-    coEvery { mockFeedRepository.getPostById("test-post-1") } returns testPost1
-    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "owner1") } returns
-        listOf(testItem1, testItem2)
+    // Mock repositories with the same owner ID
+    coEvery { mockFeedRepository.getPostById("test-post-1") } returns
+        testPost1.copy(ownerId = "owner-user-123")
+    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "owner-user-123") } returns
+        listOf(testItem1)
+
+    // Create a new viewModel with the mocked account service
+    val testViewModel =
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
 
     composeTestRule.setContent {
       OOTDTheme {
         SeeFitScreen(
-            seeFitViewModel = viewModel,
+            seeFitViewModel = testViewModel,
             postUuid = "test-post-1",
             goBack = { goBackCalled = true },
             onEditItem = { itemUuid -> editedItemUuid = itemUuid })
       }
     }
 
+    // Wait for the edit button to appear
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Click the edit button
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+        .performClick()
+
     composeTestRule.waitForIdle()
+
+    // Verify the callback was triggered with the correct item UUID
+    assertEquals(testItem1.itemUuid, editedItemUuid)
+  }
+
+  @Test
+  fun itemCard_editButtonWithMultipleItems_triggersCorrectCallback_whenUserIsOwner() {
+    var editedItemUuid = ""
+
+    // Mock the account service to return a specific user ID
+    every { mockAccountService.currentUserId } returns "multi-owner-456"
+
+    // Mock repositories with the same owner ID
+    coEvery { mockFeedRepository.getPostById("test-post-1") } returns
+        testPost1.copy(ownerId = "multi-owner-456")
+    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "multi-owner-456") } returns
+        listOf(testItem1, testItem2)
+
+    // Create a new viewModel with the mocked account service
+    val testViewModel =
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        SeeFitScreen(
+            seeFitViewModel = testViewModel,
+            postUuid = "test-post-1",
+            goBack = { goBackCalled = true },
+            onEditItem = { itemUuid -> editedItemUuid = itemUuid })
+      }
+    }
+
+    // Wait for both edit buttons to appear
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      val editButtons =
+          composeTestRule
+              .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+              .fetchSemanticsNodes()
+      editButtons.size == 2
+    }
 
     // Verify both cards are displayed
     composeTestRule
@@ -432,14 +492,6 @@ class SeeFitScreenTest {
     composeTestRule
         .onNodeWithTag(SeeFitScreenTestTags.getTestTagForItem(testItem2))
         .assertIsDisplayed()
-
-    // Verify edit buttons are displayed (user is owner)
-    val editButtons =
-        composeTestRule
-            .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-
-    assert(editButtons.size == 2) { "Expected 2 edit buttons for owner, found ${editButtons.size}" }
 
     // Click edit button on second item
     composeTestRule
@@ -453,21 +505,29 @@ class SeeFitScreenTest {
   }
 
   @Test
-  fun itemCard_editButtonDoesNotOpenDetailsDialog_whenUserIsOwner() {
+  fun itemCard_editButtonDoesNotOpenDetailsDialog_whenClicked() {
     var editedItemUuid = ""
 
-    // Mock current user as owner
-    every { mockFirebaseUser.uid } returns "owner1"
+    // Mock the account service to return a specific user ID
+    every { mockAccountService.currentUserId } returns "dialog-test-789"
 
-    // Mock repositories
-    coEvery { mockFeedRepository.getPostById("test-post-1") } returns testPost1
-    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "owner1") } returns
+    // Mock repositories with the same owner ID
+    coEvery { mockFeedRepository.getPostById("test-post-1") } returns
+        testPost1.copy(ownerId = "dialog-test-789")
+    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "dialog-test-789") } returns
         listOf(testItem1)
+
+    // Create a new viewModel with the mocked account service
+    val testViewModel =
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
 
     composeTestRule.setContent {
       OOTDTheme {
         SeeFitScreen(
-            seeFitViewModel = viewModel,
+            seeFitViewModel = testViewModel,
             postUuid = "test-post-1",
             goBack = { goBackCalled = true },
             onEditItem = { itemUuid -> editedItemUuid = itemUuid })
@@ -475,6 +535,14 @@ class SeeFitScreenTest {
     }
 
     composeTestRule.waitForIdle()
+
+    // Wait for edit button to appear
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
     // Click the edit button
     composeTestRule
@@ -491,35 +559,118 @@ class SeeFitScreenTest {
   }
 
   @Test
-  fun itemCard_editButtonVisibleWithAllItems_whenUserIsOwner() {
-    // Mock current user as owner
-    every { mockFirebaseUser.uid } returns "owner1"
+  fun itemCard_multipleItems_ownerSeesEditButtons() {
+    val items = listOf(testItem1, testItem2)
 
-    val manyItems =
-        (1..5).map { index ->
-          Item(
-              itemUuid = "item-$index",
-              postUuids = listOf("post-1"),
-              image = ImageData("img$index", "https://example.com/img$index.jpg"),
-              category = "Category $index",
-              type = "Type $index",
-              brand = "Brand $index",
-              price = index * 10.0,
-              material = emptyList(),
-              link = "https://example.com/item$index",
-              ownerId = "owner1")
-        }
+    // User is owner - should see edit buttons
+    every { mockAccountService.currentUserId } returns "owner-comparison-111"
 
-    setScreen(items = manyItems)
-    composeTestRule.waitForIdle()
+    // Create a new viewModel for owner test
+    val ownerViewModel =
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
 
-    // Verify edit buttons are present for all visible items
-    val editButtons =
+    coEvery { mockFeedRepository.getPostById("test-post-1") } returns
+        testPost1.copy(ownerId = "owner-comparison-111")
+    coEvery {
+      mockItemsRepository.getFriendItemsForPost("test-post-1", "owner-comparison-111")
+    } returns items
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        SeeFitScreen(
+            seeFitViewModel = ownerViewModel,
+            postUuid = "test-post-1",
+            goBack = { goBackCalled = true })
+      }
+    }
+
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      composeTestRule
+          .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    val editButtonsAsOwner =
         composeTestRule
             .onAllNodesWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
             .fetchSemanticsNodes()
 
-    // At least some edit buttons should be visible (depending on screen size)
-    assert(editButtons.isNotEmpty()) { "Expected edit buttons for owner, found none" }
+    assert(editButtonsAsOwner.size == 2) {
+      "Expected 2 edit buttons when user is owner, found ${editButtonsAsOwner.size}"
+    }
+  }
+
+  @Test
+  fun itemCard_multipleItems_nonOwnerDoesNotSeeEditButtons() {
+    val items = listOf(testItem1, testItem2)
+
+    // User is NOT owner - should NOT see edit buttons
+    every { mockAccountService.currentUserId } returns "not-owner-222"
+
+    // Create a new viewModel for non-owner test
+    val nonOwnerViewModel =
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
+
+    coEvery { mockFeedRepository.getPostById("test-post-2") } returns
+        testPost1.copy(postUID = "test-post-2", ownerId = "different-owner-id")
+    coEvery {
+      mockItemsRepository.getFriendItemsForPost("test-post-2", "different-owner-id")
+    } returns items
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        SeeFitScreen(
+            seeFitViewModel = nonOwnerViewModel,
+            postUuid = "test-post-2",
+            goBack = { goBackCalled = true })
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Verify NO edit buttons are present (user is not owner)
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+        .assertDoesNotExist()
+  }
+
+  @Test
+  fun itemCard_editButtonVisibility_changesWithOwnership() {
+    // Mock current user as non-owner initially
+    every { mockAccountService.currentUserId } returns "non-owner-333"
+
+    coEvery { mockFeedRepository.getPostById("test-post-1") } returns
+        testPost1.copy(ownerId = "owner1")
+    coEvery { mockItemsRepository.getFriendItemsForPost("test-post-1", "owner1") } returns
+        listOf(testItem1)
+
+    val testViewModel =
+        SeeFitViewModel(
+            itemsRepository = mockItemsRepository,
+            feedRepository = mockFeedRepository,
+            accountService = mockAccountService)
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        SeeFitScreen(
+            seeFitViewModel = testViewModel,
+            postUuid = "test-post-1",
+            goBack = { goBackCalled = true })
+      }
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Verify edit button is NOT visible (user is not owner)
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON, useUnmergedTree = true)
+        .assertDoesNotExist()
   }
 }
