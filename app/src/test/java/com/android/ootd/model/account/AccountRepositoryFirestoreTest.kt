@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.post.OutfitPostRepository
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -10,6 +11,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
@@ -32,13 +34,15 @@ class AccountRepositoryFirestoreTest {
   @RelaxedMockK private lateinit var collection: CollectionReference
   @RelaxedMockK private lateinit var document: DocumentReference
   @RelaxedMockK private lateinit var snapshot: DocumentSnapshot
+  @RelaxedMockK private lateinit var storage: FirebaseStorage
+  @RelaxedMockK private lateinit var outfitPostRepository: OutfitPostRepository
 
   private lateinit var repository: AccountRepositoryFirestore
 
   @Before
   fun setup() {
     MockKAnnotations.init(this)
-    repository = AccountRepositoryFirestore(firestore)
+    repository = AccountRepositoryFirestore(firestore, storage, outfitPostRepository)
 
     mockkStatic(FirebaseAuth::class)
     mockkObject(Firebase)
