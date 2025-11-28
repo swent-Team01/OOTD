@@ -237,7 +237,8 @@ class EditAccountScreenTest {
     composeTestRule.onNodeWithText("Choose from Gallery").performClick()
     composeTestRule.waitForIdle()
 
-    // Verify dialog dismissed (launcher would be triggered, but we can't easily verify launcher launch in compose test without intent capturing)
+    // Verify dialog dismissed (launcher would be triggered, but we can't easily verify launcher
+    // launch in compose test without intent capturing)
     composeTestRule.onNodeWithText("Select Image").assertDoesNotExist()
   }
 
