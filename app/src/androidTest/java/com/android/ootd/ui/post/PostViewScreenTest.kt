@@ -217,6 +217,13 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
 
+    // TextField appears = edit mode active
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertIsDisplayed()
+        .assertExists()
+    composeTestRule.waitForIdle()
+
     // Counter appears = edit mode active
     composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertIsDisplayed()
   }
@@ -233,6 +240,12 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertExists()
+        .assertIsDisplayed()
     composeTestRule.waitForIdle()
 
     // Ensure edit mode ON
@@ -260,10 +273,34 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
 
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertExists()
+        .assertIsDisplayed()
+    composeTestRule.waitForIdle()
+
     // Verify initial description is inside the TextField
     composeTestRule
         .onNode(hasSetTextAction())
         .assertIsDisplayed()
         .assertTextContains(testPost.description)
+  }
+
+  @Test
+  fun three_dots_icon_and_options_invisible_for_non_owner() = runTest {
+    coEvery { mockRepository.getPostById(any()) } returns testPost
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
+    every { mockAccountService.currentUserId } returns "some-other-user-id"
+
+    setContent("test-post-id")
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).assertDoesNotExist()
+
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(PostViewTestTags.DELETE_POST_OPTION).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertDoesNotExist()
+    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertDoesNotExist()
   }
 }

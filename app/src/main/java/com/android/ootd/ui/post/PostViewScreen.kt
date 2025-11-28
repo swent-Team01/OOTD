@@ -50,6 +50,8 @@ object PostViewTestTags {
   const val DELETE_POST_OPTION = "deletePostOption"
   const val SAVE_EDITED_DESCRIPTION_BUTTON = "saveEditedDescriptionButton"
   const val CANCEL_EDITING_BUTTON = "cancelEditingButton"
+
+  const val EDIT_DESCRIPTION_FIELD = "editDescriptionField"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -167,7 +169,7 @@ fun PostDetailsContent(
               editedDescription = description
             }
           },
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
           colors = commonTextFieldColors(),
           trailingIcon = {
             Row {
