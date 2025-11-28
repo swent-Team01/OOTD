@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,6 +36,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.StarYellow
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -43,7 +46,15 @@ import com.android.ootd.ui.theme.Secondary
  * @param onClick Callback when the item is clicked
  */
 @Composable
-fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit, isOwner: Boolean) {
+fun ItemCard(
+    item: Item,
+    onClick: () -> Unit,
+    onEditClick: (String) -> Unit,
+    isOwner: Boolean,
+    isStarred: Boolean,
+    onToggleStar: () -> Unit,
+    showStarToggle: Boolean
+) {
   val hasPrice = item.price != null && item.currency != null
   val brandText = item.brand.orEmpty()
   Card(
@@ -97,6 +108,24 @@ fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit, isO
                               color = MaterialTheme.colorScheme.onSurfaceVariant))
                 }
           }
+          if (showStarToggle) {
+            IconButton(
+                onClick = { onToggleStar() },
+                modifier =
+                    Modifier.align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .size(32.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(8.dp))
+                        .testTag(SeeFitScreenTestTags.getStarButtonTag(item))) {
+                  Icon(
+                      imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                      contentDescription = "Toggle wishlist",
+                      tint = if (isStarred) StarYellow else Color.White.copy(alpha = 0.8f))
+                }
+          }
+
           // Edit button (bottom-right) visible only to the owner
           if (isOwner) {
             Box(

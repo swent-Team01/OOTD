@@ -532,6 +532,22 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     }
   }
 
+  override suspend fun refreshStarredItems(userID: String): List<String> {
+    return try {
+      val document =
+          withTimeoutOrNull(2_000L) {
+            db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+          } ?: return getStarredItems(userID)
+      val starred = (document.data?.get("starredItemUids") as? List<String>) ?: emptyList()
+      val refreshed = java.util.concurrent.CopyOnWriteArrayList(starred)
+      starredListCache[userID] = refreshed
+      refreshed.toList()
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to refresh starred items: ${e.message}", e)
+      getStarredItems(userID)
+    }
+  }
+
   override suspend fun addStarredItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)

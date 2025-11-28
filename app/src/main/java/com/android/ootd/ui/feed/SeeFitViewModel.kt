@@ -3,6 +3,8 @@ package com.android.ootd.ui.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
@@ -33,13 +35,15 @@ data class SeeFitUIState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val postOwnerId: String = "",
-    val isOwner: Boolean = false
+    val isOwner: Boolean = false,
+    val starredItemIds: Set<String> = emptySet()
 )
 
 class SeeFitViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
-    private val accountService: AccountService = AccountServiceFirebase()
+    private val accountService: AccountService = AccountServiceFirebase(),
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
@@ -73,6 +77,7 @@ class SeeFitViewModel(
                 isOwner = isOwner,
                 isLoading = false,
                 errorMessage = null)
+        refreshStarredItems()
       } catch (e: Exception) {
         Log.e("SeeFitViewModel", "Failed to load items for post", e)
         _uiState.value =
@@ -91,5 +96,35 @@ class SeeFitViewModel(
   /** Clears any existing error message in the UI state. */
   fun clearMessage() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
+  }
+
+  /** Loads the starred item ids for the current user so the UI can highlight wishlist entries. */
+  fun refreshStarredItems() {
+    viewModelScope.launch {
+      val currentUserId = accountService.currentUserId
+      if (currentUserId.isBlank()) return@launch
+      try {
+        val starred = accountRepository.getStarredItems(currentUserId).toSet()
+        _uiState.value = _uiState.value.copy(starredItemIds = starred)
+      } catch (e: Exception) {
+        Log.w("SeeFitViewModel", "Failed to refresh starred items: ${e.message}")
+      }
+    }
+  }
+
+  /** Stars or unstars the given item and updates the cached starred set. */
+  fun toggleStar(item: Item) {
+    val itemId = item.itemUuid
+    if (itemId.isBlank()) return
+    viewModelScope.launch {
+      try {
+        val updated = accountRepository.toggleStarredItem(itemId).toSet()
+        Log.d("SeeFitViewModel", "Toggled star for $itemId -> ${updated.contains(itemId)}")
+        _uiState.value = _uiState.value.copy(starredItemIds = updated)
+      } catch (e: Exception) {
+        Log.w("SeeFitViewModel", "Failed to toggle star: ${e.message}")
+        setErrorMessage("Couldn't update wishlist. Please try again.")
+      }
+    }
   }
 }

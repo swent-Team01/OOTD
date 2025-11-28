@@ -3,6 +3,7 @@ package com.android.ootd.model.items
 import android.util.Log
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
@@ -57,55 +58,12 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   }
 
   override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
-    if (uuids.isEmpty()) return emptyList()
-
     val ownerId = Firebase.auth.currentUser?.uid ?: throw Exception(NOT_LOGGED_IN_EXCEPTION)
+    return fetchItemsByIds(uuids, ownerId)
+  }
 
-    // First check memory cache for all requested items
-    val cachedItems = uuids.mapNotNull { itemsCache[it] }
-    if (cachedItems.size == uuids.size) {
-      Log.d("ItemsRepositoryFirestore", "Returning all ${uuids.size} items from memory cache")
-      return cachedItems
-    }
-
-    // If some items in cache, still return them even if not all
-    if (cachedItems.isNotEmpty()) {
-      Log.d(
-          "ItemsRepositoryFirestore",
-          "Found ${cachedItems.size}/${uuids.size} items in cache, fetching rest")
-    }
-
-    // Fetch missing items from Firestore with timeout
-    val items = mutableListOf<Item>()
-    items.addAll(cachedItems) // Start with cached items
-
-    val missingUuids = uuids.filter { !itemsCache.containsKey(it) }
-    if (missingUuids.isNotEmpty()) {
-      try {
-        kotlinx.coroutines.withTimeoutOrNull(2_000L) {
-          missingUuids.chunked(10).forEach { batch ->
-            val snapshot =
-                db.collection(ITEMS_COLLECTION)
-                    .whereIn("itemUuid", batch)
-                    .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
-                    .get()
-                    .await()
-            val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
-            // Update cache with fetched items
-            fetchedItems.forEach { itemsCache[it.itemUuid] = it }
-            items.addAll(fetchedItems)
-          }
-        }
-        Log.d(
-            "ItemsRepositoryFirestore",
-            "Fetched ${items.size - cachedItems.size} items from Firestore")
-      } catch (e: Exception) {
-        Log.w("ItemsRepositoryFirestore", "Failed to fetch missing items (offline): ${e.message}")
-        // Return whatever we have in cache
-      }
-    }
-
-    return items
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
+    return fetchItemsByIds(uuids, ownerFilter = null)
   }
 
   private fun mapToItem(doc: DocumentSnapshot): Item? {
@@ -115,6 +73,50 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     } catch (_: Exception) {
       null
     }
+  }
+
+  private suspend fun fetchItemsByIds(uuids: List<String>, ownerFilter: String?): List<Item> {
+    if (uuids.isEmpty()) return emptyList()
+
+    val cachedItems = uuids.mapNotNull { itemsCache[it] }
+    if (cachedItems.size == uuids.size) {
+      Log.d("ItemsRepositoryFirestore", "Returning all ${uuids.size} items from memory cache")
+      return cachedItems
+    }
+
+    if (cachedItems.isNotEmpty()) {
+      Log.d(
+          "ItemsRepositoryFirestore",
+          "Found ${cachedItems.size}/${uuids.size} items in cache, fetching rest")
+    }
+
+    val items = mutableListOf<Item>()
+    items += cachedItems
+
+    val missingUuids = uuids.filter { !itemsCache.containsKey(it) }
+    if (missingUuids.isNotEmpty()) {
+      try {
+        kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+          missingUuids.chunked(10).forEach { batch ->
+            var query = db.collection(ITEMS_COLLECTION).whereIn(FieldPath.documentId(), batch)
+            if (ownerFilter != null) {
+              query = query.whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerFilter)
+            }
+            val snapshot = query.get().await()
+            val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
+            fetchedItems.forEach { itemsCache[it.itemUuid] = it }
+            items.addAll(fetchedItems)
+          }
+        }
+        Log.d(
+            "ItemsRepositoryFirestore",
+            "Fetched ${items.size - cachedItems.size} items from Firestore")
+      } catch (e: Exception) {
+        Log.w("ItemsRepositoryFirestore", "Failed to fetch missing items (offline): ${e.message}")
+      }
+    }
+
+    return items
   }
 
   override suspend fun addItem(item: Item) {
