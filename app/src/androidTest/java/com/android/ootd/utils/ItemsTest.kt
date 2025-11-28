@@ -30,9 +30,6 @@ interface ItemsTest {
   }
 
   fun ComposeTestRule.ensureVisible(tag: String) {
-    // Wait before scrolling
-    waitForNodeWithTag(AddItemScreenTestTags.ALL_FIELDS, timeoutMillis = 10_000)
-    waitForNodeWithTag(tag, timeoutMillis = 10_000)
     onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performScrollToNode(hasTestTag(tag))
     onNodeWithTag(tag, useUnmergedTree = true).assertExists()
   }
@@ -82,9 +79,6 @@ interface ItemsTest {
       onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE, useUnmergedTree = true)
           .performClick()
 
-      waitForIdle()
-
-      // Scroll to the INPUT_MATERIAL node after expanding additional details
       ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
     }
 
