@@ -75,6 +75,13 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     }
   }
 
+  /**
+   * Shared implementation for both owner-filtered and cross-owner item lookups.
+   *
+   * When [ownerFilter] is non-null we must respect Firestore security rules, so each document is
+   * fetched individually and skipped when it belongs to a different owner. When null, we can batch
+   * the get via `whereIn`. The cache is always respected first to avoid duplicate reads.
+   */
   private suspend fun fetchItemsByIds(uuids: List<String>, ownerFilter: String?): List<Item> {
     if (uuids.isEmpty()) return emptyList()
 

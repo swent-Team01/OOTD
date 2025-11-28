@@ -96,6 +96,8 @@ fun AccountPage(
   }
 
   DisposableEffect(lifecycleOwner) {
+    // Refresh starred items whenever we return to the account screen so stars from friends'
+    // See Fit dialogs show up immediately.
     val observer = LifecycleEventObserver { _, event ->
       if (event == Lifecycle.Event.ON_RESUME) {
         accountModel.refreshUserData()

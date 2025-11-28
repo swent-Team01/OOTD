@@ -98,7 +98,12 @@ class SeeFitViewModel(
     _uiState.value = _uiState.value.copy(errorMessage = null)
   }
 
-  /** Loads the starred item ids for the current user so the UI can highlight wishlist entries. */
+  /**
+   * Loads the starred item ids for the current user so the UI can highlight wishlist entries.
+   *
+   * This is invoked both on entering the screen and when toggles succeed so See Fit cards always
+   * reflect the same state as the account wishlist.
+   */
   fun refreshStarredItems() {
     viewModelScope.launch {
       val currentUserId = accountService.currentUserId
@@ -112,7 +117,12 @@ class SeeFitViewModel(
     }
   }
 
-  /** Stars or unstars the given item and updates the cached starred set. */
+  /**
+   * Stars or unstars [item] for the current user.
+   *
+   * The repository updates Firestore (or queues it offline) and we mirror the updated id set so the
+   * star icon reflects the latest status immediately.
+   */
   fun toggleStar(item: Item) {
     val itemId = item.itemUuid
     if (itemId.isBlank()) return

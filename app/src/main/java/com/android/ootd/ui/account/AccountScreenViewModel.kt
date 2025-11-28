@@ -136,6 +136,13 @@ class AccountPageViewModel(
     _uiState.update { it.copy(selectedTab = tab) }
   }
 
+  /**
+   * Adds or removes [item] from the starred list.
+   *
+   * We optimistically keep [AccountPageViewState.starredItems] unchanged so the card stays visible
+   * while browsing the wishlist; only the underlying id set is updated. The tab will re-fetch the
+   * authoritative list when the screen resumes.
+   */
   fun toggleStar(item: Item) {
     viewModelScope.launch {
       try {
