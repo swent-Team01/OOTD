@@ -826,6 +826,11 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val freshRepository = AccountRepositoryFirestore(FirebaseEmulator.firestore)
     AccountRepositoryProvider.repository = freshRepository
 
+    // Ensure the fresh repository can read the existing Firestore data before any writes
+    val initialItems = freshRepository.getItemsList(account1.uid)
+    assertEquals(existingItems.size, initialItems.size)
+    assertTrue(initialItems.containsAll(existingItems))
+
     val newItem = "fresh-add"
     val result = freshRepository.addItem(newItem)
 

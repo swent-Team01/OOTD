@@ -555,13 +555,7 @@ class AccountRepositoryFirestore(
           withTimeoutOrNull(2_000L) {
             db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
           } ?: return getStarredItems(userID)
-      val starred =
-          document.data?.get("starredItemUids")?.let { value ->
-            when (value) {
-              is List<*> -> value.filterIsInstance<String>()
-              else -> emptyList()
-            }
-          } ?: emptyList()
+      val starred = document.getStringList("starredItemUids") ?: emptyList()
       val refreshed = java.util.concurrent.CopyOnWriteArrayList(starred)
       starredListCache[userID] = refreshed
       refreshed.toList()
@@ -650,7 +644,7 @@ class AccountRepositoryFirestore(
                   db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
                 }
               }
-          document?.toItemsUidList() ?: emptyList()
+          document?.getStringList("starredItemUids") ?: emptyList()
         } catch (e: Exception) {
           Log.w(TAG, "Could not fetch starred items: ${e.message}")
           emptyList()
@@ -662,14 +656,21 @@ class AccountRepositoryFirestore(
   private suspend fun loadExistingItems(userId: String): List<String> {
     val cacheResult = fetchItemsFromSource(userId, Source.CACHE)
     if (!cacheResult.isNullOrEmpty()) return cacheResult
-    return fetchItemsFromSource(userId, Source.SERVER) ?: emptyList()
+    val serverResult = fetchItemsFromSource(userId, Source.SERVER)
+    return serverResult ?: cacheResult ?: emptyList()
   }
 
   private suspend fun fetchItemsFromSource(userId: String, source: Source): List<String>? {
     val timeout = if (source == Source.CACHE) 1_000L else 2_000L
     return try {
       withTimeoutOrNull(timeout) {
-        db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get(source).await().toItemsUidList()
+        val task =
+            if (source == Source.CACHE) {
+              db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get(Source.CACHE)
+            } else {
+              db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get()
+            }
+        task.await().getStringList("itemsUids")
       }
     } catch (e: Exception) {
       Log.w(TAG, "Could not fetch current items from $source: ${e.message}")
@@ -677,8 +678,8 @@ class AccountRepositoryFirestore(
     }
   }
 
-  private fun DocumentSnapshot.toItemsUidList(): List<String>? {
-    return (data?.get("itemsUids") as? List<*>)?.filterIsInstance<String>()
+  private fun DocumentSnapshot.getStringList(field: String): List<String>? {
+    return (data?.get(field) as? List<*>)?.filterIsInstance<String>()
   }
 
   private suspend fun userExists(user: User): Boolean {
