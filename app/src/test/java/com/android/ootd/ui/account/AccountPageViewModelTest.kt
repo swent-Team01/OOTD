@@ -53,7 +53,7 @@ class AccountPageViewModelTest {
           image = ImageData("image-1", "url://img"),
           category = "Clothing",
           type = "Jacket")
-  private val itemLookup = mapOf(starredItem.itemUuid to starredItem)
+  private val defaultItemLookup = mapOf(starredItem.itemUuid to starredItem)
 
   @Before
   fun setup() {
@@ -79,6 +79,20 @@ class AccountPageViewModelTest {
     advanceUntilIdle()
 
     assertEquals(listOf(starredItem), viewModel.uiState.value.starredItems)
+    assertEquals(setOf(starredItem.itemUuid), viewModel.uiState.value.starredItemIds)
+  }
+
+  @Test
+  fun `retrieveUserData loads friend owned starred items`() = runTest {
+    val friendItem = starredItem.copy(itemUuid = "friend-item", ownerId = "friend-123")
+    val responses = ArrayDeque(listOf(listOf(friendItem.itemUuid)))
+    stubCommonRepositories(responses, mapOf(friendItem.itemUuid to friendItem))
+
+    createViewModel()
+    advanceUntilIdle()
+
+    assertEquals(listOf(friendItem), viewModel.uiState.value.starredItems)
+    assertEquals(setOf(friendItem.itemUuid), viewModel.uiState.value.starredItemIds)
   }
 
   @Test
@@ -92,7 +106,8 @@ class AccountPageViewModelTest {
     viewModel.toggleStar(starredItem)
     advanceUntilIdle()
 
-    assertTrue(viewModel.uiState.value.starredItems.isEmpty())
+    assertTrue(viewModel.uiState.value.starredItems.isNotEmpty())
+    assertTrue(viewModel.uiState.value.starredItemIds.isEmpty())
     coVerify { accountRepository.toggleStarredItem(starredItem.itemUuid) }
   }
 
@@ -109,6 +124,7 @@ class AccountPageViewModelTest {
     advanceUntilIdle()
 
     assertEquals(listOf(starredItem), viewModel.uiState.value.starredItems)
+    assertEquals(setOf(starredItem.itemUuid), viewModel.uiState.value.starredItemIds)
     coVerify { accountRepository.toggleStarredItem(starredItem.itemUuid) }
   }
 
@@ -122,22 +138,25 @@ class AccountPageViewModelTest {
             itemsRepository = itemsRepository)
   }
 
-  private fun stubCommonRepositories(starredResponses: ArrayDeque<List<String>>) {
+  private fun stubCommonRepositories(
+      starredResponses: ArrayDeque<List<String>>,
+      lookup: Map<String, Item> = defaultItemLookup
+  ) {
     var lastResponse = starredResponses.lastOrNull() ?: emptyList()
     coEvery { userRepository.getUser(userId) } returns sampleUser
     coEvery { accountRepository.getAccount(userId) } returns sampleAccount
     coEvery { feedRepository.getFeedForUids(listOf(userId)) } returns listOf(samplePost)
-    coEvery { accountRepository.getStarredItems(userId) } answers
+    coEvery { accountRepository.refreshStarredItems(userId) } answers
         {
           if (starredResponses.isNotEmpty()) {
             lastResponse = starredResponses.removeFirst()
           }
           lastResponse
         }
-    coEvery { itemsRepository.getItemsByIds(any()) } answers
+    coEvery { itemsRepository.getItemsByIdsAcrossOwners(any()) } answers
         {
           val ids = firstArg<List<String>>()
-          ids.mapNotNull { itemLookup[it] }
+          ids.mapNotNull { lookup[it] }
         }
   }
 }

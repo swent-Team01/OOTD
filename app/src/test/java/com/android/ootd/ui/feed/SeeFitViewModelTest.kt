@@ -1,5 +1,6 @@
 package com.android.ootd.ui.feed
 
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
@@ -8,6 +9,7 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.posts.OutfitPost
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +42,7 @@ class SeeFitViewModelTest {
   private lateinit var mockFeedRepository: FeedRepository
 
   private lateinit var mockAccountService: AccountService
+  private lateinit var mockAccountRepository: AccountRepository
   private val testDispatcher = StandardTestDispatcher()
 
   private val testItem1 =
@@ -96,11 +99,14 @@ class SeeFitViewModelTest {
     mockItemsRepository = mockk(relaxed = true)
     mockFeedRepository = mockk(relaxed = true)
     mockAccountService = mockk(relaxed = true)
+    mockAccountRepository = mockk(relaxed = true)
+    every { mockAccountService.currentUserId } returns "user-1"
     viewModel =
         SeeFitViewModel(
             itemsRepository = mockItemsRepository,
             feedRepository = mockFeedRepository,
-            accountService = mockAccountService)
+            accountService = mockAccountService,
+            accountRepository = mockAccountRepository)
   }
 
   @After
@@ -295,5 +301,27 @@ class SeeFitViewModelTest {
     viewModel.clearMessage()
 
     assertNull(viewModel.uiState.value.errorMessage)
+  }
+
+  @Test
+  fun `refreshStarredItems updates state`() = runTest {
+    coEvery { mockAccountRepository.getStarredItems("user-1") } returns listOf("item1", "item2")
+
+    viewModel.refreshStarredItems()
+
+    advanceUntilIdle()
+
+    assertEquals(setOf("item1", "item2"), viewModel.uiState.value.starredItemIds)
+  }
+
+  @Test
+  fun `toggleStar updates starred ids`() = runTest {
+    coEvery { mockAccountRepository.toggleStarredItem("item1") } returns listOf("item1")
+
+    viewModel.toggleStar(testItem1)
+
+    advanceUntilIdle()
+
+    assertTrue(viewModel.uiState.value.starredItemIds.contains("item1"))
   }
 }

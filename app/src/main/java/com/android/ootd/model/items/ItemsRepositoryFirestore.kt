@@ -98,14 +98,29 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       try {
         kotlinx.coroutines.withTimeoutOrNull(2_000L) {
           missingUuids.chunked(10).forEach { batch ->
-            var query = db.collection(ITEMS_COLLECTION).whereIn(FieldPath.documentId(), batch)
-            if (ownerFilter != null) {
-              query = query.whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerFilter)
+            if (ownerFilter == null) {
+              val snapshot =
+                  db.collection(ITEMS_COLLECTION)
+                      .whereIn(FieldPath.documentId(), batch)
+                      .get()
+                      .await()
+              val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
+              fetchedItems.forEach { itemsCache[it.itemUuid] = it }
+              items.addAll(fetchedItems)
+            } else {
+              batch.forEach { id ->
+                val doc = db.collection(ITEMS_COLLECTION).document(id).get().await()
+                if (doc.exists()) {
+                  val owner = doc.getString(OWNER_ATTRIBUTE_NAME)
+                  if (owner == ownerFilter) {
+                    mapToItem(doc)?.let {
+                      itemsCache[it.itemUuid] = it
+                      items.add(it)
+                    }
+                  }
+                }
+              }
             }
-            val snapshot = query.get().await()
-            val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
-            fetchedItems.forEach { itemsCache[it.itemUuid] = it }
-            items.addAll(fetchedItems)
           }
         }
         Log.d(
