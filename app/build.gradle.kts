@@ -187,8 +187,6 @@ dependencies {
   implementation(libs.androidx.material3)
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.androidx.work.testing)
-  implementation(libs.androidx.ui.text)
-
   // Firebase
   // Use Firebase BOM from version catalog for maintainability
   val firebaseBom = libs.firebase.bom
