@@ -8,17 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -52,7 +47,6 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
-import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
 val CONDITION_OPTIONS = listOf("New", "Like new", "Used", "Vintage", "Very Used")
@@ -203,21 +197,6 @@ fun TypeField(
       },
       focusExpansion = { isFocused, _ -> isFocused },
       maxChars = TYPE_MAX_LENGTH)
-}
-
-/** Reusable loading overlay with progress indicator */
-@Composable
-fun LoadingOverlay(visible: Boolean) {
-  if (!visible) return
-  Box(
-      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          CircularProgressIndicator(color = Primary)
-          Spacer(modifier = Modifier.height(12.dp))
-          Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
-        }
-      }
 }
 
 /** Reusable generic text field with common styling */
