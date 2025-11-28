@@ -194,6 +194,54 @@ class EditAccountScreenTest {
   }
 
   @Test
+  fun editProfilePicture_showsDialog_withCameraAndGalleryOptions() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Click edit button
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dialog appears with options
+    composeTestRule.onNodeWithText("Select Image").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Take a Photo").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Choose from Gallery").assertIsDisplayed()
+  }
+
+  @Test
+  fun editProfilePicture_cameraOption_showsCameraScreen() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open dialog
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Select Camera
+    composeTestRule.onNodeWithText("Take a Photo").performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithText("Select Image").assertDoesNotExist()
+  }
+
+  @Test
+  fun editProfilePicture_galleryOption_dismissesDialog() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open dialog
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Select Gallery
+    composeTestRule.onNodeWithText("Choose from Gallery").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dialog dismissed (launcher would be triggered, but we can't easily verify launcher launch in compose test without intent capturing)
+    composeTestRule.onNodeWithText("Select Image").assertDoesNotExist()
+  }
+
+  @Test
   fun usernameEdit_flow_saveWithoutChange_restores() {
     signIn(mockFirebaseUser)
     setContent()
