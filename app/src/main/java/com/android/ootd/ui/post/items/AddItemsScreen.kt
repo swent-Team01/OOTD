@@ -149,13 +149,16 @@ fun AddItemsScreen(
     Scaffold(
         topBar = {
           OOTDTopBar(
-              modifier = modifier,
-              textModifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
-              centerText = "Add item",
+              centerText = "ADD ITEM",
+              textModifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
               leftComposable = {
-                BackArrow(
-                    onBackClick = goBack,
-                    modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
+                Box(
+                    modifier = Modifier.padding(start = 4.dp),
+                    contentAlignment = Alignment.Center) {
+                      BackArrow(
+                          onBackClick = goBack,
+                          modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
+                    }
               })
         },
         content = { innerPadding ->
@@ -465,7 +468,11 @@ fun AddItemsScreenSmallPreview() {
             OOTDTopBar(
                 centerText = "ADD ITEM",
                 textModifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
-                leftComposable = { BackArrow(onBackClick = {}) })
+                leftComposable = {
+                  BackArrow(
+                      onBackClick = {},
+                      modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
+                })
           },
           content = { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
