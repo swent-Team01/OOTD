@@ -199,6 +199,21 @@ fun TypeField(
       maxChars = TYPE_MAX_LENGTH)
 }
 
+/** Reusable loading overlay with progress indicator */
+@Composable
+fun LoadingOverlay(visible: Boolean) {
+  if (!visible) return
+  Box(
+      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          CircularProgressIndicator(color = Primary)
+          Spacer(modifier = Modifier.height(12.dp))
+          Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
+        }
+      }
+}
+
 /** Reusable generic text field with common styling */
 @Composable
 private fun CommonTextField(
