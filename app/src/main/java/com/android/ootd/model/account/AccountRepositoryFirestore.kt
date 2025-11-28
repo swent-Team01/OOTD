@@ -1,8 +1,14 @@
 package com.android.ootd.model.account
 
 import android.util.Log
+import com.android.ootd.model.items.ITEMS_COLLECTION
+import com.android.ootd.model.items.ImageFilenameSanitizer
+import com.android.ootd.model.items.OWNER_ATTRIBUTE_NAME
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
+import com.android.ootd.model.post.OutfitPostRepository
+import com.android.ootd.model.post.OutfitPostRepositoryProvider
+import com.android.ootd.model.post.POSTS_COLLECTION
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
@@ -14,6 +20,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -21,6 +28,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
+private const val ITEMS_PATH = "images/items"
 const val USER_NOT_LOGGED = "User not logged in"
 
 // Custom exception for taken user scenario
@@ -105,7 +113,11 @@ private fun DocumentSnapshot.toAccount(): Account {
       starredItemUids = starred)
 }
 
-class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRepository {
+class AccountRepositoryFirestore(
+    private val db: FirebaseFirestore,
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
+    private val outfitPostRepository: OutfitPostRepository = OutfitPostRepositoryProvider.repository
+) : AccountRepository {
 
   // In-memory cache for items list - updated optimistically for offline support
   // ConcurrentHashMap and CopyOnWriteArrayList ensure thread-safe operations across coroutines
@@ -230,8 +242,8 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
       val friendUserDoc = db.collection(USER_COLLECTION_PATH).document(friendID).get().await()
 
       if (!friendUserDoc.exists()) {
-        Log.e(TAG, "The user with id ${friendID} not found")
-        throw NoSuchElementException("The user with id ${friendID} not found")
+        Log.e(TAG, "The user with id $friendID not found")
+        throw NoSuchElementException("The user with id $friendID not found")
       }
 
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
@@ -327,8 +339,17 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   override suspend fun deleteAccount(userID: String) {
     try {
       if (userID.isBlank()) throw BlankUserID()
-      getAccount(userID)
 
+      // 1. Delete profile picture from storage (ignore if missing)
+      deleteProfilePicture(userID)
+
+      // 2. Delete all posts from user
+      deleteUserPosts(userID)
+
+      // 3. Delete all items from user
+      deleteUserItems(userID)
+
+      // 4. Finally delete the account document itself
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
       Log.d(TAG, "Successfully deleted account with UID: $userID")
     } catch (_: NoSuchElementException) {
@@ -392,7 +413,19 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     try {
       if (userID.isBlank()) throw BlankUserID()
       getAccount(userID)
-      db.collection(ACCOUNT_COLLECTION_PATH).document(userID).update(mapOf("profilePicture" to ""))
+
+      try {
+        storage.reference.child("profile_pictures/$userID.jpg").delete().await()
+        Log.d(TAG, "Successfully deleted profile picture from storage for user: $userID")
+      } catch (e: Exception) {
+        Log.w(TAG, "Could not delete profile picture from storage (may not exist): ${e.message}")
+      }
+
+      db.collection(ACCOUNT_COLLECTION_PATH)
+          .document(userID)
+          .update(mapOf("profilePicture" to ""))
+          .await()
+      Log.d(TAG, "Successfully cleared profile picture link for user: $userID")
     } catch (e: NoSuchElementException) {
       Log.e(TAG, "User with userID $userID not found", e)
       throw UnknowUserID()
@@ -403,7 +436,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
   }
 
   override suspend fun getItemsList(userID: String): List<String> {
-    return try {
+    try {
       // First check in-memory cache (for offline optimistic updates)
       if (itemsListCache.containsKey(userID)) {
         Log.d(TAG, "Returning items list from memory cache")
@@ -417,7 +450,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           } catch (e: Exception) {
             Log.w(TAG, "Cache read failed, trying default source: ${e.message}")
             // If cache fails, try with default source (network or cache) with timeout
-            kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+            withTimeoutOrNull(2_000L) {
               db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
             }
           }
@@ -659,6 +692,64 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
     } catch (e: Exception) {
       Log.e(TAG, "Error checking user existence: ${e.message}", e)
       throw e
+    }
+  }
+
+  /**
+   * Deletes all posts owned by the specified user, including their documents and associated images.
+   *
+   * @param userID The ID of the user whose posts should be deleted
+   */
+  private suspend fun deleteUserPosts(userID: String) {
+    try {
+      val postsQuery = db.collection(POSTS_COLLECTION).whereEqualTo("ownerId", userID).get().await()
+      for (doc in postsQuery.documents) {
+        val postId = doc.id
+        // Delete Firestore doc
+        try {
+          outfitPostRepository.deletePost(postId)
+        } catch (e: Exception) {
+          Log.w(TAG, "Error querying posts for user deletion (continuing): ${e.message}")
+        }
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Error deleting user's posts ${e.message}")
+    }
+  }
+
+  /**
+   * Deletes all items owned by the specified user, including their documents and associated images.
+   *
+   * @param userID The ID of the user whose items should be deleted
+   */
+  private suspend fun deleteUserItems(userID: String) {
+    try {
+      val itemsQuery =
+          db.collection(ITEMS_COLLECTION).whereEqualTo(OWNER_ATTRIBUTE_NAME, userID).get().await()
+      for (doc in itemsQuery.documents) {
+        val itemId = doc.id
+        // Extract imageId if present to delete storage file
+        val imageMap = doc["image"] as? Map<*, *>
+        val rawImageId = imageMap?.get("imageId") as? String ?: ""
+        val sanitizedImageId = ImageFilenameSanitizer.sanitize(rawImageId)
+        // Delete Firestore doc
+        try {
+          doc.reference.delete().await()
+        } catch (e: Exception) {
+          Log.w(TAG, "Failed deleting item doc $itemId: ${e.message}")
+        }
+        // Delete associated image (if any id)
+        if (sanitizedImageId.isNotBlank()) {
+          try {
+            storage.reference.child("$ITEMS_PATH/$sanitizedImageId.jpg").delete().await()
+          } catch (e: Exception) {
+            Log.w(TAG, "Failed deleting item image $sanitizedImageId.jpg: ${e.message}")
+          }
+        }
+      }
+      Log.d(TAG, "Deleted ${itemsQuery.size()} items for user $userID")
+    } catch (e: Exception) {
+      Log.w(TAG, "Error querying items for user deletion (continuing): ${e.message}")
     }
   }
 

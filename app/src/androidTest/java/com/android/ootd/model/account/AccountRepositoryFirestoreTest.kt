@@ -1,7 +1,10 @@
 package com.android.ootd.model.account
 
 import android.util.Log
+import com.android.ootd.model.items.ImageData
+import com.android.ootd.model.items.Item
 import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.BlankUserID
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.AccountFirestoreTest
@@ -155,6 +158,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
                   user2, dateOfBirth = testDateOfBirth, location = EPFL_LOCATION)
             }
             .exceptionOrNull()
+    assert(exception != null)
 
     expectThrows<TakenUserException>("already in use") {
       accountRepository.createAccount(
@@ -367,29 +371,6 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun deleteProfilePicture_works() = runTest {
-    accountRepository.addAccount(account1)
-    accountRepository.addAccount(account2)
-    accountRepository.addAccount(dummyAccount) // No pfp
-    val dummyPfp = dummyAccount.profilePicture
-
-    assert(account1.profilePicture.isNotBlank())
-    assert(account2.profilePicture.isNotBlank())
-    assert(dummyPfp.isBlank())
-
-    accountRepository.deleteProfilePicture(account1.uid)
-    accountRepository.deleteProfilePicture(account2.uid)
-    accountRepository.deleteProfilePicture(dummyAccount.uid)
-
-    val updated1 = accountRepository.getAccount(account1.uid)
-    val updated2 = accountRepository.getAccount(account2.uid)
-    val updatedDummy = accountRepository.getAccount(dummyAccount.uid)
-    assertEquals(updated1.profilePicture, "")
-    assertEquals(updated2.profilePicture, "")
-    assertEquals(updatedDummy.profilePicture, dummyPfp) // should do nothing
-  }
-
-  @Test
   fun deleteProfilePicture_throwsIfInvalidUserID() = runTest {
     expectThrows<BlankUserID> { accountRepository.deleteProfilePicture("") }
     accountRepository.addAccount(account1)
@@ -397,17 +378,132 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
-  fun deleteAccount_successfullyDeletesAccount() = runTest {
+  fun deleteProfilePicture_works() = runTest {
+    // Create account with profile picture
     accountRepository.addAccount(account1)
 
+    // Upload a test image to storage to simulate a real profile picture
+    val storage = FirebaseEmulator.storage
+    val testImageData = "test image data".toByteArray()
+    val profilePicRef = storage.reference.child("profile_pictures/${account1.uid}.jpg")
+    profilePicRef.putBytes(testImageData).await()
+
+    // Verify the image exists in storage
+    val downloadUrl = profilePicRef.downloadUrl.await()
+    assertTrue(downloadUrl.toString().isNotEmpty())
+
+    // Delete the profile picture
+    accountRepository.deleteProfilePicture(account1.uid)
+
+    // Verify the Firestore field is cleared
+    val updated = accountRepository.getAccount(account1.uid)
+    assertEquals("", updated.profilePicture)
+
+    // Verify the image is deleted from storage
+    val storageException =
+        kotlin.runCatching { profilePicRef.downloadUrl.await() }.exceptionOrNull()
+
+    // Should throw an exception because the file no longer exists
+    assertTrue(storageException != null)
+  }
+
+  // Test done partially with the help of AI
+  @Test
+  fun deleteAccount_successfullyDeletesAccountAndAssociatedData() = runTest {
+    // Create account
+    accountRepository.addAccount(account1)
+
+    val storage = FirebaseEmulator.storage
+
+    // Upload a test image to storage to simulate a real profile picture
+    val testImageData = "test image data for account deletion".toByteArray()
+    val profilePicRef = storage.reference.child("profile_pictures/${account1.uid}.jpg")
+    profilePicRef.putBytes(testImageData).await()
+
+    // Create and upload an item with image
+    val itemId = "testItem123"
+    val itemImageData = "test item image".toByteArray()
+    val itemImageRef = storage.reference.child("images/items/$itemId.jpg")
+    itemImageRef.putBytes(itemImageData).await()
+
+    val item =
+        Item(
+            itemUuid = itemId,
+            postUuids = emptyList(),
+            image = ImageData(itemId, ""),
+            category = "clothes",
+            ownerId = account1.uid)
+    itemsRepository.addItem(item)
+
+    // Create and upload a post with image
+    val postId = "testPost456"
+    val postImageData = "test post image".toByteArray()
+    val postImageRef = storage.reference.child("images/posts/$postId.jpg")
+    postImageRef.putBytes(postImageData).await()
+
+    val post =
+        OutfitPost(
+            postUID = postId,
+            name = account1.username,
+            ownerId = account1.uid,
+            outfitURL = "",
+            timestamp = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    // Verify everything exists
+    assertTrue(profilePicRef.downloadUrl.await().toString().isNotEmpty())
+    assertTrue(
+        FirebaseEmulator.firestore.collection("items").document(itemId).get().await().exists())
+    assertTrue(
+        FirebaseEmulator.firestore.collection("posts").document(postId).get().await().exists())
+
+    // Delete the account
     accountRepository.deleteAccount(account1.uid)
 
+    // Verify account is deleted
     expectThrows<NoSuchElementException> { accountRepository.getAccount(account1.uid) }
+
+    // Verify profile picture is deleted
+    val storageException =
+        kotlin.runCatching { profilePicRef.downloadUrl.await() }.exceptionOrNull()
+    assertTrue(storageException != null)
+
+    // Verify item document is deleted
+    val itemDocAfter = FirebaseEmulator.firestore.collection("items").document(itemId).get().await()
+    assertFalse(itemDocAfter.exists())
+
+    // Verify item image is deleted
+    val itemStorageException =
+        kotlin.runCatching { itemImageRef.downloadUrl.await() }.exceptionOrNull()
+    assertTrue(itemStorageException != null)
+
+    // Verify post document is deleted
+    val postDocAfter = FirebaseEmulator.firestore.collection("posts").document(postId).get().await()
+    assertFalse(postDocAfter.exists())
+
+    // Verify post image is deleted
+    val postStorageException =
+        kotlin.runCatching { postImageRef.downloadUrl.await() }.exceptionOrNull()
+    assertTrue(postStorageException != null)
   }
 
   @Test
-  fun deleteAccount_throwsWhenAccountNotFound() = runTest {
+  fun deleteAccount_throwsOnlyWhenUserIsNotFound() = runTest {
+    // No user
     expectThrows<UnknowUserID> { accountRepository.deleteAccount("nonexistent") }
+
+    // no posts no items no pfp
+    accountRepository.addAccount(dummyAccount)
+
+    val account = accountRepository.getAccount(dummyAccount.uid)
+    val posts = feedRepository.getFeedForUids(listOf(dummyAccount.uid))
+    assert(account.itemsUids.isEmpty())
+    assert(posts.isEmpty())
+    assert(account.profilePicture.isBlank())
+    // Shouldn't throw
+    runCatching { accountRepository.deleteAccount(dummyAccount.uid) }
+    // Make sure account has been deleted
+    assert(!accountRepository.accountExists(dummyAccount.uid))
   }
 
   @Test
