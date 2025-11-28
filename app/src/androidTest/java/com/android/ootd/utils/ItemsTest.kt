@@ -79,6 +79,11 @@ interface ItemsTest {
       onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE, useUnmergedTree = true)
           .performClick()
 
+      // Wait for the section to appear and scroll to it first (container of the field)
+      waitForNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION, timeoutMillis = 10_000)
+      onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS)
+          .performScrollToNode(hasTestTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION))
+
       ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
     }
 
