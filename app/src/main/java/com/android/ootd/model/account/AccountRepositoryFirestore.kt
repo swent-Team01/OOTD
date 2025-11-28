@@ -448,23 +448,7 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
 
       // Optimistically update memory cache immediately (synchronous)
       if (!itemsListCache.containsKey(currentUserId)) {
-        // Initialize cache by fetching current list from Firestore
-        val currentList =
-            try {
-              // Try to get from cache first with short timeout
-              kotlinx.coroutines.withTimeoutOrNull(1_000L) {
-                val doc =
-                    db.collection(ACCOUNT_COLLECTION_PATH)
-                        .document(currentUserId)
-                        .get(Source.CACHE)
-                        .await()
-                @Suppress("UNCHECKED_CAST")
-                (doc.get("itemsUids") as? List<String>) ?: emptyList()
-              } ?: emptyList()
-            } catch (e: Exception) {
-              Log.w(TAG, "Could not fetch current items, starting with empty: ${e.message}")
-              emptyList()
-            }
+        val currentList = loadExistingItems(currentUserId)
         itemsListCache[currentUserId] = java.util.concurrent.CopyOnWriteArrayList(currentList)
         Log.d(TAG, "Initialized cache with ${currentList.size} existing items")
       }
@@ -633,18 +617,35 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
                   db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
                 }
               }
-          if (document != null && document.exists()) {
-            @Suppress("UNCHECKED_CAST")
-            (document.data?.get("starredItemUids") as? List<String>) ?: emptyList()
-          } else {
-            emptyList()
-          }
+          document?.toItemsUidList() ?: emptyList()
         } catch (e: Exception) {
           Log.w(TAG, "Could not fetch starred items: ${e.message}")
           emptyList()
         }
 
     return java.util.concurrent.CopyOnWriteArrayList(starred).also { starredListCache[userId] = it }
+  }
+
+  private suspend fun loadExistingItems(userId: String): List<String> {
+    val cacheResult = fetchItemsFromSource(userId, Source.CACHE)
+    if (!cacheResult.isNullOrEmpty()) return cacheResult
+    return fetchItemsFromSource(userId, Source.SERVER) ?: emptyList()
+  }
+
+  private suspend fun fetchItemsFromSource(userId: String, source: Source): List<String>? {
+    val timeout = if (source == Source.CACHE) 1_000L else 2_000L
+    return try {
+      withTimeoutOrNull(timeout) {
+        db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get(source).await().toItemsUidList()
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Could not fetch current items from $source: ${e.message}")
+      null
+    }
+  }
+
+  private fun DocumentSnapshot.toItemsUidList(): List<String>? {
+    return (data?.get("itemsUids") as? List<*>)?.filterIsInstance<String>()
   }
 
   private suspend fun userExists(user: User): Boolean {
