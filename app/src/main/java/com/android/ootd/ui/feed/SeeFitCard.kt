@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -41,9 +42,6 @@ import com.android.ootd.ui.theme.StarYellow
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
  * the item with its image, category, and type.
- *
- * @param item The item to display
- * @param onClick Callback when the item is clicked
  */
 @Composable
 fun ItemCard(
@@ -55,127 +53,152 @@ fun ItemCard(
     onToggleStar: () -> Unit,
     showStarToggle: Boolean
 ) {
-  val hasPrice = item.price != null && item.currency != null
-  val brandText = item.brand.orEmpty()
   Card(
-      modifier =
-          Modifier.fillMaxWidth()
-              .aspectRatio(9f / 16f)
-              .clickable { onClick() }
-              .testTag(SeeFitScreenTestTags.getTestTagForItem(item)),
+      modifier = itemCardModifier(item, onClick),
       shape = RoundedCornerShape(16.dp),
       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
       elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
         Box(modifier = Modifier.fillMaxSize()) {
-          AsyncImage(
-              model = item.image.imageUrl,
-              contentDescription = "Item Image",
-              modifier =
-                  Modifier.fillMaxSize()
-                      .testTag(SeeFitScreenTestTags.ITEM_CARD_IMAGE)
-                      .align(Alignment.Center),
-              placeholder = painterResource(R.drawable.ic_photo_placeholder),
-              error = painterResource(R.drawable.ic_photo_placeholder),
-              contentScale = ContentScale.Crop)
+          ItemImage(item)
+          GradientOverlay()
+          PriceChip(item)
+          StarToggle(item, showStarToggle, isStarred, onToggleStar)
+          EditButton(isOwner, onClick = { onEditClick(item.itemUuid) })
+          ItemInfo(item)
+        }
+      }
+}
 
-          // Gradient overlay for better text contrast
-          Box(
-              modifier =
-                  Modifier.matchParentSize()
-                      .background(
-                          Brush.verticalGradient(
-                              colors =
-                                  listOf(
-                                      Color.Transparent,
-                                      Color.Black.copy(alpha = 0.4f),
-                                      Color.Black.copy(alpha = 0.75f)),
-                              startY = 0f,
-                              endY = Float.POSITIVE_INFINITY)))
+private fun itemCardModifier(item: Item, onClick: () -> Unit): Modifier {
+  return Modifier.fillMaxWidth()
+      .aspectRatio(9f / 16f)
+      .clickable { onClick() }
+      .testTag(SeeFitScreenTestTags.getTestTagForItem(item))
+}
 
-          // Price chip (top-right) if available
-          if (hasPrice) {
-            Box(
-                modifier =
-                    Modifier.align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(
-                            color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)) {
-                  Text(
-                      text = "${item.price.toInt()} ${item.currency}",
-                      style =
-                          MaterialTheme.typography.labelMedium.copy(
-                              color = MaterialTheme.colorScheme.onSurfaceVariant))
-                }
+@Composable
+private fun BoxScope.ItemImage(item: Item) {
+  AsyncImage(
+      model = item.image.imageUrl,
+      contentDescription = "Item Image",
+      modifier =
+          Modifier.fillMaxSize()
+              .testTag(SeeFitScreenTestTags.ITEM_CARD_IMAGE)
+              .align(Alignment.Center),
+      placeholder = painterResource(R.drawable.ic_photo_placeholder),
+      error = painterResource(R.drawable.ic_photo_placeholder),
+      contentScale = ContentScale.Crop)
+}
+
+@Composable
+private fun BoxScope.GradientOverlay() {
+  Box(
+      modifier =
+          Modifier.matchParentSize()
+              .background(
+                  Brush.verticalGradient(
+                      colors =
+                          listOf(
+                              Color.Transparent,
+                              Color.Black.copy(alpha = 0.4f),
+                              Color.Black.copy(alpha = 0.75f)),
+                      startY = 0f,
+                      endY = Float.POSITIVE_INFINITY)))
+}
+
+@Composable
+private fun BoxScope.PriceChip(item: Item) {
+  val hasPrice = item.price != null && item.currency != null
+  if (!hasPrice) return
+
+  Box(
+      modifier =
+          Modifier.align(Alignment.TopEnd)
+              .padding(8.dp)
+              .background(color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
+              .padding(horizontal = 10.dp, vertical = 4.dp)) {
+        Text(
+            text = "${item.price?.toInt()} ${item.currency}",
+            style =
+                MaterialTheme.typography.labelMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant))
+      }
+}
+
+@Composable
+private fun BoxScope.StarToggle(
+    item: Item,
+    showStarToggle: Boolean,
+    isStarred: Boolean,
+    onToggle: () -> Unit
+) {
+  if (!showStarToggle) return
+
+  IconButton(
+      onClick = { onToggle() },
+      modifier =
+          Modifier.align(Alignment.TopStart)
+              .padding(6.dp)
+              .size(32.dp)
+              .background(color = Color.Black.copy(alpha = 0.35f), shape = RoundedCornerShape(8.dp))
+              .testTag(SeeFitScreenTestTags.getStarButtonTag(item))) {
+        Icon(
+            imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
+            contentDescription = "Toggle wishlist",
+            tint = if (isStarred) StarYellow else Color.White.copy(alpha = 0.8f))
+      }
+}
+
+@Composable
+private fun BoxScope.EditButton(isOwner: Boolean, onClick: () -> Unit) {
+  if (!isOwner) return
+
+  Box(
+      modifier =
+          Modifier.align(Alignment.BottomEnd)
+              .padding(8.dp)
+              .size(32.dp)
+              .background(color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
+              .testTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON)) {
+        IconButton(onClick = onClick) {
+          Icon(
+              imageVector = Icons.Default.Edit,
+              contentDescription = "Edit item",
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.size(16.dp))
+        }
+      }
+}
+
+@Composable
+private fun BoxScope.ItemInfo(item: Item) {
+  val brandText = item.brand.orEmpty()
+  Column(
+      modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),
+      verticalArrangement = Arrangement.spacedBy(6.dp),
+      horizontalAlignment = Alignment.Start) {
+        Text(
+            text = item.category.uppercase(),
+            style =
+                MaterialTheme.typography.labelLarge.copy(color = Color.White.copy(alpha = 0.9f)),
+            modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
+
+        Text(
+            text = item.type.orEmpty(),
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    color = Color.White, fontSize = MaterialTheme.typography.titleLarge.fontSize),
+            textAlign = TextAlign.Start,
+            modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
+
+        if (brandText.isNotBlank()) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = brandText,
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.White.copy(alpha = 0.9f)))
           }
-          if (showStarToggle) {
-            IconButton(
-                onClick = { onToggleStar() },
-                modifier =
-                    Modifier.align(Alignment.TopStart)
-                        .padding(6.dp)
-                        .size(32.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.35f),
-                            shape = RoundedCornerShape(8.dp))
-                        .testTag(SeeFitScreenTestTags.getStarButtonTag(item))) {
-                  Icon(
-                      imageVector = if (isStarred) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                      contentDescription = "Toggle wishlist",
-                      tint = if (isStarred) StarYellow else Color.White.copy(alpha = 0.8f))
-                }
-          }
-
-          // Edit button (bottom-right) visible only to the owner
-          if (isOwner) {
-            Box(
-                modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .padding(8.dp)
-                        .size(32.dp)
-                        .background(
-                            color = Secondary.copy(alpha = 0.9f), shape = RoundedCornerShape(12.dp))
-                        .testTag(SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON)) {
-                  IconButton(onClick = { onEditClick(item.itemUuid) }) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit item",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp))
-                  }
-                }
-          }
-
-          Column(
-              modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp),
-              horizontalAlignment = Alignment.Start) {
-                Text(
-                    text = item.category.uppercase(),
-                    style =
-                        MaterialTheme.typography.labelLarge.copy(
-                            color = Color.White.copy(alpha = 0.9f)),
-                    modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
-
-                Text(
-                    text = item.type.orEmpty(),
-                    style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            color = Color.White,
-                            fontSize = MaterialTheme.typography.titleLarge.fontSize),
-                    textAlign = TextAlign.Start,
-                    modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
-
-                if (brandText.isNotBlank()) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = brandText,
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                color = Color.White.copy(alpha = 0.9f)))
-                  }
-                }
-              }
         }
       }
 }

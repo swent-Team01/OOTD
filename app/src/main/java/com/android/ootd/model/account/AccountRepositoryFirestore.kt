@@ -538,7 +538,13 @@ class AccountRepositoryFirestore(private val db: FirebaseFirestore) : AccountRep
           withTimeoutOrNull(2_000L) {
             db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
           } ?: return getStarredItems(userID)
-      val starred = (document.data?.get("starredItemUids") as? List<String>) ?: emptyList()
+      val starred =
+          document.data?.get("starredItemUids")?.let { value ->
+            when (value) {
+              is List<*> -> value.filterIsInstance<String>()
+              else -> emptyList()
+            }
+          } ?: emptyList()
       val refreshed = java.util.concurrent.CopyOnWriteArrayList(starred)
       starredListCache[userID] = refreshed
       refreshed.toList()

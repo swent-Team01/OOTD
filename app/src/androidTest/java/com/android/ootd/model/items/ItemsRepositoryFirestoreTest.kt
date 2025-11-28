@@ -637,6 +637,61 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
+  fun fetchItemsByIds_coversCacheOwnerAndCrossOwnerBranches() = runBlocking {
+    // Ensure we have deterministic credentials for reconnecting after switching users
+    val ownerEmail = "owner+fetch@example.test"
+    val ownerPassword = "owner-fetch-pass"
+    FirebaseEmulator.auth.signOut()
+    val ownerUid = signInOrCreateTestUser(ownerEmail, ownerPassword)
+    ownerId = ownerUid
+    FirebaseEmulator.auth.signInWithEmailAndPassword(ownerEmail, ownerPassword).await()
+
+    val repo = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
+    val ownerItems =
+        listOf(
+            item1.copy(itemUuid = "owner-fetch-1", ownerId = ownerUid),
+            item2.copy(itemUuid = "owner-fetch-2", ownerId = ownerUid),
+            item3.copy(itemUuid = "owner-fetch-3", ownerId = ownerUid))
+    ownerItems.forEach { repo.addItem(it) }
+
+    // First call hits Firestore path and populates cache
+    val firstFetch = repo.getItemsByIds(ownerItems.map { it.itemUuid })
+    assertEquals(ownerItems.size, firstFetch.size)
+
+    // Second call should return purely from cache (all requested IDs cached)
+    val cachedFetch = repo.getItemsByIds(listOf(ownerItems.first().itemUuid))
+    assertEquals(1, cachedFetch.size)
+    assertEquals(ownerItems.first().itemUuid, cachedFetch.first().itemUuid)
+
+    // Prepare friend items to exercise the cross-owner + chunked branch
+    val friendEmail = "friend+fetch@example.test"
+    val friendPassword = "friend-fetch-pass"
+    FirebaseEmulator.auth.signOut()
+    val friendUid = signInOrCreateTestUser(friendEmail, friendPassword)
+    ownerId = friendUid
+    FirebaseEmulator.auth.signInWithEmailAndPassword(friendEmail, friendPassword).await()
+
+    val friendRepo = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
+    val friendItems =
+        (0 until 12).map { idx ->
+          item1.copy(
+              itemUuid = "friend-fetch-$idx",
+              postUuids = listOf("friend-post-$idx"),
+              ownerId = friendUid)
+        }
+    friendItems.forEach { friendRepo.addItem(it) }
+
+    // Switch back to owner to query cross-owner API
+    FirebaseEmulator.auth.signOut()
+    FirebaseEmulator.auth.signInWithEmailAndPassword(ownerEmail, ownerPassword).await()
+    ownerId = ownerUid
+
+    val crossOwnerResult = repo.getItemsByIdsAcrossOwners(friendItems.map { it.itemUuid })
+    assertEquals(friendItems.size, crossOwnerResult.size)
+    assertTrue(crossOwnerResult.all { it.ownerId == friendUid })
+  }
+
+  @Test
   fun getFriendItemsForPostFiltersCorrectlyByPostUuid() = runBlocking {
     val postUuid1 = "friend-post-aaa"
     val postUuid2 = "friend-post-bbb"

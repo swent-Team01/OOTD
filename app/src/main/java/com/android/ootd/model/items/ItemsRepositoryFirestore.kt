@@ -97,48 +97,57 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
           "Found ${cachedItems.size}/${uuids.size} items in cache, fetching rest")
     }
 
-    val items = mutableListOf<Item>()
-    items += cachedItems
+    val missingUuids = uuids.filterNot { itemsCache.containsKey(it) }
+    val fetchedItems = fetchMissingItems(missingUuids, ownerFilter)
+    return cachedItems + fetchedItems
+  }
 
-    val missingUuids = uuids.filter { !itemsCache.containsKey(it) }
-    if (missingUuids.isNotEmpty()) {
-      try {
-        kotlinx.coroutines.withTimeoutOrNull(2_000L) {
-          missingUuids.chunked(10).forEach { batch ->
-            if (ownerFilter == null) {
-              val snapshot =
-                  db.collection(ITEMS_COLLECTION)
-                      .whereIn(FieldPath.documentId(), batch)
-                      .get()
-                      .await()
-              val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
-              fetchedItems.forEach { itemsCache[it.itemUuid] = it }
-              items.addAll(fetchedItems)
-            } else {
-              batch.forEach { id ->
-                val doc = db.collection(ITEMS_COLLECTION).document(id).get().await()
-                if (doc.exists()) {
-                  val owner = doc.getString(OWNER_ATTRIBUTE_NAME)
-                  if (owner == ownerFilter) {
-                    mapToItem(doc)?.let {
-                      itemsCache[it.itemUuid] = it
-                      items.add(it)
-                    }
-                  }
-                }
-              }
-            }
-          }
+  private suspend fun fetchMissingItems(
+      missingUuids: List<String>,
+      ownerFilter: String?
+  ): List<Item> {
+    if (missingUuids.isEmpty()) return emptyList()
+
+    val fetched = mutableListOf<Item>()
+    try {
+      kotlinx.coroutines.withTimeoutOrNull(2_000L) {
+        missingUuids.chunked(10).forEach { batch -> fetched += fetchBatch(batch, ownerFilter) }
+      }
+      Log.d(
+          "ItemsRepositoryFirestore",
+          "Fetched ${fetched.size} items from Firestore (missing=${missingUuids.size})")
+    } catch (e: Exception) {
+      Log.w("ItemsRepositoryFirestore", "Failed to fetch missing items (offline): ${e.message}")
+    }
+    return fetched
+  }
+
+  private suspend fun fetchBatch(batch: List<String>, ownerFilter: String?): List<Item> {
+    return if (ownerFilter == null) fetchCrossOwnerBatch(batch)
+    else fetchSingleOwnerBatch(batch, ownerFilter)
+  }
+
+  private suspend fun fetchCrossOwnerBatch(batch: List<String>): List<Item> {
+    val snapshot =
+        db.collection(ITEMS_COLLECTION).whereIn(FieldPath.documentId(), batch).get().await()
+    val fetchedItems = snapshot.mapNotNull { mapToItem(it) }
+    fetchedItems.forEach { itemsCache[it.itemUuid] = it }
+    return fetchedItems
+  }
+
+  private suspend fun fetchSingleOwnerBatch(batch: List<String>, ownerFilter: String): List<Item> {
+    val matches = mutableListOf<Item>()
+    batch.forEach { id ->
+      val doc = db.collection(ITEMS_COLLECTION).document(id).get().await()
+      val owner = doc.getString(OWNER_ATTRIBUTE_NAME)
+      if (doc.exists() && owner == ownerFilter) {
+        mapToItem(doc)?.let {
+          itemsCache[it.itemUuid] = it
+          matches.add(it)
         }
-        Log.d(
-            "ItemsRepositoryFirestore",
-            "Fetched ${items.size - cachedItems.size} items from Firestore")
-      } catch (e: Exception) {
-        Log.w("ItemsRepositoryFirestore", "Failed to fetch missing items (offline): ${e.message}")
       }
     }
-
-    return items
+    return matches
   }
 
   override suspend fun addItem(item: Item) {
