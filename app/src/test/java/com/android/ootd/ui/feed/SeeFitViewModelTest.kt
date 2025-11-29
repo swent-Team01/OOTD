@@ -324,4 +324,14 @@ class SeeFitViewModelTest {
 
     assertTrue(viewModel.uiState.value.starredItemIds.contains("item1"))
   }
+
+  @Test
+  fun `toggleStar noops on blank item id`() = runTest {
+    viewModel.toggleStar(testItem1.copy(itemUuid = ""))
+
+    advanceUntilIdle()
+
+    coVerify(exactly = 0) { mockAccountRepository.toggleStarredItem(any()) }
+    assertTrue(viewModel.uiState.value.starredItemIds.isEmpty())
+  }
 }
