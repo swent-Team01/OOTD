@@ -93,9 +93,14 @@ open class AddItemsViewModel(
   private val _addOnSuccess = MutableStateFlow(false)
   val addOnSuccess: StateFlow<Boolean> = _addOnSuccess
 
+  val isButtonLocked: Boolean
+    get() = _uiState.value.isLoading || _addOnSuccess.value
+
   fun resetAddSuccess() {
     _addOnSuccess.value = false
   }
+
+  private var addClickInProgress: Boolean = false
 
   override fun updateType(state: AddItemsUIState, type: String) = state.copy(type = type)
 
@@ -236,6 +241,9 @@ open class AddItemsViewModel(
   }
 
   fun onAddItemClick(context: Context) {
+    // If a click is already in progress or already succeeded, ignore this click
+    if (addClickInProgress || _addOnSuccess.value) return
+
     val state = _uiState.value
 
     // Validate state when not overriding photo requirements
@@ -247,6 +255,10 @@ open class AddItemsViewModel(
     }
 
     val ownerId = Firebase.auth.currentUser?.uid ?: ""
+
+    // We consider the click to be in progress from this point
+    addClickInProgress = true
+
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
       try {
@@ -261,6 +273,8 @@ open class AddItemsViewModel(
               if (uploaded == null) {
                 setErrorMsg("Please select a photo before adding the item.")
                 _addOnSuccess.value = false
+                // The add click is no longer in progress since we are exiting the function here
+                addClickInProgress = false
                 return@launch
               }
               uploaded
@@ -274,6 +288,8 @@ open class AddItemsViewModel(
         if (!success) {
           setErrorMsg("Failed to add item to inventory. Please try again.")
           _addOnSuccess.value = false
+          // The add click is no longer in progress since we are exiting the function here
+          addClickInProgress = false
           return@launch
         }
 
@@ -282,6 +298,7 @@ open class AddItemsViewModel(
       } catch (e: Exception) {
         setErrorMsg("Failed to add item: ${e.message}")
         _addOnSuccess.value = false
+        addClickInProgress = false
       } finally {
         _uiState.value = _uiState.value.copy(isLoading = false)
       }
