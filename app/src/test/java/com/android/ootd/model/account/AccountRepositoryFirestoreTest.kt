@@ -116,12 +116,22 @@ class AccountRepositoryFirestoreTest {
 
   @Test
   fun `getItemsList falls back to cache on firestore failure`() = runTest {
+    val cacheField =
+        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
+    @Suppress("UNCHECKED_CAST")
+    val cache =
+        cacheField.get(repository)
+            as
+            java.util.concurrent.ConcurrentHashMap<
+                String, java.util.concurrent.CopyOnWriteArrayList<String>>
+    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("cached-1", "cached-2"))
+
     every { document.get(Source.CACHE) } returns Tasks.forException(Exception("cache down"))
     every { document.get() } returns Tasks.forException(Exception("network down"))
 
     val result = repository.getItemsList("user-1")
 
-    assertTrue(result.isEmpty())
+    assertEquals(listOf("cached-1", "cached-2"), result)
   }
 
   @Test
