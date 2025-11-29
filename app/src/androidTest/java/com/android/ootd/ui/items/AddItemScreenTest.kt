@@ -379,30 +379,40 @@ private class CountingItemsRepository : ItemsRepository {
   override fun getNewItemId(): String = "item-${addCalls + 1}"
 
   override suspend fun getAllItems(): List<Item> {
-    TODO("Not yet implemented")
+    return items
   }
 
   override suspend fun getItemById(uuid: String): Item {
-    TODO("Not yet implemented")
+    return items.first { it.itemUuid == uuid }
   }
 
   override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
-    TODO("Not yet implemented")
+    return items.filter { it.itemUuid in uuids }
   }
 
   override suspend fun editItem(itemUUID: String, newItem: Item) {
-    TODO("Not yet implemented")
+    val index = items.indexOfFirst { it.itemUuid == itemUUID }
+    if (index != -1) {
+      items[index] = newItem
+    } else {
+      throw Exception("Item with UUID $itemUUID not found.")
+    }
   }
 
   override suspend fun deleteItem(uuid: String) {
-    TODO("Not yet implemented")
+    val index = items.indexOfFirst { it.itemUuid == uuid }
+    if (index != -1) {
+      items.removeAt(index)
+    } else {
+      throw Exception("Item with UUID $uuid not found.")
+    }
   }
 
   override suspend fun deletePostItems(postUuid: String) {
-    TODO("Not yet implemented")
+    items.removeAll { it.postUuids.contains(postUuid) }
   }
 
   override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
-    TODO("Not yet implemented")
+    return items.filter { it.postUuids.contains(postUuid) }
   }
 }
