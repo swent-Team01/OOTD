@@ -9,6 +9,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.post.OutfitPostRepository
@@ -129,7 +131,8 @@ class PostViewScreenTest {
     setContent("test-post-id")
     composeTestRule.waitForIdle()
 
-    composeTestRule.onNodeWithTag(PostViewTestTags.ERROR_TEXT).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(PostViewTestTags.SNACKBAR_HOST).assertIsDisplayed().assertExists()
+    // Error is now displayed in a Snackbar instead of error text
     composeTestRule.onNodeWithText("Failed to load post").assertIsDisplayed()
   }
 
@@ -302,5 +305,61 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(PostViewTestTags.DELETE_POST_OPTION).assertDoesNotExist()
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertDoesNotExist()
     composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertDoesNotExist()
+  }
+
+  @Test
+  fun description_stays_same_after_edit_cancel() = runTest {
+    coEvery { mockRepository.getPostById(any()) } returns testPost
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
+
+    val original = testPost.description
+    val modified = "Modified description text"
+
+    setContent("test-post-id")
+    composeTestRule.waitForIdle()
+
+    // Open edit mode
+    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
+    composeTestRule.waitForIdle()
+
+    // Ensure edit field visible with original text
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertExists()
+        .assertIsDisplayed()
+    composeTestRule.onNode(hasSetTextAction()).assertTextContains(original)
+
+    // Modify the description text
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).performTextClearance()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performTextInput(modified)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNode(hasSetTextAction()).assertTextContains(modified)
+
+    // Cancel edit
+    composeTestRule.onNodeWithTag(PostViewTestTags.CANCEL_EDITING_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Ensure screen shows orginal description and not the modified one
+    composeTestRule.onNodeWithText(original).assertExists().assertIsDisplayed()
+    composeTestRule.onNodeWithTag(modified).assertDoesNotExist()
+
+    // Re-open edit
+    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
+    composeTestRule.waitForIdle()
+
+    // TextField should contain tge original description again
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertExists()
+        .assertIsDisplayed()
+    composeTestRule.onNode(hasSetTextAction()).assertTextContains(original)
+    composeTestRule.onNodeWithText(modified).assertDoesNotExist()
   }
 }

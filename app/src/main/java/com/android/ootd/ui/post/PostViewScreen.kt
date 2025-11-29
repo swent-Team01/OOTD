@@ -43,7 +43,7 @@ object PostViewTestTags {
   const val BACK_BUTTON = "postViewBackButton"
   const val POST_IMAGE = "postViewImage"
   const val LOADING_INDICATOR = "postViewLoading"
-  const val ERROR_TEXT = "postViewError"
+  const val SNACKBAR_HOST = "postViewErrorSnackbarHost"
   const val DROPDOWN_OPTIONS_MENU = "dropdownOptionsMenu"
   const val DESCRIPTION_COUNTER = "descriptionCounter"
   const val EDIT_DESCRIPTION_OPTION = "editDescriptionOption"
@@ -106,7 +106,11 @@ fun PostViewScreen(
                     navigationIconContentColor = Primary),
             modifier = Modifier.testTag(PostViewTestTags.TOP_BAR))
       },
-      snackbarHost = { SnackbarHost(hostState = snackBarHostState) }) { paddingValues ->
+      snackbarHost = {
+        SnackbarHost(
+            hostState = snackBarHostState,
+            modifier = Modifier.testTag(PostViewTestTags.SNACKBAR_HOST))
+      }) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues).background(Background)) {
           when {
             uiState.isLoading -> {
