@@ -12,6 +12,7 @@ const val ITEMS_COLLECTION = "items"
 const val OWNER_ATTRIBUTE_NAME = "ownerId"
 const val POST_ATTRIBUTE_NAME = "postUuids"
 const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged in."
+private const val TAG = "ItemsRepositoryFirestore"
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
 
@@ -87,14 +88,12 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     val cachedItems = uuids.mapNotNull { itemsCache[it] }
     if (cachedItems.size == uuids.size) {
-      Log.d("ItemsRepositoryFirestore", "Returning all ${uuids.size} items from memory cache")
+      Log.d(TAG, "Returning all ${uuids.size} items from memory cache")
       return cachedItems
     }
 
     if (cachedItems.isNotEmpty()) {
-      Log.d(
-          "ItemsRepositoryFirestore",
-          "Found ${cachedItems.size}/${uuids.size} items in cache, fetching rest")
+      Log.d(TAG, "Found ${cachedItems.size}/${uuids.size} items in cache, fetching rest")
     }
 
     val missingUuids = uuids.filterNot { itemsCache.containsKey(it) }
@@ -113,11 +112,9 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       kotlinx.coroutines.withTimeoutOrNull(2_000L) {
         missingUuids.chunked(10).forEach { batch -> fetched += fetchBatch(batch, ownerFilter) }
       }
-      Log.d(
-          "ItemsRepositoryFirestore",
-          "Fetched ${fetched.size} items from Firestore (missing=${missingUuids.size})")
+      Log.d(TAG, "Fetched ${fetched.size} items from Firestore (missing=${missingUuids.size})")
     } catch (e: Exception) {
-      Log.w("ItemsRepositoryFirestore", "Failed to fetch missing items (offline): ${e.message}")
+      Log.w(TAG, "Failed to fetch missing items (offline): ${e.message}")
     }
     return fetched
   }
@@ -153,16 +150,16 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun addItem(item: Item) {
     // Optimistically update memory cache immediately
     itemsCache[item.itemUuid] = item
-    Log.d("ItemsRepositoryFirestore", "Added item ${item.itemUuid} to memory cache")
+    Log.d(TAG, "Added item ${item.itemUuid} to memory cache")
 
     // Queue Firestore update with timeout
     try {
       kotlinx.coroutines.withTimeoutOrNull(2_000L) {
         db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
       }
-      Log.d("ItemsRepositoryFirestore", "Item added to Firestore (or queued if offline)")
+      Log.d(TAG, "Item added to Firestore (or queued if offline)")
     } catch (e: Exception) {
-      Log.w("ItemsRepositoryFirestore", "Firestore add queued (offline): ${e.message}")
+      Log.w(TAG, "Firestore add queued (offline): ${e.message}")
     }
   }
 
@@ -179,7 +176,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       } catch (e: Exception) {
         // Offline / timeout: treat as not found in store for contract purposes
         existedInStore = false
-        Log.w("ItemsRepositoryFirestore", "Existence check timed out/offline: ${e.message}")
+        Log.w(TAG, "Existence check timed out/offline: ${e.message}")
       }
     }
     if (!existedInCache && !existedInStore) {
@@ -188,32 +185,32 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
     // Optimistically update memory cache immediately (synchronous, instant)
     itemsCache[itemUUID] = newItem
-    Log.d("ItemsRepositoryFirestore", "Updated item $itemUUID in memory cache")
+    Log.d(TAG, "Updated item $itemUUID in memory cache")
 
     // Queue Firestore update with timeout (will sync when online, doesn't block)
     try {
       kotlinx.coroutines.withTimeoutOrNull(2_000L) {
         db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await()
       }
-      Log.d("ItemsRepositoryFirestore", "Item edited in Firestore (or queued if offline)")
+      Log.d(TAG, "Item edited in Firestore (or queued if offline)")
     } catch (e: Exception) {
-      Log.w("ItemsRepositoryFirestore", "Firestore edit queued (offline): ${e.message}")
+      Log.w(TAG, "Firestore edit queued (offline): ${e.message}")
     }
   }
 
   override suspend fun deleteItem(uuid: String) {
     // Optimistically remove from memory cache immediately
     itemsCache.remove(uuid)
-    Log.d("ItemsRepositoryFirestore", "Removed item $uuid from memory cache")
+    Log.d(TAG, "Removed item $uuid from memory cache")
 
     // Queue Firestore delete with timeout
     try {
       kotlinx.coroutines.withTimeoutOrNull(2_000L) {
         db.collection(ITEMS_COLLECTION).document(uuid).delete().await()
       }
-      Log.d("ItemsRepositoryFirestore", "Item deleted from Firestore (or queued if offline)")
+      Log.d(TAG, "Item deleted from Firestore (or queued if offline)")
     } catch (e: Exception) {
-      Log.w("ItemsRepositoryFirestore", "Firestore delete queued (offline): ${e.message}")
+      Log.w(TAG, "Firestore delete queued (offline): ${e.message}")
     }
   }
 

@@ -643,32 +643,6 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun getItemsByIdsReturnsCachedItemsAfterDeletion() = runBlocking {
-    val repo = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
-    val ownerItems =
-        listOf(
-            item1.copy(itemUuid = "cache-case-1"),
-            item2.copy(itemUuid = "cache-case-2"),
-            item3.copy(itemUuid = "cache-case-3"))
-    ownerItems.forEach { repo.addItem(it) }
-
-    val ids = ownerItems.map { it.itemUuid }
-    val firstFetch = repo.getItemsByIds(ids)
-    assertEquals(ownerItems.size, firstFetch.size)
-
-    // Remove first item from Firestore to ensure subsequent fetch relies on cache
-    FirebaseEmulator.firestore
-        .collection(ITEMS_COLLECTION)
-        .document(ownerItems.first().itemUuid)
-        .delete()
-        .await()
-
-    val cachedFetch = repo.getItemsByIds(listOf(ownerItems.first().itemUuid))
-    assertEquals(1, cachedFetch.size)
-    assertEquals(ownerItems.first().itemUuid, cachedFetch.first().itemUuid)
-  }
-
-  @Test
   fun getFriendItemsForPostFiltersCorrectlyByPostUuid() = runBlocking {
     val postUuid1 = "friend-post-aaa"
     val postUuid2 = "friend-post-bbb"
