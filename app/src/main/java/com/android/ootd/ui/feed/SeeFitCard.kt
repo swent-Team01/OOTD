@@ -34,6 +34,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.composables.ShowText
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -119,21 +120,19 @@ fun ItemCard(item: Item, onClick: () -> Unit, onEditClick: (String) -> Unit, isO
 
           Column(
               modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp),
-              horizontalAlignment = Alignment.Start) {
-                Text(
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.Center) {
+                ShowText(
                     text = item.category.uppercase(),
                     style =
-                        MaterialTheme.typography.labelLarge.copy(
-                            color = Color.White.copy(alpha = 0.9f)),
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
-
-                Text(
+                ShowText(
                     text = item.type.orEmpty(),
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            color = Color.White,
-                            fontSize = MaterialTheme.typography.titleLarge.fontSize),
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant),
                     textAlign = TextAlign.Start,
                     modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
 

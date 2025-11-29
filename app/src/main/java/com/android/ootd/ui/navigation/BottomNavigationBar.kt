@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
-import com.android.ootd.utils.BottomNavigationMenu
+import com.android.ootd.utils.composables.BottomNavigationMenu
 
 /** Tabs used by the bottom navigation. Each tab points to a `Screen` destination. */
 sealed class Tab(

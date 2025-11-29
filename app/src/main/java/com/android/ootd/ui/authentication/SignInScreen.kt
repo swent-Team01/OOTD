@@ -33,7 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.GoogleSignInButton
+import com.android.ootd.utils.composables.GoogleSignInButton
 
 object SignInScreenTestTags {
   const val APP_LOGO = "appLogo"

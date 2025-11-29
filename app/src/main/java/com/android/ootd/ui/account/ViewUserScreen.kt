@@ -37,12 +37,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.theme.Bodoni
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.DisplayUserPosts
-import com.android.ootd.utils.LoadingScreen
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ProfilePicture
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.DisplayUserPosts
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ShowText
 
 /**
  * Test tags for ViewUserScreen components.

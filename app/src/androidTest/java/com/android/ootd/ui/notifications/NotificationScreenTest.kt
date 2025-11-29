@@ -12,9 +12,11 @@ import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryInMemory
+import com.android.ootd.ui.notifications.NotificationsScreenTestTags.BACK_BUTTON
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.EMPTY_STATE_TEXT
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.ENABLE_PUSH_NOTIFICATIONS
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags.ERROR_MESSAGE
+import com.android.ootd.ui.notifications.NotificationsScreenTestTags.NOTIFICATIONS_TITLE
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -79,6 +81,8 @@ class NotificationsScreenTest : FirestoreTest() {
     buildComposeTestRule(composeTestRule)
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule.onNodeWithTag(EMPTY_STATE_TEXT).isDisplayed()
+      composeTestRule.onNodeWithTag(NOTIFICATIONS_TITLE).isDisplayed()
+      composeTestRule.onNodeWithTag(BACK_BUTTON).isDisplayed()
     }
   }
 

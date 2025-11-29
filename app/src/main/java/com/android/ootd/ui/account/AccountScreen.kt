@@ -43,12 +43,12 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.Inventory.InventoryGrid
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.DisplayUserPosts
-import com.android.ootd.utils.LoadingScreen
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ProfilePicture
-import com.android.ootd.utils.SettingsButton
-import com.android.ootd.utils.ShowText
+import com.android.ootd.utils.composables.DisplayUserPosts
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.SettingsButton
+import com.android.ootd.utils.composables.ShowText
 
 object AccountPageTestTags {
   const val TITLE_TEXT = "accountPageTitleText"
