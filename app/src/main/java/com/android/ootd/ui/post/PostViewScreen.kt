@@ -50,7 +50,6 @@ object PostViewTestTags {
   const val DELETE_POST_OPTION = "deletePostOption"
   const val SAVE_EDITED_DESCRIPTION_BUTTON = "saveEditedDescriptionButton"
   const val CANCEL_EDITING_BUTTON = "cancelEditingButton"
-
   const val EDIT_DESCRIPTION_FIELD = "editDescriptionField"
 }
 
@@ -72,8 +71,18 @@ fun PostViewScreen(
 ) {
   val uiState by viewModel.uiState.collectAsState()
 
+  val snackBarHostState = remember { SnackbarHostState() }
+
   LaunchedEffect(postId) { viewModel.loadPost(postId) }
   val colors = MaterialTheme.colorScheme
+
+  LaunchedEffect(uiState.error) {
+    uiState.error?.let { errorMessage ->
+      snackBarHostState.showSnackbar(
+          message = errorMessage,
+      )
+    }
+  }
 
   Scaffold(
       modifier = Modifier.fillMaxSize().testTag(PostViewTestTags.SCREEN),
@@ -96,7 +105,8 @@ fun PostViewScreen(
                     titleContentColor = Primary,
                     navigationIconContentColor = Primary),
             modifier = Modifier.testTag(PostViewTestTags.TOP_BAR))
-      }) { paddingValues ->
+      },
+      snackbarHost = { SnackbarHost(hostState = snackBarHostState) }) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues).background(Background)) {
           when {
             uiState.isLoading -> {
@@ -104,16 +114,6 @@ fun PostViewScreen(
                   color = Primary,
                   modifier =
                       Modifier.align(Alignment.Center).testTag(PostViewTestTags.LOADING_INDICATOR))
-            }
-
-            uiState.error != null -> {
-              Text(
-                  text = uiState.error ?: "Unknown error",
-                  color = MaterialTheme.colorScheme.error,
-                  modifier =
-                      Modifier.align(Alignment.Center)
-                          .padding(16.dp)
-                          .testTag(PostViewTestTags.ERROR_TEXT))
             }
 
             uiState.post != null -> {
@@ -150,7 +150,10 @@ fun PostDetailsContent(
     PostOwnerSection(
         username = uiState.ownerUsername,
         profilePicture = uiState.ownerProfilePicture,
-        onEditClicked = { isEditing = true },
+        onEditClicked = {
+          isEditing = true
+          editedDescription = post.description
+        },
         isOwner = uiState.isOwner)
 
     Spacer(Modifier.height(16.dp))
@@ -233,7 +236,7 @@ fun PostOwnerSection(
     username: String?,
     profilePicture: String?,
     onEditClicked: () -> Unit,
-    isOwner: Boolean
+    isOwner: Boolean = false
 ) {
   Box(Modifier.fillMaxWidth()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
