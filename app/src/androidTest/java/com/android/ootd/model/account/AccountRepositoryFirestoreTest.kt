@@ -810,6 +810,37 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
+  fun addItem_initializesCacheFromExistingFirestoreData() = runTest {
+    accountRepository.addAccount(account1)
+
+    val existingItems = listOf("cached-1", "cached-2")
+    // Persist items directly into Firestore to simulate pre-existing data (e.g., from another
+    // log-in)
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(account1.uid)
+        .update("itemsUids", existingItems)
+        .await()
+
+    // Recreate the repository to ensure its in-memory cache starts empty
+    val freshRepository = AccountRepositoryFirestore(FirebaseEmulator.firestore)
+    AccountRepositoryProvider.repository = freshRepository
+
+    // Ensure the fresh repository can read the existing Firestore data before any writes
+    val initialItems = freshRepository.getItemsList(account1.uid)
+    assertEquals(existingItems.size, initialItems.size)
+    assertTrue(initialItems.containsAll(existingItems))
+
+    val newItem = "fresh-add"
+    val result = freshRepository.addItem(newItem)
+
+    assertTrue(result)
+    val updatedItems = freshRepository.getItemsList(account1.uid)
+    assertEquals(3, updatedItems.size)
+    assertTrue(updatedItems.containsAll(existingItems + newItem))
+  }
+
+  @Test
   fun removeItem_removesItemFromInventory() = runTest {
     accountRepository.addAccount(account1)
 
