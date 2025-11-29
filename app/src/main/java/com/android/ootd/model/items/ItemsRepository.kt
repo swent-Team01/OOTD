@@ -31,6 +31,14 @@ interface ItemsRepository {
   suspend fun getItemsByIds(uuids: List<String>): List<Item>
 
   /**
+   * Gets multiple items by their unique identifiers without filtering by owner.
+   *
+   * @param uuids The list of unique identifiers of items to retrieve.
+   * @return A list of found items (may be smaller than uuids if some don't exist).
+   */
+  suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item>
+
+  /**
    * Gets all the items associated with a specific post.
    *
    * @param postUuid The unique identifier of the post.

@@ -1,5 +1,7 @@
 package com.android.ootd.model.items
 
+import com.android.ootd.model.account.ACCOUNT_COLLECTION_PATH
+import com.android.ootd.model.account.Account
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import junit.framework.TestCase.assertEquals
@@ -588,6 +590,56 @@ class ItemsRepositoryFirestoreTest : FirestoreTest() {
 
     // Verify all returned items belong to current user
     retrievedItems.forEach { item -> assertEquals(ownerId, item.ownerId) }
+  }
+
+  @Test
+  fun getItemsByIdsAcrossOwnersReturnsFriendItems() = runBlocking {
+    val ownerEmail = "owner+wishlist@example.test"
+    val ownerPassword = "owner-pass-123"
+    FirebaseEmulator.auth.signOut()
+    val ownerUid = signInOrCreateTestUser(ownerEmail, ownerPassword)
+    ownerId = ownerUid
+
+    val friendEmail = "friend+wishlist@example.test"
+    val friendPassword = "friend-pass-123"
+    FirebaseEmulator.auth.signOut()
+    val friendUid = signInOrCreateTestUser(friendEmail, friendPassword)
+
+    val friendAccount =
+        Account(
+            uid = friendUid,
+            ownerId = friendUid,
+            username = "Friend",
+            friendUids = listOf(ownerUid))
+    val ownerAccount =
+        Account(uid = ownerUid, ownerId = ownerUid, username = "Owner", friendUids = emptyList())
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(friendUid)
+        .set(friendAccount)
+        .await()
+
+    val repo = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
+
+    val friendItems =
+        (0 until 12).map { idx ->
+          item1.copy(itemUuid = "friend-shared-$idx", ownerId = friendUid, brand = "Friend$idx")
+        }
+    friendItems.forEach { repo.addItem(it) }
+
+    FirebaseEmulator.auth.signOut()
+    FirebaseEmulator.auth.signInWithEmailAndPassword(ownerEmail, ownerPassword).await()
+    ownerId = FirebaseEmulator.auth.currentUser?.uid ?: ownerUid
+    FirebaseEmulator.firestore
+        .collection(ACCOUNT_COLLECTION_PATH)
+        .document(ownerUid)
+        .set(ownerAccount)
+        .await()
+
+    val retrieved = repo.getItemsByIdsAcrossOwners(friendItems.map { it.itemUuid })
+
+    assertEquals(friendItems.size, retrieved.size)
+    assertTrue(retrieved.all { it.ownerId == friendUid })
   }
 
   @Test

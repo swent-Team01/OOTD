@@ -47,6 +47,8 @@ object InMemoryItem : ItemsTest {
       return emptyList()
     }
 
+    override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> = emptyList()
+
     override suspend fun deletePostItems(postUuid: String) {
       itemList.removeIf { it.postUuids.contains(postUuid) }
     }

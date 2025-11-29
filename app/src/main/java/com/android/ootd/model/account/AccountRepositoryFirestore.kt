@@ -481,23 +481,7 @@ class AccountRepositoryFirestore(
 
       // Optimistically update memory cache immediately (synchronous)
       if (!itemsListCache.containsKey(currentUserId)) {
-        // Initialize cache by fetching current list from Firestore
-        val currentList =
-            try {
-              // Try to get from cache first with short timeout
-              withTimeoutOrNull(1_000L) {
-                val doc =
-                    db.collection(ACCOUNT_COLLECTION_PATH)
-                        .document(currentUserId)
-                        .get(Source.CACHE)
-                        .await()
-                @Suppress("UNCHECKED_CAST")
-                (doc.get("itemsUids") as? List<String>) ?: emptyList()
-              } ?: emptyList()
-            } catch (e: Exception) {
-              Log.w(TAG, "Could not fetch current items, starting with empty: ${e.message}")
-              emptyList()
-            }
+        val currentList = loadExistingItems(currentUserId)
         itemsListCache[currentUserId] = java.util.concurrent.CopyOnWriteArrayList(currentList)
         Log.d(TAG, "Initialized cache with ${currentList.size} existing items")
       }
@@ -562,6 +546,22 @@ class AccountRepositoryFirestore(
     } catch (e: Exception) {
       Log.e(TAG, "Error getting starred items for $userID: ${e.message}", e)
       starredListCache[userID]?.toList() ?: emptyList()
+    }
+  }
+
+  override suspend fun refreshStarredItems(userID: String): List<String> {
+    return try {
+      val document =
+          withTimeoutOrNull(2_000L) {
+            db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+          } ?: return getStarredItems(userID)
+      val starred = document.getStringList("starredItemUids") ?: emptyList()
+      val refreshed = java.util.concurrent.CopyOnWriteArrayList(starred)
+      starredListCache[userID] = refreshed
+      refreshed.toList()
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to refresh starred items: ${e.message}", e)
+      getStarredItems(userID)
     }
   }
 
@@ -644,18 +644,42 @@ class AccountRepositoryFirestore(
                   db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
                 }
               }
-          if (document != null && document.exists()) {
-            @Suppress("UNCHECKED_CAST")
-            (document.data?.get("starredItemUids") as? List<String>) ?: emptyList()
-          } else {
-            emptyList()
-          }
+          document?.getStringList("starredItemUids") ?: emptyList()
         } catch (e: Exception) {
           Log.w(TAG, "Could not fetch starred items: ${e.message}")
           emptyList()
         }
 
     return java.util.concurrent.CopyOnWriteArrayList(starred).also { starredListCache[userId] = it }
+  }
+
+  private suspend fun loadExistingItems(userId: String): List<String> {
+    val cacheResult = fetchItemsFromSource(userId, Source.CACHE)
+    if (!cacheResult.isNullOrEmpty()) return cacheResult
+    val serverResult = fetchItemsFromSource(userId, Source.SERVER)
+    return serverResult ?: cacheResult ?: emptyList()
+  }
+
+  private suspend fun fetchItemsFromSource(userId: String, source: Source): List<String>? {
+    val timeout = if (source == Source.CACHE) 1_000L else 2_000L
+    return try {
+      withTimeoutOrNull(timeout) {
+        val task =
+            if (source == Source.CACHE) {
+              db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get(Source.CACHE)
+            } else {
+              db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get()
+            }
+        task.await().getStringList("itemsUids")
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Could not fetch current items from $source: ${e.message}")
+      null
+    }
+  }
+
+  private fun DocumentSnapshot.getStringList(field: String): List<String>? {
+    return (data?.get(field) as? List<*>)?.filterIsInstance<String>()
   }
 
   private suspend fun userExists(user: User): Boolean {

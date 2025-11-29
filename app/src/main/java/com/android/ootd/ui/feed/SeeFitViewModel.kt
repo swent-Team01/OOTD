@@ -3,6 +3,8 @@ package com.android.ootd.ui.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.feed.FeedRepository
@@ -33,14 +35,20 @@ data class SeeFitUIState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val postOwnerId: String = "",
-    val isOwner: Boolean = false
+    val isOwner: Boolean = false,
+    val starredItemIds: Set<String> = emptySet()
 )
 
 class SeeFitViewModel(
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository,
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
-    private val accountService: AccountService = AccountServiceFirebase()
+    private val accountService: AccountService = AccountServiceFirebase(),
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {
+
+  private companion object {
+    const val TAG = "SeeFitViewModel"
+  }
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
   val uiState: StateFlow<SeeFitUIState> = _uiState.asStateFlow()
@@ -53,7 +61,7 @@ class SeeFitViewModel(
   fun getItemsForPost(postUuid: String) {
     if (postUuid.isEmpty()) {
       setErrorMessage("Unable to load this fit please try again later.")
-      Log.w("SeeFitViewModel", "Post UUID is empty. Cannot fetch items.")
+      Log.w(TAG, "Post UUID is empty. Cannot fetch items.")
       return
     }
     viewModelScope.launch {
@@ -73,6 +81,7 @@ class SeeFitViewModel(
                 isOwner = isOwner,
                 isLoading = false,
                 errorMessage = null)
+        refreshStarredItems()
       } catch (e: Exception) {
         Log.e("SeeFitViewModel", "Failed to load items for post", e)
         _uiState.value =
@@ -91,5 +100,45 @@ class SeeFitViewModel(
   /** Clears any existing error message in the UI state. */
   fun clearMessage() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
+  }
+
+  /**
+   * Loads the starred item ids for the current user so the UI can highlight wishlist entries.
+   *
+   * This is invoked both on entering the screen and when toggles succeed so See Fit cards always
+   * reflect the same state as the account wishlist.
+   */
+  fun refreshStarredItems() {
+    viewModelScope.launch {
+      val currentUserId = accountService.currentUserId
+      if (currentUserId.isBlank()) return@launch
+      try {
+        val starred = accountRepository.getStarredItems(currentUserId).toSet()
+        _uiState.value = _uiState.value.copy(starredItemIds = starred)
+      } catch (e: Exception) {
+        Log.w(TAG, "Failed to refresh starred items: ${e.message}")
+      }
+    }
+  }
+
+  /**
+   * Stars or unstars [item] for the current user.
+   *
+   * The repository updates Firestore (or queues it offline) and we mirror the updated id set so the
+   * star icon reflects the latest status immediately.
+   */
+  fun toggleStar(item: Item) {
+    val itemId = item.itemUuid
+    if (itemId.isBlank()) return
+    viewModelScope.launch {
+      try {
+        val updated = accountRepository.toggleStarredItem(itemId).toSet()
+        Log.d(TAG, "Toggled star for $itemId -> ${updated.contains(itemId)}")
+        _uiState.value = _uiState.value.copy(starredItemIds = updated)
+      } catch (e: Exception) {
+        Log.w(TAG, "Failed to toggle star: ${e.message}")
+        setErrorMessage("Couldn't update wishlist. Please try again.")
+      }
+    }
   }
 }
