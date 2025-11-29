@@ -180,7 +180,7 @@ fun PreviewItemScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PreviewItemScreenContent(
+fun PreviewItemScreenContent(
     ui: PreviewUIState,
     scrollBehavior: TopAppBarScrollBehavior,
     onEditItem: (String) -> Unit,
@@ -198,172 +198,32 @@ private fun PreviewItemScreenContent(
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
-        topBar = {
-          CenterAlignedTopAppBar(
-              title = {
-                Text(
-                    text = "OOTD",
-                    style =
-                        MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
-              },
-              navigationIcon = {
-                IconButton(
-                    onClick = { onGoBack(ui.postUuid) },
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
-                      Icon(
-                          Icons.AutoMirrored.Outlined.ArrowBack,
-                          contentDescription = "go back",
-                          tint = MaterialTheme.colorScheme.tertiary)
-                    }
-              },
-              colors =
-                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-                      containerColor = MaterialTheme.colorScheme.background,
-                      scrolledContainerColor = MaterialTheme.colorScheme.background,
-                      titleContentColor = Primary,
-                      navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-              scrollBehavior = scrollBehavior)
-        },
+        topBar = { PreviewTopBar(scrollBehavior = scrollBehavior) { onGoBack(ui.postUuid) } },
         bottomBar = {
-          Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-              horizontalArrangement = Arrangement.SpaceEvenly,
-              verticalAlignment = Alignment.CenterVertically) {
-                if (overridePhoto || hasItems) {
-                  Button(
-                      onClick = onPublish,
-                      modifier =
-                          Modifier.height(47.dp)
-                              .width(140.dp)
-                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                        Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Post", color = White)
-                      }
-                } else {
-                  OutlinedButton(
-                      onClick = {},
-                      enabled = false,
-                      modifier =
-                          Modifier.height(47.dp)
-                              .width(140.dp)
-                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                      border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary)) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = "Post (add items first)",
-                            tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Post", color = MaterialTheme.colorScheme.primary)
-                      }
-                }
-                Button(
-                    onClick = { showAddItemDialog = true },
-                    modifier =
-                        Modifier.height(47.dp)
-                            .width(140.dp)
-                            .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                      Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
-                      Spacer(Modifier.width(8.dp))
-                      Text("Add Item", color = White)
-                    }
-              }
+          PreviewBottomBar(
+              hasItems = hasItems,
+              overridePhoto = overridePhoto,
+              onPublish = onPublish,
+              onShowAddItemDialog = { showAddItemDialog = true })
         }) { innerPadding ->
-          if (itemsList.isNotEmpty()) {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .padding(16.dp)
-                        .padding(innerPadding)
-                        .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
-                  items(itemsList.size) { index ->
-                    OutfitItem(
-                        item = itemsList[index],
-                        onClick = { onEditItem(itemsList[index].itemUuid) },
-                        onRemove = { onRemoveItem(itemsList[index].itemUuid) })
-                  }
-                }
-          } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center) {
-                  Text(
-                      modifier =
-                          Modifier.widthIn(220.dp)
-                              .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
-                      text = "What are you wearing today ?",
-                      style =
-                          MaterialTheme.typography.titleLarge.copy(
-                              fontSize = 20.sp,
-                              fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.onSurfaceVariant),
-                      textAlign = TextAlign.Center,
-                      color = MaterialTheme.colorScheme.onSurfaceVariant)
-                  Spacer(Modifier.height(12.dp))
-                  Text(
-                      text = "Don't forget to add your items",
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.primary),
-                      textAlign = TextAlign.Center)
-                }
-          }
+          PreviewItemList(
+              itemsList = itemsList,
+              scrollBehavior = scrollBehavior,
+              innerPadding = innerPadding,
+              onEditItem = onEditItem,
+              onRemoveItem = onRemoveItem)
         }
 
     // Add Item Dialog
-    if (showAddItemDialog) {
-      AlertDialog(
-          modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
-          onDismissRequest = { showAddItemDialog = false },
-          title = { Text(text = "Add Item to Outfit") },
-          text = {
-            Column {
-              TextButton(
-                  onClick = {
-                    showAddItemDialog = false
-                    onAddItem(ui.postUuid)
-                  },
-                  modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
-                    Text("Create New Item")
-                  }
-              TextButton(
-                  onClick = {
-                    showAddItemDialog = false
-                    onSelectFromInventory(ui.postUuid)
-                  },
-                  modifier =
-                      Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
-                    Text("Select from Inventory")
-                  }
-            }
-          },
-          confirmButton = {},
-          dismissButton = {})
-    }
+    AddItemDialog(
+        showAddItemDialog = showAddItemDialog,
+        postUuid = ui.postUuid,
+        onAddItem = onAddItem,
+        onSelectFromInventory = onSelectFromInventory,
+        onDismiss = { showAddItemDialog = false })
 
     if (ui.isLoading && !enablePreview) {
-      Box(
-          modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-          contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-              CircularProgressIndicator(color = Primary)
-              Spacer(modifier = Modifier.height(12.dp))
-              Text(
-                  text = "Publishing your outfit...",
-                  color = White,
-                  style = MaterialTheme.typography.bodyLarge)
-            }
-          }
+      LoadingOverlay()
     }
   }
 }
@@ -536,4 +396,204 @@ fun PreviewItemScreenPreview() {
         onGoBack = {},
         enablePreview = true)
   }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewTopBar(
+    scrollBehavior: TopAppBarScrollBehavior,
+    onBack: () -> Unit,
+) {
+  CenterAlignedTopAppBar(
+      title = {
+        Text(
+            text = "OOTD",
+            style =
+                MaterialTheme.typography.displayLarge.copy(
+                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
+      },
+      navigationIcon = {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
+              Icon(
+                  Icons.AutoMirrored.Outlined.ArrowBack,
+                  contentDescription = "go back",
+                  tint = MaterialTheme.colorScheme.tertiary)
+            }
+      },
+      colors =
+          TopAppBarDefaults.centerAlignedTopAppBarColors(
+              containerColor = MaterialTheme.colorScheme.background,
+              scrolledContainerColor = MaterialTheme.colorScheme.background,
+              titleContentColor = Primary,
+              navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+      scrollBehavior = scrollBehavior)
+}
+
+@Composable
+private fun PreviewBottomBar(
+    hasItems: Boolean,
+    overridePhoto: Boolean,
+    onPublish: () -> Unit,
+    onShowAddItemDialog: () -> Unit
+) {
+  Row(
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+      horizontalArrangement = Arrangement.SpaceEvenly,
+      verticalAlignment = Alignment.CenterVertically) {
+        if (overridePhoto || hasItems) {
+          Button(
+              onClick = onPublish,
+              modifier =
+                  Modifier.height(47.dp)
+                      .width(140.dp)
+                      .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+              colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                Spacer(Modifier.width(8.dp))
+                Text("Post", color = White)
+              }
+        } else {
+          OutlinedButton(
+              onClick = {},
+              enabled = false,
+              modifier =
+                  Modifier.height(47.dp)
+                      .width(140.dp)
+                      .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+              border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary)) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = "Post (add items first)",
+                    tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text("Post", color = MaterialTheme.colorScheme.primary)
+              }
+        }
+        Button(
+            onClick = onShowAddItemDialog,
+            modifier =
+                Modifier.height(47.dp)
+                    .width(140.dp)
+                    .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+              Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
+              Spacer(Modifier.width(8.dp))
+              Text("Add Item", color = White)
+            }
+      }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewItemList(
+    itemsList: List<Item>,
+    scrollBehavior: TopAppBarScrollBehavior,
+    innerPadding: PaddingValues,
+    onEditItem: (String) -> Unit,
+    onRemoveItem: (String) -> Unit
+) {
+  if (itemsList.isNotEmpty()) {
+    LazyColumn(
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(16.dp)
+                .padding(innerPadding)
+                .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
+          items(itemsList.size) { index ->
+            OutfitItem(
+                item = itemsList[index],
+                onClick = { onEditItem(itemsList[index].itemUuid) },
+                onRemove = { onRemoveItem(itemsList[index].itemUuid) })
+          }
+        }
+  } else {
+    EmptyItemPlaceholder()
+  }
+}
+
+@Composable
+private fun EmptyItemPlaceholder() {
+  Column(
+      modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
+        Text(
+            modifier =
+                Modifier.widthIn(220.dp).testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
+            text = "What are you wearing today ?",
+            style =
+                MaterialTheme.typography.titleLarge.copy(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Don't forget to add your items",
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary),
+            textAlign = TextAlign.Center)
+      }
+}
+
+@Composable
+private fun AddItemDialog(
+    showAddItemDialog: Boolean,
+    postUuid: String,
+    onAddItem: (String) -> Unit,
+    onSelectFromInventory: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+  if (!showAddItemDialog) return
+
+  AlertDialog(
+      modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
+      onDismissRequest = onDismiss,
+      title = { Text(text = "Add Item to Outfit") },
+      text = {
+        Column {
+          TextButton(
+              onClick = {
+                onDismiss()
+                onAddItem(postUuid)
+              },
+              modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
+                Text("Create New Item")
+              }
+          TextButton(
+              onClick = {
+                onDismiss()
+                onSelectFromInventory(postUuid)
+              },
+              modifier = Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
+                Text("Select from Inventory")
+              }
+        }
+      },
+      confirmButton = {},
+      dismissButton = {})
+}
+
+@Composable
+private fun LoadingOverlay() {
+  Box(
+      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          CircularProgressIndicator(color = Primary)
+          Spacer(modifier = Modifier.height(12.dp))
+          Text(
+              text = "Publishing your outfit...",
+              color = White,
+              style = MaterialTheme.typography.bodyLarge)
+        }
+      }
 }
