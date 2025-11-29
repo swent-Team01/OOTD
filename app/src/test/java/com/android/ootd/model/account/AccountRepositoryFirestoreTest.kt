@@ -1,6 +1,7 @@
 package com.android.ootd.model.account
 
 import com.android.ootd.model.post.OutfitPostRepository
+import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -12,14 +13,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
-import io.mockk.MockKAnnotations
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
-import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -115,5 +112,71 @@ class AccountRepositoryFirestoreTest {
 
     val addedBack = repository.toggleStarredItem("coat")
     assertTrue("coat" in addedBack)
+  }
+
+  @Test
+  fun `getItemsList falls back to cache on firestore failure`() = runTest {
+    every { document.get(Source.CACHE) } returns Tasks.forException(Exception("cache down"))
+    every { document.get() } returns Tasks.forException(Exception("network down"))
+
+    val result = repository.getItemsList("user-1")
+
+    assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun `accountExists rethrows firestore exceptions`() = runTest {
+    val userCollection = mockk<CollectionReference>()
+    val userDoc = mockk<DocumentReference>()
+    every { firestore.collection(USER_COLLECTION_PATH) } returns userCollection
+    every { userCollection.document("user-err") } returns userDoc
+    every { userDoc.get() } returns Tasks.forException(Exception("permission denied"))
+
+    assertFailsWith<Exception> { repository.accountExists("user-err") }
+  }
+
+  @Test
+  fun `removeFriend ignores secondary update failures`() = runTest {
+    val userCollection = mockk<CollectionReference>()
+    val userDoc = mockk<DocumentReference>()
+    val friendDoc = mockk<DocumentReference>()
+    val friendSnapshot = mockk<DocumentSnapshot>()
+    every { friendSnapshot.exists() } returns true
+    every { firestore.collection(USER_COLLECTION_PATH) } returns userCollection
+    every { userCollection.document("friend-1") } returns userDoc
+    every { userDoc.get() } returns Tasks.forResult(friendSnapshot)
+
+    val userAccountDoc = mockk<DocumentReference>()
+    val friendAccountDoc = mockk<DocumentReference>()
+    every { collection.document("user-1") } returns userAccountDoc
+    every { collection.document("friend-1") } returns friendAccountDoc
+    every { userAccountDoc.update(any<String>(), any()) } returns Tasks.forResult(null)
+    every { friendAccountDoc.update(any<String>(), any()) } returns
+        Tasks.forException(Exception("not allowed"))
+
+    repository.removeFriend("user-1", "friend-1")
+  }
+
+  @Test
+  fun `deleteAccount converts missing user to UnknowUserID`() = runTest {
+    val spyRepo = io.mockk.spyk(repository)
+    coEvery { spyRepo.deleteProfilePicture(any()) } throws NoSuchElementException()
+
+    assertFailsWith<UnknowUserID> { spyRepo.deleteAccount("user-1") }
+  }
+
+  @Test
+  fun `editAccount converts missing user to UnknowUserID`() = runTest {
+    every { document.get() } returns Tasks.forResult(snapshot)
+    every { snapshot.exists() } returns false
+
+    assertFailsWith<UnknowUserID> {
+      repository.editAccount(
+          userID = "missing",
+          username = "new",
+          birthDay = "",
+          picture = "",
+          location = com.android.ootd.model.map.emptyLocation)
+    }
   }
 }
