@@ -22,7 +22,6 @@ import com.android.ootd.ui.post.items.AddItemsScreenSmallPreview
 import com.android.ootd.ui.post.items.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
-import kotlin.text.contains
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -388,6 +387,10 @@ private class CountingItemsRepository : ItemsRepository {
   }
 
   override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+    return items.filter { it.itemUuid in uuids }
+  }
+
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
     return items.filter { it.itemUuid in uuids }
   }
 
