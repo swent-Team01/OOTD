@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -86,6 +87,7 @@ object PreviewItemScreenTestTags {
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
+  const val REMOVE_ITEM_BUTTON = "removeItemButton"
   const val CREATE_ITEM_BUTTON = "createItemButton"
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
@@ -104,6 +106,7 @@ fun PreviewItemScreen(
     description: String,
     location: Location,
     onEditItem: (String) -> Unit = {},
+    onRemoveItem: (String) -> Unit = {},
     onAddItem: (String) -> Unit = {}, // now takes postUuid
     onSelectFromInventory: (String) -> Unit = {}, // new callback for inventory selection
     onPostSuccess: () -> Unit = {},
@@ -162,6 +165,8 @@ fun PreviewItemScreen(
       ui = ui,
       scrollBehavior = scrollBehavior,
       onEditItem = onEditItem,
+      onRemoveItem =
+          onRemoveItem.takeIf { enablePreview } ?: outfitPreviewViewModel::removeItemFromPost,
       onAddItem = onAddItem,
       onSelectFromInventory = onSelectFromInventory,
       onPublish = {
@@ -179,6 +184,7 @@ private fun PreviewItemScreenContent(
     ui: PreviewUIState,
     scrollBehavior: TopAppBarScrollBehavior,
     onEditItem: (String) -> Unit,
+    onRemoveItem: (String) -> Unit,
     onAddItem: (String) -> Unit,
     onSelectFromInventory: (String) -> Unit,
     onPublish: () -> Unit,
@@ -281,7 +287,8 @@ private fun PreviewItemScreenContent(
                   items(itemsList.size) { index ->
                     OutfitItem(
                         item = itemsList[index],
-                        onClick = { onEditItem(itemsList[index].itemUuid) })
+                        onClick = { onEditItem(itemsList[index].itemUuid) },
+                        onRemove = { onRemoveItem(itemsList[index].itemUuid) })
                   }
                 }
           } else {
@@ -363,7 +370,7 @@ private fun PreviewItemScreenContent(
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun OutfitItem(item: Item, onClick: (String) -> Unit) {
+fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
 
   Card(
@@ -451,6 +458,16 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
                           tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 IconButton(
+                    onClick = onRemove,
+                    modifier =
+                        Modifier.size(24.dp)
+                            .testTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Delete,
+                          contentDescription = "Remove from post",
+                          tint = MaterialTheme.colorScheme.error)
+                    }
+                IconButton(
                     onClick = { isExpanded = !isExpanded },
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EXPAND_ICON)) {
@@ -512,6 +529,7 @@ fun PreviewItemScreenPreview() {
         ui = sampleState,
         scrollBehavior = scrollBehavior,
         onEditItem = {},
+        onRemoveItem = {},
         onAddItem = {},
         onSelectFromInventory = {},
         onPublish = {},
