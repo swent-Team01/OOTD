@@ -8,6 +8,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
@@ -19,6 +20,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -74,46 +76,45 @@ class AccountRepositoryFirestoreTest {
   }
 
   @Test
-  fun `getStarredItems uses cached firestore data`() = runTest {
+  fun `getStarredItems fetches data`() = runTest {
     stubSnapshot(listOf("coat", "boots"))
 
     val result = repository.getStarredItems("user-1")
 
     assertEquals(listOf("coat", "boots"), result)
-    // second call hits memory cache instead of querying again
-    assertEquals(listOf("coat", "boots"), repository.getStarredItems("user-1"))
   }
 
   @Test
-  fun `addStarredItem appends entry locally`() = runTest {
+  fun `addStarredItem updates firestore`() = runTest {
     stubSnapshot(listOf("coat"))
 
     assertTrue(repository.addStarredItem("hat"))
-    val cached = repository.getStarredItems("user-1")
 
-    assertEquals(listOf("coat", "hat"), cached)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `removeStarredItem drops entry from cache`() = runTest {
+  fun `removeStarredItem updates firestore`() = runTest {
     stubSnapshot(listOf("coat", "hat"))
-    repository.getStarredItems("user-1") // prime cache
 
     assertTrue(repository.removeStarredItem("coat"))
-    val cached = repository.getStarredItems("user-1")
 
-    assertEquals(listOf("hat"), cached)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `toggleStarredItem flips membership`() = runTest {
+  fun `toggleStarredItem updates firestore and returns new list`() = runTest {
     stubSnapshot(listOf("coat"))
-    repository.getStarredItems("user-1") // prime cache
 
+    // Test removing (toggling off)
     val removed = repository.toggleStarredItem("coat")
     assertTrue("coat" !in removed)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
 
+    // Test adding (toggling on) - need to update stub to simulate empty list
+    stubSnapshot(emptyList())
     val addedBack = repository.toggleStarredItem("coat")
     assertTrue("coat" in addedBack)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 }
