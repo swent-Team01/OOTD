@@ -13,6 +13,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemsScreen
@@ -20,6 +22,7 @@ import com.android.ootd.ui.post.items.AddItemsScreenSmallPreview
 import com.android.ootd.ui.post.items.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
+import kotlin.text.contains
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -29,7 +32,6 @@ import org.junit.Test
 class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @get:Rule val composeTestRule = createComposeRule()
-
   private lateinit var viewModel: AddItemsViewModel
   override val repository = ItemsRepositoryProvider.repository
 
@@ -316,6 +318,36 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun multipleAddClicks_ignoresDuplicateClicks() = runTest {
+    val countingRepo = CountingItemsRepository()
+    viewModel = AddItemsViewModel(repository = countingRepo, overridePhoto = true)
+    viewModel.initPostUuid("postuid")
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+
+    setMainScreen()
+
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("T-Shirt")
+    composeTestRule.enterAddItemBrand("TestBrand")
+    composeTestRule.enterAddItemPrice(29.99)
+
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+    val initialCalls = countingRepo.addCalls
+
+    composeTestRule.runOnIdle {
+      viewModel.onAddItemClick(context)
+      viewModel.onAddItemClick(context) // ignored
+      viewModel.onAddItemClick(context) // ignored
+    }
+    composeTestRule.waitForIdle()
+    kotlinx.coroutines.delay(1000)
+
+    assert(countingRepo.addCalls - initialCalls == 1) {
+      "Expected 1 addItem() call, got ${countingRepo.addCalls - initialCalls}"
+    }
+  }
+
+  @Test
   fun addItems_preview_rendersCoreElements() {
     // Render preview directly (no main screen content rendered beforehand)
     composeTestRule.setContent { AddItemsScreenSmallPreview() }
@@ -326,5 +358,51 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     // Image preview placeholder is visible in preview mode
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
+  }
+}
+
+// A counting repository to track addItem() calls
+private class CountingItemsRepository : ItemsRepository {
+  private val items = mutableListOf<Item>()
+  @Volatile
+  var addCalls: Int = 0
+    private set
+
+  override suspend fun addItem(item: Item) {
+    addCalls++
+    items += item
+  }
+
+  override suspend fun getAssociatedItems(postUuid: String): List<Item> =
+      items.filter { it.postUuids.contains(postUuid) }
+
+  override fun getNewItemId(): String = "item-${addCalls + 1}"
+
+  override suspend fun getAllItems(): List<Item> {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun getItemById(uuid: String): Item {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun editItem(itemUUID: String, newItem: Item) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun deleteItem(uuid: String) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun deletePostItems(postUuid: String) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+    TODO("Not yet implemented")
   }
 }

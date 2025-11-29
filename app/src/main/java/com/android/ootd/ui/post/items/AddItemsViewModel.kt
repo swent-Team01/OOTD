@@ -93,13 +93,11 @@ open class AddItemsViewModel(
   private val _addOnSuccess = MutableStateFlow(false)
   val addOnSuccess: StateFlow<Boolean> = _addOnSuccess
 
-  val isButtonLocked: Boolean
-    get() = _uiState.value.isLoading || _addOnSuccess.value
-
   fun resetAddSuccess() {
     _addOnSuccess.value = false
   }
 
+  // A flag to prevent multiple simultaneous add clicks
   private var addClickInProgress: Boolean = false
 
   override fun updateType(state: AddItemsUIState, type: String) = state.copy(type = type)
