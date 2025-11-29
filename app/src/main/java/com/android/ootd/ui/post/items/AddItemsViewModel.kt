@@ -6,6 +6,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.image.ImageCompressor
@@ -15,6 +20,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
+import com.android.ootd.worker.ImageUploadWorker
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -263,6 +269,27 @@ open class AddItemsViewModel(
                 _addOnSuccess.value = false
                 return@launch
               }
+
+              // Check if we need to schedule background upload (if offline, we got a local URI)
+              val uri = Uri.parse(uploaded.imageUrl)
+              if (uri.scheme == "content" || uri.scheme == "file") {
+                val workRequest =
+                    OneTimeWorkRequestBuilder<ImageUploadWorker>()
+                        .setInputData(
+                            workDataOf(
+                                "itemUuid" to itemUuid,
+                                "imageUri" to uploaded.imageUrl,
+                                "fileName" to uploaded.imageId))
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build())
+                        .build()
+
+                WorkManager.getInstance(context).enqueue(workRequest)
+                Log.d(TAG, "Scheduled background upload for item $itemUuid")
+              }
+
               uploaded
             }
 
