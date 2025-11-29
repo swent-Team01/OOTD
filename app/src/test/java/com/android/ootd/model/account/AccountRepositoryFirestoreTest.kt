@@ -17,6 +17,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -188,5 +189,107 @@ class AccountRepositoryFirestoreTest {
           picture = "",
           location = com.android.ootd.model.map.emptyLocation)
     }
+  }
+
+  @Test
+  fun `ensureStarredCache falls back to network when cache read fails`() = runTest {
+    every { document.get(Source.CACHE) } returns Tasks.forException(Exception("cache miss"))
+    every { document.get() } returns Tasks.forResult(snapshot)
+    every { snapshot.data } returns mapOf("starredItemUids" to listOf("net-1", "net-2"))
+
+    val result = repository.getStarredItems("user-1")
+
+    assertEquals(listOf("net-1", "net-2"), result)
+  }
+
+  @Test
+  fun `ensureStarredCache returns cached list without hitting firestore`() = runTest {
+    val cacheField =
+        repository.javaClass.getDeclaredField("starredListCache").apply { isAccessible = true }
+    @Suppress("UNCHECKED_CAST")
+    val cache =
+        cacheField.get(repository)
+            as
+            java.util.concurrent.ConcurrentHashMap<
+                String, java.util.concurrent.CopyOnWriteArrayList<String>>
+    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("cached-only"))
+
+    val result = repository.getStarredItems("user-1")
+
+    assertEquals(listOf("cached-only"), result)
+    verify(exactly = 0) { document.get(any<Source>()) }
+  }
+
+  @Test
+  fun `getItemsList returns cache immediately when present`() = runTest {
+    val cacheField =
+        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
+    @Suppress("UNCHECKED_CAST")
+    val cache =
+        cacheField.get(repository)
+            as
+            java.util.concurrent.ConcurrentHashMap<
+                String, java.util.concurrent.CopyOnWriteArrayList<String>>
+    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("cached-a"))
+
+    val result = repository.getItemsList("user-1")
+
+    assertEquals(listOf("cached-a"), result)
+    verify(exactly = 0) { document.get(any<Source>()) }
+  }
+
+  @Test
+  fun `addItem handles firestore update failures but keeps cache updated`() = runTest {
+    every { document.get(Source.CACHE) } returns Tasks.forResult(snapshot)
+    every { snapshot.exists() } returns false
+    every { snapshot.get("itemsUids") } returns emptyList<String>()
+    every { document.update(any<String>(), any()) } returns Tasks.forException(Exception("offline"))
+
+    val added = repository.addItem("new-item")
+
+    assertTrue(added)
+    val cacheField =
+        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
+    @Suppress("UNCHECKED_CAST")
+    val cache =
+        cacheField.get(repository)
+            as
+            java.util.concurrent.ConcurrentHashMap<
+                String, java.util.concurrent.CopyOnWriteArrayList<String>>
+    assertTrue(cache["user-1"]?.contains("new-item") == true)
+  }
+
+  @Test
+  fun `removeItem handles firestore update failures but still returns true`() = runTest {
+    val cacheField =
+        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
+    @Suppress("UNCHECKED_CAST")
+    val cache =
+        cacheField.get(repository)
+            as
+            java.util.concurrent.ConcurrentHashMap<
+                String, java.util.concurrent.CopyOnWriteArrayList<String>>
+    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("to-remove"))
+
+    every { document.update(any<String>(), any()) } returns Tasks.forException(Exception("offline"))
+
+    val removed = repository.removeItem("to-remove")
+
+    assertTrue(removed)
+    assertFalse(cache["user-1"]?.contains("to-remove") == true)
+  }
+
+  @Test
+  fun `accountExists returns true when username present`() = runTest {
+    val userCollection = mockk<CollectionReference>()
+    val userDoc = mockk<DocumentReference>()
+    val userSnapshot = mockk<DocumentSnapshot>()
+    every { firestore.collection(USER_COLLECTION_PATH) } returns userCollection
+    every { userCollection.document("user-ok") } returns userDoc
+    every { userDoc.get() } returns Tasks.forResult(userSnapshot)
+    every { userSnapshot.exists() } returns true
+    every { userSnapshot.getString("username") } returns "bob"
+
+    assertTrue(repository.accountExists("user-ok"))
   }
 }

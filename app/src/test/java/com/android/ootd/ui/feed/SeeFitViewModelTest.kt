@@ -326,12 +326,34 @@ class SeeFitViewModelTest {
   }
 
   @Test
+  fun `toggleStar surfaces error message when repository fails`() = runTest {
+    coEvery { mockAccountRepository.toggleStarredItem("item1") } throws Exception("boom")
+
+    viewModel.toggleStar(testItem1)
+
+    advanceUntilIdle()
+
+    assertNotNull(viewModel.uiState.value.errorMessage)
+  }
+
+  @Test
   fun `toggleStar noops on blank item id`() = runTest {
     viewModel.toggleStar(testItem1.copy(itemUuid = ""))
 
     advanceUntilIdle()
 
     coVerify(exactly = 0) { mockAccountRepository.toggleStarredItem(any()) }
+    assertTrue(viewModel.uiState.value.starredItemIds.isEmpty())
+  }
+
+  @Test
+  fun `refreshStarredItems noops when user is blank`() = runTest {
+    every { mockAccountService.currentUserId } returns ""
+
+    viewModel.refreshStarredItems()
+    advanceUntilIdle()
+
+    coVerify(exactly = 0) { mockAccountRepository.getStarredItems(any()) }
     assertTrue(viewModel.uiState.value.starredItemIds.isEmpty())
   }
 }
