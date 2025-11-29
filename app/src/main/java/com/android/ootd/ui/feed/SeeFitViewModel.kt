@@ -46,6 +46,10 @@ class SeeFitViewModel(
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
 ) : ViewModel() {
 
+  private companion object {
+    const val TAG = "SeeFitViewModel"
+  }
+
   private val _uiState = MutableStateFlow(SeeFitUIState())
   val uiState: StateFlow<SeeFitUIState> = _uiState.asStateFlow()
 
@@ -57,7 +61,7 @@ class SeeFitViewModel(
   fun getItemsForPost(postUuid: String) {
     if (postUuid.isEmpty()) {
       setErrorMessage("Unable to load this fit please try again later.")
-      Log.w("SeeFitViewModel", "Post UUID is empty. Cannot fetch items.")
+      Log.w(TAG, "Post UUID is empty. Cannot fetch items.")
       return
     }
     viewModelScope.launch {
@@ -112,7 +116,7 @@ class SeeFitViewModel(
         val starred = accountRepository.getStarredItems(currentUserId).toSet()
         _uiState.value = _uiState.value.copy(starredItemIds = starred)
       } catch (e: Exception) {
-        Log.w("SeeFitViewModel", "Failed to refresh starred items: ${e.message}")
+        Log.w(TAG, "Failed to refresh starred items: ${e.message}")
       }
     }
   }
@@ -129,10 +133,10 @@ class SeeFitViewModel(
     viewModelScope.launch {
       try {
         val updated = accountRepository.toggleStarredItem(itemId).toSet()
-        Log.d("SeeFitViewModel", "Toggled star for $itemId -> ${updated.contains(itemId)}")
+        Log.d(TAG, "Toggled star for $itemId -> ${updated.contains(itemId)}")
         _uiState.value = _uiState.value.copy(starredItemIds = updated)
       } catch (e: Exception) {
-        Log.w("SeeFitViewModel", "Failed to toggle star: ${e.message}")
+        Log.w(TAG, "Failed to toggle star: ${e.message}")
         setErrorMessage("Couldn't update wishlist. Please try again.")
       }
     }
