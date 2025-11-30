@@ -69,6 +69,24 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     return items
   }
 
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
+    if (uuids.isEmpty()) return emptyList()
+
+    val items = mutableListOf<Item>()
+
+    // Fetch items from Firestore in chunks
+    uuids.chunked(10).forEach { batch ->
+      try {
+        val snapshot = db.collection(ITEMS_COLLECTION).whereIn("itemUuid", batch).get().await()
+        items.addAll(snapshot.mapNotNull { mapToItem(it) })
+      } catch (e: Exception) {
+        Log.w("ItemsRepositoryFirestore", "Failed to fetch batch of items: ${e.message}")
+      }
+    }
+
+    return items
+  }
+
   private fun mapToItem(doc: DocumentSnapshot): Item? {
     return try {
       val data = doc.data ?: return null

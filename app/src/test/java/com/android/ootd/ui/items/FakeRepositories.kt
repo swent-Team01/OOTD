@@ -22,6 +22,8 @@ class FakeItemsRepository : ItemsRepository {
 
   override suspend fun getItemsByIds(uuids: List<String>): List<Item> = emptyList()
 
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> = emptyList()
+
   override suspend fun getAssociatedItems(postUuid: String): List<Item> = emptyList()
 
   override suspend fun addItem(item: Item) {
@@ -103,6 +105,8 @@ class FakeAccountRepository : AccountRepository {
   }
 
   override suspend fun getStarredItems(userID: String): List<String> = emptyList()
+
+  override suspend fun refreshStarredItems(userID: String): List<String> = emptyList()
 
   override suspend fun addStarredItem(itemUid: String): Boolean = true
 

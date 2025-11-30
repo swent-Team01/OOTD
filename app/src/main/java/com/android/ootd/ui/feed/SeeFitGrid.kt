@@ -26,7 +26,10 @@ fun ItemGridScreen(
     items: List<Item>,
     modifier: Modifier = Modifier,
     onEditItem: (String) -> Unit = {},
-    isOwner: Boolean = false
+    isOwner: Boolean = false,
+    starredItemIds: Set<String> = emptySet(),
+    onToggleStar: (Item) -> Unit = {},
+    showStarToggle: Boolean = false
 ) {
 
   var selectedItem by remember { mutableStateOf<Item?>(null) }
@@ -43,7 +46,10 @@ fun ItemGridScreen(
                 item = item,
                 onClick = { selectedItem = item },
                 onEditClick = { onEditItem(item.itemUuid) },
-                isOwner = isOwner)
+                isOwner = isOwner,
+                isStarred = starredItemIds.contains(item.itemUuid),
+                onToggleStar = { onToggleStar(item) },
+                showStarToggle = showStarToggle)
           }
         }
 

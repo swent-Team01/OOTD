@@ -138,6 +138,9 @@ interface AccountRepository {
   /** Returns the list of starred item IDs for the current user. */
   suspend fun getStarredItems(userID: String): List<String>
 
+  /** Forces a reload of starred item IDs from Firestore, bypassing local cache. */
+  suspend fun refreshStarredItems(userID: String): List<String>
+
   /** Adds the given item to the starred list (wishlist). */
   suspend fun addStarredItem(itemUid: String): Boolean
 

@@ -493,6 +493,24 @@ class AccountRepositoryFirestore(
     }
   }
 
+  override suspend fun refreshStarredItems(userID: String): List<String> {
+    return try {
+      // Force fetch from server
+      val document =
+          db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.SERVER).await()
+      if (document.exists()) {
+        @Suppress("UNCHECKED_CAST")
+        (document.get("starredItemUids") as? List<String>) ?: emptyList()
+      } else {
+        emptyList()
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "Error refreshing starred items for $userID: ${e.message}", e)
+      // Fallback to default behavior (maybe cache or empty)
+      getStarredItems(userID)
+    }
+  }
+
   override suspend fun addStarredItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)

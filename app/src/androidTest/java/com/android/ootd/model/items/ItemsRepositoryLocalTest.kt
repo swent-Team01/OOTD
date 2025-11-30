@@ -555,6 +555,19 @@ class ItemsRepositoryLocalTest {
     TestCase.assertTrue(duplicateResult.all { it == item1 })
   }
 
+  @Test
+  fun getItemsByIdsAcrossOwnersReturnsItems() = runTest {
+    val friendItem = item2.copy(ownerId = "friend-user")
+    repository.addItem(item1)
+    repository.addItem(friendItem)
+
+    val result = repository.getItemsByIdsAcrossOwners(listOf(item1.itemUuid, friendItem.itemUuid))
+
+    TestCase.assertEquals(2, result.size)
+    TestCase.assertTrue(result.contains(item1))
+    TestCase.assertTrue(result.contains(friendItem))
+  }
+
   @After
   fun tearDown() {
     repository.clearAll()

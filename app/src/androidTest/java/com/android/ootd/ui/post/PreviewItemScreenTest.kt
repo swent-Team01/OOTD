@@ -78,6 +78,10 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           return emptyList()
         }
 
+        override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
+          return getItemsByIds(uuids)
+        }
+
         override suspend fun addItem(item: Item) {}
 
         override suspend fun editItem(itemUUID: String, newItem: Item) {}
@@ -324,6 +328,9 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
           override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
             return emptyList()
           }
+
+          override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> =
+              emptyList()
 
           override suspend fun addItem(item: Item) {}
 
