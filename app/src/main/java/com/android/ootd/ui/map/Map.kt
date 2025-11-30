@@ -3,13 +3,9 @@ package com.android.ootd.ui.map
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.map.MapScreenTestTags.getTestTagForPostMarker
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -34,7 +29,6 @@ object MapScreenTestTags {
   const val LOADING_INDICATOR = "loadingIndicator"
   const val TOP_BAR = "topBar"
   const val TOP_BAR_TITLE = "topBarTitle"
-  const val BACK_BUTTON = "backButton"
   const val CONTENT_BOX = "contentBox"
 
   fun getTestTagForPostMarker(postId: String): String = "postMarker_$postId"
@@ -42,7 +36,7 @@ object MapScreenTestTags {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
+fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
   val uiState by viewModel.uiState.collectAsState()
 
   Scaffold(
@@ -56,17 +50,6 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                       MaterialTheme.typography.displayLarge.copy(
                           fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
                   modifier = Modifier.testTag(MapScreenTestTags.TOP_BAR_TITLE))
-            },
-            navigationIcon = {
-              Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-                IconButton(
-                    onClick = onBack, modifier = Modifier.testTag(MapScreenTestTags.BACK_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                          contentDescription = "Back",
-                          tint = MaterialTheme.colorScheme.tertiary)
-                    }
-              }
             },
             modifier = Modifier.testTag(MapScreenTestTags.TOP_BAR))
       },
@@ -101,7 +84,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                             username = post.name,
                             location = post.location,
                             tag = getTestTagForPostMarker(post.postUID),
-                            onClick = { TODO("Handle marker click") })
+                            onClick = { onPostClick(post.postUID) })
                       }
                     }
               }
