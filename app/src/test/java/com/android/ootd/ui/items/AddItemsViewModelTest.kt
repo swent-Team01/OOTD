@@ -2,6 +2,11 @@ package com.android.ootd.ui.items
 
 import android.content.Context
 import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.WorkQuery
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
 import com.android.ootd.model.items.ImageData
@@ -56,7 +61,7 @@ class AddItemsViewModelTest {
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
-    context = mockk<Context>(relaxed = true)
+    context = ApplicationProvider.getApplicationContext()
     compressor = mockk<ImageCompressor>(relaxed = true)
     // Mock the suspend function with coEvery
     coEvery { compressor.compressImage(any(), any(), any()) } returns ByteArray(10)
@@ -126,6 +131,43 @@ class AddItemsViewModelTest {
     assertEquals("Casual", addedItem.style)
     assertEquals("Sample notes", addedItem.notes)
     assertEquals(existingState.postUuid, addedItem.postUuids.firstOrNull() ?: "")
+  }
+
+  @Test
+  fun onAddItemClick_offline_schedulesWorkManager() = runTest {
+    mockkStatic(FirebaseAuth::class)
+    mockkObject(Firebase)
+    val mockAuth = mockk<FirebaseAuth>()
+    val mockUser = mockk<FirebaseUser>()
+    every { FirebaseAuth.getInstance() } returns mockAuth
+    every { Firebase.auth } returns mockAuth
+    every { mockAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "uid"
+
+    // Initialize WorkManager for testing
+    WorkManagerTestInitHelper.initializeTestWorkManager(context)
+    val workManager = WorkManager.getInstance(context)
+
+    mockkObject(FirebaseImageUploader)
+    // Return a content URI to simulate offline mode
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("id", "content://local/uri")
+
+    seedCategories("Clothing")
+    viewModel.setCategory("Clothing")
+    val mockUri = Uri.parse("content://local/uri")
+    viewModel.setPhoto(mockUri)
+
+    viewModel.onAddItemClick(context)
+    advanceUntilIdle()
+
+    // Verify work enqueued
+    val workInfos =
+        workManager.getWorkInfos(WorkQuery.fromStates(listOf(WorkInfo.State.ENQUEUED))).get()
+    assertTrue(workInfos.isNotEmpty())
+    assertTrue(workInfos.any { it.tags.any { tag -> tag.contains("ImageUploadWorker") } })
+
+    assertTrue(viewModel.addOnSuccess.value)
   }
 
   @Test
