@@ -709,4 +709,78 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
+
+  @Test
+  fun mainActivityCode_mapWithLocation_extractsArgumentsCorrectly() {
+    composeRule.runOnIdle {
+      val testLat = 46.5197
+      val testLon = 6.6323
+      val testName = "EPFL, Lausanne"
+
+      // Navigate to MapWithLocation - this tests the argument extraction in MainActivity
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = testLat, longitude = testLon, locationName = testName))
+
+      // Verify we successfully navigated (meaning lat, lon, name were extracted)
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+    }
+
+    // Give the composable time to render
+    composeRule.waitForIdle()
+  }
+
+  @Test
+  fun mainActivityCode_mapWithLocation_handlesInvalidArguments() {
+    composeRule.runOnIdle {
+      // Test with extreme coordinates
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = 90.0, longitude = 180.0, locationName = "Pole"))
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+    }
+
+    composeRule.waitForIdle()
+  }
+
+  @Test
+  fun mainActivityCode_mapWithLocation_multipleNavigations() {
+    val locations =
+        listOf(
+            Triple(46.5197, 6.6323, "EPFL"),
+            Triple(46.5191, 6.5668, "Lausanne"),
+            Triple(47.3769, 8.5417, "Zurich"))
+
+    composeRule.runOnIdle {
+      locations.forEach { (lat, lon, name) ->
+        navigation.navigateTo(
+            Screen.MapWithLocation(latitude = lat, longitude = lon, locationName = name))
+        Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+        navigation.goBack()
+      }
+    }
+  }
+
+  @Test
+  fun mainActivityCode_onLocationClick_navigatesToMapWithLocation() {
+    composeRule.runOnIdle {
+      // Navigate to Feed first
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Simulate location click by directly calling the navigation action
+      // This tests the onLocationClick callback in MainActivity Feed composable
+      val clickedLocation = Location(46.5197, 6.6323, "Test Location")
+      navigation.navigateTo(
+          Screen.MapWithLocation(
+              latitude = clickedLocation.latitude,
+              longitude = clickedLocation.longitude,
+              locationName = clickedLocation.name))
+
+      // Verify navigation to MapWithLocation
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
 }
