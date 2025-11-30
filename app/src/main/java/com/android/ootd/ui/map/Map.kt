@@ -146,9 +146,11 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                         map.setOnCameraIdleListener(clusterManager)
                         map.setOnMarkerClickListener(clusterManager)
 
-                        // Clear existing items and add new ones
+                        // Clear existing items and add new ones with adjusted locations
                         clusterManager.clearItems()
-                        val clusterItems = uiState.posts.map { PostMarker(it) }
+                        val postsWithAdjusted = viewModel.getPostsWithAdjustedLocations()
+                        val clusterItems =
+                            postsWithAdjusted.map { PostMarker(it.post, it.adjustedLocation) }
                         clusterManager.addItems(clusterItems)
                         clusterManager.cluster()
                       }
