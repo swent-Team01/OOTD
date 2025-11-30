@@ -2,7 +2,6 @@ package com.android.ootd.worker
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.android.ootd.model.items.FirebaseImageUploader
@@ -24,7 +23,6 @@ class ImageUploadWorker(context: Context, workerParams: WorkerParameters) :
 
       val inputStream = contentResolver.openInputStream(imageUri)
       if (inputStream == null) {
-        Log.e("ImageUploadWorker", "Could not open input stream for URI: $imageUri")
         return Result.failure()
       }
 
@@ -39,7 +37,6 @@ class ImageUploadWorker(context: Context, workerParams: WorkerParameters) :
 
       Result.success()
     } catch (e: Exception) {
-      Log.e("ImageUploadWorker", "Error uploading image", e)
       if (runAttemptCount < 3) {
         Result.retry()
       } else {

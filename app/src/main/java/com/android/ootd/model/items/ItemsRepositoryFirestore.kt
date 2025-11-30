@@ -64,9 +64,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
                 .get()
                 .await()
         items.addAll(snapshot.mapNotNull { mapToItem(it) })
-      } catch (e: Exception) {
-        Log.w("ItemsRepositoryFirestore", "Failed to fetch batch of items: ${e.message}")
-      }
+      } catch (e: Exception) {}
     }
 
     return items
@@ -82,7 +80,6 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
               val doc = db.collection(ITEMS_COLLECTION).document(uuid).get().await()
               mapToItem(doc)
             } catch (e: Exception) {
-              Log.w("ItemsRepositoryFirestore", "Failed to fetch item $uuid: ${e.message}")
               null
             }
           }
@@ -105,10 +102,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       withTimeout(2000L) {
         db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
       }
-      Log.d("ItemsRepositoryFirestore", "Item added to Firestore")
-    } catch (e: TimeoutCancellationException) {
-      Log.w("ItemsRepositoryFirestore", "Item add timed out (offline), queued.")
-    } catch (e: Exception) {
+    } catch (e: TimeoutCancellationException) {} catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error adding item: ${e.message}", e)
       throw e
     }
@@ -125,16 +119,10 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
             throw Exception("ItemsRepositoryFirestore: Item not found")
           }
         }
-      } catch (e: TimeoutCancellationException) {
-        // If check times out, assume it exists and proceed to set (upsert)
-        Log.w("ItemsRepositoryFirestore", "Existence check timed out, proceeding with edit")
-      }
+      } catch (e: TimeoutCancellationException) {}
 
       withTimeout(2000L) { db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await() }
-      Log.d("ItemsRepositoryFirestore", "Item edited in Firestore")
-    } catch (e: TimeoutCancellationException) {
-      Log.w("ItemsRepositoryFirestore", "Item edit timed out (offline), queued.")
-    } catch (e: Exception) {
+    } catch (e: TimeoutCancellationException) {} catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error editing item: ${e.message}", e)
       throw e
     }
@@ -143,10 +131,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun deleteItem(uuid: String) {
     try {
       withTimeout(2000L) { db.collection(ITEMS_COLLECTION).document(uuid).delete().await() }
-      Log.d("ItemsRepositoryFirestore", "Item deleted from Firestore")
-    } catch (e: TimeoutCancellationException) {
-      Log.w("ItemsRepositoryFirestore", "Item delete timed out (offline), queued.")
-    } catch (e: Exception) {
+    } catch (e: TimeoutCancellationException) {} catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error deleting item: ${e.message}", e)
       throw e
     }
