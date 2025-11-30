@@ -71,11 +71,11 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.OOTDTopBar
 import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
-import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.CenteredLoadingState
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
 
@@ -270,7 +270,7 @@ fun PreviewItemScreenContent(
         onDismiss = { showAddItemDialog = false })
 
     if (ui.isLoading && !enablePreview) {
-      LoadingScreen("Publishing your outfit...")
+      CenteredLoadingState(message = "Publishing your outfit...", textColor = Tertiary)
     }
   }
 }
