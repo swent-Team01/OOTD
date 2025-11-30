@@ -31,6 +31,7 @@ interface ItemsTest {
 
   fun ComposeTestRule.ensureVisible(tag: String) {
     onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performScrollToNode(hasTestTag(tag))
+    waitForIdle()
     onNodeWithTag(tag, useUnmergedTree = true).assertExists()
   }
 

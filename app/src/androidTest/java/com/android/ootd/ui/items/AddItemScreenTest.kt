@@ -56,13 +56,20 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     setMainScreen()
     // Fill all text fields
     composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemType("Jacket")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemBrand("Brand")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemPrice(99.99)
+    composeTestRule.waitForIdle()
     // Set currency via view model to avoid flakey dropdown interactions
     composeTestRule.runOnIdle { viewModel.setCurrency("EUR") }
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemLink("www.ootd.com")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
+    composeTestRule.waitForIdle()
 
     // Verify all fields contain the correct values
     composeTestRule.runOnIdle {
