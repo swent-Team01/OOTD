@@ -117,4 +117,17 @@ class AccountRepositoryFirestoreTest {
     assertTrue("coat" in addedBack)
     verify { document.update("starredItemUids", any<FieldValue>()) }
   }
+
+  @Test
+  fun `refreshStarredItems fetches from server`() = runTest {
+    val serverItems = listOf("server-item-1", "server-item-2")
+    every { snapshot.exists() } returns true
+    every { snapshot.get("starredItemUids") } returns serverItems
+    every { document.get(Source.SERVER) } returns Tasks.forResult(snapshot)
+
+    val result = repository.refreshStarredItems("user-1")
+
+    assertEquals(serverItems, result)
+    verify { document.get(Source.SERVER) }
+  }
 }
