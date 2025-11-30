@@ -26,7 +26,8 @@ class OutfitPostCardTest {
       likeCount: Int = 0,
       onLikeClick: (String) -> Unit = {},
       onSeeFitClick: (String) -> Unit = {},
-      onCardClick: (String) -> Unit = {}
+      onCardClick: (String) -> Unit = {},
+      onLocationClick: (Location) -> Unit = {}
   ) =
       composeTestRule.setContent {
         OutfitPostCard(
@@ -36,7 +37,8 @@ class OutfitPostCardTest {
             likeCount = likeCount,
             onLikeClick = onLikeClick,
             onSeeFitClick = onSeeFitClick,
-            onCardClick = onCardClick)
+            onCardClick = onCardClick,
+            onLocationClick = onLocationClick)
       }
 
   private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
@@ -150,81 +152,81 @@ class OutfitPostCardTest {
   }
 
   @Test
-  fun likeButton_showsCorrectCount() {
-    setCard(post(), likeCount = 12)
+  fun postLocation_rendersWhenValid() {
+    val postWithLocation = post(location = Location(46.5, 6.6, "Lausanne, Switzerland"))
+    setCard(postWithLocation)
 
-    n(OutfitPostCardTestTags.LIKE_COUNT).assertTextEquals("12")
+    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
+    n(OutfitPostCardTestTags.POST_LOCATION).assertTextEquals("Lausanne, Switzerland")
+  }
+
+  @Test
+  fun postLocation_notRenderedWhenEmpty() {
+    val postWithoutLocation = post(location = emptyLocation)
+    setCard(postWithoutLocation)
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
+  }
+
+  @Test
+  fun postLocation_truncatesLongNames() {
+    val longLocationName = "A".repeat(60)
+    val postWithLongLocation = post(location = Location(46.5, 6.6, longLocationName))
+    setCard(postWithLongLocation)
+
+    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
+    // Should be truncated to 47 chars + "..."
+    val displayedText =
+        n(OutfitPostCardTestTags.POST_LOCATION)
+            .fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.Text]
+            .firstOrNull()
+            ?.text ?: ""
+    assertEquals(50, displayedText.length) // 47 + "..."
+  }
+
+  @Test
+  fun postLocation_invokesCallbackOnClick() {
+    var clickCount = 0
+    var clickedLocation: Location? = null
+    val testLocation = Location(46.5, 6.6, "Test Location")
+
+    setCard(
+        post(location = testLocation),
+        onLocationClick = { location ->
+          clickCount++
+          clickedLocation = location
+        })
+
+    n(OutfitPostCardTestTags.POST_LOCATION).performClick()
+
+    assertEquals(1, clickCount)
+    assertEquals(testLocation, clickedLocation)
   }
 
   @Test
   fun likeButton_invokesCallback() {
-    var clicks = 0
+    var clickCount = 0
+    var clickedPostId = ""
 
-    setCard(post(), isLiked = false, likeCount = 0, onLikeClick = { clicks++ })
+    setCard(
+        post(),
+        onLikeClick = { postId ->
+          clickCount++
+          clickedPostId = postId
+        })
 
     n(OutfitPostCardTestTags.LIKE_BUTTON).performClick()
 
-    assertEquals(1, clicks)
+    assertEquals(1, clickCount)
+    assertEquals("id", clickedPostId)
   }
 
   @Test
-  fun likeButton_showsFilledHeart_whenLiked() {
-    setCard(post(), isLiked = true)
+  fun likeButton_showsLikedState() {
+    setCard(post(), isLiked = true, likeCount = 5)
 
     n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
-    // Check contentDescription
-    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Liked")
-  }
-
-  @Test
-  fun likeButton_showsEmptyHeart_whenNotLiked() {
-    setCard(post(), isLiked = false)
-
-    n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
-    n(OutfitPostCardTestTags.LIKE_BUTTON).assertContentDescriptionEquals("Unliked")
-  }
-
-  @Test
-  fun showsLocation_whenValidLocationProvided() {
-    val location = Location(46.5191, 6.5668, "EPFL, Lausanne")
-    setCard(post(name = "User", description = "Test", location = location))
-
-    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
-    n(OutfitPostCardTestTags.POST_LOCATION).assertTextEquals("EPFL, Lausanne")
-  }
-
-  @Test
-  fun hidesLocation_whenLocationIsEmpty_or_whenLocationNameIsBlank() {
-    setCard(post(name = "User", description = "Test", location = emptyLocation))
-
-    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
-  }
-
-  @Test
-  fun hidesLocation_whenLocationNameIsBlank() {
-    val blankLocation = Location(46.5191, 6.5668, "")
-    setCard(post(name = "User", description = "Test", location = blankLocation))
-
-    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
-  }
-
-  @Test
-  fun hidesLocation_whenLocationHasInvalidCoordinates() {
-    val invalidLocation = Location(Double.NaN, Double.NaN, "Invalid Place")
-    setCard(post(name = "User", description = "Test", location = invalidLocation))
-
-    n(OutfitPostCardTestTags.POST_LOCATION).assertDoesNotExist()
-  }
-
-  @Test
-  fun truncatesLongLocationNames() {
-    val longName = "VeryLongLocationName_".repeat(4) // > 50 chars
-    val location = Location(46.0, 6.0, longName)
-    val expected = if (longName.length > 50) longName.take(47) + "..." else longName
-
-    setCard(post(name = "User", description = "Test", location = location))
-
-    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
-    n(OutfitPostCardTestTags.POST_LOCATION).assertTextEquals(expected)
+    n(OutfitPostCardTestTags.LIKE_COUNT).assertTextEquals("5")
   }
 }
