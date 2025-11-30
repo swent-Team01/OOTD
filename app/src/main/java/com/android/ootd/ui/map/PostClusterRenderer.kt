@@ -32,13 +32,10 @@ import kotlinx.coroutines.withContext
 /**
  * Custom cluster renderer that displays:
  * - Profile pictures for individual post markers
- * - Circular badges with counts for clustered markers
- *
- * This renderer handles asynchronous loading of profile pictures and caches them for performance.
- *
- * Disclaimer: This takes inspiration from
- * https://developers.google.com/maps/documentation/android-sdk/utility/marker-clustering.
- * Additionally, AI was used to assist in the development of this class.
+ * - Circular badges with counts for clustered markers This renderer handles asynchronous loading of
+ *   profile pictures and caches them for performance. Disclaimer: This takes inspiration from
+ *   https://developers.google.com/maps/documentation/android-sdk/utility/marker-clustering.
+ *   Additionally, AI was used to assist in the development of this class.
  *
  * @param context Android context for resource access
  * @param map GoogleMap instance
@@ -58,119 +55,68 @@ class PostClusterRenderer(
   private val markerCache = mutableMapOf<String, Marker>()
 
   init {
-    // Set minimum cluster size to 2 to ensure normal clustering behavior
-    // The declustering offset (~20m) is small enough that posts will still
-    // cluster together when zoomed out, while being visible when zoomed in
     minClusterSize = 2
   }
 
-  /**
-   * Determines whether a cluster should be rendered as a cluster or as individual items. This
-   * ensures proper clustering behavior works correctly with declustered markers.
-   */
-  override fun shouldRenderAsCluster(cluster: Cluster<PostMarker>): Boolean {
-    // Use the default clustering behavior with minimum size of 2
-    // This allows the ClusterManager to naturally handle clustering based on zoom level
-    return cluster.size >= minClusterSize
-  }
+  override fun shouldRenderAsCluster(cluster: Cluster<PostMarker>) = cluster.size >= minClusterSize
 
-  /** Override to ensure consistent cluster rendering at all zoom levels. */
-  override fun getColor(clusterSize: Int): Int {
-    return Primary.toArgb()
-  }
+  override fun getColor(clusterSize: Int) = Primary.toArgb()
 
-  /**
-   * Called before the post marker is rendered. Loads and displays user profile picture
-   * asynchronously.
-   */
   override fun onBeforeClusterItemRendered(item: PostMarker, markerOptions: MarkerOptions) {
     val userId = item.post.ownerId
     val username = item.post.name
 
-    // Check cache first
     if (profilePictureCache.containsKey(userId)) {
-      val bitmap = profilePictureCache[userId]
       val icon =
-          if (bitmap != null) {
-            BitmapDescriptorFactory.fromBitmap(createCircularBitmap(bitmap))
-          } else {
-            createInitialsBitmap(username)
-          }
+          profilePictureCache[userId]?.let {
+            BitmapDescriptorFactory.fromBitmap(createCircularBitmap(it))
+          } ?: createInitialsBitmap(username)
       markerOptions.icon(icon).anchor(0.5f, 0.5f)
     } else {
-      // Set initials as placeholder
       markerOptions.icon(createInitialsBitmap(username)).anchor(0.5f, 0.5f)
-
-      // Load profile picture asynchronously
       loadProfilePicture(userId, username, item)
     }
   }
 
-  /**
-   * Called when updating an existing cluster item marker. Updates the marker icon if a profile
-   * picture has been loaded.
-   */
   override fun onClusterItemUpdated(item: PostMarker, marker: Marker) {
     markerCache[item.post.postUID] = marker
-
     val userId = item.post.ownerId
-    val username = item.post.name
 
     if (profilePictureCache.containsKey(userId)) {
-      val bitmap = profilePictureCache[userId]
       val icon =
-          if (bitmap != null) {
-            BitmapDescriptorFactory.fromBitmap(createCircularBitmap(bitmap))
-          } else {
-            createInitialsBitmap(username)
-          }
+          profilePictureCache[userId]?.let {
+            BitmapDescriptorFactory.fromBitmap(createCircularBitmap(it))
+          } ?: createInitialsBitmap(item.post.name)
       marker.setIcon(icon)
     }
   }
 
-  /**
-   * Called before the cluster (group of markers) is rendered. Creates a circular badge with the
-   * count of posts in the cluster.
-   */
   override fun onBeforeClusterRendered(cluster: Cluster<PostMarker>, markerOptions: MarkerOptions) {
-    val icon = createClusterBitmap(cluster.size)
-    markerOptions.icon(icon).anchor(0.5f, 0.5f)
+    markerOptions.icon(createClusterBitmap(cluster.size)).anchor(0.5f, 0.5f)
   }
 
-  /** Loads profile picture asynchronously and updates the marker when loaded. */
   private fun loadProfilePicture(userId: String, username: String, item: PostMarker) {
     coroutineScope.launch {
       try {
         if (userId.isNotBlank()) {
           val user = userRepository.getUser(userId)
-
           if (user.profilePicture.isNotBlank()) {
             val bitmap =
                 withContext(Dispatchers.IO) {
-                  val imageLoader = ImageLoader(context)
                   val request =
                       ImageRequest.Builder(context)
                           .data(user.profilePicture)
                           .size(120)
                           .allowHardware(false)
                           .build()
-
-                  val result = imageLoader.execute(request)
-                  if (result is SuccessResult) {
-                    (result.drawable as? BitmapDrawable)?.bitmap
-                  } else null
+                  val result = ImageLoader(context).execute(request)
+                  (result as? SuccessResult)?.drawable?.let { (it as? BitmapDrawable)?.bitmap }
                 }
-
             profilePictureCache[userId] = bitmap
-
-            // Update marker if it exists
             withContext(Dispatchers.Main) {
               markerCache[item.post.postUID]?.setIcon(
-                  if (bitmap != null) {
-                    BitmapDescriptorFactory.fromBitmap(createCircularBitmap(bitmap))
-                  } else {
-                    createInitialsBitmap(username)
-                  })
+                  bitmap?.let { BitmapDescriptorFactory.fromBitmap(createCircularBitmap(it)) }
+                      ?: createInitialsBitmap(username))
             }
           } else {
             profilePictureCache[userId] = null
@@ -182,55 +128,38 @@ class PostClusterRenderer(
     }
   }
 
-  /** Creates a circular bitmap from a square bitmap for profile pictures. */
   private fun createCircularBitmap(bitmap: Bitmap): Bitmap {
     val size = 120
     val output = createBitmap(size, size)
     val canvas = Canvas(output)
-
-    // Draw outer circle background (Primary)
     val paint =
         Paint().apply {
           isAntiAlias = true
           color = Primary.toArgb()
         }
     canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-
-    // Draw middle ring (Secondary/light)
     paint.color = Secondary.toArgb()
     canvas.drawCircle(size / 2f, size / 2f, size / 2.2f, paint)
-
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-
-    val scaledBitmap = bitmap.scale(size, size)
-    canvas.drawBitmap(scaledBitmap, 0f, 0f, paint)
-
+    canvas.drawBitmap(bitmap.scale(size, size), 0f, 0f, paint)
     return output
   }
 
-  /** Creates a bitmap with user initials for markers without profile pictures. */
   private fun createInitialsBitmap(username: String): BitmapDescriptor {
     val size = 120
     val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
-
-    // Draw outer circle background (Primary)
     val paint =
         Paint().apply {
           isAntiAlias = true
           color = Primary.toArgb()
         }
     canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-
-    // Draw middle ring (Secondary/light)
     paint.color = Secondary.toArgb()
     canvas.drawCircle(size / 2f, size / 2f, size / 2.2f, paint)
-
-    // Draw inner circle for initials background (Primary)
     paint.color = Primary.toArgb()
     canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
 
-    // Draw initial letter
     val textPaint =
         Paint().apply {
           isAntiAlias = true
@@ -238,35 +167,28 @@ class PostClusterRenderer(
           textSize = 50f
           textAlign = Paint.Align.CENTER
         }
-
     val initial = username.firstOrNull()?.uppercase() ?: "?"
-    val xPos = size / 2f
-    val yPos = (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
-
-    canvas.drawText(initial, xPos, yPos, textPaint)
-
+    canvas.drawText(
+        initial,
+        size / 2f,
+        (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f),
+        textPaint)
     return BitmapDescriptorFactory.fromBitmap(bitmap)
   }
 
-  /** Creates a bitmap for cluster markers showing the count of posts. */
   private fun createClusterBitmap(count: Int): BitmapDescriptor {
     val size = 120
     val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
-
-    // Draw outer circle background (Secondary/light) - fixed size for all zoom levels
     val paint =
         Paint().apply {
           isAntiAlias = true
           color = Secondary.toArgb()
         }
     canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-
-    // Draw inner circle for count background (Primary) - also fixed size
     paint.color = Primary.toArgb()
     canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
 
-    // Draw count text
     val textPaint =
         Paint().apply {
           isAntiAlias = true
@@ -275,13 +197,9 @@ class PostClusterRenderer(
           textAlign = Paint.Align.CENTER
           isFakeBoldText = true
         }
-
     val text = if (count > 999) "999+" else count.toString()
-    val xPos = size / 2f
-    val yPos = (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
-
-    canvas.drawText(text, xPos, yPos, textPaint)
-
+    canvas.drawText(
+        text, size / 2f, (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f), textPaint)
     return BitmapDescriptorFactory.fromBitmap(bitmap)
   }
 }
