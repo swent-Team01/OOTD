@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -32,7 +33,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -78,6 +78,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.OOTDTopBar
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
@@ -86,6 +87,7 @@ object PreviewItemScreenTestTags {
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
+  const val REMOVE_ITEM_BUTTON = "removeItemButton"
   const val CREATE_ITEM_BUTTON = "createItemButton"
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
@@ -104,6 +106,7 @@ fun PreviewItemScreen(
     description: String,
     location: Location,
     onEditItem: (String) -> Unit = {},
+    onRemoveItem: (String) -> Unit = {},
     onAddItem: (String) -> Unit = {}, // now takes postUuid
     onSelectFromInventory: (String) -> Unit = {}, // new callback for inventory selection
     onPostSuccess: () -> Unit = {},
@@ -162,6 +165,8 @@ fun PreviewItemScreen(
       ui = ui,
       scrollBehavior = scrollBehavior,
       onEditItem = onEditItem,
+      onRemoveItem =
+          onRemoveItem.takeIf { enablePreview } ?: outfitPreviewViewModel::removeItemFromPost,
       onAddItem = onAddItem,
       onSelectFromInventory = onSelectFromInventory,
       onPublish = {
@@ -175,10 +180,11 @@ fun PreviewItemScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PreviewItemScreenContent(
+fun PreviewItemScreenContent(
     ui: PreviewUIState,
     scrollBehavior: TopAppBarScrollBehavior,
     onEditItem: (String) -> Unit,
+    onRemoveItem: (String) -> Unit,
     onAddItem: (String) -> Unit,
     onSelectFromInventory: (String) -> Unit,
     onPublish: () -> Unit,
@@ -193,17 +199,10 @@ private fun PreviewItemScreenContent(
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
-          CenterAlignedTopAppBar(
-              title = {
-                Text(
-                    text = "OOTD",
-                    style =
-                        MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE))
-              },
-              navigationIcon = {
+          OOTDTopBar(
+              centerText = "OOTD",
+              textModifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
+              leftComposable = {
                 IconButton(
                     onClick = { onGoBack(ui.postUuid) },
                     modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
@@ -212,14 +211,7 @@ private fun PreviewItemScreenContent(
                           contentDescription = "go back",
                           tint = MaterialTheme.colorScheme.tertiary)
                     }
-              },
-              colors =
-                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-                      containerColor = MaterialTheme.colorScheme.background,
-                      scrolledContainerColor = MaterialTheme.colorScheme.background,
-                      titleContentColor = Primary,
-                      navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-              scrollBehavior = scrollBehavior)
+              })
         },
         bottomBar = {
           Row(
@@ -268,102 +260,31 @@ private fun PreviewItemScreenContent(
                     }
               }
         }) { innerPadding ->
-          if (itemsList.isNotEmpty()) {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .padding(16.dp)
-                        .padding(innerPadding)
-                        .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
-                  items(itemsList.size) { index ->
-                    OutfitItem(
-                        item = itemsList[index],
-                        onClick = { onEditItem(itemsList[index].itemUuid) })
-                  }
-                }
-          } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center) {
-                  Text(
-                      modifier =
-                          Modifier.widthIn(220.dp)
-                              .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
-                      text = "What are you wearing today ?",
-                      style =
-                          MaterialTheme.typography.titleLarge.copy(
-                              fontSize = 20.sp,
-                              fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.onSurfaceVariant),
-                      textAlign = TextAlign.Center,
-                      color = MaterialTheme.colorScheme.onSurfaceVariant)
-                  Spacer(Modifier.height(12.dp))
-                  Text(
-                      text = "Don't forget to add your items",
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.primary),
-                      textAlign = TextAlign.Center)
-                }
-          }
+          PreviewItemList(
+              itemsList = itemsList,
+              scrollBehavior = scrollBehavior,
+              innerPadding = innerPadding,
+              onEditItem = onEditItem,
+              onRemoveItem = onRemoveItem)
         }
 
     // Add Item Dialog
-    if (showAddItemDialog) {
-      AlertDialog(
-          modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
-          onDismissRequest = { showAddItemDialog = false },
-          title = { Text(text = "Add Item to Outfit") },
-          text = {
-            Column {
-              TextButton(
-                  onClick = {
-                    showAddItemDialog = false
-                    onAddItem(ui.postUuid)
-                  },
-                  modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
-                    Text("Create New Item")
-                  }
-              TextButton(
-                  onClick = {
-                    showAddItemDialog = false
-                    onSelectFromInventory(ui.postUuid)
-                  },
-                  modifier =
-                      Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
-                    Text("Select from Inventory")
-                  }
-            }
-          },
-          confirmButton = {},
-          dismissButton = {})
-    }
+    AddItemDialog(
+        showAddItemDialog = showAddItemDialog,
+        postUuid = ui.postUuid,
+        onAddItem = onAddItem,
+        onSelectFromInventory = onSelectFromInventory,
+        onDismiss = { showAddItemDialog = false })
 
     if (ui.isLoading && !enablePreview) {
-      Box(
-          modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-          contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-              CircularProgressIndicator(color = Primary)
-              Spacer(modifier = Modifier.height(12.dp))
-              Text(
-                  text = "Publishing your outfit...",
-                  color = White,
-                  style = MaterialTheme.typography.bodyLarge)
-            }
-          }
+      LoadingOverlay()
     }
   }
 }
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun OutfitItem(item: Item, onClick: (String) -> Unit) {
+fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
 
   Card(
@@ -451,6 +372,16 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
                           tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 IconButton(
+                    onClick = onRemove,
+                    modifier =
+                        Modifier.size(24.dp)
+                            .testTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Delete,
+                          contentDescription = "Remove from post",
+                          tint = MaterialTheme.colorScheme.error)
+                    }
+                IconButton(
                     onClick = { isExpanded = !isExpanded },
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EXPAND_ICON)) {
@@ -512,10 +443,123 @@ fun PreviewItemScreenPreview() {
         ui = sampleState,
         scrollBehavior = scrollBehavior,
         onEditItem = {},
+        onRemoveItem = {},
         onAddItem = {},
         onSelectFromInventory = {},
         onPublish = {},
         onGoBack = {},
         enablePreview = true)
   }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewItemList(
+    itemsList: List<Item>,
+    scrollBehavior: TopAppBarScrollBehavior,
+    innerPadding: PaddingValues,
+    onEditItem: (String) -> Unit,
+    onRemoveItem: (String) -> Unit
+) {
+  if (itemsList.isNotEmpty()) {
+    LazyColumn(
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(16.dp)
+                .padding(innerPadding)
+                .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
+          items(itemsList.size) { index ->
+            OutfitItem(
+                item = itemsList[index],
+                onClick = { onEditItem(itemsList[index].itemUuid) },
+                onRemove = { onRemoveItem(itemsList[index].itemUuid) })
+          }
+        }
+  } else {
+    EmptyItemPlaceholder()
+  }
+}
+
+@Composable
+private fun EmptyItemPlaceholder() {
+  Column(
+      modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
+        Text(
+            modifier =
+                Modifier.widthIn(220.dp).testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
+            text = "What are you wearing today ?",
+            style =
+                MaterialTheme.typography.titleLarge.copy(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Don't forget to add your items",
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary),
+            textAlign = TextAlign.Center)
+      }
+}
+
+@Composable
+private fun AddItemDialog(
+    showAddItemDialog: Boolean,
+    postUuid: String,
+    onAddItem: (String) -> Unit,
+    onSelectFromInventory: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+  if (!showAddItemDialog) return
+
+  AlertDialog(
+      modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
+      onDismissRequest = onDismiss,
+      title = { Text(text = "Add Item to Outfit") },
+      text = {
+        Column {
+          TextButton(
+              onClick = {
+                onDismiss()
+                onAddItem(postUuid)
+              },
+              modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
+                Text("Create New Item")
+              }
+          TextButton(
+              onClick = {
+                onDismiss()
+                onSelectFromInventory(postUuid)
+              },
+              modifier = Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
+                Text("Select from Inventory")
+              }
+        }
+      },
+      confirmButton = {},
+      dismissButton = {})
+}
+
+@Composable
+private fun LoadingOverlay() {
+  Box(
+      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+      contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          CircularProgressIndicator(color = Primary)
+          Spacer(modifier = Modifier.height(12.dp))
+          Text(
+              text = "Publishing your outfit...",
+              color = White,
+              style = MaterialTheme.typography.bodyLarge)
+        }
+      }
 }
