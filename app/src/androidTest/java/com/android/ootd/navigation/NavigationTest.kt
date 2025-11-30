@@ -518,7 +518,7 @@ class NavigationTest {
           Screen.MapWithLocation(
               latitude = 46.5197, longitude = 6.5682, locationName = "EPFL, Lausanne"))
 
-      var currentRoute = navigation.currentRoute()
+      val currentRoute = navigation.currentRoute()
       assertTrue(currentRoute.startsWith("map?"))
       assertTrue(currentRoute.contains("lat="))
       assertTrue(currentRoute.contains("lon="))
@@ -534,8 +534,8 @@ class NavigationTest {
           Screen.MapWithLocation(latitude = testLat, longitude = testLon, locationName = testName))
 
       var args = navController.currentBackStackEntry?.arguments
-      var lat = args?.getString("lat")?.toDoubleOrNull()
-      var lon = args?.getString("lon")?.toDoubleOrNull()
+      val lat = args?.getString("lat")?.toDoubleOrNull()
+      val lon = args?.getString("lon")?.toDoubleOrNull()
       var name = args?.getString("name")
 
       assertEquals(testLat, lat ?: 0.0, 0.0001)
