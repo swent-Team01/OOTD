@@ -340,7 +340,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
       viewModel.onAddItemClick(context) // ignored
     }
     composeTestRule.waitForIdle()
-    kotlinx.coroutines.delay(1000)
 
     assert(countingRepo.addCalls - initialCalls == 1) {
       "Expected 1 addItem() call, got ${countingRepo.addCalls - initialCalls}"
