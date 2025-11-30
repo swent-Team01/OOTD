@@ -2,12 +2,10 @@ package com.android.ootd.ui.map
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.android.ootd.model.map.Location
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.google.android.gms.maps.GoogleMap
 import com.google.maps.android.clustering.ClusterManager
-import com.google.maps.android.clustering.view.DefaultClusterRenderer
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -34,8 +32,6 @@ class PostClusterRendererTest {
   private lateinit var mockClusterManager: ClusterManager<PostMarker>
   private lateinit var mockUserRepository: UserRepository
   private lateinit var testScope: TestScope
-
-  private val testLocation = Location(46.5197, 6.6323, "Lausanne")
   private val testUser =
       User(
           uid = "user123",
@@ -60,13 +56,6 @@ class PostClusterRendererTest {
     // Verify the renderer can be set on the cluster manager (as done in Map.kt)
     every { mockClusterManager.renderer = any() } returns Unit
     mockClusterManager.renderer = renderer
-  }
-
-  @Test
-  fun renderer_extendsDefaultClusterRenderer() {
-    val renderer = createRenderer()
-
-    assert(renderer is DefaultClusterRenderer<PostMarker>)
   }
 
   @Test
