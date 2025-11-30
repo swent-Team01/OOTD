@@ -33,6 +33,9 @@ object SeeFitScreenTestTags {
   const val ITEM_CARD_CATEGORY = "seeFitItemCardCategory"
   const val ITEM_CARD_TYPE = "seeFitItemCardType"
 
+  const val ITEM_CARD_EDIT_BUTTON = "seeFitItemCardEditButton"
+  const val ITEM_STAR_BUTTON = "seeFitItemStarButton"
+
   // Dialog
   const val ITEM_DETAILS_DIALOG = "seeFitItemDetailsDialog"
   const val ITEM_IMAGE = "seeFitItemImage"
@@ -53,6 +56,8 @@ object SeeFitScreenTestTags {
   fun getTestTagForItem(item: Item): String {
     return "seeFitItemCard_${item.itemUuid}"
   }
+
+  fun getStarButtonTag(item: Item): String = "${ITEM_STAR_BUTTON}_${item.itemUuid}"
 }
 
 /**
@@ -67,14 +72,16 @@ object SeeFitScreenTestTags {
 fun SeeFitScreen(
     seeFitViewModel: SeeFitViewModel = viewModel(),
     postUuid: String = "",
-    goBack: () -> Unit = {}
+    goBack: () -> Unit = {},
+    onEditItem: (String) -> Unit = {}
 ) {
 
   val context = LocalContext.current
   val uiState by seeFitViewModel.uiState.collectAsState()
   val items = uiState.items
 
-  LaunchedEffect(Unit) { seeFitViewModel.getItemsForPost(postUuid) }
+  LaunchedEffect(postUuid) { seeFitViewModel.getItemsForPost(postUuid) }
+  LaunchedEffect(Unit) { seeFitViewModel.refreshStarredItems() }
 
   LaunchedEffect(uiState.errorMessage) {
     uiState.errorMessage?.let { errorMsg ->
@@ -110,7 +117,13 @@ fun SeeFitScreen(
 
       else -> {
         ItemGridScreen(
-            items = items, modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding))
+            items = items,
+            modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
+            onEditItem = onEditItem,
+            isOwner = uiState.isOwner,
+            starredItemIds = uiState.starredItemIds,
+            onToggleStar = seeFitViewModel::toggleStar,
+            showStarToggle = !uiState.isOwner)
       }
     }
   }

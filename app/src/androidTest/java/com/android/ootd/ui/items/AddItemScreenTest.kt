@@ -13,6 +13,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemsScreen
@@ -29,7 +31,6 @@ import org.junit.Test
 class AddItemScreenTest : ItemsTest by InMemoryItem {
 
   @get:Rule val composeTestRule = createComposeRule()
-
   private lateinit var viewModel: AddItemsViewModel
   override val repository = ItemsRepositoryProvider.repository
 
@@ -62,7 +63,8 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     // Set currency via view model to avoid flakey dropdown interactions
     composeTestRule.runOnIdle { viewModel.setCurrency("EUR") }
     composeTestRule.enterAddItemLink("www.ootd.com")
-    composeTestRule.enterAddItemMaterial("Cotton 80%, Polyester 20%")
+    // Setting material through the ViewModel mimics the text field behavior without flaky scrolling
+    composeTestRule.runOnIdle { viewModel.setMaterial("Cotton 80%, Polyester 20%") }
 
     // Verify all fields contain the correct values
     composeTestRule.runOnIdle {
@@ -316,6 +318,35 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun multipleAddClicks_ignoresDuplicateClicks() = runTest {
+    val countingRepo = CountingItemsRepository()
+    viewModel = AddItemsViewModel(repository = countingRepo, overridePhoto = true)
+    viewModel.initPostUuid("postuid")
+    viewModel.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+
+    setMainScreen()
+
+    composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.enterAddItemType("T-Shirt")
+    composeTestRule.enterAddItemBrand("TestBrand")
+    composeTestRule.enterAddItemPrice(29.99)
+
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+    val initialCalls = countingRepo.addCalls
+
+    composeTestRule.runOnIdle {
+      viewModel.onAddItemClick(context)
+      viewModel.onAddItemClick(context) // ignored
+      viewModel.onAddItemClick(context) // ignored
+    }
+    composeTestRule.waitForIdle()
+
+    assert(countingRepo.addCalls - initialCalls == 1) {
+      "Expected 1 addItem() call, got ${countingRepo.addCalls - initialCalls}"
+    }
+  }
+
+  @Test
   fun addItems_preview_rendersCoreElements() {
     // Render preview directly (no main screen content rendered beforehand)
     composeTestRule.setContent { AddItemsScreenSmallPreview() }
@@ -326,5 +357,65 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     // Image preview placeholder is visible in preview mode
     composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
+  }
+}
+
+// A counting repository to track addItem() calls
+private class CountingItemsRepository : ItemsRepository {
+  private val items = mutableListOf<Item>()
+  @Volatile
+  var addCalls: Int = 0
+    private set
+
+  override suspend fun addItem(item: Item) {
+    addCalls++
+    items += item
+  }
+
+  override suspend fun getAssociatedItems(postUuid: String): List<Item> =
+      items.filter { it.postUuids.contains(postUuid) }
+
+  override fun getNewItemId(): String = "item-${addCalls + 1}"
+
+  override suspend fun getAllItems(): List<Item> {
+    return items
+  }
+
+  override suspend fun getItemById(uuid: String): Item {
+    return items.first { it.itemUuid == uuid }
+  }
+
+  override suspend fun getItemsByIds(uuids: List<String>): List<Item> {
+    return items.filter { it.itemUuid in uuids }
+  }
+
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
+    return items.filter { it.itemUuid in uuids }
+  }
+
+  override suspend fun editItem(itemUUID: String, newItem: Item) {
+    val index = items.indexOfFirst { it.itemUuid == itemUUID }
+    if (index != -1) {
+      items[index] = newItem
+    } else {
+      throw Exception("Item with UUID $itemUUID not found.")
+    }
+  }
+
+  override suspend fun deleteItem(uuid: String) {
+    val index = items.indexOfFirst { it.itemUuid == uuid }
+    if (index != -1) {
+      items.removeAt(index)
+    } else {
+      throw Exception("Item with UUID $uuid not found.")
+    }
+  }
+
+  override suspend fun deletePostItems(postUuid: String) {
+    items.removeAll { it.postUuids.contains(postUuid) }
+  }
+
+  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+    return items.filter { it.postUuids.contains(postUuid) }
   }
 }

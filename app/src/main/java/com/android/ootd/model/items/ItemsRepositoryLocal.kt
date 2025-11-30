@@ -61,6 +61,10 @@ class ItemsRepositoryLocal : ItemsRepository {
     return uuids.mapNotNull { items[it] }
   }
 
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
+    return getItemsByIds(uuids)
+  }
+
   /**
    * Adds a new item to the local storage.
    *

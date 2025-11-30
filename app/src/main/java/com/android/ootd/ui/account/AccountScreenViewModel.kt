@@ -41,6 +41,7 @@ data class AccountPageViewState(
     val isLoading: Boolean = false,
     val errorMsg: String? = null,
     val starredItems: List<Item> = emptyList(),
+    val starredItemIds: Set<String> = emptySet(),
     val selectedTab: AccountTab = AccountTab.Posts
 )
 
@@ -92,9 +93,11 @@ class AccountPageViewModel(
         val account = accountRepository.getAccount(currentUserID)
         val usersPosts =
             feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
-        val starredIds = accountRepository.getStarredItems(currentUserID)
+        val starredIds = accountRepository.refreshStarredItems(currentUserID)
         val starredItems =
-            if (starredIds.isEmpty()) emptyList() else itemsRepository.getItemsByIds(starredIds)
+            if (starredIds.isEmpty()) emptyList()
+            else itemsRepository.getItemsByIdsAcrossOwners(starredIds)
+        Log.d(currentLog, "Refreshed starred items: ${starredIds.joinToString()}")
         _uiState.update {
           it.copy(
               username = user.username,
@@ -102,6 +105,7 @@ class AccountPageViewModel(
               posts = usersPosts,
               friends = account.friendUids,
               starredItems = starredItems,
+              starredItemIds = starredIds.toSet(),
               isLoading = false)
         }
         clearErrorMsg()
@@ -132,15 +136,33 @@ class AccountPageViewModel(
     _uiState.update { it.copy(selectedTab = tab) }
   }
 
+  /**
+   * Adds or removes [item] from the starred list.
+   *
+   * We optimistically keep [AccountPageViewState.starredItems] unchanged so the card stays visible
+   * while browsing the wishlist; only the underlying id set is updated. The tab will re-fetch the
+   * authoritative list when the screen resumes.
+   */
   fun toggleStar(item: Item) {
     viewModelScope.launch {
       try {
         val currentUserID = accountService.currentUserId
         if (currentUserID.isBlank()) return@launch
         val updatedIds = accountRepository.toggleStarredItem(item.itemUuid)
-        val starredItems =
-            if (updatedIds.isEmpty()) emptyList() else itemsRepository.getItemsByIds(updatedIds)
-        _uiState.update { it.copy(starredItems = starredItems) }
+        _uiState.update { state ->
+          state.copy(
+              starredItemIds = updatedIds.toSet(),
+              starredItems =
+                  if (updatedIds.contains(item.itemUuid)) {
+                    if (state.starredItems.any { it.itemUuid == item.itemUuid }) {
+                      state.starredItems
+                    } else {
+                      state.starredItems + item
+                    }
+                  } else {
+                    state.starredItems
+                  })
+        }
       } catch (e: Exception) {
         Log.e(currentLog, "Failed to toggle starred item: ${e.message}")
       }

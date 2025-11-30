@@ -189,6 +189,26 @@ class OutfitPreviewViewModel(
     _uiState.value = _uiState.value.copy(errorMessage = null)
   }
 
+  /** Removes an item from the current post without deleting it. */
+  fun removeItemFromPost(itemUuid: String) {
+    val state = _uiState.value
+    val postId = state.postUuid
+    val targetItem = state.items.find { it.itemUuid == itemUuid } ?: return
+    viewModelScope.launch {
+      try {
+        val updatedItem =
+            targetItem.copy(postUuids = targetItem.postUuids.filterNot { it == postId })
+        itemsRepository.editItem(itemUuid, updatedItem)
+      } catch (e: Exception) {
+        Log.e("OutfitPreviewViewModel", "Failed to remove item from post", e)
+        setErrorMessage("Couldn't remove item from post")
+      } finally {
+        _uiState.value =
+            _uiState.value.copy(items = state.items.filterNot { it.itemUuid == itemUuid })
+      }
+    }
+  }
+
   /** Sets an error message in the UI state */
   private fun setErrorMessage(message: String) {
     _uiState.value = _uiState.value.copy(errorMessage = message)

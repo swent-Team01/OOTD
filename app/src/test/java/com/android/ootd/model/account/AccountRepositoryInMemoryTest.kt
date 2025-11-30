@@ -67,4 +67,16 @@ class AccountRepositoryInMemoryTest {
     assertEquals(listOf("item-42"), updated)
     assertEquals(listOf("item-42"), repository.getStarredItems("user1"))
   }
+
+  @Test
+  fun `refreshStarredItems returns current state without mutating cache`() = runBlocking {
+    repository.addStarredItem("item-1")
+    repository.addStarredItem("item-2")
+
+    val refreshed = repository.refreshStarredItems("user1")
+
+    assertEquals(listOf("item-1", "item-2"), refreshed)
+    // Ensure cached data unchanged
+    assertEquals(refreshed, repository.getStarredItems("user1"))
+  }
 }

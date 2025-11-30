@@ -1,5 +1,10 @@
 package com.android.ootd.ui.account
 
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
@@ -10,6 +15,7 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.*
 import kotlin.collections.ArrayDeque
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +29,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -31,6 +38,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class AccountPageViewModelTest {
 
+  @get:Rule val composeRule = createComposeRule()
   private lateinit var accountService: AccountService
   private lateinit var accountRepository: AccountRepository
   private lateinit var userRepository: UserRepository
@@ -53,7 +61,7 @@ class AccountPageViewModelTest {
           image = ImageData("image-1", "url://img"),
           category = "Clothing",
           type = "Jacket")
-  private val itemLookup = mapOf(starredItem.itemUuid to starredItem)
+  private val defaultItemLookup = mapOf(starredItem.itemUuid to starredItem)
 
   @Before
   fun setup() {
@@ -79,6 +87,20 @@ class AccountPageViewModelTest {
     advanceUntilIdle()
 
     assertEquals(listOf(starredItem), viewModel.uiState.value.starredItems)
+    assertEquals(setOf(starredItem.itemUuid), viewModel.uiState.value.starredItemIds)
+  }
+
+  @Test
+  fun `retrieveUserData loads friend owned starred items`() = runTest {
+    val friendItem = starredItem.copy(itemUuid = "friend-item", ownerId = "friend-123")
+    val responses = ArrayDeque(listOf(listOf(friendItem.itemUuid)))
+    stubCommonRepositories(responses, mapOf(friendItem.itemUuid to friendItem))
+
+    createViewModel()
+    advanceUntilIdle()
+
+    assertEquals(listOf(friendItem), viewModel.uiState.value.starredItems)
+    assertEquals(setOf(friendItem.itemUuid), viewModel.uiState.value.starredItemIds)
   }
 
   @Test
@@ -92,7 +114,8 @@ class AccountPageViewModelTest {
     viewModel.toggleStar(starredItem)
     advanceUntilIdle()
 
-    assertTrue(viewModel.uiState.value.starredItems.isEmpty())
+    assertTrue(viewModel.uiState.value.starredItems.isNotEmpty())
+    assertTrue(viewModel.uiState.value.starredItemIds.isEmpty())
     coVerify { accountRepository.toggleStarredItem(starredItem.itemUuid) }
   }
 
@@ -109,7 +132,58 @@ class AccountPageViewModelTest {
     advanceUntilIdle()
 
     assertEquals(listOf(starredItem), viewModel.uiState.value.starredItems)
+    assertEquals(setOf(starredItem.itemUuid), viewModel.uiState.value.starredItemIds)
     coVerify { accountRepository.toggleStarredItem(starredItem.itemUuid) }
+  }
+
+  @Test
+  fun `selectTab updates selectedTab state`() = runTest {
+    stubCommonRepositories(ArrayDeque(listOf(emptyList())))
+
+    createViewModel()
+    advanceUntilIdle()
+
+    assertEquals(AccountTab.Posts, viewModel.uiState.value.selectedTab)
+    viewModel.selectTab(AccountTab.Starred)
+
+    assertEquals(AccountTab.Starred, viewModel.uiState.value.selectedTab)
+  }
+
+  @Test
+  fun `AccountPageContent renders preview state and forwards tab selection`() {
+    val sampleState =
+        AccountPageViewState(
+            username = "JohnDoe",
+            profilePicture = "",
+            friends = listOf("f1", "f2", "f3"),
+            posts = emptyList(),
+            isLoading = false,
+            starredItems =
+                listOf(
+                    Item(
+                        itemUuid = "1",
+                        postUuids = emptyList(),
+                        image = ImageData("1", ""),
+                        category = "Clothing",
+                        ownerId = "user")))
+    var selected: AccountTab? = null
+
+    composeRule.setContent {
+      OOTDTheme {
+        AccountPageContent(
+            uiState = sampleState,
+            onEditAccount = {},
+            onPostClick = {},
+            onSelectTab = { selected = it },
+            onToggleStar = {})
+      }
+    }
+
+    composeRule.onNodeWithTag(AccountPageTestTags.USERNAME_TEXT).assertIsDisplayed()
+    composeRule.onNodeWithText("JohnDoe").assertIsDisplayed()
+    composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_COUNT_TEXT).assertIsDisplayed()
+    composeRule.onNodeWithTag(AccountPageTestTags.STARRED_TAB).assertIsDisplayed().performClick()
+    composeRule.runOnIdle { assertEquals(AccountTab.Starred, selected) }
   }
 
   private fun createViewModel() {
@@ -122,22 +196,25 @@ class AccountPageViewModelTest {
             itemsRepository = itemsRepository)
   }
 
-  private fun stubCommonRepositories(starredResponses: ArrayDeque<List<String>>) {
+  private fun stubCommonRepositories(
+      starredResponses: ArrayDeque<List<String>>,
+      lookup: Map<String, Item> = defaultItemLookup
+  ) {
     var lastResponse = starredResponses.lastOrNull() ?: emptyList()
     coEvery { userRepository.getUser(userId) } returns sampleUser
     coEvery { accountRepository.getAccount(userId) } returns sampleAccount
     coEvery { feedRepository.getFeedForUids(listOf(userId)) } returns listOf(samplePost)
-    coEvery { accountRepository.getStarredItems(userId) } answers
+    coEvery { accountRepository.refreshStarredItems(userId) } answers
         {
           if (starredResponses.isNotEmpty()) {
             lastResponse = starredResponses.removeFirst()
           }
           lastResponse
         }
-    coEvery { itemsRepository.getItemsByIds(any()) } answers
+    coEvery { itemsRepository.getItemsByIdsAcrossOwners(any()) } answers
         {
           val ids = firstArg<List<String>>()
-          ids.mapNotNull { itemLookup[it] }
+          ids.mapNotNull { lookup[it] }
         }
   }
 }
