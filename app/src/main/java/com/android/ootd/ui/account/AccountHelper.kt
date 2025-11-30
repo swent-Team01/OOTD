@@ -1,6 +1,7 @@
 package com.android.ootd.ui.account
 
 import android.content.Context
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,6 +15,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.android.ootd.ui.camera.CameraScreen
+
+/**
+ * Handles the result from the image picker by processing the URI and uploading the image.
+ *
+ * @param uri The URI returned from the image picker, or null if no image was selected
+ * @param upload The upload function from the ViewModel
+ * @param editProfilePicture The function to update the profile picture in the ViewModel
+ * @param context The context for showing Toast messages
+ */
+internal fun handleImagePickerResult(
+    uri: Uri?,
+    upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit,
+    editProfilePicture: (String) -> Unit,
+    context: Context
+) {
+  uri?.let {
+    handlePickedProfileImage(
+        it.toString(), upload = upload, editProfilePicture = editProfilePicture, context = context)
+  }
+}
 
 /**
  * Composable function that provides profile picture editing functionality.
@@ -38,13 +59,11 @@ fun ProfilePictureEditor(
       rememberLauncherForActivityResult(
           contract = ActivityResultContracts.PickVisualMedia(),
           onResult = { uri ->
-            uri?.let {
-              handlePickedProfileImage(
-                  it.toString(),
-                  upload = viewModel::uploadImageToStorage,
-                  editProfilePicture = { url -> viewModel.editUser(profilePicture = url) },
-                  context = context)
-            }
+            handleImagePickerResult(
+                uri,
+                upload = viewModel::uploadImageToStorage,
+                editProfilePicture = { url -> viewModel.editUser(profilePicture = url) },
+                context = context)
           })
 
   if (showCamera) {
