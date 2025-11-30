@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +32,7 @@ import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils.toLatLng
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
@@ -41,11 +41,8 @@ import kotlinx.coroutines.withContext
 
 /** Test tags for ProfilePictureMarker components */
 object ProfilePictureMarkerTestTags {
-  const val MARKER_CONTENT = "profilePictureMarkerContent"
   const val PROFILE_IMAGE = "profilePictureMarkerImage"
   const val PROFILE_LETTER = "profilePictureMarkerLetter"
-
-  fun getMarkerTag(username: String): String = "profilePictureMarker_$username"
 }
 
 /**
@@ -59,36 +56,34 @@ object ProfilePictureMarkerTestTags {
  */
 @Composable
 fun MarkerContent(profileBitmap: Bitmap?, username: String) {
-  Box(
-      modifier = Modifier.size(60.dp).testTag(ProfilePictureMarkerTestTags.MARKER_CONTENT),
-      contentAlignment = Alignment.Center) {
-        if (profileBitmap != null) {
-          // Display the pre-loaded bitmap
-          Image(
-              bitmap = profileBitmap.asImageBitmap(),
-              contentDescription = "Profile Picture",
-              contentScale = ContentScale.Crop,
-              modifier =
-                  Modifier.size(60.dp)
-                      .clip(CircleShape)
-                      .testTag(ProfilePictureMarkerTestTags.PROFILE_IMAGE))
-        } else {
-          // Display initials as fallback
-          Box(
-              modifier =
-                  Modifier.size(60.dp)
-                      .clip(CircleShape)
-                      .background(Primary)
-                      .testTag(ProfilePictureMarkerTestTags.PROFILE_LETTER),
-              contentAlignment = Alignment.Center) {
-                Text(
-                    text = username.firstOrNull()?.uppercase() ?: "",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontFamily = Bodoni,
-                    color = Secondary)
-              }
-        }
-      }
+  Box(modifier = Modifier.size(60.dp), contentAlignment = Alignment.Center) {
+    if (profileBitmap != null) {
+      // Display the pre-loaded bitmap
+      Image(
+          bitmap = profileBitmap.asImageBitmap(),
+          contentDescription = "Profile Picture",
+          contentScale = ContentScale.Crop,
+          modifier =
+              Modifier.size(60.dp)
+                  .clip(CircleShape)
+                  .testTag(ProfilePictureMarkerTestTags.PROFILE_IMAGE))
+    } else {
+      // Display initials as fallback
+      Box(
+          modifier =
+              Modifier.size(60.dp)
+                  .clip(CircleShape)
+                  .background(Primary)
+                  .testTag(ProfilePictureMarkerTestTags.PROFILE_LETTER),
+          contentAlignment = Alignment.Center) {
+            Text(
+                text = username.firstOrNull()?.uppercase() ?: "",
+                style = Typography.titleLarge,
+                fontFamily = Bodoni,
+                color = Secondary)
+          }
+    }
+  }
 }
 
 /**
@@ -123,7 +118,6 @@ fun ProfilePictureMarker(
   LaunchedEffect(userId) {
     try {
       if (userId.isNotBlank()) {
-        // Fetch user data
         val user = userRepository.getUser(userId)
 
         if (user.profilePicture.isNotBlank()) {
@@ -157,7 +151,7 @@ fun ProfilePictureMarker(
       state = markerState,
       title = username,
       tag = tag,
-      anchor = Offset(0.5f, 1f),
+      anchor = Offset(0.5f, 0.5f), // Center the marker on the location point
       onClick = {
         onClick()
         true
