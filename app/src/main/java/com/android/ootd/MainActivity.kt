@@ -371,6 +371,7 @@ fun OOTDApp(
                       val focusLocation = Location(latitude = lat, longitude = lon, name = name)
 
                       MapScreen(
+                          // Create ViewModel with focus location
                           viewModel = viewModel(factory = MapViewModelFactory(focusLocation)),
                           onPostClick = { postId ->
                             navigationActions.navigateTo(Screen.PostView(postId))
