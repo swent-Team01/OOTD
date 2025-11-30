@@ -241,6 +241,8 @@ private fun DescriptionAndButton(
  * @param likeCount The total number of likes for the post.
  * @param onLikeClick Callback when the like button is clicked, passing the post UID.
  * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
+ * @param onCardClick Callback when the card is clicked, passing the post UID.
+ * @param onLocationClick Callback when the location is clicked, passing the location.
  */
 @Composable
 fun OutfitPostCard(
@@ -251,7 +253,8 @@ fun OutfitPostCard(
     likeCount: Int,
     onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {},
-    onCardClick: (String) -> Unit = {}
+    onCardClick: (String) -> Unit = {},
+    onLocationClick: (Location) -> Unit = {}
 ) {
   Box(
       modifier =
@@ -277,7 +280,7 @@ fun OutfitPostCard(
                       Modifier.clickable { onCardClick(post.postUID) }
                     }
                 PostImage(post, isBlurred, modifier = clickableModifier)
-                PostLocation(post.location)
+                PostLocation(post.location, onClick = { onLocationClick(post.location) })
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
                 LikeRow(
                     isLiked = isLiked,
@@ -320,9 +323,10 @@ fun OutfitPostCard(
  * Displays a post's geographic location below the outfit image when available.
  *
  * @param location the Location to display; only rendered when valid
+ * @param onClick callback when the location is clicked
  */
 @Composable
-fun PostLocation(location: Location) {
+fun PostLocation(location: Location, onClick: () -> Unit = {}) {
   if (isValidLocation(location)) {
     val displayName =
         if (location.name.length > 50) {
@@ -340,6 +344,7 @@ fun PostLocation(location: Location) {
         modifier =
             Modifier.fillMaxWidth()
                 .padding(top = 4.dp)
+                .clickable { onClick() }
                 .testTag(OutfitPostCardTestTags.POST_LOCATION))
   }
 }
