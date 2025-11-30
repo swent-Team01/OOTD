@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.feed.FeedRepository
@@ -33,7 +32,7 @@ import org.robolectric.RobolectricTestRunner
  *
  * Tests cover:
  * - UI component visibility
- * - Back button interaction
+ * - Post click interaction
  * - Test tags for all UI components
  *
  * Note: Tests that require rendering the actual Google Maps component are skipped as they require
@@ -104,7 +103,6 @@ class MapScreenTest {
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR_TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithText("MAP").assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
   }
 
@@ -117,15 +115,17 @@ class MapScreenTest {
   }
 
   @Test
-  fun backButton_callsOnBack_whenClicked() {
-    var backCalled = false
-    val onBack = { backCalled = true }
+  fun onPostClick_isCalledWithCorrectPostId() {
+    var clickedPostId: String? = null
+    val testPostId = "test-post-123"
+    val onPostClick: (String) -> Unit = { postId -> clickedPostId = postId }
 
-    composeTestRule.setContent { MapScreen(viewModel = mockViewModel, onBack = onBack) }
+    composeTestRule.setContent { MapScreen(viewModel = mockViewModel, onPostClick = onPostClick) }
 
-    composeTestRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).performClick()
+    // Simulate clicking on a post by directly calling the callback
+    onPostClick(testPostId)
 
-    assert(backCalled)
+    assert(clickedPostId == testPostId) { "Expected post ID '$testPostId', got '$clickedPostId'" }
   }
 
   @Test
@@ -138,11 +138,10 @@ class MapScreenTest {
             MapScreenTestTags.LOADING_INDICATOR,
             MapScreenTestTags.TOP_BAR,
             MapScreenTestTags.TOP_BAR_TITLE,
-            MapScreenTestTags.BACK_BUTTON,
             MapScreenTestTags.CONTENT_BOX)
 
     // All tags should be unique
-    assert(tags.size == 7) { "Expected 7 unique test tags, got ${tags.size}" }
+    assert(tags.size == 6) { "Expected 6 unique test tags, got ${tags.size}" }
   }
 
   @Test
