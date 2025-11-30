@@ -311,4 +311,145 @@ class PostViewViewModelTest {
     assertTrue(state.likedByUsers.isEmpty())
     assertFalse(state.isLikedByCurrentUser)
   }
+
+  @Test
+  fun saveDescription_successfully_updates_description() = runTest {
+    // Arrange: Set up initial post
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
+    val ownerUser = User(uid = "test-owner-id", username = "Test User", profilePicture = "pfp.jpg")
+    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost("test-post-id") } returns emptyList()
+    coEvery { mockPostRepository.updatePostFields(any(), any()) } returns Unit
+
+    viewModel =
+        PostViewViewModel(
+            postId = "test-post-id",
+            postRepository = mockPostRepository,
+            userRepository = mockUserRepo,
+            likesRepository = mockLikesRepo)
+    advanceUntilIdle()
+
+    // Verify initial state
+    assertEquals("Test outfit description", viewModel.uiState.value.post?.description)
+
+    // Act: Update description
+    val newDescription = "Updated description"
+    viewModel.saveDescription(newDescription)
+    advanceUntilIdle()
+
+    // Assert: Verify updatePostFields was called with correct parameters
+    coVerify {
+      mockPostRepository.updatePostFields("test-post-id", mapOf("description" to newDescription))
+    }
+
+    // Verify loadPost was called to reload the post
+    coVerify(atLeast = 2) { mockPostRepository.getPostById("test-post-id") }
+  }
+
+  @Test
+  fun saveDescription_does_nothing_when_post_is_null() = runTest {
+    // Arrange: ViewModel with no post loaded
+    viewModel =
+        PostViewViewModel(
+            postId = "",
+            postRepository = mockPostRepository,
+            userRepository = mockUserRepo,
+            likesRepository = mockLikesRepo)
+    advanceUntilIdle()
+
+    // Verify no post is loaded
+    assertNull(viewModel.uiState.value.post)
+
+    // Act: Try to save description
+    viewModel.saveDescription("New description")
+    advanceUntilIdle()
+
+    // Assert: updatePostFields should not be called
+    coVerify(exactly = 0) { mockPostRepository.updatePostFields(any(), any()) }
+  }
+
+  @Test
+  fun saveDescription_handles_update_failure() = runTest {
+    // Arrange: Set up initial post
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
+    val ownerUser = User(uid = "test-owner-id", username = "Test User", profilePicture = "pfp.jpg")
+    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost("test-post-id") } returns emptyList()
+
+    // Mock updatePostFields to throw exception
+    val errorMessage = "Network error"
+    coEvery { mockPostRepository.updatePostFields(any(), any()) } throws Exception(errorMessage)
+
+    viewModel =
+        PostViewViewModel(
+            postId = "test-post-id",
+            postRepository = mockPostRepository,
+            userRepository = mockUserRepo,
+            likesRepository = mockLikesRepo)
+    advanceUntilIdle()
+
+    // Clear error from initial load
+    assertNull(viewModel.uiState.value.error)
+
+    // Act: Try to update description
+    viewModel.saveDescription("New description")
+    advanceUntilIdle()
+
+    // Assert: Error state should be set
+    val state = viewModel.uiState.value
+    assertNotNull(state.error)
+    assertFalse(state.isLoading)
+  }
+
+  @Test
+  fun saveDescription_with_empty_string() = runTest {
+    // Arrange: Set up initial post
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
+    val ownerUser = User(uid = "test-owner-id", username = "Test User", profilePicture = "pfp.jpg")
+    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost("test-post-id") } returns emptyList()
+    coEvery { mockPostRepository.updatePostFields(any(), any()) } returns Unit
+
+    viewModel =
+        PostViewViewModel(
+            postId = "test-post-id",
+            postRepository = mockPostRepository,
+            userRepository = mockUserRepo,
+            likesRepository = mockLikesRepo)
+    advanceUntilIdle()
+
+    // Act: Save empty description
+    viewModel.saveDescription("")
+    advanceUntilIdle()
+
+    // Assert: Should still call updatePostFields with empty string
+    coVerify { mockPostRepository.updatePostFields("test-post-id", mapOf("description" to "")) }
+  }
+
+  @Test
+  fun saveDescription_handles_exception_without_message() = runTest {
+    // Arrange: Set up initial post
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
+    val ownerUser = User(uid = "test-owner-id", username = "Test User", profilePicture = "pfp.jpg")
+    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost("test-post-id") } returns emptyList()
+
+    // Mock updatePostFields to throw exception with null message
+    coEvery { mockPostRepository.updatePostFields(any(), any()) } throws Exception()
+
+    viewModel =
+        PostViewViewModel(
+            postId = "test-post-id",
+            postRepository = mockPostRepository,
+            userRepository = mockUserRepo,
+            likesRepository = mockLikesRepo)
+    advanceUntilIdle()
+
+    // Act: Try to update description
+    viewModel.saveDescription("New description")
+    advanceUntilIdle()
+
+    // Assert: Default error message should be used
+    assertEquals("Failed to update description", viewModel.uiState.value.error)
+  }
 }

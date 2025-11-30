@@ -3,6 +3,7 @@ package com.android.ootd.ui.feed
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.items.ImageData
@@ -23,6 +25,7 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
@@ -48,6 +51,7 @@ class SeeFitScreenTest {
   private var goBackCalled = false
 
   private lateinit var mockAccountService: AccountService
+  private lateinit var mockAccountRepository: AccountRepository
   private val testItem1 =
       Item(
           itemUuid = "item1",
@@ -100,6 +104,7 @@ class SeeFitScreenTest {
     mockAccountService = mockk(relaxed = true)
     mockItemsRepository = mockk(relaxed = true)
     mockFeedRepository = mockk(relaxed = true)
+    mockAccountRepository = mockk(relaxed = true)
 
     every { mockAccountService.currentUserId } returns "test-uid"
 
@@ -107,14 +112,16 @@ class SeeFitScreenTest {
         SeeFitViewModel(
             itemsRepository = mockItemsRepository,
             feedRepository = mockFeedRepository,
-            accountService = mockAccountService)
+            accountService = mockAccountService,
+            accountRepository = mockAccountRepository)
     goBackCalled = false
   }
 
   private fun setScreen(
       postUuid: String = "test-post-1",
       items: List<Item> = emptyList(),
-      postOwnerId: String = "test-uid"
+      postOwnerId: String = "test-uid",
+      starred: List<String> = emptyList()
   ) {
     // Mock feedRepository to return the post with specified owner ID
     coEvery { mockFeedRepository.getPostById(postUuid) } returns
@@ -122,6 +129,8 @@ class SeeFitScreenTest {
 
     // Mock itemsRepository to return the items for that owner
     coEvery { mockItemsRepository.getFriendItemsForPost(postUuid, postOwnerId) } returns items
+    coEvery { mockAccountRepository.getStarredItems(any()) } returns starred
+    coEvery { mockAccountRepository.toggleStarredItem(any()) } returns starred
 
     composeTestRule.setContent {
       OOTDTheme {
@@ -205,6 +214,31 @@ class SeeFitScreenTest {
 
     // Wait for loading to complete
     composeTestRule.waitForIdle()
+  }
+
+  @Test
+  fun nonOwner_seesStarButton_andCanToggle() {
+    coEvery { mockAccountRepository.getStarredItems(any()) } returns emptyList()
+    coEvery { mockAccountRepository.toggleStarredItem("item1") } returns listOf("item1")
+
+    setScreen(items = listOf(testItem1), postOwnerId = "another-user")
+
+    composeTestRule
+        .onNodeWithTag(SeeFitScreenTestTags.getStarButtonTag(testItem1))
+        .assertIsDisplayed()
+        .performClick()
+
+    composeTestRule.waitForIdle()
+    coVerify { mockAccountRepository.toggleStarredItem("item1") }
+  }
+
+  @Test
+  fun owner_doesNotSeeStarButton() {
+    setScreen(items = listOf(testItem1), postOwnerId = "test-uid")
+
+    composeTestRule
+        .onAllNodesWithTag(SeeFitScreenTestTags.getStarButtonTag(testItem1))
+        .assertCountEquals(0)
   }
 
   @Test

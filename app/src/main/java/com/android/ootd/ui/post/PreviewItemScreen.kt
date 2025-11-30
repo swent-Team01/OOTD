@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -74,9 +72,10 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.OOTDTopBar
 import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
-import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
 
@@ -87,6 +86,7 @@ object PreviewItemScreenTestTags {
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
+  const val REMOVE_ITEM_BUTTON = "removeItemButton"
   const val CREATE_ITEM_BUTTON = "createItemButton"
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
@@ -105,6 +105,7 @@ fun PreviewItemScreen(
     description: String,
     location: Location,
     onEditItem: (String) -> Unit = {},
+    onRemoveItem: (String) -> Unit = {},
     onAddItem: (String) -> Unit = {}, // now takes postUuid
     onSelectFromInventory: (String) -> Unit = {}, // new callback for inventory selection
     onPostSuccess: () -> Unit = {},
@@ -163,6 +164,8 @@ fun PreviewItemScreen(
       ui = ui,
       scrollBehavior = scrollBehavior,
       onEditItem = onEditItem,
+      onRemoveItem =
+          onRemoveItem.takeIf { enablePreview } ?: outfitPreviewViewModel::removeItemFromPost,
       onAddItem = onAddItem,
       onSelectFromInventory = onSelectFromInventory,
       onPublish = {
@@ -176,10 +179,11 @@ fun PreviewItemScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PreviewItemScreenContent(
+fun PreviewItemScreenContent(
     ui: PreviewUIState,
     scrollBehavior: TopAppBarScrollBehavior,
     onEditItem: (String) -> Unit,
+    onRemoveItem: (String) -> Unit,
     onAddItem: (String) -> Unit,
     onSelectFromInventory: (String) -> Unit,
     onPublish: () -> Unit,
@@ -249,93 +253,31 @@ private fun PreviewItemScreenContent(
                     }
               }
         }) { innerPadding ->
-          if (itemsList.isNotEmpty()) {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .padding(16.dp)
-                        .padding(innerPadding)
-                        .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
-                  items(itemsList.size) { index ->
-                    OutfitItem(
-                        item = itemsList[index],
-                        onClick = { onEditItem(itemsList[index].itemUuid) })
-                  }
-                }
-          } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center) {
-                  ShowText(
-                      modifier =
-                          Modifier.widthIn(220.dp)
-                              .testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
-                      text = "What are you wearing today ?",
-                      style =
-                          Typography.titleLarge.copy(
-                              fontSize = 20.sp,
-                              fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.onSurfaceVariant),
-                      color = MaterialTheme.colorScheme.onSurfaceVariant)
-                  Spacer(Modifier.height(12.dp))
-                  ShowText(
-                      text = "Don't forget to add your items",
-                      style =
-                          Typography.bodyMedium.copy(
-                              fontWeight = FontWeight.Medium,
-                              color = MaterialTheme.colorScheme.primary))
-                }
-          }
+          PreviewItemList(
+              itemsList = itemsList,
+              scrollBehavior = scrollBehavior,
+              innerPadding = innerPadding,
+              onEditItem = onEditItem,
+              onRemoveItem = onRemoveItem)
         }
 
     // Add Item Dialog
-    if (showAddItemDialog) {
-      AlertDialog(
-          modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
-          onDismissRequest = { showAddItemDialog = false },
-          title = { Text(text = "Add Item to Outfit") },
-          text = {
-            Column {
-              TextButton(
-                  onClick = {
-                    showAddItemDialog = false
-                    onAddItem(ui.postUuid)
-                  },
-                  modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
-                    Text("Create New Item")
-                  }
-              TextButton(
-                  onClick = {
-                    showAddItemDialog = false
-                    onSelectFromInventory(ui.postUuid)
-                  },
-                  modifier =
-                      Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
-                    Text("Select from Inventory")
-                  }
-            }
-          },
-          confirmButton = {},
-          dismissButton = {})
-    }
+    AddItemDialog(
+        showAddItemDialog = showAddItemDialog,
+        postUuid = ui.postUuid,
+        onAddItem = onAddItem,
+        onSelectFromInventory = onSelectFromInventory,
+        onDismiss = { showAddItemDialog = false })
 
     if (ui.isLoading && !enablePreview) {
-      Box(
-          modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-          contentAlignment = Alignment.Center) {
-            CenteredLoadingState(message = "Publishing your outfit...", textColor = White)
-          }
+      LoadingScreen("Publishing your outfit...")
     }
   }
 }
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun OutfitItem(item: Item, onClick: (String) -> Unit) {
+fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
   val expandIcon =
       if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
@@ -370,13 +312,13 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
                       Text(
                           text = item.category,
                           style =
-                              MaterialTheme.typography.titleLarge.copy(
+                              Typography.titleLarge.copy(
                                   fontWeight = FontWeight.SemiBold,
                                   color = MaterialTheme.colorScheme.onSurface))
                       Text(
                           text = item.type ?: "Item Type",
                           style =
-                              MaterialTheme.typography.bodyMedium.copy(
+                              Typography.bodyMedium.copy(
                                   color = MaterialTheme.colorScheme.onSurface))
                       AnimatedVisibility(visible = isExpanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -384,7 +326,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
                             Text(
                                 text = it,
                                 style =
-                                    MaterialTheme.typography.bodySmall.copy(
+                                    Typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant))
                           }
 
@@ -392,21 +334,17 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit) {
                             Text(
                                 text = item.material.joinToString { m -> m?.name ?: "" },
                                 style =
-                                    MaterialTheme.typography.bodySmall.copy(
+                                    Typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant))
                           }
                           item.price?.let {
                             Text(
                                 text = "CHF ${String.format("%.2f", it)}",
                                 style =
-                                    MaterialTheme.typography.bodySmall.copy(
+                                    Typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant))
                           }
-                          item.link?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall.copy(color = Primary))
-                          }
+                          item.link?.let { Text(text = it, style = Typography.bodySmall) }
                         }
                       }
                     }
@@ -478,10 +416,103 @@ fun PreviewItemScreenPreview() {
         ui = sampleState,
         scrollBehavior = scrollBehavior,
         onEditItem = {},
+        onRemoveItem = {},
         onAddItem = {},
         onSelectFromInventory = {},
         onPublish = {},
         onGoBack = {},
         enablePreview = true)
   }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewItemList(
+    itemsList: List<Item>,
+    scrollBehavior: TopAppBarScrollBehavior,
+    innerPadding: PaddingValues,
+    onEditItem: (String) -> Unit,
+    onRemoveItem: (String) -> Unit
+) {
+  if (itemsList.isNotEmpty()) {
+    LazyColumn(
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(16.dp)
+                .padding(innerPadding)
+                .testTag(PreviewItemScreenTestTags.ITEM_LIST)) {
+          items(itemsList.size) { index ->
+            OutfitItem(
+                item = itemsList[index],
+                onClick = { onEditItem(itemsList[index].itemUuid) },
+                onRemove = { onRemoveItem(itemsList[index].itemUuid) })
+          }
+        }
+  } else {
+    EmptyItemPlaceholder()
+  }
+}
+
+@Composable
+private fun EmptyItemPlaceholder() {
+  Column(
+      modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
+        ShowText(
+            modifier =
+                Modifier.widthIn(220.dp).testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
+            text = "What are you wearing today ?",
+            style =
+                Typography.titleLarge.copy(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        ShowText(
+            text = "Don't forget to add your items",
+            style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+      }
+}
+
+@Composable
+private fun AddItemDialog(
+    showAddItemDialog: Boolean,
+    postUuid: String,
+    onAddItem: (String) -> Unit,
+    onSelectFromInventory: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+  if (!showAddItemDialog) return
+
+  AlertDialog(
+      modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
+      onDismissRequest = onDismiss,
+      title = { Text(text = "Add Item to Outfit") },
+      text = {
+        Column {
+          TextButton(
+              onClick = {
+                onDismiss()
+                onAddItem(postUuid)
+              },
+              modifier = Modifier.testTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)) {
+                Text("Create New Item")
+              }
+          TextButton(
+              onClick = {
+                onDismiss()
+                onSelectFromInventory(postUuid)
+              },
+              modifier = Modifier.testTag(PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)) {
+                Text("Select from Inventory")
+              }
+        }
+      },
+      confirmButton = {},
+      dismissButton = {})
 }

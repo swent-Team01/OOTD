@@ -252,6 +252,8 @@ class AccountRepositoryInMemory : AccountRepository {
     return account.starredItemUids
   }
 
+  override suspend fun refreshStarredItems(userID: String): List<String> = getStarredItems(userID)
+
   override suspend fun addStarredItem(itemUid: String): Boolean {
     return try {
       val account = getAccount(currentUser)

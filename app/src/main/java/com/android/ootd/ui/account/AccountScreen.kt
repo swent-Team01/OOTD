@@ -24,9 +24,13 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -36,11 +40,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.Inventory.InventoryGrid
+import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -72,12 +80,31 @@ fun AccountPage(
 ) {
   val uiState by accountModel.uiState.collectAsState()
   val context = LocalContext.current
+  val lifecycleOwner = LocalLifecycleOwner.current
 
   LaunchedEffect(uiState.errorMsg) {
     uiState.errorMsg?.let { msg ->
       Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
       accountModel.clearErrorMsg()
     }
+  }
+
+  LaunchedEffect(uiState.selectedTab) {
+    if (uiState.selectedTab == AccountTab.Starred) {
+      accountModel.refreshUserData()
+    }
+  }
+
+  DisposableEffect(lifecycleOwner) {
+    // Refresh starred items whenever we return to the account screen so stars from friends'
+    // See Fit dialogs show up immediately.
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_RESUME) {
+        accountModel.refreshUserData()
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
   }
 
   if (uiState.isLoading) {
@@ -233,6 +260,7 @@ private fun AccountTabBody(
     AccountTab.Starred ->
         StarredTabContent(
             starredItems = uiState.starredItems,
+            starredItemIds = uiState.starredItemIds,
             onToggleStar = onToggleStar,
             screenHeight = screenHeight)
   }
@@ -260,9 +288,11 @@ private fun PostsTabContent(posts: List<OutfitPost>, onPostClick: (String) -> Un
 @Composable
 private fun StarredTabContent(
     starredItems: List<Item>,
+    starredItemIds: Set<String>,
     onToggleStar: (Item) -> Unit,
-    screenHeight: androidx.compose.ui.unit.Dp
+    screenHeight: Dp
 ) {
+  var selectedItem by remember { mutableStateOf<Item?>(null) }
   if (starredItems.isEmpty()) {
     ShowText(
         text = "Star items from your inventory to build your wishlist.",
@@ -272,10 +302,14 @@ private fun StarredTabContent(
   } else {
     InventoryGrid(
         items = starredItems,
-        onItemClick = {},
-        starredItemIds = starredItems.map { it.itemUuid }.toSet(),
+        onItemClick = { selectedItem = it },
+        starredItemIds = starredItemIds,
         onToggleStar = onToggleStar,
-        modifier = Modifier.fillMaxWidth().heightIn(max = screenHeight))
+        modifier = Modifier.fillMaxWidth().heightIn(max = screenHeight),
+        showStarToggle = true)
+    selectedItem?.let { item ->
+      SeeItemDetailsDialog(item = item, onDismissRequest = { selectedItem = null })
+    }
   }
 }
 

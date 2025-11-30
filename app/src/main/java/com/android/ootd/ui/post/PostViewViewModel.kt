@@ -26,7 +26,8 @@ data class PostViewUiState(
     val likedByUsers: List<User> = emptyList(), // to display list of users who liked the post
     val isLikedByCurrentUser: Boolean = false, // to indicate if current user liked the post
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isOwner: Boolean = false
 )
 
 /** ViewModel for viewing a single post's details */
@@ -69,6 +70,8 @@ class PostViewViewModel(
         // Load owner user - we need to fetch its username and pfp
         val owner = userRepository.getUser(post.ownerId)
 
+        val isOwner = post.ownerId == currentUserId
+
         // Get all likes for the post - Like objects contain liker IDs
         val likeObjects = likesRepository.getLikesForPost(postId)
         // Extract liker IDs from Like objects
@@ -91,7 +94,8 @@ class PostViewViewModel(
                 likedByUsers = likerUsers,
                 isLikedByCurrentUser = isLikedByMe,
                 isLoading = false,
-                error = null)
+                error = null,
+                isOwner = isOwner)
       } catch (e: Exception) {
         setError(e.message ?: "Failed to load post")
       }
@@ -115,11 +119,30 @@ class PostViewViewModel(
               com.android.ootd.model.posts.Like(
                   postId = postId, postLikerId = userId, timestamp = System.currentTimeMillis()))
         }
-
         // Reload to update like count + liker list + like state
         loadPost(postId)
       } catch (e: Exception) {
         setError(e.message ?: "Failed to toggle like status")
+      }
+    }
+  }
+
+  /**
+   * Saves updated description for the post
+   *
+   * @param newDescription The new description text to save to the post
+   */
+  fun saveDescription(newDescription: String) {
+    val post = _uiState.value.post ?: return
+    viewModelScope.launch {
+      try {
+        // Update only the description field of the post
+        postRepository.updatePostFields(
+            post.postUID, updates = mapOf("description" to newDescription))
+        // Reload to reflect changes
+        loadPost(post.postUID)
+      } catch (e: Exception) {
+        setError(e.message ?: "Failed to update description")
       }
     }
   }
