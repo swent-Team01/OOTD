@@ -3,6 +3,7 @@ package com.android.ootd.ui.post.items
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -271,7 +272,7 @@ open class AddItemsViewModel(
               }
 
               // Check if we need to schedule background upload (if offline, we got a local URI)
-              val uri = Uri.parse(uploaded.imageUrl)
+              val uri = uploaded.imageUrl.toUri()
               if (uri.scheme == "content" || uri.scheme == "file") {
                 val workRequest =
                     OneTimeWorkRequestBuilder<ImageUploadWorker>()

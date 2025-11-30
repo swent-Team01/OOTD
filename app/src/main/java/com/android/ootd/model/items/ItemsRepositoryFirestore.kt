@@ -19,6 +19,13 @@ const val NOT_LOGGED_IN_EXCEPTION = "ItemsRepositoryFirestore: User not logged i
 
 class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsRepository {
 
+  companion object {
+    private const val TIMEOUT = 2000L
+    private const val SIZE_BATCH = 10
+    private const val ITEM_ATTRIBUTE = "itemUuid"
+    private const val TAG = "ItemsRepositoryFirestore"
+  }
+
   override fun getNewItemId(): String {
     return db.collection(ITEMS_COLLECTION).document().id
   }
@@ -55,16 +62,16 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     val items = mutableListOf<Item>()
 
     // Fetch items from Firestore in chunks
-    uuids.chunked(10).forEach { batch ->
+    uuids.chunked(SIZE_BATCH).forEach { batch ->
       try {
         val snapshot =
             db.collection(ITEMS_COLLECTION)
-                .whereIn("itemUuid", batch)
+                .whereIn(ITEM_ATTRIBUTE, batch)
                 .whereEqualTo(OWNER_ATTRIBUTE_NAME, ownerId)
                 .get()
                 .await()
         items.addAll(snapshot.mapNotNull { mapToItem(it) })
-      } catch (e: Exception) {
+      } catch (_: Exception) {
         // Ignore errors for this batch to allow partial results
       }
     }
@@ -81,7 +88,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
             try {
               val doc = db.collection(ITEMS_COLLECTION).document(uuid).get().await()
               mapToItem(doc)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
               null
             }
           }
@@ -101,13 +108,13 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
 
   override suspend fun addItem(item: Item) {
     try {
-      withTimeout(2000L) {
+      withTimeout(TIMEOUT) {
         db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
       }
     } catch (e: TimeoutCancellationException) {
       // Timeout means offline; Firestore will sync later
     } catch (e: Exception) {
-      Log.e("ItemsRepositoryFirestore", "Error adding item: ${e.message}", e)
+      Log.e(TAG, "Error adding item: ${e.message}", e)
       throw e
     }
   }
@@ -117,7 +124,7 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       // Check existence first (optional, but good for consistency)
       // We use a short timeout for existence check
       try {
-        withTimeout(1000L) {
+        withTimeout(TIMEOUT) {
           val doc = db.collection(ITEMS_COLLECTION).document(itemUUID).get().await()
           if (!doc.exists()) {
             throw Exception("ItemsRepositoryFirestore: Item not found")
@@ -127,22 +134,24 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
         // Timeout on existence check; assume exists and try to update
       }
 
-      withTimeout(2000L) { db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await() }
+      withTimeout(TIMEOUT) {
+        db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await()
+      }
     } catch (e: TimeoutCancellationException) {
       // Timeout means offline; Firestore will sync later
     } catch (e: Exception) {
-      Log.e("ItemsRepositoryFirestore", "Error editing item: ${e.message}", e)
+      Log.e(TAG, "Error editing item: ${e.message}", e)
       throw e
     }
   }
 
   override suspend fun deleteItem(uuid: String) {
     try {
-      withTimeout(2000L) { db.collection(ITEMS_COLLECTION).document(uuid).delete().await() }
+      withTimeout(TIMEOUT) { db.collection(ITEMS_COLLECTION).document(uuid).delete().await() }
     } catch (e: TimeoutCancellationException) {
       // Timeout means offline; Firestore will sync later
     } catch (e: Exception) {
-      Log.e("ItemsRepositoryFirestore", "Error deleting item: ${e.message}", e)
+      Log.e(TAG, "Error deleting item: ${e.message}", e)
       throw e
     }
   }

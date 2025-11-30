@@ -122,6 +122,7 @@ class AccountRepositoryFirestore(
 
   companion object {
 
+    private const val TIMEOUT = 2000L
     private const val TAG = "AccountRepositoryFirestore"
   }
 
@@ -388,11 +389,6 @@ class AccountRepositoryFirestore(
                   "profilePicture" to newProfilePic,
                   "location" to mapFromLocation(newLocation)))
           .await()
-
-      Log.d(
-          TAG,
-          "Successfully updated account with UID: $userID, new username $newUsername, " +
-              "birthdate $newBirthDate, profilePic $newProfilePic, location $newLocation")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
@@ -408,7 +404,6 @@ class AccountRepositoryFirestore(
 
       try {
         storage.reference.child("profile_pictures/$userID.jpg").delete().await()
-        Log.d(TAG, "Successfully deleted profile picture from storage for user: $userID")
       } catch (e: Exception) {
         Log.w(TAG, "Could not delete profile picture from storage (may not exist): ${e.message}")
       }
@@ -417,7 +412,6 @@ class AccountRepositoryFirestore(
           .document(userID)
           .update(mapOf("profilePicture" to ""))
           .await()
-      Log.d(TAG, "Successfully cleared profile picture link for user: $userID")
     } catch (e: NoSuchElementException) {
       Log.e(TAG, "User with userID $userID not found", e)
       throw UnknowUserID()
@@ -449,8 +443,7 @@ class AccountRepositoryFirestore(
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      withTimeout(2000L) { userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await() }
-      Log.d(TAG, "Item added to Firestore")
+      withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await() }
       true
     } catch (e: TimeoutCancellationException) {
       Log.w(TAG, "Account item add timed out (offline), queued.")
@@ -466,7 +459,7 @@ class AccountRepositoryFirestore(
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      withTimeout(2000L) { userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await() }
+      withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await() }
       Log.d("AccountRepositoryFirestore", "Item removed from Firestore")
       true
     } catch (e: TimeoutCancellationException) {
@@ -515,7 +508,7 @@ class AccountRepositoryFirestore(
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-      withTimeout(2000L) {
+      withTimeout(TIMEOUT) {
         userRef.update("starredItemUids", FieldValue.arrayUnion(itemUid)).await()
       }
       true
@@ -532,7 +525,7 @@ class AccountRepositoryFirestore(
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-      withTimeout(2000L) {
+      withTimeout(TIMEOUT) {
         userRef.update("starredItemUids", FieldValue.arrayRemove(itemUid)).await()
       }
       true
@@ -560,7 +553,7 @@ class AccountRepositoryFirestore(
           // But we can try to read from cache specifically
           try {
             userRef.get(Source.CACHE).await()
-          } catch (e2: Exception) {
+          } catch (_: Exception) {
             throw e // Give up if neither works
           }
         }
@@ -573,7 +566,7 @@ class AccountRepositoryFirestore(
         if (isStarred) FieldValue.arrayRemove(itemUid) else FieldValue.arrayUnion(itemUid)
 
     try {
-      withTimeout(2000L) { userRef.update("starredItemUids", operation).await() }
+      withTimeout(TIMEOUT) { userRef.update("starredItemUids", operation).await() }
     } catch (e: TimeoutCancellationException) {
       Log.w(TAG, "Starred item toggle timed out (offline), queued.")
     }
