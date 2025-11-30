@@ -54,7 +54,7 @@ import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.utils.composables.BackArrow
-import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTopBar
 
 object AddItemScreenTestTags {
@@ -149,9 +149,8 @@ fun AddItemsScreen(
     Scaffold(
         topBar = {
           OOTDTopBar(
-              modifier = modifier,
-              textModifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
-              centerText = "Add item",
+              textModifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
+              centerText = "ADD ITEMS",
               leftComposable = {
                 BackArrow(
                     onBackClick = goBack,
@@ -238,7 +237,7 @@ fun AddItemsScreen(
         })
 
     if (itemsUIState.isLoading) {
-      CenteredLoadingState(message = "Uploading item...")
+      LoadingScreen(contentDescription = "Uploading item...")
     }
   }
 }
@@ -463,9 +462,13 @@ fun AddItemsScreenSmallPreview() {
       Scaffold(
           topBar = {
             OOTDTopBar(
-                centerText = "ADD ITEM",
                 textModifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
-                leftComposable = { BackArrow(onBackClick = {}) })
+                centerText = "ADD ITEMS",
+                leftComposable = {
+                  BackArrow(
+                      onBackClick = {},
+                      modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
+                })
           },
           content = { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {

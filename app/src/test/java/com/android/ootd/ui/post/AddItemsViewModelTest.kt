@@ -129,6 +129,20 @@ class AddItemsViewModelTest {
   @Test
   fun `onAddItemClick with overridePhoto succeeds`() = runTest {
     val vm = AddItemsViewModel(mockRepository, mockAccountRepository, true)
+    vm.initTypeSuggestions(ApplicationProvider.getApplicationContext())
+    vm.setCategory("Clothing")
+
+    mockkStatic(FirebaseAuth::class)
+    val mockAuth = mockk<FirebaseAuth>()
+    val mockUser = mockk<FirebaseUser>()
+    every { FirebaseAuth.getInstance() } returns mockAuth
+    every { mockAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "uid"
+
+    coEvery { mockRepository.getNewItemId() } returns "id"
+    coEvery { mockRepository.addItem(any()) } returns Unit
+    coEvery { mockAccountRepository.addItem(any()) } returns true
+
     vm.onAddItemClick(context)
     advanceUntilIdle()
     assertTrue(vm.addOnSuccess.value)

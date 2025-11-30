@@ -36,6 +36,8 @@ object SeeFitScreenTestTags {
   const val ITEM_CARD_CATEGORY = "seeFitItemCardCategory"
   const val ITEM_CARD_TYPE = "seeFitItemCardType"
 
+  const val ITEM_CARD_EDIT_BUTTON = "seeFitItemCardEditButton"
+
   // Dialog
   const val ITEM_DETAILS_DIALOG = "seeFitItemDetailsDialog"
   const val ITEM_IMAGE = "seeFitItemImage"
@@ -70,7 +72,8 @@ object SeeFitScreenTestTags {
 fun SeeFitScreen(
     seeFitViewModel: SeeFitViewModel = viewModel(),
     postUuid: String = "",
-    goBack: () -> Unit = {}
+    goBack: () -> Unit = {},
+    onEditItem: (String) -> Unit = {}
 ) {
 
   val context = LocalContext.current
@@ -119,7 +122,10 @@ fun SeeFitScreen(
 
       else -> {
         ItemGridScreen(
-            items = items, modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding))
+            items = items,
+            modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
+            onEditItem = onEditItem,
+            isOwner = uiState.isOwner)
       }
     }
   }

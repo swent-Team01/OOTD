@@ -2,24 +2,45 @@ package com.android.ootd.ui.account
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.model.items.ImageData
+import com.android.ootd.model.items.Item
+import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.Inventory.InventoryGrid
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -39,6 +60,8 @@ object AccountPageTestTags {
   const val LOADING = "accountPageLoading"
   const val YOUR_POST_SECTION = "yourPostsStart"
   const val POST_TAG = "postTag"
+  const val POSTS_TAB = "accountPagePostsTab"
+  const val STARRED_TAB = "accountPageStarredTab"
 }
 
 @Composable
@@ -62,7 +85,12 @@ fun AccountPage(
         modifier = Modifier.testTag(AccountPageTestTags.LOADING),
         contentDescription = "Loading profile")
   } else {
-    AccountPageContent(uiState, onEditAccount, onPostClick)
+    AccountPageContent(
+        uiState = uiState,
+        onEditAccount = onEditAccount,
+        onPostClick = onPostClick,
+        onSelectTab = accountModel::selectTab,
+        onToggleStar = accountModel::toggleStar)
   }
 }
 
@@ -70,14 +98,12 @@ fun AccountPage(
 fun AccountPageContent(
     uiState: AccountPageViewState,
     onEditAccount: () -> Unit,
-    onPostClick: (String) -> Unit = {}
+    onPostClick: (String) -> Unit = {},
+    onSelectTab: (AccountTab) -> Unit,
+    onToggleStar: (Item) -> Unit
 ) {
-  val friendList = uiState.friends
-  val friendListSize = friendList.size
-  val username = uiState.username
-  val posts = uiState.posts
-  val profilePicture = uiState.profilePicture
   val scrollState = rememberScrollState()
+  val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
   Column(
       modifier =
@@ -85,65 +111,172 @@ fun AccountPageContent(
               .background(colorScheme.background)
               .verticalScroll(scrollState)
               .padding(horizontal = 22.dp, vertical = 10.dp)) {
-        // Setting button
-        OOTDTopBar(
-            textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
-            rightComposable = {
-              SettingsButton(
-                  onEditAccount = onEditAccount,
-                  modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
-                  size = 32.dp)
-            },
-            leftComposable = {})
-        Spacer(modifier = Modifier.height(36.dp))
+        AccountHeader(
+            username = uiState.username,
+            profilePicture = uiState.profilePicture,
+            friendCount = uiState.friends.size,
+            onEditAccount = onEditAccount)
 
-        // Avatar
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          ProfilePicture(
-              modifier =
-                  Modifier.testTag(
-                      AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() }
-                          ?: AccountPageTestTags.AVATAR_IMAGE),
-              size = 150.dp,
-              profilePicture = profilePicture,
-              username = uiState.username,
-              shape = CircleShape)
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-        // Username
-        ShowText(
-            text = username,
-            style = typography.displayLarge,
-            modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
-            color = colorScheme.primary)
-
-        Spacer(modifier = Modifier.height(9.dp))
-
-        // Friend count
-        ShowText(
-            text = "$friendListSize friends",
-            style = typography.bodyLarge,
-            modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
-
-        Spacer(modifier = Modifier.height(30.dp))
-
-        ShowText(
-            text = "Your posts :",
-            style = typography.bodyLarge,
-            modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
-            textAlign = TextAlign.Left,
-            fontFamily = Bodoni)
+        AccountTabs(
+            selectedTab = uiState.selectedTab,
+            tabs = listOf(AccountTab.Posts, AccountTab.Starred),
+            onSelectTab = onSelectTab)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        DisplayUserPosts(
-            posts = posts,
+        AccountTabBody(
+            uiState = uiState,
             onPostClick = onPostClick,
-            modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
-            padding = 22.dp,
-            spacing = 8.dp)
+            onToggleStar = onToggleStar,
+            screenHeight = screenHeight)
       }
+}
+
+@Composable
+private fun AccountHeader(
+    username: String,
+    profilePicture: String,
+    friendCount: Int,
+    onEditAccount: () -> Unit
+) {
+  OOTDTopBar(
+      textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
+      rightComposable = {
+        SettingsButton(
+            onEditAccount = onEditAccount,
+            modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
+            size = 32.dp)
+      },
+      leftComposable = {})
+
+  Spacer(modifier = Modifier.height(36.dp))
+
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    ProfilePicture(
+        modifier =
+            Modifier.testTag(
+                AccountPageTestTags.AVATAR_LETTER.takeIf { profilePicture.isBlank() }
+                    ?: AccountPageTestTags.AVATAR_IMAGE),
+        size = 150.dp,
+        profilePicture = profilePicture,
+        username = username,
+        shape = CircleShape)
+  }
+
+  Spacer(modifier = Modifier.height(18.dp))
+
+  ShowText(
+      text = username,
+      style = typography.displayLarge,
+      modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
+      color = colorScheme.primary)
+
+  Spacer(modifier = Modifier.height(9.dp))
+
+  ShowText(
+      text = "$friendCount friends",
+      style = typography.bodyLarge,
+      modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
+
+  Spacer(modifier = Modifier.height(30.dp))
+}
+
+@Composable
+private fun AccountTabs(
+    selectedTab: AccountTab,
+    tabs: List<AccountTab>,
+    onSelectTab: (AccountTab) -> Unit
+) {
+  TabRow(
+      selectedTabIndex = tabs.indexOf(selectedTab),
+      containerColor = colorScheme.secondary,
+      contentColor = colorScheme.onSecondaryContainer) {
+        tabs.forEach { tab ->
+          Tab(
+              selected = tab == selectedTab,
+              onClick = { onSelectTab(tab) },
+              modifier =
+                  Modifier.testTag(
+                      if (tab == AccountTab.Posts) AccountPageTestTags.POSTS_TAB
+                      else AccountPageTestTags.STARRED_TAB),
+              text = { TabLabel(tab) })
+        }
+      }
+}
+
+@Composable
+private fun TabLabel(tab: AccountTab) {
+  if (tab == AccountTab.Starred) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          Icon(
+              imageVector = Icons.Filled.Star,
+              contentDescription = "Starred Tab",
+              tint = colorScheme.primary)
+          Text("Starred")
+        }
+  } else {
+    Text("Posts")
+  }
+}
+
+@Composable
+private fun AccountTabBody(
+    uiState: AccountPageViewState,
+    onPostClick: (String) -> Unit,
+    onToggleStar: (Item) -> Unit,
+    screenHeight: Dp
+) {
+  when (uiState.selectedTab) {
+    AccountTab.Posts -> PostsTabContent(posts = uiState.posts, onPostClick = onPostClick)
+    AccountTab.Starred ->
+        StarredTabContent(
+            starredItems = uiState.starredItems,
+            onToggleStar = onToggleStar,
+            screenHeight = screenHeight)
+  }
+}
+
+@Composable
+private fun PostsTabContent(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
+  ShowText(
+      text = "Your posts :",
+      style = typography.bodyLarge,
+      modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
+      textAlign = TextAlign.Left,
+      fontFamily = Bodoni)
+
+  Spacer(modifier = Modifier.height(16.dp))
+
+  DisplayUserPosts(
+      posts = posts,
+      onPostClick = onPostClick,
+      modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
+      padding = 22.dp,
+      spacing = 8.dp)
+}
+
+@Composable
+private fun StarredTabContent(
+    starredItems: List<Item>,
+    onToggleStar: (Item) -> Unit,
+    screenHeight: androidx.compose.ui.unit.Dp
+) {
+  if (starredItems.isEmpty()) {
+    ShowText(
+        text = "Star items from your inventory to build your wishlist.",
+        style = typography.bodyMedium,
+        color = colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center)
+  } else {
+    InventoryGrid(
+        items = starredItems,
+        onItemClick = {},
+        starredItemIds = starredItems.map { it.itemUuid }.toSet(),
+        onToggleStar = onToggleStar,
+        modifier = Modifier.fillMaxWidth().heightIn(max = screenHeight))
+  }
 }
 
 @Preview(showBackground = true)
@@ -156,7 +289,22 @@ fun AccountPagePreview() {
           friends = listOf("friend1", "friend2", "friend3"),
           posts = listOf(),
           isLoading = false,
-          errorMsg = null)
+          errorMsg = null,
+          starredItems =
+              listOf(
+                  Item(
+                      itemUuid = "1",
+                      postUuids = emptyList(),
+                      image = ImageData("1", ""),
+                      category = "Clothing",
+                      ownerId = "user")))
 
-  OOTDTheme { AccountPageContent(uiState = sampleState, onEditAccount = {}, onPostClick = {}) }
+  OOTDTheme {
+    AccountPageContent(
+        uiState = sampleState,
+        onEditAccount = {},
+        onPostClick = {},
+        onSelectTab = {},
+        onToggleStar = {})
+  }
 }

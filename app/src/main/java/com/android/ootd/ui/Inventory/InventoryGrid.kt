@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,7 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.items.Item
-import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
 /**
@@ -28,7 +27,14 @@ import com.android.ootd.utils.CategoryNormalizer
  * @param modifier Modifier for styling
  */
 @Composable
-fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modifier = Modifier) {
+fun InventoryGrid(
+    items: List<Item>,
+    onItemClick: (Item) -> Unit,
+    starredItemIds: Set<String>,
+    onToggleStar: (Item) -> Unit,
+    modifier: Modifier = Modifier,
+    showStarToggle: Boolean = true
+) {
   // Group items by category
   val groupedItems = items.groupBy { it.category }
 
@@ -47,9 +53,7 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
             item(span = { GridItemSpan(3) }) {
               Text(
                   text = category.uppercase(),
-                  style =
-                      MaterialTheme.typography.titleLarge.copy(
-                          fontWeight = FontWeight.Bold, color = Primary),
+                  style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                   modifier =
                       Modifier.fillMaxWidth()
                           .padding(top = 16.dp, bottom = 8.dp)
@@ -58,7 +62,12 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
 
             // Items in this category
             items(categoryItems) { item ->
-              InventoryItemCard(item = item, onClick = { onItemClick(item) })
+              InventoryItemCard(
+                  item = item,
+                  onClick = { onItemClick(item) },
+                  isStarred = starredItemIds.contains(item.itemUuid),
+                  onToggleStar = { onToggleStar(item) },
+                  showStarIcon = showStarToggle)
             }
           }
         }
@@ -70,9 +79,7 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
           item(span = { GridItemSpan(3) }) {
             Text(
                 text = "OTHER",
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold, color = Primary),
+                style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier =
                     Modifier.fillMaxWidth()
                         .padding(top = 16.dp, bottom = 8.dp)
@@ -80,7 +87,12 @@ fun InventoryGrid(items: List<Item>, onItemClick: (Item) -> Unit, modifier: Modi
           }
 
           items(unknownItems) { item ->
-            InventoryItemCard(item = item, onClick = { onItemClick(item) })
+            InventoryItemCard(
+                item = item,
+                onClick = { onItemClick(item) },
+                isStarred = starredItemIds.contains(item.itemUuid),
+                onToggleStar = { onToggleStar(item) },
+                showStarIcon = showStarToggle)
           }
         }
       }

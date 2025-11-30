@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.OOTDTopBar
 
 object InventoryScreenTestTags {
@@ -49,6 +50,7 @@ object InventoryScreenTestTags {
   const val EMPTY_STATE = "inventoryEmptyState"
   const val ITEMS_GRID = "inventoryItemsGrid"
   const val ITEM_CARD = "inventoryItemCard"
+  const val ITEM_STAR_BUTTON = "inventoryItemStarButton"
   const val ADD_ITEM_FAB = "inventoryAddItemFab"
   const val SEARCH_FAB = "inventorySearchFab"
   const val SEARCH_BAR = "inventorySearchBar"
@@ -160,7 +162,7 @@ fun InventoryScreen(
                           } else {
                             "No items in your inventory yet.\n Add new items to your inventory and you will see them here!"
                           },
-                      style = MaterialTheme.typography.bodyLarge,
+                      style = Typography.bodyLarge,
                       color = Color.Gray,
                       textAlign = TextAlign.Center,
                       modifier =
@@ -173,7 +175,9 @@ fun InventoryScreen(
                     items = uiState.items,
                     onItemClick = { item ->
                       navigationActions?.navigateTo(Screen.EditItem(item.itemUuid))
-                    })
+                    },
+                    starredItemIds = uiState.starredItemIds,
+                    onToggleStar = { item -> inventoryViewModel.toggleStar(item.itemUuid) })
               }
             }
           }
