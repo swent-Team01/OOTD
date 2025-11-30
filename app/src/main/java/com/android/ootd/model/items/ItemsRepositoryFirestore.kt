@@ -6,6 +6,9 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
@@ -69,22 +72,23 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     return items
   }
 
-  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> {
-    if (uuids.isEmpty()) return emptyList()
+  override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>): List<Item> = coroutineScope {
+    if (uuids.isEmpty()) return@coroutineScope emptyList()
 
-    val items = mutableListOf<Item>()
-
-    // Fetch items from Firestore in chunks
-    uuids.chunked(10).forEach { batch ->
-      try {
-        val snapshot = db.collection(ITEMS_COLLECTION).whereIn("itemUuid", batch).get().await()
-        items.addAll(snapshot.mapNotNull { mapToItem(it) })
-      } catch (e: Exception) {
-        Log.w("ItemsRepositoryFirestore", "Failed to fetch batch of items: ${e.message}")
-      }
-    }
-
-    return items
+    uuids
+        .map { uuid ->
+          async {
+            try {
+              val doc = db.collection(ITEMS_COLLECTION).document(uuid).get().await()
+              mapToItem(doc)
+            } catch (e: Exception) {
+              Log.w("ItemsRepositoryFirestore", "Failed to fetch item $uuid: ${e.message}")
+              null
+            }
+          }
+        }
+        .awaitAll()
+        .filterNotNull()
   }
 
   private fun mapToItem(doc: DocumentSnapshot): Item? {

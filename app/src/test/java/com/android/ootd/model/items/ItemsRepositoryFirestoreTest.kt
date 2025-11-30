@@ -2,10 +2,10 @@ package com.android.ootd.model.items
 
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.QueryDocumentSnapshot
-import com.google.firebase.firestore.QuerySnapshot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -45,23 +45,27 @@ class ItemsRepositoryFirestoreTest {
     val item1 = sampleItem("item-1")
     val item2 = sampleItem("item-2")
 
-    val doc1: QueryDocumentSnapshot = mockk(relaxed = true)
-    val doc2: QueryDocumentSnapshot = mockk(relaxed = true)
-    every { doc1.data } returns ItemsMappers.toMap(item1)
-    every { doc2.data } returns ItemsMappers.toMap(item2)
+    val docRef1: DocumentReference = mockk(relaxed = true)
+    val docRef2: DocumentReference = mockk(relaxed = true)
+    val docSnap1: DocumentSnapshot = mockk(relaxed = true)
+    val docSnap2: DocumentSnapshot = mockk(relaxed = true)
 
-    val querySnapshot: QuerySnapshot = mockk(relaxed = true)
-    every { querySnapshot.iterator() } returns mutableListOf(doc1, doc2).iterator()
-    every { querySnapshot.documents } returns listOf(doc1, doc2)
+    every { collection.document("item-1") } returns docRef1
+    every { collection.document("item-2") } returns docRef2
 
-    every { collection.whereIn(any<String>(), any<List<Any>>()) } returns query
-    every { query.get() } returns Tasks.forResult(querySnapshot)
+    every { docRef1.get() } returns Tasks.forResult(docSnap1)
+    every { docRef2.get() } returns Tasks.forResult(docSnap2)
+
+    every { docSnap1.exists() } returns true
+    every { docSnap2.exists() } returns true
+    every { docSnap1.data } returns ItemsMappers.toMap(item1)
+    every { docSnap2.data } returns ItemsMappers.toMap(item2)
 
     val firstFetch = repository.getItemsByIdsAcrossOwners(ids)
 
-    assertEquals(ids, firstFetch.map { it.itemUuid })
-    verify(exactly = 1) { collection.whereIn(any<String>(), any<List<Any>>()) }
-    verify(exactly = 1) { query.get() }
+    assertEquals(ids.toSet(), firstFetch.map { it.itemUuid }.toSet())
+    verify(exactly = 1) { collection.document("item-1") }
+    verify(exactly = 1) { collection.document("item-2") }
   }
 
   private fun sampleItem(id: String): Item =
