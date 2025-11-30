@@ -65,16 +65,18 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
                         Modifier.align(Alignment.Center)
                             .testTag(MapScreenTestTags.LOADING_INDICATOR))
               } else {
-                // Camera position centered on user's location
+                // Camera position centered on focus location (either provided location or user's
+                // location)
                 val cameraPositionState = rememberCameraPositionState {
-                  position = CameraPosition.fromLatLngZoom(viewModel.getUserLatLng(), 12f)
+                  position = CameraPosition.fromLatLngZoom(viewModel.getFocusLatLng(), 12f)
                 }
 
-                // Update camera position when user location changes
-                androidx.compose.runtime.LaunchedEffect(uiState.userLocation) {
-                  cameraPositionState.animate(
-                      CameraUpdateFactory.newLatLngZoom(viewModel.getUserLatLng(), 12f))
-                }
+                // Update camera position when focus location changes
+                androidx.compose.runtime.LaunchedEffect(
+                    uiState.focusLocation, uiState.userLocation) {
+                      cameraPositionState.animate(
+                          CameraUpdateFactory.newLatLngZoom(viewModel.getFocusLatLng(), 12f))
+                    }
 
                 GoogleMap(
                     modifier = Modifier.fillMaxSize().testTag(MapScreenTestTags.GOOGLE_MAP_SCREEN),
