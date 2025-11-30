@@ -105,6 +105,8 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
 
         override suspend fun getStarredItems(userID: String): List<String> = emptyList()
 
+        override suspend fun refreshStarredItems(userID: String): List<String> = emptyList()
+
         override suspend fun addStarredItem(itemUid: String): Boolean = true
 
         override suspend fun removeStarredItem(itemUid: String): Boolean = true
@@ -122,6 +124,8 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
 
         override suspend fun getItemsByIds(uuids: List<String>) =
             items.filter { it.itemUuid in uuids }
+
+        override suspend fun getItemsByIdsAcrossOwners(uuids: List<String>) = getItemsByIds(uuids)
 
         override suspend fun getAssociatedItems(postUuid: String) = postItems
 

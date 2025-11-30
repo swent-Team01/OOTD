@@ -34,6 +34,7 @@ object SeeFitScreenTestTags {
   const val ITEM_CARD_TYPE = "seeFitItemCardType"
 
   const val ITEM_CARD_EDIT_BUTTON = "seeFitItemCardEditButton"
+  const val ITEM_STAR_BUTTON = "seeFitItemStarButton"
 
   // Dialog
   const val ITEM_DETAILS_DIALOG = "seeFitItemDetailsDialog"
@@ -55,6 +56,8 @@ object SeeFitScreenTestTags {
   fun getTestTagForItem(item: Item): String {
     return "seeFitItemCard_${item.itemUuid}"
   }
+
+  fun getStarButtonTag(item: Item): String = "${ITEM_STAR_BUTTON}_${item.itemUuid}"
 }
 
 /**
@@ -77,7 +80,8 @@ fun SeeFitScreen(
   val uiState by seeFitViewModel.uiState.collectAsState()
   val items = uiState.items
 
-  LaunchedEffect(Unit) { seeFitViewModel.getItemsForPost(postUuid) }
+  LaunchedEffect(postUuid) { seeFitViewModel.getItemsForPost(postUuid) }
+  LaunchedEffect(Unit) { seeFitViewModel.refreshStarredItems() }
 
   LaunchedEffect(uiState.errorMessage) {
     uiState.errorMessage?.let { errorMsg ->
@@ -116,7 +120,10 @@ fun SeeFitScreen(
             items = items,
             modifier = Modifier.fillMaxWidth().padding(16.dp).padding(innerPadding),
             onEditItem = onEditItem,
-            isOwner = uiState.isOwner)
+            isOwner = uiState.isOwner,
+            starredItemIds = uiState.starredItemIds,
+            onToggleStar = seeFitViewModel::toggleStar,
+            showStarToggle = !uiState.isOwner)
       }
     }
   }
