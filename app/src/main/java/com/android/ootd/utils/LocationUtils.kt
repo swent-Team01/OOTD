@@ -26,10 +26,10 @@ object LocationUtils {
    * Checks if location permission is already granted.
    *
    * @param context The application context
-   * @return true if ACCESS_COARSE_LOCATION permission is granted, false otherwise
+   * @return true if ACCESS_FINE_LOCATION permission is granted, false otherwise
    */
   fun hasLocationPermission(context: Context): Boolean {
-    return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+    return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED
   }
 
@@ -86,7 +86,7 @@ object LocationUtils {
    * @param onSuccess Callback invoked with the retrieved Location on success
    * @param onFailure Callback invoked with an error message on failure
    */
-  @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+  @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
   fun getCurrentGPSLocation(
       locationRepository: LocationRepository = LocationRepositoryProvider.repository,
       onSuccess: (Location) -> Unit,
@@ -95,8 +95,7 @@ object LocationUtils {
     val cancellationTokenSource = CancellationTokenSource()
 
     fusedLocationClient
-        .getCurrentLocation(
-            Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationTokenSource.token)
+        .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
         .addOnSuccessListener { androidLocation: android.location.Location? ->
           processAndroidLocation(androidLocation, locationRepository, onSuccess, onFailure)
           cancellationTokenSource.cancel()
