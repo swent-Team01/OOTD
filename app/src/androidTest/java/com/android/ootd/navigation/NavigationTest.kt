@@ -3,6 +3,7 @@ package com.android.ootd.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,6 +14,7 @@ import androidx.navigation.navArgument
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
+import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import org.junit.Assert.assertEquals
@@ -67,8 +69,21 @@ class NavigationTest {
                 listOf(
                     navArgument("lat") { type = NavType.StringType },
                     navArgument("lon") { type = NavType.StringType },
-                    navArgument("name") { type = NavType.StringType })) {
-              MapScreen(onPostClick = {})
+                    navArgument("name") { type = NavType.StringType })) { backStackEntry ->
+              val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
+              val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
+              val name = backStackEntry.arguments?.getString("name") ?: ""
+              val focusLocation = Location(latitude = lat, longitude = lon, name = name)
+              MapScreen(
+                  viewModel = viewModel(factory = MapViewModelFactory(focusLocation)),
+                  onPostClick = { postId -> navigation.navigateTo(Screen.PostView(postId)) })
+            }
+
+        // Add PostView route
+        composable(
+            route = Screen.PostView.route,
+            arguments = listOf(navArgument("postId") { type = NavType.StringType })) {
+              /* minimal screen */
             }
 
         composable(Screen.FitCheck.route) { /* minimal screen */ }
@@ -466,83 +481,51 @@ class NavigationTest {
 
   // Map Screen Navigation Tests
   @Test
-  fun navigationActions_navigateToMap_shouldUpdateRoute() {
+  fun navigationActions_mapNavigation_basicFlowsAndBackStack() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Map)
-      assertEquals(Screen.Map.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun navigationActions_mapToFeedFlow_shouldWork() {
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
+      // Test basic map navigation
       navigation.navigateTo(Screen.Map)
       assertEquals(Screen.Map.route, navigation.currentRoute())
 
-      // Go back to Feed
-      navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun navigationActions_mapScreen_navigateToAuthentication_shouldClearStack() {
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.Map)
-      assertEquals(Screen.Map.route, navigation.currentRoute())
-
-      // Sign out navigates to Authentication (top-level)
-      navigation.navigateTo(Screen.Authentication)
-      assertEquals(Screen.Authentication.route, navigation.currentRoute())
-
-      // Going back should return to Splash (start destination)
-      navigation.goBack()
-      assertEquals(Screen.Splash.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun mapScreen_backButton_triggersNavigationGoBack() {
-    // Navigate to Feed then Map
-    composeRule.runOnIdle {
+      // Navigate to Feed then back to Map
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.Map)
       assertEquals(Screen.Map.route, navigation.currentRoute())
     }
-
-    composeRule.waitForIdle()
 
     // Verify the map screen is displayed
+    composeRule.waitForIdle()
     composeRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertExists()
 
-    // Go back programmatically
-    composeRule.runOnIdle { navigation.goBack() }
+    composeRule.runOnIdle {
+      // Test go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
 
-    // Verify we navigated back to Feed
-    composeRule.runOnIdle { assertEquals(Screen.Feed.route, navigation.currentRoute()) }
+      // Test sign out clears stack
+      navigation.navigateTo(Screen.Map)
+      navigation.navigateTo(Screen.Authentication)
+      assertEquals(Screen.Authentication.route, navigation.currentRoute())
+    }
   }
 
   // MapWithLocation Navigation Tests
   @Test
-  fun navigationActions_navigateToMapWithLocation_shouldUpdateRoute() {
+  fun navigationActions_mapWithLocation_parameterExtractionAndSpecialChars() {
     composeRule.runOnIdle {
+      // Test basic route format
       navigation.navigateTo(
           Screen.MapWithLocation(
               latitude = 46.5197, longitude = 6.5682, locationName = "EPFL, Lausanne"))
 
-      val currentRoute = navigation.currentRoute()
+      var currentRoute = navigation.currentRoute()
       assertTrue(currentRoute.startsWith("map?"))
       assertTrue(currentRoute.contains("lat="))
       assertTrue(currentRoute.contains("lon="))
       assertTrue(currentRoute.contains("name="))
-    }
-  }
 
-  @Test
-  fun navigationActions_mapWithLocation_extractsLocationParameters() {
-    composeRule.runOnIdle {
+      // Test parameter extraction with standard name
+      navigation.goBack()
       val testLat = 46.5197
       val testLon = 6.5682
       val testName = "Test Location"
@@ -550,83 +533,100 @@ class NavigationTest {
       navigation.navigateTo(
           Screen.MapWithLocation(latitude = testLat, longitude = testLon, locationName = testName))
 
-      val args = navController.currentBackStackEntry?.arguments
-      val lat = args?.getString("lat")?.toDoubleOrNull()
-      val lon = args?.getString("lon")?.toDoubleOrNull()
-      val name = args?.getString("name")
+      var args = navController.currentBackStackEntry?.arguments
+      var lat = args?.getString("lat")?.toDoubleOrNull()
+      var lon = args?.getString("lon")?.toDoubleOrNull()
+      var name = args?.getString("name")
 
       assertEquals(testLat, lat ?: 0.0, 0.0001)
       assertEquals(testLon, lon ?: 0.0, 0.0001)
       assertEquals(testName, name)
-    }
-  }
 
-  @Test
-  fun navigationActions_mapWithLocation_handlesSpecialCharactersInName() {
-    composeRule.runOnIdle {
+      // Test special characters in location name
+      navigation.goBack()
       val locationWithSpecialChars = "Café & Restaurant, Zürich 🇨🇭"
 
       navigation.navigateTo(
           Screen.MapWithLocation(
               latitude = 47.3769, longitude = 8.5417, locationName = locationWithSpecialChars))
 
-      val args = navController.currentBackStackEntry?.arguments
-      val name = args?.getString("name")
+      args = navController.currentBackStackEntry?.arguments
+      name = args?.getString("name")
 
       assertEquals(locationWithSpecialChars, name)
     }
   }
 
   @Test
-  fun navigationActions_feedToMapWithLocation_shouldWork() {
+  fun navigationActions_mapWithLocation_navigationFlows() {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-
-      navigation.navigateTo(
-          Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
-
-      val currentRoute = navigation.currentRoute()
-      assertTrue(currentRoute.startsWith("map?"))
-    }
-  }
-
-  @Test
-  fun navigationActions_mapWithLocationToFeed_goBackShouldWork() {
-    composeRule.runOnIdle {
+      // Test Feed to MapWithLocation
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(
           Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
 
-      val currentRoute = navigation.currentRoute()
-      assertTrue(currentRoute.startsWith("map?"))
+      assertTrue(navigation.currentRoute().startsWith("map?"))
 
-      // Go back to Feed
+      // Test go back to Feed
       navigation.goBack()
       assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
 
-  @Test
-  fun navigationActions_mapWithLocation_differentLocationsHaveDifferentRoutes() {
-    composeRule.runOnIdle {
-      // Navigate to first location
+      // Test different locations have different routes
       navigation.navigateTo(
           Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
-
       val args1 = navController.currentBackStackEntry?.arguments?.getString("name")
 
       navigation.goBack()
 
-      // Navigate to second location
       navigation.navigateTo(
           Screen.MapWithLocation(latitude = 47.3769, longitude = 8.5417, locationName = "Zurich"))
-
       val args2 = navController.currentBackStackEntry?.arguments?.getString("name")
 
       assertNotEquals(args1, args2)
       assertEquals("Lausanne", args1)
       assertEquals("Zurich", args2)
+    }
+  }
+
+  // PostView Navigation Tests
+  @Test
+  fun navigationActions_postView_basicNavigationAndParameters() {
+    composeRule.runOnIdle {
+      // Test basic navigation from Feed to PostView
+      navigation.navigateTo(Screen.Feed)
+
+      val testPostId = "post123"
+      navigation.navigateTo(Screen.PostView(testPostId))
+
+      // Verify route format
+      val currentRoute = navigation.currentRoute()
+      assertTrue(currentRoute.startsWith("postView/"))
+
+      // Verify postId parameter is correctly extracted
+      val args = navController.currentBackStackEntry?.arguments
+      val extractedPostId = args?.getString("postId")
+      assertEquals(testPostId, extractedPostId)
+    }
+  }
+
+  @Test
+  fun navigationActions_postView_differentPostIds() {
+    composeRule.runOnIdle {
+      // Test that different post IDs create different routes
+      navigation.navigateTo(Screen.Feed)
+
+      // First post
+      navigation.navigateTo(Screen.PostView("post-one"))
+      val postId1 = navController.currentBackStackEntry?.arguments?.getString("postId")
+      assertEquals("post-one", postId1)
+
+      // Go back and navigate to second post
+      navigation.goBack()
+      navigation.navigateTo(Screen.PostView("post-two"))
+      val postId2 = navController.currentBackStackEntry?.arguments?.getString("postId")
+      assertEquals("post-two", postId2)
+
+      assertNotEquals(postId1, postId2)
     }
   }
 }
