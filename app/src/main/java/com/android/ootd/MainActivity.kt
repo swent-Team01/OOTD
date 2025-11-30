@@ -340,7 +340,12 @@ fun OOTDApp(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
-                composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
+                composable(Screen.Map.route) {
+                  MapScreen(
+                      onPostClick = { postId ->
+                        navigationActions.navigateTo(Screen.PostView(postId))
+                      })
+                }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)
