@@ -472,6 +472,57 @@ class EditAccountScreenTest {
   }
 
   @Test
+  fun handleImagePickerResult_callsHandlePickedProfileImage_whenUriIsNotNull() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    val mockUri = Uri.parse("content://mock/image.jpg")
+    var uploadCalled = false
+    var uploadedPath: String? = null
+    var editCalled = false
+    var editedUrl: String? = null
+
+    val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { path, onSuccess, _ ->
+      uploadCalled = true
+      uploadedPath = path
+      onSuccess("https://cdn.example.com/avatar.jpg")
+    }
+
+    composeTestRule.runOnUiThread {
+      handleImagePickerResult(
+          uri = mockUri,
+          upload = upload,
+          editProfilePicture = {
+            editCalled = true
+            editedUrl = it
+          },
+          context = ctx)
+    }
+
+    assertTrue(uploadCalled)
+    assertEquals("content://mock/image.jpg", uploadedPath)
+    assertTrue(editCalled)
+    assertEquals("https://cdn.example.com/avatar.jpg", editedUrl)
+  }
+
+  @Test
+  fun handleImagePickerResult_doesNothing_whenUriIsNull() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    var uploadCalled = false
+    var editCalled = false
+
+    val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ ->
+      uploadCalled = true
+    }
+
+    composeTestRule.runOnUiThread {
+      handleImagePickerResult(
+          uri = null, upload = upload, editProfilePicture = { editCalled = true }, context = ctx)
+    }
+
+    assertFalse(uploadCalled)
+    assertFalse(editCalled)
+  }
+
+  @Test
   fun editingUsername_pressEnter_savesAndExitsEditMode() {
     // Arrange
     signIn(mockFirebaseUser)
