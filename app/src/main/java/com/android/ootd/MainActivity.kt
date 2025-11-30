@@ -52,6 +52,7 @@ import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -187,6 +188,7 @@ fun OOTDApp(
               Screen.InventoryScreen.route,
               Screen.AccountView.route,
               Screen.Map.route,
+              Screen.MapWithLocation.route,
               Screen.NotificationsScreen.route)
 
   // Create ViewModel using factory to properly inject SharedPreferences
@@ -318,6 +320,13 @@ fun OOTDApp(
                       },
                       onSeeFitClick = { postUuid ->
                         navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
+                      },
+                      onLocationClick = { location ->
+                        navigationActions.navigateTo(
+                            Screen.MapWithLocation(
+                                latitude = location.latitude,
+                                longitude = location.longitude,
+                                locationName = location.name))
                       })
                 }
 
@@ -346,6 +355,27 @@ fun OOTDApp(
                         navigationActions.navigateTo(Screen.PostView(postId))
                       })
                 }
+
+                // Map with location parameters
+                composable(
+                    route = Screen.MapWithLocation.route,
+                    arguments =
+                        listOf(
+                            navArgument("lat") { type = NavType.StringType },
+                            navArgument("lon") { type = NavType.StringType },
+                            navArgument("name") { type = NavType.StringType })) { backStackEntry ->
+                      val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
+                      val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
+                      val name = backStackEntry.arguments?.getString("name") ?: ""
+
+                      val focusLocation = Location(latitude = lat, longitude = lon, name = name)
+
+                      MapScreen(
+                          viewModel = viewModel(factory = MapViewModelFactory(focusLocation)),
+                          onPostClick = { postId ->
+                            navigationActions.navigateTo(Screen.PostView(postId))
+                          })
+                    }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)

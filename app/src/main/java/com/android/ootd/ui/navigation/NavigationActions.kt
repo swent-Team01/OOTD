@@ -85,6 +85,19 @@ sealed class Screen(
 
   object Map : Screen(route = "map", name = "Map", isTopLevelDestination = false)
 
+  data class MapWithLocation(
+      val latitude: Double,
+      val longitude: Double,
+      val locationName: String
+  ) :
+      Screen(
+          route = "map?lat=$latitude&lon=$longitude&name=${Uri.encode(locationName)}",
+          name = "Map") {
+    companion object {
+      const val route = "map?lat={lat}&lon={lon}&name={name}"
+    }
+  }
+
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
   object InventoryScreen :
