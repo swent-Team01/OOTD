@@ -241,4 +241,50 @@ class MapViewModelTest {
     // User location should be updated
     assertEquals(48.0, uiState.userLocation.latitude, 0.0001)
   }
+
+  @Test
+  fun viewModel_withFocusLocation_setsInitialFocusCorrectly() = runTest {
+    val focusLocation = Location(46.5197, 6.6323, "EPFL")
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    assertEquals(focusLocation, uiState.focusLocation)
+    assertFalse(uiState.isLoading)
+  }
+
+  @Test
+  fun getFocusLatLng_prefersFocusLocationOverUserLocation() = runTest {
+    val focusLocation = Location(47.5, 7.5, "Focus")
+    val userLocation = Location(46.5, 6.5, "User")
+    val accountWithLocation = testAccount.copy(location = userLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(accountWithLocation)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation)
+    advanceUntilIdle()
+
+    val latLng = viewModel.getFocusLatLng()
+    // Should return focus location, not user location
+    assertEquals(47.5, latLng.latitude, 0.0001)
+    assertEquals(7.5, latLng.longitude, 0.0001)
+  }
+
+  @Test
+  fun viewModel_withNullFocusLocation_usesFallbackUserLocation() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation = null)
+    advanceUntilIdle()
+
+    val latLng = viewModel.getFocusLatLng()
+    // Should return user location when focus is null
+    assertEquals(testLocation.latitude, latLng.latitude, 0.0001)
+    assertEquals(testLocation.longitude, latLng.longitude, 0.0001)
+  }
 }
