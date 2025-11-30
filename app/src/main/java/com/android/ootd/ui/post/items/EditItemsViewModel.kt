@@ -5,6 +5,11 @@ import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil.isValidUrl
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.image.ImageCompressor
@@ -14,6 +19,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
+import com.android.ootd.worker.ImageUploadWorker
 import kotlinx.coroutines.launch
 
 /**
@@ -174,7 +180,30 @@ open class EditItemsViewModel(
                 return@launch
               }
               // Upload compressed image and get ImageData
-              FirebaseImageUploader.uploadImage(compressedImage, state.itemId, state.localPhotoUri)
+              val uploaded =
+                  FirebaseImageUploader.uploadImage(
+                      compressedImage, state.itemId, state.localPhotoUri)
+
+              // Check if we need to schedule background upload
+              val uri = Uri.parse(uploaded.imageUrl)
+              if (uri.scheme == "content" || uri.scheme == "file") {
+                val workRequest =
+                    OneTimeWorkRequestBuilder<ImageUploadWorker>()
+                        .setInputData(
+                            workDataOf(
+                                "itemUuid" to state.itemId,
+                                "imageUri" to uploaded.imageUrl,
+                                "fileName" to uploaded.imageId))
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build())
+                        .build()
+
+                WorkManager.getInstance(context).enqueue(workRequest)
+                Log.d(TAG, "Scheduled background upload for item ${state.itemId}")
+              }
+              uploaded
             } else state.image
 
         val updatedItem =

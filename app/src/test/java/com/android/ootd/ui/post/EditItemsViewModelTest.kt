@@ -3,6 +3,10 @@ package com.android.ootd.ui.post
 import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.WorkQuery
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.image.ImageCompressor
 import com.android.ootd.model.items.FirebaseImageUploader
@@ -784,6 +788,53 @@ class EditItemsViewModelTest {
       assertFalse(state.isSaveSuccessful)
       coVerify(exactly = 0) { mockRepository.editItem(any(), any()) }
     }
+  }
+
+  @Test
+  fun `onSaveItemClick_offline_schedulesWorkManager`() = runTest {
+    // Initialize WorkManager for testing
+    WorkManagerTestInitHelper.initializeTestWorkManager(context)
+    val workManager = WorkManager.getInstance(context)
+
+    val mockUri = mockk<Uri>()
+    every { mockUri.toString() } returns "content://test"
+
+    val mockImageCompressor = mockk<ImageCompressor>()
+    coEvery { mockImageCompressor.compressImage(any(), any(), any()) } returns ByteArray(8)
+    viewModel = EditItemsViewModel(mockRepository, mockAccountRepository, mockImageCompressor)
+
+    mockkObject(FirebaseImageUploader)
+    // Return a content URI to simulate offline mode
+    coEvery { FirebaseImageUploader.uploadImage(any(), any(), any()) } returns
+        ImageData("test-id", "content://local/uri")
+
+    coEvery { mockRepository.editItem(any(), any()) } returns Unit
+
+    viewModel.loadItem(
+        Item(
+            itemUuid = "test-id",
+            postUuids = listOf("test_post_uuid"),
+            image = ImageData("test-image-id", "https://example.com/test.jpg"),
+            category = "Clothing",
+            type = "T-shirt",
+            brand = "Nike",
+            price = 49.99,
+            material = emptyList(),
+            link = "https://example.com",
+            ownerId = "ownerId"))
+
+    viewModel.setPhoto(mockUri)
+    viewModel.onSaveItemClick(context)
+
+    advanceUntilIdle()
+
+    // Verify work enqueued
+    val workInfos =
+        workManager.getWorkInfos(WorkQuery.fromStates(listOf(WorkInfo.State.ENQUEUED))).get()
+    assertTrue(workInfos.isNotEmpty())
+    assertTrue(workInfos.any { it.tags.any { tag -> tag.contains("ImageUploadWorker") } })
+
+    assertTrue(viewModel.uiState.value.isSaveSuccessful)
   }
 
   @Test

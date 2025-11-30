@@ -60,6 +60,19 @@ object FirebaseImageUploader {
     }
   }
 
+  /**
+   * Uploads an image to Firebase Storage without timeout or fallback. Intended for use by
+   * background workers (WorkManager).
+   */
+  suspend fun uploadImageSuspending(imageData: ByteArray, fileName: String): ImageData {
+    val ref = storage ?: throw IllegalStateException("Firebase Storage not initialized")
+    val sanitizedFileName = ImageFilenameSanitizer.sanitize(fileName)
+    val imageRef = ref.child("images/items/$sanitizedFileName.jpg")
+    imageRef.putBytes(imageData).await()
+    val downloadUrl = imageRef.downloadUrl.await()
+    return ImageData(imageId = fileName, imageUrl = downloadUrl.toString())
+  }
+
   private fun fallbackImageData(localUri: Uri, fileName: String): ImageData {
     // If local file exists, keep offline URI; else return empty to signal invalid selection
     return try {
