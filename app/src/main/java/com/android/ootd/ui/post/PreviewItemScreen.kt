@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -359,6 +360,14 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON),
                     tint = MaterialTheme.colorScheme.onSurface)
+
+                ActionIconButton(
+                    onClick = onRemove,
+                    modifier =
+                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON),
+                    icon = Icons.Default.Delete,
+                    contentDescription = "Remove from post",
+                    tint = MaterialTheme.colorScheme.error)
                 ActionIconButton(
                     onClick = { isExpanded = !isExpanded },
                     icon = expandIcon,
