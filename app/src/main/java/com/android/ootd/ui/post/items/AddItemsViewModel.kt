@@ -219,7 +219,6 @@ open class AddItemsViewModel(
       // Cache updates happen synchronously before Firestore .await()
       try {
         repository.addItem(item)
-        Log.d(TAG, "Item added to cache, Firestore queued")
       } catch (e: Exception) {
         // Acceptable when offline - cache is still updated
         Log.w(TAG, "Item add may be offline (cache updated): ${e.message}")
@@ -227,14 +226,12 @@ open class AddItemsViewModel(
 
       try {
         accountRepository.addItem(item.itemUuid)
-        Log.d(TAG, "Account updated in cache, Firestore queued")
       } catch (e: Exception) {
         // Acceptable when offline - cache is still updated
         Log.w(TAG, "Account add may be offline (cache updated): ${e.message}")
       }
 
       // Operations completed - cache is updated, Firestore will sync
-      Log.d(TAG, "Item operations completed (cache updated)")
       true
     } catch (e: Exception) {
       Log.e(TAG, "Error in item operations: ${e.message}", e)
@@ -288,7 +285,6 @@ open class AddItemsViewModel(
                         .build()
 
                 WorkManager.getInstance(context).enqueue(workRequest)
-                Log.d(TAG, "Scheduled background upload for item $itemUuid")
               }
 
               uploaded

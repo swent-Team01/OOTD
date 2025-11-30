@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil.isValidUrl
+import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import androidx.work.Constraints
 import androidx.work.NetworkType
@@ -185,7 +186,7 @@ open class EditItemsViewModel(
                       compressedImage, state.itemId, state.localPhotoUri)
 
               // Check if we need to schedule background upload
-              val uri = Uri.parse(uploaded.imageUrl)
+              val uri = uploaded.imageUrl.toUri()
               if (uri.scheme == "content" || uri.scheme == "file") {
                 val workRequest =
                     OneTimeWorkRequestBuilder<ImageUploadWorker>()
@@ -201,7 +202,6 @@ open class EditItemsViewModel(
                         .build()
 
                 WorkManager.getInstance(context).enqueue(workRequest)
-                Log.d(TAG, "Scheduled background upload for item ${state.itemId}")
               }
               uploaded
             } else state.image
@@ -236,7 +236,6 @@ open class EditItemsViewModel(
         // So even if this coroutine finishes, the cache is already updated
         try {
           repository.editItem(updatedItem.itemUuid, updatedItem)
-          Log.d(TAG, "Item edit completed (cache updated, Firestore queued)")
         } catch (e: Exception) {
           // Error is acceptable when offline - cache is still updated
           Log.w(TAG, "Item edit may be offline (cache updated): ${e.message}")
@@ -246,7 +245,6 @@ open class EditItemsViewModel(
         _uiState.value =
             _uiState.value.copy(
                 image = finalImage, errorMessage = null, isSaveSuccessful = true, isLoading = false)
-        Log.d(TAG, "Item edit operation completed")
       } catch (e: Exception) {
         setErrorMsg("Failed to save item: ${e.message}")
         _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
@@ -272,7 +270,6 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         accountRepository.removeItem(state.itemId)
-        Log.d(TAG, "Item removal queued (will sync when online)")
       } catch (e: Exception) {
         Log.e(TAG, "Failed to queue item removal: ${e.message}")
       }
@@ -281,7 +278,6 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         repository.deleteItem(state.itemId)
-        Log.d(TAG, "Item deletion queued (will sync when online)")
       } catch (e: Exception) {
         Log.e(TAG, "Failed to queue item deletion: ${e.message}")
       }
@@ -290,7 +286,6 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         FirebaseImageUploader.deleteImage(state.image.imageId)
-        Log.d(TAG, "Image deletion queued (will sync when online)")
       } catch (e: Exception) {
         Log.w(TAG, "Image deletion failed: ${e.message}")
       }
