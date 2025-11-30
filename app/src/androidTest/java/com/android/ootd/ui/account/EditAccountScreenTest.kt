@@ -7,6 +7,9 @@ package com.android.ootd.ui.account
 import android.content.Context
 import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
@@ -381,6 +384,25 @@ class EditAccountScreenTest {
     selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).assertDoesNotExist()
     // Upload button should be shown instead of Edit
     composeTestRule.onNodeWithText("Upload").assertIsDisplayed()
+  }
+
+  @Test
+  fun profilePictureEditor_renders_dialog_correctly() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    var showDialog by mutableStateOf(true)
+
+    composeTestRule.setContent {
+      ProfilePictureEditor(
+          viewModel = viewModel,
+          context = ctx,
+          showImageSourceDialog = showDialog,
+          onShowImageSourceDialogChange = { showDialog = it })
+    }
+
+    // Verify the dialog is displayed with the expected options
+    composeTestRule.onNodeWithText("Select Image").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Take a Photo").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Choose from Gallery").assertIsDisplayed()
   }
 
   @Test
