@@ -8,7 +8,6 @@ import android.Manifest
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +35,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -61,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.map.emptyLocation
-import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.register.RegisterScreenTestTags
@@ -159,6 +155,11 @@ private fun AccountScreenContent(
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
+  var editedUsername by remember { mutableStateOf("") }
+
+  // State for image source dialog
+  var showImageSourceDialog by remember { mutableStateOf(false) }
+
   // Location permission launcher
   val locationPermissionLauncher =
       rememberLauncherForActivityResult(
@@ -171,65 +172,12 @@ private fun AccountScreenContent(
             }
           })
 
-  var editedUsername by remember { mutableStateOf("") }
-
-  // State for image source selection
-  var showImageSourceDialog by remember { mutableStateOf(false) }
-  var showCamera by remember { mutableStateOf(false) }
-
-  // Image picker launcher
-  val imagePickerLauncher =
-      rememberLauncherForActivityResult(
-          contract = ActivityResultContracts.PickVisualMedia(),
-          onResult = { uri ->
-            uri?.let {
-              handlePickedProfileImage(
-                  it.toString(),
-                  upload = accountViewModel::uploadImageToStorage,
-                  editProfilePicture = { accountViewModel.editUser(profilePicture = it) },
-                  context = context)
-            }
-          })
-
-  if (showCamera) {
-    CameraScreen(
-        onImageCaptured = { uri ->
-          handlePickedProfileImage(
-              uri.toString(),
-              upload = accountViewModel::uploadImageToStorage,
-              editProfilePicture = { accountViewModel.editUser(profilePicture = it) },
-              context = context)
-          showCamera = false
-        },
-        onDismiss = { showCamera = false })
-  }
-
-  if (showImageSourceDialog) {
-    AlertDialog(
-        onDismissRequest = { showImageSourceDialog = false },
-        title = { Text(text = "Select Image") },
-        text = {
-          Column {
-            TextButton(
-                onClick = {
-                  showImageSourceDialog = false
-                  showCamera = true
-                }) {
-                  Text("Take a Photo")
-                }
-            TextButton(
-                onClick = {
-                  showImageSourceDialog = false
-                  imagePickerLauncher.launch(
-                      PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                }) {
-                  Text("Choose from Gallery")
-                }
-          }
-        },
-        confirmButton = {},
-        dismissButton = {})
-  }
+  // Profile picture editor
+  ProfilePictureEditor(
+      viewModel = accountViewModel,
+      context = context,
+      showImageSourceDialog = showImageSourceDialog,
+      onShowImageSourceDialogChange = { showImageSourceDialog = it })
 
   Column(
       modifier =
@@ -245,7 +193,7 @@ private fun AccountScreenContent(
               avatarUri = uiState.profilePicture,
               username = uiState.username,
               onEditClick = { showImageSourceDialog = true },
-              accountViewModel,
+              accountViewModel = accountViewModel,
               context = context)
         }
 
