@@ -8,7 +8,6 @@ import android.Manifest
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
@@ -156,6 +155,11 @@ private fun AccountScreenContent(
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
+  var editedUsername by remember { mutableStateOf("") }
+
+  // State for image source dialog
+  var showImageSourceDialog by remember { mutableStateOf(false) }
+
   // Location permission launcher
   val locationPermissionLauncher =
       rememberLauncherForActivityResult(
@@ -168,21 +172,12 @@ private fun AccountScreenContent(
             }
           })
 
-  var editedUsername by remember { mutableStateOf("") }
-
-  // Image picker launcher
-  val imagePickerLauncher =
-      rememberLauncherForActivityResult(
-          contract = ActivityResultContracts.PickVisualMedia(),
-          onResult = { uri ->
-            uri?.let {
-              handlePickedProfileImage(
-                  it.toString(),
-                  upload = accountViewModel::uploadImageToStorage,
-                  editProfilePicture = { accountViewModel.editUser(profilePicture = it) },
-                  context = context)
-            }
-          })
+  // Profile picture editor
+  ProfilePictureEditor(
+      viewModel = accountViewModel,
+      context = context,
+      showImageSourceDialog = showImageSourceDialog,
+      onShowImageSourceDialogChange = { showImageSourceDialog = it })
 
   Column(
       modifier =
@@ -197,11 +192,8 @@ private fun AccountScreenContent(
           AvatarSection(
               avatarUri = uiState.profilePicture,
               username = uiState.username,
-              onEditClick = {
-                imagePickerLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-              },
-              accountViewModel,
+              onEditClick = { showImageSourceDialog = true },
+              accountViewModel = accountViewModel,
               context = context)
         }
 
