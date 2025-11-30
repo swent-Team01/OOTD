@@ -3,7 +3,6 @@ package com.android.ootd.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,7 +58,19 @@ class NavigationTest {
         composable(Screen.Feed.route) { /* minimal screen */ }
         composable(Screen.AccountEdit.route) { /* minimal screen */ }
         composable(Screen.AccountView.route) { /* minimal screen */ }
-        composable(Screen.Map.route) { MapScreen(onBack = { navigation.goBack() }) }
+        composable(Screen.Map.route) { MapScreen(onPostClick = {}) }
+
+        // Add MapWithLocation route
+        composable(
+            route = Screen.MapWithLocation.route,
+            arguments =
+                listOf(
+                    navArgument("lat") { type = NavType.StringType },
+                    navArgument("lon") { type = NavType.StringType },
+                    navArgument("name") { type = NavType.StringType })) {
+              MapScreen(onPostClick = {})
+            }
+
         composable(Screen.FitCheck.route) { /* minimal screen */ }
         composable(Screen.PreviewItemScreen.route) { /* minimal screen */ }
         composable(Screen.AddItemScreen.route) { /* minimal screen */ }
@@ -503,11 +514,119 @@ class NavigationTest {
 
     composeRule.waitForIdle()
 
-    // Click the back button on MapScreen
-    composeRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).performClick()
-    composeRule.waitForIdle()
+    // Verify the map screen is displayed
+    composeRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertExists()
+
+    // Go back programmatically
+    composeRule.runOnIdle { navigation.goBack() }
 
     // Verify we navigated back to Feed
     composeRule.runOnIdle { assertEquals(Screen.Feed.route, navigation.currentRoute()) }
+  }
+
+  // MapWithLocation Navigation Tests
+  @Test
+  fun navigationActions_navigateToMapWithLocation_shouldUpdateRoute() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(
+          Screen.MapWithLocation(
+              latitude = 46.5197, longitude = 6.5682, locationName = "EPFL, Lausanne"))
+
+      val currentRoute = navigation.currentRoute()
+      assertTrue(currentRoute.startsWith("map?"))
+      assertTrue(currentRoute.contains("lat="))
+      assertTrue(currentRoute.contains("lon="))
+      assertTrue(currentRoute.contains("name="))
+    }
+  }
+
+  @Test
+  fun navigationActions_mapWithLocation_extractsLocationParameters() {
+    composeRule.runOnIdle {
+      val testLat = 46.5197
+      val testLon = 6.5682
+      val testName = "Test Location"
+
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = testLat, longitude = testLon, locationName = testName))
+
+      val args = navController.currentBackStackEntry?.arguments
+      val lat = args?.getString("lat")?.toDoubleOrNull()
+      val lon = args?.getString("lon")?.toDoubleOrNull()
+      val name = args?.getString("name")
+
+      assertEquals(testLat, lat ?: 0.0, 0.0001)
+      assertEquals(testLon, lon ?: 0.0, 0.0001)
+      assertEquals(testName, name)
+    }
+  }
+
+  @Test
+  fun navigationActions_mapWithLocation_handlesSpecialCharactersInName() {
+    composeRule.runOnIdle {
+      val locationWithSpecialChars = "Café & Restaurant, Zürich 🇨🇭"
+
+      navigation.navigateTo(
+          Screen.MapWithLocation(
+              latitude = 47.3769, longitude = 8.5417, locationName = locationWithSpecialChars))
+
+      val args = navController.currentBackStackEntry?.arguments
+      val name = args?.getString("name")
+
+      assertEquals(locationWithSpecialChars, name)
+    }
+  }
+
+  @Test
+  fun navigationActions_feedToMapWithLocation_shouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
+
+      val currentRoute = navigation.currentRoute()
+      assertTrue(currentRoute.startsWith("map?"))
+    }
+  }
+
+  @Test
+  fun navigationActions_mapWithLocationToFeed_goBackShouldWork() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
+
+      val currentRoute = navigation.currentRoute()
+      assertTrue(currentRoute.startsWith("map?"))
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigationActions_mapWithLocation_differentLocationsHaveDifferentRoutes() {
+    composeRule.runOnIdle {
+      // Navigate to first location
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
+
+      val args1 = navController.currentBackStackEntry?.arguments?.getString("name")
+
+      navigation.goBack()
+
+      // Navigate to second location
+      navigation.navigateTo(
+          Screen.MapWithLocation(latitude = 47.3769, longitude = 8.5417, locationName = "Zurich"))
+
+      val args2 = navController.currentBackStackEntry?.arguments?.getString("name")
+
+      assertNotEquals(args1, args2)
+      assertEquals("Lausanne", args1)
+      assertEquals("Zurich", args2)
+    }
   }
 }
