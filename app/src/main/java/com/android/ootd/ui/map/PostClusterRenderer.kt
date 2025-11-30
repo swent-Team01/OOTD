@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
@@ -73,6 +72,11 @@ class PostClusterRenderer(
     // Use the default clustering behavior with minimum size of 2
     // This allows the ClusterManager to naturally handle clustering based on zoom level
     return cluster.size >= minClusterSize
+  }
+
+  /** Override to ensure consistent cluster rendering at all zoom levels. */
+  override fun getColor(clusterSize: Int): Int {
+    return Primary.toArgb()
   }
 
   /**
@@ -184,21 +188,22 @@ class PostClusterRenderer(
     val output = createBitmap(size, size)
     val canvas = Canvas(output)
 
+    // Draw outer circle background (Primary)
     val paint =
         Paint().apply {
           isAntiAlias = true
-          color = Secondary.toArgb()
+          color = Primary.toArgb()
         }
+    canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
 
-    val rect = Rect(0, 0, size, size)
-    val radius = size / 2f
-
-    canvas.drawCircle(radius, radius, radius, paint)
+    // Draw middle ring (Secondary/light)
+    paint.color = Secondary.toArgb()
+    canvas.drawCircle(size / 2f, size / 2f, size / 2.2f, paint)
 
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
 
     val scaledBitmap = bitmap.scale(size, size)
-    canvas.drawBitmap(scaledBitmap, rect, rect, paint)
+    canvas.drawBitmap(scaledBitmap, 0f, 0f, paint)
 
     return output
   }
@@ -209,13 +214,21 @@ class PostClusterRenderer(
     val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
 
-    // Draw circle background
+    // Draw outer circle background (Primary)
     val paint =
         Paint().apply {
           isAntiAlias = true
           color = Primary.toArgb()
         }
     canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+
+    // Draw middle ring (Secondary/light)
+    paint.color = Secondary.toArgb()
+    canvas.drawCircle(size / 2f, size / 2f, size / 2.2f, paint)
+
+    // Draw inner circle for initials background (Primary)
+    paint.color = Primary.toArgb()
+    canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
 
     // Draw initial letter
     val textPaint =
@@ -241,21 +254,17 @@ class PostClusterRenderer(
     val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
 
-    // Draw circle background
+    // Draw outer circle background (Secondary/light) - fixed size for all zoom levels
     val paint =
         Paint().apply {
           isAntiAlias = true
-          color = Primary.toArgb()
+          color = Secondary.toArgb()
         }
     canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
 
-    // Draw secondary (light) inner circle
-    paint.color = Secondary.toArgb()
-    canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
-
-    // Draw primary color for the count background
+    // Draw inner circle for count background (Primary) - also fixed size
     paint.color = Primary.toArgb()
-    canvas.drawCircle(size / 2f, size / 2f, size / 3f, paint)
+    canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
 
     // Draw count text
     val textPaint =
