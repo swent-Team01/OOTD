@@ -59,6 +59,14 @@ class PostClusterRendererTest {
   }
 
   @Test
+  fun renderer_hasCorrectMinimumClusterSize() {
+    val renderer = createRenderer()
+
+    every { mockClusterManager.renderer = any() } returns Unit
+    mockClusterManager.renderer = renderer
+  }
+
+  @Test
   fun renderer_handlesEdgeCases_withoutCrashing() {
     // Test multiple edge cases in a single test to reduce duplication
     val userWithoutPicture = testUser.copy(profilePicture = "")

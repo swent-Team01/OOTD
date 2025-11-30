@@ -9,6 +9,8 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
@@ -55,6 +57,23 @@ class PostClusterRenderer(
 
   private val profilePictureCache = mutableMapOf<String, Bitmap?>()
   private val markerCache = mutableMapOf<String, Marker>()
+
+  init {
+    // Set minimum cluster size to 2 to ensure normal clustering behavior
+    // The declustering offset (~20m) is small enough that posts will still
+    // cluster together when zoomed out, while being visible when zoomed in
+    minClusterSize = 2
+  }
+
+  /**
+   * Determines whether a cluster should be rendered as a cluster or as individual items. This
+   * ensures proper clustering behavior works correctly with declustered markers.
+   */
+  override fun shouldRenderAsCluster(cluster: Cluster<PostMarker>): Boolean {
+    // Use the default clustering behavior with minimum size of 2
+    // This allows the ClusterManager to naturally handle clustering based on zoom level
+    return cluster.size >= minClusterSize
+  }
 
   /**
    * Called before the post marker is rendered. Loads and displays user profile picture
@@ -162,7 +181,7 @@ class PostClusterRenderer(
   /** Creates a circular bitmap from a square bitmap for profile pictures. */
   private fun createCircularBitmap(bitmap: Bitmap): Bitmap {
     val size = 120
-    val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val output = createBitmap(size, size)
     val canvas = Canvas(output)
 
     val paint =
@@ -178,7 +197,7 @@ class PostClusterRenderer(
 
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
 
-    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, size, size, true)
+    val scaledBitmap = bitmap.scale(size, size)
     canvas.drawBitmap(scaledBitmap, rect, rect, paint)
 
     return output
@@ -187,7 +206,7 @@ class PostClusterRenderer(
   /** Creates a bitmap with user initials for markers without profile pictures. */
   private fun createInitialsBitmap(username: String): BitmapDescriptor {
     val size = 120
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
 
     // Draw circle background
@@ -219,7 +238,7 @@ class PostClusterRenderer(
   /** Creates a bitmap for cluster markers showing the count of posts. */
   private fun createClusterBitmap(count: Int): BitmapDescriptor {
     val size = 120
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
 
     // Draw circle background
