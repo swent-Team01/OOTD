@@ -26,12 +26,14 @@ import kotlinx.coroutines.launch
  *
  * @property posts The list of outfit posts to display on the map
  * @property userLocation The user's location from their account
+ * @property focusLocation The location to focus on (if provided via navigation)
  * @property isLoading Whether the location is being loaded
  */
 data class MapUiState(
     val posts: List<OutfitPost> = emptyList(),
     val currentAccount: Account? = null,
     val userLocation: Location = emptyLocation,
+    val focusLocation: Location? = null,
     val isLoading: Boolean = true,
     val errorMsg: String? = null
 )
@@ -44,10 +46,11 @@ data class MapUiState(
  */
 class MapViewModel(
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
-    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
+    focusLocation: Location? = null
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(MapUiState())
+  private val _uiState = MutableStateFlow(MapUiState(focusLocation = focusLocation))
   val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
   // Job to observe posts; allows cancellation when account changes
@@ -111,5 +114,10 @@ class MapViewModel(
   /** Get user's current location as LatLng for map centering. */
   fun getUserLatLng(): LatLng {
     return _uiState.value.userLocation.toLatLng()
+  }
+
+  /** Get the location to focus on (either the provided focus location or user's location). */
+  fun getFocusLatLng(): LatLng {
+    return _uiState.value.focusLocation?.toLatLng() ?: _uiState.value.userLocation.toLatLng()
   }
 }
