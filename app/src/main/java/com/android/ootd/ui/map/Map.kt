@@ -98,6 +98,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                     cameraPositionState = cameraPositionState) {
                       uiState.posts.forEach { post ->
                         ProfilePictureMarker(
+                            userId = post.ownerId,
                             username = post.name,
                             location = post.location,
                             tag = getTestTagForPostMarker(post.postUID),
