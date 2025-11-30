@@ -62,7 +62,7 @@ private fun DocumentSnapshot.toAccount(): Account {
   val isPrivate = getBoolean("isPrivate") ?: false
 
   // Validate that friendUids is actually a List, throw if not
-  val friendUidsRaw = get("friendUids")
+  val friendUidsRaw = this["friendUids"]
   val friends =
       when {
         friendUidsRaw == null -> emptyList()
@@ -73,7 +73,7 @@ private fun DocumentSnapshot.toAccount(): Account {
       }
 
   // Parse location if present, otherwise throw MissingLocationException
-  val locationRaw = get("location")
+  val locationRaw = this["location"]
   val location =
       when {
         locationRaw == null -> throw MissingLocationException()
@@ -82,7 +82,7 @@ private fun DocumentSnapshot.toAccount(): Account {
       }
 
   // Parse itemsUids if present
-  val itemsUidsRaw = get("itemsUids")
+  val itemsUidsRaw = this["itemsUids"]
   val itemsUids =
       when {
         itemsUidsRaw == null -> emptyList()
@@ -90,7 +90,7 @@ private fun DocumentSnapshot.toAccount(): Account {
         else -> emptyList()
       }
 
-  val starredRaw = get("starredItemUids")
+  val starredRaw = this["starredItemUids"]
   val starred =
       when {
         starredRaw == null -> emptyList()
@@ -436,7 +436,7 @@ class AccountRepositoryFirestore(
         emptyList()
       } else {
         @Suppress("UNCHECKED_CAST")
-        (document.get("itemsUids") as? List<String>) ?: emptyList()
+        (document["itemsUids"] as? List<String>) ?: emptyList()
       }
     } catch (e: Exception) {
       Log.e(TAG, "Error getting items list for $userID: ${e.message}", e)
@@ -483,7 +483,7 @@ class AccountRepositoryFirestore(
       val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
       if (document.exists()) {
         @Suppress("UNCHECKED_CAST")
-        (document.get("starredItemUids") as? List<String>) ?: emptyList()
+        (document["starredItemUids"] as? List<String>) ?: emptyList()
       } else {
         emptyList()
       }
@@ -500,7 +500,7 @@ class AccountRepositoryFirestore(
           db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.SERVER).await()
       if (document.exists()) {
         @Suppress("UNCHECKED_CAST")
-        (document.get("starredItemUids") as? List<String>) ?: emptyList()
+        (document["starredItemUids"] as? List<String>) ?: emptyList()
       } else {
         emptyList()
       }
@@ -566,7 +566,7 @@ class AccountRepositoryFirestore(
         }
 
     @Suppress("UNCHECKED_CAST")
-    val currentList = (document.get("starredItemUids") as? List<String>) ?: emptyList()
+    val currentList = (document["starredItemUids"] as? List<String>) ?: emptyList()
     val isStarred = currentList.contains(itemUid)
 
     val operation =

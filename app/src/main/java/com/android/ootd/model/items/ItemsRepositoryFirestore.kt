@@ -64,7 +64,9 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
                 .get()
                 .await()
         items.addAll(snapshot.mapNotNull { mapToItem(it) })
-      } catch (e: Exception) {}
+      } catch (e: Exception) {
+        // Ignore errors for this batch to allow partial results
+      }
     }
 
     return items
@@ -102,7 +104,9 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
       withTimeout(2000L) {
         db.collection(ITEMS_COLLECTION).document(item.itemUuid).set(item).await()
       }
-    } catch (e: TimeoutCancellationException) {} catch (e: Exception) {
+    } catch (e: TimeoutCancellationException) {
+      // Timeout means offline; Firestore will sync later
+    } catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error adding item: ${e.message}", e)
       throw e
     }
@@ -119,10 +123,14 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
             throw Exception("ItemsRepositoryFirestore: Item not found")
           }
         }
-      } catch (e: TimeoutCancellationException) {}
+      } catch (e: TimeoutCancellationException) {
+        // Timeout on existence check; assume exists and try to update
+      }
 
       withTimeout(2000L) { db.collection(ITEMS_COLLECTION).document(itemUUID).set(newItem).await() }
-    } catch (e: TimeoutCancellationException) {} catch (e: Exception) {
+    } catch (e: TimeoutCancellationException) {
+      // Timeout means offline; Firestore will sync later
+    } catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error editing item: ${e.message}", e)
       throw e
     }
@@ -131,7 +139,9 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
   override suspend fun deleteItem(uuid: String) {
     try {
       withTimeout(2000L) { db.collection(ITEMS_COLLECTION).document(uuid).delete().await() }
-    } catch (e: TimeoutCancellationException) {} catch (e: Exception) {
+    } catch (e: TimeoutCancellationException) {
+      // Timeout means offline; Firestore will sync later
+    } catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error deleting item: ${e.message}", e)
       throw e
     }
