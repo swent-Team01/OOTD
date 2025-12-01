@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,16 +107,39 @@ private fun FeedScaffold(
                     Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
                     size = 64.dp)
               })
-          TabRow(selectedTabIndex = if (isPublicFeed) 1 else 0) {
-            Tab(
-                selected = !isPublicFeed,
-                onClick = { if (isPublicFeed) onToggleFeed() },
-                text = { Text("Friends") })
-            Tab(
-                selected = isPublicFeed,
-                onClick = { if (!isPublicFeed) onToggleFeed() },
-                text = { Text("Public") })
-          }
+          TabRow(
+              selectedTabIndex = if (isPublicFeed) 1 else 0,
+              containerColor = MaterialTheme.colorScheme.background,
+              contentColor = MaterialTheme.colorScheme.primary,
+              indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    modifier =
+                        Modifier.tabIndicatorOffset(tabPositions[if (isPublicFeed) 1 else 0]),
+                    color = MaterialTheme.colorScheme.primary)
+              }) {
+                Tab(
+                    selected = !isPublicFeed,
+                    onClick = { if (isPublicFeed) onToggleFeed() },
+                    text = {
+                      Text(
+                          "Friends",
+                          style = MaterialTheme.typography.titleLarge,
+                          fontWeight = if (!isPublicFeed) FontWeight.Bold else FontWeight.Normal)
+                    },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                Tab(
+                    selected = isPublicFeed,
+                    onClick = { if (!isPublicFeed) onToggleFeed() },
+                    text = {
+                      Text(
+                          "Public",
+                          style = MaterialTheme.typography.titleLarge,
+                          fontWeight = if (isPublicFeed) FontWeight.Bold else FontWeight.Normal)
+                    },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+              }
         }
       },
       floatingActionButton = {
