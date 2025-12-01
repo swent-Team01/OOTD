@@ -52,9 +52,11 @@ object OutfitPostCardTestTags {
  * username, and remaining lifetime indicator.
  *
  * @param post The outfit post data.
+ * @param username The username of the post owner.
+ * @param profilePicUrl URL of the profile picture, empty string if not set.
  */
 @Composable
-private fun ProfileSection(post: OutfitPost) {
+private fun ProfileSection(post: OutfitPost, username: String, profilePicUrl: String) {
   val totalLifetime = 24 * 60 * 60 * 1000L // 24h in ms
   val now = System.currentTimeMillis()
   // Calculate remaining lifetime
@@ -73,15 +75,14 @@ private fun ProfileSection(post: OutfitPost) {
           modifier = Modifier.size(44.dp))
 
       // Profile picture or initial if no profile picture set
-      val profilePic = post.userProfilePicURL
       val testTag =
-          OutfitPostCardTestTags.PROFILE_PIC.takeIf { profilePic.isNotBlank() }
+          OutfitPostCardTestTags.PROFILE_PIC.takeIf { profilePicUrl.isNotBlank() }
               ?: OutfitPostCardTestTags.PROFILE_INITIAL
       ProfilePicture(
           modifier = Modifier.testTag(testTag),
           size = 36.dp,
-          profilePicture = profilePic,
-          username = post.name,
+          profilePicture = profilePicUrl,
+          username = username,
           textStyle = MaterialTheme.typography.titleMedium)
     }
 
@@ -89,7 +90,7 @@ private fun ProfileSection(post: OutfitPost) {
 
     Column {
       Text(
-          text = post.name,
+          text = username,
           style = MaterialTheme.typography.titleLarge,
           color = MaterialTheme.colorScheme.primary,
           modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
@@ -245,6 +246,8 @@ private fun DescriptionAndButton(
 @Composable
 fun OutfitPostCard(
     post: OutfitPost,
+    username: String,
+    profilePicUrl: String,
     isBlurred: Boolean,
     modifier: Modifier = Modifier,
     isLiked: Boolean,
@@ -266,7 +269,7 @@ fun OutfitPostCard(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
               Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                ProfileSection(post)
+                ProfileSection(post, username, profilePicUrl)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Click to get details enabled only when not blurred
