@@ -3,13 +3,15 @@ package com.android.ootd.ui.feed
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.feed.FeedRepository
-import com.android.ootd.model.feed.FeedRepositoryProvider
+import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.OutfitPost
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +32,9 @@ class FeedViewModelUnitTest {
   private lateinit var viewModel: FeedViewModel
   private lateinit var feedRepository: FeedRepository
   private lateinit var accountRepository: AccountRepository
+  private lateinit var likesRepository: LikesRepository
+  private lateinit var firebaseAuth: FirebaseAuth
+  private lateinit var firebaseFirestore: FirebaseFirestore
   private val testDispatcher = StandardTestDispatcher()
 
   @Before
@@ -37,12 +42,15 @@ class FeedViewModelUnitTest {
     Dispatchers.setMain(testDispatcher)
     feedRepository = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
+    likesRepository = mockk(relaxed = true)
+    firebaseAuth = mockk(relaxed = true)
+    firebaseFirestore = mockk(relaxed = true)
 
-    // Mock the provider to return our mocked repository
-    mockkObject(FeedRepositoryProvider)
-    every { FeedRepositoryProvider.repository } returns feedRepository
+    // Mock Firebase Firestore to prevent Provider initialization crash
+    mockkStatic(FirebaseFirestore::class)
+    every { FirebaseFirestore.getInstance() } returns firebaseFirestore
 
-    viewModel = FeedViewModel(feedRepository, accountRepository)
+    viewModel = FeedViewModel(feedRepository, accountRepository, likesRepository, firebaseAuth)
   }
 
   @After
@@ -53,6 +61,9 @@ class FeedViewModelUnitTest {
 
   @Test
   fun `toggleFeedType switches isPublicFeed state`() = runTest {
+    // Set a current account so refreshFeedFromFirestore doesn't return early
+    viewModel.setCurrentAccount(Account(uid = "testUser"))
+
     // Initial state should be false (Friends feed)
     assertFalse(viewModel.uiState.value.isPublicFeed)
 
@@ -71,6 +82,9 @@ class FeedViewModelUnitTest {
     val publicPosts = listOf(OutfitPost(postUID = "public1", isPublic = true))
     coEvery { feedRepository.getPublicFeed() } returns publicPosts
 
+    // Set current account
+    viewModel.setCurrentAccount(Account(uid = "testUser"))
+
     // Switch to public feed
     viewModel.toggleFeedType()
 
@@ -88,6 +102,9 @@ class FeedViewModelUnitTest {
     // Setup
     val friendPosts = listOf(OutfitPost(postUID = "friend1"))
     val account = Account(uid = "me", friendUids = listOf("friend1"))
+
+    // Set current account
+    viewModel.setCurrentAccount(account)
 
     viewModel.refreshFeedFromFirestore()
     testDispatcher.scheduler.advanceUntilIdle()

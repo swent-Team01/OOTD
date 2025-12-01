@@ -3,6 +3,7 @@ package com.android.ootd.model.posts
 import androidx.annotation.Keep
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
+import com.google.firebase.firestore.PropertyName
 
 /**
  * Represents a single post in the feed
@@ -28,7 +29,7 @@ data class OutfitPost(
     val itemsID: List<String> = emptyList(),
     val timestamp: Long = 0L,
     val location: Location = emptyLocation,
-    val isPublic: Boolean = false
+    @get:PropertyName("isPublic") val isPublic: Boolean = false
 
     // val reactionList - for when we implement reactions/commentaries to posts
     // val location - for when we implement location

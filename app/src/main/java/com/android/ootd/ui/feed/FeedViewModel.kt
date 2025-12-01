@@ -12,8 +12,7 @@ import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.LikesRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
+import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +45,8 @@ data class FeedUiState(
 open class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val likesRepository: LikesRepository = LikesRepositoryProvider.repository
+    private val likesRepository: LikesRepository = LikesRepositoryProvider.repository,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(FeedUiState())
@@ -58,7 +58,7 @@ open class FeedViewModel(
 
   /** Observes Firebase Auth state changes and loads the current account accordingly. */
   private fun observeAuthAndLoadAccount() {
-    Firebase.auth.addAuthStateListener { auth ->
+    auth.addAuthStateListener { auth ->
       val user = auth.currentUser
       if (user == null) {
         _uiState.value = FeedUiState()
