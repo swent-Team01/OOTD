@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.Inventory.InventoryGrid
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
 
@@ -98,7 +99,7 @@ fun SelectInventoryItemScreen(
               Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "No items in your inventory yet.\nAdd items to your inventory first!",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = Typography.bodyLarge,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
                     modifier =

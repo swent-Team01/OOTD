@@ -38,6 +38,7 @@ import com.android.ootd.R
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.StarYellow
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ShowText
 
 /**
@@ -120,9 +121,7 @@ private fun BoxScope.PriceChip(item: Item) {
               .padding(horizontal = 10.dp, vertical = 4.dp)) {
         Text(
             text = "${item.price.toInt()} ${item.currency}",
-            style =
-                MaterialTheme.typography.labelMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant))
+            style = Typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
       }
 }
 
@@ -180,24 +179,18 @@ private fun BoxScope.ItemInfo(item: Item) {
       horizontalAlignment = Alignment.Start) {
         ShowText(
             text = item.category.uppercase(),
-            style =
-                MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            style = Typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
         ShowText(
             text = item.type.orEmpty(),
-            style =
-                MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            style = Typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             textAlign = TextAlign.Start,
             modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
         if (brandText.isNotBlank()) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = brandText,
-                style =
-                    MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.White.copy(alpha = 0.9f)))
+                style = Typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)))
           }
         }
       }

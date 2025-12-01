@@ -45,6 +45,7 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 
 /**
  * Dialog displaying detailed information about an item.
@@ -206,11 +207,11 @@ private fun CopyableDetailRow(
   val valueColor = if (isLink) Primary else MaterialTheme.colorScheme.onSurfaceVariant
   val linkFontSize =
       when {
-        !isLink -> MaterialTheme.typography.bodyMedium.fontSize
+        !isLink -> Typography.bodyMedium.fontSize
         value.length > 80 -> 10.sp
         value.length > 60 -> 12.sp
         value.length > 40 -> 13.sp
-        else -> MaterialTheme.typography.bodyMedium.fontSize
+        else -> Typography.bodyMedium.fontSize
       }
 
   Column(
@@ -222,7 +223,7 @@ private fun CopyableDetailRow(
               Text(
                   text = label,
                   style =
-                      MaterialTheme.typography.bodyMedium.copy(
+                      Typography.bodyMedium.copy(
                           fontWeight = FontWeight.Bold,
                           color = MaterialTheme.colorScheme.onSurfaceVariant))
               IconButton(onClick = onCopy, modifier = Modifier.size(32.dp).testTag(copyTag)) {
@@ -238,9 +239,7 @@ private fun CopyableDetailRow(
             else Modifier.padding(top = 2.dp)
         Text(
             text = value,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    color = valueColor, fontSize = linkFontSize),
+            style = Typography.bodyMedium.copy(color = valueColor, fontSize = linkFontSize),
             textAlign = TextAlign.Center,
             modifier = clickableModifier.heightIn(min = 32.dp))
       }
@@ -254,14 +253,12 @@ private fun DetailTextRow(label: String, value: String, tag: String) {
         Text(
             text = label,
             style =
-                MaterialTheme.typography.bodyMedium.copy(
+                Typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant))
         Text(
             text = value,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             textAlign = TextAlign.Center)
       }
 }

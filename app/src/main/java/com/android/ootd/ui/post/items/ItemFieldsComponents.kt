@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
 val CONDITION_OPTIONS = listOf("New", "Like new", "Used", "Vintage", "Very Used")
@@ -221,15 +222,11 @@ private fun CommonTextField(
       },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       supportingText =
           if (shouldShowCounter) {
-            {
-              Text(
-                  text = "${value.length}/${maxChars}", style = MaterialTheme.typography.labelSmall)
-            }
+            { Text(text = "${value.length}/${maxChars}", style = Typography.labelSmall) }
           } else {
             null
           },
@@ -349,8 +346,7 @@ fun PriceField(
       },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
@@ -422,16 +418,11 @@ fun NotesField(
       },
       label = { Text("Notes") },
       placeholder = { Text(placeholder) },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
       supportingText =
           if (showCounter) {
-            {
-              Text(
-                  text = "${notes.length}/$NOTES_MAX_LENGTH",
-                  style = MaterialTheme.typography.labelSmall)
-            }
+            { Text(text = "${notes.length}/$NOTES_MAX_LENGTH", style = Typography.labelSmall) }
           } else null,
       modifier =
           Modifier.fillMaxWidth()
@@ -535,8 +526,7 @@ private fun SelectionDropdownField(
                 tint = MaterialTheme.colorScheme.primary)
           }
         },
-        textStyle =
-            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
         colors = commonTextFieldColors(),
         modifier = Modifier.fillMaxWidth().testTag(visuals.textFieldTag))
     val menuModifier =
@@ -549,9 +539,7 @@ private fun SelectionDropdownField(
                 text = {
                   Text(
                       clearLabel,
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              color = MaterialTheme.colorScheme.primary))
+                      style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
                 },
                 onClick = {
                   onOptionSelected("")
@@ -563,9 +551,7 @@ private fun SelectionDropdownField(
                 text = {
                   Text(
                       opt,
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              color = MaterialTheme.colorScheme.primary))
+                      style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
                 },
                 onClick = {
                   onOptionSelected(opt)
@@ -600,7 +586,7 @@ private fun SuggestionsDropdownField(
   val showCounter = maxChars != null && isFocused
   val supportingText: (@Composable () -> Unit)? =
       if (showCounter) {
-        { Text("${value.length}/$maxChars", style = MaterialTheme.typography.labelSmall) }
+        { Text("${value.length}/$maxChars", style = Typography.labelSmall) }
       } else null
 
   Box(modifier = Modifier.fillMaxWidth()) {
@@ -654,8 +640,7 @@ private fun SuggestionInputField(
             onFocusChanged(it.isFocused)
           },
       singleLine = true,
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
       colors = commonTextFieldColors(),
       supportingText = supportingText)
 }
@@ -678,9 +663,7 @@ private fun SuggestionsMenu(
               text = {
                 Text(
                     suggestion,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary))
+                    style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
               },
               onClick = { onSelect(suggestion) })
         }

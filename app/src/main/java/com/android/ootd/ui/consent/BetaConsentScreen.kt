@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ShowText
 
 object BetaConsentScreenTestTags {
@@ -54,7 +55,6 @@ fun BetaConsentScreen(
 ) {
   var hasAgreed by remember { mutableStateOf(false) }
   val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
 
   Box(
       modifier =
@@ -77,14 +77,14 @@ fun BetaConsentScreen(
               // Title
               ShowText(
                   text = "OOTD Beta Program",
-                  style = typography.headlineMedium,
+                  style = Typography.headlineMedium,
                   modifier = Modifier.testTag(BetaConsentScreenTestTags.TITLE))
 
               Spacer(modifier = Modifier.height(4.dp))
 
               ShowText(
                   text = "Data Collection & Usage Agreement",
-                  style = typography.titleSmall,
+                  style = Typography.titleSmall,
                   color = colors.onSurfaceVariant)
 
               Spacer(modifier = Modifier.height(16.dp))
@@ -101,7 +101,7 @@ fun BetaConsentScreen(
                           // Introduction
                           Text(
                               text = "Welcome to the OOTD Beta!",
-                              style = typography.titleMedium,
+                              style = Typography.titleMedium,
                               fontWeight = FontWeight.Bold,
                               color = colors.onSurfaceVariant)
 
@@ -110,7 +110,7 @@ fun BetaConsentScreen(
                           Text(
                               text =
                                   "Thank you for participating in our beta program. To help us improve OOTD and create the best outfit-sharing experience, we collect and analyze certain data during this testing phase.",
-                              style = typography.bodySmall,
+                              style = Typography.bodySmall,
                               color = colors.onSurfaceVariant)
 
                           Spacer(modifier = Modifier.height(8.dp))
@@ -118,7 +118,7 @@ fun BetaConsentScreen(
                           Text(
                               text =
                                   "This app is created for the course CS-311 at EPFL. It's still in active development, so if you encounter any bugs or just want to share feedback with us, feel free to reach out to us!",
-                              style = typography.bodySmall,
+                              style = Typography.bodySmall,
                               color = colors.onSurfaceVariant)
 
                           Spacer(modifier = Modifier.height(16.dp))
@@ -184,7 +184,7 @@ fun BetaConsentScreen(
 
                           Text(
                               text = "During the beta phase, your data is used exclusively to:",
-                              style = typography.bodySmall,
+                              style = Typography.bodySmall,
                               color = colors.onSurfaceVariant)
 
                           Spacer(modifier = Modifier.height(4.dp))
@@ -237,7 +237,7 @@ fun BetaConsentScreen(
                                       Text(
                                           text =
                                               "This is a beta version. Data collection practices may change as we prepare for the official launch. You'll be notified of any significant changes. You will need to download a new APK for updates.",
-                                          style = typography.bodySmall,
+                                          style = Typography.bodySmall,
                                           color = colors.onPrimaryContainer)
                                     }
                               }
@@ -247,7 +247,7 @@ fun BetaConsentScreen(
                           Text(
                               text =
                                   "By agreeing below, you acknowledge that you have read and understood this agreement and consent to the collection and use of your data as described during the beta testing period.",
-                              style = typography.bodySmall,
+                              style = Typography.bodySmall,
                               color = colors.onSurfaceVariant,
                               fontWeight = FontWeight.Medium)
 
@@ -255,7 +255,7 @@ fun BetaConsentScreen(
 
                           Text(
                               text = "Last updated: November 5, 2025",
-                              style = typography.bodySmall,
+                              style = Typography.bodySmall,
                               color = colors.onSurfaceVariant.copy(alpha = 0.6f))
                         }
                   }
@@ -276,7 +276,7 @@ fun BetaConsentScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "I agree to the data collection and usage terms described above",
-                        style = typography.bodySmall,
+                        style = Typography.bodySmall,
                         color = colors.onSurface)
                   }
 
@@ -293,7 +293,7 @@ fun BetaConsentScreen(
                         colors =
                             ButtonDefaults.outlinedButtonColors(
                                 contentColor = colors.onSurfaceVariant)) {
-                          Text("Decline", style = typography.titleSmall)
+                          Text("Decline", style = Typography.titleSmall)
                         }
 
                     Button(
@@ -316,7 +316,7 @@ fun BetaConsentScreen(
                           Spacer(modifier = Modifier.width(6.dp))
                           Text(
                               if (isLoading) "Saving..." else "Agree & Continue",
-                              style = typography.titleSmall)
+                              style = Typography.titleSmall)
                         }
                   }
 
@@ -329,12 +329,12 @@ fun BetaConsentScreen(
               modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp),
               action = {
                 TextButton(onClick = onErrorDismiss) {
-                  Text("Dismiss", style = MaterialTheme.typography.labelSmall)
+                  Text("Dismiss", style = Typography.labelSmall)
                 }
               },
               containerColor = MaterialTheme.colorScheme.errorContainer,
               contentColor = MaterialTheme.colorScheme.onErrorContainer) {
-                Text(errorMessage, style = MaterialTheme.typography.bodySmall)
+                Text(errorMessage, style = Typography.bodySmall)
               }
         }
       }
@@ -344,7 +344,7 @@ fun BetaConsentScreen(
 private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
   Text(
       text = title,
-      style = MaterialTheme.typography.titleMedium,
+      style = Typography.titleMedium,
       fontWeight = FontWeight.Bold,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       modifier = modifier)
@@ -361,11 +361,11 @@ private fun DataCollectionItem(
 ) {
   Column(modifier = modifier) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(text = icon, style = MaterialTheme.typography.titleLarge)
+      Text(text = icon, style = Typography.titleLarge)
       Spacer(modifier = Modifier.width(8.dp))
       Text(
           text = title,
-          style = MaterialTheme.typography.titleSmall,
+          style = Typography.titleSmall,
           fontWeight = FontWeight.SemiBold,
           color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -374,7 +374,7 @@ private fun DataCollectionItem(
 
     Text(
         text = description,
-        style = MaterialTheme.typography.bodySmall,
+        style = Typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
 
     Spacer(modifier = Modifier.height(6.dp))
@@ -392,7 +392,7 @@ private fun DataCollectionItem(
                   containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
             Text(
                 text = "Note: $note",
-                style = MaterialTheme.typography.bodySmall,
+                style = Typography.bodySmall,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier.padding(6.dp))
           }
@@ -405,11 +405,11 @@ private fun BulletPoint(text: String) {
   Row(modifier = Modifier.padding(start = 8.dp)) {
     Text(
         text = "• ",
-        style = MaterialTheme.typography.bodySmall,
+        style = Typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
     Text(
         text = text,
-        style = MaterialTheme.typography.bodySmall,
+        style = Typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
   }
 }
@@ -423,7 +423,7 @@ private fun InfoBox(text: String) {
       shape = RoundedCornerShape(8.dp)) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodySmall,
+            style = Typography.bodySmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             modifier = Modifier.padding(12.dp))
       }

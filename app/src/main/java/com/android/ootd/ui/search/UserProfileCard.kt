@@ -18,7 +18,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_IMAGE
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_LETTER
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ProfilePicture
 
 object UserProfileCardTestTags {
@@ -124,7 +124,7 @@ fun UserProfileCard(
                         size = 50.dp,
                         profilePicture = profilePicture,
                         username = username,
-                        textStyle = typography.bodySmall)
+                        textStyle = Typography.bodySmall)
                   }
                 }
 

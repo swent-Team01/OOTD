@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.android.ootd.ui.theme.Typography
 
 data class AdditionalDetailsTags(
     val toggle: String,
@@ -84,9 +85,7 @@ fun AdditionalDetailsSection(
               tint = MaterialTheme.colorScheme.primary)
           Text(
               text = title,
-              style =
-                  MaterialTheme.typography.bodyLarge.copy(
-                      color = MaterialTheme.colorScheme.primary))
+              style = Typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary))
         }
 
     AnimatedVisibility(

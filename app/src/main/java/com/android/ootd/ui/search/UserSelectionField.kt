@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.theme.Typography
 
 object UserSelectionFieldTestTags {
   const val INPUT_USERNAME = "inputUsername"
@@ -46,7 +47,7 @@ fun UserSelectionField(
             Text(
                 "Username",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium)
+                style = Typography.bodyMedium)
           },
           trailingIcon = {
             if (usernameText.isNotEmpty()) {
@@ -82,7 +83,7 @@ fun UserSelectionField(
                     Text(
                         "No users found",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium)
+                        style = Typography.bodyMedium)
                   },
                   onClick = {},
                   enabled = false,

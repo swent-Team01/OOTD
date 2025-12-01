@@ -86,7 +86,7 @@ private fun ProfileSection(post: OutfitPost) {
           size = 36.dp,
           profilePicture = profilePic,
           username = post.name,
-          textStyle = MaterialTheme.typography.titleMedium)
+          textStyle = Typography.titleMedium)
     }
 
     Spacer(modifier = Modifier.width(8.dp))
@@ -94,7 +94,7 @@ private fun ProfileSection(post: OutfitPost) {
     Column {
       Text(
           text = post.name,
-          style = MaterialTheme.typography.titleLarge,
+          style = Typography.titleLarge,
           color = MaterialTheme.colorScheme.primary,
           modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
 
@@ -116,7 +116,7 @@ private fun ProfileSection(post: OutfitPost) {
 
       Text(
           text = remainingText,
-          style = MaterialTheme.typography.bodySmall,
+          style = Typography.bodySmall,
           color = MaterialTheme.colorScheme.tertiary,
           modifier = Modifier.testTag(tag))
     }
@@ -148,7 +148,7 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
     Spacer(modifier = Modifier.width(1.dp))
     Text(
         text = likeCount.toString(),
-        style = MaterialTheme.typography.bodyMedium,
+        style = Typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSecondaryContainer,
         modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
   }
@@ -210,7 +210,7 @@ private fun DescriptionAndButton(
 
         Text(
             text = descriptionText,
-            style = MaterialTheme.typography.bodyLarge,
+            style = Typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary,
             maxLines = if (expanded) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis,
@@ -229,7 +229,7 @@ private fun DescriptionAndButton(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary),
             modifier = Modifier.testTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).height(36.dp)) {
-              Text("See fit", style = MaterialTheme.typography.bodySmall)
+              Text("See fit", style = Typography.bodySmall)
             }
       }
 }
@@ -334,7 +334,7 @@ fun PostLocation(location: Location) {
 
     Text(
         text = displayName,
-        style = MaterialTheme.typography.bodySmall,
+        style = Typography.bodySmall,
         color = MaterialTheme.colorScheme.tertiary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

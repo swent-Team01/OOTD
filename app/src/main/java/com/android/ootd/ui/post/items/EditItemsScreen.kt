@@ -47,6 +47,7 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CenteredLoadingState
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -201,7 +202,7 @@ fun EditItemsScreen(
                             tint = Tertiary,
                             modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
+                        Text("No picture yet", style = Typography.bodyMedium)
                       }
                     })
               }

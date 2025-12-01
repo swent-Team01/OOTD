@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionButton
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.NotificationButton
@@ -142,9 +143,7 @@ private fun FeedScaffold(
                     contentAlignment = Alignment.Center) {
                       ShowText(
                           text = "Do a fit check to unlock today’s feed",
-                          style =
-                              MaterialTheme.typography.titleLarge.copy(
-                                  fontWeight = FontWeight.ExtraBold))
+                          style = Typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
                     }
               }
             }

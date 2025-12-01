@@ -198,7 +198,7 @@ fun PostDetailsContent(
       // Character counter that shows how many characters are left
       Text(
           text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
-          style = MaterialTheme.typography.bodySmall,
+          style = Typography.bodySmall,
           color = MaterialTheme.colorScheme.primary,
           modifier =
               Modifier.align(Alignment.End)
@@ -238,13 +238,13 @@ fun PostOwnerSection(
           size = 48.dp,
           profilePicture = profilePicture ?: "",
           username = username ?: "",
-          textStyle = MaterialTheme.typography.titleMedium)
+          textStyle = Typography.titleMedium)
 
       Spacer(Modifier.width(12.dp))
 
       Text(
           text = username ?: "Unknown User",
-          style = MaterialTheme.typography.titleLarge,
+          style = Typography.titleLarge,
           color = MaterialTheme.colorScheme.primary)
 
       Spacer(Modifier.weight(1f))
@@ -343,7 +343,7 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 
     Text(
         text = "$likeCount likes",
-        style = MaterialTheme.typography.bodyMedium,
+        style = Typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurface)
   }
 }
@@ -357,9 +357,7 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 fun PostDescription(description: String) {
   if (description.isNotBlank()) {
     Text(
-        text = description,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.primary)
+        text = description, style = Typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
   }
 }
 
@@ -383,11 +381,11 @@ fun LikedUsersRow(likedUsers: List<User>) {
                     size = 48.dp,
                     profilePicture = user.profilePicture,
                     username = user.username,
-                    textStyle = MaterialTheme.typography.bodyMedium)
+                    textStyle = Typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = user.username,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = Typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

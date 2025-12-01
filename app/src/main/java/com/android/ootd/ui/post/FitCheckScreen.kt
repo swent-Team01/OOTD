@@ -33,6 +33,7 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
@@ -104,7 +105,7 @@ private fun DescriptionInputField(description: String, onDescriptionChange: (Str
         maxLines = 2)
     ShowText(
         text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
-        style = MaterialTheme.typography.bodySmall,
+        style = Typography.bodySmall,
         modifier =
             Modifier.align(Alignment.End)
                 .padding(top = 4.dp, end = 4.dp)
@@ -301,7 +302,7 @@ private fun FitCheckScreenContent(
                 Text(
                     text = msg,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Typography.bodyMedium,
                     modifier =
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }

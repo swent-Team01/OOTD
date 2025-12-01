@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ProfilePicture
 
 @Composable
@@ -62,7 +63,7 @@ fun FollowRequestCard(
                         size = 48.dp,
                         profilePicture = followRequestItem.senderUser.profilePicture,
                         username = followRequestItem.senderUser.username,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp))
+                        textStyle = Typography.titleMedium.copy(fontSize = 20.sp))
                   }
 
               Spacer(modifier = Modifier.width(12.dp))
