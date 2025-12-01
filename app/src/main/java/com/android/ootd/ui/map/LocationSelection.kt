@@ -36,10 +36,8 @@ import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.epflLocation
 import com.android.ootd.ui.theme.Bodoni
-import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.CommonTextField
 
@@ -165,7 +163,6 @@ private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
  *   handling)
  * @param onGPSClick callback invoked when the GPS button is clicked
  * @param modifier optional Compose modifier for the section
- * @param textColor color used for labels and placeholders
  * @param isError whether the input should show an error state
  * @param onFocusChanged callback invoked when the input focus changes
  */
@@ -177,12 +174,9 @@ fun LocationSelectionSection(
     textLocationField: String,
     onLocationSelect: ((Location) -> Unit)? = null,
     onGPSClick: () -> Unit,
-    textColor: Color = Tertiary,
     isError: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {}
 ) {
-  val colors = LightColorScheme
-  val typography = Typography
   val locationUiState by viewModel.uiState.collectAsState()
 
   Column(modifier = modifier) {

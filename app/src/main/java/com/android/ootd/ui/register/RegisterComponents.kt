@@ -10,7 +10,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -163,8 +162,6 @@ internal fun DateOfBirthField(
     isLoading: Boolean,
     onShowDatePicker: () -> Unit
 ) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
 
   CommonTextField(
       value = value,
@@ -214,7 +211,6 @@ internal fun LocationField(
       textGPSButton = "Use current location (GPS)",
       textLocationField = "Search Location",
       onGPSClick = onGPSClick,
-      textColor = fieldState.textColor.value,
       isError = isError && !fieldState.focused.value,
       onFocusChanged = { isFocused ->
         fieldState.focused.value = isFocused
