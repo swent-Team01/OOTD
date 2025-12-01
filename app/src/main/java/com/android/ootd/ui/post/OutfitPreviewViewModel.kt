@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.R
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.image.ImageCompressor
@@ -111,75 +112,77 @@ class OutfitPreviewViewModel(
    *   cannot create images.
    */
   fun publishPost(overridePhoto: Boolean = false, context: Context) {
-    if (overridePhoto) {
-      _uiState.value =
-          _uiState.value.copy(
-              isLoading = false, isPublished = true, successMessage = "Post created successfully!")
-    } else {
-      val state = _uiState.value
-      if (state.imageUri.isEmpty() || state.postUuid.isEmpty()) {
-        setErrorMessage("Missing required post data")
-        return
-      }
+    val state = _uiState.value
 
-      // returns a byte array of the compressed image
-      viewModelScope.launch {
-        _uiState.value = state.copy(isLoading = true)
-        try {
+    var imageUri = ""
 
-          // Compress image before upload
-          val compressedImage =
-              imageCompressor.compressImage(
-                  state.imageUri.toUri(),
-                  compressionThreshold = COMPRESS_THRESHOLD,
-                  context = context)
-
-          // Check compression result
-          if (compressedImage == null) {
-            setErrorMessage("Failed to compress image")
-            _uiState.value = state.copy(isLoading = false)
-            return@launch
-          }
-
-          // Fetch current user id
-          val currentUserId = accountService.currentUserId
-          // Fetch user data
-          val user = userRepository.getUser(currentUserId)
-
-          // Upload main outfit image
-          val outfitPhotoUrl =
-              postRepository.uploadOutfitWithCompressedPhoto(
-                  imageData = compressedImage, postId = state.postUuid)
-
-          // Fetch all items for this post
-          val items = itemsRepository.getAssociatedItems(state.postUuid)
-          val itemIds = items.map { it.itemUuid }
-
-          // Build and save Firestore post
-          val post =
-              OutfitPost(
-                  postUID = state.postUuid,
-                  ownerId = user.uid,
-                  name = user.username,
-                  userProfilePicURL = user.profilePicture,
-                  outfitURL = outfitPhotoUrl,
-                  description = state.description,
-                  itemsID = itemIds,
-                  timestamp = System.currentTimeMillis(),
-                  location = state.location)
-
-          postRepository.savePostToFirestore(post)
-
-          _uiState.value =
-              state.copy(
-                  isLoading = false,
-                  isPublished = true,
-                  successMessage = "Post created successfully!")
-        } catch (e: Exception) {
-          Log.e("OutfitPreviewViewModel", "Error publishing post", e)
-          setErrorMessage("Failed to publish post: ${e.message}")
-          _uiState.value = state.copy(isLoading = false)
+    imageUri =
+        if (overridePhoto) {
+          "android.resource://${context.packageName}/${R.drawable.app_logo}"
+        } else {
+          state.imageUri
         }
+
+    if (imageUri.isEmpty() || state.postUuid.isEmpty()) {
+      setErrorMessage("Missing required post data")
+      return
+    }
+
+    // returns a byte array of the compressed image
+    viewModelScope.launch {
+      _uiState.value = state.copy(isLoading = true)
+      try {
+
+        // Compress image before upload
+        val compressedImage =
+            imageCompressor.compressImage(
+                imageUri.toUri(), compressionThreshold = COMPRESS_THRESHOLD, context = context)
+
+        // Check compression result
+        if (compressedImage == null) {
+          setErrorMessage("Failed to compress image")
+          _uiState.value = state.copy(isLoading = false)
+          return@launch
+        }
+
+        // Fetch current user id
+        val currentUserId = accountService.currentUserId
+        // Fetch user data
+        val user = userRepository.getUser(currentUserId)
+
+        // Upload main outfit image
+        val outfitPhotoUrl =
+            postRepository.uploadOutfitWithCompressedPhoto(
+                imageData = compressedImage, postId = state.postUuid)
+
+        // Fetch all items for this post
+        val items = itemsRepository.getAssociatedItems(state.postUuid)
+        val itemIds = items.map { it.itemUuid }
+
+        // Build and save Firestore post
+        val post =
+            OutfitPost(
+                postUID = state.postUuid,
+                ownerId = user.uid,
+                name = user.username,
+                userProfilePicURL = user.profilePicture,
+                outfitURL = outfitPhotoUrl,
+                description = state.description,
+                itemsID = itemIds,
+                timestamp = System.currentTimeMillis(),
+                location = state.location)
+
+        postRepository.savePostToFirestore(post)
+
+        _uiState.value =
+            state.copy(
+                isLoading = false,
+                isPublished = true,
+                successMessage = "Post created successfully!")
+      } catch (e: Exception) {
+        Log.e("OutfitPreviewViewModel", "Error publishing post", e)
+        setErrorMessage("Failed to publish post: ${e.message}")
+        _uiState.value = state.copy(isLoading = false)
       }
     }
   }
@@ -211,6 +214,7 @@ class OutfitPreviewViewModel(
 
   /** Sets an error message in the UI state */
   private fun setErrorMessage(message: String) {
+    Log.e("OutfitPreviewViewModel", message)
     _uiState.value = _uiState.value.copy(errorMessage = message)
   }
 }
