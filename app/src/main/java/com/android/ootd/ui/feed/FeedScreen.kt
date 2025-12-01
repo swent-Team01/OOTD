@@ -107,14 +107,13 @@ private fun FeedScaffold(
                     Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
                     size = 64.dp)
               })
-          TabRow(
+          PrimaryTabRow(
               selectedTabIndex = if (isPublicFeed) 1 else 0,
               containerColor = MaterialTheme.colorScheme.background,
               contentColor = MaterialTheme.colorScheme.primary,
-              indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    modifier =
-                        Modifier.tabIndicatorOffset(tabPositions[if (isPublicFeed) 1 else 0]),
+              indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(if (isPublicFeed) 1 else 0),
                     color = MaterialTheme.colorScheme.primary)
               }) {
                 Tab(
