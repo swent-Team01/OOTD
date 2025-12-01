@@ -229,10 +229,7 @@ private fun AccountScreenContent(
                       editedUsername = ""
                     },
                     onSaveClick = {
-                      if (editedUsername.isNotBlank() && editedUsername != uiState.username) {
-                        accountViewModel.editUser(newUsername = editedUsername)
-                        isEditingUsername = false
-                      } else if (editedUsername == uiState.username) {
+                      if (validateUsername(editedUsername, uiState.username, accountViewModel)) {
                         isEditingUsername = false
                       }
                     })
@@ -532,6 +529,30 @@ private fun PrivacyToggleRow(
                       uncheckedThumbColor = colors.onPrimary,
                       uncheckedTrackColor = colors.outlineVariant))
         }
+  }
+}
+
+/**
+ * Validates and processes username changes. Returns true if the username should stop editing mode,
+ * false otherwise.
+ *
+ * @param editedUsername The new username value entered by the user.
+ * @param currentUsername The current username from the UI state.
+ * @param accountViewModel The view model to call for updating the user.
+ * @return Boolean indicating whether editing mode should be exited.
+ */
+private fun validateUsername(
+    editedUsername: String,
+    currentUsername: String,
+    accountViewModel: AccountViewModel
+): Boolean {
+  return when {
+    editedUsername.isNotBlank() && editedUsername != currentUsername -> {
+      accountViewModel.editUser(newUsername = editedUsername)
+      true
+    }
+    editedUsername == currentUsername -> true
+    else -> false
   }
 }
 
