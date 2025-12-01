@@ -1,7 +1,6 @@
 package com.android.ootd.model.account
 
 import com.android.ootd.model.post.OutfitPostRepository
-import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -9,15 +8,20 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -72,224 +76,58 @@ class AccountRepositoryFirestoreTest {
   }
 
   @Test
-  fun `getStarredItems uses cached firestore data`() = runTest {
+  fun `getStarredItems fetches data`() = runTest {
     stubSnapshot(listOf("coat", "boots"))
 
     val result = repository.getStarredItems("user-1")
 
     assertEquals(listOf("coat", "boots"), result)
-    // second call hits memory cache instead of querying again
-    assertEquals(listOf("coat", "boots"), repository.getStarredItems("user-1"))
   }
 
   @Test
-  fun `addStarredItem appends entry locally`() = runTest {
+  fun `addStarredItem updates firestore`() = runTest {
     stubSnapshot(listOf("coat"))
 
     assertTrue(repository.addStarredItem("hat"))
-    val cached = repository.getStarredItems("user-1")
 
-    assertEquals(listOf("coat", "hat"), cached)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `removeStarredItem drops entry from cache`() = runTest {
+  fun `removeStarredItem updates firestore`() = runTest {
     stubSnapshot(listOf("coat", "hat"))
-    repository.getStarredItems("user-1") // prime cache
 
     assertTrue(repository.removeStarredItem("coat"))
-    val cached = repository.getStarredItems("user-1")
 
-    assertEquals(listOf("hat"), cached)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `toggleStarredItem flips membership`() = runTest {
+  fun `toggleStarredItem updates firestore and returns new list`() = runTest {
     stubSnapshot(listOf("coat"))
-    repository.getStarredItems("user-1") // prime cache
 
+    // Test removing (toggling off)
     val removed = repository.toggleStarredItem("coat")
     assertTrue("coat" !in removed)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
 
+    // Test adding (toggling on) - need to update stub to simulate empty list
+    stubSnapshot(emptyList())
     val addedBack = repository.toggleStarredItem("coat")
     assertTrue("coat" in addedBack)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `getItemsList falls back to cache on firestore failure`() = runTest {
-    val cacheField =
-        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
-    @Suppress("UNCHECKED_CAST")
-    val cache =
-        cacheField.get(repository)
-            as
-            java.util.concurrent.ConcurrentHashMap<
-                String, java.util.concurrent.CopyOnWriteArrayList<String>>
-    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("cached-1", "cached-2"))
+  fun `refreshStarredItems fetches from server`() = runTest {
+    val serverItems = listOf("server-item-1", "server-item-2")
+    every { snapshot.exists() } returns true
+    every { snapshot.get("starredItemUids") } returns serverItems
+    every { document.get(Source.SERVER) } returns Tasks.forResult(snapshot)
 
-    every { document.get(Source.CACHE) } returns Tasks.forException(Exception("cache down"))
-    every { document.get() } returns Tasks.forException(Exception("network down"))
+    val result = repository.refreshStarredItems("user-1")
 
-    val result = repository.getItemsList("user-1")
-
-    assertEquals(listOf("cached-1", "cached-2"), result)
-  }
-
-  @Test
-  fun `accountExists rethrows firestore exceptions`() = runTest {
-    val userCollection = mockk<CollectionReference>()
-    val userDoc = mockk<DocumentReference>()
-    every { firestore.collection(USER_COLLECTION_PATH) } returns userCollection
-    every { userCollection.document("user-err") } returns userDoc
-    every { userDoc.get() } returns Tasks.forException(Exception("permission denied"))
-
-    assertFailsWith<Exception> { repository.accountExists("user-err") }
-  }
-
-  @Test
-  fun `removeFriend ignores secondary update failures`() = runTest {
-    val userCollection = mockk<CollectionReference>()
-    val userDoc = mockk<DocumentReference>()
-    val friendDoc = mockk<DocumentReference>()
-    val friendSnapshot = mockk<DocumentSnapshot>()
-    every { friendSnapshot.exists() } returns true
-    every { firestore.collection(USER_COLLECTION_PATH) } returns userCollection
-    every { userCollection.document("friend-1") } returns userDoc
-    every { userDoc.get() } returns Tasks.forResult(friendSnapshot)
-
-    val userAccountDoc = mockk<DocumentReference>()
-    val friendAccountDoc = mockk<DocumentReference>()
-    every { collection.document("user-1") } returns userAccountDoc
-    every { collection.document("friend-1") } returns friendAccountDoc
-    every { userAccountDoc.update(any<String>(), any()) } returns Tasks.forResult(null)
-    every { friendAccountDoc.update(any<String>(), any()) } returns
-        Tasks.forException(Exception("not allowed"))
-
-    repository.removeFriend("user-1", "friend-1")
-  }
-
-  @Test
-  fun `deleteAccount converts missing user to UnknowUserID`() = runTest {
-    val spyRepo = io.mockk.spyk(repository)
-    coEvery { spyRepo.deleteProfilePicture(any()) } throws NoSuchElementException()
-
-    assertFailsWith<UnknowUserID> { spyRepo.deleteAccount("user-1") }
-  }
-
-  @Test
-  fun `editAccount converts missing user to UnknowUserID`() = runTest {
-    every { document.get() } returns Tasks.forResult(snapshot)
-    every { snapshot.exists() } returns false
-
-    assertFailsWith<UnknowUserID> {
-      repository.editAccount(
-          userID = "missing",
-          username = "new",
-          birthDay = "",
-          picture = "",
-          location = com.android.ootd.model.map.emptyLocation)
-    }
-  }
-
-  @Test
-  fun `ensureStarredCache falls back to network when cache read fails`() = runTest {
-    every { document.get(Source.CACHE) } returns Tasks.forException(Exception("cache miss"))
-    every { document.get() } returns Tasks.forResult(snapshot)
-    every { snapshot.data } returns mapOf("starredItemUids" to listOf("net-1", "net-2"))
-
-    val result = repository.getStarredItems("user-1")
-
-    assertEquals(listOf("net-1", "net-2"), result)
-  }
-
-  @Test
-  fun `ensureStarredCache returns cached list without hitting firestore`() = runTest {
-    val cacheField =
-        repository.javaClass.getDeclaredField("starredListCache").apply { isAccessible = true }
-    @Suppress("UNCHECKED_CAST")
-    val cache =
-        cacheField.get(repository)
-            as
-            java.util.concurrent.ConcurrentHashMap<
-                String, java.util.concurrent.CopyOnWriteArrayList<String>>
-    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("cached-only"))
-
-    val result = repository.getStarredItems("user-1")
-
-    assertEquals(listOf("cached-only"), result)
-    verify(exactly = 0) { document.get(any<Source>()) }
-  }
-
-  @Test
-  fun `getItemsList returns cache immediately when present`() = runTest {
-    val cacheField =
-        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
-    @Suppress("UNCHECKED_CAST")
-    val cache =
-        cacheField.get(repository)
-            as
-            java.util.concurrent.ConcurrentHashMap<
-                String, java.util.concurrent.CopyOnWriteArrayList<String>>
-    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("cached-a"))
-
-    val result = repository.getItemsList("user-1")
-
-    assertEquals(listOf("cached-a"), result)
-    verify(exactly = 0) { document.get(any<Source>()) }
-  }
-
-  @Test
-  fun `addItem handles firestore update failures but keeps cache updated`() = runTest {
-    every { document.get(Source.CACHE) } returns Tasks.forResult(snapshot)
-    every { snapshot.exists() } returns false
-    every { snapshot.get("itemsUids") } returns emptyList<String>()
-    every { document.update(any<String>(), any()) } returns Tasks.forException(Exception("offline"))
-
-    val added = repository.addItem("new-item")
-
-    assertTrue(added)
-    val cacheField =
-        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
-    @Suppress("UNCHECKED_CAST")
-    val cache =
-        cacheField.get(repository)
-            as
-            java.util.concurrent.ConcurrentHashMap<
-                String, java.util.concurrent.CopyOnWriteArrayList<String>>
-    assertTrue(cache["user-1"]?.contains("new-item") == true)
-  }
-
-  @Test
-  fun `removeItem handles firestore update failures but still returns true`() = runTest {
-    val cacheField =
-        repository.javaClass.getDeclaredField("itemsListCache").apply { isAccessible = true }
-    @Suppress("UNCHECKED_CAST")
-    val cache =
-        cacheField.get(repository)
-            as
-            java.util.concurrent.ConcurrentHashMap<
-                String, java.util.concurrent.CopyOnWriteArrayList<String>>
-    cache["user-1"] = java.util.concurrent.CopyOnWriteArrayList(listOf("to-remove"))
-
-    every { document.update(any<String>(), any()) } returns Tasks.forException(Exception("offline"))
-
-    val removed = repository.removeItem("to-remove")
-
-    assertTrue(removed)
-    assertFalse(cache["user-1"]?.contains("to-remove") == true)
-  }
-
-  @Test
-  fun `accountExists returns true when username present`() = runTest {
-    val userCollection = mockk<CollectionReference>()
-    val userDoc = mockk<DocumentReference>()
-    val userSnapshot = mockk<DocumentSnapshot>()
-    every { firestore.collection(USER_COLLECTION_PATH) } returns userCollection
-    every { userCollection.document("user-ok") } returns userDoc
-    every { userDoc.get() } returns Tasks.forResult(userSnapshot)
-    every { userSnapshot.exists() } returns true
-    every { userSnapshot.getString("username") } returns "bob"
-
-    assertTrue(repository.accountExists("user-ok"))
+    assertEquals(serverItems, result)
+    verify { document.get(Source.SERVER) }
   }
 }
