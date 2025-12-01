@@ -16,6 +16,7 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.post.OutfitPostRepository
+import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
@@ -99,22 +100,11 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
       object : OutfitPostRepository {
         override fun getNewPostId() = "post_123"
 
-        override suspend fun uploadOutfitPhoto(localPath: String, postId: String) = ""
-
         override suspend fun savePostToFirestore(post: OutfitPost) {}
 
         override suspend fun getPostById(postId: String): OutfitPost? = null
 
         override suspend fun updatePostFields(postId: String, updates: Map<String, Any?>) {}
-
-        override suspend fun savePostWithMainPhoto(
-            uid: String,
-            name: String,
-            userProfilePicURL: String,
-            localPath: String,
-            description: String,
-            location: Location
-        ) = OutfitPost(postUID = "post_123", ownerId = uid, name = name)
 
         override suspend fun deletePost(postId: String) {}
 
@@ -122,6 +112,26 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
             imageData: ByteArray,
             postId: String
         ): String {
+          TODO("Not yet implemented")
+        }
+
+        override suspend fun uploadCompressedReactionImage(
+            imageData: ByteArray,
+            commentId: String
+        ): String {
+          TODO("Not yet implemented")
+        }
+
+        override suspend fun addCommentToPost(
+            postId: String,
+            userId: String,
+            commentText: String,
+            reactionImageData: ByteArray?
+        ): Comment {
+          TODO("Not yet implemented")
+        }
+
+        override suspend fun deleteCommentFromPost(postId: String, comment: Comment) {
           TODO("Not yet implemented")
         }
       }
