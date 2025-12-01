@@ -21,6 +21,8 @@ class OutfitPostCardTest {
   // Helpers
   private fun setCard(
       post: OutfitPost,
+      username: String = "Test User",
+      profilePic: String = "",
       isBlurred: Boolean = false,
       isLiked: Boolean = false,
       likeCount: Int = 0,
@@ -31,6 +33,8 @@ class OutfitPostCardTest {
       composeTestRule.setContent {
         OutfitPostCard(
             post = post,
+            username = username,
+            profilePicUrl = profilePic,
             isBlurred = isBlurred,
             isLiked = isLiked,
             likeCount = likeCount,
@@ -60,7 +64,7 @@ class OutfitPostCardTest {
 
   @Test
   fun rendersBasics() {
-    setCard(post("John Doe", "Casual Friday outfit"))
+    setCard(post("John Doe", "Casual Friday outfit"), username = "John Doe")
 
     n(OutfitPostCardTestTags.OUTFIT_POST_CARD).assertIsDisplayed()
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("John Doe")
@@ -74,7 +78,7 @@ class OutfitPostCardTest {
 
   @Test
   fun rendersDescriptionLine_whenEmpty() {
-    setCard(post(name = "Minimalist", description = ""))
+    setCard(post(name = "Minimalist", description = ""), username = "Minimalist")
 
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("Minimalist")
     n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("Minimalist")
@@ -115,7 +119,9 @@ class OutfitPostCardTest {
   @Test
   fun showsProfileImage_whenUrlProvided() {
     setCard(
-        post(name = "Sophie", description = "With pic", profilePic = "https://example.com/pic.jpg"))
+        post(name = "Sophie", description = "With pic", profilePic = "https://example.com/pic.jpg"),
+        username = "Sophie",
+        profilePic = "https://example.com/pic.jpg")
 
     n(OutfitPostCardTestTags.PROFILE_PIC).assertIsDisplayed()
     n(OutfitPostCardTestTags.PROFILE_INITIAL).assertDoesNotExist()

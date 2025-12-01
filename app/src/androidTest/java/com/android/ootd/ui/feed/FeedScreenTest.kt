@@ -63,7 +63,14 @@ class FeedScreenTest : FirestoreTest() {
             OutfitPost("1", "user1", "https://example.com/1.jpg"),
             OutfitPost("2", "user2", "https://example.com/2.jpg"))
 
-    composeTestRule.setContent { FeedList(posts = posts, isBlurred = false, onPostClick = {}) }
+    val userDataMap =
+        mapOf(
+            "user1" to UserFeedData("User One", "https://example.com/pic1.jpg"),
+            "user2" to UserFeedData("User Two", "https://example.com/pic2.jpg"))
+
+    composeTestRule.setContent {
+      FeedList(posts = posts, isBlurred = false, userDataMap = userDataMap, onPostClick = {})
+    }
 
     composeTestRule.onNodeWithTag(FeedScreenTestTags.FEED_LIST).assertExists()
   }
@@ -177,6 +184,8 @@ class FeedScreenTest : FirestoreTest() {
     composeTestRule.setContent {
       OutfitPostCard(
           post = post,
+          username = "Test User",
+          profilePicUrl = "",
           isBlurred = false,
           onSeeFitClick = {},
           onLikeClick = {},
