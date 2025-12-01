@@ -21,7 +21,7 @@ gms = "4.4.2"
 navigationCompose = "2.8.5"
 
 # Firebase
-firebaseAuth = "23.0.0"
+firebaseAuth = "24.0.1"
 firebaseAuthKtx = "23.0.0"
 firebaseDatabaseKtx = "21.0.0"
 firebaseFirestore = "25.1.0"
