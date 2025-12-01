@@ -1,14 +1,14 @@
 package com.android.ootd.model.post
 
 import android.util.Log
-import androidx.core.net.toUri
 import com.android.ootd.model.account.MissingLocationException
-import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
+import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.android.ootd.utils.LocationUtils.mapFromLocation
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
@@ -20,6 +20,8 @@ const val POSTS_COLLECTION = "posts"
 const val OUTFITPOST_TAG = "OutfitPostRepository"
 /** Firestore collection name for outfit images * */
 const val POSTS_IMAGES_FOLDER = "images/posts"
+/** Firestore collection name for comment reaction images * */
+const val COMMENT_REACTIONS_FOLDER = "images/comment_reactions"
 
 /**
  * Repository implementation that handles all OutfitPost operations involving both Firestore and
@@ -39,18 +41,6 @@ class OutfitPostRepositoryFirestore(
 ) : OutfitPostRepository {
 
   override fun getNewPostId(): String = db.collection(POSTS_COLLECTION).document().id
-
-  override suspend fun uploadOutfitPhoto(localPath: String, postId: String): String {
-    return try {
-      val ref = storage.reference.child("$POSTS_IMAGES_FOLDER/$postId.jpg")
-      val fileUri = localPath.toUri()
-      ref.putFile(fileUri).await()
-      ref.downloadUrl.await().toString()
-    } catch (e: Exception) {
-      Log.w(OUTFITPOST_TAG, "Upload failed (test or offline env): ${e.javaClass.simpleName}")
-      "https://fake.storage/$postId.jpg"
-    }
-  }
 
   override suspend fun uploadOutfitWithCompressedPhoto(
       imageData: ByteArray,
@@ -108,37 +98,93 @@ class OutfitPostRepositoryFirestore(
     }
   }
 
-  override suspend fun savePostWithMainPhoto(
-      uid: String,
-      name: String,
-      userProfilePicURL: String,
-      localPath: String,
-      description: String,
-      location: Location
-  ): OutfitPost {
-    val postId = getNewPostId()
-    val imageUrl =
-        try {
-          uploadOutfitPhoto(localPath, postId)
-        } catch (e: Exception) {
-          throw e
+  // Functions concerning uploading comments
+  override suspend fun uploadCompressedReactionImage(
+      imageData: ByteArray,
+      commentId: String
+  ): String {
+    return try {
+      val ref = storage.reference.child("$COMMENT_REACTIONS_FOLDER/$commentId.jpg")
+      ref.putBytes(imageData).await()
+      ref.downloadUrl.await().toString()
+    } catch (e: Exception) {
+      Log.e(OUTFITPOST_TAG, "Failed to upload reaction image", e)
+      throw e
+    }
+  }
+
+  override suspend fun addCommentToPost(
+      postId: String,
+      userId: String,
+      commentText: String,
+      reactionImageData: ByteArray? // Optional - null means no reaction image
+  ): Comment {
+    // Generate a unique comment ID
+    val commentId = db.collection(POSTS_COLLECTION).document().id
+
+    // Upload reaction image if provided
+    val reactionImageUrl =
+        if (reactionImageData != null) {
+          uploadCompressedReactionImage(reactionImageData, commentId)
+        } else {
+          "" // No reaction image
         }
 
-    val post =
-        OutfitPost(
-            postUID = postId,
-            ownerId = uid,
-            name = name,
-            userProfilePicURL = userProfilePicURL,
-            outfitURL = imageUrl,
-            description = description,
-            itemsID = emptyList(),
+    // Create the comment object
+    val comment =
+        Comment(
+            commentId = commentId,
+            ownerId = userId,
+            text = commentText,
             timestamp = System.currentTimeMillis(),
-            location = location,
-        )
+            reactionImage = reactionImageUrl)
 
-    savePostToFirestore(post)
-    return post
+    // Convert comment to a map for Firestore
+    val commentMap =
+        mapOf(
+            "commentId" to comment.commentId,
+            "userId" to comment.ownerId,
+            "text" to comment.text,
+            "timestamp" to comment.timestamp,
+            "reactionImageUrl" to comment.reactionImage)
+
+    // Add comment to the post's comments array
+    db.collection(POSTS_COLLECTION)
+        .document(postId)
+        .update("comments", FieldValue.arrayUnion(commentMap))
+        .await()
+
+    return comment
+  }
+
+  override suspend fun deleteCommentFromPost(postId: String, comment: Comment) {
+    // Convert comment to map (must match exactly for arrayRemove to work)
+    val commentMap =
+        mapOf(
+            "commentId" to comment.commentId,
+            "userId" to comment.ownerId,
+            "text" to comment.text,
+            "timestamp" to comment.timestamp,
+            "reactionImageUrl" to comment.reactionImage)
+
+    // Remove comment from Firestore array
+    db.collection(POSTS_COLLECTION)
+        .document(postId)
+        .update("comments", FieldValue.arrayRemove(commentMap))
+        .await()
+
+    // Delete the reaction image from Storage (if it exists)
+    if (comment.reactionImage.isNotEmpty()) {
+      try {
+        storage.reference
+            .child("$COMMENT_REACTIONS_FOLDER/${comment.commentId}.jpg")
+            .delete()
+            .await()
+      } catch (e: Exception) {
+        Log.w(OUTFITPOST_TAG, "Could not delete reaction image", e)
+        // we don't throw, comment is already deleted from Firestore
+      }
+    }
   }
 
   /** Converts a Firestore [DocumentSnapshot] into an [OutfitPost] model. */
@@ -148,6 +194,10 @@ class OutfitPostRepositoryFirestore(
       // Firestore stores lists as List<*>, so this would filter out any non-string values
       val rawItemsList = doc["itemsID"] as? List<*> ?: emptyList<Any>()
       val itemsID = rawItemsList.mapNotNull { it as? String }
+
+      // Parse comments if present
+      val rawCommentsList = doc["comments"] as? List<*> ?: emptyList<Any>()
+      val comments = rawCommentsList.mapNotNull { mapToComment(it) }
 
       // Parse location if present, otherwise throw MissingLocationException
       val locationRaw = doc["location"]
@@ -167,9 +217,26 @@ class OutfitPostRepositoryFirestore(
           description = doc.getString("description") ?: "",
           itemsID = itemsID,
           timestamp = doc.getLong("timestamp") ?: 0L,
-          location = location)
+          location = location,
+          comments = comments)
     } catch (e: Exception) {
       Log.e(OUTFITPOST_TAG, "Error converting document ${doc.id} to OutfitPost", e)
+      null
+    }
+  }
+
+  /** Converts a Firestore comment map into a [Comment] model. Returns null if parsing fails. */
+  private fun mapToComment(commentData: Any?): Comment? {
+    return try {
+      val commentMap = commentData as? Map<*, *> ?: return null
+      Comment(
+          commentId = commentMap["commentId"] as? String ?: "",
+          ownerId = commentMap["userId"] as? String ?: "",
+          text = commentMap["text"] as? String ?: "",
+          timestamp = (commentMap["timestamp"] as? Long) ?: 0L,
+          reactionImage = commentMap["reactionImageUrl"] as? String ?: "")
+    } catch (e: Exception) {
+      Log.e(OUTFITPOST_TAG, "Error parsing comment", e)
       null
     }
   }
