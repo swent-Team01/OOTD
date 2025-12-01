@@ -94,8 +94,15 @@ service cloud.firestore {
     allow create: if isAuthed()
         && request.resource.data.ownerId == request.auth.uid;
 
+    // Only owner can update all fields
     allow update: if isAuthed()
            && resource.data.ownerId == request.auth.uid;
+
+    // Allows friends to update ONLY the comments field in their friend's post
+    allow update: if isAuthed()
+           && request.auth.uid != resource.data.ownerId
+           && isFriend(request.auth.uid, resource.data.ownerId)
+           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']);
 
     allow delete: if isAuthed()
            && (resource == null || resource.data.ownerId == request.auth.uid);
