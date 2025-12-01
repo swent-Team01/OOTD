@@ -61,6 +61,7 @@ fun FeedScreen(
       onOpenPost = onOpenPost,
       likes = uiState.likes,
       likeCounts = uiState.likeCounts,
+      userDataMap = uiState.userDataMap,
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) })
 }
 
@@ -78,6 +79,7 @@ private fun FeedScaffold(
     onOpenPost: (String) -> Unit,
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
+    userDataMap: Map<String, UserFeedData> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {}
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
@@ -128,6 +130,7 @@ private fun FeedScaffold(
                   posts = posts,
                   likes = likes,
                   likeCounts = likeCounts,
+                  userDataMap = userDataMap,
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
                   onPostClick = onOpenPost,
                   onLikeClick = onLikeClick)
@@ -163,6 +166,7 @@ fun FeedList(
     isBlurred: Boolean,
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
+    userDataMap: Map<String, UserFeedData>,
     onSeeFitClick: (OutfitPost) -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit
@@ -172,8 +176,15 @@ fun FeedList(
       val isLiked = likes[post.postUID] ?: false
       val count = likeCounts[post.postUID] ?: 0
 
+      // Get user data for this post owner, fallback to post data if missing
+      val userData = userDataMap[post.ownerId]
+      val username = userData?.username ?: post.name
+      val profilePic = userData?.profilePicUrl ?: post.userProfilePicURL
+
       OutfitPostCard(
           post = post,
+          username = username,
+          profilePicUrl = profilePic,
           isBlurred = isBlurred,
           isLiked = isLiked,
           likeCount = count,
