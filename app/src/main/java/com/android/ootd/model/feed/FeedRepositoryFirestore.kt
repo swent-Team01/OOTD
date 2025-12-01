@@ -5,6 +5,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -21,6 +22,10 @@ private val MILLIS_IN_24_HOURS = Duration.ofHours(24).toMillis()
 
 class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
   private val ownerAttributeName = "ownerId"
+
+  companion object {
+    private const val MAX_BATCH_SIZE = 20L
+  }
 
   override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
     if (uids.isEmpty()) return emptyList()
@@ -140,8 +145,8 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val snapshot =
           db.collection(POSTS_COLLECTION_PATH)
               .whereEqualTo("isPublic", true)
-              .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-              .limit(20)
+              .orderBy("timestamp", Query.Direction.DESCENDING)
+              .limit(MAX_BATCH_SIZE)
               .get()
               .await()
 
