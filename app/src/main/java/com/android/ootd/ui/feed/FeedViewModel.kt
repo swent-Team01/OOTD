@@ -12,6 +12,8 @@ import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.LikesRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.model.user.UserRepository
+import com.android.ootd.model.user.UserRepositoryProvider
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import java.time.LocalDate
@@ -20,6 +22,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+const val FEED_TAG = "FeedViewModel"
+
+data class UserFeedData(val username: String, val profilePicUrl: String)
 
 /**
  * UI state for the FeedScreen.
@@ -33,7 +39,8 @@ data class FeedUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val likes: Map<String, Boolean> = emptyMap(),
-    val likeCounts: Map<String, Int> = emptyMap()
+    val likeCounts: Map<String, Int> = emptyMap(),
+    val userDataMap: Map<String, UserFeedData> = emptyMap()
 )
 
 /**
@@ -45,7 +52,8 @@ data class FeedUiState(
 open class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val likesRepository: LikesRepository = LikesRepositoryProvider.repository
+    private val likesRepository: LikesRepository = LikesRepositoryProvider.repository,
+    private val userRepository: UserRepository = UserRepositoryProvider.repository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(FeedUiState())
@@ -67,7 +75,7 @@ open class FeedViewModel(
             val acct = accountRepository.getAccount(user.uid)
             setCurrentAccount(acct)
           } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to load account", e)
+            Log.e(FEED_TAG, "Failed to load account", e)
             _uiState.value = _uiState.value.copy(currentAccount = null, feedPosts = emptyList())
           }
         }
@@ -106,7 +114,22 @@ open class FeedViewModel(
             likesMap[postId] = isLiked
             countsMap[postId] = count
           } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
+            Log.e(FEED_TAG, "Failed to load likes for post $postId", e)
+          }
+        }
+
+        // Load user data for all post owners
+        val userDataMap = mutableMapOf<String, UserFeedData>()
+        val uniqueOwnerIds = filteredPost.map { it.ownerId }.distinct()
+
+        for (ownerId in uniqueOwnerIds) {
+          try {
+            val user = userRepository.getUser(ownerId)
+            // no need to check for null, getUser throws if not found
+            userDataMap[ownerId] = UserFeedData(user.username, user.profilePicture)
+          } catch (e: Exception) {
+            Log.e(FEED_TAG, "Failed to load user data for user $ownerId", e)
+            userDataMap[ownerId] = UserFeedData("Unknown user", "")
           }
         }
 
@@ -116,9 +139,10 @@ open class FeedViewModel(
                 feedPosts = filteredPost,
                 isLoading = false,
                 likes = likesMap,
-                likeCounts = countsMap)
+                likeCounts = countsMap,
+                userDataMap = userDataMap)
       } catch (e: Exception) {
-        Log.e("FeedViewModel", "Failed to refresh feed", e)
+        Log.e(FEED_TAG, "Failed to refresh feed", e)
         _uiState.value =
             _uiState.value.copy(isLoading = false, errorMessage = "Failed to load feed")
       }
@@ -174,7 +198,7 @@ open class FeedViewModel(
 
         _uiState.value = current.copy(likes = newLikes, likeCounts = newCounts)
       } catch (e: Exception) {
-        Log.e("FeedViewModel", "Failed to toggle like for post $postId", e)
+        Log.e(FEED_TAG, "Failed to toggle like for post $postId", e)
       }
     }
   }
