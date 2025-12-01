@@ -98,6 +98,12 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val locationField = rememberFieldState()
   var showDatePicker by remember { mutableStateOf(false) }
 
+  // Reset the form when the screen is first shown
+  DisposableEffect(Unit) {
+    viewModel.refresh()
+    onDispose {}
+  }
+
   val locationPermissionLauncher =
       rememberLauncherForActivityResult(
           contract = ActivityResultContracts.RequestPermission(),

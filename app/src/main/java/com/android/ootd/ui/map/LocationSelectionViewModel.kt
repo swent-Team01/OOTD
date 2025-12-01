@@ -106,6 +106,17 @@ class LocationSelectionViewModel(
   }
 
   /**
+   * Clears the selected location and resets the location selection state.
+   *
+   * This method can be called to reset the entire location selection state, for example, when the
+   * user signs out or starts a new registration.
+   */
+  fun clearSelectedLocation() {
+    searchJob?.cancel()
+    _uiState.value = LocationSelectionViewState()
+  }
+
+  /**
    * Sets location suggestions directly in the UI state.
    *
    * This is primarily used for testing purposes to inject mock location data.

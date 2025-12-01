@@ -17,6 +17,10 @@ import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -130,8 +134,8 @@ class RegisterViewModel(
    * registration flags.
    */
   fun refresh() {
-    clearErrorMsg()
-    _uiState.value = _uiState.value.copy(isLoading = false, registered = false)
+    _uiState.value = RegisterUserViewModel()
+    locationSelectionViewModel.clearSelectedLocation()
   }
 
   /**
@@ -140,6 +144,33 @@ class RegisterViewModel(
    */
   fun markRegisteredHandled() {
     _uiState.value = _uiState.value.copy(registered = false)
+  }
+
+  /**
+   * Validates that the user is at least 13 years old.
+   *
+   * @param dateOfBirth The date of birth in "dd/MM/yyyy" format.
+   * @return Error message if validation fails, null otherwise.
+   */
+  private fun validateAge(dateOfBirth: String): String? {
+    if (dateOfBirth.isBlank()) {
+      return "Date of birth is required"
+    }
+
+    return try {
+      val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+      val birthDate = LocalDate.parse(dateOfBirth, formatter)
+      val today = LocalDate.now()
+      val age = Period.between(birthDate, today).years
+
+      if (age < 13) {
+        "User must be at least 13"
+      } else {
+        null
+      }
+    } catch (e: DateTimeParseException) {
+      "Invalid date format"
+    }
   }
 
   /**
@@ -156,6 +187,12 @@ class RegisterViewModel(
 
     if (validationError != null) {
       _uiState.value = _uiState.value.copy(errorMsg = validationError)
+      return
+    }
+
+    val ageError = validateAge(uiState.value.dateOfBirth)
+    if (ageError != null) {
+      _uiState.value = _uiState.value.copy(errorMsg = ageError)
       return
     }
 
