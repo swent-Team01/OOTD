@@ -13,7 +13,7 @@ plugins {
 subprojects {
     configurations.all {
         resolutionStrategy {
-            force("org.apache.commons:commons-compress:1.26.0")
+            force("org.apache.commons:commons-compress:1.28.0")
         }
     }
 }
