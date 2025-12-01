@@ -33,7 +33,8 @@ data class FeedUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val likes: Map<String, Boolean> = emptyMap(),
-    val likeCounts: Map<String, Int> = emptyMap()
+    val likeCounts: Map<String, Int> = emptyMap(),
+    val isPublicFeed: Boolean = false
 )
 
 /**
@@ -82,17 +83,28 @@ open class FeedViewModel(
       try {
         _uiState.value = _uiState.value.copy(isLoading = true)
         val hasPosted = repository.hasPostedToday(account.uid)
-        val posts = repository.getRecentFeedForUids(account.friendUids + account.uid)
+
+        val posts =
+            if (_uiState.value.isPublicFeed) {
+              repository.getPublicFeed()
+            } else {
+              repository.getRecentFeedForUids(account.friendUids + account.uid)
+            }
 
         val todayStart =
             LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         // Filter posts to only include today's post for the current user and all posts for friends
+        // Only apply this filter for private feed
         val filteredPost =
-            posts.filter { post ->
-              if (post.ownerId == account.uid) {
-                post.timestamp >= todayStart
-              } else true
+            if (_uiState.value.isPublicFeed) {
+              posts
+            } else {
+              posts.filter { post ->
+                if (post.ownerId == account.uid) {
+                  post.timestamp >= todayStart
+                } else true
+              }
             }
 
         // Load likes and like counts for these posts for the current user
@@ -123,6 +135,12 @@ open class FeedViewModel(
             _uiState.value.copy(isLoading = false, errorMessage = "Failed to load feed")
       }
     }
+  }
+
+  /** Toggles between public and private feed. */
+  fun toggleFeedType() {
+    _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
+    refreshFeedFromFirestore()
   }
 
   /**

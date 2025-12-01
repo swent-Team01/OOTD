@@ -45,7 +45,7 @@ fun FeedScreen(
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
 
-  LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday) {
+  LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
     feedViewModel.refreshFeedFromFirestore()
   }
 
@@ -61,7 +61,9 @@ fun FeedScreen(
       onOpenPost = onOpenPost,
       likes = uiState.likes,
       likeCounts = uiState.likeCounts,
-      onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) })
+      onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
+      isPublicFeed = uiState.isPublicFeed,
+      onToggleFeed = { feedViewModel.toggleFeedType() })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,7 +80,9 @@ private fun FeedScaffold(
     onOpenPost: (String) -> Unit,
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
-    onLikeClick: (OutfitPost) -> Unit = {}
+    onLikeClick: (OutfitPost) -> Unit = {},
+    isPublicFeed: Boolean = false,
+    onToggleFeed: () -> Unit = {}
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -93,14 +97,26 @@ private fun FeedScaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
-        OOTDTopBar(
-            modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
-            rightComposable = {
-              NotificationButton(
-                  onNotificationIconClick,
-                  Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
-                  size = 64.dp)
-            })
+        Column {
+          OOTDTopBar(
+              modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
+              rightComposable = {
+                NotificationButton(
+                    onNotificationIconClick,
+                    Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
+                    size = 64.dp)
+              })
+          TabRow(selectedTabIndex = if (isPublicFeed) 1 else 0) {
+            Tab(
+                selected = !isPublicFeed,
+                onClick = { if (isPublicFeed) onToggleFeed() },
+                text = { Text("Friends") })
+            Tab(
+                selected = isPublicFeed,
+                onClick = { if (!isPublicFeed) onToggleFeed() },
+                text = { Text("Public") })
+          }
+        }
       },
       floatingActionButton = {
         if (!isLoading && !hasPostedToday) {
@@ -134,7 +150,7 @@ private fun FeedScaffold(
 
               // Loading overlay
               if (isLoading) {
-                AnimatedVisibility(visible = isLoading) {
+                AnimatedVisibility(visible = true) {
                   LoadingScreen(
                       modifier = Modifier.testTag(FeedScreenTestTags.LOADING_OVERLAY),
                       contentDescription = "Loading feed")

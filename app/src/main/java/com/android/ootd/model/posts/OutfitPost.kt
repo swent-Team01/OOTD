@@ -28,6 +28,7 @@ data class OutfitPost(
     val itemsID: List<String> = emptyList(),
     val timestamp: Long = 0L,
     val location: Location = emptyLocation,
+    val isPublic: Boolean = false
 
     // val reactionList - for when we implement reactions/commentaries to posts
     // val location - for when we implement location

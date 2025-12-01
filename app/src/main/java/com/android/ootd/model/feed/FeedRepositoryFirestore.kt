@@ -135,6 +135,27 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     return mapToPost(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
   }
 
+  override suspend fun getPublicFeed(): List<OutfitPost> {
+    return try {
+      val snapshot =
+          withTimeout(5_000) {
+            db.collection(POSTS_COLLECTION_PATH)
+                .whereEqualTo("isPublic", true)
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(20)
+                .get()
+                .await()
+          }
+      snapshot.documents.mapNotNull { mapToPost(it) }
+    } catch (e: TimeoutCancellationException) {
+      Log.w("FeedRepositoryFirestore", "Timed out fetching public feed", e)
+      emptyList()
+    } catch (e: Exception) {
+      Log.e("FeedRepositoryFirestore", "Error fetching public feed", e)
+      emptyList()
+    }
+  }
+
   override fun observeRecentFeedForUids(uids: List<String>): Flow<List<OutfitPost>> = flow {
     // Emit initial state immediately
     val initialPosts = getRecentFeedForUids(uids)
@@ -166,6 +187,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val outfitUrl = doc.getString("outfitURL") ?: ""
       val userProfilePicture = doc.getString("userProfilePicURL") ?: ""
       val location = locationFromMap(doc["location"] as? Map<*, *>)
+      val isPublic = doc.getBoolean("isPublic") ?: false
 
       OutfitPost(
           postUID = postUuid,
@@ -176,7 +198,8 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           name = name,
           outfitURL = outfitUrl,
           userProfilePicURL = userProfilePicture,
-          location = location)
+          location = location,
+          isPublic = isPublic)
     } catch (e: Exception) {
       Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
       null

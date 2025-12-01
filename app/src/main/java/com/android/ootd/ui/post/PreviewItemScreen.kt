@@ -40,6 +40,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -78,6 +80,8 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.utils.OOTDTopBar
 
 object PreviewItemScreenTestTags {
@@ -175,7 +179,8 @@ fun PreviewItemScreen(
       },
       onGoBack = onGoBack,
       enablePreview = enablePreview,
-      overridePhoto = overridePhoto)
+      overridePhoto = overridePhoto,
+      onTogglePublic = { if (!enablePreview) outfitPreviewViewModel.setPublic(it) })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -190,7 +195,8 @@ fun PreviewItemScreenContent(
     onPublish: () -> Unit,
     onGoBack: (String) -> Unit,
     enablePreview: Boolean,
-    overridePhoto: Boolean = false
+    overridePhoto: Boolean = false,
+    onTogglePublic: (Boolean) -> Unit = {}
 ) {
   val itemsList = ui.items
   val hasItems = itemsList.isNotEmpty()
@@ -209,56 +215,78 @@ fun PreviewItemScreenContent(
                       Icon(
                           Icons.AutoMirrored.Outlined.ArrowBack,
                           contentDescription = "go back",
-                          tint = MaterialTheme.colorScheme.tertiary)
+                          tint = Tertiary)
                     }
               })
         },
         bottomBar = {
-          Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-              horizontalArrangement = Arrangement.SpaceEvenly,
-              verticalAlignment = Alignment.CenterVertically) {
-                if (overridePhoto || hasItems) {
+          Column(modifier = Modifier.fillMaxWidth()) {
+            if (!enablePreview) {
+              Row(
+                  modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = "Post to Public Feed",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface)
+                    Switch(
+                        checked = ui.isPublic,
+                        onCheckedChange = onTogglePublic,
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = Primary,
+                                checkedTrackColor = Secondary,
+                                uncheckedThumbColor = Secondary,
+                                uncheckedTrackColor = Tertiary))
+                  }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically) {
+                  if (overridePhoto || hasItems) {
+                    Button(
+                        onClick = onPublish,
+                        modifier =
+                            Modifier.height(47.dp)
+                                .width(140.dp)
+                                .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                          Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                          Spacer(Modifier.width(8.dp))
+                          Text("Post", color = White)
+                        }
+                  } else {
+                    OutlinedButton(
+                        onClick = {},
+                        enabled = false,
+                        modifier =
+                            Modifier.height(47.dp)
+                                .width(140.dp)
+                                .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                        border = BorderStroke(2.dp, Tertiary)) {
+                          Icon(
+                              Icons.Default.Check,
+                              contentDescription = "Post (add items first)",
+                              tint = Primary)
+                          Spacer(Modifier.width(8.dp))
+                          Text("Post", color = Primary)
+                        }
+                  }
                   Button(
-                      onClick = onPublish,
+                      onClick = { showAddItemDialog = true },
                       modifier =
                           Modifier.height(47.dp)
                               .width(140.dp)
-                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
+                              .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
                       colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                        Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+                        Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
                         Spacer(Modifier.width(8.dp))
-                        Text("Post", color = White)
-                      }
-                } else {
-                  OutlinedButton(
-                      onClick = {},
-                      enabled = false,
-                      modifier =
-                          Modifier.height(47.dp)
-                              .width(140.dp)
-                              .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                      border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary)) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = "Post (add items first)",
-                            tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Post", color = MaterialTheme.colorScheme.primary)
+                        Text("Add Item", color = White)
                       }
                 }
-                Button(
-                    onClick = { showAddItemDialog = true },
-                    modifier =
-                        Modifier.height(47.dp)
-                            .width(140.dp)
-                            .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                      Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
-                      Spacer(Modifier.width(8.dp))
-                      Text("Add Item", color = White)
-                    }
-              }
+          }
         }) { innerPadding ->
           PreviewItemList(
               itemsList = itemsList,

@@ -37,7 +37,8 @@ data class PreviewUIState(
     val successMessage: String? = null,
     val isLoading: Boolean = false,
     val isPublished: Boolean = false,
-    val location: Location = emptyLocation
+    val location: Location = emptyLocation,
+    val isPublic: Boolean = false
 )
 
 /* Compression threshold for images before upload */
@@ -102,6 +103,15 @@ class OutfitPreviewViewModel(
   }
 
   /**
+   * Sets whether the post should be public.
+   *
+   * @param isPublic True if the post should be public, false otherwise.
+   */
+  fun setPublic(isPublic: Boolean) {
+    _uiState.value = _uiState.value.copy(isPublic = isPublic)
+  }
+
+  /**
    * Publishes the current outfit post to Firebase.
    *
    * On success, updates the state with `isPublished = true` and a success message. On failure, logs
@@ -155,6 +165,15 @@ class OutfitPreviewViewModel(
           val items = itemsRepository.getAssociatedItems(state.postUuid)
           val itemIds = items.map { it.itemUuid }
 
+          // If post is public, update items to be public
+          if (state.isPublic) {
+            items.forEach { item ->
+              if (!item.isPublic) {
+                itemsRepository.editItem(item.itemUuid, item.copy(isPublic = true))
+              }
+            }
+          }
+
           // Build and save Firestore post
           val post =
               OutfitPost(
@@ -166,7 +185,8 @@ class OutfitPreviewViewModel(
                   description = state.description,
                   itemsID = itemIds,
                   timestamp = System.currentTimeMillis(),
-                  location = state.location)
+                  location = state.location,
+                  isPublic = state.isPublic)
 
           postRepository.savePostToFirestore(post)
 
