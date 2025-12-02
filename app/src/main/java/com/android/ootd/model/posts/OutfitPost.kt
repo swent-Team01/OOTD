@@ -30,7 +30,7 @@ data class OutfitPost(
     val timestamp: Long = 0L,
     val location: Location = emptyLocation,
     // Explicitly map to "isPublic" to prevent Firestore from mapping isPublic() to "public"
-    @get:PropertyName("isPublic") val isPublic: Boolean = false
+    @get:PropertyName("isPublic") val isPublic: Boolean = false,
     val comments: List<Comment> = emptyList()
 )
 
