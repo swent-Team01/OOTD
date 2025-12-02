@@ -20,7 +20,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,7 +43,10 @@ import com.android.ootd.R
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 
 /**
  * Dialog displaying detailed information about an item.
@@ -67,7 +69,7 @@ fun SeeItemDetailsDialog(
                 .padding(16.dp)
                 .testTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)) {
+        colors = CardDefaults.cardColors(containerColor = Secondary)) {
           Column(
               modifier =
                   Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
@@ -203,14 +205,14 @@ private fun CopyableDetailRow(
     onTextClick: (() -> Unit)? = null,
     isLink: Boolean = false
 ) {
-  val valueColor = if (isLink) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+  val valueColor = if (isLink) Primary else OnSurfaceVariant
   val linkFontSize =
       when {
-        !isLink -> MaterialTheme.typography.bodyMedium.fontSize
+        !isLink -> Typography.bodyMedium.fontSize
         value.length > 80 -> 10.sp
         value.length > 60 -> 12.sp
         value.length > 40 -> 13.sp
-        else -> MaterialTheme.typography.bodyMedium.fontSize
+        else -> Typography.bodyMedium.fontSize
       }
 
   Column(
@@ -222,14 +224,13 @@ private fun CopyableDetailRow(
               Text(
                   text = label,
                   style =
-                      MaterialTheme.typography.bodyMedium.copy(
-                          fontWeight = FontWeight.Bold,
-                          color = MaterialTheme.colorScheme.onSurfaceVariant))
+                      Typography.bodyMedium.copy(
+                          fontWeight = FontWeight.Bold, color = OnSurfaceVariant))
               IconButton(onClick = onCopy, modifier = Modifier.size(32.dp).testTag(copyTag)) {
                 Icon(
                     imageVector = Icons.Filled.ContentCopy,
                     contentDescription = "Copy",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = OnSurfaceVariant,
                     modifier = Modifier.size(16.dp))
               }
             }
@@ -238,9 +239,7 @@ private fun CopyableDetailRow(
             else Modifier.padding(top = 2.dp)
         Text(
             text = value,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    color = valueColor, fontSize = linkFontSize),
+            style = Typography.bodyMedium.copy(color = valueColor, fontSize = linkFontSize),
             textAlign = TextAlign.Center,
             modifier = clickableModifier.heightIn(min = 32.dp))
       }
@@ -254,14 +253,10 @@ private fun DetailTextRow(label: String, value: String, tag: String) {
         Text(
             text = label,
             style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant))
+                Typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = OnSurfaceVariant))
         Text(
             text = value,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant),
+            style = Typography.bodyMedium.copy(color = OnSurfaceVariant),
             textAlign = TextAlign.Center)
       }
 }

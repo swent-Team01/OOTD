@@ -23,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,12 +36,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.theme.Bodoni
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.DisplayUserPosts
-import com.android.ootd.utils.LoadingScreen
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ProfilePicture
-import com.android.ootd.utils.ShowText
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.DisplayUserPosts
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ShowText
 
 /**
  * Test tags for ViewUserScreen components.
@@ -137,7 +137,7 @@ private fun ViewUserProfileContent(
               size = 150.dp,
               profilePicture = uiState.profilePicture,
               username = uiState.username,
-              textStyle = typography.headlineLarge)
+              textStyle = Typography.headlineLarge)
         }
         Spacer(modifier = Modifier.height(18.dp))
 
@@ -147,14 +147,14 @@ private fun ViewUserProfileContent(
         Spacer(modifier = Modifier.height(9.dp))
 
         ShowText(
-            text = friendStatusText, style = typography.bodyLarge, color = colorScheme.onSurface)
+            text = friendStatusText, style = Typography.bodyLarge, color = colorScheme.onSurface)
 
         Spacer(modifier = Modifier.height(9.dp))
 
         // Friend count
         ShowText(
             text = "${uiState.friendCount} friends",
-            style = typography.bodyLarge,
+            style = Typography.bodyLarge,
             color = colorScheme.onSurface,
             modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
 
@@ -164,7 +164,7 @@ private fun ViewUserProfileContent(
         if (uiState.isFriend) {
           ShowText(
               text = "Posts :",
-              style = typography.bodyLarge,
+              style = Typography.bodyLarge,
               textAlign = TextAlign.Left,
               fontFamily = Bodoni,
               modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
@@ -180,7 +180,7 @@ private fun ViewUserProfileContent(
         } else {
           ShowText(
               text = "Add this user as a friend to see their posts",
-              style = typography.bodyMedium,
+              style = Typography.bodyMedium,
               textAlign = TextAlign.Center,
               color = colorScheme.onSurface,
               modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))

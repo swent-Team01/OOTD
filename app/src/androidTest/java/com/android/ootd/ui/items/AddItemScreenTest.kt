@@ -57,11 +57,16 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     setMainScreen()
     // Fill all text fields
     composeTestRule.enterAddItemCategory("Clothing")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemType("Jacket")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemBrand("Brand")
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemPrice(99.99)
+    composeTestRule.waitForIdle()
     // Set currency via view model to avoid flakey dropdown interactions
     composeTestRule.runOnIdle { viewModel.setCurrency("EUR") }
+    composeTestRule.waitForIdle()
     composeTestRule.enterAddItemLink("www.ootd.com")
     // Setting material through the ViewModel mimics the text field behavior without flaky scrolling
     composeTestRule.runOnIdle { viewModel.setMaterial("Cotton 80%, Polyester 20%") }
