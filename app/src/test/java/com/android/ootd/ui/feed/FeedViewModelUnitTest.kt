@@ -5,6 +5,7 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.model.user.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import io.mockk.coEvery
@@ -33,6 +34,7 @@ class FeedViewModelUnitTest {
   private lateinit var feedRepository: FeedRepository
   private lateinit var accountRepository: AccountRepository
   private lateinit var likesRepository: LikesRepository
+  private lateinit var userRepository: UserRepository
   private lateinit var firebaseAuth: FirebaseAuth
   private lateinit var firebaseFirestore: FirebaseFirestore
   private val testDispatcher = StandardTestDispatcher()
@@ -50,7 +52,9 @@ class FeedViewModelUnitTest {
     mockkStatic(FirebaseFirestore::class)
     every { FirebaseFirestore.getInstance() } returns firebaseFirestore
 
-    viewModel = FeedViewModel(feedRepository, accountRepository, likesRepository, firebaseAuth)
+    viewModel =
+        FeedViewModel(
+            feedRepository, accountRepository, likesRepository, userRepository, firebaseAuth)
   }
 
   @After
