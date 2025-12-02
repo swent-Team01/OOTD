@@ -18,15 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,7 +43,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -57,6 +53,9 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.OOTDTopBar
 
 object AddItemScreenTestTags {
   const val INPUT_TYPE = "inputItemType"
@@ -148,7 +147,16 @@ fun AddItemsScreen(
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
-        topBar = { AddItemTopBar(modifier, goBack) },
+        topBar = {
+          OOTDTopBar(
+              textModifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
+              centerText = "ADD ITEMS",
+              leftComposable = {
+                BackArrow(
+                    onBackClick = goBack,
+                    modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
+              })
+        },
         content = { innerPadding ->
           Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
             FieldsList(
@@ -229,34 +237,10 @@ fun AddItemsScreen(
           }
         })
 
-    LoadingOverlay(visible = itemsUIState.isLoading)
+    if (itemsUIState.isLoading) {
+      LoadingScreen(contentDescription = "Uploading item...")
+    }
   }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AddItemTopBar(modifier: Modifier, goBack: () -> Unit) {
-  CenterAlignedTopAppBar(
-      title = {
-        Text(
-            text = "ADD ITEM",
-            style =
-                MaterialTheme.typography.displayLarge.copy(
-                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
-            modifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD))
-      },
-      navigationIcon = {
-        Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-          IconButton(
-              onClick = { goBack() },
-              modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON)) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.tertiary)
-              }
-        }
-      })
 }
 
 @Composable
@@ -477,7 +461,16 @@ fun AddItemsScreenSmallPreview() {
 
     Box(modifier = Modifier.fillMaxSize()) {
       Scaffold(
-          topBar = { AddItemTopBar(Modifier, goBack = {}) },
+          topBar = {
+            OOTDTopBar(
+                textModifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
+                centerText = "ADD ITEMS",
+                leftComposable = {
+                  BackArrow(
+                      onBackClick = {},
+                      modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
+                })
+          },
           content = { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
               FieldsList(
@@ -536,8 +529,6 @@ fun AddItemsScreenSmallPreview() {
                   })
             }
           })
-
-      LoadingOverlay(visible = false)
     }
   }
 }
