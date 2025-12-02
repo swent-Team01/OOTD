@@ -1,18 +1,24 @@
 package com.android.ootd.ui.post
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,10 +30,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -37,6 +50,7 @@ import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
+import com.android.ootd.ui.theme.OotdError
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ProfilePicture
@@ -154,102 +168,138 @@ fun PostDetailsContent(
   var editedDescription by remember { mutableStateOf(post.description) }
   val locationSelectionViewModel = remember { LocationSelectionViewModel() }
   val locationUiState by locationSelectionViewModel.uiState.collectAsState()
+  var isLocationExpanded by remember { mutableStateOf(false) }
 
   LaunchedEffect(post.postUID) { locationSelectionViewModel.setLocation(post.location) }
 
-  Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
-    PostOwnerSection(
-        username = uiState.ownerUsername,
-        profilePicture = uiState.ownerProfilePicture,
-        onEditClicked = {
-          isEditing = true
-          editedDescription = post.description
-        },
-        onDeletePost = onDeletePost,
-        isOwner = uiState.isOwner)
+  Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+    // Location box at the top
+    ExpandableLocationRow(
+        location = post.location.name,
+        isExpanded = isLocationExpanded,
+        onToggleExpanded = { isLocationExpanded = !isLocationExpanded })
 
-    Spacer(Modifier.height(16.dp))
+    Column(modifier = Modifier.padding(16.dp)) {
+      PostHeroImage(
+          imageUrl = post.outfitURL,
+          likeCount = uiState.likedByUsers.size,
+          isLiked = uiState.isLikedByCurrentUser,
+          onToggleLike = onToggleLike)
 
-    PostImage(imageUrl = post.outfitURL)
+      Spacer(Modifier.height(16.dp))
 
-    Spacer(Modifier.height(16.dp))
-
-    // If the user wants to edit the description, show a text field to edit it
-    if (isEditing) {
-      TextField(
-          value = editedDescription,
-          onValueChange = { description ->
-            // Limit description length
-            if (description.length <= MAX_DESCRIPTION_LENGTH) {
-              editedDescription = description
-            }
+      PostOwnerSection(
+          username = uiState.ownerUsername,
+          profilePicture = uiState.ownerProfilePicture,
+          onEditClicked = {
+            isEditing = true
+            editedDescription = post.description
           },
-          modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
-          colors = commonTextFieldColors(),
-          trailingIcon = {
-            Row {
-              // Save edited description button
-              IconButton(
-                  onClick = {
-                    isEditing = false
-                    val chosenLocation =
-                        locationUiState.selectedLocation
-                            ?: post.location.copy(
-                                name = locationUiState.locationQuery.ifBlank { post.location.name },
-                                latitude = post.location.latitude,
-                                longitude = post.location.longitude)
-                    viewModel.savePostEdits(editedDescription, chosenLocation)
-                  },
-                  modifier = Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save editing",
-                        tint = Primary,
-                    )
-                  }
+          onDeletePost = onDeletePost,
+          isOwner = uiState.isOwner)
 
-              // Cancel button the editing description phase
-              IconButton(
-                  onClick = { isEditing = false },
-                  modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Outlined.Close,
-                        contentDescription = "Cancel editing",
-                        tint = MaterialTheme.colorScheme.error)
-                  }
+      Spacer(Modifier.height(16.dp))
+
+      // If the user wants to edit the description, show a text field to edit it
+      if (isEditing) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 0.dp,
+            color = Secondary) {
+              Column(modifier = Modifier.padding(12.dp)) {
+                TextField(
+                    value = editedDescription,
+                    onValueChange = { description ->
+                      // Limit description length
+                      if (description.length <= MAX_DESCRIPTION_LENGTH) {
+                        editedDescription = description
+                      }
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
+                    colors = commonTextFieldColors(),
+                    trailingIcon = {
+                      Row {
+                        // Save edited description button
+                        IconButton(
+                            onClick = {
+                              isEditing = false
+                              val chosenLocation =
+                                  locationUiState.selectedLocation
+                                      ?: post.location.copy(
+                                          name =
+                                              locationUiState.locationQuery.ifBlank {
+                                                post.location.name
+                                              },
+                                          latitude = post.location.latitude,
+                                          longitude = post.location.longitude)
+                              viewModel.savePostEdits(editedDescription, chosenLocation)
+                            },
+                            modifier =
+                                Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON)) {
+                              Icon(
+                                  imageVector = Icons.Default.Check,
+                                  contentDescription = "Save editing",
+                                  tint = Primary,
+                              )
+                            }
+
+                        // Cancel button the editing description phase
+                        IconButton(
+                            onClick = { isEditing = false },
+                            modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON)) {
+                              Icon(
+                                  imageVector = Icons.Outlined.Close,
+                                  contentDescription = "Cancel editing",
+                                  tint = OotdError)
+                            }
+                      }
+                    })
+                // Character counter that shows how many characters are left
+                Text(
+                    text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
+                    style = Typography.bodySmall,
+                    color = Primary,
+                    modifier =
+                        Modifier.align(Alignment.End)
+                            .padding(top = 4.dp, end = 4.dp)
+                            .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
+
+                Spacer(Modifier.height(12.dp))
+
+                LocationSelectionSection(
+                    viewModel = locationSelectionViewModel,
+                    textGPSButton = "Use current location",
+                    textLocationField = "Location",
+                    onLocationSelect = { locationSelectionViewModel.setLocation(it) },
+                    onGPSClick = { locationSelectionViewModel.onLocationPermissionGranted() },
+                    modifier = Modifier.fillMaxWidth())
+              }
             }
-          })
-      // Character counter that shows how many characters are left
-      Text(
-          text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
-          style = Typography.bodySmall,
-          color = Primary,
-          modifier =
-              Modifier.align(Alignment.End)
-                  .padding(top = 4.dp, end = 4.dp)
-                  .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
+      } else {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 0.dp,
+            color = Secondary) {
+              PostDescription(
+                  username = uiState.ownerUsername,
+                  description = post.description,
+                  modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                  textAlign = TextAlign.Start)
+            }
+      }
 
-      Spacer(Modifier.height(12.dp))
+      Spacer(Modifier.height(16.dp))
 
-      LocationSelectionSection(
-          viewModel = locationSelectionViewModel,
-          textGPSButton = "Use current location",
-          textLocationField = "Location",
-          onLocationSelect = { locationSelectionViewModel.setLocation(it) },
-          onGPSClick = { locationSelectionViewModel.onLocationPermissionGranted() },
-          modifier = Modifier.fillMaxWidth())
-    } else {
-      PostDescription(post.description)
+      PostLikeRow(
+          isLiked = uiState.isLikedByCurrentUser,
+          likeCount = uiState.likedByUsers.size,
+          onToggleLike = onToggleLike)
+
+      LikedUsersRow(likedUsers = uiState.likedByUsers)
     }
-
-    Spacer(Modifier.height(16.dp))
-
-    PostLikeRow(
-        isLiked = uiState.isLikedByCurrentUser,
-        likeCount = uiState.likedByUsers.size,
-        onToggleLike = onToggleLike)
-
-    LikedUsersRow(likedUsers = uiState.likedByUsers)
   }
 }
 
@@ -334,10 +384,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
             expanded = false
             showDeleteDialog = true
           },
-          colors =
-              MenuDefaults.itemColors(
-                  textColor = MaterialTheme.colorScheme.error,
-                  leadingIconColor = MaterialTheme.colorScheme.error),
+          colors = MenuDefaults.itemColors(textColor = OotdError, leadingIconColor = OotdError),
           modifier = Modifier.testTag(PostViewTestTags.DELETE_POST_OPTION))
     }
   }
@@ -348,13 +395,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
         title = { Text("Delete post") },
         text = { Text("This will permanently delete this post. Continue?") },
         confirmButton = {
-          TextButton(
-              onClick = {
-                showDeleteDialog = false
-                onDeleteClicked()
-              }) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
-              }
+          TextButton(onClick = { onDeleteClicked() }) { Text("Delete", color = OotdError) }
         },
         dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } })
   }
@@ -370,8 +411,12 @@ fun PostImage(imageUrl: String) {
   AsyncImage(
       model = imageUrl,
       contentDescription = "Post image",
-      contentScale = ContentScale.Fit, // show full image, no cropping
-      modifier = Modifier.fillMaxWidth().height(300.dp).testTag(PostViewTestTags.POST_IMAGE))
+      contentScale = ContentScale.Crop,
+      modifier =
+          Modifier.fillMaxWidth()
+              .height(320.dp)
+              .testTag(PostViewTestTags.POST_IMAGE)
+              .clip(RoundedCornerShape(20.dp)))
 }
 
 /**
@@ -394,15 +439,128 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
   }
 }
 
+@Composable
+private fun ExpandableLocationRow(
+    location: String,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit
+) {
+  Surface(
+      modifier = Modifier.fillMaxWidth().clickable { onToggleExpanded() }.animateContentSize(),
+      color = Background) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+              Icon(
+                  imageVector = Icons.Outlined.LocationOn,
+                  contentDescription = "Location",
+                  tint = Primary,
+                  modifier = Modifier.size(20.dp))
+
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = location.ifBlank { "No location" },
+                    style = Typography.bodyMedium,
+                    color = OnSurface,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                    overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis)
+
+                if (isExpanded && location.isNotBlank()) {
+                  Spacer(Modifier.height(4.dp))
+                  Text(text = "Tap to collapse", style = Typography.bodySmall, color = Tertiary)
+                }
+              }
+
+              Icon(
+                  imageVector =
+                      if (isExpanded) Icons.Filled.KeyboardArrowUp
+                      else Icons.Filled.KeyboardArrowDown,
+                  contentDescription = if (isExpanded) "Collapse" else "Expand",
+                  tint = Tertiary,
+                  modifier = Modifier.size(24.dp))
+            }
+      }
+}
+
+@Composable
+private fun PostHeroImage(
+    imageUrl: String,
+    likeCount: Int,
+    isLiked: Boolean,
+    onToggleLike: () -> Unit
+) {
+  Card(
+      shape = RoundedCornerShape(24.dp),
+      elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+      modifier = Modifier.fillMaxWidth().height(360.dp)) {
+        Box(modifier = Modifier.fillMaxSize()) {
+          AsyncImage(
+              model = imageUrl,
+              contentDescription = "Post image",
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop)
+          Box(
+              modifier =
+                  Modifier.matchParentSize()
+                      .background(
+                          Brush.verticalGradient(
+                              colors =
+                                  listOf(
+                                      Color.Transparent,
+                                      Color.Black.copy(alpha = 0.25f),
+                                      Color.Black.copy(alpha = 0.55f)))))
+          Row(
+              modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalAlignment = Alignment.CenterVertically) {
+                AssistChip(
+                    onClick = onToggleLike,
+                    label = { Text("$likeCount likes") },
+                    leadingIcon = {
+                      Icon(
+                          imageVector =
+                              if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                          contentDescription = null,
+                          modifier = Modifier.size(16.dp))
+                    },
+                    colors =
+                        AssistChipDefaults.assistChipColors(
+                            containerColor = Color.White.copy(alpha = 0.2f),
+                            labelColor = Color.White,
+                            leadingIconContentColor = Color.White))
+              }
+        }
+      }
+}
+
 /**
  * Composable displaying the post description
  *
  * @ param description The description text of the post
  */
 @Composable
-fun PostDescription(description: String) {
+fun PostDescription(
+    username: String?,
+    description: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
+) {
   if (description.isNotBlank()) {
-    Text(text = description, style = Typography.bodyLarge, color = Primary)
+    val annotated = buildAnnotatedString {
+      if (!username.isNullOrBlank()) {
+        withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraBold, color = Primary)) {
+          append(username)
+        }
+        append(" ")
+      }
+      withStyle(style = SpanStyle(color = Primary)) { append(description) }
+    }
+    Text(
+        text = annotated,
+        style = Typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
+        modifier = modifier,
+        textAlign = textAlign)
   }
 }
 

@@ -3,9 +3,11 @@ package com.android.ootd.ui.theme
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -20,7 +22,12 @@ val LightColorScheme =
         tertiaryContainer = TertiaryContainer,
         onSurfaceVariant = OnSurfaceVariant,
         onPrimaryContainer = OnPrimaryContainer,
-        onSurface = OnSurface)
+        onSurface = OnSurface,
+        error = Color(0xFFB3261E),
+        onError = Color.White)
+
+val OotdError
+  @Composable get() = colorScheme.error
 
 @Composable
 fun OOTDTheme(
