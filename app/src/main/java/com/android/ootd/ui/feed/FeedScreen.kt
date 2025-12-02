@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +25,6 @@ import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.composables.ActionButton
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.NotificationButton
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -149,10 +150,13 @@ private fun FeedScaffold(
       },
       floatingActionButton = {
         if (!isLoading && !hasPostedToday) {
-          ActionButton(
-              onButtonClick = onAddPostClick,
-              modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB),
-              buttonText = "Do a Fit Check")
+
+          ExtendedFloatingActionButton(
+              onClick = onAddPostClick,
+              containerColor = Primary,
+              icon = { Icon(Icons.Filled.Add, "Add a new fit check") },
+              text = { Text(text = "Do a Fit check", color = White) },
+              modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB))
         }
       }) { paddingValues ->
         // Overlay the locked message when needed

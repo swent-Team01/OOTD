@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.user.UserRepositoryProvider
-import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -58,11 +57,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
         OOTDTopBar(
             modifier = Modifier.testTag(MapScreenTestTags.TOP_BAR),
             textModifier = Modifier.testTag(MapScreenTestTags.TOP_BAR_TITLE),
-            centerText = "MAP",
-            leftComposable = {
-              BackArrow(
-                  onBackClick = onBack, modifier = Modifier.testTag(MapScreenTestTags.BACK_BUTTON))
-            })
+            centerText = "MAP")
       },
       content = { paddingValues ->
         Box(

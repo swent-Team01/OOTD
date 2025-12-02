@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Red
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,8 +36,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
-import com.android.ootd.ui.theme.OnPrimaryContainer
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.OOTDTopBar
 
@@ -112,10 +112,7 @@ fun InventoryScreen(
               onClick = { navigationActions?.navigateTo(Screen.AddItemScreen("")) },
               containerColor = Primary,
               modifier = Modifier.testTag(InventoryScreenTestTags.ADD_ITEM_FAB)) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Item",
-                    tint = OnPrimaryContainer)
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Item", tint = White)
               }
 
           Spacer(modifier.padding(10.dp))
@@ -129,7 +126,7 @@ fun InventoryScreen(
                         if (uiState.isSearchActive) Icons.Default.Close else Icons.Default.Search,
                     contentDescription =
                         if (uiState.isSearchActive) "Close Search" else "Search Item",
-                    tint = Primary)
+                    tint = White)
               }
         }
       },
@@ -163,7 +160,7 @@ fun InventoryScreen(
                             "No items in your inventory yet.\n Add new items to your inventory and you will see them here!"
                           },
                       style = Typography.bodyLarge,
-                      color = Color.Gray,
+                      color = Secondary,
                       textAlign = TextAlign.Center,
                       modifier =
                           Modifier.padding(32.dp).testTag(InventoryScreenTestTags.EMPTY_STATE))

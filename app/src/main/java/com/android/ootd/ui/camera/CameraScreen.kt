@@ -395,15 +395,6 @@ private fun ImagePreviewScreen(
                           Text("Retake")
                         }
 
-                    // Crop button
-                    Button(
-                        onClick = { isCropping = true },
-                        modifier = Modifier.testTag(CameraScreenTestTags.CROP_BUTTON),
-                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                          Spacer(modifier = Modifier.width(8.dp))
-                          Text("Crop")
-                        }
-
                     // Approve button
                     Button(
                         onClick = { onApprove(currentImageUri) },

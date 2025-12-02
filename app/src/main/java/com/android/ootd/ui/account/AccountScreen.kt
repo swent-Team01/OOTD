@@ -46,8 +46,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.Inventory.InventoryGrid
 import com.android.ootd.ui.feed.SeeItemDetailsDialog
+import com.android.ootd.ui.inventory.InventoryGrid
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
