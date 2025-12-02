@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.account.AccountPageTestTags.OUTFIT_GRID_POST
 import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
@@ -201,7 +202,8 @@ fun DisplayUserPosts(
                       .size(itemWidth)
                       .clip(RoundedCornerShape(6.dp))
                       .clickable(onClick = { onPostClick(post.postUID) })
-                      .background(color.surfaceVariant))
+                      .background(color.surfaceVariant)
+                      .testTag(OUTFIT_GRID_POST))
         }
       }
 }

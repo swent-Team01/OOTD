@@ -10,24 +10,20 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.map.Location
-import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.utils.FakeCredentialManager
 import com.android.ootd.utils.FakeJwtGenerator
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
-import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
-import com.android.ootd.utils.checkItemAppearsInPost
 import com.android.ootd.utils.checkNumberOfPostsInFeed
+import com.android.ootd.utils.checkOutMap
 import com.android.ootd.utils.checkPostAppearsInFeed
-import com.android.ootd.utils.checkStarFunctionalityForItem
-import com.android.ootd.utils.clickWithWait
+import com.android.ootd.utils.checkPostsAppearInAccountTab
 import com.android.ootd.utils.fullRegisterSequence
 import com.android.ootd.utils.loginWithoutRegistering
 import com.android.ootd.utils.openNotificationsScreenAndAcceptNotification
 import com.android.ootd.utils.searchAndFollowUser
-import com.android.ootd.utils.searchItemInInventory
 import com.android.ootd.utils.signOutAndVerifyAuthScreen
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -47,7 +43,7 @@ import org.junit.runner.RunWith
  * Some code was made using an AI coding tool
  */
 @RunWith(AndroidJUnit4::class)
-class ThirdEnd2EndTest : FirestoreTest() {
+class FourthEnd2EndTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
 
   val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
@@ -83,28 +79,33 @@ class ThirdEnd2EndTest : FirestoreTest() {
    * attempting to post an outfit, adding an item to the inventory and then logging out.
    *
    * This test validates the FULL application flow using the actual navigation system:
-   * 1. Create user and go through the whole sign-in process
-   * 2. Add item to inventory
-   * 3. Make sure that the search function works in inventory
-   * 4. Create a post with the item that was added in inventory.
-   * 5. Check that the star functionality works as intended
-   * 6. Create second user to interact with the first one
-   * 7. Create post for the second user
-   * 8. Make the second user follow the first user
-   * 9. Logout from the second user and login into the first user
-   * 10. Accept the follow request of the second user on the first user account
-   * 11. Verify that the first user can now see the post of the first user
+   * 1. App starts at Splash screen
+   * 2. Navigates to Authentication screen
+   * 3. User clicks Google Sign-In button
+   * 4. Authentication succeeds with a new user
+   * 5. App automatically navigates to Registration screen
+   * 6. User enters username, date of birth and location
+   * 7. User clicks Save button
+   * 8. App navigates directly to Feed screen (consent already given via mock)
+   * 9. User adds post with one item attached to it and check it is displayed in feed
+   * 10. User searches for "greg" in the username field
+   * 11. User selects greg from the suggestions
+   * 12. User clicks Follow button on greg's profile
+   * 13. User clicks notification icon and goes to notification screen.
+   * 14. User accepts follow notification
+   * 15. User goes to inventory checks no items are there
+   * 16. User checks the add item button is there
+   * 17. User clicks Sign Out button
+   * 18. App navigates back to Authentication screen
    *
    * LIMITATIONS:
-   * - Taking photos launches external activities that break ComposeTestRule, therefore we hardcode
-   *   an image uri for testing.
+   * - Taking photos launches external activities that break ComposeTestRule
    *
    * This test:
    * - Uses the REAL OOTDApp composable with the full NavHost navigation graph.
    * - Skips the authentication step as it was tested in the other 2 end to end tests.
    * - Uses the firebase emulator databases for a closer experience to what the application should
    *   feel like.
-   * - Creates multiple users to test interactions between them
    */
   @Test
   fun fullAppFlow_newUser_3() = runBlocking {
@@ -123,34 +124,12 @@ class ThirdEnd2EndTest : FirestoreTest() {
       }
     }
 
-    // STEP 1: Create user and go through the whole sign-in process
     fullRegisterSequence(
         composeTestRule = composeTestRule, username = "user_1", dateOfBirth = testDateofBirth)
 
-    // STEP 2: Add item to inventory
-    addItemFromInventory(composeTestRule, itemsRepository = itemsRepository)
-
-    val firstItemUuid = itemsRepository.getAllItems()[0].itemUuid
-
-    val firstItemCategory = itemsRepository.getItemById(firstItemUuid).category
-
-    // STEP 3: Make sure that the search function works in inventory
-    searchItemInInventory(
-        composeTestRule, itemCategory = firstItemCategory, itemUuid = firstItemUuid)
-
-    clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
-
-    // STEP 4: Create a post with the item that was added in inventory.
-    addPostWithOneItem(
-        composeTestRule,
-        selectFromInventory = true,
-        inventoryItemUuid = firstItemUuid) // Test adding item from inventory works as well
+    addPostWithOneItem(composeTestRule) // Test adding item from inventory works as well
     checkPostAppearsInFeed(composeTestRule)
 
-    checkItemAppearsInPost(composeTestRule)
-    // STEP 5: Check that the star functionality works as intended
-    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
-    // STEP 6: Create second user to interact with the first one
     signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
     FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
 
@@ -160,23 +139,25 @@ class ThirdEnd2EndTest : FirestoreTest() {
         dateOfBirth = testDateofBirth,
         acceptBetaScreen = false)
 
-    // STEP 7: Create post for the second user
     addPostWithOneItem(composeTestRule)
 
-    // STEP 8: Make the second user follow the first user
     searchAndFollowUser(composeTestRule, "user_1")
 
-    // STEP 9: Logout from the second user and login into the first user
     signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
     FakeCredentialManager.changeCredential(fakeGoogleIdToken)
 
     loginWithoutRegistering(composeTestRule = composeTestRule)
 
-    // STEP 10: Accept the follow request of the second user on the first user account
     openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
 
-    // STEP 11: Verify that the first user can now see the post of the first user
-
+    // Each user made a post and the current user is the friend of the other
+    // So this user can see both posts.
     checkNumberOfPostsInFeed(composeTestRule = composeTestRule, userRepository.getAllUsers().size)
+
+    // Check out whether you can see posts on your profile
+
+    checkPostsAppearInAccountTab(composeTestRule = composeTestRule)
+
+    checkOutMap(composeTestRule = composeTestRule)
   }
 }

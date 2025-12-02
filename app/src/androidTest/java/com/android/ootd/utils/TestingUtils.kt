@@ -24,6 +24,7 @@ import com.android.ootd.ui.feed.OutfitPostCardTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.OUTFIT_POST_CARD
 import com.android.ootd.ui.feed.SeeFitScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
+import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
@@ -372,4 +373,21 @@ fun checkNumberOfPostsInFeed(composeTestRule: ComposeContentTestRule, lowerThres
   composeTestRule
       .onNodeWithTag(FeedScreenTestTags.FEED_LIST)
       .performScrollToIndex(lowerThreshold - 1)
+}
+
+fun checkPostsAppearInAccountTab(composeTestRule: ComposeContentTestRule) {
+  clickWithWait(composeTestRule, NavigationTestTags.ACCOUNT_TAB)
+
+  verifyElementAppearsWithTimer(composeTestRule, AccountPageTestTags.AVATAR_LETTER)
+
+  composeTestRule.waitUntil(timeoutMillis = 5000) {
+    composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).performScrollTo().isDisplayed()
+  }
+}
+
+fun checkOutMap(composeTestRule: ComposeContentTestRule) {
+  clickWithWait(composeTestRule, NavigationTestTags.MAP_TAB)
+
+  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
+  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.BACK_BUTTON)
 }
