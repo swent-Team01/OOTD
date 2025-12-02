@@ -36,7 +36,8 @@ class ItemsMappersTest {
             "size" to "M",
             "fitType" to "Regular",
             "style" to "Casual",
-            "notes" to "Great condition")
+            "notes" to "Great condition",
+            "isPublic" to false)
 
     assertEquals(expected, map)
   }

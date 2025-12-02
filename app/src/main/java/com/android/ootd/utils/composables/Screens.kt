@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -219,12 +220,12 @@ fun PermissionRequestScreen(
     modifier: Modifier = Modifier
 ) {
   Column(
-      modifier = modifier.fillMaxSize().background(colorScheme.background).padding(32.dp),
+      modifier = modifier.fillMaxSize().background(Secondary).padding(32.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
         Text(
             text = message,
-            color = colorScheme.onBackground,
+            color = Primary,
             style = Typography.bodyLarge,
             textAlign = Center,
             modifier = Modifier.padding(16.dp))
@@ -233,14 +234,14 @@ fun PermissionRequestScreen(
 
         Button(
             onClick = onRequestPermission,
-            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary),
             modifier = Modifier.testTag(CameraScreenTestTags.PERMISSION_REQUEST_BUTTON)) {
               Text("Grant Permission !")
             }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = onCancel) { Text("Cancel", color = Secondary) }
+        TextButton(onClick = onCancel) { Text("Cancel", color = Black) }
       }
 }
 

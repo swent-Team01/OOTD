@@ -12,8 +12,7 @@ import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.LikesRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
+import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +33,8 @@ data class FeedUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val likes: Map<String, Boolean> = emptyMap(),
-    val likeCounts: Map<String, Int> = emptyMap()
+    val likeCounts: Map<String, Int> = emptyMap(),
+    val isPublicFeed: Boolean = false
 )
 
 /**
@@ -46,7 +46,8 @@ data class FeedUiState(
 open class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val likesRepository: LikesRepository = LikesRepositoryProvider.repository
+    private val likesRepository: LikesRepository = LikesRepositoryProvider.repository,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(FeedUiState())
@@ -58,7 +59,7 @@ open class FeedViewModel(
 
   /** Observes Firebase Auth state changes and loads the current account accordingly. */
   private fun observeAuthAndLoadAccount() {
-    Firebase.auth.addAuthStateListener { auth ->
+    auth.addAuthStateListener { auth ->
       val user = auth.currentUser
       if (user == null) {
         _uiState.value = FeedUiState()
@@ -86,7 +87,13 @@ open class FeedViewModel(
       try {
         // STEP 1 : Load initial feed posts
         val hasPosted = repository.hasPostedToday(account.uid)
-        val posts = repository.getRecentFeedForUids(allUids)
+
+        val posts =
+            if (_uiState.value.isPublicFeed) {
+              repository.getPublicFeed()
+            } else {
+              repository.getRecentFeedForUids(allUids)
+            }
 
         val filteredPost = filterPosts(account.uid, posts)
         updateLikesForPosts(filteredPost)
@@ -99,8 +106,13 @@ open class FeedViewModel(
         viewModelScope.launch {
           try {
             val freshPosts =
-                withTimeoutOrNull(2000L) { repository.getRecentFeedForUids(allUids) }
-                    ?: return@launch // keep cached data if timeout / offline
+                withTimeoutOrNull(2000L) {
+                  if (_uiState.value.isPublicFeed) {
+                    repository.getPublicFeed()
+                  } else {
+                    repository.getRecentFeedForUids(allUids)
+                  }
+                } ?: return@launch // keep cached data if timeout / offline
 
             // If nothing changed, no need to touch UI
 
@@ -128,6 +140,12 @@ open class FeedViewModel(
         return@launch
       }
     }
+  }
+
+  /** Toggles between public and private feed. */
+  fun toggleFeedType() {
+    _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
+    refreshFeedFromFirestore()
   }
 
   /**
@@ -188,10 +206,14 @@ open class FeedViewModel(
     val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     // Filter posts to only include today's post for the current user and all posts for friends
-    return posts.filter { post ->
-      if (post.ownerId == userId) {
-        post.timestamp >= todayStart
-      } else true
+    return if (_uiState.value.isPublicFeed) {
+      posts
+    } else {
+      posts.filter { post ->
+        if (post.ownerId == userId) {
+          post.timestamp >= todayStart
+        } else true
+      }
     }
   }
 

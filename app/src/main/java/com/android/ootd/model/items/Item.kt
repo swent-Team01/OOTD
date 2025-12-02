@@ -20,6 +20,7 @@ data class Item(
     val fitType: String? = null,
     val style: String? = null,
     val notes: String? = null,
+    val isPublic: Boolean = false
 )
 
 @Keep data class Material(val name: String = "", val percentage: Double = 0.0)
