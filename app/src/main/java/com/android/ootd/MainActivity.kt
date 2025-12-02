@@ -188,7 +188,6 @@ fun OOTDApp(
               Screen.InventoryScreen.route,
               Screen.AccountView.route,
               Screen.Map.route,
-              Screen.MapWithLocation.route,
               Screen.NotificationsScreen.route)
 
   // Create ViewModel using factory to properly inject SharedPreferences
@@ -323,7 +322,7 @@ fun OOTDApp(
                       },
                       onLocationClick = { location ->
                         navigationActions.navigateTo(
-                            Screen.MapWithLocation(
+                            Screen.Map(
                                 latitude = location.latitude,
                                 longitude = location.longitude,
                                 locationName = location.name))
@@ -349,30 +348,46 @@ fun OOTDApp(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
-                composable(Screen.Map.route) {
-                  MapScreen(
-                      onPostClick = { postId ->
-                        navigationActions.navigateTo(Screen.PostView(postId))
-                      })
-                }
 
-                // Map with location parameters
+                // Single Map composable with optional location parameters
                 composable(
-                    route = Screen.MapWithLocation.route,
+                    route = Screen.Map.route,
                     arguments =
                         listOf(
-                            navArgument("lat") { type = NavType.StringType },
-                            navArgument("lon") { type = NavType.StringType },
-                            navArgument("name") { type = NavType.StringType })) { backStackEntry ->
-                      val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
-                      val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
-                      val name = backStackEntry.arguments?.getString("name") ?: ""
+                            navArgument("lat") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
+                            },
+                            navArgument("lon") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
+                            },
+                            navArgument("name") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
+                            })) { backStackEntry ->
+                      val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+                      val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
+                      val name = backStackEntry.arguments?.getString("name")
 
-                      val focusLocation = Location(latitude = lat, longitude = lon, name = name)
+                      // Create focus location only if all parameters are provided
+                      val focusLocation =
+                          if (lat != null && lon != null && name != null) {
+                            Location(latitude = lat, longitude = lon, name = name)
+                          } else {
+                            null
+                          }
 
                       MapScreen(
-                          // Create ViewModel with focus location
-                          viewModel = viewModel(factory = MapViewModelFactory(focusLocation)),
+                          viewModel =
+                              if (focusLocation != null) {
+                                viewModel(factory = MapViewModelFactory(focusLocation))
+                              } else {
+                                viewModel()
+                              },
                           onPostClick = { postId ->
                             navigationActions.navigateTo(Screen.PostView(postId))
                           })

@@ -38,7 +38,7 @@ sealed class Tab(
 
   object Account : Tab("Account", Icons.Outlined.Person, Icons.Filled.Person, Screen.AccountView)
 
-  object Map : Tab("Map", Icons.Outlined.Place, Icons.Filled.Place, Screen.Map)
+  object Map : Tab("Map", Icons.Outlined.Place, Icons.Filled.Place, Screen.Map())
 }
 
 private val tabs = listOf(Tab.Map, Tab.Search, Tab.Feed, Tab.Inventory, Tab.Account)
