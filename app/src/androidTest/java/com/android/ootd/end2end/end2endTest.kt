@@ -15,6 +15,8 @@ import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.utils.BaseEnd2EndTest
+import com.android.ootd.utils.enterDateOfBirth
+import com.android.ootd.utils.enterUsername
 import com.android.ootd.utils.verifyFeedScreenAppears
 import com.android.ootd.utils.verifySignInScreenAppears
 import kotlinx.coroutines.runBlocking
@@ -86,8 +88,8 @@ class End2EndTest : BaseEnd2EndTest() {
       waitNavigationRegisterScreen()
 
       // Step 6: Fill in registration form
-      enterUsername(testUsername)
-      enterDateOfBirth(testDateofBirth)
+      enterUsername(composeTestRule, testUsername)
+      enterDateOfBirth(composeTestRule, testDateofBirth)
       enterLocation(testLocation)
 
       // Steps 7-8: Save registration and navigate to feed

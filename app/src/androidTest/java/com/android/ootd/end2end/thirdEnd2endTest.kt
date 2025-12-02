@@ -9,16 +9,25 @@ import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.OOTDApp
-import com.android.ootd.model.account.Account
-import com.android.ootd.model.user.User
+import com.android.ootd.model.map.Location
+import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.utils.FakeCredentialManager
 import com.android.ootd.utils.FakeJwtGenerator
+import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
 import com.android.ootd.utils.checkItemAppearsInPost
+import com.android.ootd.utils.checkNumberOfPostsInFeed
 import com.android.ootd.utils.checkPostAppearsInFeed
 import com.android.ootd.utils.checkStarFunctionalityForItem
+import com.android.ootd.utils.clickWithWait
+import com.android.ootd.utils.fullRegisterSequence
+import com.android.ootd.utils.loginWithoutRegistering
+import com.android.ootd.utils.openNotificationsScreenAndAcceptNotification
+import com.android.ootd.utils.searchAndFollowUser
+import com.android.ootd.utils.searchItemInInventory
+import com.android.ootd.utils.signOutAndVerifyAuthScreen
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -39,6 +48,12 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ThirdEnd2EndTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
+
+  val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
+  val testDateofBirth = "10102020"
+  val testUsername = "testTestUser"
+  val fakeGoogleIdToken2 =
+      FakeJwtGenerator.createFakeGoogleIdToken("brbrbrbrbrbr", email = "greg_2@gmail.com")
 
   lateinit var testNavController: TestNavHostController
   lateinit var context: Context
@@ -99,10 +114,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
   fun fullAppFlow_newUser_3() = runBlocking {
 
     /** Add user before tests start* */
-    accountRepository.addAccount(
-        Account(uid = currentUser.uid, username = "AnonymousUser", ownerId = currentUser.uid))
-    userRepository.addUser(
-        User(uid = currentUser.uid, username = "AnonymousUser", ownerId = currentUser.uid))
+    FirebaseEmulator.auth.signOut()
 
     initTestNavController()
     composeTestRule.setContent {
@@ -113,16 +125,52 @@ class ThirdEnd2EndTest : FirestoreTest() {
           testNavController = testNavController)
     }
 
-    addPostWithOneItem(composeTestRule)
+    fullRegisterSequence(
+        composeTestRule = composeTestRule, username = "user_1", dateOfBirth = testDateofBirth)
 
+    addItemFromInventory(composeTestRule, itemsRepository = itemsRepository)
+
+    val firstItemUuid = itemsRepository.getAllItems()[0].itemUuid
+
+    val firstItemCategory = itemsRepository.getItemById(firstItemUuid).category
+
+    searchItemInInventory(
+        composeTestRule, itemCategory = firstItemCategory, itemUuid = firstItemUuid)
+
+    clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
+
+    addPostWithOneItem(
+        composeTestRule,
+        selectFromInventory = true,
+        inventoryItemUuid = firstItemUuid) // Test adding item from inventory works as well
     checkPostAppearsInFeed(composeTestRule)
 
     checkItemAppearsInPost(composeTestRule)
 
-    val itemUuid = itemsRepository.getAllItems()[0].itemUuid
+    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
 
-    checkStarFunctionalityForItem(composeTestRule, itemUuid)
+    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
+    FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
 
-    addItemFromInventory(composeTestRule, itemsRepository = itemsRepository)
+    fullRegisterSequence(
+        composeTestRule = composeTestRule,
+        username = "user_2",
+        dateOfBirth = testDateofBirth,
+        acceptBetaScreen = false)
+
+    addPostWithOneItem(composeTestRule)
+
+    searchAndFollowUser(composeTestRule, "user_1")
+
+    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
+    FakeCredentialManager.changeCredential(fakeGoogleIdToken)
+
+    loginWithoutRegistering(composeTestRule = composeTestRule)
+
+    openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
+
+    // Each user made a post and the current user is the friend of the other
+    // So this user can see both posts.
+    checkNumberOfPostsInFeed(composeTestRule = composeTestRule, userRepository.getAllUsers().size)
   }
 }

@@ -268,11 +268,12 @@ fun BetaConsentScreen(
 
               // Checkbox agreement
               Row(
-                  modifier = Modifier.fillMaxWidth().testTag(BetaConsentScreenTestTags.CHECKBOX),
+                  modifier = Modifier.fillMaxWidth(),
                   verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = hasAgreed,
                         onCheckedChange = { hasAgreed = it },
+                        modifier = Modifier.testTag(BetaConsentScreenTestTags.CHECKBOX),
                         colors =
                             CheckboxDefaults.colors(
                                 checkedColor = colors.primary,

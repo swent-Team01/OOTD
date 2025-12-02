@@ -1,12 +1,10 @@
 package com.android.ootd.utils
 
 import android.content.Context
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.credentials.CredentialManager
 import androidx.navigation.compose.ComposeNavigator
@@ -29,11 +27,7 @@ import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
-import com.android.ootd.screen.enterDate
-import com.android.ootd.screen.enterUsername
 import com.android.ootd.ui.Inventory.InventoryScreenTestTags
-import com.android.ootd.ui.account.AccountPageTestTags
-import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
@@ -249,49 +243,6 @@ open class BaseEnd2EndTest {
   }
 
   /**
-   * Enters a username into the registration form.
-   *
-   * This function:
-   * 1. Scrolls to the username input field
-   * 2. Enters the provided username using the helper function
-   * 3. Waits for UI to stabilize
-   * 4. Verifies that the username was entered correctly
-   *
-   * @param testUsername The username to be entered in the registration form
-   */
-  fun enterUsername(testUsername: String) {
-    composeTestRule.onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performScrollTo()
-    composeTestRule.enterUsername(testUsername)
-    composeTestRule.waitForIdle()
-
-    // Verify username was entered correctly before moving on
-    composeTestRule
-        .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
-        .performScrollTo()
-        .assertTextContains(testUsername)
-  }
-
-  /**
-   * Enters a date of birth using the date picker in the registration form.
-   *
-   * This function:
-   * 1. Scrolls to and clicks the date picker icon
-   * 2. Waits for the date picker dialog to appear
-   * 3. Verifies the date picker is displayed
-   * 4. Enters the date using the helper function
-   * 5. Waits for the date picker to close
-   *
-   * @param testDateofBirth The date of birth to be entered (format: "DD/MM/YYYY")
-   */
-  fun enterDateOfBirth(testDateofBirth: String) {
-    clickWithWait(composeTestRule, RegisterScreenTestTags.DATE_PICKER_ICON, useUnmergedTree = true)
-    verifyElementAppearsWithTimer(composeTestRule, RegisterScreenTestTags.REGISTER_DATE_PICKER)
-    // Enter date and confirm
-    composeTestRule.enterDate(testDateofBirth)
-    composeTestRule.waitForIdle()
-  }
-
-  /**
    * Selects a location from the location picker in the registration form.
    *
    * This function:
@@ -436,28 +387,5 @@ open class BaseEnd2EndTest {
     verifyInventoryScreenAppears(composeTestRule)
     verifyElementAppearsWithTimer(composeTestRule, InventoryScreenTestTags.EMPTY_STATE)
     verifyElementAppearsWithTimer(composeTestRule, InventoryScreenTestTags.ADD_ITEM_FAB)
-  }
-
-  /**
-   * Signs out the user and verifies navigation back to the Sign-In screen.
-   *
-   * This function:
-   * 1. Goes to account page
-   * 2. Goes to the account settings
-   * 3. Clicks the Sign Out button
-   * 4. Waits for the UI to stabilize
-   * 5. Waits for navigation back to the Authentication screen
-   * 6. Verifies the Sign-In screen is displayed
-   *
-   * After sign-out, the user should be returned to the initial authentication state, requiring them
-   * to sign in again to access the app.
-   */
-  fun signOutAndVerifyAuthScreen() {
-    clickWithWait(composeTestRule, NavigationTestTags.ACCOUNT_TAB)
-    clickWithWait(composeTestRule, AccountPageTestTags.SETTINGS_BUTTON)
-    clickWithWait(composeTestRule, UiTestTags.TAG_SIGNOUT_BUTTON, shouldScroll = true)
-    waitForRoute(Screen.Authentication.route)
-    verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
-    verifySignInScreenAppears(composeTestRule)
   }
 }

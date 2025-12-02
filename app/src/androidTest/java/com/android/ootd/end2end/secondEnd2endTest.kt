@@ -4,6 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.screen.enterUsername
 import com.android.ootd.utils.BaseEnd2EndTest
 import com.android.ootd.utils.addPostWithOneItem
+import com.android.ootd.utils.enterDateOfBirth
+import com.android.ootd.utils.signOutAndVerifyAuthScreen
 import com.android.ootd.utils.verifyRegisterScreenAppears
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
@@ -78,8 +80,8 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
       verifyRegisterScreenAppears(composeTestRule)
 
       // Step 6: Fill in registration form
-      enterUsername(testUsername)
-      enterDateOfBirth(testDateofBirth)
+      composeTestRule.enterUsername(testUsername)
+      enterDateOfBirth(composeTestRule, testDateofBirth)
       enterLocation(testLocation)
 
       // Steps 7-8: Save registration and navigate to feed
@@ -104,7 +106,8 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
       navigateToInventoryAndCheckAddItemButton()
 
       // Step 17-18: Sign out and verify auth screen
-      signOutAndVerifyAuthScreen()
+      signOutAndVerifyAuthScreen(
+          composeTestRule = composeTestRule, testNavController = testNavController)
     }
   }
 }
