@@ -3,9 +3,15 @@ package com.android.ootd.ui.post.items
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.image.ImageCompressor
@@ -15,6 +21,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
+import com.android.ootd.worker.ImageUploadWorker
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -215,7 +222,6 @@ open class AddItemsViewModel(
       // Cache updates happen synchronously before Firestore .await()
       try {
         repository.addItem(item)
-        Log.d(TAG, "Item added to cache, Firestore queued")
       } catch (e: Exception) {
         // Acceptable when offline - cache is still updated
         Log.w(TAG, "Item add may be offline (cache updated): ${e.message}")
@@ -223,14 +229,12 @@ open class AddItemsViewModel(
 
       try {
         accountRepository.addItem(item.itemUuid)
-        Log.d(TAG, "Account updated in cache, Firestore queued")
       } catch (e: Exception) {
         // Acceptable when offline - cache is still updated
         Log.w(TAG, "Account add may be offline (cache updated): ${e.message}")
       }
 
       // Operations completed - cache is updated, Firestore will sync
-      Log.d(TAG, "Item operations completed (cache updated)")
       true
     } catch (e: Exception) {
       Log.e(TAG, "Error in item operations: ${e.message}", e)
@@ -275,6 +279,26 @@ open class AddItemsViewModel(
                 addClickInProgress = false
                 return@launch
               }
+
+              // Check if we need to schedule background upload (if offline, we got a local URI)
+              val uri = uploaded.imageUrl.toUri()
+              if (uri.scheme == "content" || uri.scheme == "file") {
+                val workRequest =
+                    OneTimeWorkRequestBuilder<ImageUploadWorker>()
+                        .setInputData(
+                            workDataOf(
+                                "itemUuid" to itemUuid,
+                                "imageUri" to uploaded.imageUrl,
+                                "fileName" to uploaded.imageId))
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build())
+                        .build()
+
+                WorkManager.getInstance(context).enqueue(workRequest)
+              }
+
               uploaded
             }
 

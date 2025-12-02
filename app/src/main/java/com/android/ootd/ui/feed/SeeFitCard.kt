@@ -36,8 +36,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.StarYellow
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.ShowText
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -119,9 +122,7 @@ private fun BoxScope.PriceChip(item: Item) {
               .padding(horizontal = 10.dp, vertical = 4.dp)) {
         Text(
             text = "${item.price.toInt()} ${item.currency}",
-            style =
-                MaterialTheme.typography.labelMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant))
+            style = Typography.labelMedium.copy(color = OnSurfaceVariant))
       }
 }
 
@@ -164,7 +165,7 @@ private fun BoxScope.EditButton(isOwner: Boolean, onClick: () -> Unit) {
           Icon(
               imageVector = Icons.Default.Edit,
               contentDescription = "Edit item",
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              tint = OnSurfaceVariant,
               modifier = Modifier.size(16.dp))
         }
       }
@@ -177,27 +178,20 @@ private fun BoxScope.ItemInfo(item: Item) {
       modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),
       verticalArrangement = Arrangement.spacedBy(6.dp),
       horizontalAlignment = Alignment.Start) {
-        Text(
+        ShowText(
             text = item.category.uppercase(),
-            style =
-                MaterialTheme.typography.labelLarge.copy(color = Color.White.copy(alpha = 0.9f)),
+            style = Typography.bodyLarge.copy(color = OnSurfaceVariant),
             modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
-
-        Text(
+        ShowText(
             text = item.type.orEmpty(),
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    color = Color.White, fontSize = MaterialTheme.typography.titleLarge.fontSize),
+            style = Typography.bodyLarge.copy(color = OnSurfaceVariant),
             textAlign = TextAlign.Start,
             modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
-
         if (brandText.isNotBlank()) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = brandText,
-                style =
-                    MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.White.copy(alpha = 0.9f)))
+                style = Typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)))
           }
         }
       }

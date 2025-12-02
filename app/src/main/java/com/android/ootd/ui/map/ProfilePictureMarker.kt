@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -17,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils.toLatLng
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
@@ -34,10 +34,7 @@ fun MarkerContent(username: String) {
   Box(
       modifier = Modifier.size(48.dp).clip(shape).background(Primary).padding(4.dp),
       contentAlignment = Alignment.Center) {
-        Text(
-            text = username.take(1).uppercase(),
-            color = Secondary,
-            style = MaterialTheme.typography.bodyLarge)
+        Text(text = username.take(1).uppercase(), color = Secondary, style = Typography.bodyLarge)
       }
 }
 

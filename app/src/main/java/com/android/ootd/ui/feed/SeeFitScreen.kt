@@ -16,10 +16,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.Item
-import com.android.ootd.utils.BackArrow
-import com.android.ootd.utils.CenteredEmptyState
-import com.android.ootd.utils.CenteredLoadingState
-import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CenteredEmptyState
+import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object SeeFitScreenTestTags {
   const val SCREEN = "seeFitScreen"
@@ -111,8 +114,14 @@ fun SeeFitScreen(
 
       items.isEmpty() -> {
         CenteredEmptyState(
-            message = "No items associated with this post.",
-            modifier = Modifier.fillMaxSize().padding(innerPadding))
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            text = {
+              ShowText(
+                  text = "No items associated with this post.",
+                  style = Typography.bodyLarge,
+                  color = Tertiary,
+                  modifier = Modifier.padding(innerPadding))
+            })
       }
 
       else -> {

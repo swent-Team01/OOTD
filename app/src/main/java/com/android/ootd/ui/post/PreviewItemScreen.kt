@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -33,10 +31,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -57,7 +53,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -65,7 +60,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,10 +73,17 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
+import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
-import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.ActionIconButton
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
@@ -206,17 +207,11 @@ fun PreviewItemScreenContent(
     Scaffold(
         topBar = {
           OOTDTopBar(
-              centerText = "OOTD",
               textModifier = Modifier.testTag(PreviewItemScreenTestTags.SCREEN_TITLE),
               leftComposable = {
-                IconButton(
-                    onClick = { onGoBack(ui.postUuid) },
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON)) {
-                      Icon(
-                          Icons.AutoMirrored.Outlined.ArrowBack,
-                          contentDescription = "go back",
-                          tint = Tertiary)
-                    }
+                BackArrow(
+                    onBackClick = { onGoBack(ui.postUuid) },
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.GO_BACK_BUTTON))
               })
         },
         bottomBar = {
@@ -305,7 +300,7 @@ fun PreviewItemScreenContent(
         onDismiss = { showAddItemDialog = false })
 
     if (ui.isLoading && !enablePreview) {
-      LoadingOverlay()
+      CenteredLoadingState(message = "Publishing your outfit...", textColor = Tertiary)
     }
   }
 }
@@ -314,7 +309,8 @@ fun PreviewItemScreenContent(
 @Composable
 fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
-
+  val expandIcon =
+      if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
   Card(
       modifier =
           Modifier.fillMaxWidth()
@@ -322,7 +318,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
               .animateContentSize()
               .testTag(PreviewItemScreenTestTags.getTestTagForItem(item)),
       shape = MaterialTheme.shapes.large,
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+      colors = CardDefaults.cardColors(containerColor = Secondary),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
         Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
           Row(
@@ -346,43 +342,30 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                       Text(
                           text = item.category,
                           style =
-                              MaterialTheme.typography.titleLarge.copy(
-                                  fontWeight = FontWeight.SemiBold,
-                                  color = MaterialTheme.colorScheme.onSurface))
+                              Typography.titleLarge.copy(
+                                  fontWeight = FontWeight.SemiBold, color = OnSurface))
                       Text(
                           text = item.type ?: "Item Type",
-                          style =
-                              MaterialTheme.typography.bodyMedium.copy(
-                                  color = MaterialTheme.colorScheme.onSurface))
+                          style = Typography.bodyMedium.copy(color = OnSurface))
                       AnimatedVisibility(visible = isExpanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                           item.brand?.let {
                             Text(
                                 text = it,
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                style = Typography.bodySmall.copy(color = OnSurfaceVariant))
                           }
 
                           if (item.material.isNotEmpty()) {
                             Text(
                                 text = item.material.joinToString { m -> m?.name ?: "" },
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                style = Typography.bodySmall.copy(color = OnSurfaceVariant))
                           }
                           item.price?.let {
                             Text(
                                 text = "CHF ${String.format("%.2f", it)}",
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                style = Typography.bodySmall.copy(color = OnSurfaceVariant))
                           }
-                          item.link?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall.copy(color = Primary))
-                          }
+                          item.link?.let { Text(text = it, style = Typography.bodySmall) }
                         }
                       }
                     }
@@ -390,36 +373,27 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
           Row(
               modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(
+                ActionIconButton(
                     onClick = { onClick(item.itemUuid) },
+                    icon = Icons.Default.Edit,
+                    contentDescription = "Edit item",
                     modifier =
-                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.Default.Edit,
-                          contentDescription = "Edit item",
-                          tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                IconButton(
+                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON),
+                    tint = OnSurface)
+
+                ActionIconButton(
                     onClick = onRemove,
                     modifier =
-                        Modifier.size(24.dp)
-                            .testTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.Default.Delete,
-                          contentDescription = "Remove from post",
-                          tint = MaterialTheme.colorScheme.error)
-                    }
-                IconButton(
+                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON),
+                    icon = Icons.Default.Delete,
+                    contentDescription = "Remove from post",
+                    tint = MaterialTheme.colorScheme.error)
+                ActionIconButton(
                     onClick = { isExpanded = !isExpanded },
-                    modifier =
-                        Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EXPAND_ICON)) {
-                      Icon(
-                          imageVector =
-                              if (isExpanded) Icons.Default.KeyboardArrowUp
-                              else Icons.Default.KeyboardArrowDown,
-                          contentDescription = if (isExpanded) "Collapse" else "Expand",
-                          tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    icon = expandIcon,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    modifier = Modifier.testTag(PreviewItemScreenTestTags.EXPAND_ICON),
+                    tint = OnSurface)
               }
         }
       }
@@ -517,24 +491,18 @@ private fun EmptyItemPlaceholder() {
       modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
-        Text(
+        ShowText(
             modifier =
                 Modifier.widthIn(220.dp).testTag(PreviewItemScreenTestTags.EMPTY_ITEM_LIST_MSG),
             text = "What are you wearing today ?",
             style =
-                MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Typography.titleLarge.copy(
+                    fontSize = 20.sp, fontWeight = FontWeight.Medium, color = OnSurfaceVariant),
+            color = OnSurfaceVariant)
         Spacer(Modifier.height(12.dp))
-        Text(
+        ShowText(
             text = "Don't forget to add your items",
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary),
-            textAlign = TextAlign.Center)
+            style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
       }
 }
 
@@ -574,20 +542,4 @@ private fun AddItemDialog(
       },
       confirmButton = {},
       dismissButton = {})
-}
-
-@Composable
-private fun LoadingOverlay() {
-  Box(
-      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          CircularProgressIndicator(color = Primary)
-          Spacer(modifier = Modifier.height(12.dp))
-          Text(
-              text = "Publishing your outfit...",
-              color = White,
-              style = MaterialTheme.typography.bodyLarge)
-        }
-      }
 }
