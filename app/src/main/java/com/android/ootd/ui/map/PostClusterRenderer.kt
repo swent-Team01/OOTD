@@ -2,22 +2,15 @@ package com.android.ootd.ui.map
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.scale
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.utils.MarkerUtils
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -69,11 +62,11 @@ class PostClusterRenderer(
     if (profilePictureCache.containsKey(userId)) {
       val icon =
           profilePictureCache[userId]?.let {
-            BitmapDescriptorFactory.fromBitmap(createCircularBitmap(it))
-          } ?: createInitialsBitmap(username)
+            BitmapDescriptorFactory.fromBitmap(MarkerUtils.createCircularBitmap(it))
+          } ?: MarkerUtils.createInitialsBitmap(username)
       markerOptions.icon(icon).anchor(0.5f, 0.5f)
     } else {
-      markerOptions.icon(createInitialsBitmap(username)).anchor(0.5f, 0.5f)
+      markerOptions.icon(MarkerUtils.createInitialsBitmap(username)).anchor(0.5f, 0.5f)
       loadProfilePicture(userId, username, item)
     }
   }
@@ -85,14 +78,14 @@ class PostClusterRenderer(
     if (profilePictureCache.containsKey(userId)) {
       val icon =
           profilePictureCache[userId]?.let {
-            BitmapDescriptorFactory.fromBitmap(createCircularBitmap(it))
-          } ?: createInitialsBitmap(item.post.name)
+            BitmapDescriptorFactory.fromBitmap(MarkerUtils.createCircularBitmap(it))
+          } ?: MarkerUtils.createInitialsBitmap(item.post.name)
       marker.setIcon(icon)
     }
   }
 
   override fun onBeforeClusterRendered(cluster: Cluster<PostMarker>, markerOptions: MarkerOptions) {
-    markerOptions.icon(createClusterBitmap(cluster.size)).anchor(0.5f, 0.5f)
+    markerOptions.icon(MarkerUtils.createClusterBitmap(cluster.size)).anchor(0.5f, 0.5f)
   }
 
   private fun loadProfilePicture(userId: String, username: String, item: PostMarker) {
@@ -115,8 +108,9 @@ class PostClusterRenderer(
             profilePictureCache[userId] = bitmap
             withContext(Dispatchers.Main) {
               markerCache[item.post.postUID]?.setIcon(
-                  bitmap?.let { BitmapDescriptorFactory.fromBitmap(createCircularBitmap(it)) }
-                      ?: createInitialsBitmap(username))
+                  bitmap?.let {
+                    BitmapDescriptorFactory.fromBitmap(MarkerUtils.createCircularBitmap(it))
+                  } ?: MarkerUtils.createInitialsBitmap(username))
             }
           } else {
             profilePictureCache[userId] = null
@@ -126,80 +120,5 @@ class PostClusterRenderer(
         profilePictureCache[userId] = null
       }
     }
-  }
-
-  private fun createCircularBitmap(bitmap: Bitmap): Bitmap {
-    val size = 120
-    val output = createBitmap(size, size)
-    val canvas = Canvas(output)
-    val paint =
-        Paint().apply {
-          isAntiAlias = true
-          color = Primary.toArgb()
-        }
-    canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-    paint.color = Secondary.toArgb()
-    canvas.drawCircle(size / 2f, size / 2f, size / 2.2f, paint)
-    paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-    canvas.drawBitmap(bitmap.scale(size, size), 0f, 0f, paint)
-    return output
-  }
-
-  private fun createInitialsBitmap(username: String): BitmapDescriptor {
-    val size = 120
-    val bitmap = createBitmap(size, size)
-    val canvas = Canvas(bitmap)
-    val paint =
-        Paint().apply {
-          isAntiAlias = true
-          color = Primary.toArgb()
-        }
-    canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-    paint.color = Secondary.toArgb()
-    canvas.drawCircle(size / 2f, size / 2f, size / 2.2f, paint)
-    paint.color = Primary.toArgb()
-    canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
-
-    val textPaint =
-        Paint().apply {
-          isAntiAlias = true
-          color = Secondary.toArgb()
-          textSize = 50f
-          textAlign = Paint.Align.CENTER
-        }
-    val initial = username.firstOrNull()?.uppercase() ?: "?"
-    canvas.drawText(
-        initial,
-        size / 2f,
-        (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f),
-        textPaint)
-    return BitmapDescriptorFactory.fromBitmap(bitmap)
-  }
-
-  private fun createClusterBitmap(count: Int): BitmapDescriptor {
-    val size = 120
-    val bitmap = createBitmap(size, size)
-    val canvas = Canvas(bitmap)
-    val paint =
-        Paint().apply {
-          isAntiAlias = true
-          color = Secondary.toArgb()
-        }
-    canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
-    paint.color = Primary.toArgb()
-    canvas.drawCircle(size / 2f, size / 2f, size / 2.5f, paint)
-
-    val textPaint =
-        Paint().apply {
-          isAntiAlias = true
-          color = Secondary.toArgb()
-          textSize = if (count < 100) 40f else 30f
-          textAlign = Paint.Align.CENTER
-          isFakeBoldText = true
-        }
-    val text = if (count > 999) "999+" else count.toString()
-    canvas.drawText(
-        text, size / 2f, (size / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f), textPaint)
-    return BitmapDescriptorFactory.fromBitmap(bitmap)
   }
 }
