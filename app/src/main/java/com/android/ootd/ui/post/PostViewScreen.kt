@@ -61,6 +61,7 @@ object PostViewTestTags {
   const val TOP_BAR = "postViewTopBar"
   const val BACK_BUTTON = "postViewBackButton"
   const val POST_IMAGE = "postViewImage"
+  const val LIKE_ROW = "postViewLikeRow"
   const val LOADING_INDICATOR = "postViewLoading"
   const val SNACKBAR_HOST = "postViewErrorSnackbarHost"
   const val DROPDOWN_OPTIONS_MENU = "dropdownOptionsMenu"
@@ -427,16 +428,18 @@ fun PostImage(imageUrl: String) {
  */
 @Composable
 fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(onClick = onToggleLike) {
-      Icon(
-          imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-          tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface,
-          contentDescription = if (isLiked) "Unlike" else "Like")
-    }
+  Row(
+      modifier = Modifier.testTag(PostViewTestTags.LIKE_ROW),
+      verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onToggleLike) {
+          Icon(
+              imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface,
+              contentDescription = if (isLiked) "Unlike" else "Like")
+        }
 
-    Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
-  }
+        Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
+      }
 }
 
 @Composable
@@ -489,7 +492,7 @@ private fun PostHeroImage(
   Card(
       shape = RoundedCornerShape(24.dp),
       elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-      modifier = Modifier.fillMaxWidth().height(360.dp)) {
+      modifier = Modifier.fillMaxWidth().height(360.dp).testTag(PostViewTestTags.POST_IMAGE)) {
         Box(modifier = Modifier.fillMaxSize()) {
           AsyncImage(
               model = imageUrl,

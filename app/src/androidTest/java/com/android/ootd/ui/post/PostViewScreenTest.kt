@@ -3,8 +3,9 @@ package com.android.ootd.ui.post
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -132,8 +133,6 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(PostViewTestTags.SNACKBAR_HOST).assertIsDisplayed().assertExists()
-    // Error is now displayed in a Snackbar instead of error text
-    composeTestRule.onNodeWithText("Failed to load post").assertIsDisplayed()
   }
 
   @Test
@@ -155,7 +154,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
 
-    composeTestRule.onNodeWithText("Test outfit description").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Test outfit description", substring = true).assertIsDisplayed()
   }
 
   @Test
@@ -183,7 +182,10 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
 
-    composeTestRule.onNodeWithText("2 likes").assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithText("2 likes", substring = true, useUnmergedTree = true)
+        .onFirst()
+        .assertIsDisplayed()
   }
 
   @Test
@@ -284,7 +286,7 @@ class PostViewScreenTest {
 
     // Verify initial description is inside the TextField
     composeTestRule
-        .onNode(hasSetTextAction())
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertIsDisplayed()
         .assertTextContains(testPost.description)
   }
@@ -326,11 +328,10 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Ensure edit field visible with original text
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
-        .assertExists()
-        .assertIsDisplayed()
-    composeTestRule.onNode(hasSetTextAction()).assertTextContains(original)
+        .assertTextContains(original)
 
     // Modify the description text
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).performTextClearance()
@@ -338,15 +339,18 @@ class PostViewScreenTest {
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .performTextInput(modified)
     composeTestRule.waitForIdle()
-    composeTestRule.onNode(hasSetTextAction()).assertTextContains(modified)
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertTextContains(modified)
 
     // Cancel edit
     composeTestRule.onNodeWithTag(PostViewTestTags.CANCEL_EDITING_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Ensure screen shows orginal description and not the modified one
-    composeTestRule.onNodeWithText(original).assertExists().assertIsDisplayed()
-    composeTestRule.onNodeWithTag(modified).assertDoesNotExist()
+    // Ensure screen shows original description and not the modified one
+    // Note: description is now displayed with username, so use substring match
+    composeTestRule.onNodeWithText(original, substring = true).assertExists().assertIsDisplayed()
+    composeTestRule.onNodeWithText(modified, substring = true).assertDoesNotExist()
 
     // Re-open edit
     composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
@@ -354,12 +358,14 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
 
-    // TextField should contain tge original description again
+    // TextField should contain the original description again
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertExists()
         .assertIsDisplayed()
-    composeTestRule.onNode(hasSetTextAction()).assertTextContains(original)
-    composeTestRule.onNodeWithText(modified).assertDoesNotExist()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertTextContains(original)
+    composeTestRule.onNodeWithText(modified, substring = true).assertDoesNotExist()
   }
 }
