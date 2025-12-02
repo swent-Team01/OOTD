@@ -163,8 +163,8 @@ class MapViewModel(
    * @return The adjusted location
    */
   private fun offsetLocation(location: Location, index: Int, total: Int): Location {
-    // Offset by approximately 20 meters (0.0002 degrees is roughly 20m at equator)
-    val offsetDegrees = 0.0002
+    // Offset by approximately 30 meters (0.0003 degrees is roughly 30m at equator)
+    val offsetDegrees = 0.0003
     val angle = (2 * Math.PI * index) / total
 
     val latOffset = offsetDegrees * sin(angle)
