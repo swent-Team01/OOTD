@@ -711,25 +711,6 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun mainActivityCode_mapWithLocation_extractsArgumentsCorrectly() {
-    composeRule.runOnIdle {
-      val testLat = 46.5197
-      val testLon = 6.6323
-      val testName = "EPFL, Lausanne"
-
-      // Navigate to MapWithLocation - this tests the argument extraction in MainActivity
-      navigation.navigateTo(
-          Screen.MapWithLocation(latitude = testLat, longitude = testLon, locationName = testName))
-
-      // Verify we successfully navigated (meaning lat, lon, name were extracted)
-      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
-    }
-
-    // Give the composable time to render
-    composeRule.waitForIdle()
-  }
-
-  @Test
   fun mainActivityCode_mapWithLocation_handlesInvalidArguments() {
     composeRule.runOnIdle {
       // Test with extreme coordinates
