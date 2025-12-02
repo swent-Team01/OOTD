@@ -59,7 +59,7 @@ fun BottomNavigationBar(
   // Map current route string to a Tab; default to Feed
   val selectedTab = tabList.find { it.destination.route == selectedRoute }
   BottomNavigationMenu(
-      tabs = com.android.ootd.ui.navigation.tabs,
+      tabs = tabs,
       selectedTab = selectedTab,
       onTabSelected = { tab -> onTabSelected(tab.destination) },
       modifier = modifier)
