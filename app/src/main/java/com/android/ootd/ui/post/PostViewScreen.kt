@@ -199,7 +199,7 @@ fun PostDetailsContent(
       Text(
           text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
           style = Typography.bodySmall,
-          color = MaterialTheme.colorScheme.primary,
+          color = Primary,
           modifier =
               Modifier.align(Alignment.End)
                   .padding(top = 4.dp, end = 4.dp)
@@ -242,10 +242,7 @@ fun PostOwnerSection(
 
       Spacer(Modifier.width(12.dp))
 
-      Text(
-          text = username ?: "Unknown User",
-          style = Typography.titleLarge,
-          color = MaterialTheme.colorScheme.primary)
+      Text(text = username ?: "Unknown User", style = Typography.titleLarge, color = Primary)
 
       Spacer(Modifier.weight(1f))
 
@@ -271,7 +268,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
           Icon(
               Icons.Default.MoreHoriz,
               contentDescription = "More options",
-              tint = MaterialTheme.colorScheme.onSurface,
+              tint = OnSurface,
               modifier = Modifier.size(24.dp))
         }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -288,10 +285,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
             onEditClicked()
             expanded = false
           },
-          colors =
-              MenuDefaults.itemColors(
-                  textColor = MaterialTheme.colorScheme.onSurface,
-                  leadingIconColor = MaterialTheme.colorScheme.onSurface),
+          colors = MenuDefaults.itemColors(textColor = OnSurface, leadingIconColor = OnSurface),
           modifier = Modifier.testTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION))
 
       HorizontalDivider()
@@ -336,15 +330,11 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
     IconButton(onClick = onToggleLike) {
       Icon(
           imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-          tint =
-              if (isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+          tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface,
           contentDescription = if (isLiked) "Unlike" else "Like")
     }
 
-    Text(
-        text = "$likeCount likes",
-        style = Typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface)
+    Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
   }
 }
 
@@ -356,8 +346,7 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 @Composable
 fun PostDescription(description: String) {
   if (description.isNotBlank()) {
-    Text(
-        text = description, style = Typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+    Text(text = description, style = Typography.bodyLarge, color = Primary)
   }
 }
 
@@ -386,7 +375,7 @@ fun LikedUsersRow(likedUsers: List<User>) {
                 Text(
                     text = user.username,
                     style = Typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center)

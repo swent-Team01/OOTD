@@ -33,6 +33,7 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_IMAGE
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_LETTER
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ProfilePicture
 
@@ -154,8 +155,8 @@ fun UserProfileCard(
               shape = RoundedCornerShape(12.dp),
               colors =
                   ButtonDefaults.buttonColors(
-                      containerColor = colorScheme.primary,
-                      disabledContainerColor = colorScheme.primary.copy(alpha = 0.6f))) {
+                      containerColor = Primary,
+                      disabledContainerColor = Primary.copy(alpha = 0.6f))) {
                 Text(text = followText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
               }
 
@@ -174,7 +175,7 @@ fun UserProfileCard(
             TextButton(
                 modifier = Modifier.testTag(UserProfileCardTestTags.ERROR_DISMISS_BUTTON),
                 onClick = onErrorDismiss) {
-                  Text(text = "Dismiss", fontSize = 14.sp, color = colorScheme.primary)
+                  Text(text = "Dismiss", fontSize = 14.sp, color = Primary)
                 }
           }
         }

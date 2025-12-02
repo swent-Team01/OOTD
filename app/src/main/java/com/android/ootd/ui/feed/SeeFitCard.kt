@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.StarYellow
 import com.android.ootd.ui.theme.Typography
@@ -121,7 +122,7 @@ private fun BoxScope.PriceChip(item: Item) {
               .padding(horizontal = 10.dp, vertical = 4.dp)) {
         Text(
             text = "${item.price.toInt()} ${item.currency}",
-            style = Typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+            style = Typography.labelMedium.copy(color = OnSurfaceVariant))
       }
 }
 
@@ -164,7 +165,7 @@ private fun BoxScope.EditButton(isOwner: Boolean, onClick: () -> Unit) {
           Icon(
               imageVector = Icons.Default.Edit,
               contentDescription = "Edit item",
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              tint = OnSurfaceVariant,
               modifier = Modifier.size(16.dp))
         }
       }
@@ -179,11 +180,11 @@ private fun BoxScope.ItemInfo(item: Item) {
       horizontalAlignment = Alignment.Start) {
         ShowText(
             text = item.category.uppercase(),
-            style = Typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+            style = Typography.bodyLarge.copy(color = OnSurfaceVariant),
             modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_CATEGORY))
         ShowText(
             text = item.type.orEmpty(),
-            style = Typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+            style = Typography.bodyLarge.copy(color = OnSurfaceVariant),
             textAlign = TextAlign.Start,
             modifier = Modifier.testTag(SeeFitScreenTestTags.ITEM_CARD_TYPE))
         if (brandText.isNotBlank()) {

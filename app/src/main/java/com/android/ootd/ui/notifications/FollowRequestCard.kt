@@ -19,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +28,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.ootd.ui.theme.Background
+import com.android.ootd.ui.theme.OnSecondaryContainer
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ProfilePicture
 
@@ -44,7 +48,7 @@ fun FollowRequestCard(
               .height(100.dp)
               .testTag(NotificationsScreenTestTags.NOTIFICATION_ITEM),
       shape = RoundedCornerShape(20.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+      colors = CardDefaults.cardColors(containerColor = Secondary),
       elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Row(
             modifier =
@@ -54,10 +58,7 @@ fun FollowRequestCard(
             verticalAlignment = Alignment.CenterVertically) {
               // Profile picture placeholder
               Box(
-                  modifier =
-                      Modifier.size(48.dp)
-                          .clip(CircleShape)
-                          .background(MaterialTheme.colorScheme.primary),
+                  modifier = Modifier.size(48.dp).clip(CircleShape).background(Primary),
                   contentAlignment = Alignment.Center) {
                     ProfilePicture(
                         size = 48.dp,
@@ -74,13 +75,13 @@ fun FollowRequestCard(
                     text = followRequestItem.senderUser.username,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    color = OnSecondaryContainer,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Text(
                     text = followRequestItem.notification.content,
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    color = OnSecondaryContainer,
                     maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
               }
@@ -99,14 +100,9 @@ fun FollowRequestCard(
                                 .testTag(NotificationsScreenTestTags.ACCEPT_BUTTON),
                         onClick = onAccept,
                         shape = RoundedCornerShape(20.dp),
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
                         contentPadding = PaddingValues(0.dp)) {
-                          Text(
-                              "Accept",
-                              fontSize = 12.sp,
-                              color = MaterialTheme.colorScheme.background)
+                          Text("Accept", fontSize = 12.sp, color = Background)
                         }
                     // Delete button
                     Button(
@@ -116,14 +112,9 @@ fun FollowRequestCard(
                                 .testTag(NotificationsScreenTestTags.DELETE_BUTTON),
                         onClick = onDelete,
                         shape = RoundedCornerShape(20.dp),
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary),
+                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary),
                         contentPadding = PaddingValues(0.dp)) {
-                          Text(
-                              "Delete",
-                              fontSize = 12.sp,
-                              color = MaterialTheme.colorScheme.background)
+                          Text("Delete", fontSize = 12.sp, color = Background)
                         }
                   }
             }

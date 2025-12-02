@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionButton
@@ -117,7 +118,7 @@ private fun FeedScaffold(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(top = paddingValues.calculateTopPadding())
-                    .background(MaterialTheme.colorScheme.background)) {
+                    .background(Background)) {
               // Renders the list of posts when user has posted.
               FeedList(
                   isBlurred = !hasPostedToday,

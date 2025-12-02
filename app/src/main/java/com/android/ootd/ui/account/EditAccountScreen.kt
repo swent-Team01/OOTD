@@ -8,7 +8,6 @@ import android.Manifest
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
@@ -148,185 +147,143 @@ private fun AccountScreenContent(
     onHelpDismiss: () -> Unit,
 ) {
   val context = LocalContext.current
-
-  // Image picker launcher wrapped in a small helper to keep this function lean
-  val imagePickerLauncher = rememberImagePickerLauncher { localPath ->
-    handlePickedProfileImage(
-        localPath,
-        upload = accountViewModel::uploadImageToStorage,
-        editProfilePicture = { accountViewModel.editUser(profilePicture = it) },
-        context = context)
-  }
-  val openImagePicker = {
-    imagePickerLauncher.launch(
-        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-  }
-
-  // Location permission launcher extracted to reduce inline branching
-  val locationPermissionLauncher =
-      rememberLocationPermissionLauncher(
-          onGranted = { accountViewModel.onLocationPermissionGranted() },
-          onDenied = { accountViewModel.onLocationPermissionDenied() })
-  val requestLocationPermission = {
-    locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-  }
-
-  Scaffold(topBar = { AccountTopBar(onBack = onBack) }) { paddingValues ->
-    AccountScreenBody(
-        accountViewModel = accountViewModel,
-        uiState = uiState,
-        locationUiState = locationUiState,
-        onSignOutClick = onSignOutClick,
-        onToggle = onToggle,
-        onHelpClick = onHelpClick,
-        onHelpDismiss = onHelpDismiss,
-        paddingValues = paddingValues,
-        openImagePicker = openImagePicker,
-        requestLocationPermission = requestLocationPermission)
-
-    if (uiState.isLoading) {
-      LoadingOverlay()
-    }
-  }
-}
-
-// Simplified top bar to reduce branching/verbosity in AccountScreenContent
-@Composable
-private fun AccountTopBar(onBack: () -> Unit) {
-  OOTDTopBar(
-      textModifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_TITLE),
-      centerText = "My Account",
-      leftComposable = {
-        BackArrow(onBackClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK))
-      })
-}
-
-// Extracted large content column to its own composable to lower cognitive complexity
-@Composable
-private fun AccountScreenBody(
-    accountViewModel: AccountViewModel,
-    uiState: AccountViewState,
-    locationUiState: LocationSelectionViewState,
-    onSignOutClick: () -> Unit,
-    onToggle: () -> Unit,
-    onHelpClick: () -> Unit,
-    onHelpDismiss: () -> Unit,
-    paddingValues: PaddingValues,
-    openImagePicker: () -> Unit,
-    requestLocationPermission: () -> Unit,
-) {
-  val context = LocalContext.current
   val scrollState = rememberScrollState()
-
   // Max width for centered content (keeps avatar and inputs aligned)
   val contentMaxWidth = 560.dp
   val contentModifier = Modifier.fillMaxWidth().widthIn(max = contentMaxWidth)
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
+  // Location permission launcher
+  val locationPermissionLauncher =
+      rememberLauncherForActivityResult(
+          contract = ActivityResultContracts.RequestPermission(),
+          onResult = { isGranted ->
+            if (isGranted) {
+              accountViewModel.onLocationPermissionGranted()
+            } else {
+              accountViewModel.onLocationPermissionDenied()
+            }
+          })
+
   var editedUsername by remember { mutableStateOf("") }
 
-  Column(
-      modifier =
-          Modifier.fillMaxSize()
-              .verticalScroll(scrollState)
-              .padding(paddingValues)
-              .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 72.dp),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = contentModifier) {
-          AvatarSection(
-              avatarUri = uiState.profilePicture,
-              username = uiState.username,
-              onEditClick = { openImagePicker() },
-              accountViewModel,
-              context = context)
-        }
+  // State for image source dialog
+  var showImageSourceDialog by remember { mutableStateOf(false) }
 
-        Spacer(modifier = Modifier.height(12.dp))
+  Scaffold(
+      topBar = {
+        OOTDTopBar(
+            textModifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_TITLE),
+            centerText = "My Account",
+            leftComposable = {
+              BackArrow(
+                  onBackClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK))
+            })
+      }) { paddingValues ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(paddingValues)
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 72.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              Box(modifier = contentModifier) {
+                AvatarSection(
+                    avatarUri = uiState.profilePicture,
+                    username = uiState.username,
+                    onEditClick = { showImageSourceDialog = true },
+                    accountViewModel,
+                    context = context)
+              }
 
-        Box(modifier = contentModifier) {
-          UsernameField(
-              username = uiState.username,
-              isEditing = isEditingUsername,
-              editedValue = editedUsername,
-              onValueChange = { editedUsername = it },
-              onEditClick = {
-                isEditingUsername = true
-                editedUsername = uiState.username
-              },
-              onCancelClick = {
-                isEditingUsername = false
-                editedUsername = ""
-              },
-              onSaveClick = {
-                if (validateUsername(editedUsername, uiState.username, accountViewModel))
-                    isEditingUsername = false
-              })
-        }
+              Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
+              Box(modifier = contentModifier) {
+                UsernameField(
+                    username = uiState.username,
+                    isEditing = isEditingUsername,
+                    editedValue = editedUsername,
+                    onValueChange = { editedUsername = it },
+                    onEditClick = {
+                      isEditingUsername = true
+                      editedUsername = uiState.username
+                    },
+                    onCancelClick = {
+                      isEditingUsername = false
+                      editedUsername = ""
+                    },
+                    onSaveClick = {
+                      if (validateUsername(editedUsername, uiState.username, accountViewModel)) {
+                        isEditingUsername = false
+                      }
+                    })
+              }
 
-        Box(modifier = contentModifier) {
-          CommonTextField(
-              value = uiState.googleAccountName,
-              placeholder = "Your email address",
-              onChange = {},
-              label = "Google Account",
-              readOnly = true,
-              modifier = Modifier.testTag(UiTestTags.TAG_GOOGLE_FIELD))
-        }
+              Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
+              Box(modifier = contentModifier) {
+                CommonTextField(
+                    value = uiState.googleAccountName,
+                    placeholder = "Your email address",
+                    onChange = {},
+                    label = "Google Account",
+                    readOnly = true,
+                    modifier = Modifier.testTag(UiTestTags.TAG_GOOGLE_FIELD))
+              }
 
-        Box(modifier = contentModifier) {
-          LocationField(
-              uiState = uiState,
-              locationUiState = locationUiState,
-              viewModel = accountViewModel,
-              onGPSClick = {
-                if (LocationUtils.hasLocationPermission(context)) {
-                  accountViewModel.onLocationPermissionGranted()
-                } else {
-                  requestLocationPermission()
-                }
-              })
-        }
+              Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
+              Box(modifier = contentModifier) {
+                LocationField(
+                    uiState = uiState,
+                    locationUiState = locationUiState,
+                    viewModel = accountViewModel,
+                    onGPSClick = {
+                      if (LocationUtils.hasLocationPermission(context)) {
+                        accountViewModel.onLocationPermissionGranted()
+                      } else {
+                        locationPermissionLauncher.launch(
+                            Manifest.permission.ACCESS_COARSE_LOCATION)
+                      }
+                    })
+              }
 
-        Box(modifier = contentModifier) {
-          PrivacyToggleRow(
-              isPrivate = uiState.isPrivate,
-              onToggle = onToggle,
-              showPrivacyHelp = uiState.showPrivacyHelp,
-              onHelpClick = onHelpClick,
-              onHelpDismiss = onHelpDismiss,
-              modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
-        }
+              Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+              Box(modifier = contentModifier) {
+                PrivacyToggleRow(
+                    isPrivate = uiState.isPrivate,
+                    onToggle = onToggle,
+                    showPrivacyHelp = uiState.showPrivacyHelp,
+                    onHelpClick = onHelpClick,
+                    onHelpDismiss = onHelpDismiss,
+                    modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+              }
 
-        Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
-          ActionButton(
-              onButtonClick = onSignOutClick,
-              modifier = Modifier.padding(bottom = 12.dp).testTag(UiTestTags.TAG_SIGNOUT_BUTTON),
-              buttonText = "Sign Out")
+              Spacer(modifier = Modifier.height(24.dp))
+
+              Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
+                ActionButton(
+                    onButtonClick = onSignOutClick,
+                    modifier =
+                        Modifier.padding(bottom = 12.dp).testTag(UiTestTags.TAG_SIGNOUT_BUTTON),
+                    buttonText = "Sign Out")
+              }
+            }
+
+        if (uiState.isLoading) {
+          LoadingOverlay()
         }
       }
+
+  // Profile picture editor dialog
+  ProfilePictureEditor(
+      viewModel = accountViewModel,
+      context = context,
+      showImageSourceDialog = showImageSourceDialog,
+      onShowImageSourceDialogChange = { showImageSourceDialog = it })
 }
-
-// Small helpers to create remembered launchers and keep AccountScreenContent concise
-@Composable
-private fun rememberImagePickerLauncher(onPicked: (String) -> Unit) =
-    rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let { onPicked(it.toString()) } })
-
-@Composable
-private fun rememberLocationPermissionLauncher(onGranted: () -> Unit, onDenied: () -> Unit) =
-    rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted -> if (isGranted) onGranted() else onDenied() })
 
 @Composable
 private fun AvatarSection(

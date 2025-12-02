@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
@@ -346,7 +347,7 @@ fun PriceField(
       },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
-      textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
@@ -418,7 +419,7 @@ fun NotesField(
       },
       label = { Text("Notes") },
       placeholder = { Text(placeholder) },
-      textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       supportingText =
           if (showCounter) {
@@ -484,17 +485,17 @@ fun BoxScope.ItemsImagePreview(
 @Composable
 fun commonTextFieldColors() =
     OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
-        disabledBorderColor = MaterialTheme.colorScheme.tertiary,
+        focusedBorderColor = Tertiary,
+        unfocusedBorderColor = Tertiary,
+        disabledBorderColor = Tertiary,
         errorBorderColor = MaterialTheme.colorScheme.error,
-        cursorColor = MaterialTheme.colorScheme.primary,
-        focusedLabelColor = MaterialTheme.colorScheme.primary,
-        unfocusedLabelColor = MaterialTheme.colorScheme.primary,
-        focusedPlaceholderColor = MaterialTheme.colorScheme.primary,
-        unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary,
-        focusedTextColor = MaterialTheme.colorScheme.primary,
-        unfocusedTextColor = MaterialTheme.colorScheme.primary)
+        cursorColor = Primary,
+        focusedLabelColor = Primary,
+        unfocusedLabelColor = Primary,
+        focusedPlaceholderColor = Primary,
+        unfocusedPlaceholderColor = Primary,
+        focusedTextColor = Primary,
+        unfocusedTextColor = Primary)
 
 /**
  * Shared dropdown used by condition/currency pickers, wiring label, placeholder, and optional
@@ -523,10 +524,10 @@ private fun SelectionDropdownField(
                     if (expanded) Icons.Filled.KeyboardArrowDown
                     else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = visuals.toggleContentDescription,
-                tint = MaterialTheme.colorScheme.primary)
+                tint = Primary)
           }
         },
-        textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        textStyle = Typography.bodyMedium.copy(color = Primary),
         colors = commonTextFieldColors(),
         modifier = Modifier.fillMaxWidth().testTag(visuals.textFieldTag))
     val menuModifier =
@@ -536,11 +537,7 @@ private fun SelectionDropdownField(
         expanded = expanded, onDismissRequest = { expanded = false }, modifier = menuModifier) {
           visuals.clearOptionLabel?.let { clearLabel ->
             DropdownMenuItem(
-                text = {
-                  Text(
-                      clearLabel,
-                      style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
-                },
+                text = { Text(clearLabel, style = Typography.bodyMedium.copy(color = Primary)) },
                 onClick = {
                   onOptionSelected("")
                   expanded = false
@@ -548,11 +545,7 @@ private fun SelectionDropdownField(
           }
           options.forEach { opt ->
             DropdownMenuItem(
-                text = {
-                  Text(
-                      opt,
-                      style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
-                },
+                text = { Text(opt, style = Typography.bodyMedium.copy(color = Primary)) },
                 onClick = {
                   onOptionSelected(opt)
                   expanded = false
@@ -640,7 +633,7 @@ private fun SuggestionInputField(
             onFocusChanged(it.isFocused)
           },
       singleLine = true,
-      textStyle = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium.copy(color = Primary),
       colors = commonTextFieldColors(),
       supportingText = supportingText)
 }
@@ -660,11 +653,7 @@ private fun SuggestionsMenu(
       properties = PopupProperties(focusable = false)) {
         options.forEach { suggestion ->
           DropdownMenuItem(
-              text = {
-                Text(
-                    suggestion,
-                    style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
-              },
+              text = { Text(suggestion, style = Typography.bodyMedium.copy(color = Primary)) },
               onClick = { onSelect(suggestion) })
         }
       }

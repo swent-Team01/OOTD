@@ -33,6 +33,7 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.BackArrow
@@ -65,7 +66,7 @@ private fun ImagePreviewBox(imageUri: Uri) {
       modifier =
           Modifier.size(220.dp)
               .clip(RoundedCornerShape(16.dp))
-              .border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+              .border(4.dp, Primary, RoundedCornerShape(16.dp))
               .background(Color.White)
               .testTag(FitCheckScreenTestTags.IMAGE_PREVIEW),
       contentAlignment = Alignment.Center) {
@@ -271,8 +272,7 @@ private fun FitCheckScreenContent(
                     .height(80.dp)
                     .padding(horizontal = 24.dp, vertical = 16.dp)
                     .testTag(FitCheckScreenTestTags.NEXT_BUTTON),
-            colors =
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary),
             shape = RoundedCornerShape(16.dp)) {
               Row(
                   verticalAlignment = Alignment.CenterVertically,
@@ -316,9 +316,7 @@ private fun FitCheckScreenContent(
                   onClick = { showDialog = true },
                   shape = RoundedCornerShape(24.dp),
                   modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = MaterialTheme.colorScheme.primary)) {
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
                     Text("Add Fit Photo", color = Color.White)
                   }
 

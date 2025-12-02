@@ -71,7 +71,10 @@ import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.map.Location
+import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionIconButton
@@ -232,13 +235,13 @@ fun PreviewItemScreenContent(
                           Modifier.height(47.dp)
                               .width(140.dp)
                               .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                      border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary)) {
+                      border = BorderStroke(2.dp, Tertiary)) {
                         Icon(
                             Icons.Default.Check,
                             contentDescription = "Post (add items first)",
-                            tint = MaterialTheme.colorScheme.primary)
+                            tint = Primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Post", color = MaterialTheme.colorScheme.primary)
+                        Text("Post", color = Primary)
                       }
                 }
                 Button(
@@ -289,7 +292,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
               .animateContentSize()
               .testTag(PreviewItemScreenTestTags.getTestTagForItem(item)),
       shape = MaterialTheme.shapes.large,
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+      colors = CardDefaults.cardColors(containerColor = Secondary),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
         Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
           Row(
@@ -314,36 +317,27 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                           text = item.category,
                           style =
                               Typography.titleLarge.copy(
-                                  fontWeight = FontWeight.SemiBold,
-                                  color = MaterialTheme.colorScheme.onSurface))
+                                  fontWeight = FontWeight.SemiBold, color = OnSurface))
                       Text(
                           text = item.type ?: "Item Type",
-                          style =
-                              Typography.bodyMedium.copy(
-                                  color = MaterialTheme.colorScheme.onSurface))
+                          style = Typography.bodyMedium.copy(color = OnSurface))
                       AnimatedVisibility(visible = isExpanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                           item.brand?.let {
                             Text(
                                 text = it,
-                                style =
-                                    Typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                style = Typography.bodySmall.copy(color = OnSurfaceVariant))
                           }
 
                           if (item.material.isNotEmpty()) {
                             Text(
                                 text = item.material.joinToString { m -> m?.name ?: "" },
-                                style =
-                                    Typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                style = Typography.bodySmall.copy(color = OnSurfaceVariant))
                           }
                           item.price?.let {
                             Text(
                                 text = "CHF ${String.format("%.2f", it)}",
-                                style =
-                                    Typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                style = Typography.bodySmall.copy(color = OnSurfaceVariant))
                           }
                           item.link?.let { Text(text = it, style = Typography.bodySmall) }
                         }
@@ -359,7 +353,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     contentDescription = "Edit item",
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.EDIT_ITEM_BUTTON),
-                    tint = MaterialTheme.colorScheme.onSurface)
+                    tint = OnSurface)
 
                 ActionIconButton(
                     onClick = onRemove,
@@ -373,7 +367,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     icon = expandIcon,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     modifier = Modifier.testTag(PreviewItemScreenTestTags.EXPAND_ICON),
-                    tint = MaterialTheme.colorScheme.onSurface)
+                    tint = OnSurface)
               }
         }
       }
@@ -477,10 +471,8 @@ private fun EmptyItemPlaceholder() {
             text = "What are you wearing today ?",
             style =
                 Typography.titleLarge.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant),
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    fontSize = 20.sp, fontWeight = FontWeight.Medium, color = OnSurfaceVariant),
+            color = OnSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         ShowText(
             text = "Don't forget to add your items",

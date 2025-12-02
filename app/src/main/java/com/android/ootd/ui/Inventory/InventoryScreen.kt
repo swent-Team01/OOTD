@@ -13,7 +13,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -37,6 +36,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.theme.OnPrimaryContainer
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -115,7 +115,7 @@ fun InventoryScreen(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Item",
-                    tint = MaterialTheme.colorScheme.onPrimary)
+                    tint = OnPrimaryContainer)
               }
 
           Spacer(modifier.padding(10.dp))
@@ -129,7 +129,7 @@ fun InventoryScreen(
                         if (uiState.isSearchActive) Icons.Default.Close else Icons.Default.Search,
                     contentDescription =
                         if (uiState.isSearchActive) "Close Search" else "Search Item",
-                    tint = MaterialTheme.colorScheme.onPrimary)
+                    tint = Primary)
               }
         }
       },

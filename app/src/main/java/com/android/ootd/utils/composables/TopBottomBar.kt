@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -23,6 +22,7 @@ import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 
 /**
@@ -89,7 +89,7 @@ fun BottomNavigationMenu(
               )
               .padding(top = 4.dp)
               .testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
-      containerColor = colorScheme.background,
+      containerColor = Background,
   ) {
     tabs.forEach { tab ->
       val isSelected = tab == selectedTab
@@ -103,8 +103,8 @@ fun BottomNavigationMenu(
           onClick = { onTabSelected(tab) },
           colors =
               NavigationBarItemDefaults.colors(
-                  selectedIconColor = colorScheme.primary,
-                  unselectedIconColor = colorScheme.onBackground,
+                  selectedIconColor = Primary,
+                  unselectedIconColor = Secondary,
                   indicatorColor = Color.Transparent),
           modifier = Modifier.padding(top = 8.dp).testTag(NavigationTestTags.getTabTestTag(tab)))
     }

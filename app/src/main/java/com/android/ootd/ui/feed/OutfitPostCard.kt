@@ -28,7 +28,12 @@ import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.theme.OnSecondaryContainer
 import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.OnSurfaceVariant
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.CenteredEmptyState
 import com.android.ootd.utils.composables.ProfilePicture
@@ -71,8 +76,8 @@ private fun ProfileSection(post: OutfitPost) {
       // Circular indicator for remaining lifetime
       CircularProgressIndicator(
           progress = { remainingFraction },
-          color = MaterialTheme.colorScheme.primary,
-          trackColor = MaterialTheme.colorScheme.surfaceVariant,
+          color = Primary,
+          trackColor = OnSurfaceVariant,
           strokeWidth = 3.dp,
           modifier = Modifier.size(44.dp))
 
@@ -95,7 +100,7 @@ private fun ProfileSection(post: OutfitPost) {
       Text(
           text = post.name,
           style = Typography.titleLarge,
-          color = MaterialTheme.colorScheme.primary,
+          color = Primary,
           modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
 
       // Remaining lifetime label
@@ -117,7 +122,7 @@ private fun ProfileSection(post: OutfitPost) {
       Text(
           text = remainingText,
           style = Typography.bodySmall,
-          color = MaterialTheme.colorScheme.tertiary,
+          color = Tertiary,
           modifier = Modifier.testTag(tag))
     }
   }
@@ -141,15 +146,13 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
           Icon(
               imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
               contentDescription = if (isLiked) "Liked" else "Unliked",
-              tint =
-                  if (isLiked) MaterialTheme.colorScheme.error
-                  else MaterialTheme.colorScheme.onSecondaryContainer)
+              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer)
         }
     Spacer(modifier = Modifier.width(1.dp))
     Text(
         text = likeCount.toString(),
         style = Typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        color = OnSecondaryContainer,
         modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
   }
 }
@@ -211,7 +214,7 @@ private fun DescriptionAndButton(
         Text(
             text = descriptionText,
             style = Typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = Primary,
             maxLines = if (expanded) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis,
             modifier =
@@ -226,8 +229,7 @@ private fun DescriptionAndButton(
             shape = RoundedCornerShape(50),
             colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary),
+                    containerColor = Primary, contentColor = MaterialTheme.colorScheme.onPrimary),
             modifier = Modifier.testTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).height(36.dp)) {
               Text("See fit", style = Typography.bodySmall)
             }
@@ -267,7 +269,7 @@ fun OutfitPostCard(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+            colors = CardDefaults.cardColors(containerColor = Secondary),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
               Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 ProfileSection(post)
@@ -335,7 +337,7 @@ fun PostLocation(location: Location) {
     Text(
         text = displayName,
         style = Typography.bodySmall,
-        color = MaterialTheme.colorScheme.tertiary,
+        color = Tertiary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier =
