@@ -2,9 +2,7 @@ package com.android.ootd.ui.register
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
@@ -12,8 +10,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +35,7 @@ import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.utils.composables.CommonTextField
 
 // Error messages (kept as constants to avoid repetition)
 internal const val ERROR_USERNAME = "Please enter a valid username"
@@ -131,23 +128,12 @@ internal fun UsernameField(
     isError: Boolean,
     isLoading: Boolean
 ) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
 
-  OutlinedTextField(
+  CommonTextField(
       value = value,
-      onValueChange = onValueChange,
-      label = {
-        Box(
-            modifier =
-                Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)) {
-              Text(text = "Username", style = typography.bodySmall, color = colors.tertiary)
-            }
-      },
-      placeholder = {
-        Text(text = "Enter your username", color = fieldState.textColor.value, fontFamily = Bodoni)
-      },
+      onChange = onValueChange,
+      label = "Username",
+      placeholder = "Enter your username",
       singleLine = true,
       modifier =
           Modifier.fillMaxWidth()
@@ -176,23 +162,12 @@ internal fun DateOfBirthField(
     isLoading: Boolean,
     onShowDatePicker: () -> Unit
 ) {
-  val colors = MaterialTheme.colorScheme
-  val typography = MaterialTheme.typography
 
-  OutlinedTextField(
+  CommonTextField(
       value = value,
-      onValueChange = {},
-      label = {
-        Box(
-            modifier =
-                Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)) {
-              Text(text = "Date of Birth", style = typography.bodySmall, color = colors.tertiary)
-            }
-      },
-      placeholder = {
-        Text(text = "DD/MM/YYYY", color = fieldState.textColor.value, fontFamily = Bodoni)
-      },
+      onChange = {},
+      label = "Date of Birth",
+      placeholder = "DD/MM/YYYY",
       readOnly = true,
       singleLine = true,
       modifier =
@@ -236,7 +211,6 @@ internal fun LocationField(
       textGPSButton = "Use current location (GPS)",
       textLocationField = "Search Location",
       onGPSClick = onGPSClick,
-      textColor = fieldState.textColor.value,
       isError = isError && !fieldState.focused.value,
       onFocusChanged = { isFocused ->
         fieldState.focused.value = isFocused

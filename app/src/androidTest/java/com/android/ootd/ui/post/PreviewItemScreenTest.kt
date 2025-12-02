@@ -517,4 +517,18 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
     // Verify loading overlay is NOT shown (isLoading = false, enablePreview = true)
     txt("Publishing your outfit...").assertDoesNotExist()
   }
+
+  @Test
+  fun togglePublicFeed_existsAndIsToggleable() {
+    setContent()
+
+    // Check if the text "Post to Public Feed" exists
+    txt("Post to Public Feed").assertIsDisplayed()
+
+    // Find the switch (it's toggleable) and click it
+    composeTestRule
+        .onNode(androidx.compose.ui.test.isToggleable())
+        .assertIsDisplayed()
+        .performClick()
+  }
 }

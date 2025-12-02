@@ -103,6 +103,23 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     assertTrue(result.isEmpty())
   }
 
+  @Test
+  fun getPublicFeed_returnsOnlyPublicPosts() = runTest {
+    val publicPost1 = samplePost("public1", ts = 2000L).copy(isPublic = true)
+    val publicPost2 = samplePost("public2", ts = 1000L).copy(isPublic = true)
+    val privatePost = samplePost("private1", ts = 3000L).copy(isPublic = false)
+
+    feedRepository.addPost(publicPost1)
+    feedRepository.addPost(publicPost2)
+    feedRepository.addPost(privatePost)
+
+    val result = feedRepository.getPublicFeed()
+
+    assertEquals(2, result.size)
+    assertEquals("public1", result[0].postUID) // Most recent first
+    assertEquals("public2", result[1].postUID)
+  }
+
   // -------- Error handling --------
 
   @Test

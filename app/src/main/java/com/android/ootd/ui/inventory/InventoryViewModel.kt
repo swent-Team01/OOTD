@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

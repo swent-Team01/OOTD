@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth

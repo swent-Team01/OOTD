@@ -68,7 +68,7 @@ class OutfitPostRepositoryFirestore(
             "itemsID" to post.itemsID,
             "timestamp" to post.timestamp,
             "location" to mapFromLocation(post.location),
-        )
+            "isPublic" to post.isPublic)
 
     try {
 
@@ -208,6 +208,8 @@ class OutfitPostRepositoryFirestore(
             else -> throw MissingLocationException()
           }
 
+      val isPublic = doc.getBoolean("isPublic") ?: false
+
       OutfitPost(
           postUID = doc.getString("postUID") ?: "",
           name = doc.getString("name") ?: "",
@@ -218,7 +220,8 @@ class OutfitPostRepositoryFirestore(
           itemsID = itemsID,
           timestamp = doc.getLong("timestamp") ?: 0L,
           location = location,
-          comments = comments)
+          comments = comments,
+          isPublic = isPublic)
     } catch (e: Exception) {
       Log.e(OUTFITPOST_TAG, "Error converting document ${doc.id} to OutfitPost", e)
       null

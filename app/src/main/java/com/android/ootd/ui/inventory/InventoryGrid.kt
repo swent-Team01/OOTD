@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
 /**
@@ -54,13 +54,12 @@ fun InventoryGrid(
             item(span = { GridItemSpan(3) }) {
               Text(
                   text = category.uppercase(),
-                  style =
-                      MaterialTheme.typography.titleLarge.copy(
-                          fontWeight = FontWeight.Bold, color = Primary),
+                  style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                   modifier =
                       Modifier.fillMaxWidth()
                           .padding(top = 16.dp, bottom = 8.dp)
-                          .testTag("categoryHeader_$category"))
+                          .testTag("categoryHeader_$category"),
+                  color = Primary)
             }
 
             // Items in this category
@@ -82,9 +81,7 @@ fun InventoryGrid(
           item(span = { GridItemSpan(3) }) {
             Text(
                 text = "OTHER",
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold, color = Primary),
+                style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier =
                     Modifier.fillMaxWidth()
                         .padding(top = 16.dp, bottom = 8.dp)

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -47,16 +46,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.ui.Inventory.InventoryGrid
 import com.android.ootd.ui.feed.SeeItemDetailsDialog
+import com.android.ootd.ui.inventory.InventoryGrid
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.DisplayUserPosts
-import com.android.ootd.utils.LoadingScreen
-import com.android.ootd.utils.OOTDTopBar
-import com.android.ootd.utils.ProfilePicture
-import com.android.ootd.utils.SettingsButton
-import com.android.ootd.utils.ShowText
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.DisplayUserPosts
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.SettingsButton
+import com.android.ootd.utils.composables.ShowText
 
 object AccountPageTestTags {
   const val TITLE_TEXT = "accountPageTitleText"
@@ -194,7 +194,7 @@ private fun AccountHeader(
 
   ShowText(
       text = username,
-      style = typography.displayLarge,
+      style = Typography.displayLarge,
       modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
       color = colorScheme.primary)
 
@@ -202,7 +202,7 @@ private fun AccountHeader(
 
   ShowText(
       text = "$friendCount friends",
-      style = typography.bodyLarge,
+      style = Typography.bodyLarge,
       modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
 
   Spacer(modifier = Modifier.height(30.dp))
@@ -270,7 +270,7 @@ private fun AccountTabBody(
 private fun PostsTabContent(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
   ShowText(
       text = "Your posts :",
-      style = typography.bodyLarge,
+      style = Typography.bodyLarge,
       modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
       textAlign = TextAlign.Left,
       fontFamily = Bodoni)
@@ -296,7 +296,7 @@ private fun StarredTabContent(
   if (starredItems.isEmpty()) {
     ShowText(
         text = "Star items from your inventory to build your wishlist.",
-        style = typography.bodyMedium,
+        style = Typography.bodyMedium,
         color = colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center)
   } else {
