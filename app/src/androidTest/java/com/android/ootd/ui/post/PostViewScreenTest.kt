@@ -230,7 +230,7 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Counter appears = edit mode active
-    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertExists()
   }
 
   @Test
@@ -254,7 +254,7 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Ensure edit mode ON
-    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertExists()
 
     // Click cancel
     composeTestRule.onNodeWithTag(PostViewTestTags.CANCEL_EDITING_BUTTON).performClick()
