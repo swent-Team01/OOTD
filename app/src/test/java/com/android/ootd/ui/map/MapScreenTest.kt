@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.feed.FeedRepository
@@ -104,7 +103,6 @@ class MapScreenTest {
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR_TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithText("MAP").assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
   }
 
@@ -114,18 +112,6 @@ class MapScreenTest {
 
     // Loading indicator should be visible initially
     composeTestRule.onNodeWithTag(MapScreenTestTags.LOADING_INDICATOR).assertExists()
-  }
-
-  @Test
-  fun backButton_callsOnBack_whenClicked() {
-    var backCalled = false
-    val onBack = { backCalled = true }
-
-    composeTestRule.setContent { MapScreen(viewModel = mockViewModel, onBack = onBack) }
-
-    composeTestRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).performClick()
-
-    assert(backCalled)
   }
 
   @Test

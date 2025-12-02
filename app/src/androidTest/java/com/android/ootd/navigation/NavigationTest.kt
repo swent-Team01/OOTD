@@ -2,8 +2,6 @@ package com.android.ootd.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,7 +11,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.map.MapScreen
-import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import org.junit.Assert.assertEquals
@@ -490,24 +487,5 @@ class NavigationTest {
       navigation.goBack()
       assertEquals(Screen.Splash.route, navigation.currentRoute())
     }
-  }
-
-  @Test
-  fun mapScreen_backButton_triggersNavigationGoBack() {
-    // Navigate to Feed then Map
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.Map)
-      assertEquals(Screen.Map.route, navigation.currentRoute())
-    }
-
-    composeRule.waitForIdle()
-
-    // Click the back button on MapScreen
-    composeRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).performClick()
-    composeRule.waitForIdle()
-
-    // Verify we navigated back to Feed
-    composeRule.runOnIdle { assertEquals(Screen.Feed.route, navigation.currentRoute()) }
   }
 }

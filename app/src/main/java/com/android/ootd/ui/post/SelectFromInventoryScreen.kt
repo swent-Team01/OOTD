@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.Item
-import com.android.ootd.ui.Inventory.InventoryGrid
+import com.android.ootd.ui.inventory.InventoryGrid
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
