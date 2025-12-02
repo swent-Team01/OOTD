@@ -12,10 +12,9 @@ import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.LikesRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
-import com.google.firebase.auth.FirebaseAuth
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
-import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import java.time.LocalDate
 import java.time.ZoneId

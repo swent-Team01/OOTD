@@ -72,8 +72,7 @@ fun FeedScreen(
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
       isPublicFeed = uiState.isPublicFeed,
       onToggleFeed = { feedViewModel.toggleFeedType() },
-      userDataMap = uiState.userDataMap
-    )
+      userDataMap = uiState.userDataMap)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
