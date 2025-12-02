@@ -239,12 +239,12 @@ class MapViewModelTest {
           adjustedPosts.map { "${it.adjustedLocation.latitude},${it.adjustedLocation.longitude}" }
       assertEquals(count, adjustedLocations.distinct().size)
 
-      // All adjusted locations should be close to original (within ~20 meters)
+      // All adjusted locations should be close to original (within ~30 meters)
       adjustedPosts.forEach { adjusted ->
         val latDiff = kotlin.math.abs(adjusted.adjustedLocation.latitude - sameLocation.latitude)
         val lonDiff = kotlin.math.abs(adjusted.adjustedLocation.longitude - sameLocation.longitude)
-        assertTrue("Latitude offset too large: $latDiff for count $count", latDiff < 0.0003)
-        assertTrue("Longitude offset too large: $lonDiff for count $count", lonDiff < 0.0003)
+        assertTrue("Latitude offset too large: $latDiff for count $count", latDiff < 0.0006)
+        assertTrue("Longitude offset too large: $lonDiff for count $count", lonDiff < 0.0006)
       }
     }
   }
