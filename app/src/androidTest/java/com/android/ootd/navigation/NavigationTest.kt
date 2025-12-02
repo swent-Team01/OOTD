@@ -60,22 +60,45 @@ class NavigationTest {
         composable(Screen.Feed.route) { /* minimal screen */ }
         composable(Screen.AccountEdit.route) { /* minimal screen */ }
         composable(Screen.AccountView.route) { /* minimal screen */ }
-        composable(Screen.Map.route) { MapScreen(onPostClick = {}) }
 
-        // Add MapWithLocation route
+        // Single Map composable with optional location parameters
         composable(
-            route = Screen.MapWithLocation.route,
+            route = Screen.Map.route,
             arguments =
                 listOf(
-                    navArgument("lat") { type = NavType.StringType },
-                    navArgument("lon") { type = NavType.StringType },
-                    navArgument("name") { type = NavType.StringType })) { backStackEntry ->
-              val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
-              val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
-              val name = backStackEntry.arguments?.getString("name") ?: ""
-              val focusLocation = Location(latitude = lat, longitude = lon, name = name)
+                    navArgument("lat") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
+                    },
+                    navArgument("lon") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
+                    },
+                    navArgument("name") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
+                    })) { backStackEntry ->
+              val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+              val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
+              val name = backStackEntry.arguments?.getString("name")
+
+              val focusLocation =
+                  if (lat != null && lon != null && name != null) {
+                    Location(latitude = lat, longitude = lon, name = name)
+                  } else {
+                    null
+                  }
+
               MapScreen(
-                  viewModel = viewModel(factory = MapViewModelFactory(focusLocation)),
+                  viewModel =
+                      if (focusLocation != null) {
+                        viewModel(factory = MapViewModelFactory(focusLocation))
+                      } else {
+                        viewModel()
+                      },
                   onPostClick = { postId -> navigation.navigateTo(Screen.PostView(postId)) })
             }
 
@@ -484,12 +507,12 @@ class NavigationTest {
   fun navigationActions_mapNavigation_basicFlowsAndBackStack() {
     composeRule.runOnIdle {
       // Test basic map navigation
-      navigation.navigateTo(Screen.Map)
+      navigation.navigateTo(Screen.Map())
       assertEquals(Screen.Map.route, navigation.currentRoute())
 
       // Navigate to Feed then back to Map
       navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.Map)
+      navigation.navigateTo(Screen.Map())
       assertEquals(Screen.Map.route, navigation.currentRoute())
     }
 
@@ -503,20 +526,19 @@ class NavigationTest {
       assertEquals(Screen.Feed.route, navigation.currentRoute())
 
       // Test sign out clears stack
-      navigation.navigateTo(Screen.Map)
+      navigation.navigateTo(Screen.Map())
       navigation.navigateTo(Screen.Authentication)
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
     }
   }
 
-  // MapWithLocation Navigation Tests
+  // Map with Location Navigation Tests
   @Test
   fun navigationActions_mapWithLocation_parameterExtractionAndSpecialChars() {
     composeRule.runOnIdle {
-      // Test basic route format
+      // Test basic route format with location parameters
       navigation.navigateTo(
-          Screen.MapWithLocation(
-              latitude = 46.5197, longitude = 6.5682, locationName = "EPFL, Lausanne"))
+          Screen.Map(latitude = 46.5197, longitude = 6.5682, locationName = "EPFL, Lausanne"))
 
       val currentRoute = navigation.currentRoute()
       assertTrue(currentRoute.startsWith("map?"))
@@ -531,7 +553,7 @@ class NavigationTest {
       val testName = "Test Location"
 
       navigation.navigateTo(
-          Screen.MapWithLocation(latitude = testLat, longitude = testLon, locationName = testName))
+          Screen.Map(latitude = testLat, longitude = testLon, locationName = testName))
 
       var args = navController.currentBackStackEntry?.arguments
       val lat = args?.getString("lat")?.toDoubleOrNull()
@@ -547,7 +569,7 @@ class NavigationTest {
       val locationWithSpecialChars = "Café & Restaurant, Zürich 🇨🇭"
 
       navigation.navigateTo(
-          Screen.MapWithLocation(
+          Screen.Map(
               latitude = 47.3769, longitude = 8.5417, locationName = locationWithSpecialChars))
 
       args = navController.currentBackStackEntry?.arguments
@@ -560,10 +582,10 @@ class NavigationTest {
   @Test
   fun navigationActions_mapWithLocation_navigationFlows() {
     composeRule.runOnIdle {
-      // Test Feed to MapWithLocation
+      // Test Feed to Map with location
       navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(
-          Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
+          Screen.Map(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
 
       assertTrue(navigation.currentRoute().startsWith("map?"))
 
@@ -573,13 +595,13 @@ class NavigationTest {
 
       // Test different locations have different routes
       navigation.navigateTo(
-          Screen.MapWithLocation(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
+          Screen.Map(latitude = 46.5197, longitude = 6.5682, locationName = "Lausanne"))
       val args1 = navController.currentBackStackEntry?.arguments?.getString("name")
 
       navigation.goBack()
 
       navigation.navigateTo(
-          Screen.MapWithLocation(latitude = 47.3769, longitude = 8.5417, locationName = "Zurich"))
+          Screen.Map(latitude = 47.3769, longitude = 8.5417, locationName = "Zurich"))
       val args2 = navController.currentBackStackEntry?.arguments?.getString("name")
 
       assertNotEquals(args1, args2)

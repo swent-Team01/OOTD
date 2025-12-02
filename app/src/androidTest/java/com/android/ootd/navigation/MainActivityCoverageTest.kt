@@ -157,7 +157,7 @@ class MainActivityCoverageTest {
             }
 
             testNavigation.navigateTo(
-                Screen.MapWithLocation(
+                Screen.Map(
                     latitude = location.latitude,
                     longitude = location.longitude,
                     locationName = location.name))
@@ -165,13 +165,25 @@ class MainActivityCoverageTest {
         }
 
         composable(
-            route = Screen.MapWithLocation.route,
+            route = Screen.Map.route,
             arguments =
                 listOf(
-                    navArgument("lat") { type = NavType.StringType },
-                    navArgument("lon") { type = NavType.StringType },
-                    navArgument("name") { type = NavType.StringType })) {
-              // MapWithLocation composable
+                    navArgument("lat") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
+                    },
+                    navArgument("lon") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
+                    },
+                    navArgument("name") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
+                    })) {
+              // Map composable with optional location parameters
             }
       }
     }
