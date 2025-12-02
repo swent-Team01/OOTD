@@ -139,38 +139,20 @@ class OutfitPostRepositoryFirestore(
             timestamp = System.currentTimeMillis(),
             reactionImage = reactionImageUrl)
 
-    // Convert comment to a map for Firestore
-    val commentMap =
-        mapOf(
-            "commentId" to comment.commentId,
-            "userId" to comment.ownerId,
-            "text" to comment.text,
-            "timestamp" to comment.timestamp,
-            "reactionImageUrl" to comment.reactionImage)
-
     // Add comment to the post's comments array
     db.collection(POSTS_COLLECTION)
         .document(postId)
-        .update("comments", FieldValue.arrayUnion(commentMap))
+        .update("comments", FieldValue.arrayUnion(commentToMap(comment)))
         .await()
 
     return comment
   }
 
   override suspend fun deleteCommentFromPost(postId: String, comment: Comment) {
-    // Convert comment to map (must match exactly for arrayRemove to work)
-    val commentMap =
-        mapOf(
-            "commentId" to comment.commentId,
-            "userId" to comment.ownerId,
-            "text" to comment.text,
-            "timestamp" to comment.timestamp,
-            "reactionImageUrl" to comment.reactionImage)
-
     // Remove comment from Firestore array
     db.collection(POSTS_COLLECTION)
         .document(postId)
-        .update("comments", FieldValue.arrayRemove(commentMap))
+        .update("comments", FieldValue.arrayRemove(commentToMap(comment)))
         .await()
 
     // Delete the reaction image from Storage (if it exists)
@@ -185,6 +167,19 @@ class OutfitPostRepositoryFirestore(
         // we don't throw, comment is already deleted from Firestore
       }
     }
+  }
+
+  /**
+   * Converts a [Comment] object to a Firestore-compatible map. This ensures consistent mapping
+   * between Comment objects and Firestore documents.
+   */
+  private fun commentToMap(comment: Comment): Map<String, Any> {
+    return mapOf(
+        "commentId" to comment.commentId,
+        "userId" to comment.ownerId,
+        "text" to comment.text,
+        "timestamp" to comment.timestamp,
+        "reactionImageUrl" to comment.reactionImage)
   }
 
   /** Converts a Firestore [DocumentSnapshot] into an [OutfitPost] model. */
