@@ -21,11 +21,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeout
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
 private const val ITEMS_PATH = "images/items"
@@ -61,7 +62,7 @@ private fun DocumentSnapshot.toAccount(): Account {
   val isPrivate = getBoolean("isPrivate") ?: false
 
   // Validate that friendUids is actually a List, throw if not
-  val friendUidsRaw = get("friendUids")
+  val friendUidsRaw = this["friendUids"]
   val friends =
       when {
         friendUidsRaw == null -> emptyList()
@@ -72,7 +73,7 @@ private fun DocumentSnapshot.toAccount(): Account {
       }
 
   // Parse location if present, otherwise throw MissingLocationException
-  val locationRaw = get("location")
+  val locationRaw = this["location"]
   val location =
       when {
         locationRaw == null -> throw MissingLocationException()
@@ -81,7 +82,7 @@ private fun DocumentSnapshot.toAccount(): Account {
       }
 
   // Parse itemsUids if present
-  val itemsUidsRaw = get("itemsUids")
+  val itemsUidsRaw = this["itemsUids"]
   val itemsUids =
       when {
         itemsUidsRaw == null -> emptyList()
@@ -89,7 +90,7 @@ private fun DocumentSnapshot.toAccount(): Account {
         else -> emptyList()
       }
 
-  val starredRaw = get("starredItemUids")
+  val starredRaw = this["starredItemUids"]
   val starred =
       when {
         starredRaw == null -> emptyList()
@@ -119,17 +120,9 @@ class AccountRepositoryFirestore(
     private val outfitPostRepository: OutfitPostRepository = OutfitPostRepositoryProvider.repository
 ) : AccountRepository {
 
-  // In-memory cache for items list - updated optimistically for offline support
-  // ConcurrentHashMap and CopyOnWriteArrayList ensure thread-safe operations across coroutines
-  private val itemsListCache =
-      java.util.concurrent.ConcurrentHashMap<
-          String, java.util.concurrent.CopyOnWriteArrayList<String>>()
-  private val starredListCache =
-      java.util.concurrent.ConcurrentHashMap<
-          String, java.util.concurrent.CopyOnWriteArrayList<String>>()
-
   companion object {
 
+    private const val TIMEOUT = 2000L
     private const val TAG = "AccountRepositoryFirestore"
   }
 
@@ -396,11 +389,6 @@ class AccountRepositoryFirestore(
                   "profilePicture" to newProfilePic,
                   "location" to mapFromLocation(newLocation)))
           .await()
-
-      Log.d(
-          TAG,
-          "Successfully updated account with UID: $userID, new username $newUsername, " +
-              "birthdate $newBirthDate, profilePic $newProfilePic, location $newLocation")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
@@ -416,7 +404,6 @@ class AccountRepositoryFirestore(
 
       try {
         storage.reference.child("profile_pictures/$userID.jpg").delete().await()
-        Log.d(TAG, "Successfully deleted profile picture from storage for user: $userID")
       } catch (e: Exception) {
         Log.w(TAG, "Could not delete profile picture from storage (may not exist): ${e.message}")
       }
@@ -425,7 +412,6 @@ class AccountRepositoryFirestore(
           .document(userID)
           .update(mapOf("profilePicture" to ""))
           .await()
-      Log.d(TAG, "Successfully cleared profile picture link for user: $userID")
     } catch (e: NoSuchElementException) {
       Log.e(TAG, "User with userID $userID not found", e)
       throw UnknowUserID()
@@ -436,75 +422,32 @@ class AccountRepositoryFirestore(
   }
 
   override suspend fun getItemsList(userID: String): List<String> {
-    try {
-      // First check in-memory cache (for offline optimistic updates)
-      if (itemsListCache.containsKey(userID)) {
-        Log.d(TAG, "Returning items list from memory cache")
-        return itemsListCache[userID]?.toList() ?: emptyList()
-      }
+    return try {
+      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
 
-      // Try to read from Firestore cache first (offline-first pattern)
-      val document =
-          try {
-            db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.CACHE).await()
-          } catch (e: Exception) {
-            Log.w(TAG, "Cache read failed, trying default source: ${e.message}")
-            // If cache fails, try with default source (network or cache) with timeout
-            withTimeoutOrNull(2_000L) {
-              db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
-            }
-          }
-
-      if (document == null || !document.exists()) {
-        Log.w(
-            TAG,
-            "Account not found in cache or network for items list, returning cached or empty list")
-        return itemsListCache[userID]?.toList() ?: emptyList()
+      if (!document.exists()) {
+        Log.w(TAG, "Account not found for items list")
+        emptyList()
       } else {
-        // Extract itemsUids directly from document
         @Suppress("UNCHECKED_CAST")
-        val itemsList = (document.get("itemsUids") as? List<String>) ?: emptyList()
-        // Update memory cache with fetched data
-        itemsListCache[userID] = java.util.concurrent.CopyOnWriteArrayList(itemsList)
-        return itemsList
+        (document["itemsUids"] as? List<String>) ?: emptyList()
       }
     } catch (e: Exception) {
       Log.e(TAG, "Error getting items list for $userID: ${e.message}", e)
-      // Return cached list if available, otherwise empty
-      return itemsListCache[userID]?.toList() ?: emptyList()
+      emptyList()
     }
   }
 
   override suspend fun addItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
-
-      // Optimistically update memory cache immediately (synchronous)
-      if (!itemsListCache.containsKey(currentUserId)) {
-        val currentList = loadExistingItems(currentUserId)
-        itemsListCache[currentUserId] = java.util.concurrent.CopyOnWriteArrayList(currentList)
-        Log.d(TAG, "Initialized cache with ${currentList.size} existing items")
-      }
-      val itemsList = itemsListCache[currentUserId] ?: java.util.concurrent.CopyOnWriteArrayList()
-      if (!itemsList.contains(itemUid)) {
-        itemsList.add(itemUid)
-        Log.d(TAG, "Added item to memory cache (total: ${itemsList.size})")
-      }
-
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      // Queue Firestore update with timeout (will sync when online)
-      try {
-        withTimeoutOrNull(2_000L) {
-          userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await()
-        }
-        Log.d(TAG, "Item added to Firestore (or queued if offline)")
-      } catch (e: Exception) {
-        // Acceptable when offline - cache is already updated
-        Log.w(TAG, "Firestore update queued (offline): ${e.message}")
-      }
-
-      true // Cache is updated, that's what matters
+      withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await() }
+      true
+    } catch (e: TimeoutCancellationException) {
+      Log.w(TAG, "Account item add timed out (offline), queued.")
+      true
     } catch (e: Exception) {
       Log.e(TAG, "Error adding item: ${e.message}", e)
       false
@@ -514,26 +457,14 @@ class AccountRepositoryFirestore(
   override suspend fun removeItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
-
-      // Optimistically update memory cache immediately
-      itemsListCache[currentUserId]?.remove(itemUid)?.let {
-        Log.d("AccountRepositoryFirestore", "Removed item from memory cache")
-      }
-
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
 
-      // Queue Firestore update with timeout (will sync when online)
-      try {
-        withTimeoutOrNull(2_000L) {
-          userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await()
-        }
-        Log.d("AccountRepositoryFirestore", "Item removed from Firestore (or queued if offline)")
-      } catch (e: Exception) {
-        // Acceptable when offline - cache is already updated
-        Log.w("AccountRepositoryFirestore", "Firestore update queued (offline): ${e.message}")
-      }
-
-      true // Cache is updated, that's what matters
+      withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await() }
+      Log.d("AccountRepositoryFirestore", "Item removed from Firestore")
+      true
+    } catch (e: TimeoutCancellationException) {
+      Log.w("AccountRepositoryFirestore", "Account item remove timed out (offline), queued.")
+      true
     } catch (e: Exception) {
       Log.e("AccountRepositoryFirestore", "Error removing item: ${e.message}", e)
       false
@@ -542,25 +473,33 @@ class AccountRepositoryFirestore(
 
   override suspend fun getStarredItems(userID: String): List<String> {
     return try {
-      ensureStarredCache(userID).toList()
+      val document = db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
+      if (document.exists()) {
+        @Suppress("UNCHECKED_CAST")
+        (document["starredItemUids"] as? List<String>) ?: emptyList()
+      } else {
+        emptyList()
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Error getting starred items for $userID: ${e.message}", e)
-      starredListCache[userID]?.toList() ?: emptyList()
+      emptyList()
     }
   }
 
   override suspend fun refreshStarredItems(userID: String): List<String> {
     return try {
+      // Force fetch from server
       val document =
-          withTimeoutOrNull(2_000L) {
-            db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get().await()
-          } ?: return getStarredItems(userID)
-      val starred = document.getStringList("starredItemUids") ?: emptyList()
-      val refreshed = java.util.concurrent.CopyOnWriteArrayList(starred)
-      starredListCache[userID] = refreshed
-      refreshed.toList()
+          db.collection(ACCOUNT_COLLECTION_PATH).document(userID).get(Source.SERVER).await()
+      if (document.exists()) {
+        @Suppress("UNCHECKED_CAST")
+        (document["starredItemUids"] as? List<String>) ?: emptyList()
+      } else {
+        emptyList()
+      }
     } catch (e: Exception) {
-      Log.e(TAG, "Failed to refresh starred items: ${e.message}", e)
+      Log.e(TAG, "Error refreshing starred items for $userID: ${e.message}", e)
+      // Fallback to default behavior (maybe cache or empty)
       getStarredItems(userID)
     }
   }
@@ -568,18 +507,13 @@ class AccountRepositoryFirestore(
   override suspend fun addStarredItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
-      val starred = ensureStarredCache(currentUserId)
-      if (!starred.contains(itemUid)) {
-        starred.add(itemUid)
-      }
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-      try {
-        withTimeoutOrNull(2_000L) {
-          userRef.update("starredItemUids", FieldValue.arrayUnion(itemUid)).await()
-        }
-      } catch (e: Exception) {
-        Log.w(TAG, "Firestore starred add queued/offline: ${e.message}")
+      withTimeout(TIMEOUT) {
+        userRef.update("starredItemUids", FieldValue.arrayUnion(itemUid)).await()
       }
+      true
+    } catch (e: TimeoutCancellationException) {
+      Log.w(TAG, "Starred item add timed out (offline), queued.")
       true
     } catch (e: Exception) {
       Log.e(TAG, "Error adding starred item: ${e.message}", e)
@@ -590,15 +524,13 @@ class AccountRepositoryFirestore(
   override suspend fun removeStarredItem(itemUid: String): Boolean {
     return try {
       val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
-      starredListCache[currentUserId]?.remove(itemUid)
       val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-      try {
-        withTimeoutOrNull(2_000L) {
-          userRef.update("starredItemUids", FieldValue.arrayRemove(itemUid)).await()
-        }
-      } catch (e: Exception) {
-        Log.w(TAG, "Firestore starred remove queued/offline: ${e.message}")
+      withTimeout(TIMEOUT) {
+        userRef.update("starredItemUids", FieldValue.arrayRemove(itemUid)).await()
       }
+      true
+    } catch (e: TimeoutCancellationException) {
+      Log.w(TAG, "Starred item remove timed out (offline), queued.")
       true
     } catch (e: Exception) {
       Log.e(TAG, "Error removing starred item: ${e.message}", e)
@@ -608,78 +540,39 @@ class AccountRepositoryFirestore(
 
   override suspend fun toggleStarredItem(itemUid: String): List<String> {
     val currentUserId = Firebase.auth.currentUser?.uid ?: throw Exception(USER_NOT_LOGGED)
-    val currentList = ensureStarredCache(currentUserId)
-    val isStarred = currentList.contains(itemUid)
-    if (isStarred) currentList.remove(itemUid) else currentList.add(itemUid)
-
     val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(currentUserId)
-    try {
-      withTimeoutOrNull(2_000L) {
-        val operation =
-            if (isStarred) FieldValue.arrayRemove(itemUid) else FieldValue.arrayUnion(itemUid)
-        userRef.update("starredItemUids", operation).await()
-      }
-    } catch (e: Exception) {
-      Log.w(TAG, "Firestore starred toggle queued/offline: ${e.message}")
-    }
-    return currentList.toList()
-  }
 
-  private suspend fun ensureStarredCache(
-      userId: String
-  ): java.util.concurrent.CopyOnWriteArrayList<String> {
-    starredListCache[userId]?.let {
-      return it
-    }
-
-    val starred =
+    // We need to know if it's starred to toggle.
+    // In offline mode, we rely on the cached document.
+    // We use a short timeout for the read
+    val document =
         try {
-          val document =
-              try {
-                db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get(Source.CACHE).await()
-              } catch (e: Exception) {
-                Log.w(
-                    TAG, "Cache read failed for starred items, trying default source: ${e.message}")
-                withTimeoutOrNull(2_000L) {
-                  db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get().await()
-                }
-              }
-          document?.getStringList("starredItemUids") ?: emptyList()
+          withTimeout(1000L) { userRef.get().await() }
         } catch (e: Exception) {
-          Log.w(TAG, "Could not fetch starred items: ${e.message}")
-          emptyList()
+          // If read fails/times out, we can't toggle reliably without cache.
+          // But we can try to read from cache specifically
+          try {
+            userRef.get(Source.CACHE).await()
+          } catch (_: Exception) {
+            throw e // Give up if neither works
+          }
         }
 
-    return java.util.concurrent.CopyOnWriteArrayList(starred).also { starredListCache[userId] = it }
-  }
+    @Suppress("UNCHECKED_CAST")
+    val currentList = (document["starredItemUids"] as? List<String>) ?: emptyList()
+    val isStarred = currentList.contains(itemUid)
 
-  private suspend fun loadExistingItems(userId: String): List<String> {
-    val cacheResult = fetchItemsFromSource(userId, Source.CACHE)
-    if (!cacheResult.isNullOrEmpty()) return cacheResult
-    val serverResult = fetchItemsFromSource(userId, Source.SERVER)
-    return serverResult ?: cacheResult ?: emptyList()
-  }
+    val operation =
+        if (isStarred) FieldValue.arrayRemove(itemUid) else FieldValue.arrayUnion(itemUid)
 
-  private suspend fun fetchItemsFromSource(userId: String, source: Source): List<String>? {
-    val timeout = if (source == Source.CACHE) 1_000L else 2_000L
-    return try {
-      withTimeoutOrNull(timeout) {
-        val task =
-            if (source == Source.CACHE) {
-              db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get(Source.CACHE)
-            } else {
-              db.collection(ACCOUNT_COLLECTION_PATH).document(userId).get()
-            }
-        task.await().getStringList("itemsUids")
-      }
-    } catch (e: Exception) {
-      Log.w(TAG, "Could not fetch current items from $source: ${e.message}")
-      null
+    try {
+      withTimeout(TIMEOUT) { userRef.update("starredItemUids", operation).await() }
+    } catch (e: TimeoutCancellationException) {
+      Log.w(TAG, "Starred item toggle timed out (offline), queued.")
     }
-  }
 
-  private fun DocumentSnapshot.getStringList(field: String): List<String>? {
-    return (data?.get(field) as? List<*>)?.filterIsInstance<String>()
+    // Return the updated list (optimistically calculated)
+    return if (isStarred) currentList - itemUid else currentList + itemUid
   }
 
   private suspend fun userExists(user: User): Boolean {

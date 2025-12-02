@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +30,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 
 data class AdditionalDetailsTags(
     val toggle: String,
@@ -81,12 +82,8 @@ fun AdditionalDetailsSection(
                   if (expanded) Icons.Filled.KeyboardArrowDown
                   else Icons.AutoMirrored.Filled.KeyboardArrowRight,
               contentDescription = if (expanded) "Collapse" else "Expand",
-              tint = MaterialTheme.colorScheme.primary)
-          Text(
-              text = title,
-              style =
-                  MaterialTheme.typography.bodyLarge.copy(
-                      color = MaterialTheme.colorScheme.primary))
+              tint = Primary)
+          Text(text = title, style = Typography.bodyLarge.copy(color = Primary))
         }
 
     AnimatedVisibility(

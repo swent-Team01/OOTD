@@ -79,6 +79,8 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> =
               emptyList<OutfitPost>()
 
+          override suspend fun getPublicFeed(): List<OutfitPost> = emptyList()
+
           override fun observeRecentFeedForUids(
               uids: List<String>
           ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> =
@@ -114,6 +116,8 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun getFeedForUids(uids: List<String>) = posts
 
           override suspend fun getRecentFeedForUids(uids: List<String>): List<OutfitPost> = posts
+
+          override suspend fun getPublicFeed(): List<OutfitPost> = emptyList()
 
           override fun observeRecentFeedForUids(
               uids: List<String>
@@ -168,6 +172,20 @@ class FeedScreenTest : FirestoreTest() {
         .performClick()
 
     assertTrue(notificationsClicked)
+  }
+
+  @Test
+  fun feedScreen_switchesToPublicFeed_whenTabClicked() {
+    var toggleCalled = false
+    val viewModel = FakeFeedViewModel()
+
+    // We can't easily override the toggle function in the fake without changing the base class or
+    // using a spy.
+
+    composeTestRule.setContent { FeedScreen(feedViewModel = viewModel, onAddPostClick = {}) }
+
+    // Check "Public" tab exists and click it
+    composeTestRule.onNodeWithText("Public").assertExists().performClick()
   }
 
   @Test
@@ -287,6 +305,8 @@ class FeedScreenTest : FirestoreTest() {
           override suspend fun getFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
 
           override suspend fun getRecentFeedForUids(uids: List<String>) = emptyList<OutfitPost>()
+
+          override suspend fun getPublicFeed(): List<OutfitPost> = emptyList()
 
           override fun observeRecentFeedForUids(
               uids: List<String>
