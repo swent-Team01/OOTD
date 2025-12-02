@@ -1,13 +1,11 @@
 package com.android.ootd.ui.map
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
@@ -18,8 +16,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,11 +36,10 @@ import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.epflLocation
 import com.android.ootd.ui.theme.Bodoni
-import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.CommonTextField
 
 // Test tags for location selection UI
 object LocationSelectionTestTags {
@@ -168,7 +163,6 @@ private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
  *   handling)
  * @param onGPSClick callback invoked when the GPS button is clicked
  * @param modifier optional Compose modifier for the section
- * @param textColor color used for labels and placeholders
  * @param isError whether the input should show an error state
  * @param onFocusChanged callback invoked when the input focus changes
  */
@@ -180,12 +174,9 @@ fun LocationSelectionSection(
     textLocationField: String,
     onLocationSelect: ((Location) -> Unit)? = null,
     onGPSClick: () -> Unit,
-    textColor: Color = Tertiary,
     isError: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {}
 ) {
-  val colors = LightColorScheme
-  val typography = Typography
   val locationUiState by viewModel.uiState.collectAsState()
 
   Column(modifier = modifier) {
@@ -203,34 +194,16 @@ fun LocationSelectionSection(
 
     // Manual Input Field with dropdown
     Box {
-      OutlinedTextField(
+      CommonTextField(
           value = locationUiState.locationQuery,
-          onValueChange = {
+          onChange = {
             viewModel.setLocationQuery(it)
             if (isFocused) {
               showDropdown = true
             }
           },
-          textStyle = typography.bodyLarge.copy(fontFamily = Bodoni, color = colors.primary),
-          label = {
-            Box(
-                modifier =
-                    Modifier.background(colors.secondary, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)) {
-                  Text(
-                      text = textLocationField,
-                      style = typography.bodySmall.copy(fontFamily = Bodoni),
-                      color = colors.tertiary)
-                }
-          },
-          placeholder = {
-            Text("Or enter address manually", color = textColor, fontFamily = Bodoni)
-          },
-          colors =
-              OutlinedTextFieldDefaults.colors(
-                  focusedTextColor = colors.primary,
-                  unfocusedTextColor = colors.primary,
-                  cursorColor = colors.primary),
+          label = textLocationField,
+          placeholder = "Or enter address manually",
           trailingIcon = {
             LocationInputTrailingIcon(
                 isLoadingLocation = locationUiState.isLoadingLocations,

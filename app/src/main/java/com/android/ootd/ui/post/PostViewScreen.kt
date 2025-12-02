@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -38,7 +37,9 @@ import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
 import kotlinx.coroutines.launch
 
 object PostViewTestTags {
@@ -79,7 +80,6 @@ fun PostViewScreen(
   val coroutineScope = rememberCoroutineScope()
 
   LaunchedEffect(postId) { viewModel.loadPost(postId) }
-  val colors = MaterialTheme.colorScheme
 
   LaunchedEffect(uiState.error) {
     uiState.error?.let { errorMessage ->
@@ -93,23 +93,13 @@ fun PostViewScreen(
       modifier = Modifier.fillMaxSize().testTag(PostViewTestTags.SCREEN),
       containerColor = Background,
       topBar = {
-        TopAppBar(
-            title = { Text("Post", color = Primary) },
-            navigationIcon = {
-              IconButton(
-                  onClick = onBack, modifier = Modifier.testTag(PostViewTestTags.BACK_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colors.onBackground)
-                  }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = Background,
-                    titleContentColor = Primary,
-                    navigationIconContentColor = Primary),
-            modifier = Modifier.testTag(PostViewTestTags.TOP_BAR))
+        OOTDTopBar(
+            modifier = Modifier.testTag(PostViewTestTags.TOP_BAR),
+            centerText = "Post",
+            leftComposable = {
+              BackArrow(
+                  onBackClick = onBack, modifier = Modifier.testTag(PostViewTestTags.BACK_BUTTON))
+            })
       },
       snackbarHost = {
         SnackbarHost(
@@ -232,8 +222,8 @@ fun PostDetailsContent(
       // Character counter that shows how many characters are left
       Text(
           text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.primary,
+          style = Typography.bodySmall,
+          color = Primary,
           modifier =
               Modifier.align(Alignment.End)
                   .padding(top = 4.dp, end = 4.dp)
@@ -283,14 +273,11 @@ fun PostOwnerSection(
           size = 48.dp,
           profilePicture = profilePicture ?: "",
           username = username ?: "",
-          textStyle = MaterialTheme.typography.titleMedium)
+          textStyle = Typography.titleMedium)
 
       Spacer(Modifier.width(12.dp))
 
-      Text(
-          text = username ?: "Unknown User",
-          style = MaterialTheme.typography.titleLarge,
-          color = MaterialTheme.colorScheme.primary)
+      Text(text = username ?: "Unknown User", style = Typography.titleLarge, color = Primary)
 
       Spacer(Modifier.weight(1f))
 
@@ -317,7 +304,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
           Icon(
               Icons.Default.MoreHoriz,
               contentDescription = "More options",
-              tint = MaterialTheme.colorScheme.onSurface,
+              tint = OnSurface,
               modifier = Modifier.size(24.dp))
         }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -334,10 +321,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
             onEditClicked()
             expanded = false
           },
-          colors =
-              MenuDefaults.itemColors(
-                  textColor = MaterialTheme.colorScheme.onSurface,
-                  leadingIconColor = MaterialTheme.colorScheme.onSurface),
+          colors = MenuDefaults.itemColors(textColor = OnSurface, leadingIconColor = OnSurface),
           modifier = Modifier.testTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION))
 
       HorizontalDivider()
@@ -402,15 +386,11 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
     IconButton(onClick = onToggleLike) {
       Icon(
           imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-          tint =
-              if (isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+          tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface,
           contentDescription = if (isLiked) "Unlike" else "Like")
     }
 
-    Text(
-        text = "$likeCount likes",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface)
+    Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
   }
 }
 
@@ -422,10 +402,7 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 @Composable
 fun PostDescription(description: String) {
   if (description.isNotBlank()) {
-    Text(
-        text = description,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.primary)
+    Text(text = description, style = Typography.bodyLarge, color = Primary)
   }
 }
 
@@ -449,12 +426,12 @@ fun LikedUsersRow(likedUsers: List<User>) {
                     size = 48.dp,
                     profilePicture = user.profilePicture,
                     username = user.username,
-                    textStyle = MaterialTheme.typography.bodyMedium)
+                    textStyle = Typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = user.username,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = Typography.labelSmall,
+                    color = Primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center)
