@@ -13,6 +13,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.theme.Background
+import com.android.ootd.ui.theme.OnSurfaceVariant
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
 
 object UserSelectionFieldTestTags {
   const val INPUT_USERNAME = "inputUsername"
@@ -33,7 +38,7 @@ fun UserSelectionField(
     Icon(
         imageVector = Icons.Default.Search,
         contentDescription = "Search",
-        tint = MaterialTheme.colorScheme.primary,
+        tint = Primary,
         modifier = Modifier.size(56.dp))
 
     Spacer(modifier = Modifier.width(8.dp))
@@ -43,10 +48,7 @@ fun UserSelectionField(
           value = usernameText,
           onValueChange = { onUsernameTextChanged(it) },
           placeholder = {
-            Text(
-                "Username",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium)
+            Text("Username", color = OnSurfaceVariant, style = Typography.bodyMedium)
           },
           trailingIcon = {
             if (usernameText.isNotEmpty()) {
@@ -54,16 +56,16 @@ fun UserSelectionField(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Clear",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    tint = OnSurfaceVariant)
               }
             }
           },
           colors =
               OutlinedTextFieldDefaults.colors(
-                  focusedBorderColor = MaterialTheme.colorScheme.primary,
-                  unfocusedBorderColor = MaterialTheme.colorScheme.secondary,
-                  focusedContainerColor = MaterialTheme.colorScheme.background,
-                  unfocusedContainerColor = MaterialTheme.colorScheme.background),
+                  focusedBorderColor = Primary,
+                  unfocusedBorderColor = Secondary,
+                  focusedContainerColor = Background,
+                  unfocusedContainerColor = Background),
           shape = RoundedCornerShape(24.dp),
           modifier =
               Modifier.fillMaxWidth()
@@ -79,10 +81,7 @@ fun UserSelectionField(
             if (usernameSuggestions.isEmpty()) {
               DropdownMenuItem(
                   text = {
-                    Text(
-                        "No users found",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium)
+                    Text("No users found", color = OnSurfaceVariant, style = Typography.bodyMedium)
                   },
                   onClick = {},
                   enabled = false,

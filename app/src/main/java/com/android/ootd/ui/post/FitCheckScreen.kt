@@ -11,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,7 +33,13 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CommonTextField
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -62,7 +66,7 @@ private fun ImagePreviewBox(imageUri: Uri) {
       modifier =
           Modifier.size(220.dp)
               .clip(RoundedCornerShape(16.dp))
-              .border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+              .border(4.dp, Primary, RoundedCornerShape(16.dp))
               .background(Color.White)
               .testTag(FitCheckScreenTestTags.IMAGE_PREVIEW),
       contentAlignment = Alignment.Center) {
@@ -88,24 +92,21 @@ private fun DescriptionInputField(description: String, onDescriptionChange: (Str
   val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
 
   Column(modifier = Modifier.fillMaxWidth()) {
-    OutlinedTextField(
+    CommonTextField(
         value = description,
-        onValueChange = { newValue ->
+        onChange = { newValue ->
           if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
             onDescriptionChange(newValue)
           }
         },
-        label = { Text("Description") },
-        placeholder = { Text("Add a short caption for your FitCheck") },
+        label = "Description",
+        placeholder = "Add a short caption for your FitCheck",
         modifier = Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
         singleLine = false,
-        maxLines = 2,
-        shape = RoundedCornerShape(12.dp))
-
-    Text(
+        maxLines = 2)
+    ShowText(
         text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.primary,
+        style = Typography.bodySmall,
         modifier =
             Modifier.align(Alignment.End)
                 .padding(top = 4.dp, end = 4.dp)
@@ -243,26 +244,14 @@ private fun FitCheckScreenContent(
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
       topBar = {
-        CenterAlignedTopAppBar(
+        OOTDTopBar(
             modifier = Modifier.testTag(FitCheckScreenTestTags.TOP_BAR),
-            title = {
-              Text(
-                  text = "FitCheck",
-                  style =
-                      MaterialTheme.typography.displayLarge.copy(
-                          fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
-            },
-            navigationIcon = {
-              IconButton(
-                  onClick = { onBackClick() },
-                  modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.tertiary)
-                  }
-            },
-        )
+            centerText = "FitCheck",
+            leftComposable = {
+              BackArrow(
+                  onBackClick = onBackClick,
+                  modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON))
+            })
       },
       bottomBar = {
         Button(
@@ -283,8 +272,7 @@ private fun FitCheckScreenContent(
                     .height(80.dp)
                     .padding(horizontal = 24.dp, vertical = 16.dp)
                     .testTag(FitCheckScreenTestTags.NEXT_BUTTON),
-            colors =
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary),
             shape = RoundedCornerShape(16.dp)) {
               Row(
                   verticalAlignment = Alignment.CenterVertically,
@@ -314,7 +302,7 @@ private fun FitCheckScreenContent(
                 Text(
                     text = msg,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Typography.bodyMedium,
                     modifier =
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
@@ -328,9 +316,7 @@ private fun FitCheckScreenContent(
                   onClick = { showDialog = true },
                   shape = RoundedCornerShape(24.dp),
                   modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = MaterialTheme.colorScheme.primary)) {
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
                     Text("Add Fit Photo", color = Color.White)
                   }
 

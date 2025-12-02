@@ -7,6 +7,9 @@ package com.android.ootd.ui.account
 import android.content.Context
 import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
@@ -194,6 +197,55 @@ class EditAccountScreenTest {
   }
 
   @Test
+  fun editProfilePicture_showsDialog_withCameraAndGalleryOptions() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Click edit button
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dialog appears with options
+    composeTestRule.onNodeWithText("Select Image").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Take a Photo").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Choose from Gallery").assertIsDisplayed()
+  }
+
+  @Test
+  fun editProfilePicture_cameraOption_showsCameraScreen() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open dialog
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Select Camera
+    composeTestRule.onNodeWithText("Take a Photo").performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithText("Select Image").assertDoesNotExist()
+  }
+
+  @Test
+  fun editProfilePicture_galleryOption_dismissesDialog() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open dialog
+    selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Select Gallery
+    composeTestRule.onNodeWithText("Choose from Gallery").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dialog dismissed (launcher would be triggered, but we can't easily verify launcher
+    // launch in compose test without intent capturing)
+    composeTestRule.onNodeWithText("Select Image").assertDoesNotExist()
+  }
+
+  @Test
   fun usernameEdit_flow_saveWithoutChange_restores() {
     signIn(mockFirebaseUser)
     setContent()
@@ -335,6 +387,25 @@ class EditAccountScreenTest {
   }
 
   @Test
+  fun profilePictureEditor_renders_dialog_correctly() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    var showDialog by mutableStateOf(true)
+
+    composeTestRule.setContent {
+      ProfilePictureEditor(
+          viewModel = viewModel,
+          context = ctx,
+          showImageSourceDialog = showDialog,
+          onShowImageSourceDialogChange = { showDialog = it })
+    }
+
+    // Verify the dialog is displayed with the expected options
+    composeTestRule.onNodeWithText("Select Image").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Take a Photo").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Choose from Gallery").assertIsDisplayed()
+  }
+
+  @Test
   fun handlePickedProfileImage_coversSuccessErrorAndBlank() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
 
@@ -398,6 +469,57 @@ class EditAccountScreenTest {
       assertFalse(uploadInvoked)
       assertFalse(editedCalled)
     }
+  }
+
+  @Test
+  fun handleImagePickerResult_callsHandlePickedProfileImage_whenUriIsNotNull() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    val mockUri = Uri.parse("content://mock/image.jpg")
+    var uploadCalled = false
+    var uploadedPath: String? = null
+    var editCalled = false
+    var editedUrl: String? = null
+
+    val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { path, onSuccess, _ ->
+      uploadCalled = true
+      uploadedPath = path
+      onSuccess("https://cdn.example.com/avatar.jpg")
+    }
+
+    composeTestRule.runOnUiThread {
+      handleImagePickerResult(
+          uri = mockUri,
+          upload = upload,
+          editProfilePicture = {
+            editCalled = true
+            editedUrl = it
+          },
+          context = ctx)
+    }
+
+    assertTrue(uploadCalled)
+    assertEquals("content://mock/image.jpg", uploadedPath)
+    assertTrue(editCalled)
+    assertEquals("https://cdn.example.com/avatar.jpg", editedUrl)
+  }
+
+  @Test
+  fun handleImagePickerResult_doesNothing_whenUriIsNull() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    var uploadCalled = false
+    var editCalled = false
+
+    val upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ ->
+      uploadCalled = true
+    }
+
+    composeTestRule.runOnUiThread {
+      handleImagePickerResult(
+          uri = null, upload = upload, editProfilePicture = { editCalled = true }, context = ctx)
+    }
+
+    assertFalse(uploadCalled)
+    assertFalse(editCalled)
   }
 
   @Test
