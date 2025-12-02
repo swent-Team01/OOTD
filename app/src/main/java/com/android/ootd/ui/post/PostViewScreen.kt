@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,10 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.map.LocationSelectionSection
+import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.utils.ProfilePicture
+import kotlinx.coroutines.launch
 
 object PostViewTestTags {
   const val SCREEN = "postViewScreen"
@@ -67,11 +71,12 @@ private const val MAX_DESCRIPTION_LENGTH = 100
 fun PostViewScreen(
     postId: String,
     onBack: () -> Unit,
+    onDeleted: () -> Unit = { onBack() },
     viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId))
 ) {
   val uiState by viewModel.uiState.collectAsState()
-
   val snackBarHostState = remember { SnackbarHostState() }
+  val coroutineScope = rememberCoroutineScope()
 
   LaunchedEffect(postId) { viewModel.loadPost(postId) }
   val colors = MaterialTheme.colorScheme
@@ -125,7 +130,14 @@ fun PostViewScreen(
                   uiState = uiState,
                   onToggleLike = { viewModel.toggleLike() },
                   modifier = Modifier.fillMaxSize(),
-                  viewModel = viewModel)
+                  viewModel = viewModel,
+                  onDeletePost = {
+                    viewModel.deletePost(
+                        onSuccess = { onDeleted() },
+                        onError = { msg ->
+                          coroutineScope.launch { snackBarHostState.showSnackbar(msg) }
+                        })
+                  })
             }
           }
         }
@@ -143,12 +155,17 @@ fun PostDetailsContent(
     uiState: PostViewUiState,
     onToggleLike: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PostViewViewModel
+    viewModel: PostViewViewModel,
+    onDeletePost: () -> Unit
 ) {
   val post = uiState.post!!
 
   var isEditing by remember { mutableStateOf(false) }
   var editedDescription by remember { mutableStateOf(post.description) }
+  val locationSelectionViewModel = remember { LocationSelectionViewModel() }
+  val locationUiState by locationSelectionViewModel.uiState.collectAsState()
+
+  LaunchedEffect(post.postUID) { locationSelectionViewModel.setLocation(post.location) }
 
   Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
     PostOwnerSection(
@@ -158,6 +175,7 @@ fun PostDetailsContent(
           isEditing = true
           editedDescription = post.description
         },
+        onDeletePost = onDeletePost,
         isOwner = uiState.isOwner)
 
     Spacer(Modifier.height(16.dp))
@@ -184,7 +202,13 @@ fun PostDetailsContent(
               IconButton(
                   onClick = {
                     isEditing = false
-                    viewModel.saveDescription(editedDescription)
+                    val chosenLocation =
+                        locationUiState.selectedLocation
+                            ?: post.location.copy(
+                                name = locationUiState.locationQuery.ifBlank { post.location.name },
+                                latitude = post.location.latitude,
+                                longitude = post.location.longitude)
+                    viewModel.savePostEdits(editedDescription, chosenLocation)
                   },
                   modifier = Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON)) {
                     Icon(
@@ -214,6 +238,16 @@ fun PostDetailsContent(
               Modifier.align(Alignment.End)
                   .padding(top = 4.dp, end = 4.dp)
                   .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
+
+      Spacer(Modifier.height(12.dp))
+
+      LocationSelectionSection(
+          viewModel = locationSelectionViewModel,
+          textGPSButton = "Use current location",
+          textLocationField = "Location",
+          onLocationSelect = { locationSelectionViewModel.setLocation(it) },
+          onGPSClick = { locationSelectionViewModel.onLocationPermissionGranted() },
+          modifier = Modifier.fillMaxWidth())
     } else {
       PostDescription(post.description)
     }
@@ -240,6 +274,7 @@ fun PostOwnerSection(
     username: String?,
     profilePicture: String?,
     onEditClicked: () -> Unit,
+    onDeletePost: () -> Unit,
     isOwner: Boolean = false
 ) {
   Box(Modifier.fillMaxWidth()) {
@@ -260,7 +295,7 @@ fun PostOwnerSection(
       Spacer(Modifier.weight(1f))
 
       // Dropdown menu for post options
-      if (isOwner) DropdownMenuWithDetails(onEditClicked)
+      if (isOwner) DropdownMenuWithDetails(onEditClicked, onDeletePost)
     }
   }
 }
@@ -271,8 +306,9 @@ fun PostOwnerSection(
  * @param onEditClicked Callback when the edit option is clicked
  */
 @Composable
-fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
+fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Unit) {
   var expanded by remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
 
   Box(modifier = Modifier.size(32.dp).padding(8.dp).fillMaxWidth()) {
     IconButton(
@@ -310,13 +346,33 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
       DropdownMenuItem(
           text = { Text("Delete post") },
           leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = "Delete post") },
-          onClick = { expanded = false /* delete logic implemented later */ },
+          onClick = {
+            expanded = false
+            showDeleteDialog = true
+          },
           colors =
               MenuDefaults.itemColors(
                   textColor = MaterialTheme.colorScheme.error,
                   leadingIconColor = MaterialTheme.colorScheme.error),
           modifier = Modifier.testTag(PostViewTestTags.DELETE_POST_OPTION))
     }
+  }
+
+  if (showDeleteDialog) {
+    AlertDialog(
+        onDismissRequest = { showDeleteDialog = false },
+        title = { Text("Delete post") },
+        text = { Text("This will permanently delete this post. Continue?") },
+        confirmButton = {
+          TextButton(
+              onClick = {
+                showDeleteDialog = false
+                onDeleteClicked()
+              }) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
+              }
+        },
+        dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } })
   }
 }
 
