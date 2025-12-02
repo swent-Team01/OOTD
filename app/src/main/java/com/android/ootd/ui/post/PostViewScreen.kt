@@ -174,7 +174,7 @@ fun PostDetailsContent(
 
   Column(modifier = modifier.verticalScroll(rememberScrollState())) {
     // Location box at the top
-    ExpandableLocationRow(
+    LocationRow(
         location = post.location.name,
         isExpanded = isLocationExpanded,
         onToggleExpanded = { isLocationExpanded = !isLocationExpanded })
@@ -440,11 +440,7 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 }
 
 @Composable
-private fun ExpandableLocationRow(
-    location: String,
-    isExpanded: Boolean,
-    onToggleExpanded: () -> Unit
-) {
+fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> Unit) {
   Surface(
       modifier = Modifier.fillMaxWidth().clickable { onToggleExpanded() }.animateContentSize(),
       color = Background) {
