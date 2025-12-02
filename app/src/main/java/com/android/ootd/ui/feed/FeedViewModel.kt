@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * UI state for the FeedScreen.
@@ -79,48 +80,52 @@ open class FeedViewModel(
   fun refreshFeedFromFirestore() {
     val account = _uiState.value.currentAccount ?: return
     viewModelScope.launch {
+      _uiState.value = _uiState.value.copy(isLoading = true)
+
+      val allUids = account.friendUids + account.uid
       try {
-        _uiState.value = _uiState.value.copy(isLoading = true)
+        // STEP 1 : Load initial feed posts
         val hasPosted = repository.hasPostedToday(account.uid)
-        val posts = repository.getRecentFeedForUids(account.friendUids + account.uid)
+        val posts = repository.getRecentFeedForUids(allUids)
 
-        val todayStart =
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-        // Filter posts to only include today's post for the current user and all posts for friends
-        val filteredPost =
-            posts.filter { post ->
-              if (post.ownerId == account.uid) {
-                post.timestamp >= todayStart
-              } else true
-            }
-
-        // Load likes and like counts for these posts for the current user
-        val likesMap = mutableMapOf<String, Boolean>()
-        val countsMap = mutableMapOf<String, Int>()
-        for (post in filteredPost) {
-          val postId = post.postUID
-          try {
-            val isLiked = likesRepository.isPostLikedByUser(postId, account.uid)
-            val count = likesRepository.getLikeCount(postId)
-            likesMap[postId] = isLiked
-            countsMap[postId] = count
-          } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
-          }
-        }
+        val filteredPost = filterPosts(account.uid, posts)
+        updateLikesForPosts(filteredPost)
 
         _uiState.value =
             _uiState.value.copy(
-                hasPostedToday = hasPosted,
-                feedPosts = filteredPost,
-                isLoading = false,
-                likes = likesMap,
-                likeCounts = countsMap)
+                hasPostedToday = hasPosted, feedPosts = filteredPost, isLoading = false)
+
+        // STEP 2 - Background refresh with timeout
+        viewModelScope.launch {
+          try {
+            val freshPosts =
+                withTimeoutOrNull(2000L) { repository.getRecentFeedForUids(allUids) }
+                    ?: return@launch // keep cached data if timeout / offline
+
+            // If nothing changed, no need to touch UI
+
+            if (freshPosts == posts) return@launch
+
+            val filteredFresh = filterPosts(account.uid, freshPosts)
+            updateLikesForPosts(filteredFresh)
+
+            _uiState.value = _uiState.value.copy(feedPosts = filteredFresh)
+          } catch (e: Exception) {
+            Log.e("FeedViewModel", "Failed to refresh feed likes/counts", e)
+            // User already sees cached datta, so we don't surface an error
+          }
+        }
       } catch (e: Exception) {
-        Log.e("FeedViewModel", "Failed to refresh feed", e)
+        Log.e("FeedViewModel", "Failed to load initial feed", e)
+        // Only show error if we have no posts at all
+        val current = _uiState.value
         _uiState.value =
-            _uiState.value.copy(isLoading = false, errorMessage = "Failed to load feed")
+            current.copy(
+                isLoading = false,
+                errorMessage =
+                    if (current.feedPosts.isEmpty()) "Failed to load feed"
+                    else current.errorMessage)
+        return@launch
       }
     }
   }
@@ -177,5 +182,37 @@ open class FeedViewModel(
         Log.e("FeedViewModel", "Failed to toggle like for post $postId", e)
       }
     }
+  }
+
+  private fun filterPosts(userId: String, posts: List<OutfitPost>): List<OutfitPost> {
+    val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+    // Filter posts to only include today's post for the current user and all posts for friends
+    return posts.filter { post ->
+      if (post.ownerId == userId) {
+        post.timestamp >= todayStart
+      } else true
+    }
+  }
+
+  private suspend fun updateLikesForPosts(posts: List<OutfitPost>) {
+    val account = _uiState.value.currentAccount ?: return
+
+    // Load likes and like counts for these posts for the current user
+    val likesMap = mutableMapOf<String, Boolean>()
+    val countsMap = mutableMapOf<String, Int>()
+    for (post in posts) {
+      val postId = post.postUID
+      try {
+        val isLiked = likesRepository.isPostLikedByUser(postId, account.uid)
+        val count = likesRepository.getLikeCount(postId)
+        likesMap[postId] = isLiked
+        countsMap[postId] = count
+      } catch (e: Exception) {
+        Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
+      }
+    }
+
+    _uiState.value = _uiState.value.copy(likes = likesMap, likeCounts = countsMap)
   }
 }
