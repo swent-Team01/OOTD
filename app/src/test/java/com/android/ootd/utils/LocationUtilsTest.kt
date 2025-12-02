@@ -58,7 +58,7 @@ class LocationUtilsTest {
   @Test
   fun hasLocationPermission_returnsTrueWhenGranted() {
     val app = shadowOf(context as android.app.Application)
-    app.grantPermissions(Manifest.permission.ACCESS_COARSE_LOCATION)
+    app.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     assertTrue(LocationUtils.hasLocationPermission(context))
   }
@@ -66,7 +66,7 @@ class LocationUtilsTest {
   @Test
   fun hasLocationPermission_returnsFalseWhenNotGranted() {
     val app = shadowOf(context as android.app.Application)
-    app.denyPermissions(Manifest.permission.ACCESS_COARSE_LOCATION)
+    app.denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
 
     assertFalse(LocationUtils.hasLocationPermission(context))
   }

@@ -243,8 +243,7 @@ private fun AccountScreenContent(
                       if (LocationUtils.hasLocationPermission(context)) {
                         accountViewModel.onLocationPermissionGranted()
                       } else {
-                        locationPermissionLauncher.launch(
-                            Manifest.permission.ACCESS_COARSE_LOCATION)
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                       }
                     })
               }

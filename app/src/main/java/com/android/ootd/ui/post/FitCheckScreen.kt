@@ -185,7 +185,7 @@ fun FitCheckScreen(
           if (LocationUtils.hasLocationPermission(context)) {
             locationSelectionViewModel.onLocationPermissionGranted()
           } else {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
           }
         }
       }

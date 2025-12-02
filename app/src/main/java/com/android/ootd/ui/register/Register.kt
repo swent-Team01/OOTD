@@ -203,7 +203,7 @@ private fun rememberGPSClickHandler(
       if (LocationUtils.hasLocationPermission(context)) {
         viewModel.onLocationPermissionGranted()
       } else {
-        locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
       }
     }
   }
