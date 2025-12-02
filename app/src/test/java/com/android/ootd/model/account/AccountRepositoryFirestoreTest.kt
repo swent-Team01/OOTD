@@ -1,5 +1,6 @@
 package com.android.ootd.model.account
 
+import com.android.ootd.model.post.OutfitPostRepository
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -7,9 +8,11 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.RelaxedMockK
@@ -17,6 +20,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,13 +36,15 @@ class AccountRepositoryFirestoreTest {
   @RelaxedMockK private lateinit var collection: CollectionReference
   @RelaxedMockK private lateinit var document: DocumentReference
   @RelaxedMockK private lateinit var snapshot: DocumentSnapshot
+  @RelaxedMockK private lateinit var storage: FirebaseStorage
+  @RelaxedMockK private lateinit var outfitPostRepository: OutfitPostRepository
 
   private lateinit var repository: AccountRepositoryFirestore
 
   @Before
   fun setup() {
     MockKAnnotations.init(this)
-    repository = AccountRepositoryFirestore(firestore)
+    repository = AccountRepositoryFirestore(firestore, storage, outfitPostRepository)
 
     mockkStatic(FirebaseAuth::class)
     mockkObject(Firebase)
@@ -70,46 +76,58 @@ class AccountRepositoryFirestoreTest {
   }
 
   @Test
-  fun `getStarredItems uses cached firestore data`() = runTest {
+  fun `getStarredItems fetches data`() = runTest {
     stubSnapshot(listOf("coat", "boots"))
 
     val result = repository.getStarredItems("user-1")
 
     assertEquals(listOf("coat", "boots"), result)
-    // second call hits memory cache instead of querying again
-    assertEquals(listOf("coat", "boots"), repository.getStarredItems("user-1"))
   }
 
   @Test
-  fun `addStarredItem appends entry locally`() = runTest {
+  fun `addStarredItem updates firestore`() = runTest {
     stubSnapshot(listOf("coat"))
 
     assertTrue(repository.addStarredItem("hat"))
-    val cached = repository.getStarredItems("user-1")
 
-    assertEquals(listOf("coat", "hat"), cached)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `removeStarredItem drops entry from cache`() = runTest {
+  fun `removeStarredItem updates firestore`() = runTest {
     stubSnapshot(listOf("coat", "hat"))
-    repository.getStarredItems("user-1") // prime cache
 
     assertTrue(repository.removeStarredItem("coat"))
-    val cached = repository.getStarredItems("user-1")
 
-    assertEquals(listOf("hat"), cached)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
   }
 
   @Test
-  fun `toggleStarredItem flips membership`() = runTest {
+  fun `toggleStarredItem updates firestore and returns new list`() = runTest {
     stubSnapshot(listOf("coat"))
-    repository.getStarredItems("user-1") // prime cache
 
+    // Test removing (toggling off)
     val removed = repository.toggleStarredItem("coat")
     assertTrue("coat" !in removed)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
 
+    // Test adding (toggling on) - need to update stub to simulate empty list
+    stubSnapshot(emptyList())
     val addedBack = repository.toggleStarredItem("coat")
     assertTrue("coat" in addedBack)
+    verify { document.update("starredItemUids", any<FieldValue>()) }
+  }
+
+  @Test
+  fun `refreshStarredItems fetches from server`() = runTest {
+    val serverItems = listOf("server-item-1", "server-item-2")
+    every { snapshot.exists() } returns true
+    every { snapshot.get("starredItemUids") } returns serverItems
+    every { document.get(Source.SERVER) } returns Tasks.forResult(snapshot)
+
+    val result = repository.refreshStarredItems("user-1")
+
+    assertEquals(serverItems, result)
+    verify { document.get(Source.SERVER) }
   }
 }

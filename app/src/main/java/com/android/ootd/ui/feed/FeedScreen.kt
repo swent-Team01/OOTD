@@ -5,11 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -17,10 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.LoadingScreen
-import com.android.ootd.utils.NotificationButton
-import com.android.ootd.utils.OOTDTopBar
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.NotificationButton
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ShowText
 
 object FeedScreenTestTags {
   const val SCREEN = "feedScreen"
@@ -45,7 +53,7 @@ fun FeedScreen(
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
 
-  LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday) {
+  LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
     feedViewModel.refreshFeedFromFirestore()
   }
 
@@ -61,8 +69,11 @@ fun FeedScreen(
       onOpenPost = onOpenPost,
       likes = uiState.likes,
       likeCounts = uiState.likeCounts,
-      userDataMap = uiState.userDataMap,
-      onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) })
+      onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
+      isPublicFeed = uiState.isPublicFeed,
+      onToggleFeed = { feedViewModel.toggleFeedType() },
+      userDataMap = uiState.userDataMap
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,8 +90,10 @@ private fun FeedScaffold(
     onOpenPost: (String) -> Unit,
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
+    onLikeClick: (OutfitPost) -> Unit = {},
+    isPublicFeed: Boolean = false,
+    onToggleFeed: () -> Unit = {},
     userDataMap: Map<String, UserFeedData> = emptyMap(),
-    onLikeClick: (OutfitPost) -> Unit = {}
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -95,27 +108,58 @@ private fun FeedScaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
-        OOTDTopBar(
-            modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
-            rightComposable = {
-              NotificationButton(
-                  onNotificationIconClick,
-                  Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
-                  size = 64.dp)
-            })
+        Column {
+          OOTDTopBar(
+              modifier = Modifier.testTag(FeedScreenTestTags.TOP_BAR),
+              rightComposable = {
+                NotificationButton(
+                    onNotificationIconClick,
+                    Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
+                    size = 64.dp)
+              })
+          PrimaryTabRow(
+              selectedTabIndex = if (isPublicFeed) 1 else 0,
+              containerColor = White,
+              contentColor = Secondary,
+              indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(if (isPublicFeed) 1 else 0),
+                    color = Primary)
+              }) {
+                Tab(
+                    selected = !isPublicFeed,
+                    onClick = { if (isPublicFeed) onToggleFeed() },
+                    text = {
+                      Text(
+                          "Friends",
+                          style = MaterialTheme.typography.titleLarge,
+                          fontWeight = if (!isPublicFeed) FontWeight.Bold else FontWeight.Normal)
+                    },
+                    selectedContentColor = Primary,
+                    unselectedContentColor = Black)
+                Tab(
+                    selected = isPublicFeed,
+                    onClick = { if (!isPublicFeed) onToggleFeed() },
+                    text = {
+                      Text(
+                          "Public",
+                          style = MaterialTheme.typography.titleLarge,
+                          fontWeight = if (isPublicFeed) FontWeight.Bold else FontWeight.Normal)
+                    },
+                    selectedContentColor = Primary,
+                    unselectedContentColor = Black)
+              }
+        }
       },
       floatingActionButton = {
         if (!isLoading && !hasPostedToday) {
-          Button(
+
+          ExtendedFloatingActionButton(
               onClick = onAddPostClick,
-              colors =
-                  ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-              modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB)) {
-                Text(
-                    "Do a Fit Check",
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge)
-              }
+              containerColor = Primary,
+              icon = { Icon(Icons.Filled.Add, "Add a new fit check") },
+              text = { Text(text = "Do a Fit check", color = White) },
+              modifier = Modifier.testTag(FeedScreenTestTags.ADD_POST_FAB))
         }
       }) { paddingValues ->
         // Overlay the locked message when needed
@@ -123,7 +167,7 @@ private fun FeedScaffold(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(top = paddingValues.calculateTopPadding())
-                    .background(MaterialTheme.colorScheme.background)) {
+                    .background(Background)) {
               // Renders the list of posts when user has posted.
               FeedList(
                   isBlurred = !hasPostedToday,
@@ -137,7 +181,7 @@ private fun FeedScaffold(
 
               // Loading overlay
               if (isLoading) {
-                AnimatedVisibility(visible = isLoading) {
+                AnimatedVisibility(visible = true) {
                   LoadingScreen(
                       modifier = Modifier.testTag(FeedScreenTestTags.LOADING_OVERLAY),
                       contentDescription = "Loading feed")
@@ -148,12 +192,9 @@ private fun FeedScaffold(
                 Box(
                     modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.LOCKED_MESSAGE),
                     contentAlignment = Alignment.Center) {
-                      Text(
-                          "Do a fit check to unlock today’s feed",
-                          style =
-                              MaterialTheme.typography.titleLarge.copy(
-                                  fontWeight = FontWeight.ExtraBold),
-                          color = MaterialTheme.colorScheme.primary)
+                      ShowText(
+                          text = "Do a fit check to unlock today’s feed",
+                          style = Typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
                     }
               }
             }

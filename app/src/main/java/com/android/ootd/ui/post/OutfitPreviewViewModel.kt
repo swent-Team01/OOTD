@@ -18,6 +18,9 @@ import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,7 +40,8 @@ data class PreviewUIState(
     val successMessage: String? = null,
     val isLoading: Boolean = false,
     val isPublished: Boolean = false,
-    val location: Location = emptyLocation
+    val location: Location = emptyLocation,
+    val isPublic: Boolean = false
 )
 
 /* Compression threshold for images before upload */
@@ -102,6 +106,15 @@ class OutfitPreviewViewModel(
   }
 
   /**
+   * Sets whether the post should be public.
+   *
+   * @param isPublic True if the post should be public, false otherwise.
+   */
+  fun setPublic(isPublic: Boolean) {
+    _uiState.value = _uiState.value.copy(isPublic = isPublic)
+  }
+
+  /**
    * Publishes the current outfit post to Firebase.
    *
    * On success, updates the state with `isPublished = true` and a success message. On failure, logs
@@ -155,6 +168,25 @@ class OutfitPreviewViewModel(
           val items = itemsRepository.getAssociatedItems(state.postUuid)
           val itemIds = items.map { it.itemUuid }
 
+          // If post is public, update items to be public
+          if (state.isPublic) {
+            val toMakePublic = items.filter { !it.isPublic }
+            try {
+              coroutineScope {
+                toMakePublic
+                    .map { item ->
+                      async { itemsRepository.editItem(item.itemUuid, item.copy(isPublic = true)) }
+                    }
+                    .awaitAll()
+              }
+            } catch (e: Exception) {
+              Log.e("OutfitPreviewViewModel", "Failed to mark items public", e)
+              setErrorMessage("Failed to update items visibility")
+              _uiState.value = state.copy(isLoading = false)
+              return@launch
+            }
+          }
+
           // Build and save Firestore post
           val post =
               OutfitPost(
@@ -166,7 +198,8 @@ class OutfitPreviewViewModel(
                   description = state.description,
                   itemsID = itemIds,
                   timestamp = System.currentTimeMillis(),
-                  location = state.location)
+                  location = state.location,
+                  isPublic = state.isPublic)
 
           postRepository.savePostToFirestore(post)
 
@@ -187,6 +220,26 @@ class OutfitPreviewViewModel(
   /** Clears the error message in the UI state */
   fun clearErrorMessage() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
+  }
+
+  /** Removes an item from the current post without deleting it. */
+  fun removeItemFromPost(itemUuid: String) {
+    val state = _uiState.value
+    val postId = state.postUuid
+    val targetItem = state.items.find { it.itemUuid == itemUuid } ?: return
+    viewModelScope.launch {
+      try {
+        val updatedItem =
+            targetItem.copy(postUuids = targetItem.postUuids.filterNot { it == postId })
+        itemsRepository.editItem(itemUuid, updatedItem)
+      } catch (e: Exception) {
+        Log.e("OutfitPreviewViewModel", "Failed to remove item from post", e)
+        setErrorMessage("Couldn't remove item from post")
+      } finally {
+        _uiState.value =
+            _uiState.value.copy(items = state.items.filterNot { it.itemUuid == itemUuid })
+      }
+    }
   }
 
   /** Sets an error message in the UI state */

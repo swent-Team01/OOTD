@@ -31,6 +31,7 @@ interface ItemsTest {
 
   fun ComposeTestRule.ensureVisible(tag: String) {
     onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).performScrollToNode(hasTestTag(tag))
+    waitForIdle()
     onNodeWithTag(tag, useUnmergedTree = true).assertExists()
   }
 
@@ -78,8 +79,11 @@ interface ItemsTest {
       ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
       onNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE, useUnmergedTree = true)
           .performClick()
-      ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
+      waitForIdle()
+      waitForNodeWithTag(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION)
+      ensureVisible(AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION)
     }
+    ensureVisible(AddItemScreenTestTags.INPUT_MATERIAL)
 
     onNodeWithTag(AddItemScreenTestTags.INPUT_MATERIAL, useUnmergedTree = true)
         .performTextReplacement(material)

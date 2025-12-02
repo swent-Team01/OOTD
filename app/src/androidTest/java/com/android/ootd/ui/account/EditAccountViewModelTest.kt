@@ -540,4 +540,37 @@ class EditAccountViewModelTest {
     assertNotNull(viewModel.uiState.value.errorMsg)
     assertTrue(viewModel.uiState.value.errorMsg!!.contains("Location permission denied"))
   }
+
+  @Test
+  fun uploadImageToStorage_invokes_callbacks_correctly() = runTest {
+    // Arrange
+    val localPath = "/local/image.jpg"
+    val uploadedUrl = "https://storage.example.com/test-uid/image.jpg"
+
+    val vm =
+        AccountViewModel(
+            accountService = accountService,
+            accountRepository = accountRepository,
+            userRepository = userRepository,
+            uploader = { uid, path, _ ->
+              assertEquals("test-uid", uid)
+              assertEquals(localPath, path)
+              uploadedUrl
+            })
+
+    signInAs(mockFirebaseUser)
+
+    // Act
+    var resultUrl: String? = null
+    var errorThrown: Throwable? = null
+
+    vm.uploadImageToStorage(
+        localPath = localPath, onResult = { resultUrl = it }, onError = { errorThrown = it })
+    advanceUntilIdle()
+
+    // Assert
+    assertEquals(uploadedUrl, resultUrl)
+    assertNull(errorThrown)
+    assertNull(vm.uiState.value.errorMsg)
+  }
 }

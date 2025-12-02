@@ -86,11 +86,12 @@ service cloud.firestore {
            && (resource == null || resource.data.ownerId == request.auth.uid);
     }
 
-    // Posts: readable by author or mutual friends
+    // Posts: readable by author or mutual friends OR if public
     match /posts/{postId} {
       allow read: if isAuthed() &&
                               (resource == null || resource.data.ownerId == request.auth.uid ||
-                                                 isFriend(request.auth.uid, resource.data.ownerId));
+                                                 isFriend(request.auth.uid, resource.data.ownerId) ||
+                                                 resource.data.isPublic == true);
     allow create: if isAuthed()
         && request.resource.data.ownerId == request.auth.uid;
 
@@ -105,7 +106,8 @@ service cloud.firestore {
     match /items/{itemId} {
       allow read: if isAuthed() &&
                         (resource == null || resource.data.ownerId == request.auth.uid ||
-                        isFriend(request.auth.uid, resource.data.ownerId));
+                        isFriend(request.auth.uid, resource.data.ownerId) ||
+                        resource.data.isPublic == true);
 
       allow create: if isAuthed()
           && request.resource.data.ownerId == request.auth.uid;
@@ -147,6 +149,9 @@ service cloud.firestore {
                   request.auth.uid,
                   get(/databases/$(database)/documents/posts/$(postId)).data.ownerId
                 )
+                ||
+                // Or if the post is public
+                get(/databases/$(database)/documents/posts/$(postId)).data.isPublic == true
              );
 
       allow delete: if isAuthed()
@@ -163,6 +168,9 @@ service cloud.firestore {
                   request.auth.uid,
                   get(/databases/$(database)/documents/posts/$(postId)).data.ownerId
                 )
+                ||
+                // Or if the post is public
+                get(/databases/$(database)/documents/posts/$(postId)).data.isPublic == true
              );
     }
 
