@@ -18,6 +18,9 @@ import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -167,10 +170,20 @@ class OutfitPreviewViewModel(
 
           // If post is public, update items to be public
           if (state.isPublic) {
-            items.forEach { item ->
-              if (!item.isPublic) {
-                itemsRepository.editItem(item.itemUuid, item.copy(isPublic = true))
+            val toMakePublic = items.filter { !it.isPublic }
+            try {
+              coroutineScope {
+                toMakePublic
+                    .map { item ->
+                      async { itemsRepository.editItem(item.itemUuid, item.copy(isPublic = true)) }
+                    }
+                    .awaitAll()
               }
+            } catch (e: Exception) {
+              Log.e("OutfitPreviewViewModel", "Failed to mark items public", e)
+              setErrorMessage("Failed to update items visibility")
+              _uiState.value = state.copy(isLoading = false)
+              return@launch
             }
           }
 

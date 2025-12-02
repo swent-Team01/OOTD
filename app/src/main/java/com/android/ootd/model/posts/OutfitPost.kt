@@ -29,6 +29,7 @@ data class OutfitPost(
     val itemsID: List<String> = emptyList(),
     val timestamp: Long = 0L,
     val location: Location = emptyLocation,
+    // Explicitly map to "isPublic" to prevent Firestore from mapping isPublic() to "public"
     @get:PropertyName("isPublic") val isPublic: Boolean = false
 
     // val reactionList - for when we implement reactions/commentaries to posts

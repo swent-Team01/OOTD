@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,6 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.utils.LoadingScreen
 import com.android.ootd.utils.NotificationButton
 import com.android.ootd.utils.OOTDTopBar
@@ -108,12 +112,12 @@ private fun FeedScaffold(
               })
           PrimaryTabRow(
               selectedTabIndex = if (isPublicFeed) 1 else 0,
-              containerColor = MaterialTheme.colorScheme.background,
-              contentColor = MaterialTheme.colorScheme.primary,
+              containerColor = White,
+              contentColor = Secondary,
               indicator = {
                 TabRowDefaults.PrimaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(if (isPublicFeed) 1 else 0),
-                    color = MaterialTheme.colorScheme.primary)
+                    color = Primary)
               }) {
                 Tab(
                     selected = !isPublicFeed,
@@ -124,8 +128,8 @@ private fun FeedScaffold(
                           style = MaterialTheme.typography.titleLarge,
                           fontWeight = if (!isPublicFeed) FontWeight.Bold else FontWeight.Normal)
                     },
-                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                    selectedContentColor = Primary,
+                    unselectedContentColor = Black)
                 Tab(
                     selected = isPublicFeed,
                     onClick = { if (!isPublicFeed) onToggleFeed() },
@@ -135,8 +139,8 @@ private fun FeedScaffold(
                           style = MaterialTheme.typography.titleLarge,
                           fontWeight = if (isPublicFeed) FontWeight.Bold else FontWeight.Normal)
                     },
-                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                    selectedContentColor = Primary,
+                    unselectedContentColor = Black)
               }
         }
       },
