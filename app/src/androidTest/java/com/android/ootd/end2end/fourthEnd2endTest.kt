@@ -79,24 +79,17 @@ class FourthEnd2EndTest : FirestoreTest() {
    * attempting to post an outfit, adding an item to the inventory and then logging out.
    *
    * This test validates the FULL application flow using the actual navigation system:
-   * 1. App starts at Splash screen
-   * 2. Navigates to Authentication screen
-   * 3. User clicks Google Sign-In button
-   * 4. Authentication succeeds with a new user
-   * 5. App automatically navigates to Registration screen
-   * 6. User enters username, date of birth and location
-   * 7. User clicks Save button
-   * 8. App navigates directly to Feed screen (consent already given via mock)
-   * 9. User adds post with one item attached to it and check it is displayed in feed
-   * 10. User searches for "greg" in the username field
-   * 11. User selects greg from the suggestions
-   * 12. User clicks Follow button on greg's profile
-   * 13. User clicks notification icon and goes to notification screen.
-   * 14. User accepts follow notification
-   * 15. User goes to inventory checks no items are there
-   * 16. User checks the add item button is there
-   * 17. User clicks Sign Out button
-   * 18. App navigates back to Authentication screen
+   * 1. Login as the first user and go through the whole sign-in process
+   * 2. Add a post in the feed of the first user
+   * 3. Make sure the post appears in the feed
+   * 4. Logout and login as second user
+   * 5. Create a post with one item for the second user
+   * 6. Follow the first user from the second user account
+   * 7. Logout from second user and login as first user
+   * 8. Accept follow request from second user from first user's account
+   * 9. Check that both posts of the users appear in the first user's feed
+   * 10. Check that you can see your posts in the account tab. 11 - TBD. TODO: Check Map
+   *     functionality
    *
    * LIMITATIONS:
    * - Taking photos launches external activities that break ComposeTestRule
@@ -124,12 +117,17 @@ class FourthEnd2EndTest : FirestoreTest() {
       }
     }
 
+    // STEP 1: Login as the first user and go through the whole sign-in process
     fullRegisterSequence(
         composeTestRule = composeTestRule, username = "user_1", dateOfBirth = testDateofBirth)
 
+    // STEP 2: Add a post in the feed of the first user
     addPostWithOneItem(composeTestRule) // Test adding item from inventory works as well
+
+    // STEP 3: Make sure the post appears in the feed
     checkPostAppearsInFeed(composeTestRule)
 
+    // STEP 4: Logout and login as second user
     signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
     FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
 
@@ -139,25 +137,31 @@ class FourthEnd2EndTest : FirestoreTest() {
         dateOfBirth = testDateofBirth,
         acceptBetaScreen = false)
 
+    // STEP 5: Create a post with one item for the second user
     addPostWithOneItem(composeTestRule)
 
+    // STEP 6: Follow the first user from the second user account
     searchAndFollowUser(composeTestRule, "user_1")
 
+    // STEP 7: Logout from second user and login as first user
     signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
     FakeCredentialManager.changeCredential(fakeGoogleIdToken)
 
     loginWithoutRegistering(composeTestRule = composeTestRule)
 
+    // STEP 8: Accept follow request from second user from first user's account
     openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
 
-    // Each user made a post and the current user is the friend of the other
-    // So this user can see both posts.
+    // STEP 9: Check that both posts of the users appear in the first user's feed
+
     checkNumberOfPostsInFeed(composeTestRule = composeTestRule, userRepository.getAllUsers().size)
 
-    // Check out whether you can see posts on your profile
+    // STEP 10: Check out whether you can see posts on your profile
 
     checkPostsAppearInAccountTab(composeTestRule = composeTestRule)
 
+    // STEP 11 - TBD: Check map functionality
+    // To be completed in a next PR after Julien's changes are merged.
     checkOutMap(composeTestRule = composeTestRule)
   }
 }
