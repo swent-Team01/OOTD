@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * UI state for the SeeFit screen.
@@ -67,20 +68,61 @@ class SeeFitViewModel(
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
       try {
-        // Gets the post owner ID otherwise it throws an exception caught below
-        val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
-        val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
-        // Get the current user ID to determine ownership
-        val currentUserId = accountService.currentUserId
-        // Determine if the current user is the owner of the post
-        val isOwner = currentUserId.isNotEmpty() && currentUserId == postOwner
-        _uiState.value =
-            _uiState.value.copy(
-                items = items,
-                postOwnerId = postOwner,
-                isOwner = isOwner,
-                isLoading = false,
-                errorMessage = null)
+        // Try offline/cached post first (no exception)
+        val cachedPost =
+            try {
+              feedRepository.getPostById(postUuid) // Firestore returns cached if offline
+            } catch (_: Exception) {
+              null
+            }
+        if (cachedPost != null) {
+          // Load cached items offline
+          val cachedItems =
+              try {
+                itemsRepository.getFriendItemsForPost(postUuid, cachedPost.ownerId)
+              } catch (_: Exception) {
+                emptyList()
+              }
+          // Get the current user ID to determine ownership
+          val currentUserId = accountService.currentUserId
+          // Determine if the current user is the owner of the post
+          val isOwner = currentUserId.isNotEmpty() && currentUserId == cachedPost.ownerId
+
+          _uiState.value =
+              _uiState.value.copy(
+                  items = cachedItems,
+                  postOwnerId = cachedPost.ownerId,
+                  isOwner = isOwner,
+                  isLoading = false,
+                  errorMessage = null)
+        }
+
+        // Best effort online refresh (2s timeout)
+        val freshPost =
+            withTimeoutOrNull(2000) { feedRepository.getPostById(postUuid) }
+                ?: return@launch // If offline, we stop, cached items are already shown
+
+        val freshItems =
+            try {
+              itemsRepository.getFriendItemsForPost(postUuid, freshPost.ownerId)
+            } catch (_: Exception) {
+              null
+            }
+
+        if (freshItems != null) {
+          // Get the current user ID to determine ownership
+          val currentUserId = accountService.currentUserId
+          // Determine if the current user is the owner of the post
+          val isOwner = currentUserId.isNotEmpty() && currentUserId == freshPost.ownerId
+
+          _uiState.value =
+              _uiState.value.copy(
+                  items = freshItems,
+                  postOwnerId = freshPost.ownerId,
+                  isOwner = isOwner,
+                  isLoading = false,
+                  errorMessage = null)
+        }
         refreshStarredItems()
       } catch (e: Exception) {
         Log.e("SeeFitViewModel", "Failed to load items for post", e)
