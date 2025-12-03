@@ -44,9 +44,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
+import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
@@ -75,6 +78,18 @@ object PostViewTestTags {
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
+private const val DEL_POST = "Delete Post"
+
+private fun resolveLocation(
+    post: OutfitPost,
+    locationUiState: LocationSelectionViewState
+): Location {
+  return locationUiState.selectedLocation
+      ?: post.location.copy(
+          name = locationUiState.locationQuery.ifBlank { post.location.name },
+          latitude = post.location.latitude,
+          longitude = post.location.longitude)
+}
 
 /**
  * Screen for viewing a single post in full detail
@@ -174,6 +189,23 @@ fun PostDetailsContent(
 
   LaunchedEffect(post.postUID) { locationSelectionViewModel.setLocation(post.location) }
 
+  val onStartEditing =
+      remember(post.postUID) {
+        {
+          isEditing = true
+          editedDescription = post.description
+        }
+      }
+  val onCancelEdit = remember { { isEditing = false } }
+  val onSaveEdits: () -> Unit = {
+    val chosenLocation = resolveLocation(post, locationUiState)
+    viewModel.savePostEdits(editedDescription, chosenLocation)
+    isEditing = false
+  }
+  val onDescriptionChange: (String) -> Unit = { description ->
+    if (description.length <= MAX_DESCRIPTION_LENGTH) editedDescription = description
+  }
+
   Column(modifier = modifier.verticalScroll(rememberScrollState())) {
     // Location box at the top
     LocationRow(
@@ -193,104 +225,21 @@ fun PostDetailsContent(
       PostOwnerSection(
           username = uiState.ownerUsername,
           profilePicture = uiState.ownerProfilePicture,
-          onEditClicked = {
-            isEditing = true
-            editedDescription = post.description
-          },
+          onEditClicked = { onStartEditing() },
           onDeletePost = onDeletePost,
           isOwner = uiState.isOwner)
 
       Spacer(Modifier.height(16.dp))
 
-      // If the user wants to edit the description, show a text field to edit it
-      if (isEditing) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 0.dp,
-            color = Secondary) {
-              Column(modifier = Modifier.padding(12.dp)) {
-                TextField(
-                    value = editedDescription,
-                    onValueChange = { description ->
-                      // Limit description length
-                      if (description.length <= MAX_DESCRIPTION_LENGTH) {
-                        editedDescription = description
-                      }
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
-                    colors = commonTextFieldColors(),
-                    trailingIcon = {
-                      Row {
-                        // Save edited description button
-                        IconButton(
-                            onClick = {
-                              isEditing = false
-                              val chosenLocation =
-                                  locationUiState.selectedLocation
-                                      ?: post.location.copy(
-                                          name =
-                                              locationUiState.locationQuery.ifBlank {
-                                                post.location.name
-                                              },
-                                          latitude = post.location.latitude,
-                                          longitude = post.location.longitude)
-                              viewModel.savePostEdits(editedDescription, chosenLocation)
-                            },
-                            modifier =
-                                Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON)) {
-                              Icon(
-                                  imageVector = Icons.Default.Check,
-                                  contentDescription = "Save editing",
-                                  tint = Primary,
-                              )
-                            }
-
-                        // Cancel button the editing description phase
-                        ActionIconButton(
-                            onClick = { isEditing = false },
-                            modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON),
-                            icon = Icons.Outlined.Close,
-                            contentDescription = "Cancel editing",
-                            tint = OOTDerror)
-                      }
-                    })
-                // Character counter that shows how many characters are written
-                ShowText(
-                    text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters",
-                    style = Typography.bodySmall,
-                    color = Primary,
-                    textAlign = TextAlign.End,
-                    modifier =
-                        Modifier.align(Alignment.End)
-                            .padding(top = 4.dp, end = 4.dp)
-                            .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
-
-                Spacer(Modifier.height(12.dp))
-
-                LocationSelectionSection(
-                    viewModel = locationSelectionViewModel,
-                    textGPSButton = "Use current location",
-                    textLocationField = "Location",
-                    onLocationSelect = { locationSelectionViewModel.setLocation(it) },
-                    onGPSClick = { locationSelectionViewModel.onLocationPermissionGranted() },
-                    modifier = Modifier.fillMaxWidth())
-              }
-            }
-      } else {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 0.dp,
-            color = Secondary) {
-              PostDescription(
-                  username = uiState.ownerUsername,
-                  description = post.description,
-                  modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                  textAlign = TextAlign.Start)
-            }
-      }
+      DescriptionSection(
+          isEditing = isEditing,
+          editedDescription = editedDescription,
+          ownerUsername = uiState.ownerUsername,
+          postDescription = post.description,
+          onDescriptionChange = onDescriptionChange,
+          onSave = onSaveEdits,
+          onCancel = onCancelEdit,
+          locationSelectionViewModel = locationSelectionViewModel)
 
       Spacer(Modifier.height(16.dp))
 
@@ -302,6 +251,97 @@ fun PostDetailsContent(
       LikedUsersRow(likedUsers = uiState.likedByUsers)
     }
   }
+}
+
+@Composable
+private fun DescriptionSection(
+    isEditing: Boolean,
+    editedDescription: String,
+    ownerUsername: String?,
+    postDescription: String,
+    onDescriptionChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    locationSelectionViewModel: LocationSelectionViewModel
+) {
+  if (isEditing) {
+    DescriptionEditor(
+        editedDescription = editedDescription,
+        onDescriptionChange = onDescriptionChange,
+        onSave = onSave,
+        onCancel = onCancel,
+        locationSelectionViewModel = locationSelectionViewModel)
+  } else {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 0.dp,
+        color = Secondary) {
+          PostDescription(
+              username = ownerUsername,
+              description = postDescription,
+              modifier = Modifier.padding(16.dp).fillMaxWidth(),
+              textAlign = TextAlign.Start)
+        }
+  }
+}
+
+@Composable
+private fun DescriptionEditor(
+    editedDescription: String,
+    onDescriptionChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    locationSelectionViewModel: LocationSelectionViewModel
+) {
+  Surface(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(16.dp),
+      tonalElevation = 0.dp,
+      color = Secondary) {
+        Column(modifier = Modifier.padding(12.dp)) {
+          TextField(
+              value = editedDescription,
+              onValueChange = onDescriptionChange,
+              modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
+              colors = commonTextFieldColors(),
+              trailingIcon = {
+                Row {
+                  ActionIconButton(
+                      onClick = onSave,
+                      modifier = Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON),
+                      icon = Icons.Default.Check,
+                      contentDescription = "Save editing",
+                      tint = Primary)
+                  ActionIconButton(
+                      onClick = onCancel,
+                      modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON),
+                      icon = Icons.Outlined.Close,
+                      contentDescription = "Cancel editing",
+                      tint = OOTDerror)
+                }
+              })
+          ShowText(
+              text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters",
+              style = Typography.bodySmall,
+              color = Primary,
+              textAlign = TextAlign.End,
+              modifier =
+                  Modifier.align(Alignment.End)
+                      .padding(top = 4.dp, end = 4.dp)
+                      .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
+
+          Spacer(Modifier.height(12.dp))
+
+          LocationSelectionSection(
+              viewModel = locationSelectionViewModel,
+              textGPSButton = "Use current location",
+              textLocationField = "Location",
+              onLocationSelect = { locationSelectionViewModel.setLocation(it) },
+              onGPSClick = { locationSelectionViewModel.onLocationPermissionGranted() },
+              modifier = Modifier.fillMaxWidth())
+        }
+      }
 }
 
 /**
@@ -379,8 +419,8 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
 
       // Delete option section
       DropdownMenuItem(
-          text = { Text("Delete post") },
-          leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = "Delete post") },
+          text = { Text(DEL_POST) },
+          leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = DEL_POST) },
           onClick = {
             expanded = false
             showDeleteDialog = true
@@ -393,7 +433,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
   if (showDeleteDialog) {
     AlertDialog(
         onDismissRequest = { showDeleteDialog = false },
-        title = { Text("Delete post") },
+        title = { Text(DEL_POST) },
         text = { Text("This will permanently delete this post. Continue?") },
         confirmButton = {
           TextButton(onClick = { onDeleteClicked() }) { Text("Delete", color = OOTDerror) }
