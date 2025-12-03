@@ -149,6 +149,7 @@ class AccountRepositoryFirestore(
   override suspend fun createAccount(
       user: User,
       userEmail: String,
+      profilePicture: String,
       dateOfBirth: String,
       location: Location
   ) {
@@ -164,7 +165,7 @@ class AccountRepositoryFirestore(
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
-            profilePicture = user.profilePicture,
+            profilePicture = profilePicture,
             location = location)
     try {
       addAccount(newAccount)

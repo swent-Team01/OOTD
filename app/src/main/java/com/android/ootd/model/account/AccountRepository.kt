@@ -11,6 +11,7 @@ interface AccountRepository {
   suspend fun createAccount(
       user: User,
       userEmail: String = "",
+      profilePicture: String = "",
       dateOfBirth: String,
       location: Location
   )

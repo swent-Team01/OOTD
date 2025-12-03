@@ -111,6 +111,14 @@ class RegisterViewModel(
     _uiState.value = _uiState.value.copy(errorMsg = msg)
   }
 
+    fun setProfilePicture(profilePic: String){
+        _uiState.value = _uiState.value.copy(profilePicture = profilePic)
+    }
+
+    fun clearProfilePicture() {
+        _uiState.value = _uiState.value.copy(profilePicture = "")
+    }
+
   /**
    * Updates the username in the UI state.
    *
@@ -197,7 +205,7 @@ class RegisterViewModel(
     }
 
     showLoading(true)
-    loadUser(uname)
+    loadUser(uname, uiState.value.profilePicture)
   }
 
   /**
@@ -206,21 +214,21 @@ class RegisterViewModel(
    *
    * @param username The username to register.
    */
-  private fun loadUser(username: String) {
+  private fun loadUser(username: String, profilePicture: String) {
     viewModelScope.launch {
       try {
         val userId = auth.currentUser!!.uid
-        val user = User(uid = userId, ownerId = userId, username = username)
+        val user = User(uid = userId, ownerId = userId, username = username, profilePicture = profilePicture)
         val email = auth.currentUser!!.email.orEmpty()
         val location = locationSelectionViewModel.uiState.value.selectedLocation ?: emptyLocation
         if (location == emptyLocation) throw MissingLocationException()
-        accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
+        accountRepository.createAccount(user, email,profilePicture = profilePicture, uiState.value.dateOfBirth, location)
         userRepository.createUser(
             username,
             userId,
             ownerId = userId,
             profilePicture =
-                user.profilePicture) // TODO: Add profile picture to register (empty string for now)
+                profilePicture) // TODO: Add profile picture to register (empty string for now)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {

@@ -64,6 +64,7 @@ class AccountRepositoryInMemory : AccountRepository {
   override suspend fun createAccount(
       user: User,
       userEmail: String,
+      profilePicture: String,
       dateOfBirth: String,
       location: Location
   ) {
@@ -79,7 +80,7 @@ class AccountRepositoryInMemory : AccountRepository {
             googleAccountEmail = userEmail,
             username = user.username,
             birthday = dateOfBirth,
-            profilePicture = user.profilePicture,
+            profilePicture = profilePicture,
             location = location)
     addAccount(newAccount)
   }
