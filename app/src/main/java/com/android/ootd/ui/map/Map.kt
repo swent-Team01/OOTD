@@ -39,7 +39,6 @@ object MapScreenTestTags {
   const val LOADING_INDICATOR = "loadingIndicator"
   const val TOP_BAR = "topBar"
   const val TOP_BAR_TITLE = "topBarTitle"
-  const val BACK_BUTTON = "backButton"
   const val CONTENT_BOX = "contentBox"
 
   fun getTestTagForPostMarker(postId: String): String = "postMarker_$postId"
@@ -48,11 +47,7 @@ object MapScreenTestTags {
 @SuppressLint("PotentialBehaviorOverride")
 @OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class)
 @Composable
-fun MapScreen(
-    viewModel: MapViewModel = viewModel(),
-    onPostClick: (String) -> Unit = {},
-    onBack: () -> Unit = {}
-) {
+fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
