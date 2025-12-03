@@ -176,7 +176,7 @@ class RegisterViewModel(
       } else {
         null
       }
-    } catch (e: DateTimeParseException) {
+    } catch (_: DateTimeParseException) {
       "Invalid date format"
     }
   }
