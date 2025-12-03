@@ -66,7 +66,6 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun createAccount(
             user: com.android.ootd.model.user.User,
             userEmail: String,
-            profilePicture: String,
             dateOfBirth: String,
             location: com.android.ootd.model.map.Location
         ) {}
