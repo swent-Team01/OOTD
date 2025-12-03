@@ -83,7 +83,27 @@ sealed class Screen(
   object BetaConsent :
       Screen(route = "betaConsent", name = "BetaConsent", isTopLevelDestination = true)
 
-  object Map : Screen(route = "map", name = "Map", isTopLevelDestination = false)
+  data class Map(
+      val latitude: Double? = null,
+      val longitude: Double? = null,
+      val locationName: String? = null
+  ) :
+      Screen(
+          route = buildMapRoute(latitude, longitude, locationName),
+          name = "Map",
+          isTopLevelDestination = false) {
+    companion object {
+      const val route = "map?lat={lat}&lon={lon}&name={name}"
+
+      private fun buildMapRoute(lat: Double?, lon: Double?, name: String?): String {
+        return if (lat != null && lon != null && name != null) {
+          "map?lat=$lat&lon=$lon&name=${Uri.encode(name)}"
+        } else {
+          "map"
+        }
+      }
+    }
+  }
 
   object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
