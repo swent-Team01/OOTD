@@ -29,7 +29,7 @@ fun ComposeTestRule.enterDate(date: String) {
   }
   onNodeWithText("Date").performClick()
   waitForIdle()
-  onNodeWithText("Date").assertIsDisplayed().performTextInput("10102020")
+  onNodeWithText("Date").assertIsDisplayed().performTextInput(date)
   waitForIdle()
 
   onNodeWithText("Confirm").performClick()

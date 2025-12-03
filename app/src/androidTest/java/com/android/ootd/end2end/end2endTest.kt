@@ -174,7 +174,7 @@ class End2EndTest : BaseEnd2EndTest() {
       composeTestRule.onNodeWithTag(RegisterScreenTestTags.REGISTER_DATE_PICKER).assertIsDisplayed()
 
       // Enter date and confirm
-      composeTestRule.enterDate("10102020")
+      composeTestRule.enterDate(testDateofBirth)
       composeTestRule.waitForIdle()
 
       // STEP 6b: Select a location
