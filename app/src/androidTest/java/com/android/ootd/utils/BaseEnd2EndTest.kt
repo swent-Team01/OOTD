@@ -137,7 +137,7 @@ open class BaseEnd2EndTest {
     coEvery { mockUserRepository.createUser(any(), any()) } returns Unit
 
     // Mock successful account creation
-    coEvery { mockAccountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+    coEvery { mockAccountRepository.createAccount(any(), any(), any(), any(),any()) } returns Unit
     coEvery { mockAccountRepository.accountExists(any()) } returns false
 
     // Mock consent as already given (user has consented, so consent screen will be skipped)

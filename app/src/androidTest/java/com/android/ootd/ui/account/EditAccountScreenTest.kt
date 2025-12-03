@@ -393,8 +393,9 @@ class EditAccountScreenTest {
 
     composeTestRule.setContent {
       ProfilePictureEditor(
-          viewModel = viewModel,
           context = ctx,
+          uploadProfilePicture = viewModel::uploadImageToStorage,
+          editProfilePicture = {url -> viewModel.editUser(profilePicture = url)},
           showImageSourceDialog = showDialog,
           onShowImageSourceDialogChange = { showDialog = it })
     }

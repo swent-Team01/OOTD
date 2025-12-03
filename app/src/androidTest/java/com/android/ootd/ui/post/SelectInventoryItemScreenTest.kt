@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -66,6 +67,7 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun createAccount(
             user: com.android.ootd.model.user.User,
             userEmail: String,
+            profilePicture: String,
             dateOfBirth: String,
             location: com.android.ootd.model.map.Location
         ) {}

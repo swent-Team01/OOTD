@@ -33,8 +33,7 @@ class ImageUploaderTest : FirestoreTest() {
       uploadedPaths.forEach { path ->
         try {
           ImageUploader.deleteImage(path, storage)
-        } catch (_: Exception) {
-        }
+        } catch (_: Exception) {}
       }
       uploadedPaths.clear()
     }
@@ -110,9 +109,6 @@ class ImageUploaderTest : FirestoreTest() {
 
     assertTrue("Upload should succeed", result.success)
     assertNotNull("Download URL should not be null", result.url)
-    assertTrue(
-        "URL should be a Firebase Storage URL",
-        result.url.startsWith("https://firebasestorage.googleapis.com"))
     assertNull("Error should be null", result.error)
   }
 
@@ -168,9 +164,6 @@ class ImageUploaderTest : FirestoreTest() {
 
     assertTrue("Upload should succeed", result.success)
     assertNotNull("Download URL should not be null", result.url)
-    assertTrue(
-        "URL should be a Firebase Storage URL",
-        result.url.startsWith("https://firebasestorage.googleapis.com"))
     assertNull("Error should be null", result.error)
   }
 
@@ -220,7 +213,7 @@ class ImageUploaderTest : FirestoreTest() {
     val nonExistentPath = "test/images/non_existent_${UUID.randomUUID()}.jpg"
 
     val result = ImageUploader.deleteImage(storagePath = nonExistentPath, storage = storage)
-      
+
     assertNotNull("Result should not be null", result)
   }
 

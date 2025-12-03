@@ -132,7 +132,7 @@ class AccountRepositoryInMemoryTest {
             ownerId = "user6",
             username = "george_washington",
             profilePicture = testProfilePicture)
-    repository.createAccount(user, testEmail, "",dateOfBirth = testDateOfBirth,EPFL_LOCATION)
+    repository.createAccount(user, testEmail, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     val acc = repository.getAccount("user6")
     assertEquals(user.uid, acc.uid)
     assertEquals(user.username, acc.username)
@@ -280,8 +280,8 @@ class AccountRepositoryInMemoryTest {
             profilePicture = testProfilePicture)
     val user2 =
         User(uid = "user7", ownerId = "user7", username = "no_pic_user", profilePicture = "")
-    repository.createAccount(user1, testEmail, "",dateOfBirth = testDateOfBirth, EPFL_LOCATION)
-    repository.createAccount(user2, testEmail, "",dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user1, testEmail, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user2, testEmail, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
 
     // Verify profile picture exists
     val accountBefore = repository.getAccount("user6")
