@@ -50,6 +50,7 @@ class FakeAccountRepository : AccountRepository {
   override suspend fun createAccount(
       user: User,
       userEmail: String,
+      profilePicture: String,
       dateOfBirth: String,
       location: Location
   ) {
