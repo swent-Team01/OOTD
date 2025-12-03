@@ -390,8 +390,7 @@ fun OOTDApp(
                               },
                           onPostClick = { postId ->
                             navigationActions.navigateTo(Screen.PostView(postId))
-                          },
-                          onBack = { navigationActions.goBack() })
+                          })
                     }
 
                 composable(Screen.InventoryScreen.route) {
