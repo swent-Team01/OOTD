@@ -105,19 +105,20 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
 
   @Test
   fun getPublicFeed_returnsOnlyPublicPosts() = runTest {
-    val publicPost1 = samplePost("public1", ts = 2000L).copy(isPublic = true)
-    val publicPost2 = samplePost("public2", ts = 1000L).copy(isPublic = true)
-    val privatePost = samplePost("private1", ts = 3000L).copy(isPublic = false)
+    val now = System.currentTimeMillis()
+    val recentPublic = samplePost("public1", ts = now - 1000).copy(isPublic = true)
+    val oldPublic =
+        samplePost("public2", ts = now - 25 * 60 * 60 * 1000).copy(isPublic = true) // 25 hours ago
+    val recentPrivate = samplePost("private1", ts = now - 2000).copy(isPublic = false)
 
-    feedRepository.addPost(publicPost1)
-    feedRepository.addPost(publicPost2)
-    feedRepository.addPost(privatePost)
+    feedRepository.addPost(recentPublic)
+    feedRepository.addPost(oldPublic)
+    feedRepository.addPost(recentPrivate)
 
     val result = feedRepository.getPublicFeed()
 
-    assertEquals(2, result.size)
-    assertEquals("public1", result[0].postUID) // Most recent first
-    assertEquals("public2", result[1].postUID)
+    assertEquals(1, result.size)
+    assertEquals("public1", result[0].postUID)
   }
 
   // -------- Error handling --------
