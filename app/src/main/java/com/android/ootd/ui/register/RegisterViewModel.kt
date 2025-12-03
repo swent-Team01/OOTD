@@ -248,8 +248,7 @@ class RegisterViewModel(
                 profilePicture = uploadedPictureUrl)
 
         // Create account with the uploaded picture URL
-        accountRepository.createAccount(
-            user, email, uiState.value.dateOfBirth, location)
+        accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
 
         // Create user with the uploaded picture URL
         userRepository.createUser(

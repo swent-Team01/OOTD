@@ -228,9 +228,7 @@ class RegisterViewModelTest {
     customVM.registerUser()
     advanceUntilIdle()
 
-    coVerify(atLeast = 1) {
-      accountRepository.createAccount(any(), customEmail, any(), any())
-    }
+    coVerify(atLeast = 1) { accountRepository.createAccount(any(), customEmail, any(), any()) }
   }
 
   // ========== Edge Cases and Boundary Tests ==========

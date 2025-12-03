@@ -280,8 +280,7 @@ class AccountRepositoryInMemoryTest {
             profilePicture = testProfilePicture)
     val user2 =
         User(uid = "user7", ownerId = "user7", username = "no_pic_user", profilePicture = "")
-    repository.createAccount(
-        user1, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     repository.createAccount(user2, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
 
     // Verify profile picture exists
