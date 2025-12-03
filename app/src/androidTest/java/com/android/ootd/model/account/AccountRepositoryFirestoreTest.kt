@@ -539,7 +539,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
             username = "test_location_user",
             profilePicture = "")
 
-    accountRepository.createAccount(user, testEmail, "", testDateOfBirth, EPFL_LOCATION)
+    accountRepository.createAccount(user, testEmail, testDateOfBirth, EPFL_LOCATION)
 
     val retrieved = accountRepository.getAccount(currentUser.uid)
     assertEquals(EPFL_LOCATION.latitude, retrieved.location.latitude, 0.0001)
@@ -906,7 +906,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
     // Try to create account with existing username - should log error and throw
     expectThrows<TakenUserException>("already in use") {
-      accountRepository.createAccount(user, "test@example.com", "", "1990-01-01", emptyLocation)
+      accountRepository.createAccount(user, "test@example.com", "1990-01-01", emptyLocation)
     }
   }
 
