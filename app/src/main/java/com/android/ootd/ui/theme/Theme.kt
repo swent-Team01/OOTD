@@ -26,7 +26,7 @@ val LightColorScheme =
         error = Color(0xFFB3261E),
         onError = Color.White)
 
-val OotdError
+val OOTDerror
   @Composable get() = colorScheme.error
 
 @Composable

@@ -50,10 +50,11 @@ import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
-import com.android.ootd.ui.theme.OotdError
+import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ShowText
 import kotlinx.coroutines.launch
 
 object PostViewTestTags {
@@ -247,21 +248,20 @@ fun PostDetailsContent(
                             }
 
                         // Cancel button the editing description phase
-                        IconButton(
+                        ActionIconButton(
                             onClick = { isEditing = false },
-                            modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON)) {
-                              Icon(
-                                  imageVector = Icons.Outlined.Close,
-                                  contentDescription = "Cancel editing",
-                                  tint = OotdError)
-                            }
+                            modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON),
+                            icon = Icons.Outlined.Close,
+                            contentDescription = "Cancel editing",
+                            tint = OOTDerror)
                       }
                     })
-                // Character counter that shows how many characters are left
-                Text(
-                    text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
+                // Character counter that shows how many characters are written
+                ShowText(
+                    text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters",
                     style = Typography.bodySmall,
                     color = Primary,
+                    textAlign = TextAlign.End,
                     modifier =
                         Modifier.align(Alignment.End)
                             .padding(top = 4.dp, end = 4.dp)
@@ -385,7 +385,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
             expanded = false
             showDeleteDialog = true
           },
-          colors = MenuDefaults.itemColors(textColor = OotdError, leadingIconColor = OotdError),
+          colors = MenuDefaults.itemColors(textColor = OOTDerror, leadingIconColor = OOTDerror),
           modifier = Modifier.testTag(PostViewTestTags.DELETE_POST_OPTION))
     }
   }
@@ -396,7 +396,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
         title = { Text("Delete post") },
         text = { Text("This will permanently delete this post. Continue?") },
         confirmButton = {
-          TextButton(onClick = { onDeleteClicked() }) { Text("Delete", color = OotdError) }
+          TextButton(onClick = { onDeleteClicked() }) { Text("Delete", color = OOTDerror) }
         },
         dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } })
   }
@@ -431,12 +431,11 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
   Row(
       modifier = Modifier.testTag(PostViewTestTags.LIKE_ROW),
       verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onToggleLike) {
-          Icon(
-              imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface,
-              contentDescription = if (isLiked) "Unlike" else "Like")
-        }
+        ActionIconButton(
+            onClick = onToggleLike,
+            icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = if (isLiked) "Unlike" else "Like",
+            tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface)
 
         Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
       }
