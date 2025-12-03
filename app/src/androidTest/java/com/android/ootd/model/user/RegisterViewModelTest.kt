@@ -228,7 +228,7 @@ class RegisterViewModelTest {
     customVM.registerUser()
     advanceUntilIdle()
 
-    coVerify(atLeast = 1) { accountRepository.createAccount(any(), customEmail, any(), any()) }
+    coVerify(atLeast = 1) { accountRepository.createAccount(any(), customEmail, any(), any(), any()) }
   }
 
   // ========== Edge Cases and Boundary Tests ==========
@@ -355,7 +355,7 @@ class RegisterViewModelTest {
     advanceUntilIdle()
 
     // Verify the location from LocationSelectionViewModel was used
-    coVerify { accountRepository.createAccount(any(), any(), any(), testLocation) }
+    coVerify { accountRepository.createAccount(any(), any(), any(), any(),testLocation) }
   }
 
   // ========== Refresh Functionality Tests ==========
@@ -386,7 +386,7 @@ class RegisterViewModelTest {
     assertFalse(viewModel.uiState.value.registered)
     assertEquals("", viewModel.uiState.value.uid)
     assertEquals("", viewModel.uiState.value.userEmail)
-    assertEquals("", viewModel.uiState.value.profilePicture)
+    assertEquals("", viewModel.uiState.value.localProfilePictureUri.toString())
   }
 
   @Test
@@ -425,7 +425,7 @@ class RegisterViewModelTest {
     assertEquals("User must be at least 13", viewModel.uiState.value.errorMsg)
     assertFalse(viewModel.uiState.value.registered)
     coVerify(exactly = 0) { userRepository.createUser(any(), any(), any()) }
-    coVerify(exactly = 0) { accountRepository.createAccount(any(), any(), any(), any()) }
+    coVerify(exactly = 0) { accountRepository.createAccount(any(), any(), any(), any(),any()) }
   }
 
   @Test

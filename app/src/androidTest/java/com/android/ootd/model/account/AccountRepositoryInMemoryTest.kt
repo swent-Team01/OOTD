@@ -132,7 +132,7 @@ class AccountRepositoryInMemoryTest {
             ownerId = "user6",
             username = "george_washington",
             profilePicture = testProfilePicture)
-    repository.createAccount(user, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user, testEmail, "",dateOfBirth = testDateOfBirth,EPFL_LOCATION)
     val acc = repository.getAccount("user6")
     assertEquals(user.uid, acc.uid)
     assertEquals(user.username, acc.username)
@@ -221,8 +221,8 @@ class AccountRepositoryInMemoryTest {
             username = "duplicate_user",
             profilePicture = "")
     expectThrows<TakenUserException>("Username already in use") {
-      repository.createAccount(u1, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
-      repository.createAccount(u2, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+      repository.createAccount(u1, testEmail, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+      repository.createAccount(u2, testEmail, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     }
   }
 
@@ -280,8 +280,8 @@ class AccountRepositoryInMemoryTest {
             profilePicture = testProfilePicture)
     val user2 =
         User(uid = "user7", ownerId = "user7", username = "no_pic_user", profilePicture = "")
-    repository.createAccount(user1, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
-    repository.createAccount(user2, testEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user1, testEmail, "",dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user2, testEmail, "",dateOfBirth = testDateOfBirth, EPFL_LOCATION)
 
     // Verify profile picture exists
     val accountBefore = repository.getAccount("user6")
@@ -330,7 +330,7 @@ class AccountRepositoryInMemoryTest {
     val user =
         User(uid = "user8", ownerId = "user8", username = "empty_email_user", profilePicture = "")
     val emptyEmail = ""
-    repository.createAccount(user, emptyEmail, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(user, emptyEmail, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     val account = repository.getAccount("user8")
     assertEquals(emptyEmail, account.googleAccountEmail)
     assertEquals("user8", account.uid)
@@ -338,8 +338,8 @@ class AccountRepositoryInMemoryTest {
     val a = User(uid = "user9", ownerId = "user9", username = "first_user", profilePicture = "")
     val b = User(uid = "user10", ownerId = "user10", username = "second_user", profilePicture = "")
     val email = "shared@example.com"
-    repository.createAccount(a, email, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
-    repository.createAccount(b, email, dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(a, email, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
+    repository.createAccount(b, email, "", dateOfBirth = testDateOfBirth, EPFL_LOCATION)
     assertEquals(email, repository.getAccount("user9").googleAccountEmail)
     assertEquals(email, repository.getAccount("user10").googleAccountEmail)
   }

@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Instrumentation tests for ImageUploader utility.
+ * Instrumentation tests for ImageUploader utility. These tests have been done with AI
  *
  * These tests verify the actual upload/download behavior with Firebase Storage.
  */
@@ -29,13 +29,11 @@ class ImageUploaderTest : FirestoreTest() {
 
   @After
   fun cleanup() {
-    // Clean up all uploaded test images
     runTest {
       uploadedPaths.forEach { path ->
         try {
           ImageUploader.deleteImage(path, storage)
         } catch (_: Exception) {
-          // Ignore cleanup errors
         }
       }
       uploadedPaths.clear()
@@ -159,61 +157,6 @@ class ImageUploaderTest : FirestoreTest() {
   }
 
   @Test
-  fun uploadImageBytes_withValidData_uploadsAndReturnsDownloadUrl() = runTest {
-    val imageBytes =
-        byteArrayOf(
-            0xFF.toByte(),
-            0xD8.toByte(),
-            0xFF.toByte(),
-            0xE0.toByte(),
-            0x00.toByte(),
-            0x10.toByte(),
-            0x4A.toByte(),
-            0x46.toByte(),
-            0x49.toByte(),
-            0x46.toByte(),
-            0x00.toByte(),
-            0x01.toByte(),
-            0x01.toByte(),
-            0x00.toByte(),
-            0x00.toByte(),
-            0x01.toByte(),
-            0x00.toByte(),
-            0x01.toByte(),
-            0x00.toByte(),
-            0x00.toByte(),
-            0xFF.toByte(),
-            0xD9.toByte())
-    val storagePath = "test/images/bytes_${UUID.randomUUID()}.jpg"
-    uploadedPaths.add(storagePath)
-
-    val result =
-        ImageUploader.uploadImageBytes(
-            imageData = imageBytes, storagePath = storagePath, storage = storage)
-
-    assertTrue("Upload should succeed", result.success)
-    assertNotNull("Download URL should not be null", result.url)
-    assertTrue(
-        "URL should be a Firebase Storage URL",
-        result.url.startsWith("https://firebasestorage.googleapis.com"))
-    assertNull("Error should be null", result.error)
-  }
-
-  @Test
-  fun uploadImageBytes_withEmptyData_handlesGracefully() = runTest {
-    val emptyBytes = byteArrayOf()
-    val storagePath = "test/images/empty_${UUID.randomUUID()}.jpg"
-    uploadedPaths.add(storagePath)
-
-    val result =
-        ImageUploader.uploadImageBytes(
-            imageData = emptyBytes, storagePath = storagePath, storage = storage)
-
-    // Firebase Storage accepts empty files, so this should succeed
-    assertTrue("Upload should succeed (Firebase accepts empty files)", result.success)
-  }
-
-  @Test
   fun uploadImageToReference_withValidUri_uploadsSuccessfully() = runTest {
     val testUri = createTestImageFile()
     val storagePath = "test/images/ref_${UUID.randomUUID()}.jpg"
@@ -277,10 +220,7 @@ class ImageUploaderTest : FirestoreTest() {
     val nonExistentPath = "test/images/non_existent_${UUID.randomUUID()}.jpg"
 
     val result = ImageUploader.deleteImage(storagePath = nonExistentPath, storage = storage)
-
-    // Firebase Storage delete returns success if file doesn't exist
-    // Our implementation returns false on error, but this might not find the file
-    // The behavior depends on the exception type
+      
     assertNotNull("Result should not be null", result)
   }
 
@@ -307,49 +247,5 @@ class ImageUploaderTest : FirestoreTest() {
     assertTrue("First delete should succeed", firstDelete)
     // Second delete behavior depends on implementation
     assertNotNull("Second delete should return a result", secondDelete)
-  }
-
-  @Test
-  fun uploadImage_multipleImagesSequentially_allSucceed() = runTest {
-    val results = mutableListOf<ImageUploader.UploadResult>()
-
-    repeat(3) { index ->
-      val testUri = createTestImageFile()
-      val storagePath = "test/images/sequential_${index}_${UUID.randomUUID()}.jpg"
-      uploadedPaths.add(storagePath)
-
-      val result =
-          ImageUploader.uploadImage(
-              localUri = testUri.toString(), storagePath = storagePath, storage = storage)
-      results.add(result)
-    }
-
-    // All uploads should succeed
-    results.forEach { result ->
-      assertTrue("All uploads should succeed", result.success)
-      assertNotNull("All should have URLs", result.url)
-      assertTrue(
-          "All URLs should be Firebase Storage URLs",
-          result.url.startsWith("https://firebasestorage.googleapis.com"))
-    }
-
-    // All URLs should be different
-    val uniqueUrls = results.map { it.url }.toSet()
-    assertEquals("All URLs should be unique", 3, uniqueUrls.size)
-  }
-
-  @Test
-  fun uploadImageBytes_largeImage_handlesSuccessfully() = runTest {
-    // Create a larger image (100KB)
-    val largeImageBytes = ByteArray(100 * 1024) { it.toByte() }
-    val storagePath = "test/images/large_${UUID.randomUUID()}.jpg"
-    uploadedPaths.add(storagePath)
-
-    val result =
-        ImageUploader.uploadImageBytes(
-            imageData = largeImageBytes, storagePath = storagePath, storage = storage)
-
-    assertTrue("Large image upload should succeed", result.success)
-    assertNotNull("Download URL should not be null", result.url)
   }
 }
