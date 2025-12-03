@@ -30,7 +30,6 @@ import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.android.ootd.utils.BaseEnd2EndTest
-import com.android.ootd.utils.InMemoryItem.ensureVisible
 import com.android.ootd.utils.clickWithWait
 import com.android.ootd.utils.verifyElementAppearsWithTimer
 import com.android.ootd.utils.verifyElementDoesNotAppearWithTimer
@@ -242,14 +241,13 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
     clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
     composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
 
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
     composeTestRule.waitUntil(timeoutMillis = 5_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
-    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON, shouldScroll = true)
+    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON, shouldScroll = false)
     verifyElementAppearsWithTimer(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
 

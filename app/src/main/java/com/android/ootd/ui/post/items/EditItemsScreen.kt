@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -37,11 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color.Companion.Red
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -142,38 +144,40 @@ fun EditItemsScreen(
               verticalArrangement = Arrangement.spacedBy(10.dp),
               horizontalAlignment = Alignment.End) {
                 // Delete FAB
-
-                ExtendedFloatingActionButton(
-                    onClick = {
-                      if (itemsUIState.itemId.isNotEmpty()) editItemsViewModel.deleteItem()
-                    },
-                    containerColor = Red,
-                    icon = {
+                val isDeleteEnabled = itemsUIState.itemId.isNotEmpty()
+                FloatingActionButton(
+                    onClick = { if (isDeleteEnabled) editItemsViewModel.deleteItem() },
+                    containerColor =
+                        if (isDeleteEnabled) MaterialTheme.colorScheme.error else Color.Gray,
+                    modifier =
+                        Modifier.testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).semantics {
+                          if (!isDeleteEnabled) disabled()
+                        }) {
                       Icon(
                           imageVector = Icons.Default.Delete,
                           contentDescription = "Delete Item",
-                          tint = White)
-                    },
-                    text = { Text(text = "Delete item", color = White) },
-                    modifier = Modifier.testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM))
+                          tint =
+                              if (isDeleteEnabled) MaterialTheme.colorScheme.onError
+                              else Color.White)
+                    }
 
                 // Save FAB
                 val isSaveEnabled =
                     (itemsUIState.localPhotoUri != null ||
                         itemsUIState.image.imageUrl.isNotEmpty()) &&
                         itemsUIState.category.isNotEmpty()
-
-                ExtendedFloatingActionButton(
+                FloatingActionButton(
                     onClick = { if (isSaveEnabled) editItemsViewModel.onSaveItemClick(context) },
-                    containerColor = if (isSaveEnabled) Primary else Tertiary,
-                    icon = {
+                    containerColor = if (isSaveEnabled) Primary else Color.Gray,
+                    modifier =
+                        Modifier.testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).semantics {
+                          if (!isSaveEnabled) disabled()
+                        }) {
                       Icon(
                           imageVector = Icons.Default.Check,
                           contentDescription = "Save Changes",
                           tint = White)
-                    },
-                    text = { Text(text = "Save item", color = White) },
-                    modifier = Modifier.testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES))
+                    }
               }
         },
         content = { innerPadding ->
