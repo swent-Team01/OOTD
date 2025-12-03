@@ -14,7 +14,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.UserRepositoryInMemory
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
 
 object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
@@ -31,7 +34,7 @@ fun UserSearchScreen(
   Column(
       modifier =
           Modifier.fillMaxSize()
-              .background(MaterialTheme.colorScheme.background)
+              .background(Background)
               .verticalScroll(rememberScrollState())
               .padding(vertical = 32.dp, horizontal = 20.dp)
               .testTag(SearchScreenTestTags.SEARCH_SCREEN)) {
@@ -40,10 +43,7 @@ fun UserSearchScreen(
 
           Spacer(modifier = Modifier.weight(1f))
 
-          Text(
-              text = "OOTD",
-              style = MaterialTheme.typography.headlineLarge,
-              color = MaterialTheme.colorScheme.primary)
+          Text(text = "OOTD", style = Typography.headlineLarge, color = Primary)
 
           Spacer(modifier = Modifier.weight(1f))
 

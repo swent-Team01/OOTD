@@ -7,6 +7,9 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.inventory.InventoryGrid
+import com.android.ootd.ui.inventory.InventoryItemCard
+import com.android.ootd.ui.inventory.InventoryScreenTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

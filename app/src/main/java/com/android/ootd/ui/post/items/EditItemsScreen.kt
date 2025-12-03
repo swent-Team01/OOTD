@@ -16,15 +16,14 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -38,10 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -51,6 +53,10 @@ import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.OOTDTopBar
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
@@ -129,7 +135,51 @@ fun EditItemsScreen(
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
-        topBar = { EditTopBar(goBack) },
+        topBar = {
+          OOTDTopBar(
+              centerText = "EDIT ITEMS", leftComposable = { BackArrow(onBackClick = goBack) })
+        },
+        floatingActionButton = {
+          Column(
+              verticalArrangement = Arrangement.spacedBy(10.dp),
+              horizontalAlignment = Alignment.End) {
+                // Delete FAB
+                val isDeleteEnabled = itemsUIState.itemId.isNotEmpty()
+                FloatingActionButton(
+                    onClick = { if (isDeleteEnabled) editItemsViewModel.deleteItem() },
+                    containerColor =
+                        if (isDeleteEnabled) MaterialTheme.colorScheme.error else Color.Gray,
+                    modifier =
+                        Modifier.testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).semantics {
+                          if (!isDeleteEnabled) disabled()
+                        }) {
+                      Icon(
+                          imageVector = Icons.Default.Delete,
+                          contentDescription = "Delete Item",
+                          tint =
+                              if (isDeleteEnabled) MaterialTheme.colorScheme.onError
+                              else Color.White)
+                    }
+
+                // Save FAB
+                val isSaveEnabled =
+                    (itemsUIState.localPhotoUri != null ||
+                        itemsUIState.image.imageUrl.isNotEmpty()) &&
+                        itemsUIState.category.isNotEmpty()
+                FloatingActionButton(
+                    onClick = { if (isSaveEnabled) editItemsViewModel.onSaveItemClick(context) },
+                    containerColor = if (isSaveEnabled) Primary else Color.Gray,
+                    modifier =
+                        Modifier.testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).semantics {
+                          if (!isSaveEnabled) disabled()
+                        }) {
+                      Icon(
+                          imageVector = Icons.Default.Check,
+                          contentDescription = "Save Changes",
+                          tint = White)
+                    }
+              }
+        },
         content = { innerPadding ->
           Box(
               modifier =
@@ -161,13 +211,6 @@ fun EditItemsScreen(
                     onCurrencyChange = editItemsViewModel::setCurrency,
                     link = itemsUIState.link,
                     onLinkChange = editItemsViewModel::setLink,
-                    isDeleteEnabled = itemsUIState.itemId.isNotEmpty(),
-                    onDelete = editItemsViewModel::deleteItem,
-                    isSaveEnabled =
-                        (itemsUIState.localPhotoUri != null ||
-                            itemsUIState.image.imageUrl.isNotEmpty()) &&
-                            itemsUIState.category.isNotEmpty(),
-                    onSave = { editItemsViewModel.onSaveItemClick(context) },
                     // Additional
                     condition = itemsUIState.condition,
                     onConditionChange = editItemsViewModel::setCondition,
@@ -199,40 +242,19 @@ fun EditItemsScreen(
                             tint = Tertiary,
                             modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text("No picture yet", style = MaterialTheme.typography.bodyMedium)
+                        Text("No picture yet", style = Typography.bodyMedium)
                       }
                     })
               }
         })
 
-    LoadingOverlay(visible = itemsUIState.isLoading)
+    if (itemsUIState.isLoading) {
+      CenteredLoadingState(message = "Uploading item...")
+    }
   }
 }
 
 // --- Extracted composables to reduce cognitive complexity ---
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditTopBar(goBack: () -> Unit) {
-  CenterAlignedTopAppBar(
-      title = {
-        Text(
-            "EDIT ITEMS",
-            style =
-                MaterialTheme.typography.displayLarge.copy(
-                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary))
-      },
-      navigationIcon = {
-        Box(modifier = Modifier.padding(start = 4.dp), contentAlignment = Alignment.Center) {
-          IconButton(onClick = { goBack() }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.tertiary)
-          }
-        }
-      })
-}
-
 @Composable
 private fun FieldsList(
     modifier: Modifier,
@@ -252,10 +274,6 @@ private fun FieldsList(
     onCurrencyChange: (String) -> Unit,
     link: String,
     onLinkChange: (String) -> Unit,
-    isDeleteEnabled: Boolean,
-    onDelete: () -> Unit,
-    isSaveEnabled: Boolean,
-    onSave: () -> Unit,
     condition: String,
     onConditionChange: (String) -> Unit,
     size: String,
@@ -346,13 +364,7 @@ private fun FieldsList(
                             condExpandedInitially = conditionMenuExpandedPreview),
                     tags = detailsTags)
               },
-              actionButtons = {
-                SaveDeleteRow(
-                    isDeleteEnabled = isDeleteEnabled,
-                    onDelete = onDelete,
-                    isSaveEnabled = isSaveEnabled,
-                    onSave = onSave)
-              }))
+              actionButtons = { Spacer(modifier = Modifier.height(24.dp)) }))
 }
 
 @Composable
@@ -369,44 +381,6 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
         modifier = Modifier.weight(1f).testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA),
         colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
           Text("Take a new picture")
-        }
-  }
-}
-
-@Composable
-private fun SaveDeleteRow(
-    isDeleteEnabled: Boolean,
-    onDelete: () -> Unit,
-    isSaveEnabled: Boolean,
-    onSave: () -> Unit,
-) {
-  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    Button(
-        onClick = onDelete,
-        enabled = isDeleteEnabled,
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError),
-        modifier = Modifier.weight(1f).testTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)) {
-          Row(
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.size(8.dp))
-                Text("Delete Item")
-              }
-        }
-
-    Button(
-        onClick = onSave,
-        enabled = isSaveEnabled,
-        modifier = Modifier.weight(1f).testTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES),
-        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-          Text("Save Changes")
         }
   }
 }
@@ -430,7 +404,9 @@ fun EditItemsScreenSmallPreview() {
 
     Box(modifier = Modifier.fillMaxSize()) {
       Scaffold(
-          topBar = { EditTopBar(goBack = {}) },
+          topBar = {
+            OOTDTopBar(centerText = "EDIT ITEMS", leftComposable = { BackArrow(onBackClick = {}) })
+          },
           content = { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
               FieldsList(
@@ -454,10 +430,6 @@ fun EditItemsScreenSmallPreview() {
                   onCurrencyChange = {},
                   link = "https://example.com/item",
                   onLinkChange = {},
-                  isDeleteEnabled = true,
-                  onDelete = {},
-                  isSaveEnabled = true,
-                  onSave = {},
                   condition = "New",
                   onConditionChange = {},
                   size = "M",

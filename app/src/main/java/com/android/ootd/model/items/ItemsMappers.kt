@@ -39,6 +39,7 @@ object ItemsMappers {
       val fitType = data["fitType"] as? String
       val style = data["style"] as? String
       val notes = data["notes"] as? String
+      val isPublic = data["isPublic"] as? Boolean ?: false
 
       Item(
           itemUuid = itemUuid,
@@ -56,7 +57,8 @@ object ItemsMappers {
           size = size,
           fitType = fitType,
           style = style,
-          notes = notes)
+          notes = notes,
+          isPublic = isPublic)
     } catch (e: Exception) {
       null
     }
@@ -83,5 +85,5 @@ object ItemsMappers {
           "fitType" to item.fitType,
           "style" to item.style,
           "notes" to item.notes,
-      )
+          "isPublic" to item.isPublic)
 }

@@ -1,19 +1,24 @@
 package com.android.ootd.ui.post
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,27 +26,46 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.map.LocationSelectionSection
+import com.android.ootd.ui.map.LocationSelectionViewModel
+import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.utils.composables.ActionIconButton
+import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ShowText
+import kotlinx.coroutines.launch
 
 object PostViewTestTags {
   const val SCREEN = "postViewScreen"
   const val TOP_BAR = "postViewTopBar"
   const val BACK_BUTTON = "postViewBackButton"
   const val POST_IMAGE = "postViewImage"
+  const val LIKE_ROW = "postViewLikeRow"
   const val LOADING_INDICATOR = "postViewLoading"
   const val SNACKBAR_HOST = "postViewErrorSnackbarHost"
   const val DROPDOWN_OPTIONS_MENU = "dropdownOptionsMenu"
@@ -54,6 +78,18 @@ object PostViewTestTags {
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
+private const val DEL_POST = "Delete Post"
+
+private fun resolveLocation(
+    post: OutfitPost,
+    locationUiState: LocationSelectionViewState
+): Location {
+  return locationUiState.selectedLocation
+      ?: post.location.copy(
+          name = locationUiState.locationQuery.ifBlank { post.location.name },
+          latitude = post.location.latitude,
+          longitude = post.location.longitude)
+}
 
 /**
  * Screen for viewing a single post in full detail
@@ -67,14 +103,14 @@ private const val MAX_DESCRIPTION_LENGTH = 100
 fun PostViewScreen(
     postId: String,
     onBack: () -> Unit,
+    onDeleted: () -> Unit = { onBack() },
     viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId))
 ) {
   val uiState by viewModel.uiState.collectAsState()
-
   val snackBarHostState = remember { SnackbarHostState() }
+  val coroutineScope = rememberCoroutineScope()
 
   LaunchedEffect(postId) { viewModel.loadPost(postId) }
-  val colors = MaterialTheme.colorScheme
 
   LaunchedEffect(uiState.error) {
     uiState.error?.let { errorMessage ->
@@ -88,23 +124,13 @@ fun PostViewScreen(
       modifier = Modifier.fillMaxSize().testTag(PostViewTestTags.SCREEN),
       containerColor = Background,
       topBar = {
-        TopAppBar(
-            title = { Text("Post", color = Primary) },
-            navigationIcon = {
-              IconButton(
-                  onClick = onBack, modifier = Modifier.testTag(PostViewTestTags.BACK_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colors.onBackground)
-                  }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = Background,
-                    titleContentColor = Primary,
-                    navigationIconContentColor = Primary),
-            modifier = Modifier.testTag(PostViewTestTags.TOP_BAR))
+        OOTDTopBar(
+            modifier = Modifier.testTag(PostViewTestTags.TOP_BAR),
+            centerText = "Post",
+            leftComposable = {
+              BackArrow(
+                  onBackClick = onBack, modifier = Modifier.testTag(PostViewTestTags.BACK_BUTTON))
+            })
       },
       snackbarHost = {
         SnackbarHost(
@@ -125,7 +151,14 @@ fun PostViewScreen(
                   uiState = uiState,
                   onToggleLike = { viewModel.toggleLike() },
                   modifier = Modifier.fillMaxSize(),
-                  viewModel = viewModel)
+                  viewModel = viewModel,
+                  onDeletePost = {
+                    viewModel.deletePost(
+                        onSuccess = { onDeleted() },
+                        onError = { msg ->
+                          coroutineScope.launch { snackBarHostState.showSnackbar(msg) }
+                        })
+                  })
             }
           }
         }
@@ -143,90 +176,172 @@ fun PostDetailsContent(
     uiState: PostViewUiState,
     onToggleLike: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PostViewViewModel
+    viewModel: PostViewViewModel,
+    onDeletePost: () -> Unit
 ) {
   val post = uiState.post!!
 
   var isEditing by remember { mutableStateOf(false) }
   var editedDescription by remember { mutableStateOf(post.description) }
+  val locationSelectionViewModel = remember { LocationSelectionViewModel() }
+  val locationUiState by locationSelectionViewModel.uiState.collectAsState()
+  var isLocationExpanded by remember { mutableStateOf(false) }
 
-  Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
-    PostOwnerSection(
-        username = uiState.ownerUsername,
-        profilePicture = uiState.ownerProfilePicture,
-        onEditClicked = {
+  LaunchedEffect(post.postUID) { locationSelectionViewModel.setLocation(post.location) }
+
+  val onStartEditing =
+      remember(post.postUID) {
+        {
           isEditing = true
           editedDescription = post.description
-        },
-        isOwner = uiState.isOwner)
-
-    Spacer(Modifier.height(16.dp))
-
-    PostImage(imageUrl = post.outfitURL)
-
-    Spacer(Modifier.height(16.dp))
-
-    // If the user wants to edit the description, show a text field to edit it
-    if (isEditing) {
-      TextField(
-          value = editedDescription,
-          onValueChange = { description ->
-            // Limit description length
-            if (description.length <= MAX_DESCRIPTION_LENGTH) {
-              editedDescription = description
-            }
-          },
-          modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
-          colors = commonTextFieldColors(),
-          trailingIcon = {
-            Row {
-              // Save edited description button
-              IconButton(
-                  onClick = {
-                    isEditing = false
-                    viewModel.saveDescription(editedDescription)
-                  },
-                  modifier = Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save editing",
-                        tint = Primary,
-                    )
-                  }
-
-              // Cancel button the editing description phase
-              IconButton(
-                  onClick = { isEditing = false },
-                  modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Outlined.Close,
-                        contentDescription = "Cancel editing",
-                        tint = MaterialTheme.colorScheme.error)
-                  }
-            }
-          })
-      // Character counter that shows how many characters are left
-      Text(
-          text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters left",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.primary,
-          modifier =
-              Modifier.align(Alignment.End)
-                  .padding(top = 4.dp, end = 4.dp)
-                  .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
-    } else {
-      PostDescription(post.description)
-    }
-
-    Spacer(Modifier.height(16.dp))
-
-    PostLikeRow(
-        isLiked = uiState.isLikedByCurrentUser,
-        likeCount = uiState.likedByUsers.size,
-        onToggleLike = onToggleLike)
-
-    LikedUsersRow(likedUsers = uiState.likedByUsers)
+        }
+      }
+  val onCancelEdit = remember { { isEditing = false } }
+  val onSaveEdits: () -> Unit = {
+    val chosenLocation = resolveLocation(post, locationUiState)
+    viewModel.savePostEdits(editedDescription, chosenLocation)
+    isEditing = false
   }
+  val onDescriptionChange: (String) -> Unit = { description ->
+    if (description.length <= MAX_DESCRIPTION_LENGTH) editedDescription = description
+  }
+
+  Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+    // Location box at the top
+    LocationRow(
+        location = post.location.name,
+        isExpanded = isLocationExpanded,
+        onToggleExpanded = { isLocationExpanded = !isLocationExpanded })
+
+    Column(modifier = Modifier.padding(16.dp)) {
+      PostHeroImage(
+          imageUrl = post.outfitURL,
+          likeCount = uiState.likedByUsers.size,
+          isLiked = uiState.isLikedByCurrentUser,
+          onToggleLike = onToggleLike)
+
+      Spacer(Modifier.height(16.dp))
+
+      PostOwnerSection(
+          username = uiState.ownerUsername,
+          profilePicture = uiState.ownerProfilePicture,
+          onEditClicked = { onStartEditing() },
+          onDeletePost = onDeletePost,
+          isOwner = uiState.isOwner)
+
+      Spacer(Modifier.height(16.dp))
+
+      DescriptionSection(
+          isEditing = isEditing,
+          editedDescription = editedDescription,
+          ownerUsername = uiState.ownerUsername,
+          postDescription = post.description,
+          onDescriptionChange = onDescriptionChange,
+          onSave = onSaveEdits,
+          onCancel = onCancelEdit,
+          locationSelectionViewModel = locationSelectionViewModel)
+
+      Spacer(Modifier.height(16.dp))
+
+      PostLikeRow(
+          isLiked = uiState.isLikedByCurrentUser,
+          likeCount = uiState.likedByUsers.size,
+          onToggleLike = onToggleLike)
+
+      LikedUsersRow(likedUsers = uiState.likedByUsers)
+    }
+  }
+}
+
+@Composable
+private fun DescriptionSection(
+    isEditing: Boolean,
+    editedDescription: String,
+    ownerUsername: String?,
+    postDescription: String,
+    onDescriptionChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    locationSelectionViewModel: LocationSelectionViewModel
+) {
+  if (isEditing) {
+    DescriptionEditor(
+        editedDescription = editedDescription,
+        onDescriptionChange = onDescriptionChange,
+        onSave = onSave,
+        onCancel = onCancel,
+        locationSelectionViewModel = locationSelectionViewModel)
+  } else {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 0.dp,
+        color = Secondary) {
+          PostDescription(
+              username = ownerUsername,
+              description = postDescription,
+              modifier = Modifier.padding(16.dp).fillMaxWidth(),
+              textAlign = TextAlign.Start)
+        }
+  }
+}
+
+@Composable
+private fun DescriptionEditor(
+    editedDescription: String,
+    onDescriptionChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    locationSelectionViewModel: LocationSelectionViewModel
+) {
+  Surface(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(16.dp),
+      tonalElevation = 0.dp,
+      color = Secondary) {
+        Column(modifier = Modifier.padding(12.dp)) {
+          TextField(
+              value = editedDescription,
+              onValueChange = onDescriptionChange,
+              modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD),
+              colors = commonTextFieldColors(),
+              trailingIcon = {
+                Row {
+                  ActionIconButton(
+                      onClick = onSave,
+                      modifier = Modifier.testTag(PostViewTestTags.SAVE_EDITED_DESCRIPTION_BUTTON),
+                      icon = Icons.Default.Check,
+                      contentDescription = "Save editing",
+                      tint = Primary)
+                  ActionIconButton(
+                      onClick = onCancel,
+                      modifier = Modifier.testTag(PostViewTestTags.CANCEL_EDITING_BUTTON),
+                      icon = Icons.Outlined.Close,
+                      contentDescription = "Cancel editing",
+                      tint = OOTDerror)
+                }
+              })
+          ShowText(
+              text = "${editedDescription.length}/$MAX_DESCRIPTION_LENGTH characters",
+              style = Typography.bodySmall,
+              color = Primary,
+              textAlign = TextAlign.End,
+              modifier =
+                  Modifier.align(Alignment.End)
+                      .padding(top = 4.dp, end = 4.dp)
+                      .testTag(PostViewTestTags.DESCRIPTION_COUNTER))
+
+          Spacer(Modifier.height(12.dp))
+
+          LocationSelectionSection(
+              viewModel = locationSelectionViewModel,
+              textGPSButton = "Use current location",
+              textLocationField = "Location",
+              onLocationSelect = { locationSelectionViewModel.setLocation(it) },
+              onGPSClick = { locationSelectionViewModel.onLocationPermissionGranted() },
+              modifier = Modifier.fillMaxWidth())
+        }
+      }
 }
 
 /**
@@ -240,6 +355,7 @@ fun PostOwnerSection(
     username: String?,
     profilePicture: String?,
     onEditClicked: () -> Unit,
+    onDeletePost: () -> Unit,
     isOwner: Boolean = false
 ) {
   Box(Modifier.fillMaxWidth()) {
@@ -248,19 +364,16 @@ fun PostOwnerSection(
           size = 48.dp,
           profilePicture = profilePicture ?: "",
           username = username ?: "",
-          textStyle = MaterialTheme.typography.titleMedium)
+          textStyle = Typography.titleMedium)
 
       Spacer(Modifier.width(12.dp))
 
-      Text(
-          text = username ?: "Unknown User",
-          style = MaterialTheme.typography.titleLarge,
-          color = MaterialTheme.colorScheme.primary)
+      Text(text = username ?: "Unknown User", style = Typography.titleLarge, color = Primary)
 
       Spacer(Modifier.weight(1f))
 
       // Dropdown menu for post options
-      if (isOwner) DropdownMenuWithDetails(onEditClicked)
+      if (isOwner) DropdownMenuWithDetails(onEditClicked, onDeletePost)
     }
   }
 }
@@ -271,8 +384,9 @@ fun PostOwnerSection(
  * @param onEditClicked Callback when the edit option is clicked
  */
 @Composable
-fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
+fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Unit) {
   var expanded by remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
 
   Box(modifier = Modifier.size(32.dp).padding(8.dp).fillMaxWidth()) {
     IconButton(
@@ -281,7 +395,7 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
           Icon(
               Icons.Default.MoreHoriz,
               contentDescription = "More options",
-              tint = MaterialTheme.colorScheme.onSurface,
+              tint = OnSurface,
               modifier = Modifier.size(24.dp))
         }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -298,25 +412,33 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit) {
             onEditClicked()
             expanded = false
           },
-          colors =
-              MenuDefaults.itemColors(
-                  textColor = MaterialTheme.colorScheme.onSurface,
-                  leadingIconColor = MaterialTheme.colorScheme.onSurface),
+          colors = MenuDefaults.itemColors(textColor = OnSurface, leadingIconColor = OnSurface),
           modifier = Modifier.testTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION))
 
       HorizontalDivider()
 
       // Delete option section
       DropdownMenuItem(
-          text = { Text("Delete post") },
-          leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = "Delete post") },
-          onClick = { expanded = false /* delete logic implemented later */ },
-          colors =
-              MenuDefaults.itemColors(
-                  textColor = MaterialTheme.colorScheme.error,
-                  leadingIconColor = MaterialTheme.colorScheme.error),
+          text = { Text(DEL_POST) },
+          leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = DEL_POST) },
+          onClick = {
+            expanded = false
+            showDeleteDialog = true
+          },
+          colors = MenuDefaults.itemColors(textColor = OOTDerror, leadingIconColor = OOTDerror),
           modifier = Modifier.testTag(PostViewTestTags.DELETE_POST_OPTION))
     }
+  }
+
+  if (showDeleteDialog) {
+    AlertDialog(
+        onDismissRequest = { showDeleteDialog = false },
+        title = { Text(DEL_POST) },
+        text = { Text("This will permanently delete this post. Continue?") },
+        confirmButton = {
+          TextButton(onClick = { onDeleteClicked() }) { Text("Delete", color = OOTDerror) }
+        },
+        dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } })
   }
 }
 
@@ -330,8 +452,12 @@ fun PostImage(imageUrl: String) {
   AsyncImage(
       model = imageUrl,
       contentDescription = "Post image",
-      contentScale = ContentScale.Fit, // show full image, no cropping
-      modifier = Modifier.fillMaxWidth().height(300.dp).testTag(PostViewTestTags.POST_IMAGE))
+      contentScale = ContentScale.Crop,
+      modifier =
+          Modifier.fillMaxWidth()
+              .height(320.dp)
+              .testTag(PostViewTestTags.POST_IMAGE)
+              .clip(RoundedCornerShape(20.dp)))
 }
 
 /**
@@ -342,20 +468,108 @@ fun PostImage(imageUrl: String) {
  */
 @Composable
 fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(onClick = onToggleLike) {
-      Icon(
-          imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-          tint =
-              if (isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-          contentDescription = if (isLiked) "Unlike" else "Like")
-    }
+  Row(
+      modifier = Modifier.testTag(PostViewTestTags.LIKE_ROW),
+      verticalAlignment = Alignment.CenterVertically) {
+        ActionIconButton(
+            onClick = onToggleLike,
+            icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = if (isLiked) "Unlike" else "Like",
+            tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface)
 
-    Text(
-        text = "$likeCount likes",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface)
-  }
+        Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
+      }
+}
+
+@Composable
+fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> Unit) {
+  Surface(
+      modifier = Modifier.fillMaxWidth().clickable { onToggleExpanded() }.animateContentSize(),
+      color = Background) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+              Icon(
+                  imageVector = Icons.Outlined.LocationOn,
+                  contentDescription = "Location",
+                  tint = Primary,
+                  modifier = Modifier.size(20.dp))
+
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = location.ifBlank { "No location" },
+                    style = Typography.bodyMedium,
+                    color = OnSurface,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                    overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis)
+
+                if (isExpanded && location.isNotBlank()) {
+                  Spacer(Modifier.height(4.dp))
+                  Text(text = "Tap to collapse", style = Typography.bodySmall, color = Tertiary)
+                }
+              }
+
+              Icon(
+                  imageVector =
+                      if (isExpanded) Icons.Filled.KeyboardArrowUp
+                      else Icons.Filled.KeyboardArrowDown,
+                  contentDescription = if (isExpanded) "Collapse" else "Expand",
+                  tint = Tertiary,
+                  modifier = Modifier.size(24.dp))
+            }
+      }
+}
+
+@Composable
+private fun PostHeroImage(
+    imageUrl: String,
+    likeCount: Int,
+    isLiked: Boolean,
+    onToggleLike: () -> Unit
+) {
+  Card(
+      shape = RoundedCornerShape(24.dp),
+      elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+      modifier = Modifier.fillMaxWidth().height(360.dp).testTag(PostViewTestTags.POST_IMAGE)) {
+        Box(modifier = Modifier.fillMaxSize()) {
+          AsyncImage(
+              model = imageUrl,
+              contentDescription = "Post image",
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop)
+          Box(
+              modifier =
+                  Modifier.matchParentSize()
+                      .background(
+                          Brush.verticalGradient(
+                              colors =
+                                  listOf(
+                                      Color.Transparent,
+                                      Color.Black.copy(alpha = 0.25f),
+                                      Color.Black.copy(alpha = 0.55f)))))
+          Row(
+              modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalAlignment = Alignment.CenterVertically) {
+                AssistChip(
+                    onClick = onToggleLike,
+                    label = { Text("$likeCount likes") },
+                    leadingIcon = {
+                      Icon(
+                          imageVector =
+                              if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                          contentDescription = null,
+                          modifier = Modifier.size(16.dp))
+                    },
+                    colors =
+                        AssistChipDefaults.assistChipColors(
+                            containerColor = Color.White.copy(alpha = 0.2f),
+                            labelColor = Color.White,
+                            leadingIconContentColor = Color.White))
+              }
+        }
+      }
 }
 
 /**
@@ -364,12 +578,27 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
  * @ param description The description text of the post
  */
 @Composable
-fun PostDescription(description: String) {
+fun PostDescription(
+    username: String?,
+    description: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
+) {
   if (description.isNotBlank()) {
+    val annotated = buildAnnotatedString {
+      if (!username.isNullOrBlank()) {
+        withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraBold, color = Primary)) {
+          append(username)
+        }
+        append(" ")
+      }
+      withStyle(style = SpanStyle(color = Primary)) { append(description) }
+    }
     Text(
-        text = description,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.primary)
+        text = annotated,
+        style = Typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
+        modifier = modifier,
+        textAlign = textAlign)
   }
 }
 
@@ -393,12 +622,12 @@ fun LikedUsersRow(likedUsers: List<User>) {
                     size = 48.dp,
                     profilePicture = user.profilePicture,
                     username = user.username,
-                    textStyle = MaterialTheme.typography.bodyMedium)
+                    textStyle = Typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = user.username,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = Typography.labelSmall,
+                    color = Primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center)

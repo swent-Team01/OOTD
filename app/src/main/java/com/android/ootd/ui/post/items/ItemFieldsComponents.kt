@@ -8,17 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -52,6 +47,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
@@ -227,15 +223,11 @@ private fun CommonTextField(
       },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       supportingText =
           if (shouldShowCounter) {
-            {
-              Text(
-                  text = "${value.length}/${maxChars}", style = MaterialTheme.typography.labelSmall)
-            }
+            { Text(text = "${value.length}/${maxChars}", style = Typography.labelSmall) }
           } else {
             null
           },
@@ -355,8 +347,7 @@ fun PriceField(
       },
       label = { Text(label) },
       placeholder = { Text(placeholder) },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
 }
@@ -428,16 +419,11 @@ fun NotesField(
       },
       label = { Text("Notes") },
       placeholder = { Text(placeholder) },
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       supportingText =
           if (showCounter) {
-            {
-              Text(
-                  text = "${notes.length}/$NOTES_MAX_LENGTH",
-                  style = MaterialTheme.typography.labelSmall)
-            }
+            { Text(text = "${notes.length}/$NOTES_MAX_LENGTH", style = Typography.labelSmall) }
           } else null,
       modifier =
           Modifier.fillMaxWidth()
@@ -445,21 +431,6 @@ fun NotesField(
               .onFocusChanged { isFocused = it.isFocused }
               .testTag(testTag),
       maxLines = 5)
-}
-
-/** Reusable loading overlay with progress indicator */
-@Composable
-fun LoadingOverlay(visible: Boolean) {
-  if (!visible) return
-  Box(
-      modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
-      contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          CircularProgressIndicator(color = Primary)
-          Spacer(modifier = Modifier.height(12.dp))
-          Text("Uploading item...", color = Color.White, style = Typography.bodyLarge)
-        }
-      }
 }
 
 /** Image preview (local URI, remote URL, or placeholder) */
@@ -514,17 +485,17 @@ fun BoxScope.ItemsImagePreview(
 @Composable
 fun commonTextFieldColors() =
     OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.tertiary,
-        disabledBorderColor = MaterialTheme.colorScheme.tertiary,
+        focusedBorderColor = Tertiary,
+        unfocusedBorderColor = Tertiary,
+        disabledBorderColor = Tertiary,
         errorBorderColor = MaterialTheme.colorScheme.error,
-        cursorColor = MaterialTheme.colorScheme.primary,
-        focusedLabelColor = MaterialTheme.colorScheme.primary,
-        unfocusedLabelColor = MaterialTheme.colorScheme.primary,
-        focusedPlaceholderColor = MaterialTheme.colorScheme.primary,
-        unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary,
-        focusedTextColor = MaterialTheme.colorScheme.primary,
-        unfocusedTextColor = MaterialTheme.colorScheme.primary)
+        cursorColor = Primary,
+        focusedLabelColor = Primary,
+        unfocusedLabelColor = Primary,
+        focusedPlaceholderColor = Primary,
+        unfocusedPlaceholderColor = Primary,
+        focusedTextColor = Primary,
+        unfocusedTextColor = Primary)
 
 /**
  * Shared dropdown used by condition/currency pickers, wiring label, placeholder, and optional
@@ -553,11 +524,10 @@ private fun SelectionDropdownField(
                     if (expanded) Icons.Filled.KeyboardArrowDown
                     else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = visuals.toggleContentDescription,
-                tint = MaterialTheme.colorScheme.primary)
+                tint = Primary)
           }
         },
-        textStyle =
-            MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+        textStyle = Typography.bodyMedium.copy(color = Primary),
         colors = commonTextFieldColors(),
         modifier = Modifier.fillMaxWidth().testTag(visuals.textFieldTag))
     val menuModifier =
@@ -567,13 +537,7 @@ private fun SelectionDropdownField(
         expanded = expanded, onDismissRequest = { expanded = false }, modifier = menuModifier) {
           visuals.clearOptionLabel?.let { clearLabel ->
             DropdownMenuItem(
-                text = {
-                  Text(
-                      clearLabel,
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              color = MaterialTheme.colorScheme.primary))
-                },
+                text = { Text(clearLabel, style = Typography.bodyMedium.copy(color = Primary)) },
                 onClick = {
                   onOptionSelected("")
                   expanded = false
@@ -581,13 +545,7 @@ private fun SelectionDropdownField(
           }
           options.forEach { opt ->
             DropdownMenuItem(
-                text = {
-                  Text(
-                      opt,
-                      style =
-                          MaterialTheme.typography.bodyMedium.copy(
-                              color = MaterialTheme.colorScheme.primary))
-                },
+                text = { Text(opt, style = Typography.bodyMedium.copy(color = Primary)) },
                 onClick = {
                   onOptionSelected(opt)
                   expanded = false
@@ -621,7 +579,7 @@ private fun SuggestionsDropdownField(
   val showCounter = maxChars != null && isFocused
   val supportingText: (@Composable () -> Unit)? =
       if (showCounter) {
-        { Text("${value.length}/$maxChars", style = MaterialTheme.typography.labelSmall) }
+        { Text("${value.length}/$maxChars", style = Typography.labelSmall) }
       } else null
 
   Box(modifier = Modifier.fillMaxWidth()) {
@@ -675,8 +633,7 @@ private fun SuggestionInputField(
             onFocusChanged(it.isFocused)
           },
       singleLine = true,
-      textStyle =
-          MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
+      textStyle = Typography.bodyMedium.copy(color = Primary),
       colors = commonTextFieldColors(),
       supportingText = supportingText)
 }
@@ -696,13 +653,7 @@ private fun SuggestionsMenu(
       properties = PopupProperties(focusable = false)) {
         options.forEach { suggestion ->
           DropdownMenuItem(
-              text = {
-                Text(
-                    suggestion,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary))
-              },
+              text = { Text(suggestion, style = Typography.bodyMedium.copy(color = Primary)) },
               onClick = { onSelect(suggestion) })
         }
       }

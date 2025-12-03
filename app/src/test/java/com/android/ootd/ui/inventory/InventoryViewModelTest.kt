@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ImageData

@@ -4,7 +4,13 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil.isValidUrl
+import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.image.ImageCompressor
@@ -14,6 +20,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.items.Material
+import com.android.ootd.worker.ImageUploadWorker
 import kotlinx.coroutines.launch
 
 /**
@@ -174,7 +181,29 @@ open class EditItemsViewModel(
                 return@launch
               }
               // Upload compressed image and get ImageData
-              FirebaseImageUploader.uploadImage(compressedImage, state.itemId, state.localPhotoUri)
+              val uploaded =
+                  FirebaseImageUploader.uploadImage(
+                      compressedImage, state.itemId, state.localPhotoUri)
+
+              // Check if we need to schedule background upload
+              val uri = uploaded.imageUrl.toUri()
+              if (uri.scheme == "content" || uri.scheme == "file") {
+                val workRequest =
+                    OneTimeWorkRequestBuilder<ImageUploadWorker>()
+                        .setInputData(
+                            workDataOf(
+                                "itemUuid" to state.itemId,
+                                "imageUri" to uploaded.imageUrl,
+                                "fileName" to uploaded.imageId))
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build())
+                        .build()
+
+                WorkManager.getInstance(context).enqueue(workRequest)
+              }
+              uploaded
             } else state.image
 
         val updatedItem =
@@ -207,7 +236,6 @@ open class EditItemsViewModel(
         // So even if this coroutine finishes, the cache is already updated
         try {
           repository.editItem(updatedItem.itemUuid, updatedItem)
-          Log.d(TAG, "Item edit completed (cache updated, Firestore queued)")
         } catch (e: Exception) {
           // Error is acceptable when offline - cache is still updated
           Log.w(TAG, "Item edit may be offline (cache updated): ${e.message}")
@@ -217,7 +245,6 @@ open class EditItemsViewModel(
         _uiState.value =
             _uiState.value.copy(
                 image = finalImage, errorMessage = null, isSaveSuccessful = true, isLoading = false)
-        Log.d(TAG, "Item edit operation completed")
       } catch (e: Exception) {
         setErrorMsg("Failed to save item: ${e.message}")
         _uiState.value = _uiState.value.copy(isSaveSuccessful = false, isLoading = false)
@@ -243,7 +270,6 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         accountRepository.removeItem(state.itemId)
-        Log.d(TAG, "Item removal queued (will sync when online)")
       } catch (e: Exception) {
         Log.e(TAG, "Failed to queue item removal: ${e.message}")
       }
@@ -252,7 +278,6 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         repository.deleteItem(state.itemId)
-        Log.d(TAG, "Item deletion queued (will sync when online)")
       } catch (e: Exception) {
         Log.e(TAG, "Failed to queue item deletion: ${e.message}")
       }
@@ -261,7 +286,6 @@ open class EditItemsViewModel(
     viewModelScope.launch {
       try {
         FirebaseImageUploader.deleteImage(state.image.imageId)
-        Log.d(TAG, "Image deletion queued (will sync when online)")
       } catch (e: Exception) {
         Log.w(TAG, "Image deletion failed: ${e.message}")
       }

@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed

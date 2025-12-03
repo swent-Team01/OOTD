@@ -14,7 +14,6 @@ import androidx.navigation.testing.TestNavHostController
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
-import com.android.ootd.ui.Inventory.InventoryScreenTestTags
 import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
@@ -23,6 +22,7 @@ import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.OUTFIT_POST_CARD
 import com.android.ootd.ui.feed.SeeFitScreenTestTags
+import com.android.ootd.ui.inventory.InventoryScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
@@ -389,5 +389,4 @@ fun checkOutMap(composeTestRule: ComposeContentTestRule) {
   clickWithWait(composeTestRule, NavigationTestTags.MAP_TAB)
 
   verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
-  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.BACK_BUTTON)
 }

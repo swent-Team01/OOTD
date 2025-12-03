@@ -38,8 +38,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.camera.ImageOrientationHelper
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
-import com.android.ootd.utils.CircularIconButton
-import com.android.ootd.utils.PermissionRequestScreen
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.CircularIconButton
+import com.android.ootd.utils.composables.PermissionRequestScreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -211,7 +212,7 @@ private fun CameraView(
                   Text(
                       text = "${String.format("%.1f", cameraUiState.zoomRatio)}x",
                       color = White,
-                      style = MaterialTheme.typography.bodyMedium)
+                      style = Typography.bodyMedium)
                 }
           }
 
@@ -345,7 +346,7 @@ private fun ImagePreviewScreen(
                     Modifier.align(Alignment.Center)
                         .padding(16.dp)
                         .testTag(CameraScreenTestTags.ERROR_MESSAGE),
-                style = MaterialTheme.typography.bodyLarge)
+                style = Typography.bodyLarge)
           }
           bitmap != null -> {
             // Show the loaded bitmap
@@ -392,15 +393,6 @@ private fun ImagePreviewScreen(
                               modifier = Modifier.size(24.dp))
                           Spacer(modifier = Modifier.width(8.dp))
                           Text("Retake")
-                        }
-
-                    // Crop button
-                    Button(
-                        onClick = { isCropping = true },
-                        modifier = Modifier.testTag(CameraScreenTestTags.CROP_BUTTON),
-                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                          Spacer(modifier = Modifier.width(8.dp))
-                          Text("Crop")
                         }
 
                     // Approve button

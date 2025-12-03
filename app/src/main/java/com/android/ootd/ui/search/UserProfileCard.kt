@@ -18,7 +18,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,7 +33,9 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_IMAGE
 import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_LETTER
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.ProfilePicture
 
 object UserProfileCardTestTags {
   const val USER_FOLLOW_BUTTON = "userFollowButton"
@@ -124,7 +125,7 @@ fun UserProfileCard(
                         size = 50.dp,
                         profilePicture = profilePicture,
                         username = username,
-                        textStyle = typography.bodySmall)
+                        textStyle = Typography.bodySmall)
                   }
                 }
 
@@ -154,8 +155,8 @@ fun UserProfileCard(
               shape = RoundedCornerShape(12.dp),
               colors =
                   ButtonDefaults.buttonColors(
-                      containerColor = colorScheme.primary,
-                      disabledContainerColor = colorScheme.primary.copy(alpha = 0.6f))) {
+                      containerColor = Primary,
+                      disabledContainerColor = Primary.copy(alpha = 0.6f))) {
                 Text(text = followText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
               }
 
@@ -174,7 +175,7 @@ fun UserProfileCard(
             TextButton(
                 modifier = Modifier.testTag(UserProfileCardTestTags.ERROR_DISMISS_BUTTON),
                 onClick = onErrorDismiss) {
-                  Text(text = "Dismiss", fontSize = 14.sp, color = colorScheme.primary)
+                  Text(text = "Dismiss", fontSize = 14.sp, color = Primary)
                 }
           }
         }

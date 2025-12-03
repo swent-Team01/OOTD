@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,7 +29,14 @@ import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
-import com.android.ootd.utils.ProfilePicture
+import com.android.ootd.ui.theme.OnSecondaryContainer
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
+import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.CenteredEmptyState
+import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ShowText
 
 object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
@@ -67,8 +75,8 @@ private fun ProfileSection(post: OutfitPost) {
       // Circular indicator for remaining lifetime
       CircularProgressIndicator(
           progress = { remainingFraction },
-          color = MaterialTheme.colorScheme.primary,
-          trackColor = MaterialTheme.colorScheme.surfaceVariant,
+          color = Primary,
+          trackColor = Secondary,
           strokeWidth = 3.dp,
           modifier = Modifier.size(44.dp))
 
@@ -82,7 +90,7 @@ private fun ProfileSection(post: OutfitPost) {
           size = 36.dp,
           profilePicture = profilePic,
           username = post.name,
-          textStyle = MaterialTheme.typography.titleMedium)
+          textStyle = Typography.titleMedium)
     }
 
     Spacer(modifier = Modifier.width(8.dp))
@@ -90,8 +98,8 @@ private fun ProfileSection(post: OutfitPost) {
     Column {
       Text(
           text = post.name,
-          style = MaterialTheme.typography.titleLarge,
-          color = MaterialTheme.colorScheme.primary,
+          style = Typography.titleLarge,
+          color = Primary,
           modifier = Modifier.testTag(OutfitPostCardTestTags.POST_USERNAME))
 
       // Remaining lifetime label
@@ -112,8 +120,8 @@ private fun ProfileSection(post: OutfitPost) {
 
       Text(
           text = remainingText,
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.tertiary,
+          style = Typography.bodySmall,
+          color = Tertiary,
           modifier = Modifier.testTag(tag))
     }
   }
@@ -137,15 +145,13 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
           Icon(
               imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
               contentDescription = if (isLiked) "Liked" else "Unliked",
-              tint =
-                  if (isLiked) MaterialTheme.colorScheme.error
-                  else MaterialTheme.colorScheme.onSecondaryContainer)
+              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer)
         }
     Spacer(modifier = Modifier.width(1.dp))
     Text(
         text = likeCount.toString(),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        style = Typography.bodyMedium,
+        color = OnSecondaryContainer,
         modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
   }
 }
@@ -206,8 +212,8 @@ private fun DescriptionAndButton(
 
         Text(
             text = descriptionText,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
+            style = Typography.bodyLarge,
+            color = Primary,
             maxLines = if (expanded) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis,
             modifier =
@@ -222,10 +228,9 @@ private fun DescriptionAndButton(
             shape = RoundedCornerShape(50),
             colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary),
+                    containerColor = Primary, contentColor = MaterialTheme.colorScheme.onPrimary),
             modifier = Modifier.testTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).height(36.dp)) {
-              Text("See fit", style = MaterialTheme.typography.bodySmall)
+              Text("See fit", style = Typography.bodySmall)
             }
       }
 }
@@ -241,6 +246,8 @@ private fun DescriptionAndButton(
  * @param likeCount The total number of likes for the post.
  * @param onLikeClick Callback when the like button is clicked, passing the post UID.
  * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
+ * @param onCardClick Callback when the card is clicked, passing the post UID.
+ * @param onLocationClick Callback when the location is clicked, passing the location.
  */
 @Composable
 fun OutfitPostCard(
@@ -251,7 +258,8 @@ fun OutfitPostCard(
     likeCount: Int,
     onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {},
-    onCardClick: (String) -> Unit = {}
+    onCardClick: (String) -> Unit = {},
+    onLocationClick: (Location) -> Unit = {}
 ) {
   Box(
       modifier =
@@ -263,7 +271,7 @@ fun OutfitPostCard(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+            colors = CardDefaults.cardColors(containerColor = Secondary),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
               Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 ProfileSection(post)
@@ -277,7 +285,7 @@ fun OutfitPostCard(
                       Modifier.clickable { onCardClick(post.postUID) }
                     }
                 PostImage(post, isBlurred, modifier = clickableModifier)
-                PostLocation(post.location)
+                PostLocation(post.location, onClick = { onLocationClick(post.location) })
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
                 LikeRow(
                     isLiked = isLiked,
@@ -294,23 +302,20 @@ fun OutfitPostCard(
           Box(
               modifier = Modifier.matchParentSize().testTag(OutfitPostCardTestTags.BLUR_OVERLAY),
               contentAlignment = Alignment.Center) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center) {
+                CenteredEmptyState(
+                    icon = {
                       Icon(
                           imageVector = Icons.Default.PhotoCamera,
                           contentDescription = "Photo icon",
-                          tint = Color.White,
+                          tint = White,
                           modifier = Modifier.size(48.dp))
-
-                      Spacer(modifier = Modifier.height(8.dp))
-
-                      Text(
+                    },
+                    text = {
+                      ShowText(
                           text = "Do a fit check to unlock today's feed",
-                          style = MaterialTheme.typography.titleLarge,
-                          color = Color.White,
-                          modifier = Modifier.padding(horizontal = 16.dp))
-                    }
+                          style = Typography.bodyLarge,
+                          color = White)
+                    })
               }
         }
       }
@@ -320,9 +325,10 @@ fun OutfitPostCard(
  * Displays a post's geographic location below the outfit image when available.
  *
  * @param location the Location to display; only rendered when valid
+ * @param onClick callback when the location is clicked
  */
 @Composable
-fun PostLocation(location: Location) {
+fun PostLocation(location: Location, onClick: () -> Unit = {}) {
   if (isValidLocation(location)) {
     val displayName =
         if (location.name.length > 50) {
@@ -333,13 +339,14 @@ fun PostLocation(location: Location) {
 
     Text(
         text = displayName,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.tertiary,
+        style = Typography.bodySmall,
+        color = Tertiary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier =
             Modifier.fillMaxWidth()
                 .padding(top = 4.dp)
+                .clickable { onClick() }
                 .testTag(OutfitPostCardTestTags.POST_LOCATION))
   }
 }

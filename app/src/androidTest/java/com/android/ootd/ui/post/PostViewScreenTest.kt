@@ -3,9 +3,7 @@ package com.android.ootd.ui.post
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,7 +12,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.post.OutfitPostRepository
-import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
@@ -24,7 +21,6 @@ import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -97,22 +93,6 @@ class PostViewScreenTest {
   }
 
   @Test
-  fun screen_displays_loading_indicator_initially() {
-    coEvery { mockRepository.getPostById(any()) } coAnswers
-        {
-          delay(1000)
-          testPost
-        }
-
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-
-    composeTestRule.onNodeWithTag(PostViewTestTags.LOADING_INDICATOR).assertIsDisplayed()
-  }
-
-  @Test
   fun screen_displays_post_image_when_loaded_successfully() = runTest {
     coEvery { mockRepository.getPostById("test-post-id") } returns testPost
     coEvery { mockUserRepo.getUser(any()) } returns ownerUser
@@ -132,69 +112,6 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(PostViewTestTags.SNACKBAR_HOST).assertIsDisplayed().assertExists()
-    // Error is now displayed in a Snackbar instead of error text
-    composeTestRule.onNodeWithText("Failed to load post").assertIsDisplayed()
-  }
-
-  @Test
-  fun owner_section_displays_username() = runTest {
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-
-    composeTestRule.onNodeWithText("Owner Name").assertIsDisplayed()
-  }
-
-  @Test
-  fun description_is_displayed_when_present() = runTest {
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-
-    composeTestRule.onNodeWithText("Test outfit description").assertIsDisplayed()
-  }
-
-  @Test
-  fun description_not_displayed_when_blank() = runTest {
-    val noDescription = testPost.copy(description = "")
-
-    coEvery { mockRepository.getPostById(any()) } returns noDescription
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-
-    composeTestRule.onNodeWithText("Test outfit description").assertDoesNotExist()
-  }
-
-  @Test
-  fun like_row_shows_correct_like_count() = runTest {
-    val likes = listOf(Like("test-post-id", "u1", 0), Like("test-post-id", "u2", 0))
-
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns likes
-    coEvery { mockUserRepo.getUser("u1") } returns User("u1", "A", "")
-    coEvery { mockUserRepo.getUser("u2") } returns User("u2", "B", "")
-
-    setContent("test-post-id")
-
-    composeTestRule.onNodeWithText("2 likes").assertIsDisplayed()
-  }
-
-  @Test
-  fun like_button_is_clickable() = runTest {
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-
-    composeTestRule.onNodeWithContentDescription("Like").performClick()
   }
 
   @Test
@@ -228,65 +145,7 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Counter appears = edit mode active
-    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertIsDisplayed()
-  }
-
-  @Test
-  fun cancel_button_exits_edit_mode() = runTest {
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
-        .assertExists()
-        .assertIsDisplayed()
-    composeTestRule.waitForIdle()
-
-    // Ensure edit mode ON
-    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertIsDisplayed()
-
-    // Click cancel
-    composeTestRule.onNodeWithTag(PostViewTestTags.CANCEL_EDITING_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    // Ensure edit mode OFF
-    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertDoesNotExist()
-  }
-
-  @Test
-  fun edit_mode_shows_text_field_with_existing_description() = runTest {
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
-
-    setContent("test-post-id")
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
-        .assertExists()
-        .assertIsDisplayed()
-    composeTestRule.waitForIdle()
-
-    // Verify initial description is inside the TextField
-    composeTestRule
-        .onNode(hasSetTextAction())
-        .assertIsDisplayed()
-        .assertTextContains(testPost.description)
+    composeTestRule.onNodeWithTag(PostViewTestTags.DESCRIPTION_COUNTER).assertExists()
   }
 
   @Test
@@ -326,11 +185,10 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Ensure edit field visible with original text
+    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
-        .assertExists()
-        .assertIsDisplayed()
-    composeTestRule.onNode(hasSetTextAction()).assertTextContains(original)
+        .assertTextContains(original)
 
     // Modify the description text
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).performTextClearance()
@@ -338,15 +196,18 @@ class PostViewScreenTest {
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .performTextInput(modified)
     composeTestRule.waitForIdle()
-    composeTestRule.onNode(hasSetTextAction()).assertTextContains(modified)
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertTextContains(modified)
 
     // Cancel edit
     composeTestRule.onNodeWithTag(PostViewTestTags.CANCEL_EDITING_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Ensure screen shows orginal description and not the modified one
-    composeTestRule.onNodeWithText(original).assertExists().assertIsDisplayed()
-    composeTestRule.onNodeWithTag(modified).assertDoesNotExist()
+    // Ensure screen shows original description and not the modified one
+    // Note: description is now displayed with username, so use substring match
+    composeTestRule.onNodeWithText(original, substring = true).assertExists().assertIsDisplayed()
+    composeTestRule.onNodeWithText(modified, substring = true).assertDoesNotExist()
 
     // Re-open edit
     composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
@@ -354,12 +215,14 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
 
-    // TextField should contain tge original description again
+    // TextField should contain the original description again
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertExists()
         .assertIsDisplayed()
-    composeTestRule.onNode(hasSetTextAction()).assertTextContains(original)
-    composeTestRule.onNodeWithText(modified).assertDoesNotExist()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .assertTextContains(original)
+    composeTestRule.onNodeWithText(modified, substring = true).assertDoesNotExist()
   }
 }

@@ -2,12 +2,14 @@ package com.android.ootd.ui.post
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -94,7 +96,6 @@ class EditItemsScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_LINK).assertExists()
-    scrollTo(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertExists()
   }
@@ -133,7 +134,6 @@ class EditItemsScreenTest {
   fun `save button is disabled when required fields are empty`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    scrollTo(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsNotEnabled()
   }
 
@@ -147,7 +147,6 @@ class EditItemsScreenTest {
 
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    scrollTo(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES).assertIsEnabled()
   }
 
@@ -155,7 +154,6 @@ class EditItemsScreenTest {
   fun `delete button is disabled when itemId is empty`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    scrollTo(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsNotEnabled()
   }
 
@@ -176,7 +174,6 @@ class EditItemsScreenTest {
 
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    scrollTo(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).assertIsEnabled()
   }
 
@@ -328,12 +325,11 @@ class EditItemsScreenTest {
 
     composeTestRule.onNodeWithText("Select from Gallery").assertExists()
     composeTestRule.onNodeWithText("Take a new picture").assertExists()
-    scrollTo(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
-        .assertTextContains("Save Changes")
+        .assert(hasContentDescription("Save Changes"))
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
-        .assertTextContains("Delete Item")
+        .assert(hasContentDescription("Delete Item"))
   }
 }
