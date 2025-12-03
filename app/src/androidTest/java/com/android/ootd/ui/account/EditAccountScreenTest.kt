@@ -395,7 +395,7 @@ class EditAccountScreenTest {
       ProfilePictureEditor(
           context = ctx,
           uploadProfilePicture = viewModel::uploadImageToStorage,
-          editProfilePicture = {url -> viewModel.editUser(profilePicture = url)},
+          editProfilePicture = { url -> viewModel.editUser(profilePicture = url) },
           showImageSourceDialog = showDialog,
           onShowImageSourceDialogChange = { showDialog = it })
     }

@@ -90,7 +90,7 @@ class RegisterViewModelTest {
 
   private fun stubSuccess() {
     coEvery { userRepository.createUser(any(), testUid, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any(), any(),any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any(), any()) } returns Unit
   }
 
   // ========== Username Validation Tests ==========
@@ -157,7 +157,7 @@ class RegisterViewModelTest {
     coVerify(atLeast = 1) { userRepository.createUser(username, testUid, ownerId = testUid) }
     coVerify(atLeast = 1) {
       accountRepository.createAccount(
-          match { it.uid == testUid && it.username == username }, testEmail, any(),dob,any())
+          match { it.uid == testUid && it.username == username }, testEmail, any(), dob, any())
     }
 
     // markRegisteredHandled resets flag
@@ -185,7 +185,7 @@ class RegisterViewModelTest {
 
     // Repos called in order: accountRepo first, then userRepo
     val callOrder = mutableListOf<String>()
-    coEvery { accountRepository.createAccount(any(), any(), any(),any(), any()) } coAnswers
+    coEvery { accountRepository.createAccount(any(), any(), any(), any(), any()) } coAnswers
         {
           callOrder.add("account")
           Unit
@@ -210,7 +210,7 @@ class RegisterViewModelTest {
 
     // Re-stub for custom VM
     coEvery { userRepository.createUser(any(), any(), any()) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any(), any(),any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any(), any()) } returns Unit
 
     val customLocationVM = mockk<LocationSelectionViewModel>(relaxed = true)
     every { customLocationVM.uiState } returns
@@ -279,7 +279,7 @@ class RegisterViewModelTest {
     // Account creation failure stops loading and keeps registered false
     val username = "testUser"
     coEvery { userRepository.createUser(username, testUid, testUid) } returns Unit
-    coEvery { accountRepository.createAccount(any(), any(), any(), any(),any()) } throws
+    coEvery { accountRepository.createAccount(any(), any(), any(), any(), any()) } throws
         Exception("Account error")
 
     register(username, "01/01/2003")
@@ -288,7 +288,7 @@ class RegisterViewModelTest {
     assertNotNull(viewModel.uiState.value.errorMsg)
 
     // Both operations must succeed for registered=true
-    coEvery { accountRepository.createAccount(any(), any(), any(), any(),any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any(), any()) } returns Unit
     register("bothSucceed", "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
     assertNull(viewModel.uiState.value.errorMsg)
