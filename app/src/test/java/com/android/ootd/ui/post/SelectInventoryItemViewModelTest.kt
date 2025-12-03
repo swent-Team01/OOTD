@@ -209,4 +209,50 @@ class SelectInventoryItemViewModelTest {
     assertNull(viewModel.uiState.value.errorMessage)
     assertNull(viewModel.uiState.value.successMessage)
   }
+
+  @Test
+  fun `toggleSearch toggles state and clears query`() {
+    assertFalse(viewModel.uiState.value.isSearchActive)
+    viewModel.toggleSearch()
+    assertTrue(viewModel.uiState.value.isSearchActive)
+
+    viewModel.updateSearchQuery("test")
+    assertEquals("test", viewModel.uiState.value.searchQuery)
+
+    viewModel.toggleSearch()
+    assertFalse(viewModel.uiState.value.isSearchActive)
+    assertEquals("", viewModel.uiState.value.searchQuery)
+  }
+
+  @Test
+  fun `updateSearchQuery filters items correctly`() = runTest {
+    val item1 = createItem("1").copy(category = "Tops", brand = "Nike", type = "T-Shirt")
+    val item2 = createItem("2").copy(category = "Bottoms", brand = "Adidas", type = "Pants")
+    val item3 = createItem("3").copy(category = "Shoes", brand = "Puma", type = "Sneakers")
+
+    coEvery { mockAccountRepo.getItemsList(any()) } returns listOf("1", "2", "3")
+    coEvery { mockItemsRepo.getItemsByIds(any()) } returns listOf(item1, item2, item3)
+    coEvery { mockItemsRepo.getAssociatedItems(any()) } returns emptyList()
+
+    viewModel.initPostUuid("post1")
+    advanceUntilIdle()
+
+    viewModel.updateSearchQuery("")
+    assertEquals(3, viewModel.uiState.value.filteredItems.size)
+
+    viewModel.updateSearchQuery("Tops")
+    assertEquals(1, viewModel.uiState.value.filteredItems.size)
+    assertEquals("1", viewModel.uiState.value.filteredItems[0].itemUuid)
+
+    viewModel.updateSearchQuery("adidas")
+    assertEquals(1, viewModel.uiState.value.filteredItems.size)
+    assertEquals("2", viewModel.uiState.value.filteredItems[0].itemUuid)
+
+    viewModel.updateSearchQuery("Sneakers")
+    assertEquals(1, viewModel.uiState.value.filteredItems.size)
+    assertEquals("3", viewModel.uiState.value.filteredItems[0].itemUuid)
+
+    viewModel.updateSearchQuery("NonExistent")
+    assertEquals(0, viewModel.uiState.value.filteredItems.size)
+  }
 }
