@@ -30,8 +30,24 @@ data class OutfitPost(
     val timestamp: Long = 0L,
     val location: Location = emptyLocation,
     // Explicitly map to "isPublic" to prevent Firestore from mapping isPublic() to "public"
-    @get:PropertyName("isPublic") val isPublic: Boolean = false
+    @get:PropertyName("isPublic") val isPublic: Boolean = false,
+    val comments: List<Comment> = emptyList()
+)
 
-    // val reactionList - for when we implement reactions/commentaries to posts
-    // val location - for when we implement location
+/**
+ * Represents a comment on a post
+ *
+ * @property commentId unique ID of the comment
+ * @property ownerId UID of the user who made the comment
+ * @property text content of the comment
+ * @property timestamp time passed since commenting
+ * @property reactionImage optional reaction image URL
+ */
+@Keep
+data class Comment(
+    val commentId: String = "",
+    val ownerId: String = "",
+    val text: String = "",
+    val timestamp: Long = 0L,
+    val reactionImage: String = "",
 )
