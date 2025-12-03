@@ -72,7 +72,6 @@ internal fun handleImagePickerResult(
 fun ProfilePictureEditor(
     context: Context,
     uploadProfilePicture: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ -> },
-    uploadProfilePictureLocal: (String) -> Unit = {},
     editProfilePicture: (String) -> Unit = {},
     showImageSourceDialog: Boolean,
     onShowImageSourceDialogChange: (Boolean) -> Unit
