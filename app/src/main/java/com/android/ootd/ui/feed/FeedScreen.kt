@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -24,10 +23,10 @@ import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCR
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.NotificationButton
+import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
 
@@ -118,38 +117,13 @@ private fun FeedScaffold(
                     Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
                     size = 64.dp)
               })
-          PrimaryTabRow(
+          OOTDTabRow(
               selectedTabIndex = if (isPublicFeed) 1 else 0,
-              containerColor = White,
-              contentColor = Secondary,
-              indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(if (isPublicFeed) 1 else 0),
-                    color = Primary)
-              }) {
-                Tab(
-                    selected = !isPublicFeed,
-                    onClick = { if (isPublicFeed) onToggleFeed() },
-                    text = {
-                      Text(
-                          "Friends",
-                          style = MaterialTheme.typography.titleLarge,
-                          fontWeight = if (!isPublicFeed) FontWeight.Bold else FontWeight.Normal)
-                    },
-                    selectedContentColor = Primary,
-                    unselectedContentColor = Black)
-                Tab(
-                    selected = isPublicFeed,
-                    onClick = { if (!isPublicFeed) onToggleFeed() },
-                    text = {
-                      Text(
-                          "Public",
-                          style = MaterialTheme.typography.titleLarge,
-                          fontWeight = if (isPublicFeed) FontWeight.Bold else FontWeight.Normal)
-                    },
-                    selectedContentColor = Primary,
-                    unselectedContentColor = Black)
-              }
+              tabs = listOf("Friends", "Public"),
+              onTabClick = { index ->
+                if (index == 0 && isPublicFeed) onToggleFeed()
+                if (index == 1 && !isPublicFeed) onToggleFeed()
+              })
         }
       },
       floatingActionButton = {

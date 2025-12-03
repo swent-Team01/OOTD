@@ -27,9 +27,12 @@ import kotlinx.coroutines.launch
 data class SelectInventoryItemUIState(
     val postUuid: String = "",
     val availableItems: List<Item> = emptyList(),
+    val filteredItems: List<Item> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = ""
 )
 
 /**
@@ -97,7 +100,9 @@ class SelectInventoryItemViewModel(
         // Filter out items already in the post
         val availableItems = allItems.filter { it.itemUuid !in postItemIds }
 
-        _uiState.value = _uiState.value.copy(availableItems = availableItems, isLoading = false)
+        _uiState.value =
+            _uiState.value.copy(
+                availableItems = availableItems, filteredItems = availableItems, isLoading = false)
       } catch (e: Exception) {
         Log.e("SelectInventoryItemViewModel", "Error loading items", e)
         _uiState.value =
@@ -141,5 +146,39 @@ class SelectInventoryItemViewModel(
   /** Clears error and success messages. */
   fun clearMessages() {
     _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
+  }
+
+  /** Toggles the search bar visibility. */
+  fun toggleSearch() {
+    _uiState.value = _uiState.value.copy(isSearchActive = !_uiState.value.isSearchActive)
+    if (!_uiState.value.isSearchActive) {
+      updateSearchQuery("")
+    }
+  }
+
+  /**
+   * Updates the search query and filters the items.
+   *
+   * @param query The new search query
+   */
+  fun updateSearchQuery(query: String) {
+    _uiState.value = _uiState.value.copy(searchQuery = query)
+    filterItems()
+  }
+
+  private fun filterItems() {
+    val query = _uiState.value.searchQuery
+    val items = _uiState.value.availableItems
+    val filtered =
+        if (query.isBlank()) {
+          items
+        } else {
+          items.filter { item ->
+            item.category.contains(query, ignoreCase = true) ||
+                item.brand?.contains(query, ignoreCase = true) == true ||
+                item.type?.contains(query, ignoreCase = true) == true
+          }
+        }
+    _uiState.value = _uiState.value.copy(filteredItems = filtered)
   }
 }
