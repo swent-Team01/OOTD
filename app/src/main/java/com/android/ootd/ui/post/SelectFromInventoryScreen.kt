@@ -2,11 +2,16 @@ package com.android.ootd.ui.post
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Red
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -14,7 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.Item
 import com.android.ootd.ui.inventory.InventoryGrid
+import com.android.ootd.ui.inventory.InventorySearchBar
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -27,6 +34,7 @@ object SelectInventoryItemScreenTestTags {
   const val EMPTY_STATE = "selectInventoryItemEmptyState"
   const val ITEMS_GRID = "selectInventoryItemGrid"
   const val GO_BACK_BUTTON = "selectInventoryGoBackButton"
+  const val SEARCH_FAB = "selectInventorySearchFab"
 
   fun getTestTagForItem(item: Item): String = "selectInventoryItem${item.itemUuid}"
 }
@@ -82,39 +90,65 @@ fun SelectInventoryItemScreen(
                   onBackClick = onGoBack,
                   modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.GO_BACK_BUTTON))
             })
+      },
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = { selectInventoryItemViewModel.toggleSearch() },
+            containerColor = if (uiState.isSearchActive) Red else Primary,
+            modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.SEARCH_FAB)) {
+              Icon(
+                  imageVector =
+                      if (uiState.isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                  contentDescription =
+                      if (uiState.isSearchActive) "Close Search" else "Search Item",
+                  tint = White)
+            }
       }) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          when {
-            uiState.isLoading -> {
-              // Loading state
-              Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier.testTag(SelectInventoryItemScreenTestTags.LOADING_INDICATOR),
-                    color = Primary)
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+          if (uiState.isSearchActive) {
+            InventorySearchBar(
+                searchQuery = uiState.searchQuery,
+                onSearchQueryChange = { selectInventoryItemViewModel.updateSearchQuery(it) })
+          }
+
+          Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+            when {
+              uiState.isLoading -> {
+                // Loading state
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                  CircularProgressIndicator(
+                      modifier =
+                          Modifier.testTag(SelectInventoryItemScreenTestTags.LOADING_INDICATOR),
+                      color = Primary)
+                }
               }
-            }
-            uiState.availableItems.isEmpty() -> {
-              // Empty state
-              Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "No items in your inventory yet.\nAdd items to your inventory first!",
-                    style = Typography.bodyLarge,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier.padding(32.dp)
-                            .testTag(SelectInventoryItemScreenTestTags.EMPTY_STATE))
+              uiState.filteredItems.isEmpty() -> {
+                // Empty state
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                  Text(
+                      text =
+                          if (uiState.isSearchActive && uiState.searchQuery.isNotEmpty()) {
+                            "No items match your search.\nTry a different search term."
+                          } else {
+                            "No items in your inventory yet.\nAdd items to your inventory first!"
+                          },
+                      style = Typography.bodyLarge,
+                      color = if (uiState.isSearchActive) Secondary else Color.Gray,
+                      textAlign = TextAlign.Center,
+                      modifier =
+                          Modifier.padding(32.dp)
+                              .testTag(SelectInventoryItemScreenTestTags.EMPTY_STATE))
+                }
               }
-            }
-            else -> {
-              InventoryGrid(
-                  items = uiState.availableItems,
-                  onItemClick = { item -> selectInventoryItemViewModel.addItemToPost(item) },
-                  starredItemIds = emptySet(),
-                  onToggleStar = {},
-                  modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.ITEMS_GRID),
-                  showStarToggle = false)
+              else -> {
+                InventoryGrid(
+                    items = uiState.filteredItems,
+                    onItemClick = { item -> selectInventoryItemViewModel.addItemToPost(item) },
+                    starredItemIds = emptySet(),
+                    onToggleStar = {},
+                    modifier = Modifier.testTag(SelectInventoryItemScreenTestTags.ITEMS_GRID),
+                    showStarToggle = false)
+              }
             }
           }
         }
