@@ -150,7 +150,9 @@ private fun AccountScreenContent(
   val scrollState = rememberScrollState()
   // Max width for centered content (keeps avatar and inputs aligned)
   val contentMaxWidth = 560.dp
-  val contentModifier = Modifier.fillMaxWidth().widthIn(max = contentMaxWidth)
+  val contentModifier = Modifier
+      .fillMaxWidth()
+      .widthIn(max = contentMaxWidth)
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
@@ -183,7 +185,8 @@ private fun AccountScreenContent(
       }) { paddingValues ->
         Column(
             modifier =
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(paddingValues)
                     .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 72.dp),
@@ -193,7 +196,7 @@ private fun AccountScreenContent(
                     avatarUri = uiState.profilePicture,
                     username = uiState.username,
                     onEditClick = { showImageSourceDialog = true },
-                    accountViewModel,
+                    deleteProfilePicture = { accountViewModel.deleteProfilePicture() },
                     context = context)
               }
 
@@ -258,7 +261,9 @@ private fun AccountScreenContent(
                     showPrivacyHelp = uiState.showPrivacyHelp,
                     onHelpClick = onHelpClick,
                     onHelpDismiss = onHelpDismiss,
-                    modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
               }
 
               Spacer(modifier = Modifier.height(24.dp))
@@ -267,7 +272,9 @@ private fun AccountScreenContent(
                 ActionButton(
                     onButtonClick = onSignOutClick,
                     modifier =
-                        Modifier.padding(bottom = 12.dp).testTag(UiTestTags.TAG_SIGNOUT_BUTTON),
+                        Modifier
+                            .padding(bottom = 12.dp)
+                            .testTag(UiTestTags.TAG_SIGNOUT_BUTTON),
                     buttonText = "Sign Out")
               }
             }
@@ -279,73 +286,14 @@ private fun AccountScreenContent(
 
   // Profile picture editor dialog
   ProfilePictureEditor(
-      viewModel = accountViewModel,
       context = context,
+      uploadProfilePicture = accountViewModel::uploadImageToStorage,
+      editProfilePicture = {url -> accountViewModel.editUser(profilePicture = url)},
       showImageSourceDialog = showImageSourceDialog,
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
 }
 
-@Composable
-private fun AvatarSection(
-    avatarUri: String,
-    username: String,
-    onEditClick: () -> Unit,
-    accountViewModel: AccountViewModel,
-    modifier: Modifier = Modifier,
-    context: Context = LocalContext.current
-) {
-  val colors = LightColorScheme
-  val typography = Typography
 
-  Column(
-      modifier = modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).fillMaxWidth(),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        // Avatar image/letter
-        val tag =
-            UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE.takeIf { avatarUri.isNotBlank() }
-                ?: UiTestTags.TAG_ACCOUNT_AVATAR_LETTER
-        ProfilePicture(
-            Modifier.testTag(tag),
-            120.dp,
-            avatarUri,
-            username,
-            typography.headlineMedium.copy(fontFamily = Bodoni))
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
-
-        // Edit and Delete buttons under avatar
-        Row(
-            modifier = Modifier.wrapContentWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
-              ActionButton(
-                  onButtonClick = onEditClick,
-                  modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT),
-                  buttonText = editProfilePicture)
-
-              // Delete button - only show if user has a profile picture
-              if (avatarUri.isNotBlank()) {
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Button(
-                    onClick = {
-                      accountViewModel.deleteProfilePicture()
-                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
-                    },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
-                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
-                      Text(
-                          text = "Delete",
-                          color = colors.onError,
-                          style = typography.titleMedium.copy(fontFamily = Bodoni))
-                    }
-              }
-            }
-      }
-}
 
 @Composable
 private fun UsernameField(
@@ -394,15 +342,17 @@ private fun UsernameField(
         }
       },
       modifier =
-          Modifier.testTag(UiTestTags.TAG_USERNAME_FIELD).onKeyEvent { event ->
-            if (isEditing && event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
-              onSaveClick()
-              focusManager.clearFocus()
-              true
-            } else {
-              false
-            }
-          })
+          Modifier
+              .testTag(UiTestTags.TAG_USERNAME_FIELD)
+              .onKeyEvent { event ->
+                  if (isEditing && event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
+                      onSaveClick()
+                      focusManager.clearFocus()
+                      true
+                  } else {
+                      false
+                  }
+              })
 }
 
 @Composable
@@ -428,7 +378,9 @@ private fun UsernameEditActions(onCancelClick: () -> Unit, onSaveClick: () -> Un
 private fun LoadingOverlay() {
   val colors = LightColorScheme
   Box(
-      modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
+      modifier = Modifier
+          .fillMaxSize()
+          .background(colors.onBackground.copy(alpha = 0.12f)),
       contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
             modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
@@ -485,7 +437,9 @@ private fun PrivacyToggleRow(
             onClick = onHelpClick,
             icon = Icons.Outlined.Info,
             contentDescription = "Privacy help",
-            modifier = Modifier.size(32.dp).testTag(UiTestTags.TAG_PRIVACY_HELP_ICON),
+            modifier = Modifier
+                .size(32.dp)
+                .testTag(UiTestTags.TAG_PRIVACY_HELP_ICON),
             size = 20.dp)
         DropdownMenu(expanded = showPrivacyHelp, onDismissRequest = onHelpDismiss) {
           DropdownMenuItem(
