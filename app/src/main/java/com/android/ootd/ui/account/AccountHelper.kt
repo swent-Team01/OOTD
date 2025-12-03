@@ -140,14 +140,12 @@ fun AvatarSection(
     modifier: Modifier = Modifier,
     context: Context = LocalContext.current
 ) {
-    val colors = LightColorScheme
-    val typography = Typography
+  val colors = LightColorScheme
+  val typography = Typography
 
-    Column(
-        modifier = modifier
-            .testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER)
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(
+      modifier = modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).fillMaxWidth(),
+      horizontalAlignment = Alignment.CenterHorizontally) {
         // Avatar image/letter
         val tag =
             UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE.takeIf { avatarUri.isNotBlank() }
@@ -168,29 +166,29 @@ fun AvatarSection(
             modifier = Modifier.wrapContentWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically) {
-            ActionButton(
-                onButtonClick = onEditClick,
-                modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT),
-                buttonText = editProfilePicture)
+              ActionButton(
+                  onButtonClick = onEditClick,
+                  modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT),
+                  buttonText = editProfilePicture)
 
-            // Delete button - only show if user has a profile picture
-            if (avatarUri.isNotBlank()) {
+              // Delete button - only show if user has a profile picture
+              if (avatarUri.isNotBlank()) {
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Button(
                     onClick = {
-                        deleteProfilePicture()
-                        Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+                      deleteProfilePicture()
+                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
                     },
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
                     modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
-                    Text(
-                        text = "Delete",
-                        color = colors.onError,
-                        style = typography.titleMedium.copy(fontFamily = Bodoni))
-                }
+                      Text(
+                          text = "Delete",
+                          color = colors.onError,
+                          style = typography.titleMedium.copy(fontFamily = Bodoni))
+                    }
+              }
             }
-        }
-    }
+      }
 }

@@ -146,9 +146,7 @@ private fun AccountScreenContent(
   val scrollState = rememberScrollState()
   // Max width for centered content (keeps avatar and inputs aligned)
   val contentMaxWidth = 560.dp
-  val contentModifier = Modifier
-      .fillMaxWidth()
-      .widthIn(max = contentMaxWidth)
+  val contentModifier = Modifier.fillMaxWidth().widthIn(max = contentMaxWidth)
 
   // State for username editing
   var isEditingUsername by remember { mutableStateOf(false) }
@@ -181,8 +179,7 @@ private fun AccountScreenContent(
       }) { paddingValues ->
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
+                Modifier.fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(paddingValues)
                     .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 72.dp),
@@ -257,9 +254,7 @@ private fun AccountScreenContent(
                     showPrivacyHelp = uiState.showPrivacyHelp,
                     onHelpClick = onHelpClick,
                     onHelpDismiss = onHelpDismiss,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+                    modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
               }
 
               Spacer(modifier = Modifier.height(24.dp))
@@ -268,9 +263,7 @@ private fun AccountScreenContent(
                 ActionButton(
                     onButtonClick = onSignOutClick,
                     modifier =
-                        Modifier
-                            .padding(bottom = 12.dp)
-                            .testTag(UiTestTags.TAG_SIGNOUT_BUTTON),
+                        Modifier.padding(bottom = 12.dp).testTag(UiTestTags.TAG_SIGNOUT_BUTTON),
                     buttonText = "Sign Out")
               }
             }
@@ -284,12 +277,10 @@ private fun AccountScreenContent(
   ProfilePictureEditor(
       context = context,
       uploadProfilePicture = accountViewModel::uploadImageToStorage,
-      editProfilePicture = {url -> accountViewModel.editUser(profilePicture = url)},
+      editProfilePicture = { url -> accountViewModel.editUser(profilePicture = url) },
       showImageSourceDialog = showImageSourceDialog,
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
 }
-
-
 
 @Composable
 private fun UsernameField(
@@ -338,17 +329,15 @@ private fun UsernameField(
         }
       },
       modifier =
-          Modifier
-              .testTag(UiTestTags.TAG_USERNAME_FIELD)
-              .onKeyEvent { event ->
-                  if (isEditing && event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
-                      onSaveClick()
-                      focusManager.clearFocus()
-                      true
-                  } else {
-                      false
-                  }
-              })
+          Modifier.testTag(UiTestTags.TAG_USERNAME_FIELD).onKeyEvent { event ->
+            if (isEditing && event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
+              onSaveClick()
+              focusManager.clearFocus()
+              true
+            } else {
+              false
+            }
+          })
 }
 
 @Composable
@@ -374,9 +363,7 @@ private fun UsernameEditActions(onCancelClick: () -> Unit, onSaveClick: () -> Un
 private fun LoadingOverlay() {
   val colors = LightColorScheme
   Box(
-      modifier = Modifier
-          .fillMaxSize()
-          .background(colors.onBackground.copy(alpha = 0.12f)),
+      modifier = Modifier.fillMaxSize().background(colors.onBackground.copy(alpha = 0.12f)),
       contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
             modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_LOADING), color = colors.primary)
@@ -433,9 +420,7 @@ private fun PrivacyToggleRow(
             onClick = onHelpClick,
             icon = Icons.Outlined.Info,
             contentDescription = "Privacy help",
-            modifier = Modifier
-                .size(32.dp)
-                .testTag(UiTestTags.TAG_PRIVACY_HELP_ICON),
+            modifier = Modifier.size(32.dp).testTag(UiTestTags.TAG_PRIVACY_HELP_ICON),
             size = 20.dp)
         DropdownMenu(expanded = showPrivacyHelp, onDismissRequest = onHelpDismiss) {
           DropdownMenuItem(

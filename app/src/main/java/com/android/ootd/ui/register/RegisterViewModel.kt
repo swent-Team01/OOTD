@@ -7,14 +7,13 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.account.TakenUserException
-import com.android.ootd.model.authentication.AccountService
-import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.ui.map.LocationSelectionViewModel
+import com.android.ootd.utils.ImageUploader
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
@@ -71,7 +70,6 @@ data class RegisterUserViewModel(
 class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val accountService: AccountService = AccountServiceFirebase(),
     val locationSelectionViewModel: LocationSelectionViewModel = LocationSelectionViewModel(),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
@@ -111,13 +109,19 @@ class RegisterViewModel(
     _uiState.value = _uiState.value.copy(errorMsg = msg)
   }
 
-    fun setProfilePicture(profilePic: String){
-        _uiState.value = _uiState.value.copy(profilePicture = profilePic)
-    }
+  /**
+   * Updates the profile picture in the UI state.
+   *
+   * @param profilePic The URL or path to the user's profile picture.
+   */
+  fun setProfilePicture(profilePic: String) {
+    _uiState.value = _uiState.value.copy(profilePicture = profilePic)
+  }
 
-    fun clearProfilePicture() {
-        _uiState.value = _uiState.value.copy(profilePicture = "")
-    }
+  /** Clears the profile picture from the UI state. */
+  fun clearProfilePicture() {
+    _uiState.value = _uiState.value.copy(profilePicture = "")
+  }
 
   /**
    * Updates the username in the UI state.
@@ -218,17 +222,20 @@ class RegisterViewModel(
     viewModelScope.launch {
       try {
         val userId = auth.currentUser!!.uid
-        val user = User(uid = userId, ownerId = userId, username = username, profilePicture = profilePicture)
+        val user =
+            User(
+                uid = userId,
+                ownerId = userId,
+                username = username,
+                profilePicture = profilePicture)
         val email = auth.currentUser!!.email.orEmpty()
         val location = locationSelectionViewModel.uiState.value.selectedLocation ?: emptyLocation
         if (location == emptyLocation) throw MissingLocationException()
-        accountRepository.createAccount(user, email,profilePicture = profilePicture, uiState.value.dateOfBirth, location)
+        val pictureToUpload = uploadProfilePicture(profilePicture)
+        accountRepository.createAccount(
+            user, email, profilePicture = profilePicture, uiState.value.dateOfBirth, location)
         userRepository.createUser(
-            username,
-            userId,
-            ownerId = userId,
-            profilePicture =
-                profilePicture) // TODO: Add profile picture to register (empty string for now)
+            username, userId, ownerId = userId, profilePicture = pictureToUpload)
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {
@@ -264,6 +271,24 @@ class RegisterViewModel(
         showLoading(false)
       }
     }
+  }
+
+  /**
+   * Uploads a profile picture to Firebase Storage and returns the download URL.
+   *
+   * @param url The local URI or path of the profile picture to upload.
+   * @return The Firebase Storage download URL, or the original URL if blank or if upload fails.
+   */
+  private suspend fun uploadProfilePicture(url: String): String {
+    val userId = auth.currentUser?.uid ?: return url
+    val result =
+        ImageUploader.uploadImage(localUri = url, storagePath = "profile_pictures/$userId.jpg")
+
+    if (!result.success) {
+      Log.w("RegisterViewModel", "Failed to upload profile picture: ${result.error}")
+    }
+
+    return result.url
   }
 
   // ----------------- GPS Location helpers -----------------
