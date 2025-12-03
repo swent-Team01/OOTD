@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.items.Item
+import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
@@ -57,7 +58,8 @@ fun InventoryGrid(
                   modifier =
                       Modifier.fillMaxWidth()
                           .padding(top = 16.dp, bottom = 8.dp)
-                          .testTag("categoryHeader_$category"))
+                          .testTag("categoryHeader_$category"),
+                  color = Primary)
             }
 
             // Items in this category

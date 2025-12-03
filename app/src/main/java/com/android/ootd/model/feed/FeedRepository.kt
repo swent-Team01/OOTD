@@ -54,4 +54,11 @@ interface FeedRepository {
    * @return Flow emitting lists of recent posts
    */
   fun observeRecentFeedForUids(uids: List<String>): Flow<List<OutfitPost>>
+
+  /**
+   * Retrieves the public feed posts.
+   *
+   * @return List of public posts
+   */
+  suspend fun getPublicFeed(): List<OutfitPost>
 }

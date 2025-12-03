@@ -38,7 +38,7 @@ sealed class Tab(
 
   object Account : Tab("Account", Icons.Outlined.Person, Icons.Filled.Person, Screen.AccountView)
 
-  object Map : Tab("Map", Icons.Outlined.Place, Icons.Filled.Place, Screen.Map)
+  object Map : Tab("Map", Icons.Outlined.Place, Icons.Filled.Place, Screen.Map())
 }
 
 private val tabs = listOf(Tab.Map, Tab.Search, Tab.Feed, Tab.Inventory, Tab.Account)
@@ -59,7 +59,7 @@ fun BottomNavigationBar(
   // Map current route string to a Tab; default to Feed
   val selectedTab = tabList.find { it.destination.route == selectedRoute }
   BottomNavigationMenu(
-      tabs = com.android.ootd.ui.navigation.tabs,
+      tabs = tabs,
       selectedTab = selectedTab,
       onTabSelected = { tab -> onTabSelected(tab.destination) },
       modifier = modifier)

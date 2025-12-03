@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,8 +30,6 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.theme.OnSecondaryContainer
-import com.android.ootd.ui.theme.OnSurface
-import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
@@ -77,7 +76,7 @@ private fun ProfileSection(post: OutfitPost) {
       CircularProgressIndicator(
           progress = { remainingFraction },
           color = Primary,
-          trackColor = OnSurfaceVariant,
+          trackColor = Secondary,
           strokeWidth = 3.dp,
           modifier = Modifier.size(44.dp))
 
@@ -247,6 +246,8 @@ private fun DescriptionAndButton(
  * @param likeCount The total number of likes for the post.
  * @param onLikeClick Callback when the like button is clicked, passing the post UID.
  * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
+ * @param onCardClick Callback when the card is clicked, passing the post UID.
+ * @param onLocationClick Callback when the location is clicked, passing the location.
  */
 @Composable
 fun OutfitPostCard(
@@ -257,7 +258,8 @@ fun OutfitPostCard(
     likeCount: Int,
     onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {},
-    onCardClick: (String) -> Unit = {}
+    onCardClick: (String) -> Unit = {},
+    onLocationClick: (Location) -> Unit = {}
 ) {
   Box(
       modifier =
@@ -283,7 +285,7 @@ fun OutfitPostCard(
                       Modifier.clickable { onCardClick(post.postUID) }
                     }
                 PostImage(post, isBlurred, modifier = clickableModifier)
-                PostLocation(post.location)
+                PostLocation(post.location, onClick = { onLocationClick(post.location) })
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
                 LikeRow(
                     isLiked = isLiked,
@@ -305,14 +307,14 @@ fun OutfitPostCard(
                       Icon(
                           imageVector = Icons.Default.PhotoCamera,
                           contentDescription = "Photo icon",
-                          tint = Color.White,
+                          tint = White,
                           modifier = Modifier.size(48.dp))
                     },
                     text = {
                       ShowText(
                           text = "Do a fit check to unlock today's feed",
                           style = Typography.bodyLarge,
-                          color = OnSurface)
+                          color = White)
                     })
               }
         }
@@ -323,9 +325,10 @@ fun OutfitPostCard(
  * Displays a post's geographic location below the outfit image when available.
  *
  * @param location the Location to display; only rendered when valid
+ * @param onClick callback when the location is clicked
  */
 @Composable
-fun PostLocation(location: Location) {
+fun PostLocation(location: Location, onClick: () -> Unit = {}) {
   if (isValidLocation(location)) {
     val displayName =
         if (location.name.length > 50) {
@@ -343,6 +346,7 @@ fun PostLocation(location: Location) {
         modifier =
             Modifier.fillMaxWidth()
                 .padding(top = 4.dp)
+                .clickable { onClick() }
                 .testTag(OutfitPostCardTestTags.POST_LOCATION))
   }
 }

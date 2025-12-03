@@ -17,6 +17,9 @@ open class AccountFirestoreTest : FirestoreTest() {
 
   val EPFL_LOCATION =
       Location(46.5191, 6.5668, "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
+
+  val LAUSANNE_LOCATION = Location(46.5197, 6.6323, "Lausanne")
+
   lateinit var account1: Account
   lateinit var account2: Account
   lateinit var dummyAccount: Account

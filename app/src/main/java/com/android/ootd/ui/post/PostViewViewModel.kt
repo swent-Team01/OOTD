@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.posts.LikesRepository
@@ -13,6 +14,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.android.ootd.utils.LocationUtils.mapFromLocation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -149,6 +151,41 @@ class PostViewViewModel(
 
   private fun setError(msg: String) {
     _uiState.value = _uiState.value.copy(error = msg, isLoading = false)
+  }
+
+  fun savePostEdits(newDescription: String, newLocation: Location) {
+    val post = _uiState.value.post ?: return
+    viewModelScope.launch {
+      try {
+        postRepository.updatePostFields(
+            post.postUID,
+            updates =
+                mapOf(
+                    "description" to newDescription,
+                    "location" to mapFromLocation(newLocation),
+                ))
+        loadPost(post.postUID)
+      } catch (e: Exception) {
+        setError(e.message ?: "Failed to update post")
+      }
+    }
+  }
+
+  fun deletePost(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    val post = _uiState.value.post ?: return
+    viewModelScope.launch {
+      try {
+        _uiState.value = _uiState.value.copy(isLoading = true)
+        postRepository.deletePost(post.postUID)
+        onSuccess()
+      } catch (e: Exception) {
+        val msg = e.message ?: "Failed to delete post"
+        setError(msg)
+        onError(msg)
+      } finally {
+        _uiState.value = _uiState.value.copy(isLoading = false)
+      }
+    }
   }
 }
 

@@ -7,9 +7,9 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import com.android.ootd.ui.Inventory.InventoryScreenTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
+import com.android.ootd.ui.inventory.InventoryScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 
 fun verifyFeedScreenAppears(composeTestRule: ComposeContentTestRule) {

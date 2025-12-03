@@ -15,6 +15,8 @@ import com.android.ootd.utils.LocationUtils.toLatLng
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,16 +24,31 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
+ * Data class representing a post with an adjusted location to prevent marker overlap.
+ *
+ * @property post The original outfit post
+ * @property adjustedLocation The location adjusted to prevent overlap with other markers
+ * @property overlappingCount The number of posts at the same original location
+ */
+data class PostWithAdjustedLocation(
+    val post: OutfitPost,
+    val adjustedLocation: Location,
+    val overlappingCount: Int
+)
+
+/**
  * UI state for the Map screen.
  *
  * @property posts The list of outfit posts to display on the map
  * @property userLocation The user's location from their account
+ * @property focusLocation The location to focus on (if provided via navigation)
  * @property isLoading Whether the location is being loaded
  */
 data class MapUiState(
     val posts: List<OutfitPost> = emptyList(),
     val currentAccount: Account? = null,
     val userLocation: Location = emptyLocation,
+    val focusLocation: Location? = null,
     val isLoading: Boolean = true,
     val errorMsg: String? = null
 )
@@ -44,10 +61,11 @@ data class MapUiState(
  */
 class MapViewModel(
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
-    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository
+    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
+    focusLocation: Location? = null
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(MapUiState())
+  private val _uiState = MutableStateFlow(MapUiState(focusLocation = focusLocation))
   val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
   // Job to observe posts; allows cancellation when account changes
@@ -111,5 +129,59 @@ class MapViewModel(
   /** Get user's current location as LatLng for map centering. */
   fun getUserLatLng(): LatLng {
     return _uiState.value.userLocation.toLatLng()
+  }
+
+  /** Get the location to focus on (either the provided focus location or user's location). */
+  fun getFocusLatLng(): LatLng {
+    return _uiState.value.focusLocation?.toLatLng() ?: _uiState.value.userLocation.toLatLng()
+  }
+
+  /**
+   * Get posts with adjusted locations to prevent overlapping markers. When multiple posts share the
+   * same location, they are offset in a circular pattern.
+   */
+  fun getPostsWithAdjustedLocations(): List<PostWithAdjustedLocation> {
+    val posts = _uiState.value.posts
+    val locationGroups = posts.groupBy { "${it.location.latitude},${it.location.longitude}" }
+
+    return posts.map { post ->
+      val locationKey = "${post.location.latitude},${post.location.longitude}"
+      val postsAtSameLocation = locationGroups[locationKey] ?: listOf(post)
+      val overlappingCount = postsAtSameLocation.size
+
+      if (overlappingCount == 1) {
+        // No overlap, use original location
+        PostWithAdjustedLocation(post, post.location, 1)
+      } else {
+        // Multiple posts at same location - offset them in a circle
+        val index = postsAtSameLocation.indexOf(post)
+        val adjustedLocation = offsetLocation(post.location, index, overlappingCount)
+        PostWithAdjustedLocation(post, adjustedLocation, overlappingCount)
+      }
+    }
+  }
+
+  /**
+   * Offset a location by a small amount to prevent marker overlap. Markers are arranged in a
+   * circular pattern around the original location.
+   *
+   * @param location The original location
+   * @param index The index of this marker among overlapping markers
+   * @param total The total number of overlapping markers
+   * @return The adjusted location
+   */
+  private fun offsetLocation(location: Location, index: Int, total: Int): Location {
+    // Offset by approximately 30 meters (0.0003 degrees is roughly 30m at equator)
+    val offsetDegrees = 0.0003
+    val angle = (2 * Math.PI * index) / total
+
+    val latOffset = offsetDegrees * sin(angle)
+    // longitude does not directly corresponds to ground distance and must thus be scaled
+    val lonOffset = offsetDegrees * cos(angle) / cos(Math.toRadians(location.latitude))
+
+    return Location(
+        latitude = location.latitude + latOffset,
+        longitude = location.longitude + lonOffset,
+        name = location.name)
   }
 }

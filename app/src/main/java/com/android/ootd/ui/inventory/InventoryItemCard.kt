@@ -1,4 +1,4 @@
-package com.android.ootd.ui.Inventory
+package com.android.ootd.ui.inventory
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

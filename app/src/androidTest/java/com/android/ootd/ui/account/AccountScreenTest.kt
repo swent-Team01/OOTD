@@ -19,7 +19,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
-import com.android.ootd.ui.Inventory.InventoryScreenTestTags
+import com.android.ootd.ui.inventory.InventoryScreenTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
