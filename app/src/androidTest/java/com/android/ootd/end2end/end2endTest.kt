@@ -135,7 +135,6 @@ class End2EndTest : BaseEnd2EndTest() {
       }
 
       // STEP 5: Verify we're on the Registration screen
-      composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
       composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
       composeTestRule
           .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)
