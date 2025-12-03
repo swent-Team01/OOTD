@@ -38,22 +38,39 @@ import com.android.ootd.utils.composables.ActionButton
 import com.android.ootd.utils.composables.ProfilePicture
 
 /**
- * Handles the result from the image picker by processing the URI and uploading the image.
+ * Handles the result from the image picker by processing the URI.
  *
  * @param uri The URI returned from the image picker, or null if no image was selected
- * @param upload The upload function from the ViewModel
- * @param editProfilePicture The function to update the profile picture in the ViewModel
+ * @param upload The upload function from the ViewModel (optional, not used in local mode)
+ * @param editProfilePicture The function to update the profile picture URL in the ViewModel (for
+ *   uploaded URLs)
+ * @param editProfilePictureLocal The function to update the profile picture with a local URI (for
+ *   local preview)
  * @param context The context for showing Toast messages
+ * @param isLocal If true, stores the URI locally without uploading; if false, uploads to Firebase
+ *   Storage
  */
 internal fun handleImagePickerResult(
     uri: Uri?,
-    upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit,
-    editProfilePicture: (String) -> Unit,
-    context: Context
+    upload: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ -> },
+    editProfilePicture: (String) -> Unit = {},
+    editProfilePictureLocal: (Uri) -> Unit = {},
+    context: Context,
+    isLocal: Boolean = false
 ) {
   uri?.let {
-    handlePickedProfileImage(
-        it.toString(), upload = upload, editProfilePicture = editProfilePicture, context = context)
+    if (isLocal) {
+      // Local mode: just store the URI without uploading
+      editProfilePictureLocal(it)
+      Toast.makeText(context, "Profile picture selected", Toast.LENGTH_SHORT).show()
+    } else {
+      // Upload mode: upload to Firebase Storage
+      handlePickedProfileImage(
+          it.toString(),
+          upload = upload,
+          editProfilePicture = editProfilePicture,
+          context = context)
+    }
   }
 }
 
@@ -62,19 +79,27 @@ internal fun handleImagePickerResult(
  *
  * @param context The context for showing Toast messages
  * @param uploadProfilePicture Function to upload the profile picture to storage. Takes the image
- *   URI string, a success callback with the download URL, and an error callback
- * @param editProfilePicture Function to update the profile picture URL in the ViewModel
+ *   URI string, a success callback with the download URL, and an error callback (not used in local
+ *   mode)
+ * @param editProfilePicture Function to update the profile picture URL in the ViewModel (for
+ *   uploaded URLs)
+ * @param editProfilePictureLocal Function to update the profile picture with a local URI (for local
+ *   preview)
  * @param showImageSourceDialog Whether to show the image source selection dialog (camera or
  *   gallery)
  * @param onShowImageSourceDialogChange Callback to update the showImageSourceDialog state
+ * @param isLocal If true, stores the URI locally without uploading; if false, uploads to Firebase
+ *   Storage
  */
 @Composable
 fun ProfilePictureEditor(
     context: Context,
     uploadProfilePicture: (String, (String) -> Unit, (Throwable) -> Unit) -> Unit = { _, _, _ -> },
     editProfilePicture: (String) -> Unit = {},
+    editProfilePictureLocal: (Uri) -> Unit = {},
     showImageSourceDialog: Boolean,
-    onShowImageSourceDialogChange: (Boolean) -> Unit
+    onShowImageSourceDialogChange: (Boolean) -> Unit,
+    isLocal: Boolean = false
 ) {
   // State for camera view
   var showCamera by remember { mutableStateOf(false) }
@@ -84,20 +109,29 @@ fun ProfilePictureEditor(
           contract = ActivityResultContracts.PickVisualMedia(),
           onResult = { uri ->
             handleImagePickerResult(
-                uri,
+                uri = uri,
                 upload = uploadProfilePicture,
-                editProfilePicture = { url -> editProfilePicture(url) },
-                context = context)
+                editProfilePicture = editProfilePicture,
+                editProfilePictureLocal = editProfilePictureLocal,
+                context = context,
+                isLocal = isLocal)
           })
 
   if (showCamera) {
     CameraScreen(
         onImageCaptured = { uri ->
-          handlePickedProfileImage(
-              uri.toString(),
-              upload = uploadProfilePicture,
-              editProfilePicture = { url -> editProfilePicture(url) },
-              context = context)
+          if (isLocal) {
+            // Local mode: just store the URI
+            editProfilePictureLocal(uri)
+            Toast.makeText(context, "Photo captured", Toast.LENGTH_SHORT).show()
+          } else {
+            // Upload mode: upload to Firebase Storage
+            handlePickedProfileImage(
+                uri.toString(),
+                upload = uploadProfilePicture,
+                editProfilePicture = editProfilePicture,
+                context = context)
+          }
           showCamera = false
         },
         onDismiss = { showCamera = false })

@@ -136,9 +136,10 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
 
   ProfilePictureEditor(
       context = context,
-      editProfilePicture = { url -> viewModel.setProfilePicture(url) },
+      editProfilePictureLocal = viewModel::setProfilePicture,
       showImageSourceDialog = showImageSourceDialog,
-      onShowImageSourceDialogChange = { showImageSourceDialog = it })
+      onShowImageSourceDialogChange = { showImageSourceDialog = it },
+      isLocal = true)
 
   UpdateFieldColors(usernameField, usernameError)
   UpdateFieldColors(dateField, dateError)
@@ -158,7 +159,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           Spacer(modifier = Modifier.height(SPACER))
 
           AvatarSection(
-              avatarUri = registerUiState.profilePicture,
+              avatarUri = registerUiState.localProfilePictureUri?.toString() ?: "",
               username = registerUiState.username,
               onEditClick = { showImageSourceDialog = true },
               deleteProfilePicture = { viewModel.clearProfilePicture() },
