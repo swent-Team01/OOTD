@@ -101,7 +101,7 @@ class FourthEnd2EndTest : FirestoreTest() {
    *   feel like.
    */
   @Test
-  fun fullAppFlow_newUser_3() = runBlocking {
+  fun fullAppFlow_newUser_4() = runBlocking {
 
     /** Add user before tests start* */
     FirebaseEmulator.auth.signOut()

@@ -27,9 +27,9 @@ import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepositoryFirestore
 import com.android.ootd.model.user.UserRepositoryProvider
-import com.android.ootd.ui.Inventory.InventoryScreenTestTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
+import com.android.ootd.ui.inventory.InventoryScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen

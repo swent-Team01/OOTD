@@ -34,7 +34,6 @@ import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
-import com.android.ootd.utils.InMemoryItem.ensureVisible
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 fun verifyFeedScreenAppears(composeTestRule: ComposeContentTestRule) {
@@ -146,14 +145,13 @@ fun addPostWithOneItem(
     clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
     composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
 
-    composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
     composeTestRule.waitUntil(timeoutMillis = 5_000) {
       composeTestRule
           .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
-    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON, shouldScroll = true)
+    clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
   } else {
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)
     clickWithWait(composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${inventoryItemUuid}")
@@ -195,14 +193,13 @@ suspend fun addItemFromInventory(
   clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
   composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
 
-  composeTestRule.ensureVisible(AddItemScreenTestTags.ADD_ITEM_BUTTON)
   composeTestRule.waitUntil(timeoutMillis = 5_000) {
     composeTestRule
         .onAllNodesWithTag(AddItemScreenTestTags.ADD_ITEM_BUTTON, useUnmergedTree = true)
         .fetchSemanticsNodes()
         .isNotEmpty()
   }
-  clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON, shouldScroll = true)
+  clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
   val finalItemNumber = itemsRepository.getAllItems().count()
   assert(finalItemNumber == initialItemNumber + 1)
 }
