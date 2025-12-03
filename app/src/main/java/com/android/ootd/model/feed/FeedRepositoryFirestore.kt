@@ -141,10 +141,14 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
   }
 
   override suspend fun getPublicFeed(): List<OutfitPost> {
+    val now = System.currentTimeMillis()
+    val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS
+
     return try {
       val snapshot =
           db.collection(POSTS_COLLECTION_PATH)
               .whereEqualTo("isPublic", true)
+              .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
               .orderBy("timestamp", Query.Direction.DESCENDING)
               .limit(MAX_BATCH_SIZE)
               .get()
