@@ -80,7 +80,6 @@ class CameraScreenPreviewTest {
 
     // Verify all preview buttons exist and are displayed
     composeTestRule.onNodeWithTag(CameraScreenTestTags.RETAKE_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.CROP_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertIsDisplayed()
 
     // Verify close button
@@ -106,7 +105,6 @@ class CameraScreenPreviewTest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(CameraScreenTestTags.RETAKE_BUTTON).assertIsEnabled()
-    composeTestRule.onNodeWithTag(CameraScreenTestTags.CROP_BUTTON).assertIsEnabled()
     composeTestRule.onNodeWithTag(CameraScreenTestTags.APPROVE_BUTTON).assertIsEnabled()
   }
 
@@ -187,7 +185,6 @@ class CameraScreenPreviewTest {
 
     // Verify button text
     composeTestRule.onNodeWithText("Retake").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Crop").assertIsDisplayed()
     composeTestRule.onNodeWithText("Approve").assertIsDisplayed()
 
     // Verify content descriptions

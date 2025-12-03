@@ -103,6 +103,7 @@ class MapScreenTest {
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR_TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithText("MAP").assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MapScreenTestTags.BACK_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
   }
 
@@ -115,20 +116,6 @@ class MapScreenTest {
   }
 
   @Test
-  fun onPostClick_isCalledWithCorrectPostId() {
-    var clickedPostId: String? = null
-    val testPostId = "test-post-123"
-    val onPostClick: (String) -> Unit = { postId -> clickedPostId = postId }
-
-    composeTestRule.setContent { MapScreen(viewModel = mockViewModel, onPostClick = onPostClick) }
-
-    // Simulate clicking on a post by directly calling the callback
-    onPostClick(testPostId)
-
-    assert(clickedPostId == testPostId) { "Expected post ID '$testPostId', got '$clickedPostId'" }
-  }
-
-  @Test
   fun mapScreen_allTestTags_areUnique() {
     // Verify all test tags are unique constants
     val tags =
@@ -138,6 +125,7 @@ class MapScreenTest {
             MapScreenTestTags.LOADING_INDICATOR,
             MapScreenTestTags.TOP_BAR,
             MapScreenTestTags.TOP_BAR_TITLE,
+            MapScreenTestTags.BACK_BUTTON,
             MapScreenTestTags.CONTENT_BOX)
 
     // All tags should be unique

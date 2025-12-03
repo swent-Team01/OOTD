@@ -40,7 +40,6 @@ import com.android.ootd.model.notifications.Notification
 import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.notifications.scheduleBackgroundNotificationSync
 import com.android.ootd.model.notifications.sendLocalNotification
-import com.android.ootd.ui.Inventory.InventoryScreen
 import com.android.ootd.ui.account.AccountPage
 import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.ViewUserProfile
@@ -51,6 +50,7 @@ import com.android.ootd.ui.consent.BetaConsentViewModel
 import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.SeeFitScreen
+import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
