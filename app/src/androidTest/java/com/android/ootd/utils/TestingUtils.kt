@@ -111,9 +111,16 @@ fun verifyElementDoesNotAppearWithTimer(composeTestRule: ComposeContentTestRule,
   }
 }
 
-fun verifyElementAppearsWithTimer(composeTestRule: ComposeContentTestRule, tag: String) {
+fun verifyElementAppearsWithTimer(
+    composeTestRule: ComposeContentTestRule,
+    tag: String,
+    useUnmergedTree: Boolean = false
+) {
   composeTestRule.waitUntil(timeoutMillis = 5000) {
-    composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+    composeTestRule
+        .onAllNodesWithTag(tag, useUnmergedTree = useUnmergedTree)
+        .fetchSemanticsNodes()
+        .isNotEmpty()
   }
 }
 
