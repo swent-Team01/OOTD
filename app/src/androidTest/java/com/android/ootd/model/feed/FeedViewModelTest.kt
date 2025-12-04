@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryFirestore
+import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
@@ -29,6 +30,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
 
   private lateinit var viewModel: FeedViewModel
   private lateinit var auth: FirebaseAuth
+  private lateinit var postRepo: OutfitPostRepositoryFirestore
   private lateinit var accountRepo: AccountRepositoryFirestore
   private lateinit var feedRepo: FeedRepositoryFirestore
 
@@ -37,11 +39,12 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     super.setUp()
     auth = FirebaseEmulator.auth
     accountRepo = AccountRepositoryFirestore(FirebaseEmulator.firestore)
+    postRepo = OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
     feedRepo = FeedRepositoryFirestore(FirebaseEmulator.firestore)
 
     runBlocking { auth.signInAnonymously().await() }
 
-    viewModel = FeedViewModel(feedRepo, accountRepo)
+    viewModel = FeedViewModel(feedRepo, postRepo, accountRepo)
   }
 
   @Test
