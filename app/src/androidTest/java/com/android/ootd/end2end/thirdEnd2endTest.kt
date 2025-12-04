@@ -52,9 +52,8 @@ class ThirdEnd2EndTest : FirestoreTest() {
 
   val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
   val testDateofBirth = "10102020"
-  val testUsername = "testTestUser"
   val fakeGoogleIdToken2 =
-      FakeJwtGenerator.createFakeGoogleIdToken("brbrbrbrbrbr", email = "greg_2@gmail.com")
+      FakeJwtGenerator.createFakeGoogleIdToken("test3_user_2", email = "test_3@gmail.com")
 
   lateinit var testNavController: TestNavHostController
   lateinit var context: Context
@@ -66,7 +65,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
     super.setUp()
     context = ApplicationProvider.getApplicationContext()
     fakeGoogleIdToken =
-        FakeJwtGenerator.createFakeGoogleIdToken(currentUser.uid, email = "greg@gmail.com")
+        FakeJwtGenerator.createFakeGoogleIdToken("test_3_user_1", email = "test_3_2@gmail.com")
     fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
   }
 
@@ -147,7 +146,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
     // STEP 4: Create a post with the item that was added in inventory.
     addPostWithOneItem(
         composeTestRule,
-        selectFromInventory = false,
+        selectFromInventory = true,
         inventoryItemUuid = firstItemUuid) // Test adding item from inventory works as well
 
     checkPostAppearsInFeed(composeTestRule)
