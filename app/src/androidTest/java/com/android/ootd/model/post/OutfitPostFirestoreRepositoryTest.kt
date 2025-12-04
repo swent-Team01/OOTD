@@ -3,7 +3,6 @@ package com.android.ootd.model.post
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
-import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
@@ -526,40 +525,68 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun mapToComment_validMap_returnsComment() = runTest {
-    val repo = outfitPostRepository
+  fun mapToComment_validComment_parsesCorrectly() = runTest {
+    val postId = newId()
 
-    val map =
-        mapOf(
-            "commentId" to "c1",
-            "ownerId" to "u1",
-            "text" to "Hello",
-            "timestamp" to 123L,
-            "reactionImage" to "url.jpg")
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to
+                    listOf(
+                        mapOf(
+                            "commentId" to "c1",
+                            "ownerId" to "u1",
+                            "text" to "Hello",
+                            "timestamp" to 123L,
+                            "reactionImage" to "url.jpg"))))
+        .await()
 
-    // Use reflection to call private method
-    val method = repo::class.java.getDeclaredMethod("mapToComment", Any::class.java)
-    method.isAccessible = true
+    val post = outfitPostRepository.getPostById(postId)
 
-    val result = method.invoke(repo, map) as? Comment
-
-    Assert.assertNotNull(result)
-    Assert.assertEquals("c1", result!!.commentId)
-    Assert.assertEquals("u1", result.ownerId)
-    Assert.assertEquals("Hello", result.text)
-    Assert.assertEquals(123L, result.timestamp)
-    Assert.assertEquals("url.jpg", result.reactionImage)
+    Assert.assertNotNull(post)
+    Assert.assertEquals(1, post!!.comments.size)
+    val c = post.comments[0]
+    Assert.assertEquals("c1", c.commentId)
+    Assert.assertEquals("u1", c.ownerId)
+    Assert.assertEquals("Hello", c.text)
+    Assert.assertEquals(123L, c.timestamp)
+    Assert.assertEquals("url.jpg", c.reactionImage)
   }
 
   @Test
-  fun mapToComment_nonMapInput_returnsNull() = runTest {
-    val repo = outfitPostRepository
+  fun mapToComment_nonMapInput_isIgnored() = runTest {
+    val postId = newId()
 
-    val method = repo::class.java.getDeclaredMethod("mapToComment", Any::class.java)
-    method.isAccessible = true
+    // Insert a post whose comments array contains an invalid entry
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to listOf("not a map")))
+        .await()
 
-    val result = method.invoke(repo, "not a map")
+    val post = outfitPostRepository.getPostById(postId)
 
-    Assert.assertNull(result)
+    Assert.assertNotNull(post)
+    Assert.assertTrue("Invalid comment should be ignored", post!!.comments.isEmpty())
   }
 }
