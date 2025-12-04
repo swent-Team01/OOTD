@@ -48,12 +48,6 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       }
       // Merge and sort by timestamp ascending
       results.sortedBy { it.timestamp }
-    } catch (e: TimeoutCancellationException) {
-      Log.w(
-          "FeedRepositoryFirestore",
-          "Timed out fetching friend-filtered feed; returning empty list",
-          e)
-      emptyList()
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error fetching friend-filtered feed", e)
       emptyList()
@@ -85,9 +79,6 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
       // Sort descending (meaning most recent first)
       results.sortedByDescending { it.timestamp }
-    } catch (e: TimeoutCancellationException) {
-      Log.w("FeedRepositoryFirestore", "Timed out fetching recent feed; returning empty list", e)
-      emptyList()
     } catch (e: Exception) {
       Log.e("FeedRepositoryFirestore", "Error fetching recent friend feed", e)
       emptyList()
