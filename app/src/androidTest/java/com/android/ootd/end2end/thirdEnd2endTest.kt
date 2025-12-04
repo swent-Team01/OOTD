@@ -128,7 +128,11 @@ class ThirdEnd2EndTest : FirestoreTest() {
         composeTestRule = composeTestRule, username = "user_1", dateOfBirth = testDateofBirth)
 
     // STEP 2: Add item to inventory
-    addItemFromInventory(composeTestRule, itemsRepository = itemsRepository)
+    addItemFromInventory(
+        composeTestRule,
+        itemsRepository = itemsRepository,
+        accountRepository = accountRepository,
+        userId = FirebaseEmulator.auth.currentUser?.uid ?: "")
 
     val firstItemUuid = itemsRepository.getAllItems()[0].itemUuid
 
@@ -143,8 +147,9 @@ class ThirdEnd2EndTest : FirestoreTest() {
     // STEP 4: Create a post with the item that was added in inventory.
     addPostWithOneItem(
         composeTestRule,
-        selectFromInventory = true,
+        selectFromInventory = false,
         inventoryItemUuid = firstItemUuid) // Test adding item from inventory works as well
+
     checkPostAppearsInFeed(composeTestRule)
 
     checkItemAppearsInPost(composeTestRule)

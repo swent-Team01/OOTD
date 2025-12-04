@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.navigation.testing.TestNavHostController
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
@@ -39,10 +40,10 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 fun verifyFeedScreenAppears(composeTestRule: ComposeContentTestRule) {
   // Verify we're on the Feed screen
   composeTestRule.waitUntil(timeoutMillis = 5000) {
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).isDisplayed()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN, useUnmergedTree = true).isDisplayed()
   }
   composeTestRule.waitUntil(timeoutMillis = 5000) {
-    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR).isDisplayed()
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR, useUnmergedTree = true).isDisplayed()
   }
 }
 
@@ -161,7 +162,10 @@ fun addPostWithOneItem(
     clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
   } else {
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.SELECT_FROM_INVENTORY_OPTION)
-    clickWithWait(composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${inventoryItemUuid}")
+    clickWithWait(
+        composeTestRule,
+        "${InventoryScreenTestTags.ITEM_CARD}_${inventoryItemUuid}",
+        useUnmergedTree = true)
   }
   verifyElementAppearsWithTimer(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
   clickWithWait(composeTestRule, PreviewItemScreenTestTags.POST_BUTTON)
@@ -189,15 +193,20 @@ fun checkStarFunctionalityForItem(composeTestRule: ComposeContentTestRule, itemU
 
 suspend fun addItemFromInventory(
     composeTestRule: ComposeContentTestRule,
-    itemsRepository: ItemsRepository
+    itemsRepository: ItemsRepository,
+    accountRepository: AccountRepository,
+    userId: String
 ) {
   val initialItemNumber = itemsRepository.getAllItems().count()
   clickWithWait(composeTestRule, NavigationTestTags.INVENTORY_TAB)
   clickWithWait(composeTestRule, InventoryScreenTestTags.ADD_ITEM_FAB)
-
-  clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
+  assert(userId != "")
+  // clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
 
   clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
+
+  verifyElementAppearsWithTimer(composeTestRule, AddItemScreenTestTags.CATEGORY_SUGGESTION)
+
   composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
 
   composeTestRule.waitUntil(timeoutMillis = 5_000) {
@@ -209,6 +218,12 @@ suspend fun addItemFromInventory(
   clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
   val finalItemNumber = itemsRepository.getAllItems().count()
   assert(finalItemNumber == initialItemNumber + 1)
+  val accountItems = accountRepository.getItemsList(userId)
+  assert(accountItems.size == 1)
+  val itemUuid = itemsRepository.getAllItems()[0].itemUuid
+
+  verifyElementAppearsWithTimer(
+      composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${itemUuid}", useUnmergedTree = true)
 }
 
 fun searchItemInInventory(
@@ -222,7 +237,8 @@ fun searchItemInInventory(
 
   composeTestRule.onNodeWithTag(InventoryScreenTestTags.SEARCH_FIELD).performTextInput(itemCategory)
 
-  verifyElementAppearsWithTimer(composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${itemUuid}")
+  verifyElementAppearsWithTimer(
+      composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${itemUuid}", useUnmergedTree = true)
 }
 
 fun waitForRoute(
