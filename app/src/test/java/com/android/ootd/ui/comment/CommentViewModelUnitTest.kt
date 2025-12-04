@@ -111,8 +111,16 @@ class CommentViewModelUnitTest {
             text = "Great post!",
             timestamp = 123456L,
             reactionImage = "")
-    coEvery { postRepository.addCommentToPost("post1", "user1", "Great post!", null) } returns
-        comment
+
+    coEvery { postRepository.addCommentToPost("post1", "user1", "Great post!", null) } coAnswers
+        {
+          // Check state during execution
+          assertTrue(viewModel.uiState.value.isSubmitting)
+          comment
+        }
+
+    // Initially not submitting
+    assertFalse(viewModel.uiState.value.isSubmitting)
 
     val result = viewModel.addComment("post1", "user1", "Great post!", null, context)
     testDispatcher.scheduler.advanceUntilIdle()
@@ -120,6 +128,8 @@ class CommentViewModelUnitTest {
     assertTrue(result.isSuccess)
     assertEquals(comment, result.getOrNull())
     coVerify { postRepository.addCommentToPost("post1", "user1", "Great post!", null) }
+
+    // After completion, no longer submitting
     assertFalse(viewModel.uiState.value.isSubmitting)
     assertNull(viewModel.uiState.value.selectedImage)
   }
@@ -137,8 +147,15 @@ class CommentViewModelUnitTest {
             reactionImage = "https://example.com/reaction.jpg")
 
     coEvery { imageCompressor.compressImage(imageUri, 200_000L, context) } returns compressedData
-    coEvery { postRepository.addCommentToPost("post1", "user1", "Nice!", compressedData) } returns
-        comment
+    coEvery { postRepository.addCommentToPost("post1", "user1", "Nice!", compressedData) } coAnswers
+        {
+          // Check state during execution
+          assertTrue(viewModel.uiState.value.isSubmitting)
+          comment
+        }
+
+    // Initially not submitting
+    assertFalse(viewModel.uiState.value.isSubmitting)
 
     val result = viewModel.addComment("post1", "user1", "Nice!", imageUri, context)
     testDispatcher.scheduler.advanceUntilIdle()
@@ -146,29 +163,8 @@ class CommentViewModelUnitTest {
     assertTrue(result.isSuccess)
     coVerify { imageCompressor.compressImage(imageUri, 200_000L, context) }
     coVerify { postRepository.addCommentToPost("post1", "user1", "Nice!", compressedData) }
-  }
 
-  @Test
-  fun `addComment sets isSubmitting state correctly`() = runTest {
-    val comment =
-        Comment(
-            commentId = "comment3",
-            ownerId = "user1",
-            text = "Test",
-            timestamp = 123456L,
-            reactionImage = "")
-    coEvery { postRepository.addCommentToPost(any(), any(), any(), any()) } coAnswers
-        {
-          // Check state during execution
-          assertTrue(viewModel.uiState.value.isSubmitting)
-          comment
-        }
-
-    assertFalse(viewModel.uiState.value.isSubmitting)
-
-    viewModel.addComment("post1", "user1", "Test", null, context)
-    testDispatcher.scheduler.advanceUntilIdle()
-
+    // After completion, no longer submitting
     assertFalse(viewModel.uiState.value.isSubmitting)
   }
 
