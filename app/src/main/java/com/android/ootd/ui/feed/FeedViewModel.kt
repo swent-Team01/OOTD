@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * UI state for the FeedScreen.
@@ -56,8 +57,11 @@ open class FeedViewModel(
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
-  // Cache for feed posts to use when the app is in offline mode
-  private var cachedFeed: List<OutfitPost> = emptyList()
+  // Cache for public feed posts to use when the app is in offline mode
+  private var cachedPublicFeed: List<OutfitPost> = emptyList()
+
+  // Cache for private feed posts to use when the app is in offline mode
+  private var cachedPrivateFeed: List<OutfitPost> = emptyList()
 
   init {
     observeAuthAndLoadAccount()
@@ -83,121 +87,123 @@ open class FeedViewModel(
     }
   }
 
-  /**
-   * Loads cached feed posts from the local cache based on the current feed type (public or
-   * friends).
-   */
-  fun loadCachedFeed() {
-    viewModelScope.launch {
-      // Retrieves the current account data
-      val currentAccount = _uiState.value.currentAccount ?: return@launch
-
-      // Load cached feed based on the feed type
-      val cached =
-          if (_uiState.value.isPublicFeed) {
-            repository.getCachedPublicFeed()
-          } else {
-            repository.getCachedFriendFeed(currentAccount.friendUids + currentAccount.uid)
-          }
-
-      // Update UI state with cached feed if available
-      if (cached.isNotEmpty()) {
-        cachedFeed = cached
-        _uiState.value = _uiState.value.copy(feedPosts = cached, isLoading = false)
-      }
-    }
-  }
-
   /** Refreshes the feed posts from Firestore for the current account. */
   fun refreshFeedFromFirestore() {
     val account = _uiState.value.currentAccount ?: return
     viewModelScope.launch {
-      _uiState.value = _uiState.value.copy(isLoading = true)
 
-      if (cachedFeed.isNotEmpty() && _uiState.value.feedPosts.isEmpty()) {
-        _uiState.value = _uiState.value.copy(feedPosts = cachedFeed, isLoading = false)
+      // 1) Prefill from Firestore local cache immediately
+      val cached =
+          if (_uiState.value.isPublicFeed) {
+            repository.getCachedPublicFeed()
+          } else {
+            repository.getCachedFriendFeed(account.friendUids + account.uid)
+          }
+
+      if (cached.isNotEmpty()) {
+        val todayStart =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        val filteredCached =
+            if (_uiState.value.isPublicFeed) cached
+            else
+                cached.filter { post ->
+                  if (post.ownerId == account.uid) post.timestamp >= todayStart else true
+                }
+
+        // Keep caches for subsequent `loadCachedFeed`
+        if (_uiState.value.isPublicFeed) {
+          cachedPublicFeed = filteredCached
+        } else {
+          cachedPrivateFeed = filteredCached
+        }
+
+        // Update UI instantly from cache and suppress loading overlay
+        _uiState.value =
+            _uiState.value.copy(
+                feedPosts = filteredCached,
+                hasPostedToday =
+                    (cachedPublicFeed + cachedPrivateFeed).any {
+                      it.ownerId == account.uid && it.timestamp >= todayStart
+                    },
+                isLoading = false)
       }
 
-      _uiState.value = _uiState.value.copy(errorMessage = null)
-
-      try {
-
+      // 2) Try fast online refresh with a short timeout. Show loading only if no cache.
+      val shouldShowLoading = cached.isEmpty()
+      if (shouldShowLoading) {
         _uiState.value = _uiState.value.copy(isLoading = true)
+      }
 
-        val hasPostedToday = repository.hasPostedToday(account.uid)
-
-        val allPosts =
+      val allPosts =
+          withTimeoutOrNull(2000) {
             if (_uiState.value.isPublicFeed) {
               repository.getPublicFeed()
             } else {
               repository.getRecentFeedForUids(account.friendUids + account.uid)
             }
-
-        val todayStart =
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-        // Check if user has posted today in the cached feed as well
-        val localHasPostedToday =
-            cachedFeed.any { it.ownerId == account.uid && it.timestamp >= todayStart }
-
-        // Combine both checks
-        val finalHasPostedToday = hasPostedToday || localHasPostedToday
-
-        val filteredPost =
-            if (_uiState.value.isPublicFeed) {
-              allPosts
-            } else {
-              allPosts.filter { post ->
-                if (post.ownerId == account.uid) {
-                  post.timestamp >= todayStart
-                } else true
-              }
-            }
-
-        val likesMap = mutableMapOf<String, Boolean>()
-        val likeCounts = mutableMapOf<String, Int>()
-
-        for (post in filteredPost) {
-          val postId = post.postUID
-          try {
-            val isLiked = likesRepository.isPostLikedByUser(postId, account.uid)
-            val count = likesRepository.getLikeCount(postId)
-            likesMap[postId] = isLiked
-            likeCounts[postId] = count
-          } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
           }
-        }
 
-        cachedFeed = filteredPost
+      if (allPosts == null) {
+        _uiState.value = _uiState.value.copy(isLoading = false)
+        return@launch
+      }
 
-        _uiState.value =
-            _uiState.value.copy(
-                hasPostedToday = finalHasPostedToday,
-                feedPosts = filteredPost,
-                isLoading = false,
-                likes = likesMap,
-                likeCounts = likeCounts)
-      } catch (e: Exception) {
-        Log.e("FeedViewModel", "Failed to load initial feed", e)
-        // Only show error if we have no posts at all
-        if (cachedFeed.isNotEmpty()) {
-          _uiState.value = _uiState.value.copy(isLoading = false, feedPosts = cachedFeed)
-        } else {
-          _uiState.value =
-              _uiState.value.copy(
-                  errorMessage = "Failed to load feed. Please try again.", isLoading = false)
+      val todayStart =
+          LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+      val filteredPost =
+          if (_uiState.value.isPublicFeed) {
+            allPosts
+          } else {
+            allPosts.filter { post ->
+              if (post.ownerId == account.uid) {
+                post.timestamp >= todayStart
+              } else true
+            }
+          }
+
+      val likesMap = mutableMapOf<String, Boolean>()
+      val likeCounts = mutableMapOf<String, Int>()
+
+      for (post in filteredPost) {
+        val postId = post.postUID
+        try {
+          val isLiked = likesRepository.isPostLikedByUser(postId, account.uid)
+          val count = likesRepository.getLikeCount(postId)
+          likesMap[postId] = isLiked
+          likeCounts[postId] = count
+        } catch (e: Exception) {
+          Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
         }
       }
+
+      if (_uiState.value.isPublicFeed) {
+        cachedPublicFeed = allPosts
+      } else {
+        cachedPrivateFeed = filteredPost
+      }
+
+      val hasPostedToday = repository.hasPostedToday(account.uid)
+      val postedOffline =
+          (cachedPublicFeed + cachedPrivateFeed).any { post ->
+            post.ownerId == account.uid && post.timestamp >= todayStart
+          }
+      val finalHasPostedToday = hasPostedToday || postedOffline
+
+      _uiState.value =
+          _uiState.value.copy(
+              hasPostedToday = finalHasPostedToday,
+              feedPosts = filteredPost,
+              isLoading = false,
+              likes = likesMap,
+              likeCounts = likeCounts)
     }
   }
 
   /** Toggles between public and private feed. */
   fun toggleFeedType() {
     _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
-
-    viewModelScope.launch { loadCachedFeed() }
-
     refreshFeedFromFirestore()
   }
 
@@ -208,7 +214,6 @@ open class FeedViewModel(
    */
   fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
-    loadCachedFeed()
   }
 
   /**

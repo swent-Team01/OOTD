@@ -182,7 +182,9 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
         results += snap.documents.mapNotNull { mapToPost(it) }
       }
-      results.sortedByDescending { it.timestamp }
+      results
+          .filter { it.timestamp >= System.currentTimeMillis() - MILLIS_IN_24_HOURS }
+          .sortedByDescending { it.timestamp }
     } catch (_: Exception) {
       emptyList()
     }
@@ -196,7 +198,13 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
               .get(Source.CACHE) // Fetch from cache
               .await()
 
-      snap.documents.mapNotNull { mapToPost(it) }
+      val now = System.currentTimeMillis()
+      val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS
+
+      snap.documents
+          .mapNotNull { mapToPost(it) }
+          .filter { it.timestamp >= twentyFourHoursAgo }
+          .sortedByDescending { it.timestamp }
     } catch (_: Exception) {
       emptyList()
     }
