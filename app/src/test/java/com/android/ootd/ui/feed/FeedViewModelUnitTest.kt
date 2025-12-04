@@ -3,6 +3,7 @@ package com.android.ootd.ui.feed
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.feed.FeedRepository
+import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.auth.FirebaseAuth
@@ -32,6 +33,7 @@ class FeedViewModelUnitTest {
   private lateinit var viewModel: FeedViewModel
   private lateinit var feedRepository: FeedRepository
   private lateinit var accountRepository: AccountRepository
+  private lateinit var postRepo: OutfitPostRepository
   private lateinit var likesRepository: LikesRepository
   private lateinit var firebaseAuth: FirebaseAuth
   private lateinit var firebaseFirestore: FirebaseFirestore
@@ -41,6 +43,7 @@ class FeedViewModelUnitTest {
   fun setUp() {
     Dispatchers.setMain(testDispatcher)
     feedRepository = mockk(relaxed = true)
+    postRepo = mockk(relaxed = true)
     accountRepository = mockk(relaxed = true)
     likesRepository = mockk(relaxed = true)
     firebaseAuth = mockk(relaxed = true)
@@ -50,7 +53,8 @@ class FeedViewModelUnitTest {
     mockkStatic(FirebaseFirestore::class)
     every { FirebaseFirestore.getInstance() } returns firebaseFirestore
 
-    viewModel = FeedViewModel(feedRepository, accountRepository, likesRepository, firebaseAuth)
+    viewModel =
+        FeedViewModel(feedRepository, postRepo, accountRepository, likesRepository, firebaseAuth)
   }
 
   @After
