@@ -123,7 +123,7 @@ class OutfitPostRepositoryFirestore(
     val commentId = db.collection(POSTS_COLLECTION).document().id
 
     // Upload reaction image if provided
-    val reactionImageUrl =
+    val reactionImage =
         if (reactionImageData != null) {
           uploadCompressedReactionImage(reactionImageData, commentId)
         } else {
@@ -137,7 +137,7 @@ class OutfitPostRepositoryFirestore(
             ownerId = userId,
             text = commentText,
             timestamp = System.currentTimeMillis(),
-            reactionImage = reactionImageUrl)
+            reactionImage = reactionImage)
 
     // Add comment to the post's comments array
     db.collection(POSTS_COLLECTION)
@@ -176,10 +176,10 @@ class OutfitPostRepositoryFirestore(
   private fun commentToMap(comment: Comment): Map<String, Any> {
     return mapOf(
         "commentId" to comment.commentId,
-        "userId" to comment.ownerId,
+        "ownerId" to comment.ownerId,
         "text" to comment.text,
         "timestamp" to comment.timestamp,
-        "reactionImageUrl" to comment.reactionImage)
+        "reactionImage" to comment.reactionImage)
   }
 
   /** Converts a Firestore [DocumentSnapshot] into an [OutfitPost] model. */
@@ -229,10 +229,10 @@ class OutfitPostRepositoryFirestore(
       val commentMap = commentData as? Map<*, *> ?: return null
       Comment(
           commentId = commentMap["commentId"] as? String ?: "",
-          ownerId = commentMap["userId"] as? String ?: "",
+          ownerId = commentMap["ownerId"] as? String ?: "",
           text = commentMap["text"] as? String ?: "",
           timestamp = (commentMap["timestamp"] as? Long) ?: 0L,
-          reactionImage = commentMap["reactionImageUrl"] as? String ?: "")
+          reactionImage = commentMap["reactionImage"] as? String ?: "")
     } catch (e: Exception) {
       Log.e(OUTFITPOST_TAG, "Error parsing comment", e)
       null

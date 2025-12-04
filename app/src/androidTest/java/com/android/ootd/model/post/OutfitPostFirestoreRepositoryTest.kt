@@ -511,10 +511,10 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
                     listOf(
                         mapOf(
                             "commentId" to "valid_id",
-                            "userId" to "valid_user",
+                            "ownerId" to "valid_user",
                             "text" to "Valid comment",
                             "timestamp" to 123456L,
-                            "reactionImageUrl" to ""),
+                            "reactionImage" to ""),
                         "invalid_comment_data")))
         .await()
 
@@ -522,5 +522,71 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertEquals("Should only have 1 valid comment", 1, fetchedPost!!.comments.size)
     Assert.assertEquals(
         "Valid comment should be parsed", "Valid comment", fetchedPost.comments[0].text)
+  }
+
+  @Test
+  fun mapToComment_validComment_parsesCorrectly() = runTest {
+    val postId = newId()
+
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to
+                    listOf(
+                        mapOf(
+                            "commentId" to "c1",
+                            "ownerId" to "u1",
+                            "text" to "Hello",
+                            "timestamp" to 123L,
+                            "reactionImage" to "url.jpg"))))
+        .await()
+
+    val post = outfitPostRepository.getPostById(postId)
+
+    Assert.assertNotNull(post)
+    Assert.assertEquals(1, post!!.comments.size)
+    val c = post.comments[0]
+    Assert.assertEquals("c1", c.commentId)
+    Assert.assertEquals("u1", c.ownerId)
+    Assert.assertEquals("Hello", c.text)
+    Assert.assertEquals(123L, c.timestamp)
+    Assert.assertEquals("url.jpg", c.reactionImage)
+  }
+
+  @Test
+  fun mapToComment_nonMapInput_isIgnored() = runTest {
+    val postId = newId()
+
+    // Insert a post whose comments array contains an invalid entry
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to listOf("not a map")))
+        .await()
+
+    val post = outfitPostRepository.getPostById(postId)
+
+    Assert.assertNotNull(post)
+    Assert.assertTrue("Invalid comment should be ignored", post!!.comments.isEmpty())
   }
 }
