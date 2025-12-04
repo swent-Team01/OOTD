@@ -82,6 +82,10 @@ object ImageUploader {
       storagePath: String,
       storage: FirebaseStorage = FirebaseStorage.getInstance()
   ): UploadResult {
+    if (imageData.isEmpty()) {
+      return UploadResult(success = false, url = "", error = "Image data is empty")
+    }
+
     return try {
       val storageRef = storage.reference
       val fileRef = storageRef.child(storagePath)
