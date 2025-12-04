@@ -511,10 +511,10 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
                     listOf(
                         mapOf(
                             "commentId" to "valid_id",
-                            "userId" to "valid_user",
+                            "ownerId" to "valid_user",
                             "text" to "Valid comment",
                             "timestamp" to 123456L,
-                            "reactionImageUrl" to ""),
+                            "reactionImage" to ""),
                         "invalid_comment_data")))
         .await()
 
