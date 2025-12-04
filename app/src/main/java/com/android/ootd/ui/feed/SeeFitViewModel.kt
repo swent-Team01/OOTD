@@ -80,7 +80,7 @@ class SeeFitViewModel(
             }
         if (cachedPost != null) {
           // Load cached items offline
-          cachedItemsSucceeded = updateUiWithPost(cachedPost, offline = true)
+          cachedItemsSucceeded = updateUiWithPost(cachedPost)
         }
 
         // Best effort online refresh (2s timeout)
@@ -96,7 +96,7 @@ class SeeFitViewModel(
           }
           return@launch
         }
-        val freshItemsSucceeded = updateUiWithPost(freshPost, offline = false)
+        val freshItemsSucceeded = updateUiWithPost(freshPost)
 
         // If both cached and fresh item fetches failed, show error
         if (!cachedItemsSucceeded && !freshItemsSucceeded) {
@@ -167,7 +167,7 @@ class SeeFitViewModel(
     }
   }
 
-  private suspend fun updateUiWithPost(post: OutfitPost, offline: Boolean): Boolean {
+  private suspend fun updateUiWithPost(post: OutfitPost): Boolean {
     val items =
         try {
           itemsRepository.getFriendItemsForPost(post.postUID, post.ownerId)
