@@ -11,22 +11,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.NotificationButton
+import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
 
@@ -47,7 +47,8 @@ fun FeedScreen(
     onAddPostClick: () -> Unit,
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
-    onOpenPost: (String) -> Unit = {}
+    onOpenPost: (String) -> Unit = {},
+    onLocationClick: (Location) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -71,6 +72,7 @@ fun FeedScreen(
       onNotificationIconClick = onNotificationIconClick,
       onSeeFitClick = onSeeFitClick,
       onOpenPost = onOpenPost,
+      onLocationClick = onLocationClick,
       likes = uiState.likes,
       likeCounts = uiState.likeCounts,
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
@@ -90,6 +92,7 @@ private fun FeedScaffold(
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
     onOpenPost: (String) -> Unit,
+    onLocationClick: (Location) -> Unit = {},
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {},
@@ -118,38 +121,13 @@ private fun FeedScaffold(
                     Modifier.testTag(NAVIGATE_TO_NOTIFICATIONS_SCREEN),
                     size = 64.dp)
               })
-          PrimaryTabRow(
+          OOTDTabRow(
               selectedTabIndex = if (isPublicFeed) 1 else 0,
-              containerColor = White,
-              contentColor = Secondary,
-              indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(if (isPublicFeed) 1 else 0),
-                    color = Primary)
-              }) {
-                Tab(
-                    selected = !isPublicFeed,
-                    onClick = { if (isPublicFeed) onToggleFeed() },
-                    text = {
-                      Text(
-                          "Friends",
-                          style = MaterialTheme.typography.titleLarge,
-                          fontWeight = if (!isPublicFeed) FontWeight.Bold else FontWeight.Normal)
-                    },
-                    selectedContentColor = Primary,
-                    unselectedContentColor = Black)
-                Tab(
-                    selected = isPublicFeed,
-                    onClick = { if (!isPublicFeed) onToggleFeed() },
-                    text = {
-                      Text(
-                          "Public",
-                          style = MaterialTheme.typography.titleLarge,
-                          fontWeight = if (isPublicFeed) FontWeight.Bold else FontWeight.Normal)
-                    },
-                    selectedContentColor = Primary,
-                    unselectedContentColor = Black)
-              }
+              tabs = listOf("Friends", "Public"),
+              onTabClick = { index ->
+                if (index == 0 && isPublicFeed) onToggleFeed()
+                if (index == 1 && !isPublicFeed) onToggleFeed()
+              })
         }
       },
       floatingActionButton = {
@@ -177,6 +155,7 @@ private fun FeedScaffold(
                   likeCounts = likeCounts,
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
                   onPostClick = onOpenPost,
+                  onLocationClick = onLocationClick,
                   onLikeClick = onLikeClick)
 
               // Loading overlay
@@ -209,7 +188,8 @@ fun FeedList(
     likeCounts: Map<String, Int> = emptyMap(),
     onSeeFitClick: (OutfitPost) -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
-    onPostClick: (String) -> Unit
+    onPostClick: (String) -> Unit,
+    onLocationClick: (Location) -> Unit = {}
 ) {
   LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
     items(posts) { post ->
@@ -223,7 +203,8 @@ fun FeedList(
           likeCount = count,
           onLikeClick = { onLikeClick(post) },
           onSeeFitClick = { onSeeFitClick(post) },
-          onCardClick = { onPostClick(post.postUID) })
+          onCardClick = { onPostClick(post.postUID) },
+          onLocationClick = onLocationClick)
     }
   }
 }

@@ -210,6 +210,42 @@ class FeedScreenTest : FirestoreTest() {
     composeTestRule.onRoot().assertExists()
   }
 
+  @Test
+  fun feedScreen_locationClickCallback_isInvoked() {
+    var locationClickCount = 0
+    var clickedLocation: com.android.ootd.model.map.Location? = null
+    val testLocation = com.android.ootd.model.map.Location(46.5, 6.6, "Test Location")
+    val postWithLocation =
+        OutfitPost(postUID = "post1", ownerId = "user1", name = "User1", location = testLocation)
+
+    composeTestRule.setContent {
+      FeedList(
+          posts = listOf(postWithLocation),
+          isBlurred = false,
+          onPostClick = {},
+          onLocationClick = { location ->
+            locationClickCount++
+            clickedLocation = location
+          })
+    }
+
+    composeTestRule
+        .onNodeWithTag(OutfitPostCardTestTags.POST_LOCATION)
+        .assertExists()
+        .performClick()
+
+    assertEquals(1, locationClickCount)
+    assertEquals(testLocation, clickedLocation)
+  }
+
+  @Test
+  fun feedScreen_passesLocationClickToFeedList() {
+    composeTestRule.setContent { FeedScreen(onAddPostClick = {}, onLocationClick = {}) }
+
+    // This test verifies the callback chain is properly connected through compilation
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertExists()
+  }
+
   // ========================================================================
   // Repository Tests
   // ========================================================================

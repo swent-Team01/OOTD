@@ -19,8 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -53,6 +51,7 @@ import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
 import com.android.ootd.utils.composables.LoadingScreen
+import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ProfilePicture
 import com.android.ootd.utils.composables.SettingsButton
@@ -214,21 +213,16 @@ private fun AccountTabs(
     tabs: List<AccountTab>,
     onSelectTab: (AccountTab) -> Unit
 ) {
-  TabRow(
+  OOTDTabRow(
       selectedTabIndex = tabs.indexOf(selectedTab),
-      containerColor = colorScheme.secondary,
-      contentColor = colorScheme.onSecondaryContainer) {
-        tabs.forEach { tab ->
-          Tab(
-              selected = tab == selectedTab,
-              onClick = { onSelectTab(tab) },
-              modifier =
-                  Modifier.testTag(
-                      if (tab == AccountTab.Posts) AccountPageTestTags.POSTS_TAB
-                      else AccountPageTestTags.STARRED_TAB),
-              text = { TabLabel(tab) })
-        }
-      }
+      tabs = tabs.map { if (it == AccountTab.Starred) "Starred" else "Posts" },
+      onTabClick = { index -> onSelectTab(tabs[index]) },
+      tabModifiers =
+          tabs.map { tab ->
+            Modifier.testTag(
+                if (tab == AccountTab.Posts) AccountPageTestTags.POSTS_TAB
+                else AccountPageTestTags.STARRED_TAB)
+          })
 }
 
 @Composable

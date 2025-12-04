@@ -23,6 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -51,8 +52,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.R
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
-import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -157,6 +158,18 @@ fun AddItemsScreen(
                     modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
               })
         },
+        floatingActionButton = {
+          val isEnabled = !itemsUIState.isLoading && (overridePhoto || itemsUIState.isAddingValid)
+
+          ExtendedFloatingActionButton(
+              onClick = { if (isEnabled) addItemsViewModel.onAddItemClick(context = context) },
+              containerColor = if (isEnabled) Primary else Tertiary,
+              icon = {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Item", tint = White)
+              },
+              text = { Text(text = "Add new item", color = White) },
+              modifier = Modifier.testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON))
+        },
         content = { innerPadding ->
           Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
             FieldsList(
@@ -203,11 +216,6 @@ fun AddItemsScreen(
                 onLinkChange = addItemsViewModel::setLink,
                 material = itemsUIState.materialText,
                 onMaterialChange = addItemsViewModel::setMaterial,
-
-                // add
-                isAddEnabled =
-                    !itemsUIState.isLoading && (overridePhoto || itemsUIState.isAddingValid),
-                onAddClick = { addItemsViewModel.onAddItemClick(context = context) },
                 condition = itemsUIState.condition,
                 onConditionChange = addItemsViewModel::setCondition,
                 size = itemsUIState.size,
@@ -267,8 +275,6 @@ private fun FieldsList(
     onLinkChange: (String) -> Unit,
     material: String,
     onMaterialChange: (String) -> Unit,
-    isAddEnabled: Boolean,
-    onAddClick: () -> Unit,
     condition: String,
     onConditionChange: (String) -> Unit,
     size: String,
@@ -365,10 +371,7 @@ private fun FieldsList(
                             condExpandedInitially = conditionMenuExpandedPreview),
                     tags = detailsTags)
               },
-              actionButtons = {
-                Spacer(modifier = Modifier.height(24.dp))
-                AddItemButton(enabled = isAddEnabled, onClick = onAddClick)
-              }))
+              actionButtons = { Spacer(modifier = Modifier.height(24.dp)) }))
 }
 
 @Composable
@@ -417,28 +420,6 @@ private fun ImagePickerRow(
         confirmButton = {},
         dismissButton = {})
   }
-}
-
-@Composable
-private fun AddItemButton(enabled: Boolean, onClick: () -> Unit) {
-  Button(
-      onClick = onClick,
-      enabled = enabled,
-      modifier =
-          Modifier.height(47.dp).width(140.dp).testTag(AddItemScreenTestTags.ADD_ITEM_BUTTON),
-      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center) {
-              Icon(
-                  imageVector = Icons.Default.Add,
-                  contentDescription = "Add",
-                  tint = Background,
-                  modifier = Modifier.size(20.dp))
-              Spacer(Modifier.width(8.dp))
-              Text(text = "Add Item", modifier = Modifier.align(Alignment.CenterVertically))
-            }
-      }
 }
 
 @Preview(name = "Add Items", showBackground = true)
@@ -500,8 +481,6 @@ fun AddItemsScreenSmallPreview() {
                   onLinkChange = {},
                   material = "Cotton",
                   onMaterialChange = {},
-                  isAddEnabled = true,
-                  onAddClick = {},
                   condition = "New",
                   onConditionChange = {},
                   size = "M",

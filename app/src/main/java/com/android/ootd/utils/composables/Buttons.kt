@@ -15,10 +15,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,11 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.ootd.R
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 
 /**
@@ -214,4 +222,49 @@ fun ActionIconButton(
         tint = tint,
         modifier = Modifier.size(size))
   }
+}
+
+/**
+ * Displays a custom tab row with OOTD styling.
+ *
+ * @param selectedTabIndex The index of the currently selected tab.
+ * @param tabs The list of tab titles.
+ * @param onTabClick Callback invoked when a tab is clicked.
+ * @param modifier The modifier to be applied to the tab row.
+ * @param tabModifiers Optional list of modifiers to apply to each tab.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OOTDTabRow(
+    selectedTabIndex: Int,
+    tabs: List<String>,
+    onTabClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    tabModifiers: List<Modifier> = emptyList()
+) {
+  PrimaryTabRow(
+      selectedTabIndex = selectedTabIndex,
+      containerColor = Color.White,
+      contentColor = Secondary,
+      indicator = {
+        TabRowDefaults.PrimaryIndicator(
+            modifier = Modifier.tabIndicatorOffset(selectedTabIndex), color = Primary)
+      },
+      modifier = modifier) {
+        tabs.forEachIndexed { index, title ->
+          Tab(
+              selected = selectedTabIndex == index,
+              onClick = { onTabClick(index) },
+              text = {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight =
+                        if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal)
+              },
+              selectedContentColor = Primary,
+              unselectedContentColor = Color.Black,
+              modifier = tabModifiers.getOrElse(index) { Modifier })
+        }
+      }
 }

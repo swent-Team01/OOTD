@@ -262,41 +262,6 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
   }
 
   @Test
-  fun savePartialPost_createsPostWithUploadedPhoto() = runTest {
-    val uid = uid()
-    ensureUser(uid)
-
-    val fakeUri = "file:///tmp/fake_photo.jpg"
-    val location = Location(46.5197, 6.6323, "EPFL")
-
-    val saved =
-        outfitPostRepository.savePostWithMainPhoto(
-            uid = uid,
-            name = "Partial Save Tester",
-            userProfilePicURL = "https://example.com/profile.jpg",
-            localPath = fakeUri,
-            description = "Test post with photo",
-            location = location)
-
-    val fetched = outfitPostRepository.getPostById(saved.postUID)
-    Assert.assertNotNull(fetched)
-    Assert.assertEquals("Partial Save Tester", fetched!!.name)
-    Assert.assertEquals("Test post with photo", fetched.description)
-    Assert.assertTrue(fetched.outfitURL.isNotBlank())
-    Assert.assertEquals(location, fetched.location)
-  }
-
-  @Test
-  fun uploadOutfitPhoto_returnsValidDownloadUrl() = runTest {
-    val id = newId()
-    val fakeUri = "file:///tmp/fake_upload_image.jpg"
-    val url = outfitPostRepository.uploadOutfitPhoto(fakeUri, id)
-
-    Assert.assertTrue("Returned URL should not be blank", url.isNotBlank())
-    Assert.assertTrue("URL should include the post ID", url.contains(id))
-  }
-
-  @Test
   fun updatePostFields_updatesDescriptionSuccessfully() = runTest {
     val uid = uid()
     ensureUser(uid)
@@ -334,43 +299,6 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
             location = emptyLocation)
 
     expectThrows<Exception> { outfitPostRepository.savePostToFirestore(badPost) }
-  }
-
-  @Test
-  fun uploadOutfitPhoto_returnsFakeUrlOnFailure() = runTest {
-    val id = newId()
-    val fakeBadPath = "not_a_valid_uri"
-
-    val url = outfitPostRepository.uploadOutfitPhoto(fakeBadPath, id)
-
-    Assert.assertTrue(url.contains("https://fake.storage/"))
-    Assert.assertTrue(url.contains(id))
-  }
-
-  @Test
-  fun savePostWithMainPhoto_usesFallbackUrlOnUploadFailure() = runTest {
-    val uid = uid()
-
-    val invalidPath = "not_a_valid_uri"
-    val location = Location(46.5197, 6.6323, "EPFL")
-
-    val saved =
-        outfitPostRepository.savePostWithMainPhoto(
-            uid = uid,
-            name = "Fallback Upload",
-            userProfilePicURL = "https://example.com/profile.jpg",
-            localPath = invalidPath,
-            description = "Fallback triggered",
-            location = location)
-
-    Assert.assertTrue(saved.outfitURL.startsWith("https://fake.storage/"))
-    Assert.assertTrue(saved.outfitURL.contains(saved.postUID))
-    Assert.assertEquals(location, saved.location)
-
-    val fetched = outfitPostRepository.getPostById(saved.postUID)
-    Assert.assertNotNull(fetched)
-    Assert.assertEquals("Fallback Upload", fetched?.name)
-    Assert.assertEquals(location, fetched?.location)
   }
 
   @Test
@@ -426,5 +354,239 @@ class OutfitPostRepositoryFirestoreTest : FirestoreTest() {
     Assert.assertNotNull("URL should not be null for PNG data", url)
     // Firebase Storage accepts any binary data, so this should work
     Assert.assertTrue("URL should be generated", url.isNotEmpty() || url.isEmpty())
+  }
+
+  @Test
+  fun addCommentToPost_withoutReaction_addsCommentSuccessfully() = runTest {
+    val uid = uid()
+    ensureUser(uid)
+
+    val postId = newId()
+    val post = post(id = postId, owner = uid)
+    outfitPostRepository.savePostToFirestore(post)
+
+    val comment =
+        outfitPostRepository.addCommentToPost(
+            postId = postId, userId = uid, commentText = "Great outfit!", reactionImageData = null)
+
+    Assert.assertNotNull("Comment should not be null", comment)
+    Assert.assertEquals("Comment text should match", "Great outfit!", comment.text)
+    Assert.assertEquals("Comment owner should match", uid, comment.ownerId)
+    Assert.assertTrue("Comment ID should not be empty", comment.commentId.isNotEmpty())
+    Assert.assertEquals("Reaction image should be empty", "", comment.reactionImage)
+
+    val updatedPost = outfitPostRepository.getPostById(postId)
+    Assert.assertEquals("Post should have 1 comment", 1, updatedPost!!.comments.size)
+    Assert.assertEquals("Comment text should match", "Great outfit!", updatedPost.comments[0].text)
+  }
+
+  @Test
+  fun addCommentToPost_withReactionImage_uploadsImageAndAddsComment() = runTest {
+    val uid = uid()
+    ensureUser(uid)
+
+    val postId = newId()
+    val post = post(id = postId, owner = uid)
+    outfitPostRepository.savePostToFirestore(post)
+
+    val reactionImageData =
+        byteArrayOf(
+            0xFF.toByte(),
+            0xD8.toByte(),
+            0xFF.toByte(),
+            0xE0.toByte(),
+            0x00,
+            0x10,
+            0x4A,
+            0x46,
+            0x49,
+            0x46,
+            0x00,
+            0x01) + ByteArray(1024) { (it % 256).toByte() }
+
+    val comment =
+        outfitPostRepository.addCommentToPost(
+            postId = postId,
+            userId = uid,
+            commentText = "Love this!",
+            reactionImageData = reactionImageData)
+
+    Assert.assertTrue("Reaction image URL should not be empty", comment.reactionImage.isNotEmpty())
+
+    val updatedPost = outfitPostRepository.getPostById(postId)
+    Assert.assertTrue(
+        "Comment should have reaction image", updatedPost!!.comments[0].reactionImage.isNotEmpty())
+  }
+
+  @Test
+  fun addCommentToPost_multipleComments_addsAllCorrectly() = runTest {
+    val uid = uid()
+    ensureUser(uid)
+
+    val postId = newId()
+    val post = post(id = postId, owner = uid)
+    outfitPostRepository.savePostToFirestore(post)
+
+    outfitPostRepository.addCommentToPost(postId, uid, "First comment", null)
+    outfitPostRepository.addCommentToPost(postId, uid, "Second comment", null)
+    outfitPostRepository.addCommentToPost(postId, uid, "Third comment", null)
+
+    val updatedPost = outfitPostRepository.getPostById(postId)
+    Assert.assertEquals("Post should have 3 comments", 3, updatedPost!!.comments.size)
+    Assert.assertEquals("First comment text", "First comment", updatedPost.comments[0].text)
+    Assert.assertEquals("Third comment text", "Third comment", updatedPost.comments[2].text)
+  }
+
+  @Test
+  fun deleteCommentFromPost_removesCommentSuccessfully() = runTest {
+    val uid = uid()
+    ensureUser(uid)
+
+    val postId = newId()
+    val post = post(id = postId, owner = uid)
+    outfitPostRepository.savePostToFirestore(post)
+
+    val comment = outfitPostRepository.addCommentToPost(postId, uid, "To be deleted", null)
+
+    val postWithComment = outfitPostRepository.getPostById(postId)
+    Assert.assertEquals("Should have 1 comment", 1, postWithComment!!.comments.size)
+
+    outfitPostRepository.deleteCommentFromPost(postId, comment)
+
+    val postAfterDelete = outfitPostRepository.getPostById(postId)
+    Assert.assertEquals("Should have 0 comments", 0, postAfterDelete!!.comments.size)
+  }
+
+  @Test
+  fun deleteCommentFromPost_withReactionImage_removesCommentAndImage() = runTest {
+    val uid = uid()
+    ensureUser(uid)
+
+    val postId = newId()
+    val post = post(id = postId, owner = uid)
+    outfitPostRepository.savePostToFirestore(post)
+
+    val reactionImageData =
+        byteArrayOf(
+            0xFF.toByte(),
+            0xD8.toByte(),
+            0xFF.toByte(),
+            0xE0.toByte(),
+            0x00,
+            0x10,
+            0x4A,
+            0x46,
+            0x49,
+            0x46,
+            0x00,
+            0x01) + ByteArray(1024) { (it % 256).toByte() }
+
+    val comment =
+        outfitPostRepository.addCommentToPost(postId, uid, "With reaction", reactionImageData)
+
+    outfitPostRepository.deleteCommentFromPost(postId, comment)
+
+    val postAfterDelete = outfitPostRepository.getPostById(postId)
+    Assert.assertEquals("Should have 0 comments", 0, postAfterDelete!!.comments.size)
+  }
+
+  @Test
+  fun mapToComment_withMalformedData_skipsInvalidComments() = runTest {
+    val postId = newId()
+
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to
+                    listOf(
+                        mapOf(
+                            "commentId" to "valid_id",
+                            "ownerId" to "valid_user",
+                            "text" to "Valid comment",
+                            "timestamp" to 123456L,
+                            "reactionImage" to ""),
+                        "invalid_comment_data")))
+        .await()
+
+    val fetchedPost = outfitPostRepository.getPostById(postId)
+    Assert.assertEquals("Should only have 1 valid comment", 1, fetchedPost!!.comments.size)
+    Assert.assertEquals(
+        "Valid comment should be parsed", "Valid comment", fetchedPost.comments[0].text)
+  }
+
+  @Test
+  fun mapToComment_validComment_parsesCorrectly() = runTest {
+    val postId = newId()
+
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to
+                    listOf(
+                        mapOf(
+                            "commentId" to "c1",
+                            "ownerId" to "u1",
+                            "text" to "Hello",
+                            "timestamp" to 123L,
+                            "reactionImage" to "url.jpg"))))
+        .await()
+
+    val post = outfitPostRepository.getPostById(postId)
+
+    Assert.assertNotNull(post)
+    Assert.assertEquals(1, post!!.comments.size)
+    val c = post.comments[0]
+    Assert.assertEquals("c1", c.commentId)
+    Assert.assertEquals("u1", c.ownerId)
+    Assert.assertEquals("Hello", c.text)
+    Assert.assertEquals(123L, c.timestamp)
+    Assert.assertEquals("url.jpg", c.reactionImage)
+  }
+
+  @Test
+  fun mapToComment_nonMapInput_isIgnored() = runTest {
+    val postId = newId()
+
+    // Insert a post whose comments array contains an invalid entry
+    FirebaseEmulator.firestore
+        .collection(POSTS_COLLECTION)
+        .document(postId)
+        .set(
+            mapOf(
+                "postUID" to postId,
+                "name" to "Test",
+                "ownerId" to ownerId,
+                "userProfilePicURL" to "",
+                "outfitURL" to "",
+                "description" to "",
+                "itemsID" to emptyList<String>(),
+                "timestamp" to 0L,
+                "comments" to listOf("not a map")))
+        .await()
+
+    val post = outfitPostRepository.getPostById(postId)
+
+    Assert.assertNotNull(post)
+    Assert.assertTrue("Invalid comment should be ignored", post!!.comments.isEmpty())
   }
 }

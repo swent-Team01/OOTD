@@ -52,6 +52,7 @@ import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -318,6 +319,13 @@ fun OOTDApp(
                       },
                       onSeeFitClick = { postUuid ->
                         navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
+                      },
+                      onLocationClick = { location ->
+                        navigationActions.navigateTo(
+                            Screen.Map(
+                                latitude = location.latitude,
+                                longitude = location.longitude,
+                                locationName = location.name))
                       })
                 }
 
@@ -340,7 +348,50 @@ fun OOTDApp(
                       onBack = { navigationActions.goBack() },
                       onSignOut = { navigationActions.navigateTo(Screen.Authentication) })
                 }
-                composable(Screen.Map.route) { MapScreen(onBack = { navigationActions.goBack() }) }
+
+                // Single Map composable with optional location parameters
+                composable(
+                    route = Screen.Map.route,
+                    arguments =
+                        listOf(
+                            navArgument("lat") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
+                            },
+                            navArgument("lon") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
+                            },
+                            navArgument("name") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
+                            })) { backStackEntry ->
+                      val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+                      val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
+                      val name = backStackEntry.arguments?.getString("name")
+
+                      // Create focus location only if all parameters are provided
+                      val focusLocation =
+                          if (lat != null && lon != null && name != null) {
+                            Location(latitude = lat, longitude = lon, name = name)
+                          } else {
+                            null
+                          }
+
+                      MapScreen(
+                          viewModel =
+                              if (focusLocation != null) {
+                                viewModel(factory = MapViewModelFactory(focusLocation))
+                              } else {
+                                viewModel()
+                              },
+                          onPostClick = { postId ->
+                            navigationActions.navigateTo(Screen.PostView(postId))
+                          })
+                    }
 
                 composable(Screen.InventoryScreen.route) {
                   InventoryScreen(navigationActions = navigationActions)

@@ -289,4 +289,118 @@ class MapViewModelTest {
     assertEquals(location2.latitude, adjustedPosts[2].adjustedLocation.latitude, 0.0001)
     assertEquals(location2.longitude, adjustedPosts[2].adjustedLocation.longitude, 0.0001)
   }
+
+  @Test
+  fun observeLocalizablePosts_filtersValidLocations() = runTest {
+    val validPost =
+        OutfitPost(
+            postUID = "post1",
+            ownerId = testUserId,
+            location = Location(46.5, 6.6, "Valid Location"))
+    val invalidPost = OutfitPost(postUID = "post2", ownerId = testUserId, location = emptyLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns
+        flowOf(listOf(validPost, invalidPost))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    assertEquals(1, uiState.posts.size)
+    assertEquals("post1", uiState.posts[0].postUID)
+  }
+
+  @Test
+  fun getFocusLatLng_withFocusLocation_returnsFocusLocation() = runTest {
+    val focusLocation = Location(47.0, 7.0, "Focus Location")
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation)
+    advanceUntilIdle()
+
+    val latLng = viewModel.getFocusLatLng()
+    assertEquals(47.0, latLng.latitude, 0.0001)
+    assertEquals(7.0, latLng.longitude, 0.0001)
+  }
+
+  @Test
+  fun getFocusLatLng_withoutFocusLocation_returnsUserLocation() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation = null)
+    advanceUntilIdle()
+
+    val latLng = viewModel.getFocusLatLng()
+    assertEquals(testLocation.latitude, latLng.latitude, 0.0001)
+    assertEquals(testLocation.longitude, latLng.longitude, 0.0001)
+  }
+
+  @Test
+  fun focusLocation_isPreservedWhenAccountUpdates() = runTest {
+    val focusLocation = Location(47.0, 7.0, "Focus Location")
+    val updatedAccount = testAccount.copy(location = Location(48.0, 8.0, "Updated Location"))
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns
+        flowOf(testAccount, updatedAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    // Focus location should remain unchanged
+    assertEquals(47.0, uiState.focusLocation?.latitude)
+    assertEquals(7.0, uiState.focusLocation?.longitude)
+    // User location should be updated
+    assertEquals(48.0, uiState.userLocation.latitude, 0.0001)
+  }
+
+  @Test
+  fun viewModel_withFocusLocation_setsInitialFocusCorrectly() = runTest {
+    val focusLocation = Location(46.5197, 6.6323, "EPFL")
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    assertEquals(focusLocation, uiState.focusLocation)
+    assertFalse(uiState.isLoading)
+  }
+
+  @Test
+  fun getFocusLatLng_prefersFocusLocationOverUserLocation() = runTest {
+    val focusLocation = Location(47.5, 7.5, "Focus")
+    val userLocation = Location(46.5, 6.5, "User")
+    val accountWithLocation = testAccount.copy(location = userLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(accountWithLocation)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation)
+    advanceUntilIdle()
+
+    val latLng = viewModel.getFocusLatLng()
+    // Should return focus location, not user location
+    assertEquals(47.5, latLng.latitude, 0.0001)
+    assertEquals(7.5, latLng.longitude, 0.0001)
+  }
+
+  @Test
+  fun viewModel_withNullFocusLocation_usesFallbackUserLocation() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository, focusLocation = null)
+    advanceUntilIdle()
+
+    val latLng = viewModel.getFocusLatLng()
+    // Should return user location when focus is null
+    assertEquals(testLocation.latitude, latLng.latitude, 0.0001)
+    assertEquals(testLocation.longitude, latLng.longitude, 0.0001)
+  }
 }

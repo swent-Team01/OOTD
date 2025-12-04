@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.map.Location
+import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.PostFirestoreTest
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.OnMapsSdkInitializedCallback
@@ -232,6 +233,60 @@ class MapScreenFirebaseTest : PostFirestoreTest(), OnMapsSdkInitializedCallback 
 
     // Verify the map handles many posts with clustering
     composeTestRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
+  }
+
+  @Test
+  fun mapScreen_rendersProfilePictureMarkers_whenPostsExist() {
+    runBlocking {
+      // Create multiple posts with different usernames to ensure forEach executes
+      val posts =
+          listOf(
+              OutfitPost(
+                  postUID = "post-a",
+                  name = "Alice",
+                  ownerId = currentUser.uid,
+                  userProfilePicURL = "",
+                  outfitURL = "https://example.com/outfit-a.jpg",
+                  description = "Post A",
+                  itemsID = emptyList(),
+                  timestamp = System.currentTimeMillis(),
+                  location = Location(46.5197, 6.6323, "Location A")),
+              OutfitPost(
+                  postUID = "post-b",
+                  name = "Bob",
+                  ownerId = currentUser.uid,
+                  userProfilePicURL = "",
+                  outfitURL = "https://example.com/outfit-b.jpg",
+                  description = "Post B",
+                  itemsID = emptyList(),
+                  timestamp = System.currentTimeMillis(),
+                  location = Location(46.5198, 6.6324, "Location B")),
+              OutfitPost(
+                  postUID = "post-c",
+                  name = "Charlie",
+                  ownerId = currentUser.uid,
+                  userProfilePicURL = "",
+                  outfitURL = "https://example.com/outfit-c.jpg",
+                  description = "Post C",
+                  itemsID = emptyList(),
+                  timestamp = System.currentTimeMillis(),
+                  location = Location(46.5199, 6.6325, "Location C")))
+
+      // Add all posts to ensure the forEach loop in MapScreen executes
+      posts.forEach { feedRepository.addPost(it) }
+    }
+
+    // Render the MapScreen - this should execute the ProfilePictureMarker code
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    // Wait for composition and map rendering
+    composeTestRule.waitForIdle()
+    Thread.sleep(2000)
+    composeTestRule.waitForIdle()
+
+    // Verify the map rendered successfully with posts
+    composeTestRule.onNodeWithTag(MapScreenTestTags.GOOGLE_MAP_SCREEN).assertExists()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
   }
 }

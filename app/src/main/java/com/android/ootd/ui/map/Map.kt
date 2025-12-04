@@ -1,5 +1,6 @@
 package com.android.ootd.ui.map
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -38,15 +39,15 @@ object MapScreenTestTags {
   const val LOADING_INDICATOR = "loadingIndicator"
   const val TOP_BAR = "topBar"
   const val TOP_BAR_TITLE = "topBarTitle"
-  const val BACK_BUTTON = "backButton"
   const val CONTENT_BOX = "contentBox"
 
   fun getTestTagForPostMarker(postId: String): String = "postMarker_$postId"
 }
 
+@SuppressLint("PotentialBehaviorOverride")
 @OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class)
 @Composable
-fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
+fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
@@ -71,16 +72,18 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
                         Modifier.align(Alignment.Center)
                             .testTag(MapScreenTestTags.LOADING_INDICATOR))
               } else {
-                // Camera position centered on user's location
+                // Camera position centered on focus location (either provided location or user's
+                // location)
                 val cameraPositionState = rememberCameraPositionState {
-                  position = CameraPosition.fromLatLngZoom(viewModel.getUserLatLng(), 12f)
+                  position = CameraPosition.fromLatLngZoom(viewModel.getFocusLatLng(), 12f)
                 }
 
-                // Update camera position when user location changes
-                androidx.compose.runtime.LaunchedEffect(uiState.userLocation) {
-                  cameraPositionState.animate(
-                      CameraUpdateFactory.newLatLngZoom(viewModel.getUserLatLng(), 12f))
-                }
+                // Update camera position when focus location changes
+                androidx.compose.runtime.LaunchedEffect(
+                    uiState.focusLocation, uiState.userLocation) {
+                      cameraPositionState.animate(
+                          CameraUpdateFactory.newLatLngZoom(viewModel.getFocusLatLng(), 12f))
+                    }
 
                 GoogleMap(
                     modifier = Modifier.fillMaxSize().testTag(MapScreenTestTags.GOOGLE_MAP_SCREEN),
@@ -113,7 +116,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onBack: () -> Unit = {}) {
 
                         // Set item click listener
                         clusterManager.setOnClusterItemClickListener { item ->
-                          // TODO: navigate to see post
+                          onPostClick(item.post.postUID)
                           true
                         }
 
