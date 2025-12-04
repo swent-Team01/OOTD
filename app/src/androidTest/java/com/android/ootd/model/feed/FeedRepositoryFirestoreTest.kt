@@ -11,6 +11,8 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestoreSettings
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -524,6 +526,208 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     assertEquals("Should have 2 posts (savedPosts had ${savedPosts.size})", 2, posts.size)
     assertTrue("Should include first post", posts.any { it.postUID == "user1-post-a" })
     assertTrue("Should include second post", posts.any { it.postUID == "user1-post-b" })
+  }
+
+  // -------- Comment parsing tests (minimal coverage) --------
+
+  @Test
+  fun getPostById_parsesCommentsCorrectly() = runBlocking {
+    val post = samplePost("post-with-comments", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    // Manually add comments to the post document
+    val comments =
+        listOf(
+            mapOf(
+                "commentId" to "comment1",
+                "ownerId" to currentUid,
+                "text" to "Great outfit!",
+                "timestamp" to System.currentTimeMillis(),
+                "reactionImage" to "https://example.com/reaction1.jpg"))
+
+    db.collection(POSTS_COLLECTION_PATH)
+        .document("post-with-comments")
+        .update("comments", comments)
+        .await()
+
+    val retrieved = feedRepository.getPostById("post-with-comments")
+
+    assertEquals(1, retrieved?.comments?.size)
+    assertEquals("comment1", retrieved?.comments?.get(0)?.commentId)
+    assertEquals(currentUid, retrieved?.comments?.get(0)?.ownerId)
+    assertEquals("Great outfit!", retrieved?.comments?.get(0)?.text)
+    assertEquals("https://example.com/reaction1.jpg", retrieved?.comments?.get(0)?.reactionImage)
+  }
+
+  @Test
+  fun getPostById_handlesPostWithoutComments() = runBlocking {
+    val post = samplePost("post-no-comments", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    val retrieved = feedRepository.getPostById("post-no-comments")
+
+    assertTrue(retrieved?.comments?.isEmpty() == true)
+  }
+
+  @Test
+  fun mapToComment_handlesMalformedCommentData() = runBlocking {
+    val post = samplePost("post-malformed-comments", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    val validTimestamp = System.currentTimeMillis()
+
+    // Add comments with various malformed data
+    val comments =
+        listOf(
+            mapOf(
+                "commentId" to "valid1",
+                "ownerId" to currentUid,
+                "text" to "Valid comment",
+                "timestamp" to validTimestamp,
+                "reactionImage" to ""),
+            // Missing required fields - will parse with defaults
+            mapOf(
+                "commentId" to "partial1"
+                // Missing ownerId, text, timestamp - will use defaults
+                ),
+            // Completely invalid structure - will be filtered out
+            "not even a map",
+            // Null - will be filtered out
+            null,
+            mapOf(
+                "commentId" to "valid2",
+                "ownerId" to currentUid,
+                "text" to "Another valid",
+                "timestamp" to validTimestamp,
+                "reactionImage" to ""))
+
+    db.collection(POSTS_COLLECTION_PATH)
+        .document("post-malformed-comments")
+        .update("comments", comments)
+        .await()
+
+    val retrieved = feedRepository.getPostById("post-malformed-comments")
+
+    // Should parse 3 comments (2 fully valid + 1 partial with defaults)
+    // String and null are filtered out
+    assertEquals(3, retrieved?.comments?.size)
+    assertEquals("Valid comment", retrieved?.comments?.get(0)?.text)
+    assertEquals("", retrieved?.comments?.get(1)?.text) // partial comment with default text
+    assertEquals("Another valid", retrieved?.comments?.get(2)?.text)
+  }
+
+  @Test
+  fun getFeed_filtersMalformedComments() = runBlocking {
+    val post = samplePost("post-with-mixed-comments", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    val comments =
+        listOf(
+            mapOf(
+                "commentId" to "good",
+                "ownerId" to currentUid,
+                "text" to "Good comment",
+                "timestamp" to System.currentTimeMillis(),
+                "reactionImage" to ""),
+            "bad comment data")
+
+    db.collection(POSTS_COLLECTION_PATH)
+        .document("post-with-mixed-comments")
+        .update("comments", comments)
+        .await()
+
+    val feed = feedRepository.getFeedForUids(listOf(currentUid))
+
+    assertEquals(1, feed.size)
+    assertEquals(1, feed[0].comments.size)
+    assertEquals("Good comment", feed[0].comments[0].text)
+  }
+
+  // -------- Additional mapToPost coverage tests --------
+
+  @Test
+  fun mapToPost_handlesMalformedData() = runBlocking {
+    // Create document with minimal/malformed data
+    val docData =
+        mapOf(
+            "postUID" to "malformed-post",
+            "ownerId" to currentUid,
+            "timestamp" to System.currentTimeMillis(),
+            "unexpectedField" to 123
+            // Missing many required fields
+            )
+
+    db.collection(POSTS_COLLECTION_PATH).document("malformed-post").set(docData).await()
+
+    val retrieved = feedRepository.getPostById("malformed-post")
+
+    // Should parse with defaults
+    assertNotNull(retrieved)
+    assertEquals("malformed-post", retrieved?.postUID)
+    assertEquals("", retrieved?.name)
+    assertEquals("", retrieved?.description)
+    assertTrue(retrieved?.itemsID?.isEmpty() == true)
+    assertTrue(retrieved?.comments?.isEmpty() == true)
+  }
+
+  @Test
+  fun mapToPost_handlesNullFields() = runBlocking {
+    val docData =
+        mapOf(
+            "postUID" to "null-fields-post",
+            "ownerId" to currentUid,
+            "timestamp" to System.currentTimeMillis(),
+            "name" to null,
+            "description" to null,
+            "outfitURL" to null,
+            "userProfilePicURL" to null,
+            "itemsID" to null,
+            "comments" to null)
+
+    db.collection(POSTS_COLLECTION_PATH).document("null-fields-post").set(docData).await()
+
+    val retrieved = feedRepository.getPostById("null-fields-post")
+
+    // Should handle nulls gracefully with defaults
+    assertNotNull(retrieved)
+    assertEquals("null-fields-post", retrieved?.postUID)
+    assertEquals("", retrieved?.name)
+    assertEquals("", retrieved?.description)
+    assertTrue(retrieved?.itemsID?.isEmpty() == true)
+    assertTrue(retrieved?.comments?.isEmpty() == true)
+  }
+
+  @Test
+  fun mapToPost_preservesIsPublicFlag() = runBlocking {
+    val publicPost =
+        samplePost("public-post", ts = System.currentTimeMillis()).copy(isPublic = true)
+    feedRepository.addPost(publicPost)
+
+    val retrieved = feedRepository.getPostById("public-post")
+
+    assertTrue(retrieved?.isPublic == true)
+  }
+
+  @Test
+  fun mapToPost_defaultsIsPublicToFalse() = runBlocking {
+    val docData =
+        mapOf(
+            "postUID" to "no-public-field",
+            "ownerId" to currentUid,
+            "timestamp" to System.currentTimeMillis(),
+            "name" to "Test",
+            "description" to "Test",
+            "outfitURL" to "",
+            "userProfilePicURL" to "",
+            "itemsID" to emptyList<String>()
+            // Missing isPublic field
+            )
+
+    db.collection(POSTS_COLLECTION_PATH).document("no-public-field").set(docData).await()
+
+    val retrieved = feedRepository.getPostById("no-public-field")
+
+    assertFalse(retrieved?.isPublic == true)
   }
 
   // -------- Helpers --------
