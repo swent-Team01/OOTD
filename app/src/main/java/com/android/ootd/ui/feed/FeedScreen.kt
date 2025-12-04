@@ -147,7 +147,7 @@ private fun FeedScaffold(
                     .background(Background)) {
               // Renders the list of posts when user has posted.
               FeedList(
-                  isBlurred = !hasPostedToday && !isPublicFeed,
+                  isBlurred = !hasPostedToday,
                   posts = posts,
                   likes = likes,
                   likeCounts = likeCounts,
