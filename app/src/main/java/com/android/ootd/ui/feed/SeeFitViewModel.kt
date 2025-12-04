@@ -12,6 +12,7 @@ import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.model.posts.OutfitPost
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,6 +68,7 @@ class SeeFitViewModel(
     }
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+      var cachedItemsSucceeded = false
       try {
         // Try offline/cached post first (no exception)
         val cachedPost =
@@ -77,52 +79,31 @@ class SeeFitViewModel(
             }
         if (cachedPost != null) {
           // Load cached items offline
-          val cachedItems =
-              try {
-                itemsRepository.getFriendItemsForPost(postUuid, cachedPost.ownerId)
-              } catch (_: Exception) {
-                emptyList()
-              }
-          // Get the current user ID to determine ownership
-          val currentUserId = accountService.currentUserId
-          // Determine if the current user is the owner of the post
-          val isOwner = currentUserId.isNotEmpty() && currentUserId == cachedPost.ownerId
-
-          _uiState.value =
-              _uiState.value.copy(
-                  items = cachedItems,
-                  postOwnerId = cachedPost.ownerId,
-                  isOwner = isOwner,
-                  isLoading = false,
-                  errorMessage = null)
+          cachedItemsSucceeded = updateUiWithPost(cachedPost, offline = true)
         }
 
         // Best effort online refresh (2s timeout)
-        val freshPost =
-            withTimeoutOrNull(2000) { feedRepository.getPostById(postUuid) }
-                ?: return@launch // If offline, we stop, cached items are already shown
+        val freshPost = withTimeoutOrNull(2000) { feedRepository.getPostById(postUuid) }
 
-        val freshItems =
-            try {
-              itemsRepository.getFriendItemsForPost(postUuid, freshPost.ownerId)
-            } catch (_: Exception) {
-              null
-            }
+        if (freshPost == null) {
+          if (cachedPost == null) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Unable to load this fit. Please check your connection.")
+          }
+          return@launch
+        }
+        val freshItemsSucceeded = updateUiWithPost(freshPost, offline = false)
 
-        if (freshItems != null) {
-          // Get the current user ID to determine ownership
-          val currentUserId = accountService.currentUserId
-          // Determine if the current user is the owner of the post
-          val isOwner = currentUserId.isNotEmpty() && currentUserId == freshPost.ownerId
-
+        // If both cached and fresh item fetches failed, show error
+        if (!cachedItemsSucceeded && !freshItemsSucceeded) {
           _uiState.value =
               _uiState.value.copy(
-                  items = freshItems,
-                  postOwnerId = freshPost.ownerId,
-                  isOwner = isOwner,
                   isLoading = false,
-                  errorMessage = null)
+                  errorMessage = "Unable to load items for this fit. Please try again later.")
         }
+
         refreshStarredItems()
       } catch (e: Exception) {
         Log.e("SeeFitViewModel", "Failed to load items for post", e)
@@ -182,5 +163,28 @@ class SeeFitViewModel(
         setErrorMessage("Couldn't update wishlist. Please try again.")
       }
     }
+  }
+
+  private suspend fun updateUiWithPost(post: OutfitPost, offline: Boolean): Boolean {
+    val items =
+        try {
+          itemsRepository.getFriendItemsForPost(post.postUID, post.ownerId)
+        } catch (_: Exception) {
+          // In offline mode, we tolerate empty but still consider it a failure for error reporting
+          // In online mode, return null to signal failure immediately
+          return false
+        }
+
+    val currentUserId = accountService.currentUserId
+    val isOwner = currentUserId.isNotEmpty() && currentUserId == post.ownerId
+
+    _uiState.value =
+        _uiState.value.copy(
+            items = items,
+            postOwnerId = post.ownerId,
+            isOwner = isOwner,
+            isLoading = false,
+            errorMessage = null)
+    return true
   }
 }

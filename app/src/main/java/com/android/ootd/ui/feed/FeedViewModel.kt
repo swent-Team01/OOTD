@@ -184,7 +184,8 @@ open class FeedViewModel(
         cachedPrivateFeed = filteredPost
       }
 
-      val hasPostedToday = repository.hasPostedToday(account.uid)
+      val hasPostedToday =
+          withTimeoutOrNull(2000) { repository.hasPostedToday(account.uid) } ?: false
       val postedOffline =
           (cachedPublicFeed + cachedPrivateFeed).any { post ->
             post.ownerId == account.uid && post.timestamp >= todayStart

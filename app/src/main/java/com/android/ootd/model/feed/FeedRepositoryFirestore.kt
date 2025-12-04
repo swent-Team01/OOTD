@@ -27,6 +27,11 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
   companion object {
     private const val MAX_BATCH_SIZE = 20L
+
+    // Helper to compute timestamp for 24 hours ago
+    private fun twentyFourHoursAgo(): Long {
+      return System.currentTimeMillis() - MILLIS_IN_24_HOURS
+    }
   }
 
   override suspend fun getFeedForUids(uids: List<String>): List<OutfitPost> {
@@ -61,8 +66,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
     val cleaned = uids.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
     if (cleaned.isEmpty()) return emptyList()
 
-    val now = System.currentTimeMillis()
-    val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS // milliseconds in 24h
+    val twentyFourHoursAgo = twentyFourHoursAgo()
 
     return try {
       val chunks = cleaned.chunked(10)
@@ -130,8 +134,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
   }
 
   override suspend fun getPublicFeed(): List<OutfitPost> {
-    val now = System.currentTimeMillis()
-    val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS
+    val twentyFourHoursAgo = twentyFourHoursAgo()
 
     return try {
       val snapshot =
@@ -182,9 +185,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
 
         results += snap.documents.mapNotNull { mapToPost(it) }
       }
-      results
-          .filter { it.timestamp >= System.currentTimeMillis() - MILLIS_IN_24_HOURS }
-          .sortedByDescending { it.timestamp }
+      results.filter { it.timestamp >= twentyFourHoursAgo() }.sortedByDescending { it.timestamp }
     } catch (_: Exception) {
       emptyList()
     }
@@ -198,8 +199,7 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
               .get(Source.CACHE) // Fetch from cache
               .await()
 
-      val now = System.currentTimeMillis()
-      val twentyFourHoursAgo = now - MILLIS_IN_24_HOURS
+      val twentyFourHoursAgo = twentyFourHoursAgo()
 
       snap.documents
           .mapNotNull { mapToPost(it) }

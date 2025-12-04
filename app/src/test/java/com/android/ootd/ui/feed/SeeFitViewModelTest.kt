@@ -252,7 +252,7 @@ class SeeFitViewModelTest {
   @Test
   fun `getItemsForPost handles itemsRepository exception`() = runTest {
     val errorMessage = "Network error"
-    // Mock post to succeed but items fetch to fail
+    // Mock post to succeed but items fetch to fail for both cached and fresh attempts
     coEvery { mockFeedRepository.getPostById("post1") } returns testPost1
     coEvery { mockItemsRepository.getFriendItemsForPost("post1", "owner1") } throws
         Exception(errorMessage)
@@ -263,12 +263,12 @@ class SeeFitViewModelTest {
     advanceUntilIdle()
 
     val state = viewModel.uiState.value
-    // With the new implementation, exceptions in items fetch are caught
-    // and result in empty items, not an error message
+    // When both cached and fresh item fetches fail, user should see an error message
     assertTrue(state.items.isEmpty())
     assertFalse(state.isLoading)
-    // The error is swallowed, so no error message is set
-    assertNull(state.errorMessage)
+    // Now an error message is shown when both fetches fail
+    assertNotNull(state.errorMessage)
+    assertTrue(state.errorMessage!!.contains("Unable to load items"))
   }
 
   @Test
