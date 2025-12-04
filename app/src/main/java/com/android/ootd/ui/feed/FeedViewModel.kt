@@ -54,6 +54,10 @@ open class FeedViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
+  private companion object {
+    const val NETWORK_TIMEOUT_MILLIS = 2000L
+  }
+
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
@@ -136,7 +140,7 @@ open class FeedViewModel(
       }
 
       val allPosts =
-          withTimeoutOrNull(2000) {
+          withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) {
             if (_uiState.value.isPublicFeed) {
               repository.getPublicFeed()
             } else {
@@ -185,7 +189,8 @@ open class FeedViewModel(
       }
 
       val hasPostedToday =
-          withTimeoutOrNull(2000) { repository.hasPostedToday(account.uid) } ?: false
+          withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { repository.hasPostedToday(account.uid) }
+              ?: false
       val postedOffline =
           (cachedPublicFeed + cachedPrivateFeed).any { post ->
             post.ownerId == account.uid && post.timestamp >= todayStart

@@ -50,6 +50,7 @@ class SeeFitViewModel(
 
   private companion object {
     const val TAG = "SeeFitViewModel"
+    const val NETWORK_TIMEOUT_MILLIS = 2000L
   }
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
@@ -83,7 +84,8 @@ class SeeFitViewModel(
         }
 
         // Best effort online refresh (2s timeout)
-        val freshPost = withTimeoutOrNull(2000) { feedRepository.getPostById(postUuid) }
+        val freshPost =
+            withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { feedRepository.getPostById(postUuid) }
 
         if (freshPost == null) {
           if (cachedPost == null) {
