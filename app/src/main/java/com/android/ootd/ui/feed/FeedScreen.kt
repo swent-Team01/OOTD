@@ -1,5 +1,6 @@
 package com.android.ootd.ui.feed
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.comments.CommentBottomSheet
+import com.android.ootd.ui.comments.CommentViewModel
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
@@ -44,6 +47,7 @@ object FeedScreenTestTags {
 @Composable
 fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
+    commentViewModel: CommentViewModel = viewModel(),
     onAddPostClick: () -> Unit,
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
@@ -53,6 +57,8 @@ fun FeedScreen(
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
+  // Tracks which post's comments are being viewed, set back to null when comments sheet is closed
+  var selectedPostForComments by remember { mutableStateOf<OutfitPost?>(null) }
 
   LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
     feedViewModel.refreshFeedFromFirestore()
@@ -73,7 +79,32 @@ fun FeedScreen(
       likeCounts = uiState.likeCounts,
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
       isPublicFeed = uiState.isPublicFeed,
-      onToggleFeed = { feedViewModel.toggleFeedType() })
+      onToggleFeed = { feedViewModel.toggleFeedType() },
+      onCommentClick = { post -> selectedPostForComments = post })
+
+  // Comments Bottom Sheet
+  selectedPostForComments?.let { selectedPost ->
+    val currentUserId = uiState.currentAccount?.uid ?: return@let
+    val latestPosts = uiState.feedPosts
+    val currentPost = latestPosts.find { it.postUID == selectedPost.postUID } ?: selectedPost
+
+    Log.d("FeedScreen", "=== RENDERING COMMENT SHEET ===")
+    Log.d("FeedScreen", "Selected post ID: ${selectedPost.postUID}")
+    Log.d("FeedScreen", "Selected post has ${selectedPost.comments.size} comments")
+    Log.d("FeedScreen", "Current post (from feed) has ${currentPost.comments.size} comments")
+    Log.d("FeedScreen", "Using currentPost for CommentBottomSheet")
+
+    CommentBottomSheet(
+        post = currentPost,
+        currentUserId = currentUserId,
+        onDismiss = { selectedPostForComments = null },
+        onCommentAdded = {
+          // Refresh this specific post to show new comments
+          Log.d("FeedScreen", "onCommentAdded called, refreshing post ${currentPost.postUID}")
+          feedViewModel.refreshPost(currentPost.postUID)
+        },
+        viewModel = commentViewModel)
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,7 +124,8 @@ private fun FeedScaffold(
     likeCounts: Map<String, Int> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
-    onToggleFeed: () -> Unit = {}
+    onToggleFeed: () -> Unit = {},
+    onCommentClick: (OutfitPost) -> Unit = {}
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -152,7 +184,8 @@ private fun FeedScaffold(
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
-                  onLikeClick = onLikeClick)
+                  onLikeClick = onLikeClick,
+                  onCommentClick = onCommentClick)
 
               // Loading overlay
               if (isLoading) {
@@ -185,7 +218,8 @@ fun FeedList(
     onSeeFitClick: (OutfitPost) -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
-    onLocationClick: (Location) -> Unit = {}
+    onLocationClick: (Location) -> Unit = {},
+    onCommentClick: (OutfitPost) -> Unit = {}
 ) {
   LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
     items(posts) { post ->
@@ -200,7 +234,8 @@ fun FeedList(
           onLikeClick = { onLikeClick(post) },
           onSeeFitClick = { onSeeFitClick(post) },
           onCardClick = { onPostClick(post.postUID) },
-          onLocationClick = onLocationClick)
+          onLocationClick = onLocationClick,
+          onCommentClick = onCommentClick)
     }
   }
 }
