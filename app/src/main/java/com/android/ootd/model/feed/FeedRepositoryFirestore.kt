@@ -6,6 +6,7 @@ import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Source
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -38,13 +39,11 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val results = mutableListOf<OutfitPost>()
       for (chunk in chunks) {
         val snap =
-            withTimeout(5_000) {
-              db.collection(POSTS_COLLECTION_PATH)
-                  .whereIn(ownerAttributeName, chunk)
-                  .orderBy("timestamp")
-                  .get()
-                  .await()
-            }
+            db.collection(POSTS_COLLECTION_PATH)
+                .whereIn(ownerAttributeName, chunk)
+                .orderBy("timestamp")
+                .get()
+                .await()
         results += snap.documents.mapNotNull { mapToPost(it) }
       }
       // Merge and sort by timestamp ascending
@@ -75,14 +74,12 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val results = mutableListOf<OutfitPost>()
       for (chunk in chunks) {
         val snap =
-            withTimeout(5_000) {
-              db.collection(POSTS_COLLECTION_PATH)
-                  .whereIn(ownerAttributeName, chunk)
-                  .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
-                  .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                  .get()
-                  .await()
-            }
+            db.collection(POSTS_COLLECTION_PATH)
+                .whereIn(ownerAttributeName, chunk)
+                .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .await()
         results += snap.documents.mapNotNull { mapToPost(it) }
       }
 
@@ -173,6 +170,39 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
         Log.e("FeedRepositoryFirestore", "Error polling posts", e)
         // Continue polling even on error
       }
+    }
+  }
+
+  override suspend fun getCachedFriendFeed(uids: List<String>): List<OutfitPost> {
+    return try {
+      val chunks = uids.distinct().chunked(10)
+      val results = mutableListOf<OutfitPost>()
+      for (chunk in chunks) {
+        val snap =
+            db.collection(POSTS_COLLECTION_PATH)
+                .whereIn("ownerId", chunk)
+                .get(Source.CACHE) // Fetch from cache
+                .await()
+
+        results += snap.documents.mapNotNull { mapToPost(it) }
+      }
+      results.sortedByDescending { it.timestamp }
+    } catch (_: Exception) {
+      emptyList()
+    }
+  }
+
+  override suspend fun getCachedPublicFeed(): List<OutfitPost> {
+    return try {
+      val snap =
+          db.collection(POSTS_COLLECTION_PATH)
+              .whereEqualTo("isPublic", true)
+              .get(Source.CACHE) // Fetch from cache
+              .await()
+
+      snap.documents.mapNotNull { mapToPost(it) }
+    } catch (_: Exception) {
+      emptyList()
     }
   }
 

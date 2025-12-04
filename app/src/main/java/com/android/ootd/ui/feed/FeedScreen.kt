@@ -54,6 +54,10 @@ fun FeedScreen(
   val posts = uiState.feedPosts
 
   LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
+    // show cached posts instantly
+    feedViewModel.loadCachedFeed()
+
+    // try refreshing if online
     feedViewModel.refreshFeedFromFirestore()
   }
 

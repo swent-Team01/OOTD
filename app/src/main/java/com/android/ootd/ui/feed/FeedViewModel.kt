@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * UI state for the FeedScreen.
@@ -53,6 +52,9 @@ open class FeedViewModel(
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
+  // Cache for feed posts to use when the app is in offline mode
+  private var cachedFeed: List<OutfitPost> = emptyList()
+
   init {
     observeAuthAndLoadAccount()
   }
@@ -77,67 +79,111 @@ open class FeedViewModel(
     }
   }
 
+  /**
+   * Loads cached feed posts from the local cache based on the current feed type (public or
+   * friends).
+   */
+  fun loadCachedFeed() {
+    viewModelScope.launch {
+      // Retrieves the current account data
+      val currentAccount = _uiState.value.currentAccount ?: return@launch
+
+      // Load cached feed based on the feed type
+      val cached =
+          if (_uiState.value.isPublicFeed) {
+            repository.getCachedPublicFeed()
+          } else {
+            repository.getCachedFriendFeed(currentAccount.friendUids + currentAccount.uid)
+          }
+
+      // Update UI state with cached feed if available
+      if (cached.isNotEmpty()) {
+        cachedFeed = cached
+        _uiState.value = _uiState.value.copy(feedPosts = cached, isLoading = false)
+      }
+    }
+  }
+
   /** Refreshes the feed posts from Firestore for the current account. */
   fun refreshFeedFromFirestore() {
     val account = _uiState.value.currentAccount ?: return
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true)
 
-      val allUids = account.friendUids + account.uid
-      try {
-        // STEP 1 : Load initial feed posts
-        val hasPosted = repository.hasPostedToday(account.uid)
+      if (cachedFeed.isNotEmpty() && _uiState.value.feedPosts.isEmpty()) {
+        _uiState.value = _uiState.value.copy(feedPosts = cachedFeed, isLoading = false)
+      }
 
-        val posts =
+      _uiState.value = _uiState.value.copy(errorMessage = null)
+
+      try {
+
+        _uiState.value = _uiState.value.copy(isLoading = true)
+
+        val hasPostedToday = repository.hasPostedToday(account.uid)
+
+        val allPosts =
             if (_uiState.value.isPublicFeed) {
               repository.getPublicFeed()
             } else {
-              repository.getRecentFeedForUids(allUids)
+              repository.getRecentFeedForUids(account.friendUids + account.uid)
             }
 
-        val filteredPost = filterPosts(account.uid, posts)
-        updateLikesForPosts(filteredPost)
+        val todayStart =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        // Check if user has posted today in the cached feed as well
+        val localHasPostedToday =
+            cachedFeed.any { it.ownerId == account.uid && it.timestamp >= todayStart }
+
+        // Combine both checks
+        val finalHasPostedToday = hasPostedToday || localHasPostedToday
+
+        val filteredPost =
+            if (_uiState.value.isPublicFeed) {
+              allPosts
+            } else {
+              allPosts.filter { post ->
+                if (post.ownerId == account.uid) {
+                  post.timestamp >= todayStart
+                } else true
+              }
+            }
+
+        val likesMap = mutableMapOf<String, Boolean>()
+        val likeCounts = mutableMapOf<String, Int>()
+
+        for (post in filteredPost) {
+          val postId = post.postUID
+          try {
+            val isLiked = likesRepository.isPostLikedByUser(postId, account.uid)
+            val count = likesRepository.getLikeCount(postId)
+            likesMap[postId] = isLiked
+            likeCounts[postId] = count
+          } catch (e: Exception) {
+            Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
+          }
+        }
+
+        cachedFeed = filteredPost
 
         _uiState.value =
             _uiState.value.copy(
-                hasPostedToday = hasPosted, feedPosts = filteredPost, isLoading = false)
-
-        // STEP 2 - Background refresh with timeout
-        viewModelScope.launch {
-          try {
-            val freshPosts =
-                withTimeoutOrNull(2000L) {
-                  if (_uiState.value.isPublicFeed) {
-                    repository.getPublicFeed()
-                  } else {
-                    repository.getRecentFeedForUids(allUids)
-                  }
-                } ?: return@launch // keep cached data if timeout / offline
-
-            // If nothing changed, no need to touch UI
-
-            if (freshPosts == posts) return@launch
-
-            val filteredFresh = filterPosts(account.uid, freshPosts)
-            updateLikesForPosts(filteredFresh)
-
-            _uiState.value = _uiState.value.copy(feedPosts = filteredFresh)
-          } catch (e: Exception) {
-            Log.e("FeedViewModel", "Failed to refresh feed likes/counts", e)
-            // User already sees cached datta, so we don't surface an error
-          }
-        }
+                hasPostedToday = finalHasPostedToday,
+                feedPosts = filteredPost,
+                isLoading = false,
+                likes = likesMap,
+                likeCounts = likeCounts)
       } catch (e: Exception) {
         Log.e("FeedViewModel", "Failed to load initial feed", e)
         // Only show error if we have no posts at all
-        val current = _uiState.value
-        _uiState.value =
-            current.copy(
-                isLoading = false,
-                errorMessage =
-                    if (current.feedPosts.isEmpty()) "Failed to load feed"
-                    else current.errorMessage)
-        return@launch
+        if (cachedFeed.isNotEmpty()) {
+          _uiState.value = _uiState.value.copy(isLoading = false, feedPosts = cachedFeed)
+        } else {
+          _uiState.value =
+              _uiState.value.copy(
+                  errorMessage = "Failed to load feed. Please try again.", isLoading = false)
+        }
       }
     }
   }
@@ -145,6 +191,9 @@ open class FeedViewModel(
   /** Toggles between public and private feed. */
   fun toggleFeedType() {
     _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
+
+    viewModelScope.launch { loadCachedFeed() }
+
     refreshFeedFromFirestore()
   }
 
@@ -155,6 +204,7 @@ open class FeedViewModel(
    */
   fun setCurrentAccount(account: Account) {
     _uiState.value = _uiState.value.copy(currentAccount = account)
+    loadCachedFeed()
   }
 
   /**
@@ -200,41 +250,5 @@ open class FeedViewModel(
         Log.e("FeedViewModel", "Failed to toggle like for post $postId", e)
       }
     }
-  }
-
-  private fun filterPosts(userId: String, posts: List<OutfitPost>): List<OutfitPost> {
-    val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-    // Filter posts to only include today's post for the current user and all posts for friends
-    return if (_uiState.value.isPublicFeed) {
-      posts
-    } else {
-      posts.filter { post ->
-        if (post.ownerId == userId) {
-          post.timestamp >= todayStart
-        } else true
-      }
-    }
-  }
-
-  private suspend fun updateLikesForPosts(posts: List<OutfitPost>) {
-    val account = _uiState.value.currentAccount ?: return
-
-    // Load likes and like counts for these posts for the current user
-    val likesMap = mutableMapOf<String, Boolean>()
-    val countsMap = mutableMapOf<String, Int>()
-    for (post in posts) {
-      val postId = post.postUID
-      try {
-        val isLiked = likesRepository.isPostLikedByUser(postId, account.uid)
-        val count = likesRepository.getLikeCount(postId)
-        likesMap[postId] = isLiked
-        countsMap[postId] = count
-      } catch (e: Exception) {
-        Log.e("FeedViewModel", "Failed to load likes for post $postId", e)
-      }
-    }
-
-    _uiState.value = _uiState.value.copy(likes = likesMap, likeCounts = countsMap)
   }
 }

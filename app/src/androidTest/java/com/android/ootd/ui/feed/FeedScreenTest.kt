@@ -81,6 +81,11 @@ class FeedScreenTest : FirestoreTest() {
 
           override suspend fun getPublicFeed(): List<OutfitPost> = emptyList()
 
+          override suspend fun getCachedFriendFeed(uids: List<String>): List<OutfitPost> =
+              emptyList()
+
+          override suspend fun getCachedPublicFeed(): List<OutfitPost> = emptyList()
+
           override fun observeRecentFeedForUids(
               uids: List<String>
           ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> =
@@ -90,9 +95,7 @@ class FeedScreenTest : FirestoreTest() {
 
           override fun getNewPostId() = "fake-id"
 
-          override suspend fun getPostById(postUuid: String): OutfitPost? {
-            TODO("Not yet implemented")
-          }
+          override suspend fun getPostById(postUuid: String): OutfitPost? = null
         }
 
     FeedRepositoryProvider.repository = fakeRepo
@@ -119,6 +122,10 @@ class FeedScreenTest : FirestoreTest() {
 
           override suspend fun getPublicFeed(): List<OutfitPost> = emptyList()
 
+          override suspend fun getCachedFriendFeed(uids: List<String>): List<OutfitPost> = posts
+
+          override suspend fun getCachedPublicFeed(): List<OutfitPost> = emptyList()
+
           override fun observeRecentFeedForUids(
               uids: List<String>
           ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> = kotlinx.coroutines.flow.flowOf(posts)
@@ -127,9 +134,7 @@ class FeedScreenTest : FirestoreTest() {
 
           override fun getNewPostId() = "fake-id"
 
-          override suspend fun getPostById(postUuid: String): OutfitPost? {
-            TODO("Not yet implemented")
-          }
+          override suspend fun getPostById(postUuid: String): OutfitPost? = posts.firstOrNull()
         }
 
     FeedRepositoryProvider.repository = fakeRepo
@@ -247,17 +252,21 @@ class FeedScreenTest : FirestoreTest() {
   }
 
   @Test
-  fun getFeed_withCorruptedData_returnsEmpty() = runTest {
+  fun getFeed_withCorruptedData_returnsOnlyValidPosts() = runTest {
     feedRepository.addPost(samplePost("valid", 1L))
     feedRepository.addPost(samplePost("corrupted", 2L))
 
+    // Corrupt the timestamp field
     db.collection(POSTS_COLLECTION_PATH)
         .document("corrupted")
         .update(mapOf("timestamp" to "invalid"))
         .await()
 
     val result = feedRepository.getFeedForUids(listOf(currentUid))
-    assertTrue(result.isEmpty())
+
+    // Should return only the valid post, filtering out the corrupted one
+    assertEquals(1, result.size)
+    assertEquals("valid", result[0].postUID)
   }
 
   @Test
@@ -272,6 +281,11 @@ class FeedScreenTest : FirestoreTest() {
 
           override suspend fun getPublicFeed(): List<OutfitPost> = emptyList()
 
+          override suspend fun getCachedFriendFeed(uids: List<String>): List<OutfitPost> =
+              emptyList()
+
+          override suspend fun getCachedPublicFeed(): List<OutfitPost> = emptyList()
+
           override fun observeRecentFeedForUids(
               uids: List<String>
           ): kotlinx.coroutines.flow.Flow<List<OutfitPost>> =
@@ -281,9 +295,7 @@ class FeedScreenTest : FirestoreTest() {
 
           override fun getNewPostId() = "fake-id"
 
-          override suspend fun getPostById(postUuid: String): OutfitPost? {
-            TODO("Not yet implemented")
-          }
+          override suspend fun getPostById(postUuid: String): OutfitPost? = null
         }
 
     FeedRepositoryProvider.repository = fakeRepo
