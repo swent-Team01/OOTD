@@ -337,6 +337,45 @@ class AccountViewModel(
     _uiState.update { it.copy(showPrivacyHelp = false) }
   }
 
+  /**
+   * Deletes the current user's account and all associated data.
+   *
+   * This method performs the following steps:
+   * 1. Deletes account data from [AccountRepository] (includes profile picture, posts, items)
+   * 2. Deletes user data from [UserRepository]
+   * 3. Signs out the user from Firebase Auth
+   *
+   * On success, updates the UI state to reflect that the user has been signed out. On failure,
+   * displays an error message to the user.
+   */
+  fun deleteAccount() {
+    viewModelScope.launch {
+      try {
+        _uiState.update { it.copy(isLoading = true) }
+        val userID = accountService.currentUserId
+
+        // Delete account data (profile picture, posts, items, account document)
+        accountRepository.deleteAccount(userID)
+
+        // Delete user data from user repository
+        userRepository.deleteUser(userID)
+
+        // Set flag to prevent observeAuthState from resetting state during sign-out
+        isSigningOut = true
+
+        // Sign out after successful deletion
+        accountService.signOut()
+
+        // Clear state and mark as signed out
+        _uiState.update { AccountViewState(signedOut = true) }
+      } catch (e: Exception) {
+        val errorMessage = "Failed deleting account: ${e.message ?: "Unknown Error"}"
+        Log.e("AccountViewModel", errorMessage, e)
+        _uiState.update { it.copy(errorMsg = errorMessage, isLoading = false) }
+      }
+    }
+  }
+
   // ----------------- Location-related helpers -----------------
   /**
    * Selects a location and updates the UI state.
