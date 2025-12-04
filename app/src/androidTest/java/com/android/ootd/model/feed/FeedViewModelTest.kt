@@ -256,7 +256,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
   }
 
   @Test
-  fun refreshPost_noopWhenPostNotInFeed() = runBlocking {
+  fun refreshPost_shouldNotUpdateState_whenPostNotInFeed() = runBlocking {
     val uid = auth.currentUser!!.uid
 
     // Create account with no posts
@@ -270,7 +270,6 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
 
     // Calling refreshPost for a post that is not in the feed should NOT crash or modify state
     viewModel.refreshPost("non_existent_post")
-    delay(300)
 
     val state = viewModel.uiState.value
     assertTrue(state.feedPosts.isEmpty())

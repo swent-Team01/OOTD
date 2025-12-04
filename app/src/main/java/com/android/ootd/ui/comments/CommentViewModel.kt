@@ -118,7 +118,6 @@ class CommentViewModel(
 
       _uiState.value = _uiState.value.copy(isSubmitting = false, selectedImage = null)
 
-      Log.d(TAG, "Comment added successfully: ${comment.commentId}")
       Result.success(comment)
     } catch (e: Exception) {
       Log.e(TAG, "Failed to add comment to post $postId", e)
@@ -146,7 +145,6 @@ class CommentViewModel(
 
       _uiState.value = _uiState.value.copy(isLoading = false)
 
-      Log.d(TAG, "Comment deleted successfully: ${comment.commentId}")
       Result.success(Unit)
     } catch (e: Exception) {
       Log.e(TAG, "Failed to delete comment ${comment.commentId}", e)
