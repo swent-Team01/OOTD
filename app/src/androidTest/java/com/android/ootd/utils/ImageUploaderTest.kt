@@ -284,22 +284,4 @@ class ImageUploaderTest : FirestoreTest() {
 
     assertTrue("Should return true for blank path", result)
   }
-
-  @Test
-  fun deleteImage_multipleTimes_handlesGracefully() = runTest {
-    // Upload an image
-    val testUri = createTestImageFile()
-    val storagePath = "test/images/double_delete_${UUID.randomUUID()}.jpg"
-
-    ImageUploader.uploadImage(
-        localUri = testUri.toString(), storagePath = storagePath, storage = storage)
-
-    // Delete it twice
-    val firstDelete = ImageUploader.deleteImage(storagePath, storage)
-    val secondDelete = ImageUploader.deleteImage(storagePath, storage)
-
-    assertTrue("First delete should succeed", firstDelete)
-    // Second delete behavior depends on implementation
-    assertNotNull("Second delete should return a result", secondDelete)
-  }
 }

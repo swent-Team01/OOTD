@@ -416,8 +416,8 @@ class RegisterViewModelTest {
     stubSuccess()
 
     // Calculate a date of birth for someone who is 10 years old
-    val tenYearsAgo = java.time.LocalDate.now().minusYears(10)
-    val dob = tenYearsAgo.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    val oneDayShort = java.time.LocalDate.now().minusYears(13).plusDays(1)
+    val dob = oneDayShort.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
 
     viewModel.setUsername("validUser")
     viewModel.setDateOfBirth(dob)
@@ -520,23 +520,6 @@ class RegisterViewModelTest {
     advanceUntilIdle()
 
     assertEquals("User must be at least 13", viewModel.uiState.value.errorMsg)
-  }
-
-  @Test
-  fun ageValidation_userExactly12YearsAnd364Days_showsError() = runTest {
-    stubSuccess()
-
-    // User is 12 years and 364 days old (one day before turning 13)
-    val almostThirteen = java.time.LocalDate.now().minusYears(13).plusDays(1)
-    val dob = almostThirteen.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-
-    viewModel.setUsername("validUser")
-    viewModel.setDateOfBirth(dob)
-    viewModel.registerUser()
-    advanceUntilIdle()
-
-    assertEquals("User must be at least 13", viewModel.uiState.value.errorMsg)
-    assertFalse(viewModel.uiState.value.registered)
   }
 
   // ========== Profile Picture Upload Tests ==========
