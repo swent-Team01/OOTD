@@ -12,6 +12,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.android.ootd.R
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.image.ImageCompressor
@@ -268,7 +269,8 @@ open class AddItemsViewModel(
 
         val uploadedImage =
             if (overridePhoto) {
-              ImageData(itemUuid, state.image.imageUrl.ifEmpty { "override://$itemUuid" })
+              ImageData(
+                  itemUuid, "android.resource://${context.packageName}/${R.drawable.app_logo}")
             } else {
               // Upload image (uses local URI when offline)
               val uploaded = uploadItemImage(state.localPhotoUri, itemUuid, context)
@@ -282,7 +284,7 @@ open class AddItemsViewModel(
 
               // Check if we need to schedule background upload (if offline, we got a local URI)
               val uri = uploaded.imageUrl.toUri()
-              if (uri.scheme == "content" || uri.scheme == "file") {
+              if (!overridePhoto && (uri.scheme == "content" || uri.scheme == "file")) {
                 val workRequest =
                     OneTimeWorkRequestBuilder<ImageUploadWorker>()
                         .setInputData(
