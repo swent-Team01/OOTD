@@ -18,6 +18,8 @@ import com.android.ootd.model.consent.Consent
 import com.android.ootd.model.consent.ConsentRepository
 import com.android.ootd.model.consent.ConsentRepositoryFirestore
 import com.android.ootd.model.consent.ConsentRepositoryProvider
+import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.LocationRepositoryProvider
@@ -74,6 +76,7 @@ open class BaseEnd2EndTest {
   lateinit var fakeGoogleIdToken: String
   lateinit var fakeCredentialManager: CredentialManager
   lateinit var testNavController: TestNavHostController
+  lateinit var mockItemsRepository: ItemsRepository
 
   // If you want to add a new repository, you need to make sure to add it here.
   @Before
@@ -86,7 +89,7 @@ open class BaseEnd2EndTest {
     mockAccountRepository = mockk(relaxed = true)
     mockLocationRepository = mockk(relaxed = true)
     mockConsentRepository = mockk(relaxed = true)
-
+    mockItemsRepository = mockk(relaxed = true)
     mockNotificationRepository = mockk(relaxed = true)
     // Inject mock repositories into the providers so the app uses them instead of real Firestore
     UserRepositoryProvider.repository = mockUserRepository
@@ -94,6 +97,8 @@ open class BaseEnd2EndTest {
     NotificationRepositoryProvider.repository = mockNotificationRepository
     LocationRepositoryProvider.repository = mockLocationRepository
     ConsentRepositoryProvider.repository = mockConsentRepository
+    ItemsRepositoryProvider.repository = mockItemsRepository
+
     // Generate unique identifiers for each test run to avoid conflicts
     val timestamp = System.currentTimeMillis()
     testUserId = "test_user_$timestamp"

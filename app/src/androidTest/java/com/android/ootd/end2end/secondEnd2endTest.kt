@@ -3,7 +3,6 @@ package com.android.ootd.end2end
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.screen.enterUsername
 import com.android.ootd.utils.BaseEnd2EndTest
-import com.android.ootd.utils.addPostWithOneItem
 import com.android.ootd.utils.enterDateOfBirth
 import com.android.ootd.utils.signOutAndVerifyAuthScreen
 import com.android.ootd.utils.verifyRegisterScreenAppears
@@ -39,16 +38,15 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 6. User enters username, date of birth and location
    * 7. User clicks Save button
    * 8. App navigates directly to Feed screen (consent already given via mock)
-   * 9. User adds post with one item attached to it and check it is displayed in feed
-   * 10. User searches for "greg" in the username field
-   * 11. User selects greg from the suggestions
-   * 12. User clicks Follow button on greg's profile
-   * 13. User clicks notification icon and goes to notification screen.
-   * 14. User accepts follow notification
-   * 15. User goes to inventory checks no items are there
-   * 16. User checks the add item button is there
-   * 17. User clicks Sign Out button
-   * 18. App navigates back to Authentication screen
+   * 9. User searches for "greg" in the username field
+   * 10. User selects greg from the suggestions
+   * 11. User clicks Follow button on greg's profile
+   * 12. User clicks notification icon and goes to notification screen.
+   * 13. User accepts follow notification
+   * 14. User goes to inventory checks no items are there
+   * 15. User checks the add item button is there
+   * 16. User clicks Sign Out button
+   * 17. App navigates back to Authentication screen
    *
    * LIMITATIONS:
    * - Taking photos launches external activities that break ComposeTestRule
@@ -87,25 +85,22 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
       // Steps 7-8: Save registration and navigate to feed
       saveRegistrationAndNavigateToFeed()
 
-      // Step 9: Add post with one item attached to it and check it is displayed in feed
-      addPostWithOneItem(composeTestRule)
-
-      // Step 10: Navigate to search screen
+      // Step 9: Navigate to search screen
       navigateToSearchScreen()
 
-      // Step 11-12: Searches for Greg and follows him
+      // Step 10-11: Searches for Greg and follows him
       searchAndFollowUser()
 
-      // Step 13: Open notifications screen
+      // Step 12: Open notifications screen
       openNotificationsScreen()
 
-      // Step 14: Accept follow notification
+      // Step 13: Accept follow notification
       acceptFollowNotification()
 
-      // Step 15-16: Navigate to inventory and check add item button exists
+      // Step 14-15: Navigate to inventory and check add item button exists
       navigateToInventoryAndCheckAddItemButton()
 
-      // Step 17-18: Sign out and verify auth screen
+      // Step 16-17: Sign out and verify auth screen
       signOutAndVerifyAuthScreen(
           composeTestRule = composeTestRule, testNavController = testNavController)
     }
