@@ -1,6 +1,6 @@
 package com.android.ootd.model.post
 
-import com.android.ootd.model.map.Location
+import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 
 interface OutfitPostRepository {
@@ -10,15 +10,6 @@ interface OutfitPostRepository {
    * image filename.
    */
   fun getNewPostId(): String
-
-  /**
-   * Uploads the outfit photo to Firebase Storage and returns its download URL as a String.
-   *
-   * @param localPath Local file path or URI string of the image.
-   * @param postId The unique ID of the post (used as the filename).
-   * @return Download URL of the uploaded image.
-   */
-  suspend fun uploadOutfitPhoto(localPath: String, postId: String): String
 
   /**
    * Saves the post metadata to Firestore under the 'posts' collection.
@@ -44,21 +35,6 @@ interface OutfitPostRepository {
   suspend fun updatePostFields(postId: String, updates: Map<String, Any?>)
 
   /**
-   * Creates a new post in Firestore with only the photo and description fields filled. Uploads the
-   * outfit photo to Firebase Storage and saves the metadata document.
-   *
-   * Returns the created [OutfitPost] object (including its Firestore ID and photo URL).
-   */
-  suspend fun savePostWithMainPhoto(
-      uid: String,
-      name: String,
-      userProfilePicURL: String,
-      localPath: String,
-      description: String,
-      location: Location
-  ): OutfitPost
-
-  /**
    * Deletes both the Firestore post document and its associated image in Storage.
    *
    * @param postId The ID of the post to delete.
@@ -74,4 +50,38 @@ interface OutfitPostRepository {
    * @return Download URL of the uploaded image.
    */
   suspend fun uploadOutfitWithCompressedPhoto(imageData: ByteArray, postId: String): String
+
+  /**
+   * Uploads a reaction image for a comment as a byte array Firebase Storage and returns its
+   * download URL as a String.
+   *
+   * @param imageData Byte array of the reaction image data.
+   * @param commentId The unique ID of the comment (used as the filename).
+   * @return Download URL of the uploaded reaction image.
+   */
+  suspend fun uploadCompressedReactionImage(imageData: ByteArray, commentId: String): String
+
+  /**
+   * Adds a comment to a post, optionally uploading a reaction image.
+   *
+   * @param postId The ID of the post to comment on.
+   * @param userId The ID of the user making the comment.
+   * @param commentText The text content of the comment.
+   * @param reactionImageData Optional byte array of the reaction image data.
+   * @return The created Comment object.
+   */
+  suspend fun addCommentToPost(
+      postId: String,
+      userId: String,
+      commentText: String,
+      reactionImageData: ByteArray? = null // Optional - null means no reaction image
+  ): Comment
+
+  /**
+   * Deletes a comment from a post.
+   *
+   * @param postId The ID of the post containing the comment.
+   * @param commentId The ID of the comment to delete.
+   */
+  suspend fun deleteCommentFromPost(postId: String, comment: Comment)
 }

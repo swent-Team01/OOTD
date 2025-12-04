@@ -8,6 +8,8 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
+import com.android.ootd.model.post.OutfitPostRepository
+import com.android.ootd.model.post.OutfitPostRepositoryProvider
 import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.LikesRepositoryProvider
@@ -44,6 +46,8 @@ data class FeedUiState(
  */
 open class FeedViewModel(
     private val repository: FeedRepository = FeedRepositoryProvider.repository,
+    private val outfitPostRepository: OutfitPostRepository =
+        OutfitPostRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val likesRepository: LikesRepository = LikesRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -193,6 +197,28 @@ open class FeedViewModel(
         _uiState.value = current.copy(likes = newLikes, likeCounts = newCounts)
       } catch (e: Exception) {
         Log.e("FeedViewModel", "Failed to toggle like for post $postId", e)
+      }
+    }
+  }
+
+  /**
+   * Refreshes a single post in the feed after comment changes.
+   *
+   * @param postId The ID of the post to refresh
+   */
+  fun refreshPost(postId: String) {
+    viewModelScope.launch {
+      try {
+        val updatedPost = outfitPostRepository.getPostById(postId) ?: return@launch
+        val currentPosts = _uiState.value.feedPosts.toMutableList()
+        val index = currentPosts.indexOfFirst { it.postUID == postId }
+
+        if (index != -1) {
+          currentPosts[index] = updatedPost
+          _uiState.value = _uiState.value.copy(feedPosts = currentPosts)
+        }
+      } catch (e: Exception) {
+        Log.e("FeedViewModel", "Failed to refresh post $postId", e)
       }
     }
   }

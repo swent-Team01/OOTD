@@ -1,6 +1,7 @@
 package com.android.ootd.model.feed
 
 import android.util.Log
+import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.google.firebase.firestore.DocumentSnapshot
@@ -194,6 +195,10 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val location = locationFromMap(doc["location"] as? Map<*, *>)
       val isPublic = doc.getBoolean("isPublic") ?: false
 
+      // ADD THIS: Parse comments
+      val rawCommentsList = doc["comments"] as? List<*> ?: emptyList<Any>()
+      val comments = rawCommentsList.mapNotNull { mapToComment(it) }
+
       OutfitPost(
           postUID = postUuid,
           ownerId = ownerId,
@@ -204,9 +209,26 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
           outfitURL = outfitUrl,
           userProfilePicURL = userProfilePicture,
           location = location,
-          isPublic = isPublic)
+          isPublic = isPublic,
+          comments = comments)
     } catch (e: Exception) {
-      Log.e("ItemsRepositoryFirestore", "Error converting document ${doc.id} to Item", e)
+      Log.e("FeedRepository", "Error mapping post", e)
+      null
+    }
+  }
+
+  // Helper to map comment data to Comment object
+  private fun mapToComment(commentData: Any?): Comment? {
+    return try {
+      val commentMap = commentData as? Map<*, *> ?: return null
+      Comment(
+          commentId = commentMap["commentId"] as? String ?: "",
+          ownerId = commentMap["ownerId"] as? String ?: "",
+          text = commentMap["text"] as? String ?: "",
+          timestamp = (commentMap["timestamp"] as? Long) ?: 0L,
+          reactionImage = commentMap["reactionImage"] as? String ?: "")
+    } catch (e: Exception) {
+      Log.e("FeedRepository", "Error parsing comment", e)
       null
     }
   }
