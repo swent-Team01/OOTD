@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryFirestore
+import com.android.ootd.model.post.OutfitPostRepositoryFirestore
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
@@ -29,6 +30,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
 
   private lateinit var viewModel: FeedViewModel
   private lateinit var auth: FirebaseAuth
+  private lateinit var postRepo: OutfitPostRepositoryFirestore
   private lateinit var accountRepo: AccountRepositoryFirestore
   private lateinit var feedRepo: FeedRepositoryFirestore
 
@@ -38,10 +40,11 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     auth = FirebaseEmulator.auth
     accountRepo = AccountRepositoryFirestore(FirebaseEmulator.firestore)
     feedRepo = FeedRepositoryFirestore(FirebaseEmulator.firestore)
+    postRepo = OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
 
     runBlocking { auth.signInAnonymously().await() }
 
-    viewModel = FeedViewModel(feedRepo, accountRepo)
+    viewModel = FeedViewModel(feedRepo, postRepo, accountRepo)
   }
 
   @Test
@@ -250,5 +253,27 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
 
   private fun waitUntilFeedLoaded(timeoutMillis: Long = 5000) {
     composeTestRule.waitUntil(timeoutMillis) { !viewModel.uiState.value.isLoading }
+  }
+
+  @Test
+  fun refreshPost_noopWhenPostNotInFeed() = runBlocking {
+    val uid = auth.currentUser!!.uid
+
+    // Create account with no posts
+    val account = Account(uid, uid, "bob", friendUids = emptyList())
+    FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
+
+    viewModel.setCurrentAccount(account)
+    viewModel.refreshFeedFromFirestore()
+    waitUntilFeedLoaded()
+    assertTrue(viewModel.uiState.value.feedPosts.isEmpty())
+
+    // Calling refreshPost for a post that is not in the feed should NOT crash or modify state
+    viewModel.refreshPost("non_existent_post")
+    delay(300)
+
+    val state = viewModel.uiState.value
+    assertTrue(state.feedPosts.isEmpty())
+    assertNull(state.errorMessage)
   }
 }
