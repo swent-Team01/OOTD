@@ -209,27 +209,13 @@ open class FeedViewModel(
   fun refreshPost(postId: String) {
     viewModelScope.launch {
       try {
-        Log.d("FeedViewModel", "Refreshing post $postId")
-        Log.d("FeedViewModel", "Refreshing post $postId")
-        Log.d("FeedViewModel", "Current posts in feed: ${_uiState.value.feedPosts.size}")
-
         val updatedPost = outfitPostRepository.getPostById(postId) ?: return@launch
-        Log.d("FeedViewModel", "Fetched post with ${updatedPost.comments.size} comments")
-
         val currentPosts = _uiState.value.feedPosts.toMutableList()
         val index = currentPosts.indexOfFirst { it.postUID == postId }
 
         if (index != -1) {
           currentPosts[index] = updatedPost
           _uiState.value = _uiState.value.copy(feedPosts = currentPosts)
-          Log.d(
-              "FeedViewModel",
-              "New state has ${_uiState.value.feedPosts[index].comments.size} comments")
-          Log.d("FeedViewModel", "State updated. Verifying...")
-          Log.d(
-              "FeedViewModel",
-              "Post at index $index now has ${_uiState.value.feedPosts[index].comments.size} comments")
-          Log.d("FeedViewModel", "Comments: ${_uiState.value.feedPosts[index].comments}")
         }
       } catch (e: Exception) {
         Log.e("FeedViewModel", "Failed to refresh post $postId", e)

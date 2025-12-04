@@ -14,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlin.time.Clock.System.now
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -117,5 +118,61 @@ class FeedViewModelUnitTest {
     coVerify(exactly = 0) { feedRepository.getPublicFeed() }
     // Should call getRecentFeedForUids (even with empty list if no account)
     coVerify { feedRepository.getRecentFeedForUids(any()) }
+  }
+
+  @OptIn(kotlin.time.ExperimentalTime::class)
+  @Test
+  fun `refreshPost updates specific post in feed`() = runTest {
+    val now = System.currentTimeMillis()
+    // Setup - create initial posts
+    val post1 =
+        OutfitPost(postUID = "post1", ownerId = "user1", description = "Original", timestamp = now)
+    val post2 =
+        OutfitPost(postUID = "post2", ownerId = "user2", description = "Another", timestamp = now)
+
+    val account = Account(uid = "user1", friendUids = listOf("user2"))
+    viewModel.setCurrentAccount(account)
+
+    // Mock all necessary repository calls for initial refresh
+    coEvery { feedRepository.hasPostedToday("user1") } returns true
+    coEvery { feedRepository.getRecentFeedForUids(listOf("user2", "user1")) } returns
+        listOf(post1, post2)
+    coEvery { likesRepository.isPostLikedByUser("post1", "user1") } returns false
+    coEvery { likesRepository.getLikeCount("post1") } returns 0
+    coEvery { likesRepository.isPostLikedByUser("post2", "user1") } returns false
+    coEvery { likesRepository.getLikeCount("post2") } returns 0
+
+    // Initial refresh to populate feed
+    viewModel.refreshFeedFromFirestore()
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Verify initial state
+    assertEquals(2, viewModel.uiState.value.feedPosts.size)
+
+    // Setup - mock updated post with comments
+    val updatedPost1 =
+        post1.copy(
+            description = "Updated",
+            comments =
+                listOf(
+                    com.android.ootd.model.posts.Comment(
+                        commentId = "c1",
+                        ownerId = "user2",
+                        text = "Nice!",
+                        timestamp = System.currentTimeMillis(),
+                        reactionImage = "")))
+    coEvery { postRepo.getPostById("post1") } returns updatedPost1
+
+    // Act
+    viewModel.refreshPost("post1")
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Assert
+    val state = viewModel.uiState.value
+    assertEquals(2, state.feedPosts.size)
+    assertEquals("Updated", state.feedPosts.find { it.postUID == "post1" }?.description)
+    assertEquals(1, state.feedPosts.find { it.postUID == "post1" }?.comments?.size)
+
+    coVerify { postRepo.getPostById("post1") }
   }
 }
