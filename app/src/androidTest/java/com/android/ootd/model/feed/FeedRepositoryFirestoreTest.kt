@@ -526,6 +526,47 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     assertTrue("Should include second post", posts.any { it.postUID == "user1-post-b" })
   }
 
+  // -------- Comment parsing tests (minimal coverage) --------
+
+  @Test
+  fun getPostById_parsesCommentsCorrectly() = runBlocking {
+    val post = samplePost("post-with-comments", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    // Manually add comments to the post document
+    val comments =
+        listOf(
+            mapOf(
+                "commentId" to "comment1",
+                "ownerId" to currentUid,
+                "text" to "Great outfit!",
+                "timestamp" to System.currentTimeMillis(),
+                "reactionImage" to "https://example.com/reaction1.jpg"))
+
+    db.collection(POSTS_COLLECTION_PATH)
+        .document("post-with-comments")
+        .update("comments", comments)
+        .await()
+
+    val retrieved = feedRepository.getPostById("post-with-comments")
+
+    assertEquals(1, retrieved?.comments?.size)
+    assertEquals("comment1", retrieved?.comments?.get(0)?.commentId)
+    assertEquals(currentUid, retrieved?.comments?.get(0)?.ownerId)
+    assertEquals("Great outfit!", retrieved?.comments?.get(0)?.text)
+    assertEquals("https://example.com/reaction1.jpg", retrieved?.comments?.get(0)?.reactionImage)
+  }
+
+  @Test
+  fun getPostById_handlesPostWithoutComments() = runBlocking {
+    val post = samplePost("post-no-comments", ts = System.currentTimeMillis())
+    feedRepository.addPost(post)
+
+    val retrieved = feedRepository.getPostById("post-no-comments")
+
+    assertTrue(retrieved?.comments?.isEmpty() == true)
+  }
+
   // -------- Helpers --------
 
   private fun samplePost(id: String, ts: Long) =
