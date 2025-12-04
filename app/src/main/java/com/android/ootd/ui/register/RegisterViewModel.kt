@@ -68,12 +68,16 @@ data class RegisterUserViewModel(
  * @property accountRepository The repository used to create accounts.
  * @property locationSelectionViewModel The ViewModel handling location selection logic.
  * @property auth Firebase authentication instance.
+ * @property uploader Function to upload profile pictures. Defaults to ImageUploader.uploadImage.
  */
 class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     val locationSelectionViewModel: LocationSelectionViewModel = LocationSelectionViewModel(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val uploader: suspend (String, String) -> ImageUploader.UploadResult = { uri, path ->
+      ImageUploader.uploadImage(uri, path)
+    }
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(RegisterUserViewModel())
@@ -299,8 +303,7 @@ class RegisterViewModel(
    */
   private suspend fun uploadProfilePicture(url: String): String {
     val userId = auth.currentUser?.uid ?: return url
-    val result =
-        ImageUploader.uploadImage(localUri = url, storagePath = "profile_pictures/$userId.jpg")
+    val result = uploader(url, "profile_pictures/$userId.jpg")
 
     if (!result.success) {
       Log.w("RegisterViewModel", "Failed to upload profile picture: ${result.error}")

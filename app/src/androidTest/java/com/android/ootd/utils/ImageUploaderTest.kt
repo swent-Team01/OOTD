@@ -192,6 +192,67 @@ class ImageUploaderTest : FirestoreTest() {
   }
 
   @Test
+  fun uploadImageToReference_withInvalidUri_returnsFailure() = runTest {
+    val invalidUri = "content://invalid/uri/that/does/not/exist"
+    val storageRef = storage.reference.child("test/invalid_ref_${UUID.randomUUID()}.jpg")
+
+    val result =
+        ImageUploader.uploadImageToReference(localUri = invalidUri, storageRef = storageRef)
+
+    assertFalse("Upload should fail", result.success)
+    assertEquals("Should return original URI on failure", invalidUri, result.url)
+    assertNotNull("Error message should be present", result.error)
+  }
+
+  @Test
+  fun uploadImageBytes_withValidData_uploadsSuccessfully() = runTest {
+    val storagePath = "test/images/bytes_${UUID.randomUUID()}.jpg"
+    uploadedPaths.add(storagePath)
+    // Minimal valid JPEG bytes
+    val jpegBytes =
+        byteArrayOf(
+            0xFF.toByte(),
+            0xD8.toByte(),
+            0xFF.toByte(),
+            0xE0.toByte(),
+            0x00.toByte(),
+            0x10.toByte(),
+            0x4A.toByte(),
+            0x46.toByte(),
+            0x49.toByte(),
+            0x46.toByte(),
+            0x00.toByte(),
+            0x01.toByte(),
+            0x01.toByte(),
+            0x00.toByte(),
+            0x00.toByte(),
+            0x01.toByte(),
+            0x00.toByte(),
+            0x01.toByte(),
+            0x00.toByte(),
+            0x00.toByte(),
+            0xFF.toByte(),
+            0xD9.toByte())
+
+    val result = ImageUploader.uploadImageBytes(jpegBytes, storagePath, storage)
+
+    assertTrue("Upload should succeed", result.success)
+    assertTrue("URL should be a Firebase Storage URL", result.url.startsWith("https://"))
+    assertNull("Error should be null", result.error)
+  }
+
+  @Test
+  fun uploadImageBytes_withEmptyData_returnsFailure() = runTest {
+    val storagePath = "test/images/empty_${UUID.randomUUID()}.jpg"
+
+    val result = ImageUploader.uploadImageBytes(byteArrayOf(), storagePath, storage)
+
+    assertFalse("Upload should fail for empty data", result.success)
+    assertEquals("", result.url)
+    assertNotNull("Error message should be present", result.error)
+  }
+
+  @Test
   fun deleteImage_withExistingImage_deletesSuccessfully() = runTest {
     // First upload an image
     val testUri = createTestImageFile()

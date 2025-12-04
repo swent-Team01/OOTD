@@ -2,6 +2,7 @@ package com.android.ootd.utils
 
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.tasks.await
@@ -14,6 +15,7 @@ import kotlinx.coroutines.tasks.await
 object ImageUploader {
 
   private const val TAG = "ImageUploader"
+  private const val UNKNOWN_ERROR = "Unknown Error"
 
   /**
    * Result of an image upload operation.
@@ -63,7 +65,7 @@ object ImageUploader {
       UploadResult(success = true, url = downloadUrl.toString())
     } catch (e: Exception) {
       Log.e(TAG, "Failed to upload image to $storagePath: ${e.message}", e)
-      UploadResult(success = false, url = localUri, error = e.message ?: "Unknown error")
+      UploadResult(success = false, url = localUri, error = e.message ?: UNKNOWN_ERROR)
     }
   }
 
@@ -90,7 +92,7 @@ object ImageUploader {
       UploadResult(success = true, url = downloadUrl.toString())
     } catch (e: Exception) {
       Log.e(TAG, "Failed to upload image bytes to $storagePath: ${e.message}", e)
-      UploadResult(success = false, url = "", error = e.message ?: "Unknown error")
+      UploadResult(success = false, url = "", error = e.message ?: UNKNOWN_ERROR)
     }
   }
 
@@ -112,7 +114,7 @@ object ImageUploader {
     }
 
     return try {
-      val fileUri = Uri.parse(localUri)
+      val fileUri = localUri.toUri()
 
       storageRef.putFile(fileUri).await()
       val downloadUrl = storageRef.downloadUrl.await()
@@ -120,7 +122,7 @@ object ImageUploader {
       UploadResult(success = true, url = downloadUrl.toString())
     } catch (e: Exception) {
       Log.e(TAG, "Failed to upload image: ${e.message}", e)
-      UploadResult(success = false, url = localUri, error = e.message ?: "Unknown error")
+      UploadResult(success = false, url = localUri, error = e.message ?: UNKNOWN_ERROR)
     }
   }
 

@@ -1,10 +1,12 @@
 package com.android.ootd.model.user
 
+import android.net.Uri
 import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.register.RegisterViewModel
+import com.android.ootd.utils.ImageUploader
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -535,5 +537,112 @@ class RegisterViewModelTest {
 
     assertEquals("User must be at least 13", viewModel.uiState.value.errorMsg)
     assertFalse(viewModel.uiState.value.registered)
+  }
+
+  // ========== Profile Picture Upload Tests ==========
+
+  @Test
+  fun uploadProfilePicture_successPath_uploadsAndUsesUrl() = runTest {
+    val uploadedUrl = "https://storage.test/profile_pictures/$testUid.jpg"
+    val localUri = Uri.parse("file:///local/pic.jpg")
+
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { _, _ -> ImageUploader.UploadResult(true, uploadedUrl) })
+
+    coEvery { userRepository.createUser(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    vm.setProfilePicture(localUri)
+    vm.registerUser()
+    advanceUntilIdle()
+
+    assertTrue(vm.uiState.value.registered)
+    coVerify { userRepository.createUser("testUser", testUid, testUid, uploadedUrl) }
+  }
+
+  @Test
+  fun uploadProfilePicture_failurePath_usesOriginalUrl() = runTest {
+    val localUri = Uri.parse("file:///local/pic.jpg")
+
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { uri, _ -> ImageUploader.UploadResult(false, uri, "Upload failed") })
+
+    coEvery { userRepository.createUser(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    vm.setProfilePicture(localUri)
+    vm.registerUser()
+    advanceUntilIdle()
+
+    assertTrue(vm.uiState.value.registered)
+    coVerify { userRepository.createUser("testUser", testUid, testUid, localUri.toString()) }
+  }
+
+  @Test
+  fun uploadProfilePicture_nullUri_skipsUpload() = runTest {
+    var uploaderCalled = false
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { _, _ ->
+              uploaderCalled = true
+              ImageUploader.UploadResult(true, "")
+            })
+
+    coEvery { userRepository.createUser(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    // Don't set profile picture
+    vm.registerUser()
+    advanceUntilIdle()
+
+    assertTrue(vm.uiState.value.registered)
+    assertFalse(uploaderCalled)
+    coVerify { userRepository.createUser("testUser", testUid, testUid, "") }
+  }
+
+  @Test
+  fun uploadProfilePicture_nullUser_returnsOriginalUrl() = runTest {
+    every { auth.currentUser } returns null
+
+    var uploaderCalled = false
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { _, _ ->
+              uploaderCalled = true
+              ImageUploader.UploadResult(true, "url")
+            })
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    vm.setProfilePicture(Uri.parse("file:///pic.jpg"))
+    vm.registerUser()
+    advanceUntilIdle()
+
+    // Registration should fail because user is null (different error path)
+    assertFalse(uploaderCalled)
   }
 }
