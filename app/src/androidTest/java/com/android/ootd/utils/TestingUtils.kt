@@ -275,7 +275,8 @@ fun signOutAndVerifyAuthScreen(
  * @param testUsername The username to be entered in the registration form
  */
 fun enterUsername(composeTestRule: ComposeContentTestRule, testUsername: String) {
-  verifyElementAppearsWithTimer(composeTestRule, RegisterScreenTestTags.INPUT_REGISTER_UNAME)
+  verifyElementAppearsWithTimer(
+      composeTestRule, RegisterScreenTestTags.INPUT_REGISTER_UNAME, useUnmergedTree = true)
   composeTestRule.enterUsername(testUsername)
   composeTestRule.waitForIdle()
 
