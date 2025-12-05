@@ -17,9 +17,11 @@ import com.android.ootd.ui.register.RegisterScreenTestTags
 
 /** Disclaimer: Parts of the code have been written with the help of AI */
 fun ComposeTestRule.enterUsername(text: String) {
-  onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performClick()
-  onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performTextClearance()
-  onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME).performTextInput(text)
+  onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME, useUnmergedTree = true).performClick()
+  onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME, useUnmergedTree = true)
+      .performTextClearance()
+  onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME, useUnmergedTree = true)
+      .performTextInput(text)
 }
 
 fun ComposeTestRule.enterDate(date: String) {

@@ -4,11 +4,15 @@ import NotificationRepository
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.consent.ConsentRepository
+import com.android.ootd.model.consent.ConsentRepositoryFirestore
+import com.android.ootd.model.consent.ConsentRepositoryProvider
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryFirestore
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryFirestore
+import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.notifications.NotificationRepositoryFirestore
 import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.post.OutfitPostRepository
@@ -55,6 +59,9 @@ abstract class BaseTest() {
   val outfitPostRepository: OutfitPostRepository
     get() = OutfitPostRepositoryProvider.repository
 
+  val consentRepository: ConsentRepository
+    get() = ConsentRepositoryProvider.repository
+
   val currentUser: FirebaseUser
     get() {
       return FirebaseEmulator.auth.currentUser!!
@@ -80,6 +87,8 @@ abstract class BaseTest() {
     OutfitPostRepositoryProvider.repository =
         OutfitPostRepositoryFirestore(FirebaseEmulator.firestore, FirebaseEmulator.storage)
     UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
+    ConsentRepositoryProvider.repository = ConsentRepositoryFirestore(FirebaseEmulator.firestore)
+    ItemsRepositoryProvider.repository = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
   }
 
   @After

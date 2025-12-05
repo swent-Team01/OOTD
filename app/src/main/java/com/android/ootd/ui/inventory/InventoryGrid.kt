@@ -38,7 +38,6 @@ fun InventoryGrid(
 ) {
   // Group items by category
   val groupedItems = items.groupBy { it.category }
-
   LazyVerticalGrid(
       columns = GridCells.Fixed(3),
       modifier = modifier.fillMaxSize().testTag(InventoryScreenTestTags.ITEMS_GRID),

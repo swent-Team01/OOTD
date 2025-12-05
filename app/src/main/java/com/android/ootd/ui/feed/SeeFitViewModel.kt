@@ -12,10 +12,12 @@ import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
+import com.android.ootd.model.posts.OutfitPost
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * UI state for the SeeFit screen.
@@ -48,6 +50,7 @@ class SeeFitViewModel(
 
   private companion object {
     const val TAG = "SeeFitViewModel"
+    const val NETWORK_TIMEOUT_MILLIS = 2000L
   }
 
   private val _uiState = MutableStateFlow(SeeFitUIState())
@@ -66,21 +69,43 @@ class SeeFitViewModel(
     }
     viewModelScope.launch {
       _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+      var cachedItemsSucceeded = false
       try {
-        // Gets the post owner ID otherwise it throws an exception caught below
-        val postOwner = feedRepository.getPostById(postUuid)?.ownerId.orEmpty()
-        val items = itemsRepository.getFriendItemsForPost(postUuid, postOwner)
-        // Get the current user ID to determine ownership
-        val currentUserId = accountService.currentUserId
-        // Determine if the current user is the owner of the post
-        val isOwner = currentUserId.isNotEmpty() && currentUserId == postOwner
-        _uiState.value =
-            _uiState.value.copy(
-                items = items,
-                postOwnerId = postOwner,
-                isOwner = isOwner,
-                isLoading = false,
-                errorMessage = null)
+        // Try offline/cached post first (no exception)
+        val cachedPost =
+            try {
+              feedRepository.getPostById(postUuid) // Firestore returns cached if offline
+            } catch (_: Exception) {
+              null
+            }
+        if (cachedPost != null) {
+          // Load cached items offline
+          cachedItemsSucceeded = updateUiWithPost(cachedPost)
+        }
+
+        // Best effort online refresh (2s timeout)
+        val freshPost =
+            withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { feedRepository.getPostById(postUuid) }
+
+        if (freshPost == null) {
+          if (cachedPost == null) {
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Unable to load this fit. Please check your connection.")
+          }
+          return@launch
+        }
+        val freshItemsSucceeded = updateUiWithPost(freshPost)
+
+        // If both cached and fresh item fetches failed, show error
+        if (!cachedItemsSucceeded && !freshItemsSucceeded) {
+          _uiState.value =
+              _uiState.value.copy(
+                  isLoading = false,
+                  errorMessage = "Unable to load items for this fit. Please try again later.")
+        }
+
         refreshStarredItems()
       } catch (e: Exception) {
         Log.e("SeeFitViewModel", "Failed to load items for post", e)
@@ -140,5 +165,28 @@ class SeeFitViewModel(
         setErrorMessage("Couldn't update wishlist. Please try again.")
       }
     }
+  }
+
+  private suspend fun updateUiWithPost(post: OutfitPost): Boolean {
+    val items =
+        try {
+          itemsRepository.getFriendItemsForPost(post.postUID, post.ownerId)
+        } catch (_: Exception) {
+          // In offline mode, we tolerate empty but still consider it a failure for error reporting
+          // In online mode, return null to signal failure immediately
+          return false
+        }
+
+    val currentUserId = accountService.currentUserId
+    val isOwner = currentUserId.isNotEmpty() && currentUserId == post.ownerId
+
+    _uiState.value =
+        _uiState.value.copy(
+            items = items,
+            postOwnerId = post.ownerId,
+            isOwner = isOwner,
+            isLoading = false,
+            errorMessage = null)
+    return true
   }
 }
