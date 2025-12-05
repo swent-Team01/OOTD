@@ -445,7 +445,7 @@ class AccountRepositoryFirestore(
 
       withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await() }
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Account item add timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -462,7 +462,7 @@ class AccountRepositoryFirestore(
       withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await() }
       Log.d("AccountRepositoryFirestore", "Item removed from Firestore")
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w("AccountRepositoryFirestore", "Account item remove timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -512,7 +512,7 @@ class AccountRepositoryFirestore(
         userRef.update("starredItemUids", FieldValue.arrayUnion(itemUid)).await()
       }
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Starred item add timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -529,7 +529,7 @@ class AccountRepositoryFirestore(
         userRef.update("starredItemUids", FieldValue.arrayRemove(itemUid)).await()
       }
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Starred item remove timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -567,7 +567,7 @@ class AccountRepositoryFirestore(
 
     try {
       withTimeout(TIMEOUT) { userRef.update("starredItemUids", operation).await() }
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Starred item toggle timed out (offline), queued.")
     }
 

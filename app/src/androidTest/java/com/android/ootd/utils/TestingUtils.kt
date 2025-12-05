@@ -56,7 +56,6 @@ fun verifySignInScreenAppears(composeTestRule: ComposeContentTestRule) {
 }
 
 fun verifyRegisterScreenAppears(composeTestRule: ComposeContentTestRule) {
-  composeTestRule.onNodeWithTag(RegisterScreenTestTags.APP_LOGO).assertIsDisplayed()
   composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
   composeTestRule
       .onNodeWithTag(RegisterScreenTestTags.INPUT_REGISTER_UNAME)

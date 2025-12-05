@@ -1,5 +1,6 @@
 package com.android.ootd.ui.register
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,16 +8,19 @@ import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.account.MissingLocationException
 import com.android.ootd.model.account.TakenUserException
-import com.android.ootd.model.authentication.AccountService
-import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.model.user.TakenUsernameException
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.ui.map.LocationSelectionViewModel
+import com.android.ootd.utils.ImageUploader
 import com.android.ootd.utils.UsernameValidator
 import com.google.firebase.auth.FirebaseAuth
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,7 +37,8 @@ import kotlinx.coroutines.launch
  *   only letters, numbers, and underscores. Empty string by default.
  * @property dateOfBirth The user's date of birth in string format. Empty string by default.
  * @property userEmail The user's email address. Empty string by default.
- * @property profilePicture The URL or path to the user's profile picture. Empty string by default.
+ * @property localProfilePictureUri The local URI of the selected profile picture for preview. This
+ *   stays local until registration. Null by default.
  * @property errorMsg An optional error message to display to the user when validation or
  *   registration fails. Null when no error is present.
  * @property isLoading Indicates whether a registration operation is currently in progress. False by
@@ -46,7 +51,7 @@ data class RegisterUserViewModel(
     val username: String = "",
     val dateOfBirth: String = "",
     val userEmail: String = "",
-    val profilePicture: String = "",
+    val localProfilePictureUri: Uri? = null,
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false,
@@ -63,13 +68,16 @@ data class RegisterUserViewModel(
  * @property accountRepository The repository used to create accounts.
  * @property locationSelectionViewModel The ViewModel handling location selection logic.
  * @property auth Firebase authentication instance.
+ * @property uploader Function to upload profile pictures. Defaults to ImageUploader.uploadImage.
  */
 class RegisterViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val accountService: AccountService = AccountServiceFirebase(),
     val locationSelectionViewModel: LocationSelectionViewModel = LocationSelectionViewModel(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val uploader: suspend (String, String) -> ImageUploader.UploadResult = { uri, path ->
+      ImageUploader.uploadImage(uri, path)
+    }
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(RegisterUserViewModel())
@@ -108,6 +116,21 @@ class RegisterViewModel(
   }
 
   /**
+   * Updates the profile picture in the UI state with a local URI for immediate preview. The image
+   * will only be uploaded to Firebase Storage when registerUser() is called.
+   *
+   * @param profilePicUri The local URI of the selected profile picture.
+   */
+  fun setProfilePicture(profilePicUri: Uri) {
+    _uiState.value = _uiState.value.copy(localProfilePictureUri = profilePicUri)
+  }
+
+  /** Clears the profile picture from the UI state. */
+  fun clearProfilePicture() {
+    _uiState.value = _uiState.value.copy(localProfilePictureUri = null)
+  }
+
+  /**
    * Updates the username in the UI state.
    *
    * @param uname The new username value.
@@ -130,8 +153,8 @@ class RegisterViewModel(
    * registration flags.
    */
   fun refresh() {
-    clearErrorMsg()
-    _uiState.value = _uiState.value.copy(isLoading = false, registered = false)
+    _uiState.value = RegisterUserViewModel()
+    locationSelectionViewModel.clearSelectedLocation()
   }
 
   /**
@@ -140,6 +163,33 @@ class RegisterViewModel(
    */
   fun markRegisteredHandled() {
     _uiState.value = _uiState.value.copy(registered = false)
+  }
+
+  /**
+   * Validates that the user is at least 13 years old.
+   *
+   * @param dateOfBirth The date of birth in "dd/MM/yyyy" format.
+   * @return Error message if validation fails, null otherwise.
+   */
+  private fun validateAge(dateOfBirth: String): String? {
+    if (dateOfBirth.isBlank()) {
+      return "Date of birth is required"
+    }
+
+    return try {
+      val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+      val birthDate = LocalDate.parse(dateOfBirth, formatter)
+      val today = LocalDate.now()
+      val age = Period.between(birthDate, today).years
+
+      if (age < 13) {
+        "User must be at least 13"
+      } else {
+        null
+      }
+    } catch (_: DateTimeParseException) {
+      "Invalid date format"
+    }
   }
 
   /**
@@ -159,31 +209,55 @@ class RegisterViewModel(
       return
     }
 
+    val ageError = validateAge(uiState.value.dateOfBirth)
+    if (ageError != null) {
+      _uiState.value = _uiState.value.copy(errorMsg = ageError)
+      return
+    }
+
     showLoading(true)
-    loadUser(uname)
+    loadUser(uname, uiState.value.localProfilePictureUri)
   }
 
   /**
-   * Attempts to create a user with the given username. Handles success, [TakenUsernameException],
+   * Attempts to create a user with the given username and profile picture. The profile picture is
+   * uploaded to Firebase Storage during this process. Handles success, [TakenUsernameException],
    * and other exceptions.
    *
    * @param username The username to register.
+   * @param localProfilePictureUri The local URI of the profile picture to upload, or null if none.
    */
-  private fun loadUser(username: String) {
+  private fun loadUser(username: String, localProfilePictureUri: Uri?) {
     viewModelScope.launch {
       try {
         val userId = auth.currentUser!!.uid
-        val user = User(uid = userId, ownerId = userId, username = username)
         val email = auth.currentUser!!.email.orEmpty()
         val location = locationSelectionViewModel.uiState.value.selectedLocation ?: emptyLocation
+
         if (location == emptyLocation) throw MissingLocationException()
+
+        // Upload the profile picture to Firebase Storage (only happens when "save" is clicked)
+        val uploadedPictureUrl =
+            if (localProfilePictureUri != null) {
+              uploadProfilePicture(localProfilePictureUri.toString())
+            } else {
+              ""
+            }
+
+        val user =
+            User(
+                uid = userId,
+                ownerId = userId,
+                username = username,
+                profilePicture = uploadedPictureUrl)
+
+        // Create account with the uploaded picture URL
         accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
+
+        // Create user with the uploaded picture URL
         userRepository.createUser(
-            username,
-            userId,
-            ownerId = userId,
-            profilePicture =
-                user.profilePicture) // TODO: Add profile picture to register (empty string for now)
+            username, userId, ownerId = userId, profilePicture = uploadedPictureUrl)
+
         _uiState.value = _uiState.value.copy(registered = true, username = username)
       } catch (e: Exception) {
         when (e) {
@@ -219,6 +293,23 @@ class RegisterViewModel(
         showLoading(false)
       }
     }
+  }
+
+  /**
+   * Uploads a profile picture to Firebase Storage and returns the download URL.
+   *
+   * @param url The local URI or path of the profile picture to upload.
+   * @return The Firebase Storage download URL, or the original URL if blank or if upload fails.
+   */
+  private suspend fun uploadProfilePicture(url: String): String {
+    val userId = auth.currentUser?.uid ?: return url
+    val result = uploader(url, "profile_pictures/$userId.jpg")
+
+    if (!result.success) {
+      Log.w("RegisterViewModel", "Failed to upload profile picture: ${result.error}")
+    }
+
+    return result.url
   }
 
   // ----------------- GPS Location helpers -----------------

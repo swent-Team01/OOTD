@@ -19,9 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -113,15 +116,25 @@ fun ProfilePicture(
         error = defaultAvatarPainter,
         contentScale = ContentScale.Crop,
         modifier = modifier.size(size).clip(shape))
-  } else {
+  } else if (username.isNotBlank()) {
     Box(
         modifier = Modifier.size(size).clip(shape).background(Primary),
         contentAlignment = Alignment.Center) {
           ShowText(
-              text = username.firstOrNull()?.uppercase() ?: "",
+              text = username.first().uppercase(),
               style = textStyle,
               color = Secondary,
               modifier = modifier) // Only test tag
+        }
+  } else {
+    Box(
+        modifier = modifier.size(size).clip(shape).background(color.tertiary),
+        contentAlignment = Alignment.Center) {
+          Icon(
+              imageVector = Icons.Default.Person,
+              contentDescription = "Default Profile Picture",
+              tint = color.onSurfaceVariant,
+              modifier = Modifier.size(size * 0.6f))
         }
   }
 }

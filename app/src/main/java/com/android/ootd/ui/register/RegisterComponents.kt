@@ -1,7 +1,6 @@
 package com.android.ootd.ui.register
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -20,15 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.ootd.R
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.Bodoni
@@ -102,11 +98,6 @@ internal fun UpdateFieldColors(fieldState: FieldState, hasError: Boolean) {
 
 @Composable
 internal fun RegisterHeader() {
-  Image(
-      painter = painterResource(id = R.drawable.app_logo),
-      contentDescription = "Logo",
-      contentScale = ContentScale.FillBounds,
-      modifier = Modifier.width(237.dp).height(237.dp).testTag(RegisterScreenTestTags.APP_LOGO))
 
   Text(
       text = "Welcome\nTime to drop a fit.",
