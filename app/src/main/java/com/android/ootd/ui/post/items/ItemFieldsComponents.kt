@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,10 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -49,7 +46,6 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.CategoryNormalizer
 
 val CONDITION_OPTIONS = listOf("New", "Like new", "Used", "Vintage", "Very Used")
 val STYLE_SUGGESTIONS =
@@ -93,26 +89,26 @@ fun ItemPrimaryFields(
     onLinkChange: (String) -> Unit,
     linkTag: String,
 ) {
-  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+  Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
     BrandField(brand = brand, onChange = onBrandChange, testTag = brandTag)
 
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      Box(modifier = Modifier.weight(1f)) {
-        PriceField(price = price, onChange = onPriceChange, testTag = priceTag)
-      }
-      Box(modifier = Modifier.weight(1f)) {
-        CurrencyField(currency = currency, onChange = onCurrencyChange, testTag = currencyTag)
-      }
+    // Price row with chip-based currency selector
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      PriceField(price = price, onChange = onPriceChange, testTag = priceTag)
+      CurrencyChipSelector(
+          selectedCurrency = currency.ifEmpty { "CHF" },
+          onCurrencySelected = onCurrencyChange,
+          containerTestTag = currencyTag)
     }
 
-    SizeField(size = size, onChange = onSizeChange, testTag = sizeTag)
+    // Size section with quick-select chips
+    SizeFieldWithChips(size = size, onChange = onSizeChange, testTag = sizeTag)
 
     LinkField(link = link, onChange = onLinkChange, testTag = linkTag)
   }
 }
 
-/** Reusable category dropdown field. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Reusable category field with quick-select chips. This field is mandatory. */
 @Composable
 fun CategoryField(
     category: String,
@@ -122,50 +118,15 @@ fun CategoryField(
     onValidate: (() -> Unit)? = null,
     dropdownTestTag: String? = null
 ) {
-  var expanded by remember { mutableStateOf(false) }
-  val categories = CategoryNormalizer.VALID_CATEGORIES
-
-  ExposedDropdownMenuBox(
-      expanded = expanded,
-      onExpandedChange = { expanded = it },
-      modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = category,
-            onValueChange = {}, // Read-only: selection only
-            readOnly = true,
-            label = { Text("Item Category*") },
-            placeholder = { Text("Select the Item Category") },
-            isError = invalidCategory != null,
-            supportingText =
-                invalidCategory?.let { msg ->
-                  { Text(text = msg, color = MaterialTheme.colorScheme.error) }
-                },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier =
-                Modifier.menuAnchor(
-                        type = ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true)
-                    .fillMaxWidth()
-                    .testTag(testTag),
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors())
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier =
-                (dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
-                    ?: Modifier.fillMaxWidth())) {
-              categories.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                      onChange(option)
-                      onValidate?.invoke()
-                      expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding)
-              }
-            }
-      }
+  CategoryQuickSelector(
+      selectedCategory = category,
+      onCategorySelected = { newCategory ->
+        onChange(newCategory)
+        onValidate?.invoke()
+      },
+      isError = invalidCategory != null,
+      errorMessage = invalidCategory,
+      containerTestTag = dropdownTestTag ?: testTag)
 }
 
 /** Reusable text field for type input with autocomplete suggestions */
@@ -269,6 +230,47 @@ fun SizeField(size: String, onChange: (String) -> Unit, testTag: String) {
       placeholder = "e.g., M, 42, One-size",
       testTag = testTag,
       maxChars = SIZE_MAX_LENGTH)
+}
+
+/**
+ * Enhanced size field with quick-select chips for standard sizes and a text field for custom sizes.
+ */
+@Composable
+fun SizeFieldWithChips(
+    size: String,
+    onChange: (String) -> Unit,
+    testTag: String,
+    sizes: List<String> = STANDARD_SIZES
+) {
+  val isStandardSize = sizes.contains(size)
+
+  Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text(
+        text = "Size",
+        style = Typography.bodyMedium.copy(color = Primary, fontWeight = FontWeight.Medium),
+        modifier = Modifier.padding(start = 4.dp))
+
+    // Quick-select chips for standard sizes
+    SizeQuickSelector(
+        selectedSize = if (isStandardSize) size else "",
+        onSizeSelected = onChange,
+        containerTestTag = "${testTag}_chips")
+
+    // Custom size input for non-standard sizes
+    OutlinedTextField(
+        value = if (isStandardSize) "" else size,
+        onValueChange = { newValue ->
+          if (newValue.length <= SIZE_MAX_LENGTH) {
+            onChange(newValue)
+          }
+        },
+        label = { Text("Or enter custom size") },
+        placeholder = { Text("e.g., 42, One-size, EU 38") },
+        textStyle = Typography.bodyMedium,
+        colors = commonTextFieldColors(),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth().testTag(testTag))
+  }
 }
 
 /** Autocomplete-style field for item style suggestions. */
