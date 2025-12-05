@@ -51,6 +51,8 @@ object FakeJwtGenerator {
 class FakeCredentialManager private constructor(private val context: Context) :
     CredentialManager by CredentialManager.create(context) {
   companion object {
+    lateinit var mockGetCredentialResponse: GetCredentialResponse
+
     // Creates a mock CredentialManager that always returns a CustomCredential
     // containing the given fakeUserIdToken when getCredential() is called.
     fun create(fakeUserIdToken: String): CredentialManager {
@@ -59,7 +61,7 @@ class FakeCredentialManager private constructor(private val context: Context) :
       every { googleIdTokenCredential.idToken } returns fakeUserIdToken
       every { GoogleIdTokenCredential.createFrom(any()) } returns googleIdTokenCredential
       val fakeCredentialManager = mockk<FakeCredentialManager>()
-      val mockGetCredentialResponse = mockk<GetCredentialResponse>()
+      mockGetCredentialResponse = mockk<GetCredentialResponse>()
 
       val fakeCustomCredential =
           CustomCredential(
@@ -72,6 +74,18 @@ class FakeCredentialManager private constructor(private val context: Context) :
       } returns mockGetCredentialResponse
 
       return fakeCredentialManager
+    }
+
+    fun changeCredential(fakeUserIdToken: String) {
+      mockkObject(GoogleIdTokenCredential)
+      val googleIdTokenCredential = mockk<GoogleIdTokenCredential>()
+      every { googleIdTokenCredential.idToken } returns fakeUserIdToken
+      every { GoogleIdTokenCredential.createFrom(any()) } returns googleIdTokenCredential
+      val fakeCustomCredential =
+          CustomCredential(
+              type = TYPE_GOOGLE_ID_TOKEN_CREDENTIAL,
+              data = bundleOf("id_token" to fakeUserIdToken))
+      every { mockGetCredentialResponse.credential } returns fakeCustomCredential
     }
   }
 }

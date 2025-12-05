@@ -26,7 +26,7 @@ interface ItemsTest {
 
   @Before
   fun setUp() {
-    ItemsRepositoryProvider.setRepository(createInitializedRepository())
+    ItemsRepositoryProvider.repository = createInitializedRepository()
   }
 
   fun ComposeTestRule.ensureVisible(tag: String) {

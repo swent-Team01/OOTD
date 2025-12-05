@@ -126,7 +126,7 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
   // -------- Error handling --------
 
   @Test
-  fun getFeed_withCorruptedOrInvalidData_returnsEmptyList() = runTest {
+  fun getFeed_filtersCorruptedOrInvalidData() = runTest {
     // Add valid post first
     feedRepository.addPost(samplePost("valid", ts = 1L))
 
@@ -139,7 +139,8 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
 
     // Corrupted data should be filtered out
     val result = feedRepository.getFeedForUids(listOf(currentUid))
-    assertTrue(result.isEmpty())
+    // Only the valid post should be returned
+    assertEquals(1, result.size)
   }
 
   @Test

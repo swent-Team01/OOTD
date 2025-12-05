@@ -69,6 +69,7 @@ object AccountPageTestTags {
   const val POST_TAG = "postTag"
   const val POSTS_TAB = "accountPagePostsTab"
   const val STARRED_TAB = "accountPageStarredTab"
+  const val OUTFIT_GRID_POST = "outfitGridPost"
 }
 
 @Composable
