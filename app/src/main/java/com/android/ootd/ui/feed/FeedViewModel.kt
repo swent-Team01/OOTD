@@ -94,6 +94,16 @@ open class FeedViewModel(
   /** Refreshes the feed posts from Firestore for the current account. */
   fun refreshFeedFromFirestore() {
     val account = _uiState.value.currentAccount ?: return
+
+    val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+    val postedOffline =
+        (cachedPublicFeed + cachedPrivateFeed).any { post ->
+          post.ownerId == account.uid && post.timestamp >= todayStart
+        }
+
+    _uiState.value = _uiState.value.copy(hasPostedToday = postedOffline)
+
     viewModelScope.launch {
 
       // 1) Prefill from Firestore local cache immediately
@@ -153,9 +163,6 @@ open class FeedViewModel(
         return@launch
       }
 
-      val todayStart =
-          LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
       val filteredPost =
           if (_uiState.value.isPublicFeed) {
             allPosts
@@ -183,7 +190,7 @@ open class FeedViewModel(
       }
 
       if (_uiState.value.isPublicFeed) {
-        cachedPublicFeed = allPosts
+        cachedPublicFeed = filteredPost
       } else {
         cachedPrivateFeed = filteredPost
       }
@@ -191,10 +198,7 @@ open class FeedViewModel(
       val hasPostedToday =
           withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { repository.hasPostedToday(account.uid) }
               ?: false
-      val postedOffline =
-          (cachedPublicFeed + cachedPrivateFeed).any { post ->
-            post.ownerId == account.uid && post.timestamp >= todayStart
-          }
+
       val finalHasPostedToday = hasPostedToday || postedOffline
 
       _uiState.value =
