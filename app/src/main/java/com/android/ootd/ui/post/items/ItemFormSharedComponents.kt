@@ -99,12 +99,6 @@ fun AdditionalDetailsSection(
                     onConditionSelected = state.onConditionChange,
                     containerTestTag = tags.conditionField)
 
-                // Material text field
-                MaterialField(
-                    materialText = state.material,
-                    onChange = state.onMaterialChange,
-                    testTag = tags.materialField)
-
                 // Fit Type with quick-select chips
                 FitTypeQuickSelector(
                     selectedFitType = state.fitType,
@@ -117,6 +111,11 @@ fun AdditionalDetailsSection(
                     onStyleSelected = state.onStyleChange,
                     containerTestTag = tags.styleField)
 
+                // Material text field
+                MaterialField(
+                    materialText = state.material,
+                    onChange = state.onMaterialChange,
+                    testTag = tags.materialField)
                 // Notes text field
                 NotesField(
                     notes = state.notes, onChange = state.onNotesChange, testTag = tags.notesField)

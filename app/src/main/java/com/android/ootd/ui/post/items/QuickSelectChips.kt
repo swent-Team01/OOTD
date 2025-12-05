@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,13 +37,7 @@ import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.CategoryNormalizer
 
 /** Standard clothing sizes for quick selection */
-val STANDARD_SIZES = listOf("XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL")
-
-/** Numeric sizes commonly used for shoes and pants */
-val NUMERIC_SIZES = (36..48).map { it.toString() }
-
-/** One-size option */
-val ONE_SIZE = listOf("One-size")
+val STANDARD_SIZES = listOf("One-size", "XS", "S", "M", "L", "XL", "XXL")
 
 object QuickSelectChipsTestTags {
   const val SIZE_CHIP_PREFIX = "sizeChip_"
@@ -280,16 +275,14 @@ fun CategoryQuickSelector(
               text = label,
               style =
                   Typography.bodyMedium.copy(
-                      color = if (isError) androidx.compose.ui.graphics.Color.Red else Primary,
-                      fontWeight = FontWeight.Medium),
+                      color = if (isError) Red else Primary, fontWeight = FontWeight.Medium),
               modifier = Modifier.padding(start = 4.dp))
           if (selectedCategory.isEmpty()) {
             Text(
                 text = "(required)",
                 style =
                     Typography.labelSmall.copy(
-                        color = if (isError) androidx.compose.ui.graphics.Color.Red else Tertiary,
-                        fontWeight = FontWeight.Normal))
+                        color = if (isError) Red else Tertiary, fontWeight = FontWeight.Normal))
           }
         }
 
@@ -312,7 +305,7 @@ fun CategoryQuickSelector(
     if (isError && errorMessage != null) {
       Text(
           text = errorMessage,
-          style = Typography.labelSmall.copy(color = androidx.compose.ui.graphics.Color.Red),
+          style = Typography.labelSmall.copy(color = Red),
           modifier = Modifier.padding(start = 4.dp))
     }
   }
@@ -324,7 +317,7 @@ fun CurrencyChipSelector(
     selectedCurrency: String,
     onCurrencySelected: (String) -> Unit,
     modifier: Modifier = Modifier,
-    currencies: List<String> = listOf("CHF", "USD", "EUR", "GBP"),
+    currencies: List<String> = listOf("CHF", "USD", "EUR", "GBP", "YEN"),
     label: String? = "Currency",
     testTagPrefix: String = "currencyChip_",
     containerTestTag: String = "currencySelector"

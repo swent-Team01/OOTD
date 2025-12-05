@@ -12,13 +12,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -47,25 +43,12 @@ import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 
-val CONDITION_OPTIONS = listOf("New", "Like new", "Used", "Vintage", "Very Used")
-val STYLE_SUGGESTIONS =
-    listOf(
-        "Casual", "Formal", "Streetwear", "Vintage", "Business", "Sporty", "Smart casual", "Chic")
-val FIT_TYPE_SUGGESTIONS =
-    listOf("Slim", "Regular", "Relaxed", "Oversized", "Skinny", "Tailored", "Boxy", "Loose")
-
 private const val BRAND_MAX_LENGTH = 40
 private const val MATERIAL_MAX_LENGTH = 100
 private const val SIZE_MAX_LENGTH = 20
 private const val LINK_MAX_LENGTH = 160
 private const val NOTES_MAX_LENGTH = 250
 private const val TYPE_MAX_LENGTH = 40
-private const val STYLE_MAX_LENGTH = 40
-private const val FIT_TYPE_MAX_LENGTH = 30
-
-fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<String> {
-  return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
-}
 
 /**
  * Groups the main item inputs (brand, price/currency, size, and link) with consistent spacing so
@@ -220,18 +203,6 @@ fun MaterialField(materialText: String, onChange: (String) -> Unit, testTag: Str
       maxChars = MATERIAL_MAX_LENGTH)
 }
 
-/** Reusable text field for size input */
-@Composable
-fun SizeField(size: String, onChange: (String) -> Unit, testTag: String) {
-  CommonTextField(
-      value = size,
-      onChange = onChange,
-      label = "Size",
-      placeholder = "e.g., M, 42, One-size",
-      testTag = testTag,
-      maxChars = SIZE_MAX_LENGTH)
-}
-
 /**
  * Enhanced size field with quick-select chips for standard sizes and a text field for custom sizes.
  */
@@ -273,50 +244,6 @@ fun SizeFieldWithChips(
   }
 }
 
-/** Autocomplete-style field for item style suggestions. */
-@Composable
-fun StyleField(
-    style: String,
-    onChange: (String) -> Unit,
-    testTag: String,
-    dropdownTestTag: String,
-    suggestions: List<String> = STYLE_SUGGESTIONS
-) {
-  SuggestionsDropdownField(
-      value = style,
-      onValueChange = onChange,
-      suggestions = suggestions,
-      visuals =
-          SuggestionsDropdownVisuals(
-              label = "Item style",
-              placeholder = "e.g., Streetwear, Formal",
-              textFieldTag = testTag,
-              dropdownTestTag = dropdownTestTag),
-      maxChars = STYLE_MAX_LENGTH)
-}
-
-/** Autocomplete-style field for item fit type suggestions. */
-@Composable
-fun FitTypeField(
-    fitType: String,
-    onChange: (String) -> Unit,
-    testTag: String,
-    dropdownTestTag: String,
-    suggestions: List<String> = FIT_TYPE_SUGGESTIONS
-) {
-  SuggestionsDropdownField(
-      value = fitType,
-      onValueChange = onChange,
-      suggestions = suggestions,
-      visuals =
-          SuggestionsDropdownVisuals(
-              label = "Item fit type",
-              placeholder = "e.g., oversized, slim",
-              textFieldTag = testTag,
-              dropdownTestTag = dropdownTestTag),
-      maxChars = FIT_TYPE_MAX_LENGTH)
-}
-
 /** Reusable text field for link input */
 @Composable
 fun LinkField(link: String, onChange: (String) -> Unit, testTag: String) {
@@ -352,53 +279,6 @@ fun PriceField(
       textStyle = Typography.bodyMedium,
       colors = commonTextFieldColors(),
       modifier = Modifier.fillMaxWidth().testTag(testTag))
-}
-
-/** Simple currency dropdown similar to ConditionDropdown with fixed options. */
-@Composable
-fun CurrencyField(
-    currency: String,
-    onChange: (String) -> Unit,
-    testTag: String,
-    dropdownTestTag: String? = null,
-    label: String = "Currency",
-    options: List<String> =
-        listOf("CHF", "USD", "EUR", "JPY", "GBP", "CAD", "AUD", "CNY", "V-BUCKS")
-) {
-  SelectionDropdownField(
-      value = currency,
-      onOptionSelected = onChange,
-      options = options,
-      visuals =
-          SelectionDropdownVisuals(
-              label = label,
-              placeholder = "Select currency",
-              textFieldTag = testTag,
-              toggleContentDescription = "Toggle currency options",
-              dropdownTestTag = dropdownTestTag))
-}
-
-/** Shared condition dropdown used by add/edit screens. */
-@Composable
-fun ConditionDropdown(
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    testTag: String,
-    expandedInitially: Boolean = false,
-    options: List<String> = CONDITION_OPTIONS
-) {
-  SelectionDropdownField(
-      value = condition.ifEmpty { "" },
-      onOptionSelected = onConditionChange,
-      visuals =
-          SelectionDropdownVisuals(
-              label = "Condition",
-              placeholder = "Select condition",
-              textFieldTag = testTag,
-              toggleContentDescription = "Toggle condition options",
-              clearOptionLabel = "Clear condition"),
-      options = options,
-      expandedInitially = expandedInitially)
 }
 
 /** Reusable multi-line notes field sharing the same styling as other inputs. */
@@ -499,62 +379,9 @@ fun commonTextFieldColors() =
         focusedTextColor = Primary,
         unfocusedTextColor = Primary)
 
-/**
- * Shared dropdown used by condition/currency pickers, wiring label, placeholder, and optional
- * "clear" action while keeping the same Material styling everywhere.
- */
-@Composable
-private fun SelectionDropdownField(
-    value: String,
-    onOptionSelected: (String) -> Unit,
-    options: List<String>,
-    visuals: SelectionDropdownVisuals,
-    expandedInitially: Boolean = false
-) {
-  var expanded by remember { mutableStateOf(expandedInitially) }
-  Column(Modifier.fillMaxWidth()) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        readOnly = true,
-        label = { Text(visuals.label) },
-        placeholder = { Text(visuals.placeholder) },
-        trailingIcon = {
-          IconButton(onClick = { expanded = !expanded }) {
-            Icon(
-                imageVector =
-                    if (expanded) Icons.Filled.KeyboardArrowDown
-                    else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = visuals.toggleContentDescription,
-                tint = Primary)
-          }
-        },
-        textStyle = Typography.bodyMedium.copy(color = Primary),
-        colors = commonTextFieldColors(),
-        modifier = Modifier.fillMaxWidth().testTag(visuals.textFieldTag))
-    val menuModifier =
-        visuals.dropdownTestTag?.let { Modifier.fillMaxWidth().testTag(it) }
-            ?: Modifier.fillMaxWidth()
-    DropdownMenu(
-        expanded = expanded, onDismissRequest = { expanded = false }, modifier = menuModifier) {
-          visuals.clearOptionLabel?.let { clearLabel ->
-            DropdownMenuItem(
-                text = { Text(clearLabel, style = Typography.bodyMedium.copy(color = Primary)) },
-                onClick = {
-                  onOptionSelected("")
-                  expanded = false
-                })
-          }
-          options.forEach { opt ->
-            DropdownMenuItem(
-                text = { Text(opt, style = Typography.bodyMedium.copy(color = Primary)) },
-                onClick = {
-                  onOptionSelected(opt)
-                  expanded = false
-                })
-          }
-        }
-  }
+/** Helper to filter dropdown suggestions based on user input. */
+fun filterDropdownSuggestions(input: String, suggestions: List<String>): List<String> {
+  return if (input.isBlank()) suggestions else suggestions.filter { it.startsWith(input, true) }
 }
 
 /**
@@ -660,15 +487,6 @@ private fun SuggestionsMenu(
         }
       }
 }
-
-private data class SelectionDropdownVisuals(
-    val label: String,
-    val placeholder: String,
-    val textFieldTag: String,
-    val toggleContentDescription: String,
-    val dropdownTestTag: String? = null,
-    val clearOptionLabel: String? = null
-)
 
 private data class SuggestionsDropdownVisuals(
     val label: String,

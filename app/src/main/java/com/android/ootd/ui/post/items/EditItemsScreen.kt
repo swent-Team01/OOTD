@@ -186,45 +186,94 @@ fun EditItemsScreen(
                   Modifier.fillMaxSize()
                       .padding(innerPadding)
                       .nestedScroll(nestedScrollConnection)) {
-                FieldsList(
+                ItemFieldsListLayout(
                     modifier =
                         Modifier.fillMaxWidth()
                             .padding(16.dp)
                             .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
                             .testTag(EditItemsScreenTestTags.ALL_FIELDS),
-                    onPickFromGallery = { galleryLauncher.launch("image/*") },
-                    onOpenCamera = { showCamera = true },
-                    category = itemsUIState.category,
-                    onCategoryChange = editItemsViewModel::setCategory,
-                    type = itemsUIState.type,
-                    suggestions = itemsUIState.suggestions,
-                    onTypeChange = {
-                      editItemsViewModel.setType(it)
-                      editItemsViewModel.updateTypeSuggestions(it)
-                    },
-                    onTypeFocus = { editItemsViewModel.updateTypeSuggestions(itemsUIState.type) },
-                    brand = itemsUIState.brand,
-                    onBrandChange = editItemsViewModel::setBrand,
-                    price = itemsUIState.price,
-                    onPriceChange = editItemsViewModel::setPrice,
-                    currency = itemsUIState.currency,
-                    onCurrencyChange = editItemsViewModel::setCurrency,
-                    link = itemsUIState.link,
-                    onLinkChange = editItemsViewModel::setLink,
-                    // Additional
-                    condition = itemsUIState.condition,
-                    onConditionChange = editItemsViewModel::setCondition,
-                    size = itemsUIState.size,
-                    onSizeChange = editItemsViewModel::setSize,
-                    fitType = itemsUIState.fitType,
-                    onFitTypeChange = editItemsViewModel::setFitType,
-                    style = itemsUIState.style,
-                    onStyleChange = editItemsViewModel::setStyle,
-                    notes = itemsUIState.notes,
-                    onNotesChange = editItemsViewModel::setNotes,
-                    material = itemsUIState.materialText,
-                    onMaterialChange = editItemsViewModel::setMaterial,
-                )
+                    layoutConfig =
+                        ItemFieldsLayoutConfig(
+                            horizontalAlignment = Alignment.Start,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)),
+                    slots =
+                        ItemFieldsListSlots(
+                            imagePicker = {
+                              ImagePickerRow(
+                                  onPickFromGallery = { galleryLauncher.launch("image/*") },
+                                  onOpenCamera = { showCamera = true })
+                            },
+                            categoryField = {
+                              CategoryField(
+                                  category = itemsUIState.category,
+                                  onChange = editItemsViewModel::setCategory,
+                                  testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
+                            },
+                            typeField = {
+                              TypeField(
+                                  type = itemsUIState.type,
+                                  suggestions = itemsUIState.suggestions,
+                                  onChange = {
+                                    editItemsViewModel.setType(it)
+                                    editItemsViewModel.updateTypeSuggestions(it)
+                                  },
+                                  testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
+                                  dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
+                                  onFocus = {
+                                    editItemsViewModel.updateTypeSuggestions(itemsUIState.type)
+                                  })
+                            },
+                            primaryFields = {
+                              ItemPrimaryFields(
+                                  brand = itemsUIState.brand,
+                                  onBrandChange = editItemsViewModel::setBrand,
+                                  brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
+                                  price = itemsUIState.price,
+                                  onPriceChange = editItemsViewModel::setPrice,
+                                  priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
+                                  currency = itemsUIState.currency,
+                                  onCurrencyChange = editItemsViewModel::setCurrency,
+                                  currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
+                                  size = itemsUIState.size,
+                                  onSizeChange = editItemsViewModel::setSize,
+                                  sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
+                                  link = itemsUIState.link,
+                                  onLinkChange = editItemsViewModel::setLink,
+                                  linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
+                            },
+                            additionalDetails = {
+                              AdditionalDetailsSection(
+                                  state =
+                                      AdditionalDetailsState(
+                                          condition = itemsUIState.condition,
+                                          onConditionChange = editItemsViewModel::setCondition,
+                                          material = itemsUIState.materialText,
+                                          onMaterialChange = editItemsViewModel::setMaterial,
+                                          fitType = itemsUIState.fitType,
+                                          onFitTypeChange = editItemsViewModel::setFitType,
+                                          style = itemsUIState.style,
+                                          onStyleChange = editItemsViewModel::setStyle,
+                                          notes = itemsUIState.notes,
+                                          onNotesChange = editItemsViewModel::setNotes),
+                                  tags =
+                                      AdditionalDetailsTags(
+                                          toggle =
+                                              EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE,
+                                          section =
+                                              EditItemsScreenTestTags.ADDITIONAL_DETAILS_SECTION,
+                                          conditionField =
+                                              EditItemsScreenTestTags.INPUT_ITEM_CONDITION,
+                                          materialField =
+                                              EditItemsScreenTestTags.INPUT_ITEM_MATERIAL,
+                                          fitTypeField =
+                                              EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE,
+                                          fitTypeDropdown =
+                                              EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS,
+                                          styleField = EditItemsScreenTestTags.INPUT_ITEM_STYLE,
+                                          styleDropdown = EditItemsScreenTestTags.STYLE_SUGGESTIONS,
+                                          notesField = EditItemsScreenTestTags.INPUT_ITEM_NOTES))
+                            },
+                            actionButtons = { Spacer(modifier = Modifier.height(24.dp)) }))
 
                 // Image preview overlay
                 ItemsImagePreview(
@@ -254,119 +303,6 @@ fun EditItemsScreen(
   }
 }
 
-// --- Extracted composables to reduce cognitive complexity ---
-@Composable
-private fun FieldsList(
-    modifier: Modifier,
-    onPickFromGallery: () -> Unit,
-    onOpenCamera: () -> Unit,
-    category: String,
-    onCategoryChange: (String) -> Unit,
-    type: String,
-    suggestions: List<String>,
-    onTypeChange: (String) -> Unit,
-    onTypeFocus: () -> Unit,
-    brand: String,
-    onBrandChange: (String) -> Unit,
-    price: Double,
-    onPriceChange: (Double) -> Unit,
-    currency: String,
-    onCurrencyChange: (String) -> Unit,
-    link: String,
-    onLinkChange: (String) -> Unit,
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    size: String,
-    onSizeChange: (String) -> Unit,
-    fitType: String,
-    onFitTypeChange: (String) -> Unit,
-    style: String,
-    onStyleChange: (String) -> Unit,
-    notes: String,
-    onNotesChange: (String) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
-    // Preview flags
-    additionalExpandedPreview: Boolean = false,
-    conditionMenuExpandedPreview: Boolean = false,
-) {
-  val detailsTags =
-      AdditionalDetailsTags(
-          toggle = EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE,
-          section = EditItemsScreenTestTags.ADDITIONAL_DETAILS_SECTION,
-          conditionField = EditItemsScreenTestTags.INPUT_ITEM_CONDITION,
-          materialField = EditItemsScreenTestTags.INPUT_ITEM_MATERIAL,
-          fitTypeField = EditItemsScreenTestTags.INPUT_ITEM_FIT_TYPE,
-          fitTypeDropdown = EditItemsScreenTestTags.FIT_TYPE_SUGGESTIONS,
-          styleField = EditItemsScreenTestTags.INPUT_ITEM_STYLE,
-          styleDropdown = EditItemsScreenTestTags.STYLE_SUGGESTIONS,
-          notesField = EditItemsScreenTestTags.INPUT_ITEM_NOTES)
-
-  ItemFieldsListLayout(
-      modifier = modifier,
-      layoutConfig =
-          ItemFieldsLayoutConfig(
-              horizontalAlignment = Alignment.Start,
-              verticalArrangement = Arrangement.spacedBy(10.dp)),
-      slots =
-          ItemFieldsListSlots(
-              imagePicker = {
-                ImagePickerRow(onPickFromGallery = onPickFromGallery, onOpenCamera = onOpenCamera)
-              },
-              categoryField = {
-                CategoryField(
-                    category = category,
-                    onChange = onCategoryChange,
-                    testTag = EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-              },
-              typeField = {
-                TypeField(
-                    type = type,
-                    suggestions = suggestions,
-                    onChange = onTypeChange,
-                    testTag = EditItemsScreenTestTags.INPUT_ITEM_TYPE,
-                    dropdownTestTag = EditItemsScreenTestTags.TYPE_SUGGESTIONS,
-                    onFocus = onTypeFocus)
-              },
-              primaryFields = {
-                ItemPrimaryFields(
-                    brand = brand,
-                    onBrandChange = onBrandChange,
-                    brandTag = EditItemsScreenTestTags.INPUT_ITEM_BRAND,
-                    price = price,
-                    onPriceChange = onPriceChange,
-                    priceTag = EditItemsScreenTestTags.INPUT_ITEM_PRICE,
-                    currency = currency,
-                    onCurrencyChange = onCurrencyChange,
-                    currencyTag = EditItemsScreenTestTags.INPUT_ITEM_CURRENCY,
-                    size = size,
-                    onSizeChange = onSizeChange,
-                    sizeTag = EditItemsScreenTestTags.INPUT_ITEM_SIZE,
-                    link = link,
-                    onLinkChange = onLinkChange,
-                    linkTag = EditItemsScreenTestTags.INPUT_ITEM_LINK)
-              },
-              additionalDetails = {
-                AdditionalDetailsSection(
-                    state =
-                        AdditionalDetailsState(
-                            condition = condition,
-                            onConditionChange = onConditionChange,
-                            material = material,
-                            onMaterialChange = onMaterialChange,
-                            fitType = fitType,
-                            onFitTypeChange = onFitTypeChange,
-                            style = style,
-                            onStyleChange = onStyleChange,
-                            notes = notes,
-                            onNotesChange = onNotesChange,
-                            expandedInitially = additionalExpandedPreview,
-                            condExpandedInitially = conditionMenuExpandedPreview),
-                    tags = detailsTags)
-              },
-              actionButtons = { Spacer(modifier = Modifier.height(24.dp)) }))
-}
-
 @Composable
 private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Unit) {
   Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -385,73 +321,18 @@ private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Un
   }
 }
 
-@Preview(name = "Edit Items", showBackground = true)
+@Preview(name = "Edit Items - Preview", showBackground = true)
 @Composable
 fun EditItemsScreenSmallPreview() {
   MaterialTheme {
-    val maxImageSize = 180.dp
-    val minImageSize = 80.dp
-
-    val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
-    val imageScaleState = remember { mutableFloatStateOf(1f) }
-
-    val nestedScrollConnection =
-        rememberImageResizeScrollConnection(
-            currentImageSize = currentImageSizeState,
-            imageScale = imageScaleState,
-            minImageSize = minImageSize,
-            maxImageSize = maxImageSize)
-
     Box(modifier = Modifier.fillMaxSize()) {
       Scaffold(
           topBar = {
             OOTDTopBar(centerText = "EDIT ITEMS", leftComposable = { BackArrow(onBackClick = {}) })
           },
           content = { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
-              FieldsList(
-                  modifier =
-                      Modifier.fillMaxWidth().padding(16.dp).offset {
-                        IntOffset(0, currentImageSizeState.value.roundToPx())
-                      },
-                  onPickFromGallery = {},
-                  onOpenCamera = {},
-                  category = "Tops",
-                  onCategoryChange = {},
-                  type = "Hoodie",
-                  suggestions = listOf("Hoodie", "Jacket", "T-Shirt"),
-                  onTypeChange = {},
-                  onTypeFocus = {},
-                  brand = "BrandY",
-                  onBrandChange = {},
-                  price = 49.9,
-                  onPriceChange = {},
-                  currency = "EUR",
-                  onCurrencyChange = {},
-                  link = "https://example.com/item",
-                  onLinkChange = {},
-                  condition = "New",
-                  onConditionChange = {},
-                  size = "M",
-                  onSizeChange = {},
-                  fitType = "Regular",
-                  onFitTypeChange = {},
-                  style = "Casual",
-                  onStyleChange = {},
-                  notes = "Great condition",
-                  onNotesChange = {},
-                  material = "Cotton 80%, Wool 20%",
-                  onMaterialChange = {},
-                  additionalExpandedPreview = true,
-                  conditionMenuExpandedPreview = false)
-
-              ItemsImagePreview(
-                  localUri = null,
-                  remoteUrl = "",
-                  maxImageSize = maxImageSize,
-                  imageScale = imageScaleState.floatValue,
-                  currentSize = currentImageSizeState.value,
-                  testTag = EditItemsScreenTestTags.PLACEHOLDER_PICTURE)
+            Box(modifier = Modifier.padding(innerPadding)) {
+              Text("Preview placeholder - use emulator for full preview")
             }
           })
     }
