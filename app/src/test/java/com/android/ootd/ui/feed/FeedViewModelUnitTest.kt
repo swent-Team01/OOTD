@@ -86,6 +86,9 @@ class FeedViewModelUnitTest {
     // Setup
     val publicPosts = listOf(OutfitPost(postUID = "public1", isPublic = true))
     coEvery { feedRepository.getPublicFeed() } returns publicPosts
+    coEvery { feedRepository.hasPostedToday(any()) } returns false
+    coEvery { likesRepository.isPostLikedByUser(any(), any()) } returns false
+    coEvery { likesRepository.getLikeCount(any()) } returns 0
 
     // Set current account
     viewModel.setCurrentAccount(Account(uid = "testUser"))
@@ -93,12 +96,15 @@ class FeedViewModelUnitTest {
     // Switch to public feed
     viewModel.toggleFeedType()
 
-    // Trigger refresh
-    viewModel.refreshFeedFromFirestore()
+    // Advance time to allow both initial fetch and background refresh to complete
+    testDispatcher.scheduler.advanceTimeBy(2100)
     testDispatcher.scheduler.advanceUntilIdle()
 
-    // Verify
-    coVerify { feedRepository.getPublicFeed() }
+    // Verify getPublicFeed was called (at least once for initial fetch, possibly twice with
+    // background refresh)
+    coVerify(atLeast = 1) { feedRepository.getPublicFeed() }
+    // Verify getRecentFeedForUids was NOT called since we're in public feed mode
+    coVerify(exactly = 0) { feedRepository.getRecentFeedForUids(any()) }
     assertEquals(publicPosts, viewModel.uiState.value.feedPosts)
   }
 

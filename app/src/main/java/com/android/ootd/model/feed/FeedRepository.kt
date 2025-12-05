@@ -61,4 +61,18 @@ interface FeedRepository {
    * @return List of public posts
    */
   suspend fun getPublicFeed(): List<OutfitPost>
+
+  /**
+   * Retrieves cached posts of the friends of the current user.
+   *
+   * @param uids List of user IDs whose cached posts are to be retrieved
+   */
+  suspend fun getCachedFriendFeed(uids: List<String>): List<OutfitPost>
+
+  /**
+   * Retrieves cached public feed posts.
+   *
+   * @return List of cached public posts
+   */
+  suspend fun getCachedPublicFeed(): List<OutfitPost>
 }
