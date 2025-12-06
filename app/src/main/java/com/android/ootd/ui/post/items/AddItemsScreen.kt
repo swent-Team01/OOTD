@@ -201,8 +201,7 @@ fun AddItemsScreen(
                               onChange = addItemsViewModel::setCategory,
                               testTag = AddItemScreenTestTags.INPUT_CATEGORY,
                               invalidCategory = itemsUIState.invalidCategory,
-                              onValidate = addItemsViewModel::validateCategory,
-                              dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
+                              onValidate = addItemsViewModel::validateCategory)
                         },
                         typeField = {
                           TypeField(
