@@ -62,10 +62,7 @@ object OutfitPostCardTestTags {
  * @param post The outfit post data.
  */
 @Composable
-private fun ProfileSection(
-    post: OutfitPost,
-    onProfileClick: (String) -> Unit = {}
-) {
+private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = {}) {
   val totalLifetime = 24 * 60 * 60 * 1000L // 24h in ms
   val now = System.currentTimeMillis()
   // Calculate remaining lifetime
@@ -99,8 +96,7 @@ private fun ProfileSection(
 
     Spacer(modifier = Modifier.width(8.dp))
 
-    Column (modifier = Modifier.clickable { onProfileClick(post.ownerId) })
-    {
+    Column(modifier = Modifier.clickable { onProfileClick(post.ownerId) }) {
       Text(
           text = post.name,
           style = Typography.titleLarge,

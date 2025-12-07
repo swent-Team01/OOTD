@@ -58,7 +58,6 @@ import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.ClickableProfileColumn
 import com.android.ootd.utils.composables.ClickableProfileRow
 import com.android.ootd.utils.composables.OOTDTopBar
-import com.android.ootd.utils.composables.ProfilePicture
 import com.android.ootd.utils.composables.ShowText
 import kotlinx.coroutines.launch
 
@@ -255,9 +254,7 @@ fun PostDetailsContent(
           likeCount = uiState.likedByUsers.size,
           onToggleLike = onToggleLike)
 
-      LikedUsersRow(
-          likedUsers = uiState.likedByUsers,
-          onProfileClick = onProfileClick)
+      LikedUsersRow(likedUsers = uiState.likedByUsers, onProfileClick = onProfileClick)
     }
   }
 }
@@ -371,16 +368,15 @@ fun PostOwnerSection(
 ) {
   Box(Modifier.fillMaxWidth()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        ClickableProfileRow(
-            userId = ownerId,
-            username = username ?: "Unknown User",
-            profilePictureUrl = profilePicture ?: "",
-            profileSize = 48.dp,
-            onProfileClick = onProfileClick,
-            usernameStyle = Typography.titleLarge,
-            usernameColor = Primary,
-            modifier = Modifier.weight(1f)
-        )
+      ClickableProfileRow(
+          userId = ownerId,
+          username = username ?: "Unknown User",
+          profilePictureUrl = profilePicture ?: "",
+          profileSize = 48.dp,
+          onProfileClick = onProfileClick,
+          usernameStyle = Typography.titleLarge,
+          usernameColor = Primary,
+          modifier = Modifier.weight(1f))
 
       // Dropdown menu for post options
       if (isOwner) DropdownMenuWithDetails(onEditClicked, onDeletePost)
@@ -618,9 +614,7 @@ fun PostDescription(
  * @ param likedUsers List of users who liked the post
  */
 @Composable
-fun LikedUsersRow(
-    likedUsers: List<User>,
-    onProfileClick: (String) -> Unit){
+fun LikedUsersRow(likedUsers: List<User>, onProfileClick: (String) -> Unit) {
   LazyRow(
       horizontalArrangement = Arrangement.spacedBy(16.dp),
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
@@ -628,15 +622,14 @@ fun LikedUsersRow(
           val user = likedUsers[index]
 
           ClickableProfileColumn(
-                userId = user.uid,
-                username = user.username,
-                profilePictureUrl = user.profilePicture,
-                profileSize = 48.dp,
-                onProfileClick = onProfileClick,
-                usernameStyle = Typography.labelSmall,
-                usernameColor = Primary,
-                modifier = Modifier.width(64.dp)
-          )
+              userId = user.uid,
+              username = user.username,
+              profilePictureUrl = user.profilePicture,
+              profileSize = 48.dp,
+              onProfileClick = onProfileClick,
+              usernameStyle = Typography.labelSmall,
+              usernameColor = Primary,
+              modifier = Modifier.width(64.dp))
         }
       }
 }

@@ -327,7 +327,7 @@ fun OOTDApp(
                                 longitude = location.longitude,
                                 locationName = location.name))
                       },
-                      onProfileClick = {ownerId ->
+                      onProfileClick = { ownerId ->
                         navigationActions.navigateTo(Screen.ViewUser(ownerId))
                       })
                 }
@@ -519,7 +519,7 @@ fun OOTDApp(
                             onBack = { navigationActions.goBack() },
                             onProfileClick = { ownerId ->
                               navigationActions.navigateTo(Screen.ViewUser(ownerId))
-                            } )
+                            })
                       }
                     }
 
@@ -555,7 +555,7 @@ fun OOTDApp(
                       onBackClick = { navigationActions.goBack() },
                       onProfileClick = { userId ->
                         navigationActions.navigateTo(Screen.ViewUser(userId))
-                      } )
+                      })
                 }
               }
             }

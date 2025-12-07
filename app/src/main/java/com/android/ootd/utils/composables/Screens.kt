@@ -62,7 +62,7 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 
-//Disclaimer: Some parts of the code were written with the help of AI and verified by human
+// Disclaimer: Some parts of the code were written with the help of AI and verified by human
 
 /**
  * Displays text with customizable styling.
@@ -114,52 +114,52 @@ fun ProfilePicture(
     shape: RoundedCornerShape = CircleShape,
     onClick: (() -> Unit)? = null
 ) {
-    val color = colorScheme
-    val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
+  val color = colorScheme
+  val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
 
-    if (profilePicture.isNotBlank()) {
-        // We apply modifier directly
-        AsyncImage(
-            model = profilePicture,
-            contentDescription = "Profile Picture",
-            placeholder = defaultAvatarPainter,
-            error = defaultAvatarPainter,
-            contentScale = ContentScale.Crop,
-            modifier = modifier
+  if (profilePicture.isNotBlank()) {
+    // We apply modifier directly
+    AsyncImage(
+        model = profilePicture,
+        contentDescription = "Profile Picture",
+        placeholder = defaultAvatarPainter,
+        error = defaultAvatarPainter,
+        contentScale = ContentScale.Crop,
+        modifier =
+            modifier
                 .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
                 .size(size)
                 .clip(shape))
-    } else if (username.isNotBlank()) {
-        // We apply the modifier to the Box only
-        Box(
-            modifier = modifier
+  } else if (username.isNotBlank()) {
+    // We apply the modifier to the Box only
+    Box(
+        modifier =
+            modifier
                 .semantics(mergeDescendants = true) {}
                 .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
                 .size(size)
                 .clip(shape)
                 .background(Primary),
-            contentAlignment = Alignment.Center) {
-            Text(
-                text = username.first().uppercase(),
-                style = textStyle,
-                color = Secondary)
+        contentAlignment = Alignment.Center) {
+          Text(text = username.first().uppercase(), style = textStyle, color = Secondary)
         }
-    } else {
-        // Defaulting to person icon
-        Box(
-            modifier = modifier
+  } else {
+    // Defaulting to person icon
+    Box(
+        modifier =
+            modifier
                 .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
                 .size(size)
                 .clip(shape)
                 .background(color.tertiary),
-            contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Default Profile Picture",
-                tint = color.onSurfaceVariant,
-                modifier = Modifier.size(size * 0.6f))
+        contentAlignment = Alignment.Center) {
+          Icon(
+              imageVector = Icons.Default.Person,
+              contentDescription = "Default Profile Picture",
+              tint = color.onSurfaceVariant,
+              modifier = Modifier.size(size * 0.6f))
         }
-    }
+  }
 }
 
 /**
@@ -369,8 +369,8 @@ fun CommonTextField(
 }
 
 /**
- * A reusable clickable profile row with picture + username + optional content.
- * The entire ROW is clickable
+ * A reusable clickable profile row with picture + username + optional content. The entire ROW is
+ * clickable
  *
  * @param userId The user's unique ID (passed to onClick)
  * @param username The display name of the user
@@ -408,42 +408,40 @@ fun ClickableProfileRow(
     horizontalSpacing: Dp = 8.dp,
     additionalContent: @Composable ColumnScope.() -> Unit = {}
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.clickable(enabled = enabled) { onProfileClick(userId) }
-    ) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = modifier.clickable(enabled = enabled) { onProfileClick(userId) }) {
         ProfilePicture(
             modifier = if (profileTestTag != null) Modifier.testTag(profileTestTag) else Modifier,
             size = profileSize,
             profilePicture = profilePictureUrl,
             username = username,
-            textStyle = Typography.bodySmall
-        )
+            textStyle = Typography.bodySmall)
 
         if (showUsername) {
-            Spacer(modifier = Modifier.width(horizontalSpacing))
+          Spacer(modifier = Modifier.width(horizontalSpacing))
 
-            Column {
-                Text(
-                    text = username,
-                    style = usernameStyle,
-                    color = usernameColor,
-                    maxLines = usernameMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = usernameModifier.then(
-                        if (usernameTestTag != null) Modifier.testTag(usernameTestTag) else Modifier
-                    )
-                )
+          Column {
+            Text(
+                text = username,
+                style = usernameStyle,
+                color = usernameColor,
+                maxLines = usernameMaxLines,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    usernameModifier.then(
+                        if (usernameTestTag != null) Modifier.testTag(usernameTestTag)
+                        else Modifier))
 
-                additionalContent()
-            }
+            additionalContent()
+          }
         }
-    }
+      }
 }
 
 /**
- * A clickable profile displayed vertically (picture on top, username below).
- * The entire COLUMN is clickable
+ * A clickable profile displayed vertically (picture on top, username below). The entire COLUMN is
+ * clickable
  *
  * @param userId The user's unique ID (passed to onClick)
  * @param username The display name of the user
@@ -471,17 +469,15 @@ fun ClickableProfileColumn(
     profileTestTag: String? = null,
     usernameTestTag: String? = null
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable { onProfileClick(userId) }
-    ) {
+  Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      modifier = modifier.clickable { onProfileClick(userId) }) {
         ProfilePicture(
             size = profileSize,
             profilePicture = profilePictureUrl,
             username = username,
             textStyle = Typography.bodyMedium,
-            modifier = if (profileTestTag != null) Modifier.testTag(profileTestTag) else Modifier
-        )
+            modifier = if (profileTestTag != null) Modifier.testTag(profileTestTag) else Modifier)
 
         Spacer(Modifier.height(4.dp))
 
@@ -492,7 +488,6 @@ fun ClickableProfileColumn(
             maxLines = usernameMaxLines,
             overflow = TextOverflow.Ellipsis,
             textAlign = Center,
-            modifier = if (usernameTestTag != null) Modifier.testTag(usernameTestTag) else Modifier
-        )
-    }
+            modifier = if (usernameTestTag != null) Modifier.testTag(usernameTestTag) else Modifier)
+      }
 }
