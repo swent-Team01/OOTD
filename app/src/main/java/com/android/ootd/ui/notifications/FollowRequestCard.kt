@@ -34,13 +34,15 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.ClickableProfileRow
 import com.android.ootd.utils.composables.ProfilePicture
 
 @Composable
 fun FollowRequestCard(
     followRequestItem: FollowRequestItem,
     onAccept: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onProfileClick: (String) -> Unit = {}
 ) {
   Card(
       modifier =
@@ -56,35 +58,29 @@ fun FollowRequestCard(
                     .fillMaxHeight()
                     .padding(horizontal = 16.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically) {
-              // Profile picture placeholder
-              Box(
-                  modifier = Modifier.size(48.dp).clip(CircleShape).background(Primary),
-                  contentAlignment = Alignment.Center) {
-                    ProfilePicture(
-                        size = 48.dp,
-                        profilePicture = followRequestItem.senderUser.profilePicture,
-                        username = followRequestItem.senderUser.username,
-                        textStyle = Typography.titleMedium.copy(fontSize = 20.sp))
-                  }
 
-              Spacer(modifier = Modifier.width(12.dp))
-
-              // Username and message - now in a Column that takes available space
-              Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text(
-                    text = followRequestItem.senderUser.username,
+            ClickableProfileRow(
+                userId = followRequestItem.senderUser.uid,
+                username = followRequestItem.senderUser.username,
+                profilePictureUrl = followRequestItem.senderUser.profilePicture,
+                profileSize = 48.dp,
+                onProfileClick = onProfileClick,
+                usernameStyle = Typography.titleMedium.copy(
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = OnSecondaryContainer,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    fontWeight = FontWeight.SemiBold
+                ),
+                usernameColor = OnSecondaryContainer,
+                usernameMaxLines = 1,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Notification message below username
                 Text(
                     text = followRequestItem.notification.content,
                     fontSize = 14.sp,
                     color = OnSecondaryContainer,
                     maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-              }
+            }
 
               Spacer(modifier = Modifier.width(8.dp))
 
