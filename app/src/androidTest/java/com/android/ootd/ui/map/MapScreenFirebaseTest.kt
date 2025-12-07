@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.map.Location
@@ -288,5 +290,144 @@ class MapScreenFirebaseTest : PostFirestoreTest(), OnMapsSdkInitializedCallback 
     // Verify the map rendered successfully with posts
     composeTestRule.onNodeWithTag(MapScreenTestTags.GOOGLE_MAP_SCREEN).assertExists()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
+  }
+
+  @Test
+  fun mapScreen_displaysTabRowWithBothTabsAndLabels() {
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+    composeTestRule.waitForIdle()
+
+    // Verify tab row exists
+    composeTestRule.onNodeWithTag(MapScreenTestTags.TAB_ROW).assertExists()
+
+    // Verify both tabs exist
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).assertExists()
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).assertExists()
+
+    // Verify tab labels are displayed
+    composeTestRule.onNodeWithText("Friends Posts").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Find Friends").assertIsDisplayed()
+  }
+
+  @Test
+  fun mapScreen_friendsPostsTab_isSelectedByDefault() {
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).assertExists()
+
+    // Verify the initial map type in the viewmodel
+    assert(viewModel.uiState.value.selectedMapType == MapType.FRIENDS_POSTS) {
+      "Expected FRIENDS_POSTS to be selected by default"
+    }
+  }
+
+  @Test
+  fun mapScreen_tabClick_switchesMapType() {
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+    composeTestRule.waitForIdle()
+
+    // Initial state should be FRIENDS_POSTS
+    assert(viewModel.uiState.value.selectedMapType == MapType.FRIENDS_POSTS)
+
+    // Click on Find Friends tab
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    // Should now be FIND_FRIENDS
+    assert(viewModel.uiState.value.selectedMapType == MapType.FIND_FRIENDS) {
+      "Expected FIND_FRIENDS after clicking Find Friends tab"
+    }
+
+    // Click back on Friends Posts tab
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    // Should be back to FRIENDS_POSTS
+    assert(viewModel.uiState.value.selectedMapType == MapType.FRIENDS_POSTS) {
+      "Expected FRIENDS_POSTS after clicking Friends Posts tab"
+    }
+  }
+
+  @Test
+  fun mapScreen_tabSwitch_preservesCameraPosition() {
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+    composeTestRule.waitForIdle()
+
+    val initialLocation = viewModel.getFocusLatLng()
+
+    // Switch to Find Friends tab
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    val locationAfterSwitch = viewModel.getFocusLatLng()
+
+    // Camera position should be the same
+    assert(initialLocation.latitude == locationAfterSwitch.latitude) {
+      "Latitude should be preserved after tab switch"
+    }
+    assert(initialLocation.longitude == locationAfterSwitch.longitude) {
+      "Longitude should be preserved after tab switch"
+    }
+  }
+
+  @Test
+  fun mapScreen_tabSwitch_preservesUserDataAndMaintainsCorrectState() {
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+    composeTestRule.waitForIdle()
+
+    val initialPosts = viewModel.uiState.value.posts
+    val initialAccount = viewModel.uiState.value.currentAccount
+    val initialUserLocation = viewModel.uiState.value.userLocation
+
+    // Perform multiple tab switches
+    repeat(3) {
+      // Switch to Find Friends tab
+      composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).performClick()
+      composeTestRule.waitForIdle()
+
+      val stateAfterFindFriends = viewModel.uiState.value
+      assert(stateAfterFindFriends.selectedMapType == MapType.FIND_FRIENDS)
+
+      // Verify user data is preserved
+      assert(stateAfterFindFriends.posts == initialPosts) { "Posts should be preserved" }
+      assert(stateAfterFindFriends.currentAccount == initialAccount) {
+        "Account should be preserved"
+      }
+      assert(stateAfterFindFriends.userLocation == initialUserLocation) {
+        "User location should be preserved"
+      }
+
+      // Switch back to Friends Posts tab
+      composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).performClick()
+      composeTestRule.waitForIdle()
+
+      val stateAfterFriendsPosts = viewModel.uiState.value
+      assert(stateAfterFriendsPosts.selectedMapType == MapType.FRIENDS_POSTS)
+
+      // Verify user data is still preserved
+      assert(stateAfterFriendsPosts.posts == initialPosts) { "Posts should be preserved" }
+      assert(stateAfterFriendsPosts.currentAccount == initialAccount) {
+        "Account should be preserved"
+      }
+      assert(stateAfterFriendsPosts.userLocation == initialUserLocation) {
+        "User location should be preserved"
+      }
+    }
   }
 }
