@@ -29,6 +29,8 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -343,4 +345,27 @@ fun CommonTextField(
       trailingIcon = trailingIcon,
       colors = commonTextFieldColors(),
       modifier = modifier.fillMaxWidth())
+}
+
+/**
+ * A composable that provides pull-to-refresh functionality.
+ *
+ * @param modifier The modifier to be applied to the pull-to-refresh container.
+ * @param content The content to be displayed inside the pull-to-refresh container.
+ * @param onRefresh The callback to be invoked when a refresh is triggered.
+ * @param isRefreshing A boolean indicating whether a refresh is currently in progress.
+ */
+@Composable
+fun PullToRefresh(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit = {},
+    onRefresh: () -> Unit = {},
+    isRefreshing: Boolean = false
+) {
+
+  val state = rememberPullToRefreshState()
+  PullToRefreshBox(
+      modifier = modifier, state = state, isRefreshing = isRefreshing, onRefresh = onRefresh) {
+        content()
+      }
 }

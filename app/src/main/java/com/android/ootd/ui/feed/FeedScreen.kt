@@ -1,5 +1,6 @@
 package com.android.ootd.ui.feed
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -28,6 +29,7 @@ import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.NotificationButton
 import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.PullToRefresh
 import com.android.ootd.utils.composables.ShowText
 
 object FeedScreenTestTags {
@@ -40,6 +42,7 @@ object FeedScreenTestTags {
   const val LOADING_OVERLAY = "feedLoadingOverlay"
 }
 
+@SuppressLint("SuspiciousIndentation")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
@@ -53,10 +56,10 @@ fun FeedScreen(
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
+  val isRefreshing by feedViewModel.isRefreshing.collectAsState()
 
   LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
-
-    // try refreshing if online
+    // Refresh feed when account changes or feed type changes
     feedViewModel.refreshFeedFromFirestore()
   }
 
@@ -75,7 +78,9 @@ fun FeedScreen(
       likeCounts = uiState.likeCounts,
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
       isPublicFeed = uiState.isPublicFeed,
-      onToggleFeed = { feedViewModel.toggleFeedType() })
+      onToggleFeed = { feedViewModel.toggleFeedType() },
+      isRefreshing = isRefreshing,
+      onRefresh = { feedViewModel.onPullToRefreshTrigger() })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,7 +100,9 @@ private fun FeedScaffold(
     likeCounts: Map<String, Int> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
-    onToggleFeed: () -> Unit = {}
+    onToggleFeed: () -> Unit = {},
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {}
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -145,6 +152,7 @@ private fun FeedScaffold(
                 Modifier.fillMaxSize()
                     .padding(top = paddingValues.calculateTopPadding())
                     .background(Background)) {
+
               // Renders the list of posts when user has posted.
               FeedList(
                   isBlurred = !hasPostedToday,
@@ -154,10 +162,12 @@ private fun FeedScaffold(
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
-                  onLikeClick = onLikeClick)
+                  onLikeClick = onLikeClick,
+                  isRefreshing = isRefreshing,
+                  onRefresh = onRefresh)
 
-              // Loading overlay
-              if (isLoading) {
+              // Loading overlay and hides it while refreshing
+              if (isLoading && !isRefreshing) {
                 AnimatedVisibility(visible = true) {
                   LoadingScreen(
                       modifier = Modifier.testTag(FeedScreenTestTags.LOADING_OVERLAY),
@@ -187,24 +197,33 @@ fun FeedList(
     onSeeFitClick: (OutfitPost) -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
-    onLocationClick: (Location) -> Unit = {}
+    onLocationClick: (Location) -> Unit = {},
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {}
 ) {
-  LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
-    items(posts) { post ->
-      val isLiked = likes[post.postUID] ?: false
-      val count = likeCounts[post.postUID] ?: 0
+  // Pull to refresh layout
+  PullToRefresh(
+      modifier = Modifier.fillMaxSize(),
+      isRefreshing = isRefreshing,
+      onRefresh = { onRefresh() },
+      content = {
+        LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
+          items(posts) { post ->
+            val isLiked = likes[post.postUID] ?: false
+            val count = likeCounts[post.postUID] ?: 0
 
-      OutfitPostCard(
-          post = post,
-          isBlurred = isBlurred,
-          isLiked = isLiked,
-          likeCount = count,
-          onLikeClick = { onLikeClick(post) },
-          onSeeFitClick = { onSeeFitClick(post) },
-          onCardClick = { onPostClick(post.postUID) },
-          onLocationClick = onLocationClick)
-    }
-  }
+            OutfitPostCard(
+                post = post,
+                isBlurred = isBlurred,
+                isLiked = isLiked,
+                likeCount = count,
+                onLikeClick = { onLikeClick(post) },
+                onSeeFitClick = { onSeeFitClick(post) },
+                onCardClick = { onPostClick(post.postUID) },
+                onLocationClick = onLocationClick)
+          }
+        }
+      })
 }
 
 @Preview(showBackground = true)
