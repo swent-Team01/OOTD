@@ -105,7 +105,7 @@ class FeedViewModelOfflineTest {
   fun refreshFeed_offline_usesCachedFriendFeed() = runTest {
     viewModel.setCurrentAccount(testAccount)
 
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     testDispatcher.scheduler.advanceTimeBy(2100) // Past the 2s timeout
     advanceUntilIdle()
 
@@ -152,7 +152,7 @@ class FeedViewModelOfflineTest {
     // Wait for any initial auth listener processing
     testDispatcher.scheduler.advanceUntilIdle()
 
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     testDispatcher.scheduler.advanceTimeBy(2100) // Past the 2s timeout
     testDispatcher.scheduler.advanceUntilIdle()
 
@@ -170,7 +170,7 @@ class FeedViewModelOfflineTest {
     coEvery { feedRepository.getCachedFriendFeed(any()) } returns listOf(cachedPost, userPost)
 
     viewModel.setCurrentAccount(testAccount)
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     testDispatcher.scheduler.advanceTimeBy(2100) // Past the 2s timeout
     advanceUntilIdle()
 
@@ -192,7 +192,7 @@ class FeedViewModelOfflineTest {
     viewModel.setCurrentAccount(testAccount)
 
     // Start with friend feed
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     testDispatcher.scheduler.advanceTimeBy(2100)
     advanceUntilIdle()
     assertEquals("friend-cached", viewModel.uiState.value.feedPosts.first().postUID)

@@ -14,7 +14,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import kotlin.time.Clock.System.now
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -117,7 +116,7 @@ class FeedViewModelUnitTest {
     // Set current account
     viewModel.setCurrentAccount(account)
 
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Should NOT call getPublicFeed
@@ -149,7 +148,7 @@ class FeedViewModelUnitTest {
     coEvery { likesRepository.getLikeCount("post2") } returns 0
 
     // Initial refresh to populate feed
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Verify initial state

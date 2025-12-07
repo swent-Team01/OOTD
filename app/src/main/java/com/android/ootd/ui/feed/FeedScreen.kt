@@ -61,7 +61,7 @@ fun FeedScreen(
 
   LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
     // Refresh feed when account changes or feed type changes
-    feedViewModel.refreshFeedFromFirestore()
+    feedViewModel.refreshFeed()
   }
 
   FeedScaffold(

@@ -95,7 +95,7 @@ open class FeedViewModel(
   }
 
   /** Refreshes the feed posts from Firestore for the current account. */
-  fun refreshFeedFromFirestore() {
+  fun refreshFeed() {
     val account = _uiState.value.currentAccount ?: return
 
     val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -215,7 +215,7 @@ open class FeedViewModel(
   /** Toggles between public and private feed. */
   fun toggleFeedType() {
     _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
-    refreshFeedFromFirestore()
+    refreshFeed()
   }
 
   /**
@@ -300,7 +300,7 @@ open class FeedViewModel(
       _isRefreshing.value = true
       try {
         delay(NETWORK_TIMEOUT_MILLIS)
-        refreshFeedFromFirestore()
+        refreshFeed()
       } finally {
         _isRefreshing.value = false
       }

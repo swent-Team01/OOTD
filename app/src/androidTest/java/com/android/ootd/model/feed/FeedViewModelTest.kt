@@ -55,7 +55,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
 
     viewModel.setCurrentAccount(account)
 
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     delay(500)
 
     val state = viewModel.uiState.first()
@@ -82,7 +82,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
 
     viewModel.setCurrentAccount(account)
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     waitUntilFeedLoaded()
 
     composeTestRule.waitUntil(timeoutMillis = 5000) {
@@ -133,7 +133,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
       viewModel.uiState.value.currentAccount != null
     }
 
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     delay(1000)
 
     val state = viewModel.uiState.first()
@@ -163,7 +163,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
             postId = "post1", postLikerId = uid, timestamp = System.currentTimeMillis()))
 
     viewModel.setCurrentAccount(account)
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     delay(600)
 
     val state = viewModel.uiState.value
@@ -179,7 +179,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     delay(500)
 
     // should not throw and should remain cleared
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     delay(500)
 
     val state = viewModel.uiState.first()
@@ -226,7 +226,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
 
     viewModel.setCurrentAccount(account)
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     delay(300)
 
     assertFalse(viewModel.uiState.value.likes["p_toggle"] == true)
@@ -264,7 +264,7 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
     FirebaseEmulator.firestore.collection("accounts").document(uid).set(account).await()
 
     viewModel.setCurrentAccount(account)
-    viewModel.refreshFeedFromFirestore()
+    viewModel.refreshFeed()
     waitUntilFeedLoaded()
     assertTrue(viewModel.uiState.value.feedPosts.isEmpty())
 
