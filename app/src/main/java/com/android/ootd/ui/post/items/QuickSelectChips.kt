@@ -38,6 +38,7 @@ import com.android.ootd.utils.CategoryNormalizer
 
 /** Standard clothing sizes for quick selection */
 val STANDARD_SIZES = listOf("One-size", "XS", "S", "M", "L", "XL", "XXL")
+private const val CHIP_ANIMATION_DURATION = 200
 
 object QuickSelectChipsTestTags {
   const val SIZE_CHIP_PREFIX = "sizeChip_"
@@ -68,22 +69,22 @@ fun SelectableChip(
   val backgroundColor by
       animateColorAsState(
           targetValue = if (isSelected) Primary else Color.White,
-          animationSpec = tween(durationMillis = 200),
+          animationSpec = tween(durationMillis = CHIP_ANIMATION_DURATION),
           label = "chipBackground")
   val contentColor by
       animateColorAsState(
           targetValue = if (isSelected) Color.White else Primary,
-          animationSpec = tween(durationMillis = 200),
+          animationSpec = tween(durationMillis = CHIP_ANIMATION_DURATION),
           label = "chipContent")
   val borderColor by
       animateColorAsState(
           targetValue = if (isSelected) Primary else Tertiary,
-          animationSpec = tween(durationMillis = 200),
+          animationSpec = tween(durationMillis = CHIP_ANIMATION_DURATION),
           label = "chipBorder")
   val elevation by
       animateDpAsState(
           targetValue = if (isSelected) 4.dp else 0.dp,
-          animationSpec = tween(durationMillis = 200),
+          animationSpec = tween(durationMillis = CHIP_ANIMATION_DURATION),
           label = "chipElevation")
 
   OutlinedButton(
@@ -317,7 +318,7 @@ fun CurrencyChipSelector(
     selectedCurrency: String,
     onCurrencySelected: (String) -> Unit,
     modifier: Modifier = Modifier,
-    currencies: List<String> = listOf("CHF", "USD", "EUR", "GBP", "YEN"),
+    currencies: List<String> = listOf("CHF", "USD", "EUR", "GBP", "JPY"),
     label: String? = "Currency",
     testTagPrefix: String = "currencyChip_",
     containerTestTag: String = "currencySelector"
