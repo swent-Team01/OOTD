@@ -788,4 +788,40 @@ class MainActivityCallbacksTest {
     // Verify the navigation succeeded
     composeRule.runOnIdle { Assert.assertTrue(navigation.currentRoute().startsWith("map?")) }
   }
+
+  @Test
+  fun feedScreen_onProfileClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+
+      // Simulate profile click from feed post
+      navigation.navigateTo(Screen.ViewUser(userId = "test-user-123"))
+
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun searchScreen_onUserClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.SearchScreen)
+
+      // Simulate user click from search results
+      navigation.navigateTo(Screen.ViewUser(userId = "searched-user-456"))
+
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun postViewScreen_onProfileClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PostView("post-123"))
+
+      // Simulate profile click (owner or liked user)
+      navigation.navigateTo(Screen.ViewUser(userId = "post-owner-789"))
+
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+    }
+  }
 }

@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -80,13 +81,17 @@ class PostViewScreenTest {
     clearAllMocks()
   }
 
-  private fun setContent(postId: String) {
+  private fun setContent(postId: String, onProfileClick: (String) -> Unit = {}) {
     viewModel =
         PostViewViewModel(postId, mockRepository, mockUserRepo, mockLikesRepo, mockAccountService)
 
     composeTestRule.setContent {
       OOTDTheme {
-        PostViewScreen(postId = postId, onBack = { onBackCalled = true }, viewModel = viewModel)
+        PostViewScreen(
+            postId = postId,
+            onBack = { onBackCalled = true },
+            onProfileClick = onProfileClick,
+            viewModel = viewModel)
       }
     }
     composeTestRule.waitForIdle()
@@ -224,5 +229,76 @@ class PostViewScreenTest {
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertTextContains(original)
     composeTestRule.onNodeWithText(modified, substring = true).assertDoesNotExist()
+  }
+
+  @Test
+  fun likedUsersRow_profileClick_triggersCallback() = runTest {
+    val likedUser1 = User(uid = "liker-1", username = "Liker One", profilePicture = "")
+    val likedUser2 = User(uid = "liker-2", username = "Liker Two", profilePicture = "")
+
+    coEvery { mockRepository.getPostById(any()) } returns testPost
+    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
+    coEvery { mockUserRepo.getUser("liker-1") } returns likedUser1
+    coEvery { mockUserRepo.getUser("liker-2") } returns likedUser2
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns
+        listOf(
+            com.android.ootd.model.posts.Like(
+                postId = "test-post-id", postLikerId = "liker-1", timestamp = 0L),
+            com.android.ootd.model.posts.Like(
+                postId = "test-post-id", postLikerId = "liker-2", timestamp = 0L))
+    coEvery { mockLikesRepo.isPostLikedByUser(any(), any()) } returns false
+
+    var clickedUserId: String? = null
+
+    setContent("test-post-id") { userId -> clickedUserId = userId }
+
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithText("Liker One", substring = true, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onNodeWithText("Liker One", substring = true, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    assert(clickedUserId == "liker-1") { "Expected liker-1 but got $clickedUserId" }
+  }
+
+  @Test
+  fun likedUsersRow_displaysAndClickable() = runTest {
+    val likedUser1 = User(uid = "liker-1", username = "Liker One", profilePicture = "")
+
+    coEvery { mockRepository.getPostById(any()) } returns testPost
+    coEvery { mockUserRepo.getUser("test-owner-id") } returns ownerUser
+    coEvery { mockUserRepo.getUser("liker-1") } returns likedUser1
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns
+        listOf(
+            com.android.ootd.model.posts.Like(
+                postId = "test-post-id", postLikerId = "liker-1", timestamp = 0L))
+    coEvery { mockLikesRepo.isPostLikedByUser(any(), any()) } returns false
+
+    var clickedUserId: String? = null
+    setContent("test-post-id") { userId -> clickedUserId = userId }
+
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithText("Liker One", substring = true, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onNodeWithText("Liker One", substring = true, useUnmergedTree = true)
+        .assertExists()
+
+    composeTestRule
+        .onNodeWithText("Liker One", substring = true, useUnmergedTree = true)
+        .performClick()
+    composeTestRule.waitForIdle()
+
+    assert(clickedUserId == "liker-1") { "Expected liker-1 but got $clickedUserId" }
   }
 }
