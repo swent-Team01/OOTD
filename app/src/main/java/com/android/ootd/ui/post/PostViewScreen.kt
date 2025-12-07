@@ -55,6 +55,8 @@ import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.ClickableProfileColumn
+import com.android.ootd.utils.composables.ClickableProfileRow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ProfilePicture
 import com.android.ootd.utils.composables.ShowText
@@ -104,6 +106,7 @@ fun PostViewScreen(
     postId: String,
     onBack: () -> Unit,
     onDeleted: () -> Unit = { onBack() },
+    onProfileClick: (String) -> Unit = {},
     viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId))
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -152,6 +155,7 @@ fun PostViewScreen(
                   onToggleLike = { viewModel.toggleLike() },
                   modifier = Modifier.fillMaxSize(),
                   viewModel = viewModel,
+                  onProfileClick = onProfileClick,
                   onDeletePost = {
                     viewModel.deletePost(
                         onSuccess = { onDeleted() },
@@ -177,6 +181,7 @@ fun PostDetailsContent(
     onToggleLike: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostViewViewModel,
+    onProfileClick: (String) -> Unit,
     onDeletePost: () -> Unit
 ) {
   val post = uiState.post!!
@@ -225,6 +230,8 @@ fun PostDetailsContent(
       PostOwnerSection(
           username = uiState.ownerUsername,
           profilePicture = uiState.ownerProfilePicture,
+          ownerId = post.ownerId,
+          onProfileClick = onProfileClick,
           onEditClicked = { onStartEditing() },
           onDeletePost = onDeletePost,
           isOwner = uiState.isOwner)
@@ -248,7 +255,9 @@ fun PostDetailsContent(
           likeCount = uiState.likedByUsers.size,
           onToggleLike = onToggleLike)
 
-      LikedUsersRow(likedUsers = uiState.likedByUsers)
+      LikedUsersRow(
+          likedUsers = uiState.likedByUsers,
+          onProfileClick = onProfileClick)
     }
   }
 }
@@ -354,23 +363,24 @@ private fun DescriptionEditor(
 fun PostOwnerSection(
     username: String?,
     profilePicture: String?,
+    ownerId: String,
+    onProfileClick: (String) -> Unit,
     onEditClicked: () -> Unit,
     onDeletePost: () -> Unit,
     isOwner: Boolean = false
 ) {
   Box(Modifier.fillMaxWidth()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      ProfilePicture(
-          size = 48.dp,
-          profilePicture = profilePicture ?: "",
-          username = username ?: "",
-          textStyle = Typography.titleMedium)
-
-      Spacer(Modifier.width(12.dp))
-
-      Text(text = username ?: "Unknown User", style = Typography.titleLarge, color = Primary)
-
-      Spacer(Modifier.weight(1f))
+        ClickableProfileRow(
+            userId = ownerId,
+            username = username ?: "Unknown User",
+            profilePictureUrl = profilePicture ?: "",
+            profileSize = 48.dp,
+            onProfileClick = onProfileClick,
+            usernameStyle = Typography.titleLarge,
+            usernameColor = Primary,
+            modifier = Modifier.weight(1f)
+        )
 
       // Dropdown menu for post options
       if (isOwner) DropdownMenuWithDetails(onEditClicked, onDeletePost)
@@ -608,30 +618,25 @@ fun PostDescription(
  * @ param likedUsers List of users who liked the post
  */
 @Composable
-fun LikedUsersRow(likedUsers: List<User>) {
+fun LikedUsersRow(
+    likedUsers: List<User>,
+    onProfileClick: (String) -> Unit){
   LazyRow(
       horizontalArrangement = Arrangement.spacedBy(16.dp),
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         items(likedUsers.size) { index ->
           val user = likedUsers[index]
 
-          Column(
-              horizontalAlignment = Alignment.CenterHorizontally,
-              modifier = Modifier.width(64.dp)) {
-                ProfilePicture(
-                    size = 48.dp,
-                    profilePicture = user.profilePicture,
-                    username = user.username,
-                    textStyle = Typography.bodyMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = user.username,
-                    style = Typography.labelSmall,
-                    color = Primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center)
-              }
+          ClickableProfileColumn(
+                userId = user.uid,
+                username = user.username,
+                profilePictureUrl = user.profilePicture,
+                profileSize = 48.dp,
+                onProfileClick = onProfileClick,
+                usernameStyle = Typography.labelSmall,
+                usernameColor = Primary,
+                modifier = Modifier.width(64.dp)
+          )
         }
       }
 }
