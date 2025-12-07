@@ -35,6 +35,7 @@ import com.android.ootd.ui.search.UserProfileCardTestTags.AVATAR_LETTER
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.ClickableProfileRow
 import com.android.ootd.utils.composables.ProfilePicture
 
 object UserProfileCardTestTags {
@@ -109,39 +110,27 @@ fun UserProfileCard(
             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Top),
             horizontalAlignment = Alignment.Start,
         ) {
-          Row(
-              modifier =
-                  Modifier.fillMaxWidth()
-                      .clickable(
-                          enabled = selectedUser != null,
-                          onClick = { onUserClick(selectedUser!!.uid) })) {
-                if (selectedUser != null && errorMessage == null) {
-                  val profilePicture = selectedUser.profilePicture
-                  val username = selectedUser.username
-                  val tag = AVATAR_IMAGE.takeIf { profilePicture.isNotBlank() } ?: AVATAR_LETTER
-                  Box {
-                    ProfilePicture(
-                        modifier = Modifier.testTag(tag),
-                        size = 50.dp,
-                        profilePicture = profilePicture,
-                        username = username,
-                        textStyle = Typography.bodySmall)
-                  }
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Text(
-                    modifier =
-                        Modifier.testTag(UserProfileCardTestTags.USERNAME_TEXT)
-                            .horizontalScroll(rememberScrollState()),
-                    text = selectedUser?.username ?: "",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSecondaryContainer,
-                    textAlign = TextAlign.Right,
-                    maxLines = 1)
-              }
+            if (selectedUser != null && errorMessage == null) {
+                ClickableProfileRow(
+                    userId = selectedUser.uid,
+                    username = selectedUser.username,
+                    profilePictureUrl = selectedUser.profilePicture,
+                    profileSize = 50.dp,
+                    onProfileClick = onUserClick,
+                    enabled = true,
+                    usernameStyle = Typography.headlineMedium.copy(
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    usernameColor = colorScheme.onSecondaryContainer,
+                    usernameMaxLines = 1,
+                    profileTestTag = if (selectedUser.profilePicture.isNotBlank())
+                        AVATAR_IMAGE else AVATAR_LETTER,
+                    usernameTestTag = UserProfileCardTestTags.USERNAME_TEXT,
+                    usernameModifier = Modifier.horizontalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
           Spacer(modifier = Modifier.width(16.dp))
 
