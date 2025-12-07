@@ -48,7 +48,8 @@ fun FeedScreen(
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
     onOpenPost: (String) -> Unit = {},
-    onLocationClick: (Location) -> Unit = {}
+    onLocationClick: (Location) -> Unit = {},
+    onProfileClick: (String) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -75,7 +76,8 @@ fun FeedScreen(
       likeCounts = uiState.likeCounts,
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
       isPublicFeed = uiState.isPublicFeed,
-      onToggleFeed = { feedViewModel.toggleFeedType() })
+      onToggleFeed = { feedViewModel.toggleFeedType() },
+      onProfileClick = onProfileClick)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,7 +97,8 @@ private fun FeedScaffold(
     likeCounts: Map<String, Int> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
-    onToggleFeed: () -> Unit = {}
+    onToggleFeed: () -> Unit = {},
+    onProfileClick: (String) -> Unit
 ) {
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -154,7 +157,8 @@ private fun FeedScaffold(
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
-                  onLikeClick = onLikeClick)
+                  onLikeClick = onLikeClick,
+                  onProfileClick = onProfileClick)
 
               // Loading overlay
               if (isLoading) {
@@ -187,7 +191,8 @@ fun FeedList(
     onSeeFitClick: (OutfitPost) -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
-    onLocationClick: (Location) -> Unit = {}
+    onLocationClick: (Location) -> Unit = {},
+    onProfileClick: (String) -> Unit = {}
 ) {
   LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
     items(posts) { post ->
@@ -202,7 +207,8 @@ fun FeedList(
           onLikeClick = { onLikeClick(post) },
           onSeeFitClick = { onSeeFitClick(post) },
           onCardClick = { onPostClick(post.postUID) },
-          onLocationClick = onLocationClick)
+          onLocationClick = onLocationClick,
+          onProfileClick = onProfileClick)
     }
   }
 }
@@ -244,6 +250,7 @@ fun FeedScreenPreview() {
         likes = emptyMap(),
         likeCounts = emptyMap(),
         onLikeClick = {},
-        onOpenPost = {})
+        onOpenPost = {},
+        onProfileClick = {})
   }
 }
