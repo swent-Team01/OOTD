@@ -60,7 +60,7 @@ open class BaseEnd2EndTest {
   @get:Rule val composeTestRule = createComposeRule()
   val userId = "greg"
   val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
-  val testDateofBirth = "10102020"
+  val testDateofBirth = "10102010"
 
   lateinit var context: Context
   lateinit var mockFirebaseAuth: FirebaseAuth

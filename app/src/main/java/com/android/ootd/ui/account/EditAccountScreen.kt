@@ -73,7 +73,6 @@ import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
-import com.android.ootd.utils.composables.ProfilePicture
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -217,7 +216,7 @@ private fun AccountScreenContent(
                     avatarUri = uiState.profilePicture,
                     username = uiState.username,
                     onEditClick = { showImageSourceDialog = true },
-                    accountViewModel,
+                    deleteProfilePicture = { accountViewModel.deleteProfilePicture() },
                     context = context)
               }
 
@@ -302,8 +301,9 @@ private fun AccountScreenContent(
 
   // Profile picture editor dialog
   ProfilePictureEditor(
-      viewModel = accountViewModel,
       context = context,
+      uploadProfilePicture = accountViewModel::uploadImageToStorage,
+      editProfilePicture = { url -> accountViewModel.editUser(profilePicture = url) },
       showImageSourceDialog = showImageSourceDialog,
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
 
@@ -427,68 +427,6 @@ private fun DeleteConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Uni
               Text(text = "Cancel", style = typography.bodyMedium, color = colors.primary)
             }
       })
-}
-
-@Composable
-private fun AvatarSection(
-    avatarUri: String,
-    username: String,
-    onEditClick: () -> Unit,
-    accountViewModel: AccountViewModel,
-    modifier: Modifier = Modifier,
-    context: Context = LocalContext.current
-) {
-  val colors = LightColorScheme
-  val typography = Typography
-
-  Column(
-      modifier = modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).fillMaxWidth(),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        // Avatar image/letter
-        val tag =
-            UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE.takeIf { avatarUri.isNotBlank() }
-                ?: UiTestTags.TAG_ACCOUNT_AVATAR_LETTER
-        ProfilePicture(
-            Modifier.testTag(tag),
-            120.dp,
-            avatarUri,
-            username,
-            typography.headlineMedium.copy(fontFamily = Bodoni))
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
-
-        // Edit and Delete buttons under avatar
-        Row(
-            modifier = Modifier.wrapContentWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
-              ActionButton(
-                  onButtonClick = onEditClick,
-                  modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT),
-                  buttonText = editProfilePicture)
-
-              // Delete button - only show if user has a profile picture
-              if (avatarUri.isNotBlank()) {
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Button(
-                    onClick = {
-                      accountViewModel.deleteProfilePicture()
-                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
-                    },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
-                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
-                      Text(
-                          text = "Delete",
-                          color = colors.onError,
-                          style = typography.titleMedium.copy(fontFamily = Bodoni))
-                    }
-              }
-            }
-      }
 }
 
 @Composable

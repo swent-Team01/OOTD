@@ -342,7 +342,11 @@ class AccountRepositoryFirestore(
       // 3. Delete all items from user
       deleteUserItems(userID)
 
-      // 4. Finally delete the account document itself
+      // 3. Remove all friends
+      val account = getAccount(userID)
+      deleteUserFriends(account)
+
+      // 5. Finally delete the account document itself
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
       Log.d(TAG, "Successfully deleted account with UID: $userID")
     } catch (_: NoSuchElementException) {
@@ -445,7 +449,7 @@ class AccountRepositoryFirestore(
 
       withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayUnion(itemUid)).await() }
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Account item add timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -462,7 +466,7 @@ class AccountRepositoryFirestore(
       withTimeout(TIMEOUT) { userRef.update("itemsUids", FieldValue.arrayRemove(itemUid)).await() }
       Log.d("AccountRepositoryFirestore", "Item removed from Firestore")
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w("AccountRepositoryFirestore", "Account item remove timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -512,7 +516,7 @@ class AccountRepositoryFirestore(
         userRef.update("starredItemUids", FieldValue.arrayUnion(itemUid)).await()
       }
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Starred item add timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -529,7 +533,7 @@ class AccountRepositoryFirestore(
         userRef.update("starredItemUids", FieldValue.arrayRemove(itemUid)).await()
       }
       true
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Starred item remove timed out (offline), queued.")
       true
     } catch (e: Exception) {
@@ -567,7 +571,7 @@ class AccountRepositoryFirestore(
 
     try {
       withTimeout(TIMEOUT) { userRef.update("starredItemUids", operation).await() }
-    } catch (e: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) {
       Log.w(TAG, "Starred item toggle timed out (offline), queued.")
     }
 
@@ -644,6 +648,18 @@ class AccountRepositoryFirestore(
       Log.d(TAG, "Deleted ${itemsQuery.size()} items for user $userID")
     } catch (e: Exception) {
       Log.w(TAG, "Error querying items for user deletion (continuing): ${e.message}")
+    }
+  }
+
+  private suspend fun deleteUserFriends(acc: Account) {
+    val friendList = acc.friendUids
+    if (friendList.isEmpty()) return
+    for (friend in friendList) {
+      try {
+        removeFriend(acc.ownerId, friend)
+      } catch (_: Exception) {
+        Log.w(TAG, "Failed to delete user friend : $friend")
+      }
     }
   }
 

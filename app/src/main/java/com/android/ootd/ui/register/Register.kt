@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.ui.account.AvatarSection
+import com.android.ootd.ui.account.ProfilePictureEditor
 import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
@@ -96,7 +98,15 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val usernameField = rememberFieldState()
   val dateField = rememberFieldState()
   val locationField = rememberFieldState()
+  val context = LocalContext.current
   var showDatePicker by remember { mutableStateOf(false) }
+  var showImageSourceDialog by remember { mutableStateOf(false) }
+
+  // Reset the form when the screen is first shown
+  DisposableEffect(Unit) {
+    viewModel.refresh()
+    onDispose {}
+  }
 
   val locationPermissionLauncher =
       rememberLauncherForActivityResult(
@@ -124,6 +134,13 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
       onRegister = onRegister,
       onHideDatePicker = { showDatePicker = false })
 
+  ProfilePictureEditor(
+      context = context,
+      editProfilePictureLocal = viewModel::setProfilePicture,
+      showImageSourceDialog = showImageSourceDialog,
+      onShowImageSourceDialogChange = { showImageSourceDialog = it },
+      isLocal = true)
+
   UpdateFieldColors(usernameField, usernameError)
   UpdateFieldColors(dateField, dateError)
   UpdateFieldColors(locationField, locationError)
@@ -140,6 +157,13 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           RegisterHeader()
 
           Spacer(modifier = Modifier.height(SPACER))
+
+          AvatarSection(
+              avatarUri = registerUiState.localProfilePictureUri?.toString() ?: "",
+              username = registerUiState.username,
+              onEditClick = { showImageSourceDialog = true },
+              deleteProfilePicture = { viewModel.clearProfilePicture() },
+          )
 
           UsernameField(
               value = registerUiState.username,

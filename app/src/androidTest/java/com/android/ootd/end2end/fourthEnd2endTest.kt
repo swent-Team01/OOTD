@@ -47,7 +47,7 @@ class FourthEnd2EndTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
 
   val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
-  val testDateofBirth = "10102020"
+  val testDateofBirth = "10102010"
   val testUsername = "testTestUser"
   val fakeGoogleIdToken2 =
       FakeJwtGenerator.createFakeGoogleIdToken("brbrbrbrbrbr", email = "greg_2@gmail.com")
