@@ -81,57 +81,75 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
                         Modifier.align(Alignment.Center)
                             .testTag(MapScreenTestTags.LOADING_INDICATOR))
               } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                  // Tab selector for switching between maps
-                  OOTDTabRow(
-                      selectedTabIndex =
-                          if (uiState.selectedMapType == MapType.FRIENDS_POSTS) 0 else 1,
-                      tabs = listOf("Friends Posts", "Find Friends"),
-                      onTabClick = { index ->
-                        viewModel.setMapType(
-                            if (index == 0) MapType.FRIENDS_POSTS else MapType.FIND_FRIENDS)
-                      },
-                      modifier = Modifier.testTag(MapScreenTestTags.TAB_ROW),
-                      tabModifiers =
-                          listOf(
-                              Modifier.testTag(MapScreenTestTags.FRIENDS_POSTS_TAB),
-                              Modifier.testTag(MapScreenTestTags.FIND_FRIENDS_TAB)))
-
-                  // Camera position centered on focus location (either provided location or user's
-                  // location)
-                  val cameraPositionState = rememberCameraPositionState {
-                    position = CameraPosition.fromLatLngZoom(viewModel.getFocusLatLng(), 12f)
-                  }
-
-                  // Update camera position when focus location changes
-                  androidx.compose.runtime.LaunchedEffect(
-                      uiState.focusLocation, uiState.userLocation) {
-                        cameraPositionState.animate(
-                            CameraUpdateFactory.newLatLngZoom(viewModel.getFocusLatLng(), 12f))
-                      }
-
-                  // Display the appropriate map based on selected tab
-                  when (uiState.selectedMapType) {
-                    MapType.FRIENDS_POSTS -> {
-                      FriendsPostsMap(
-                          modifier = Modifier.fillMaxSize(),
-                          cameraPositionState = cameraPositionState,
-                          posts = uiState.posts,
-                          viewModel = viewModel,
-                          onPostClick = onPostClick,
-                          context = context,
-                          coroutineScope = coroutineScope)
-                    }
-                    MapType.FIND_FRIENDS -> {
-                      FindFriendsMap(
-                          modifier = Modifier.fillMaxSize(),
-                          cameraPositionState = cameraPositionState)
-                    }
-                  }
-                }
+                MapContent(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    onPostClick = onPostClick,
+                    context = context,
+                    coroutineScope = coroutineScope)
               }
             }
       })
+}
+
+/** Main content for the map screen including tabs and map display. */
+@Composable
+private fun MapContent(
+    uiState: MapUiState,
+    viewModel: MapViewModel,
+    onPostClick: (String) -> Unit,
+    context: Context,
+    coroutineScope: CoroutineScope
+) {
+  Column(modifier = Modifier.fillMaxSize()) {
+    // Tab selector for switching between maps
+    MapTabRow(
+        selectedMapType = uiState.selectedMapType, onMapTypeChange = { viewModel.setMapType(it) })
+
+    // Camera position centered on focus location
+    val cameraPositionState = rememberCameraPositionState {
+      position = CameraPosition.fromLatLngZoom(viewModel.getFocusLatLng(), 12f)
+    }
+
+    // Update camera position when focus location changes
+    androidx.compose.runtime.LaunchedEffect(uiState.focusLocation, uiState.userLocation) {
+      cameraPositionState.animate(
+          CameraUpdateFactory.newLatLngZoom(viewModel.getFocusLatLng(), 12f))
+    }
+
+    // Display the appropriate map based on selected tab
+    when (uiState.selectedMapType) {
+      MapType.FRIENDS_POSTS -> {
+        FriendsPostsMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            posts = uiState.posts,
+            viewModel = viewModel,
+            onPostClick = onPostClick,
+            context = context,
+            coroutineScope = coroutineScope)
+      }
+      MapType.FIND_FRIENDS -> {
+        FindFriendsMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState)
+      }
+    }
+  }
+}
+
+/** Tab row for switching between Friends Posts and Find Friends maps. */
+@Composable
+private fun MapTabRow(selectedMapType: MapType, onMapTypeChange: (MapType) -> Unit) {
+  OOTDTabRow(
+      selectedTabIndex = if (selectedMapType == MapType.FRIENDS_POSTS) 0 else 1,
+      tabs = listOf("Friends Posts", "Find Friends"),
+      onTabClick = { index ->
+        onMapTypeChange(if (index == 0) MapType.FRIENDS_POSTS else MapType.FIND_FRIENDS)
+      },
+      modifier = Modifier.testTag(MapScreenTestTags.TAB_ROW),
+      tabModifiers =
+          listOf(
+              Modifier.testTag(MapScreenTestTags.FRIENDS_POSTS_TAB),
+              Modifier.testTag(MapScreenTestTags.FIND_FRIENDS_TAB)))
 }
 
 /** Map displaying friends' outfit posts with clustering. */
