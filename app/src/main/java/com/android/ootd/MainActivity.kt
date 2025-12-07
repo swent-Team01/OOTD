@@ -326,6 +326,9 @@ fun OOTDApp(
                                 latitude = location.latitude,
                                 longitude = location.longitude,
                                 locationName = location.name))
+                      },
+                      onProfileClick = {ownerId ->
+                        navigationActions.navigateTo(Screen.ViewUser(ownerId))
                       })
                 }
 
@@ -511,7 +514,12 @@ fun OOTDApp(
                       val postId = navBackStackEntry.arguments?.getString("postId")
 
                       if (postId != null) {
-                        PostViewScreen(postId = postId, onBack = { navigationActions.goBack() })
+                        PostViewScreen(
+                            postId = postId,
+                            onBack = { navigationActions.goBack() },
+                            onProfileClick = { ownerId ->
+                              navigationActions.navigateTo(Screen.ViewUser(ownerId))
+                            } )
                       }
                     }
 
@@ -543,7 +551,11 @@ fun OOTDApp(
 
                 composable(route = Screen.NotificationsScreen.route) {
                   NotificationsScreen(
-                      testMode = testMode, onBackClick = { navigationActions.goBack() })
+                      testMode = testMode,
+                      onBackClick = { navigationActions.goBack() },
+                      onProfileClick = { userId ->
+                        navigationActions.navigateTo(Screen.ViewUser(userId))
+                      } )
                 }
               }
             }
