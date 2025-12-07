@@ -162,6 +162,31 @@ class FeedRepositoryFirestoreTest : FirestoreTest() {
     assertTrue(freshRepo.getFeedForUids(listOf(currentUid)).isEmpty())
   }
 
+  @Test
+  fun getFeed_skipsFailedChunks_butReturnsSuccesses() = runTest {
+    val ids = (1..11).map { "u$it" }
+    // chunk size 10 => two chunks, first will fail, second succeeds
+    val repo =
+        object : FeedRepositoryFirestore(FirebaseFirestore.getInstance()) {
+          private var calls = 0
+
+          override suspend fun fetchChunk(
+              ownerIds: List<String>,
+              cutoff: Long?,
+              order: com.google.firebase.firestore.Query.Direction
+          ): List<OutfitPost> {
+            calls++
+            if (calls == 1) error("simulate chunk failure")
+            return listOf(samplePost(ownerIds.first(), ts = 5L).copy(ownerId = ownerIds.first()))
+          }
+        }
+
+    val result = repo.getFeedForUids(ids)
+
+    assertEquals(1, result.size)
+    assertEquals("u11", result.first().ownerId)
+  }
+
   // -------- getPostById and mapToPost tests --------
 
   @Test

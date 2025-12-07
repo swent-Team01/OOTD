@@ -7,6 +7,7 @@ import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Query.Direction
 import com.google.firebase.firestore.Source
 import java.time.Duration
 import java.time.LocalDate
@@ -22,7 +23,7 @@ const val POSTS_COLLECTION_PATH = "posts"
 const val REFRESH_INTERVAL_MILLIS = 60_000L
 private val MILLIS_IN_24_HOURS = Duration.ofHours(24).toMillis()
 
-class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
+open class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepository {
   private val ownerAttributeName = "ownerId"
 
   companion object {
@@ -44,13 +45,11 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val chunks = cleaned.chunked(10) // whereIn supports up to 10 values
       val results = mutableListOf<OutfitPost>()
       for (chunk in chunks) {
-        val snap =
-            db.collection(POSTS_COLLECTION_PATH)
-                .whereIn(ownerAttributeName, chunk)
-                .orderBy("timestamp")
-                .get()
-                .await()
-        results += snap.documents.mapNotNull { mapToPost(it) }
+        try {
+          results += fetchChunk(chunk)
+        } catch (e: Exception) {
+          Log.w("FeedRepositoryFirestore", "Skipping chunk ${chunk.joinToString()} due to error", e)
+        }
       }
       // Merge and sort by timestamp ascending
       results.sortedBy { it.timestamp }
@@ -72,14 +71,11 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
       val chunks = cleaned.chunked(10)
       val results = mutableListOf<OutfitPost>()
       for (chunk in chunks) {
-        val snap =
-            db.collection(POSTS_COLLECTION_PATH)
-                .whereIn(ownerAttributeName, chunk)
-                .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .get()
-                .await()
-        results += snap.documents.mapNotNull { mapToPost(it) }
+        try {
+          results += fetchChunk(chunk, cutoff = twentyFourHoursAgo, order = Direction.DESCENDING)
+        } catch (e: Exception) {
+          Log.w("FeedRepositoryFirestore", "Skipping chunk ${chunk.joinToString()} due to error", e)
+        }
       }
 
       // Sort descending (meaning most recent first)
@@ -131,6 +127,21 @@ class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepositor
   override suspend fun getPostById(postUuid: String): OutfitPost? {
     val doc = db.collection(POSTS_COLLECTION_PATH).document(postUuid).get().await()
     return mapToPost(doc) ?: throw Exception("ItemsRepositoryFirestore: Item not found")
+  }
+
+  /** Fetches a Firestore chunk for the provided owner IDs with optional time filter. */
+  protected open suspend fun fetchChunk(
+      ownerIds: List<String>,
+      cutoff: Long? = null,
+      order: Direction = Direction.ASCENDING
+  ): List<OutfitPost> {
+    val base = db.collection(POSTS_COLLECTION_PATH).whereIn(ownerAttributeName, ownerIds)
+    val query =
+        (if (cutoff != null) base.whereGreaterThanOrEqualTo("timestamp", cutoff) else base).orderBy(
+            "timestamp", order)
+
+    val snapshot = withTimeout(5_000) { query.get().await() }
+    return snapshot.documents.mapNotNull { mapToPost(it) }
   }
 
   override suspend fun getPublicFeed(): List<OutfitPost> {
