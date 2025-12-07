@@ -40,6 +40,7 @@ object FeedScreenTestTags {
   const val FEED_LIST = "feedList"
   const val NAVIGATE_TO_NOTIFICATIONS_SCREEN = "navigateToNotificationsScreen"
   const val LOADING_OVERLAY = "feedLoadingOverlay"
+  const val REFRESHER = "feedRefresher"
 }
 
 @SuppressLint("SuspiciousIndentation")
@@ -203,7 +204,7 @@ fun FeedList(
 ) {
   // Pull to refresh layout
   PullToRefresh(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.REFRESHER),
       isRefreshing = isRefreshing,
       onRefresh = { onRefresh() },
       content = {

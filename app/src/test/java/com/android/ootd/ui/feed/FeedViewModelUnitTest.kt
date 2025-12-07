@@ -181,4 +181,42 @@ class FeedViewModelUnitTest {
 
     coVerify { postRepo.getPostById("post1") }
   }
+
+  @Test
+  fun `onPullToRefreshTrigger sets isRefreshing state and triggers feed refresh`() = runTest {
+    // Setup
+    val account = Account(uid = "testUser", friendUids = listOf("friend1"))
+    val posts = listOf(OutfitPost(postUID = "post1", ownerId = "friend1"))
+
+    viewModel.setCurrentAccount(account)
+
+    // Mock repository calls
+    coEvery { feedRepository.getCachedFriendFeed(any()) } returns emptyList()
+    coEvery { feedRepository.getRecentFeedForUids(any()) } returns posts
+    coEvery { feedRepository.hasPostedToday(any()) } returns false
+    coEvery { likesRepository.isPostLikedByUser(any(), any()) } returns false
+    coEvery { likesRepository.getLikeCount(any()) } returns 0
+
+    // Initially isRefreshing should be false
+    assertFalse(viewModel.isRefreshing.value)
+
+    // Trigger pull to refresh
+    viewModel.onPullToRefreshTrigger()
+
+    // Advance time slightly to let the coroutine start
+    testDispatcher.scheduler.advanceTimeBy(100)
+
+    // isRefreshing should be true during the refresh
+    assertTrue(viewModel.isRefreshing.value)
+
+    // Advance time to complete the delay and refresh
+    testDispatcher.scheduler.advanceTimeBy(2100)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // isRefreshing should be false after refresh completes
+    assertFalse(viewModel.isRefreshing.value)
+
+    // Verify that feed was refreshed
+    coVerify { feedRepository.getRecentFeedForUids(any()) }
+  }
 }
