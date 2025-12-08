@@ -42,6 +42,7 @@ object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
   const val POST_USERNAME = "postUsername"
   const val POST_IMAGE = "postImage"
+  const val POST_IMAGE_BOX = "postImageBox"
   const val POST_DESCRIPTION = "postDescription"
   const val SEE_FIT_BUTTON = "seeFitButton"
   const val PROFILE_PIC = "profilePic"
@@ -170,6 +171,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
               .height(260.dp)
               .clip(RoundedCornerShape(12.dp))
               .background(Color.White)
+              .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
         AsyncImage(
             model = post.outfitURL.ifBlank { null },

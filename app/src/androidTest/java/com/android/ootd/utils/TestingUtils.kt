@@ -22,6 +22,7 @@ import com.android.ootd.ui.consent.BetaConsentScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.OUTFIT_POST_CARD
+import com.android.ootd.ui.feed.OutfitPostCardTestTags.POST_LOCATION
 import com.android.ootd.ui.feed.SeeFitScreenTestTags
 import com.android.ootd.ui.inventory.InventoryScreenTestTags
 import com.android.ootd.ui.map.LocationSelectionTestTags
@@ -30,6 +31,7 @@ import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
+import com.android.ootd.ui.post.PostViewTestTags
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
@@ -129,17 +131,23 @@ fun verifyElementAppearsWithTimer(
 fun addPostWithOneItem(
     composeTestRule: ComposeContentTestRule,
     selectFromInventory: Boolean = false,
-    inventoryItemUuid: String = ""
+    inventoryItemUuid: String = "",
+    addLocation: Boolean = false
 ) {
   verifyElementAppearsWithTimer(composeTestRule, FeedScreenTestTags.ADD_POST_FAB)
 
   clickWithWait(composeTestRule, FeedScreenTestTags.ADD_POST_FAB, useUnmergedTree = true)
-  clickWithWait(composeTestRule, FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
-  verifyElementAppearsWithTimer(composeTestRule, FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)
-  clickWithWait(composeTestRule, FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)
+  if (addLocation) {
+    clickWithWait(
+        composeTestRule, LocationSelectionTestTags.LOCATION_DEFAULT_EPFL, shouldScroll = true)
+  }
   composeTestRule
       .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
       .performTextInput("Sample description")
+
+  clickWithWait(composeTestRule, FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
+  verifyElementAppearsWithTimer(composeTestRule, FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)
+  clickWithWait(composeTestRule, FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)
 
   clickWithWait(composeTestRule, FitCheckScreenTestTags.NEXT_BUTTON)
   verifyElementAppearsWithTimer(composeTestRule, PreviewItemScreenTestTags.SCREEN_TITLE)
@@ -409,4 +417,19 @@ fun checkOutMap(composeTestRule: ComposeContentTestRule) {
   clickWithWait(composeTestRule, NavigationTestTags.MAP_TAB)
 
   verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
+}
+
+fun verifyPressingLocationGoesToMap(composeTestRule: ComposeContentTestRule) {
+  clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
+  verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION)
+  composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performClick()
+  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
+}
+
+fun checkOutfitView(composeTestRule: ComposeContentTestRule) {
+  clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
+  verifyElementAppearsWithTimer(composeTestRule, OutfitPostCardTestTags.POST_IMAGE_BOX)
+  composeTestRule.onAllNodesWithTag(OutfitPostCardTestTags.POST_IMAGE_BOX)[0].performClick()
+  verifyElementAppearsWithTimer(composeTestRule, PostViewTestTags.SCREEN)
+  clickWithWait(composeTestRule, PostViewTestTags.FIRST_LIKE_BUTTON)
 }

@@ -50,6 +50,7 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.map.LocationSelectionViewState
+import com.android.ootd.ui.post.PostViewTestTags.FIRST_LIKE_BUTTON
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
@@ -75,6 +76,7 @@ object PostViewTestTags {
   const val SAVE_EDITED_DESCRIPTION_BUTTON = "saveEditedDescriptionButton"
   const val CANCEL_EDITING_BUTTON = "cancelEditingButton"
   const val EDIT_DESCRIPTION_FIELD = "editDescriptionField"
+  const val FIRST_LIKE_BUTTON = "firstLikeButton"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -566,7 +568,8 @@ private fun PostHeroImage(
                         AssistChipDefaults.assistChipColors(
                             containerColor = Color.White.copy(alpha = 0.2f),
                             labelColor = Color.White,
-                            leadingIconContentColor = Color.White))
+                            leadingIconContentColor = Color.White),
+                    modifier = Modifier.testTag(FIRST_LIKE_BUTTON))
               }
         }
       }
