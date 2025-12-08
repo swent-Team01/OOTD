@@ -182,7 +182,8 @@ class ViewUserScreenTest {
     composeTestRule.onNodeWithText("This user is your friend").assertIsDisplayed()
 
     composeTestRule.onNodeWithTag(ViewUserScreenTags.POST_TAG).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(ViewUserScreenTags.POST_TAG).assertTextContains("No posts !")
+    composeTestRule.onNodeWithTag(ViewUserScreenTags.POST_TAG).assertTextContains("No posts yet !")
+    composeTestRule.onNodeWithTag("PostHangerIcon").assertIsDisplayed()
   }
 
   @Test

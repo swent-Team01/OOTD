@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.ui.theme.OnSurface
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -145,8 +146,7 @@ private fun ViewUserProfileContent(
 
         Spacer(modifier = Modifier.height(9.dp))
 
-        ShowText(
-            text = friendStatusText, style = Typography.bodyLarge, color = colorScheme.onSurface)
+        ShowText(text = friendStatusText, style = Typography.bodyLarge, color = OnSurface)
 
         Spacer(modifier = Modifier.height(9.dp))
 
@@ -156,7 +156,7 @@ private fun ViewUserProfileContent(
         ShowText(
             text = "$friendCount $friendText",
             style = Typography.bodyLarge,
-            color = colorScheme.onSurface,
+            color = OnSurface,
             modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -185,7 +185,7 @@ private fun ViewUserProfileContent(
               text = "Add this user as a friend to see their posts",
               style = Typography.bodyMedium,
               textAlign = TextAlign.Center,
-              color = colorScheme.onSurface,
+              color = OnSurface,
               modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
         }
       }
