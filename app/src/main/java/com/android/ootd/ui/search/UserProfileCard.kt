@@ -117,7 +117,6 @@ fun UserProfileCard(
                 usernameStyle =
                     Typography.headlineMedium.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold),
                 usernameColor = colorScheme.onSecondaryContainer,
-                usernameMaxLines = 1,
                 profileTestTag =
                     if (selectedUser.profilePicture.isNotBlank()) AVATAR_IMAGE else AVATAR_LETTER,
                 usernameTestTag = UserProfileCardTestTags.USERNAME_TEXT,

@@ -62,7 +62,6 @@ fun FollowRequestCard(
                       Typography.titleMedium.copy(
                           fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
                   usernameColor = OnSecondaryContainer,
-                  usernameMaxLines = 1,
                   modifier = Modifier.weight(1f)) {
                     // Notification message below username
                     Text(

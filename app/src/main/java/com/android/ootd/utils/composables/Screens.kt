@@ -382,7 +382,6 @@ fun CommonTextField(
  * @param showUsername Whether to display the username (default true)
  * @param usernameStyle Text style for the username
  * @param usernameColor Color for the username text
- * @param usernameMaxLines Maximum lines for username
  * @param usernameModifier Modifier for the username text
  * @param profileTestTag Test tag for the profile picture
  * @param usernameTestTag Test tag for the username
@@ -401,7 +400,6 @@ fun ClickableProfileRow(
     showUsername: Boolean = true,
     usernameStyle: TextStyle = Typography.titleLarge,
     usernameColor: Color = Primary,
-    usernameMaxLines: Int = 1,
     usernameModifier: Modifier = Modifier,
     profileTestTag: String? = null,
     usernameTestTag: String? = null,
@@ -426,7 +424,7 @@ fun ClickableProfileRow(
                 text = username,
                 style = usernameStyle,
                 color = usernameColor,
-                maxLines = usernameMaxLines,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier =
                     usernameModifier.then(
@@ -451,7 +449,6 @@ fun ClickableProfileRow(
  * @param modifier Optional modifier
  * @param usernameStyle Text style for the username
  * @param usernameColor Color for the username
- * @param usernameMaxLines Maximum lines for username
  * @param profileTestTag Test tag for the profile picture
  * @param usernameTestTag Test tag for the username
  */
@@ -465,7 +462,6 @@ fun ClickableProfileColumn(
     modifier: Modifier = Modifier,
     usernameStyle: TextStyle = Typography.labelSmall,
     usernameColor: Color = Primary,
-    usernameMaxLines: Int = 1,
     profileTestTag: String? = null,
     usernameTestTag: String? = null
 ) {
@@ -485,7 +481,7 @@ fun ClickableProfileColumn(
             text = username,
             style = usernameStyle,
             color = usernameColor,
-            maxLines = usernameMaxLines,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = Center,
             modifier = if (usernameTestTag != null) Modifier.testTag(usernameTestTag) else Modifier)
