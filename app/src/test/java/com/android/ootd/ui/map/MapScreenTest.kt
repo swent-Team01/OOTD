@@ -99,11 +99,15 @@ class MapScreenTest {
   fun mapScreen_displaysAllUIComponents() {
     composeTestRule.setContent { MapScreen(viewModel = mockViewModel) }
 
+    // Verify scaffold and basic structure
     composeTestRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR_TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithText("MAP").assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
+
+    // Verify loading indicator is shown (since dispatcher is not advanced)
+    composeTestRule.onNodeWithTag(MapScreenTestTags.LOADING_INDICATOR).assertExists()
   }
 
   @Test
@@ -124,10 +128,13 @@ class MapScreenTest {
             MapScreenTestTags.LOADING_INDICATOR,
             MapScreenTestTags.TOP_BAR,
             MapScreenTestTags.TOP_BAR_TITLE,
-            MapScreenTestTags.CONTENT_BOX)
+            MapScreenTestTags.CONTENT_BOX,
+            MapScreenTestTags.TAB_ROW,
+            MapScreenTestTags.FRIENDS_POSTS_TAB,
+            MapScreenTestTags.FIND_FRIENDS_TAB)
 
     // All tags should be unique
-    assert(tags.size == 6) { "Expected 6 unique test tags, got ${tags.size}" }
+    assert(tags.size == 9) { "Expected 9 unique test tags, got ${tags.size}" }
   }
 
   @Test
