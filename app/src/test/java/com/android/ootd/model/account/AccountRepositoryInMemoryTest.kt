@@ -104,9 +104,7 @@ class AccountRepositoryInMemoryTest {
   @Test
   fun togglePrivacy_createsPublicLocationWhenAccountBecomesPublic() = runBlocking {
     setValidLocation("user1")
-    // user1 is already private by default, no need to toggle first
-
-    assertFalse(repository.togglePrivacy("user1")) // Make public
+    assertFalse(repository.togglePrivacy("user1"))
 
     val publicLocations = repository.getPublicLocations()
     assertEquals(1, publicLocations.size)
@@ -116,12 +114,9 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun togglePrivacy_throwsInvalidLocationExceptionWhenLocationIsInvalid() = runBlocking {
-    // user1 is already private by default with invalid location
-
     assertThrows(InvalidLocationException::class.java) {
-      runBlocking { repository.togglePrivacy("user1") } // Try to make public with invalid location
+      runBlocking { repository.togglePrivacy("user1") }
     }
-
     assertEquals(0, repository.getPublicLocations().size)
   }
 
@@ -129,7 +124,6 @@ class AccountRepositoryInMemoryTest {
   fun togglePrivacy_removesPublicLocationWhenAccountBecomesPrivate() = runBlocking {
     setValidLocation("user1")
     makePublic("user1")
-
     assertEquals(1, repository.getPublicLocations().size)
 
     assertTrue(repository.togglePrivacy("user1"))
@@ -152,10 +146,7 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun editAccount_doesNotSyncPublicLocationWhenAccountIsPrivate() = runBlocking {
-    // user1 is already private by default, no need to toggle
-
     repository.editAccount("user1", "new_username", "1990-01-01", "pic.jpg", NY_LOCATION)
-
     assertEquals(0, repository.getPublicLocations().size)
   }
 
@@ -163,11 +154,9 @@ class AccountRepositoryInMemoryTest {
   fun deleteAccount_removesPublicLocationIfExists() = runBlocking {
     setValidLocation("user2", EPFL_LOCATION)
     makePublic("user2")
-
     assertEquals(1, repository.getPublicLocations().size)
 
     repository.deleteAccount("user2")
-
     assertEquals(0, repository.getPublicLocations().size)
   }
 
@@ -179,7 +168,6 @@ class AccountRepositoryInMemoryTest {
     makePublic("user2")
 
     val publicLocations = repository.getPublicLocations()
-
     assertEquals(2, publicLocations.size)
     assertTrue(publicLocations.any { it.ownerId == "user1" })
     assertTrue(publicLocations.any { it.ownerId == "user2" })
@@ -192,24 +180,17 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun observePublicLocations_emitsUpdatesWhenPublicLocationChanges() = runBlocking {
-    // Set a valid location for user1
     setValidLocation("user1", EPFL_LOCATION)
 
-    // Verify initial state - no public locations (user1 is private by default)
     val initialLocations = repository.getPublicLocations()
-    assertEquals("Initial state should have no public locations", 0, initialLocations.size)
+    assertEquals(0, initialLocations.size)
 
-    // Make account public (user1 is already private, so just toggle once)
     repository.togglePrivacy("user1")
-
     val afterPublic = repository.getPublicLocations()
-    assertEquals("After making public, should have 1 location", 1, afterPublic.size)
+    assertEquals(1, afterPublic.size)
     assertEquals("user1", afterPublic[0].ownerId)
 
-    // Make account private again
     repository.togglePrivacy("user1")
-
     val afterPrivate = repository.getPublicLocations()
-    assertEquals("After making private, should have 0 locations", 0, afterPrivate.size)
   }
 }

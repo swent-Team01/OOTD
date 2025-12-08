@@ -24,10 +24,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * Generic cluster renderer that displays profile pictures for individual markers and circular
- * badges with counts for clustered markers.
- *
- * This renderer handles asynchronous loading of profile pictures and caches them for performance.
- * Works with any ClusterItem that implements ProfileMarkerItem.
+ * badges with counts for clustered markers. This renderer handles asynchronous loading of profile
+ * pictures and caches them for performance.
  *
  * Disclaimer: This takes inspiration from
  * https://developers.google.com/maps/documentation/android-sdk/utility/marker-clustering.

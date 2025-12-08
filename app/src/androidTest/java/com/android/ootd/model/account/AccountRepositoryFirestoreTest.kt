@@ -572,7 +572,6 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun togglePrivacy_createsPublicLocationWhenAccountBecomesPublic() = runTest {
     add(account1.copy(isPrivate = true, location = EPFL_LOCATION))
-
     assertFalse(accountRepository.togglePrivacy(account1.uid))
 
     val doc = publicLocDoc(account1.uid)
@@ -584,8 +583,7 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun togglePrivacy_throwsInvalidLocationExceptionWhenLocationIsInvalid() = runTest {
-    add(account1.copy(isPrivate = true)) // emptyLocation by default
-
+    add(account1.copy(isPrivate = true))
     expectThrows<InvalidLocationException> { accountRepository.togglePrivacy(account1.uid) }
     assertFalse(publicLocDoc(account1.uid).exists())
   }
@@ -611,10 +609,8 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun editAccount_doesNotSyncPublicLocationWhenAccountIsPrivate() = runTest {
     add(account1.copy(isPrivate = true, location = EPFL_LOCATION))
-
     accountRepository.editAccount(
         account1.uid, "new_username", account1.birthday, account1.profilePicture, LAUSANNE_LOCATION)
-
     assertFalse(publicLocDoc(account1.uid).exists())
   }
 
@@ -622,24 +618,20 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   fun deleteAccount_removesPublicLocationIfExists() = runTest {
     add(account1.copy(isPrivate = false, location = EPFL_LOCATION))
     makePublic(account1.uid)
-
     assertTrue(publicLocDoc(account1.uid).exists())
 
     accountRepository.deleteAccount(account1.uid)
-
     assertFalse(publicLocDoc(account1.uid).exists())
   }
 
   @Test
   fun getPublicLocations_returnsAllPublicAccounts() = runTest {
-    // Create one account with valid location
     val public1 = account1.copy(isPrivate = false, location = EPFL_LOCATION)
     add(public1)
     makePublic(public1.uid)
 
     val locations = accountRepository.getPublicLocations()
     assertEquals(1, locations.size)
-
     val loc1 = locations.find { it.ownerId == public1.uid }!!
     assertEquals(public1.username, loc1.username)
     assertEquals(EPFL_LOCATION.latitude, loc1.location.latitude, 0.0001)
@@ -661,11 +653,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     kotlinx.coroutines.delay(500)
     makePublic(account1.uid)
     kotlinx.coroutines.delay(500)
-    accountRepository.togglePrivacy(account1.uid) // Make private
+    accountRepository.togglePrivacy(account1.uid)
     kotlinx.coroutines.delay(500)
 
     job.cancel()
-
     assertTrue(emissions.size >= 2)
     assertTrue(emissions.any { it.isNotEmpty() })
     assertTrue(emissions.last().isEmpty())
