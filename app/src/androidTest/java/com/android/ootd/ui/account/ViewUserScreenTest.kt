@@ -122,7 +122,7 @@ class ViewUserScreenTest {
   @Test
   fun screen_displays_correctly_when_not_friend() {
     uiStateFlow.value =
-        ViewUserData(username = "testuser", friendCount = 42, isFriend = false, isLoading = false)
+        ViewUserData(username = "testuser", friendCount = 1, isFriend = false, isLoading = false)
     setContent()
 
     composeTestRule.onNodeWithTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG).assertIsDisplayed()
@@ -131,7 +131,7 @@ class ViewUserScreenTest {
     composeTestRule.onNodeWithTag(ViewUserScreenTags.FRIEND_COUNT_TAG).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(ViewUserScreenTags.FRIEND_COUNT_TAG)
-        .assertTextContains("42 friends")
+        .assertTextContains("1 friend")
 
     composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
     composeTestRule

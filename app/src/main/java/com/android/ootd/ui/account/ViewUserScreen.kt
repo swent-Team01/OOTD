@@ -150,9 +150,11 @@ private fun ViewUserProfileContent(
 
         Spacer(modifier = Modifier.height(9.dp))
 
+        val friendCount = uiState.friendCount
+        val friendText = if (friendCount == 1) "friend" else "friends"
         // Friend count
         ShowText(
-            text = "${uiState.friendCount} friends",
+            text = "$friendCount $friendText",
             style = Typography.bodyLarge,
             color = colorScheme.onSurface,
             modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
