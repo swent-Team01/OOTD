@@ -59,7 +59,7 @@ object FitCheckScreenTestTags {
   const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
 
-private const val MAX_DESCRIPTION_LENGTH = 100
+private const val MAX_DESCRIPTION_LENGTH = 200
 
 /** Image preview box showing selected photo or placeholder */
 @Composable

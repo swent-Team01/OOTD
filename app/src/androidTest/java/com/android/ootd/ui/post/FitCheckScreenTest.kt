@@ -140,20 +140,20 @@ class FitCheckScreenTest {
   @Test
   fun description_overLimit_isIgnored() {
     val inputField = composeTestRule.onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
-    val validText = "x".repeat(100)
-    val tooLongText = "x".repeat(150)
+    val validText = "x".repeat(200)
+    val tooLongText = "x".repeat(250)
 
     inputField.performTextInput(validText)
     composeTestRule.waitForIdle()
 
-    composeTestRule.runOnIdle { assert(viewModel.uiState.value.description.length == 100) }
+    composeTestRule.runOnIdle { assert(viewModel.uiState.value.description.length == 200) }
 
     inputField.performTextReplacement(tooLongText)
     composeTestRule.waitForIdle()
 
     composeTestRule.runOnIdle {
       val actualLength = viewModel.uiState.value.description.length
-      assert(actualLength == 100) { "Expected capped at 100, but got $actualLength" }
+      assert(actualLength == 200) { "Expected capped at 200, but got $actualLength" }
     }
   }
 

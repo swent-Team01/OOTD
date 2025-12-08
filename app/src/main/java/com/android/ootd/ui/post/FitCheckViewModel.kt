@@ -137,7 +137,7 @@ class FitCheckViewModel(
                 content {
                   image(bitmap)
                   text(
-                      "Make a description for a social media app of the image you got as input. Make it joyfull. Only output around 100 characters. Do not add anything else")
+                      "Write an engaging description for a social media app of the image you got as input. Make it joyfull and include any detailed you see in the image. Only output around 100 characters. Do not add anything else")
                 })
 
         _uiState.value = _uiState.value.copy(description = response.text ?: "", isLoading = false)
