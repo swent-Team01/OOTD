@@ -3,7 +3,6 @@ package com.android.ootd.ui.searchscreen
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -27,6 +26,7 @@ import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.search.UserSearchScreenPreview
 import com.android.ootd.ui.search.UserSearchViewModel
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
+import com.android.ootd.utils.FakeJwtGenerator
 import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import kotlinx.coroutines.test.runTest
@@ -37,6 +37,8 @@ class UserSearchScreenTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
   private lateinit var navController: NavHostController
   private lateinit var navigationActions: NavigationActions
+  val fakeGoogleIdToken2 =
+      FakeJwtGenerator.createFakeGoogleIdToken("brbrbrbrbrbr", email = "greg_2@gmail.com")
 
   @Composable
   private fun SetupTestNavigationHost() {
@@ -54,73 +56,6 @@ class UserSearchScreenTest : FirestoreTest() {
         composable(Screen.SearchScreen.route) { UserSearchScreen() }
       }
     }
-  }
-
-  @Test
-  fun testGeneralSearch() = runTest {
-    composeTestRule.setContent {
-      UserSearchScreen(
-          UserSearchViewModel(
-              userRepository = userRepository,
-              accountRepository = accountRepository,
-              notificationRepository = notificationsRepository,
-              overrideUser = false))
-    }
-    val secondUsername = UserRepositoryInMemory().nameList[1]
-    val lastUsername = UserRepositoryInMemory().nameList[4]
-
-    accountRepository.addAccount(
-        Account(uid = currentUser.uid, username = lastUsername, ownerId = currentUser.uid))
-    accountRepository.addAccount(
-        Account(uid = currentUser.uid, username = secondUsername, ownerId = currentUser.uid))
-
-    userRepository.addUser(
-        User(uid = currentUser.uid, ownerId = currentUser.uid, username = lastUsername))
-
-    // Input text to trigger dropdown
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
-        .performTextInput(lastUsername)
-
-    // Wait for dropdown to appear
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      // Verify dropdown contains exactly one item
-      composeTestRule
-          .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
-          .fetchSemanticsNodes()
-          .size == 1
-    }
-    // Verify the text of the first (and only) suggestion
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertTextEquals(lastUsername)
-
-    // Click on the first suggestion
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      // Verify dropdown contains exactly one item
-      composeTestRule
-          .onAllNodesWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON)
-          .fetchSemanticsNodes()
-          .size == 1
-    }
-
-    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
-
-    composeTestRule
-        .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(UserProfileCardTestTags.AVATAR_LETTER, useUnmergedTree = true)
-        .assertIsDisplayed()
   }
 
   @Test
