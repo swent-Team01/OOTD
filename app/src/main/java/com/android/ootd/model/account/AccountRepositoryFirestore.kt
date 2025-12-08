@@ -374,36 +374,22 @@ class AccountRepositoryFirestore(
   }
 
   override suspend fun deleteAccount(userID: String) {
+    if (userID.isBlank()) throw BlankUserID()
+
+    deleteProfilePicture(userID)
+    deleteUserPosts(userID)
+    deleteUserItems(userID)
+
+    val account = getAccount(userID)
+    deleteUserFriends(account)
+
     try {
-      if (userID.isBlank()) throw BlankUserID()
-
-      // 1. Delete profile picture from storage (ignore if missing)
-      deleteProfilePicture(userID)
-
-      // 2. Delete all posts from user
-      deleteUserPosts(userID)
-
-      // 3. Delete all items from user
-      deleteUserItems(userID)
-
-      // 4. Remove all friends
-      val account = getAccount(userID)
-      deleteUserFriends(account)
-
-      // 5. Delete public location if exists
-      try {
-        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).delete().await()
-      } catch (e: Exception) {
-        // Continue execution
-      }
-
-      // 6. Finally delete the account document itself
-      db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
-    } catch (_: NoSuchElementException) {
-      throw UnknowUserID()
-    } catch (e: Exception) {
-      throw e
+      db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).delete().await()
+    } catch (_: Exception) {
+      // Public location may not exist, safe to ignore
     }
+
+    db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
   }
 
   override suspend fun editAccount(

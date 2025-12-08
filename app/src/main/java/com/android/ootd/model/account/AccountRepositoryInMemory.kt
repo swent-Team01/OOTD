@@ -229,35 +229,27 @@ class AccountRepositoryInMemory : AccountRepository {
   }
 
   override suspend fun addItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-      if (account.itemsUids.contains(itemUid)) {
-        return true
-      }
-      val updatedItemsUids = account.itemsUids + itemUid
-      val updatedAccount = account.copy(itemsUids = updatedItemsUids)
-      accounts[currentUser] = updatedAccount
-      accountUpdates.value = Pair(currentUser, updatedAccount)
-      true
-    } catch (_: Exception) {
-      false
+    val account = getAccount(currentUser)
+    if (account.itemsUids.contains(itemUid)) {
+      return true
     }
+    val updatedItemsUids = account.itemsUids + itemUid
+    val updatedAccount = account.copy(itemsUids = updatedItemsUids)
+    accounts[currentUser] = updatedAccount
+    accountUpdates.value = Pair(currentUser, updatedAccount)
+    return true
   }
 
   override suspend fun removeItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-      if (!account.itemsUids.contains(itemUid)) {
-        return true
-      }
-      val updatedItemsUids = account.itemsUids - itemUid
-      val updatedAccount = account.copy(itemsUids = updatedItemsUids)
-      accounts[currentUser] = updatedAccount
-      accountUpdates.value = Pair(currentUser, updatedAccount)
-      true
-    } catch (_: Exception) {
-      false
+    val account = getAccount(currentUser)
+    if (!account.itemsUids.contains(itemUid)) {
+      return true
     }
+    val updatedItemsUids = account.itemsUids - itemUid
+    val updatedAccount = account.copy(itemsUids = updatedItemsUids)
+    accounts[currentUser] = updatedAccount
+    accountUpdates.value = Pair(currentUser, updatedAccount)
+    return true
   }
 
   override fun observeAccount(userID: String): Flow<Account> {
@@ -280,25 +272,17 @@ class AccountRepositoryInMemory : AccountRepository {
   override suspend fun refreshStarredItems(userID: String): List<String> = getStarredItems(userID)
 
   override suspend fun addStarredItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-      if (account.starredItemUids.contains(itemUid)) return true
-      accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids + itemUid)
-      true
-    } catch (_: Exception) {
-      false
-    }
+    val account = getAccount(currentUser)
+    if (account.starredItemUids.contains(itemUid)) return true
+    accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids + itemUid)
+    return true
   }
 
   override suspend fun removeStarredItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-      if (!account.starredItemUids.contains(itemUid)) return true
-      accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids - itemUid)
-      true
-    } catch (_: Exception) {
-      false
-    }
+    val account = getAccount(currentUser)
+    if (!account.starredItemUids.contains(itemUid)) return true
+    accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids - itemUid)
+    return true
   }
 
   override suspend fun toggleStarredItem(itemUid: String): List<String> {
