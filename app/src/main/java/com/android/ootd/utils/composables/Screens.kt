@@ -52,7 +52,6 @@ import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.post.items.commonTextFieldColors
-import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
