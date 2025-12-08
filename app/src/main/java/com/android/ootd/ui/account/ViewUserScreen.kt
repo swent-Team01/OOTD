@@ -35,7 +35,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -162,17 +161,19 @@ private fun ViewUserProfileContent(
 
         // Posts section
         if (uiState.isFriend) {
-          ShowText(
-              text = "Posts :",
-              style = Typography.bodyLarge,
-              textAlign = TextAlign.Left,
-              fontFamily = Bodoni,
-              modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
+          val posts = uiState.friendPosts
+          if (posts.isNotEmpty()) {
+            ShowText(
+                text = "${uiState.username}'s posts :",
+                style = Typography.bodyLarge,
+                textAlign = TextAlign.Left,
+                modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
 
-          Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+          }
 
           DisplayUserPosts(
-              posts = uiState.friendPosts,
+              posts = posts,
               onPostClick = onPostClick,
               modifier = Modifier.testTag(ViewUserScreenTags.POST_TAG),
               padding = 22.dp,
