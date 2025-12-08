@@ -12,11 +12,14 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.android.ootd.model.map.Location
+import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
+import com.android.ootd.ui.post.PostViewScreen
+import com.android.ootd.ui.search.UserSearchScreen
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -57,7 +60,15 @@ class NavigationTest {
           }
 
       navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
-        composable(Screen.Feed.route) { /* minimal screen */ }
+        composable(Screen.Feed.route) {
+          FeedScreen(
+              onAddPostClick = {},
+              onNotificationIconClick = {},
+              onSeeFitClick = {},
+              onOpenPost = {},
+              onLocationClick = {},
+              onProfileClick = { ownerId -> navigation.navigateTo(Screen.ViewUser(ownerId)) })
+        }
         composable(Screen.AccountEdit.route) { /* minimal screen */ }
         composable(Screen.AccountView.route) { /* minimal screen */ }
 
@@ -102,11 +113,24 @@ class NavigationTest {
                   onPostClick = { postId -> navigation.navigateTo(Screen.PostView(postId)) })
             }
 
-        // Add PostView route
         composable(
             route = Screen.PostView.route,
             arguments = listOf(navArgument("postId") { type = NavType.StringType })) {
-              /* minimal screen */
+              PostViewScreen(
+                  postId = it.arguments?.getString("postId") ?: "",
+                  onBack = { navigation.goBack() },
+                  onProfileClick = { userId -> navigation.navigateTo(Screen.ViewUser(userId)) })
+            }
+
+        composable(Screen.SearchScreen.route) {
+          UserSearchScreen(
+              onUserClick = { userId -> navigation.navigateTo(Screen.ViewUser(userId)) })
+        }
+
+        composable(
+            route = Screen.ViewUser.ROUTE,
+            arguments =
+                listOf(navArgument("userId") { type = NavType.StringType })) { /*minimal screen*/
             }
 
         composable(Screen.FitCheck.route) { /* minimal screen */ }
@@ -649,6 +673,67 @@ class NavigationTest {
       assertEquals("post-two", postId2)
 
       assertNotEquals(postId1, postId2)
+    }
+  }
+
+  @Test
+  fun mainActivityCode_feedOnProfileClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      val testOwnerId = "test-owner-123"
+
+      // Simulate the navigation that onProfileClick would do
+      navigation.navigateTo(Screen.ViewUser(testOwnerId))
+
+      // Check that we're at the ViewUser destination and that the argument is correct
+      val args = navController.currentBackStackEntry?.arguments
+      val extractedUserId = args?.getString("userId")
+
+      assertEquals("viewUser/{userId}", navigation.currentRoute())
+      assertEquals(testOwnerId, extractedUserId)
+    }
+  }
+
+  @Test
+  fun mainActivityCode_postViewOnProfileClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      val testUserId = "user-456"
+
+      navigation.navigateTo(Screen.ViewUser(testUserId))
+
+      val args = navController.currentBackStackEntry?.arguments
+      val extractedUserId = args?.getString("userId")
+
+      assertEquals("viewUser/{userId}", navigation.currentRoute())
+      assertEquals(testUserId, extractedUserId)
+    }
+  }
+
+  @Test
+  fun mainActivityCode_searchOnUserClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      val testUserId = "searched-user-789"
+
+      navigation.navigateTo(Screen.ViewUser(testUserId))
+
+      val args = navController.currentBackStackEntry?.arguments
+      val extractedUserId = args?.getString("userId")
+
+      assertEquals("viewUser/{userId}", navigation.currentRoute())
+      assertEquals(testUserId, extractedUserId)
+    }
+  }
+
+  @Test
+  fun navigateToUserProfile_routesCorrectly() {
+    composeRule.runOnIdle {
+      // Current user -> AccountView
+      navigation.navigateToUserProfile("my-user-id", "my-user-id")
+      assertEquals(Screen.AccountView.route, navigation.currentRoute())
+      navigation.goBack()
+
+      // Other user -> ViewUser
+      navigation.navigateToUserProfile("other-user-id", "my-user-id")
+      assertTrue(navigation.currentRoute().contains("viewUser"))
     }
   }
 }

@@ -206,4 +206,19 @@ open class NavigationActions(
   open fun currentRoute(): String {
     return navController.currentDestination?.route ?: ""
   }
+
+  /**
+   * Navigate to a user's profile screen. If the userId matches the current user, navigate to
+   * AccountView. Otherwise, navigate to ViewUser screen.
+   *
+   * @param userId The ID of the user whose profile to view
+   * @param currentUserId The ID of the currently logged-in user
+   */
+  fun navigateToUserProfile(userId: String, currentUserId: String?) {
+    if (userId == currentUserId) {
+      navigateTo(Screen.AccountView)
+    } else {
+      navigateTo(Screen.ViewUser(userId))
+    }
+  }
 }

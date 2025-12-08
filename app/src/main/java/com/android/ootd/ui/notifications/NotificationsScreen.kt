@@ -70,7 +70,8 @@ fun rememberPermissionLauncher(onResult: (Boolean) -> Unit) =
 fun NotificationsScreen(
     viewModel: NotificationsViewModel = viewModel(),
     testMode: Boolean = false,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onProfileClick: (String) -> Unit = {}
 ) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
@@ -177,7 +178,8 @@ fun NotificationsScreen(
                           FollowRequestCard(
                               followRequestItem = followRequest,
                               onAccept = { viewModel.acceptFollowRequest(followRequest) },
-                              onDelete = { viewModel.deleteFollowRequest(followRequest) })
+                              onDelete = { viewModel.deleteFollowRequest(followRequest) },
+                              onProfileClick = onProfileClick)
                         }
                       }
                 }

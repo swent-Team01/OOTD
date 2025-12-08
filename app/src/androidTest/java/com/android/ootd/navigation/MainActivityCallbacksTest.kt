@@ -788,4 +788,83 @@ class MainActivityCallbacksTest {
     // Verify the navigation succeeded
     composeRule.runOnIdle { Assert.assertTrue(navigation.currentRoute().startsWith("map?")) }
   }
+
+  @Test
+  fun feedScreen_onProfileClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+
+      // Simulate profile click from feed post
+      navigation.navigateTo(Screen.ViewUser(userId = "test-user-123"))
+
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun searchScreen_onUserClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.SearchScreen)
+
+      // Simulate user click from search results
+      navigation.navigateTo(Screen.ViewUser(userId = "searched-user-456"))
+
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun postViewScreen_onProfileClick_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PostView("post-123"))
+
+      // Simulate profile click (owner or liked user)
+      navigation.navigateTo(Screen.ViewUser(userId = "post-owner-789"))
+
+      assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun combined_profileNavigation_fromMultipleOrigins() {
+    val cases =
+        listOf(
+            Triple(Screen.Feed, Screen.ViewUser(userId = "test-user-123"), Screen.ViewUser.ROUTE),
+            Triple(
+                Screen.SearchScreen,
+                Screen.ViewUser(userId = "searched-user-456"),
+                Screen.ViewUser.ROUTE),
+            Triple(
+                Screen.PostView(postId = "post-123"),
+                Screen.ViewUser(userId = "post-owner-789"),
+                Screen.ViewUser.ROUTE))
+
+    cases.forEach { (start, target, expected) -> navigateToAndAssert(start, target, expected) }
+  }
+
+  private fun navigateToAndAssert(start: Screen, target: Screen, expectedRoute: String) {
+    composeRule.runOnIdle {
+      navigation.navigateTo(start)
+
+      val startRoute = start.route
+      val isDynamicStart =
+          startRoute.contains("{") ||
+              startRoute.contains("postView") ||
+              startRoute.contains("editItem") ||
+              startRoute.contains("fitCheck")
+
+      if (!isDynamicStart) {
+        Assert.assertTrue(
+            "Start route mismatch: ${navigation.currentRoute()}",
+            navigation.currentRoute().startsWith(startRoute))
+      }
+
+      navigation.navigateTo(target)
+
+      // We only check prefix match for dynamic routes
+      Assert.assertTrue(
+          "Target route mismatch: ${navigation.currentRoute()}",
+          navigation.currentRoute().startsWith(expectedRoute))
+    }
+  }
 }
