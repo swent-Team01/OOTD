@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -35,6 +34,7 @@ import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
+import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -218,8 +218,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   }
 
   ProfilePictureConfirmDialogs(
-      showEditProfileConfirm = showEditProfileConfirm,
-      showDeleteProfileConfirm = showDeleteProfileConfirm,
+      showEdit = showEditProfileConfirm,
+      showDelete = showDeleteProfileConfirm,
       onDismissEdit = { showEditProfileConfirm = false },
       onDismissDelete = { showDeleteProfileConfirm = false },
       onEditConfirmed = {
@@ -229,35 +229,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
       onDeleteConfirmed = {
         showDeleteProfileConfirm = false
         viewModel.clearProfilePicture()
-      })
-}
-
-@Composable
-private fun ProfilePictureConfirmDialogs(
-    showEditProfileConfirm: Boolean,
-    showDeleteProfileConfirm: Boolean,
-    onDismissEdit: () -> Unit,
-    onDismissDelete: () -> Unit,
-    onEditConfirmed: () -> Unit,
-    onDeleteConfirmed: () -> Unit
-) {
-  if (showEditProfileConfirm) {
-    AlertDialog(
-        onDismissRequest = onDismissEdit,
-        title = { Text("Change profile picture?") },
-        text = { Text("You can reselect or take a new photo to replace the current one.") },
-        confirmButton = { TextButton(onClick = onEditConfirmed) { Text("Continue") } },
-        dismissButton = { TextButton(onClick = onDismissEdit) { Text("Cancel") } })
-  }
-
-  if (showDeleteProfileConfirm) {
-    AlertDialog(
-        onDismissRequest = onDismissDelete,
-        title = { Text("Remove profile picture?") },
-        text = { Text("This will clear the selected photo.") },
-        confirmButton = { TextButton(onClick = onDeleteConfirmed) { Text("Remove") } },
-        dismissButton = { TextButton(onClick = onDismissDelete) { Text("Cancel") } })
-  }
+      },
+      editText = "You can reselect or take a new photo to replace the current one.")
 }
 
 /** Handles the GPS button click, checking for location permissions and requesting if needed. */

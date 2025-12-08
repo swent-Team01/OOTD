@@ -73,6 +73,7 @@ import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -310,8 +311,8 @@ private fun AccountScreenContent(
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
 
   ProfilePictureConfirmDialogs(
-      showEditProfileConfirm = showEditProfileConfirm,
-      showDeleteProfileConfirm = showDeleteProfileConfirm,
+      showEdit = showEditProfileConfirm,
+      showDelete = showDeleteProfileConfirm,
       onDismissEdit = { showEditProfileConfirm = false },
       onDismissDelete = { showDeleteProfileConfirm = false },
       onEditConfirmed = {
@@ -674,32 +675,4 @@ internal fun handlePickedProfileImage(
                 context, error.localizedMessage ?: "Failed to upload image", Toast.LENGTH_SHORT)
             .show()
       })
-}
-
-@Composable
-private fun ProfilePictureConfirmDialogs(
-    showEditProfileConfirm: Boolean,
-    showDeleteProfileConfirm: Boolean,
-    onDismissEdit: () -> Unit,
-    onDismissDelete: () -> Unit,
-    onEditConfirmed: () -> Unit,
-    onDeleteConfirmed: () -> Unit
-) {
-  if (showEditProfileConfirm) {
-    AlertDialog(
-        onDismissRequest = onDismissEdit,
-        title = { Text("Change profile picture?") },
-        text = { Text("This will replace your current profile picture.") },
-        confirmButton = { TextButton(onClick = onEditConfirmed) { Text("Continue") } },
-        dismissButton = { TextButton(onClick = onDismissEdit) { Text("Cancel") } })
-  }
-
-  if (showDeleteProfileConfirm) {
-    AlertDialog(
-        onDismissRequest = onDismissDelete,
-        title = { Text("Remove profile picture?") },
-        text = { Text("This cannot be undone.") },
-        confirmButton = { TextButton(onClick = onDeleteConfirmed) { Text("Remove") } },
-        dismissButton = { TextButton(onClick = onDismissDelete) { Text("Cancel") } })
-  }
 }
