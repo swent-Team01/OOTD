@@ -1,15 +1,23 @@
 package com.android.ootd.ui.items
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.android.ootd.ui.post.items.ConditionDropdown
-import com.android.ootd.ui.post.items.CurrencyField
+import androidx.compose.ui.test.performTextInput
+import com.android.ootd.ui.post.items.CategoryQuickSelector
+import com.android.ootd.ui.post.items.ConditionQuickSelector
+import com.android.ootd.ui.post.items.CurrencyChipSelector
+import com.android.ootd.ui.post.items.FitTypeQuickSelector
+import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
+import com.android.ootd.ui.post.items.SizeQuickSelector
+import com.android.ootd.ui.post.items.StyleQuickSelector
+import com.android.ootd.ui.post.items.TypeField
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -19,70 +27,105 @@ class ItemFieldsComponentsTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   @Test
-  fun conditionDropdown_updatesSelection_whenOptionChosen() {
-    val options = listOf("New", "Used")
-    lateinit var selectedState: MutableState<String>
+  fun quickSelectors_updateSelection_whenChipClicked() {
+    lateinit var categoryState: MutableState<String>
+    lateinit var conditionState: MutableState<String>
+    lateinit var styleState: MutableState<String>
+    lateinit var fitState: MutableState<String>
+    lateinit var currencyState: MutableState<String>
+    lateinit var sizeState: MutableState<String>
+
     composeTestRule.setContent {
-      selectedState = remember { mutableStateOf("") }
-      ConditionDropdown(
-          condition = selectedState.value,
-          onConditionChange = { selectedState.value = it },
-          testTag = "conditionDropdown",
-          expandedInitially = false,
-          options = options)
+      categoryState = remember { mutableStateOf("") }
+      conditionState = remember { mutableStateOf("") }
+      styleState = remember { mutableStateOf("") }
+      fitState = remember { mutableStateOf("") }
+      currencyState = remember { mutableStateOf("CHF") }
+      sizeState = remember { mutableStateOf("") }
+
+      Column {
+        CategoryQuickSelector(
+            selectedCategory = categoryState.value,
+            onCategorySelected = { categoryState.value = it })
+        ConditionQuickSelector(
+            selectedCondition = conditionState.value,
+            onConditionSelected = { conditionState.value = it })
+        StyleQuickSelector(
+            selectedStyle = styleState.value, onStyleSelected = { styleState.value = it })
+        FitTypeQuickSelector(
+            selectedFitType = fitState.value, onFitTypeSelected = { fitState.value = it })
+        CurrencyChipSelector(
+            selectedCurrency = currencyState.value,
+            onCurrencySelected = { currencyState.value = it })
+        SizeQuickSelector(selectedSize = sizeState.value, onSizeSelected = { sizeState.value = it })
+      }
     }
 
-    composeTestRule.onNodeWithContentDescription("Toggle condition options").performClick()
-    composeTestRule.waitUntil(5_000) {
-      composeTestRule
-          .onAllNodesWithText("Used", useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("Used", useUnmergedTree = true).performClick()
-    composeTestRule.runOnIdle { assertEquals("Used", selectedState.value) }
+    // Category
+    composeTestRule
+        .onNodeWithTag("${QuickSelectChipsTestTags.CATEGORY_CHIP_PREFIX}Clothing")
+        .performClick()
+    composeTestRule.runOnIdle { assertEquals("Clothing", categoryState.value) }
+
+    // Condition
+    composeTestRule
+        .onNodeWithTag("${QuickSelectChipsTestTags.CONDITION_CHIP_PREFIX}Used")
+        .performClick()
+    composeTestRule.runOnIdle { assertEquals("Used", conditionState.value) }
+    // Deselect
+    composeTestRule
+        .onNodeWithTag("${QuickSelectChipsTestTags.CONDITION_CHIP_PREFIX}Used")
+        .performClick()
+    composeTestRule.runOnIdle { assertEquals("", conditionState.value) }
+
+    // Style
+    composeTestRule
+        .onNodeWithTag("${QuickSelectChipsTestTags.STYLE_CHIP_PREFIX}Casual")
+        .performClick()
+    composeTestRule.runOnIdle { assertEquals("Casual", styleState.value) }
+
+    // FitType
+    composeTestRule
+        .onNodeWithTag("${QuickSelectChipsTestTags.FIT_TYPE_CHIP_PREFIX}Slim")
+        .performClick()
+    composeTestRule.runOnIdle { assertEquals("Slim", fitState.value) }
+
+    // Currency
+    composeTestRule.onNodeWithTag("currencyChip_USD").performClick()
+    composeTestRule.runOnIdle { assertEquals("USD", currencyState.value) }
+
+    // Size
+    composeTestRule.onNodeWithTag("${QuickSelectChipsTestTags.SIZE_CHIP_PREFIX}M").performClick()
+    composeTestRule.runOnIdle { assertEquals("M", sizeState.value) }
   }
 
   @Test
-  fun conditionDropdown_clearsSelection_whenClearChosen() {
-    val options = listOf("New", "Used")
-    lateinit var selectedState: MutableState<String>
+  fun typeField_showsSuggestions_andFilters() {
+    lateinit var typeState: MutableState<String>
+    val suggestions = listOf("Jacket", "Jeans", "Jumper", "Hat")
+
     composeTestRule.setContent {
-      selectedState = remember { mutableStateOf("New") }
-      ConditionDropdown(
-          condition = selectedState.value,
-          onConditionChange = { selectedState.value = it },
-          testTag = "conditionDropdown",
-          expandedInitially = true,
-          options = options)
+      typeState = remember { mutableStateOf("") }
+      TypeField(
+          type = typeState.value,
+          suggestions = suggestions,
+          onChange = { typeState.value = it },
+          testTag = "typeField",
+          dropdownTestTag = "typeDropdown",
+          expandOnChange = true)
     }
 
-    composeTestRule.onNodeWithText("Clear condition", useUnmergedTree = true).performClick()
-    composeTestRule.runOnIdle { assertEquals("", selectedState.value) }
-  }
+    // Type "J"
+    composeTestRule.onNodeWithTag("typeField").performTextInput("J")
+    composeTestRule.waitForIdle()
 
-  @Test
-  fun currencyField_updatesSelection_whenCurrencyChosen() {
-    val options = listOf("CHF", "USD")
-    lateinit var selectedState: MutableState<String>
-    composeTestRule.setContent {
-      selectedState = remember { mutableStateOf("CHF") }
-      CurrencyField(
-          currency = selectedState.value,
-          onChange = { selectedState.value = it },
-          testTag = "currencyField",
-          dropdownTestTag = "currencyMenu",
-          options = options)
-    }
+    // Check suggestions
+    composeTestRule.onNodeWithText("Jacket").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Jeans").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Hat").assertDoesNotExist()
 
-    composeTestRule.onNodeWithContentDescription("Toggle currency options").performClick()
-    composeTestRule.waitUntil(5_000) {
-      composeTestRule
-          .onAllNodesWithText("USD", useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithText("USD", useUnmergedTree = true).performClick()
-    composeTestRule.runOnIdle { assertEquals("USD", selectedState.value) }
+    // Select "Jacket"
+    composeTestRule.onNodeWithText("Jacket").performClick()
+    composeTestRule.runOnIdle { assertEquals("Jacket", typeState.value) }
   }
 }
