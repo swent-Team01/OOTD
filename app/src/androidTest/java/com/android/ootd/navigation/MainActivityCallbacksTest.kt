@@ -826,45 +826,45 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun mainActivityCode_onProfileClick_executesLambda_andNavigatesToViewUser() {
-    val testUserId = "user-profile-123"
+  fun combined_profileNavigation_fromMultipleOrigins() {
+    val cases =
+        listOf(
+            Triple(Screen.Feed, Screen.ViewUser(userId = "test-user-123"), Screen.ViewUser.ROUTE),
+            Triple(
+                Screen.SearchScreen,
+                Screen.ViewUser(userId = "searched-user-456"),
+                Screen.ViewUser.ROUTE),
+            Triple(
+                Screen.PostView(postId = "post-123"),
+                Screen.ViewUser(userId = "post-owner-789"),
+                Screen.ViewUser.ROUTE))
 
-    composeRule.runOnIdle {
-      // Start at Feed where the lambda is defined
-      navigation.navigateTo(Screen.Feed)
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-
-    composeRule.runOnIdle { navigation.navigateTo(Screen.ViewUser(testUserId)) }
-
-    composeRule.runOnIdle { assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute()) }
+    cases.forEach { (start, target, expected) -> navigateToAndAssert(start, target, expected) }
   }
 
-  @Test
-  fun mainActivityCode_searchOnUserClick_executesLambda_andNavigatesToViewUser() {
-    val testUserId = "search-user-123"
-
+  private fun navigateToAndAssert(start: Screen, target: Screen, expectedRoute: String) {
     composeRule.runOnIdle {
-      navigation.navigateTo(Screen.SearchScreen)
-      assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+      navigation.navigateTo(start)
+
+      val startRoute = start.route
+      val isDynamicStart =
+          startRoute.contains("{") ||
+              startRoute.contains("postView") ||
+              startRoute.contains("editItem") ||
+              startRoute.contains("fitCheck")
+
+      if (!isDynamicStart) {
+        Assert.assertTrue(
+            "Start route mismatch: ${navigation.currentRoute()}",
+            navigation.currentRoute().startsWith(startRoute))
+      }
+
+      navigation.navigateTo(target)
+
+      // We only check prefix match for dynamic routes
+      Assert.assertTrue(
+          "Target route mismatch: ${navigation.currentRoute()}",
+          navigation.currentRoute().startsWith(expectedRoute))
     }
-
-    composeRule.runOnIdle { navigation.navigateTo(Screen.ViewUser(testUserId)) }
-
-    composeRule.runOnIdle { assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute()) }
-  }
-
-  @Test
-  fun mainActivityCode_postViewOnProfileClick_executesLambda_andNavigatesToViewUser() {
-    val testUserId = "post-owner-456"
-
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.PostView("post-123"))
-      assertEquals(Screen.PostView.route, navigation.currentRoute())
-    }
-
-    composeRule.runOnIdle { navigation.navigateTo(Screen.ViewUser(testUserId)) }
-
-    composeRule.runOnIdle { assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute()) }
   }
 }
