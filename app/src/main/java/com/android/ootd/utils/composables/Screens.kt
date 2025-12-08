@@ -162,7 +162,11 @@ fun DisplayUserPosts(
     Box(
         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
         contentAlignment = Alignment.Center) {
-          ShowText(text = "No posts !", style = Typography.bodyLarge, color = OnSurfaceVariant, modifier = modifier)
+          ShowText(
+              text = "No posts !",
+              style = Typography.bodyLarge,
+              color = OnSurfaceVariant,
+              modifier = modifier)
         }
     return
   }
