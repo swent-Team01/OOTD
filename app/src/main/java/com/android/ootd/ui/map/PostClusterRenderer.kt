@@ -4,24 +4,18 @@ import android.content.Context
 import com.android.ootd.model.user.UserRepository
 import com.google.android.gms.maps.GoogleMap
 import com.google.maps.android.clustering.ClusterManager
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * Custom cluster renderer for post markers that displays profile pictures.
- *
- * This is a type alias for ProfileClusterRenderer specialized for PostMarker items. See
- * ProfileClusterRenderer for implementation details.
  *
  * @param context Android context for resource access
  * @param map GoogleMap instance
  * @param clusterManager ClusterManager instance
  * @param userRepository Repository to fetch user profile pictures
- * @param coroutineScope Coroutine scope for async operations
  */
 class PostClusterRenderer(
     context: Context,
     map: GoogleMap,
     clusterManager: ClusterManager<PostMarker>,
-    userRepository: UserRepository,
-    coroutineScope: CoroutineScope
-) : ProfileClusterRenderer<PostMarker>(context, map, clusterManager, userRepository, coroutineScope)
+    userRepository: UserRepository
+) : ClusterRenderer<PostMarker>(context, map, clusterManager, userRepository)

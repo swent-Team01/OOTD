@@ -12,7 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +30,6 @@ import com.google.maps.android.compose.GoogleMap as ComposeGoogleMap
 import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.CoroutineScope
 
 /*
  * Disclaimer: This takes inspiration from
@@ -59,7 +57,6 @@ object MapScreenTestTags {
 fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
-  val coroutineScope = rememberCoroutineScope()
 
   Scaffold(
       modifier = Modifier.testTag(MapScreenTestTags.SCREEN),
@@ -85,8 +82,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
                     uiState = uiState,
                     viewModel = viewModel,
                     onPostClick = onPostClick,
-                    context = context,
-                    coroutineScope = coroutineScope)
+                    context = context)
               }
             }
       })
@@ -98,8 +94,7 @@ private fun MapContent(
     uiState: MapUiState,
     viewModel: MapViewModel,
     onPostClick: (String) -> Unit,
-    context: Context,
-    coroutineScope: CoroutineScope
+    context: Context
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
     // Tab selector for switching between maps
@@ -125,16 +120,14 @@ private fun MapContent(
             cameraPositionState = cameraPositionState,
             viewModel = viewModel,
             onPostClick = onPostClick,
-            context = context,
-            coroutineScope = coroutineScope)
+            context = context)
       }
       MapType.FIND_FRIENDS -> {
         FindFriendsMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             viewModel = viewModel,
-            context = context,
-            coroutineScope = coroutineScope)
+            context = context)
       }
     }
   }
@@ -165,8 +158,7 @@ private fun FriendsPostsMap(
     cameraPositionState: CameraPositionState,
     viewModel: MapViewModel,
     onPostClick: (String) -> Unit,
-    context: Context,
-    coroutineScope: CoroutineScope
+    context: Context
 ) {
   val clusterItems = viewModel.getPostsWithAdjustedLocations()
 
@@ -175,14 +167,12 @@ private fun FriendsPostsMap(
       cameraPositionState = cameraPositionState,
       items = clusterItems,
       context = context,
-      coroutineScope = coroutineScope,
       createRenderer = { map, clusterManager ->
         PostClusterRenderer(
             context = context,
             map = map,
             clusterManager = clusterManager,
-            userRepository = UserRepositoryProvider.repository,
-            coroutineScope = coroutineScope)
+            userRepository = UserRepositoryProvider.repository)
       },
       onItemClick = { item -> onPostClick(item.post.postUID) })
 }
@@ -195,8 +185,7 @@ private fun FindFriendsMap(
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState,
     viewModel: MapViewModel,
-    context: Context,
-    coroutineScope: CoroutineScope
+    context: Context
 ) {
   val clusterItems = viewModel.getPublicLocationsWithAdjusted()
 
@@ -205,14 +194,12 @@ private fun FindFriendsMap(
       cameraPositionState = cameraPositionState,
       items = clusterItems,
       context = context,
-      coroutineScope = coroutineScope,
       createRenderer = { map, clusterManager ->
         PublicProfileClusterRenderer(
             context = context,
             map = map,
             clusterManager = clusterManager,
-            userRepository = UserRepositoryProvider.repository,
-            coroutineScope = coroutineScope)
+            userRepository = UserRepositoryProvider.repository)
       },
       onItemClick = {
         // TODO: Add navigation to user profile
@@ -235,8 +222,7 @@ private fun <T : ProfileMarkerItem> ClusteredMap(
     cameraPositionState: CameraPositionState,
     items: List<T>,
     context: Context,
-    coroutineScope: CoroutineScope,
-    createRenderer: (GoogleMap, ClusterManager<T>) -> ProfileClusterRenderer<T>,
+    createRenderer: (GoogleMap, ClusterManager<T>) -> ClusterRenderer<T>,
     onItemClick: (T) -> Unit = {}
 ) {
   ComposeGoogleMap(
@@ -247,10 +233,8 @@ private fun <T : ProfileMarkerItem> ClusteredMap(
         MapEffect(key1 = items) { map ->
           val clusterManager = ClusterManager<T>(context, map)
 
-          // Set custom renderer for clusters
           clusterManager.renderer = createRenderer(map, clusterManager)
 
-          // Set cluster click listener for when clicking on clusters
           clusterManager.setOnClusterClickListener { cluster ->
             // Zoom into the cluster
             val builder = LatLngBounds.builder()
@@ -260,17 +244,14 @@ private fun <T : ProfileMarkerItem> ClusteredMap(
             true
           }
 
-          // Set item click listener
           clusterManager.setOnClusterItemClickListener { item ->
             onItemClick(item)
             true
           }
 
-          // Set up map listeners to forward to cluster manager
           map.setOnCameraIdleListener(clusterManager)
           map.setOnMarkerClickListener(clusterManager)
 
-          // Clear existing items and add new ones
           clusterManager.clearItems()
           clusterManager.addItems(items)
           clusterManager.cluster()

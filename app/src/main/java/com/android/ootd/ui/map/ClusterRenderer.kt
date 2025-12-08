@@ -19,6 +19,7 @@ import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.clustering.view.DefaultClusterRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -36,16 +37,15 @@ import kotlinx.coroutines.withContext
  * @param map GoogleMap instance
  * @param clusterManager ClusterManager instance
  * @param userRepository Repository to fetch user profile pictures
- * @param coroutineScope Coroutine scope for async operations
  */
-open class ProfileClusterRenderer<T : ProfileMarkerItem>(
+open class ClusterRenderer<T : ProfileMarkerItem>(
     private val context: Context,
     map: GoogleMap,
     clusterManager: ClusterManager<T>,
-    private val userRepository: UserRepository,
-    private val coroutineScope: CoroutineScope
+    private val userRepository: UserRepository
 ) : DefaultClusterRenderer<T>(context, map, clusterManager) {
 
+  private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
   private val profilePictureCache = mutableMapOf<String, Bitmap?>()
   private val markerCache = mutableMapOf<String, Marker>()
 
