@@ -64,13 +64,8 @@ class AccountRepositoryInMemory : AccountRepository {
                   friendUids = listOf(),
                   isPrivate = true))
 
-  // StateFlow to track account changes for real-time observation
   private val accountUpdates = MutableStateFlow<Pair<String, Account?>>(Pair("", null))
-
-  // In-memory storage for public locations
   private val publicLocations = mutableMapOf<String, PublicLocation>()
-
-  // StateFlow to track public location changes for real-time observation
   private val publicLocationUpdates = MutableStateFlow<List<PublicLocation>>(emptyList())
 
   override suspend fun createAccount(
@@ -79,7 +74,6 @@ class AccountRepositoryInMemory : AccountRepository {
       dateOfBirth: String,
       location: Location
   ) {
-    // Check if username already exists
     if (accounts.values.any { it.username == user.username && it.username.isNotBlank() }) {
       throw TakenUserException("Username already in use")
     }
@@ -124,9 +118,8 @@ class AccountRepositoryInMemory : AccountRepository {
       throw NoSuchElementException("Friend with ID $friendID not found")
     }
 
-    // Check if friend already exists in the list
     if (account.friendUids.any { it == friendID }) {
-      return true // Already friends, do nothing (mimics arrayUnion behavior)
+      return true
     }
 
     val updatedFriendUids = account.friendUids + friendID
@@ -143,7 +136,6 @@ class AccountRepositoryInMemory : AccountRepository {
       throw NoSuchElementException("Friend with ID $friendID not found")
     }
 
-    // If the friend is not there, we don't do anything
     if (account.friendUids.none { it == friendID }) {
       return
     }
@@ -155,20 +147,14 @@ class AccountRepositoryInMemory : AccountRepository {
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
-    // Here the userID does not matter because this class is used for testing,
-    // and this way I would not have to redo all the tests I already written.
-
     val account = getAccount(currentUser)
     return account.friendUids.isNotEmpty() && account.friendUids.any { it == friendID }
   }
 
-  // replaces removeAccount
   override suspend fun deleteAccount(userID: String) {
     if (accounts.containsKey(userID)) {
-      // Remove public location if exists
       publicLocations.remove(userID)
       publicLocationUpdates.value = publicLocations.values.toList()
-
       accounts.remove(userID)
     } else {
       throw NoSuchElementException("Account with ID $userID not found")
@@ -192,7 +178,6 @@ class AccountRepositoryInMemory : AccountRepository {
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
 
-    // Sync public location if account is public
     if (!updatedAccount.isPrivate) {
       val publicLocation =
           PublicLocation(
@@ -214,7 +199,6 @@ class AccountRepositoryInMemory : AccountRepository {
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
 
-    // If making account public, validate location BEFORE toggling
     if (account.isPrivate && !isValidLocation(account.location)) {
       throw InvalidLocationException()
     }
@@ -223,9 +207,7 @@ class AccountRepositoryInMemory : AccountRepository {
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
 
-    // Sync public location based on new privacy setting
     if (!updatedAccount.isPrivate) {
-      // Account is now public - add to publicLocations
       val publicLocation =
           PublicLocation(
               ownerId = updatedAccount.ownerId,
@@ -234,7 +216,6 @@ class AccountRepositoryInMemory : AccountRepository {
       publicLocations[userID] = publicLocation
       publicLocationUpdates.value = publicLocations.values.toList()
     } else {
-      // Account is now private - remove from publicLocations
       publicLocations.remove(userID)
       publicLocationUpdates.value = publicLocations.values.toList()
     }
@@ -250,11 +231,9 @@ class AccountRepositoryInMemory : AccountRepository {
   override suspend fun addItem(itemUid: String): Boolean {
     return try {
       val account = getAccount(currentUser)
-
       if (account.itemsUids.contains(itemUid)) {
         return true
       }
-
       val updatedItemsUids = account.itemsUids + itemUid
       val updatedAccount = account.copy(itemsUids = updatedItemsUids)
       accounts[currentUser] = updatedAccount
@@ -268,11 +247,9 @@ class AccountRepositoryInMemory : AccountRepository {
   override suspend fun removeItem(itemUid: String): Boolean {
     return try {
       val account = getAccount(currentUser)
-
       if (!account.itemsUids.contains(itemUid)) {
         return true
       }
-
       val updatedItemsUids = account.itemsUids - itemUid
       val updatedAccount = account.copy(itemsUids = updatedItemsUids)
       accounts[currentUser] = updatedAccount
@@ -284,11 +261,9 @@ class AccountRepositoryInMemory : AccountRepository {
   }
 
   override fun observeAccount(userID: String): Flow<Account> {
-    // Emit initial account state
     val initialAccount =
         accounts[userID] ?: throw NoSuchElementException("Account with ID $userID not found")
 
-    // Return a flow that emits the initial account and then updates for this specific user
     return accountUpdates
         .filter { (uid, _) -> uid == userID }
         .map { (_, account) ->

@@ -393,18 +393,15 @@ class AccountRepositoryFirestore(
       // 5. Delete public location if exists
       try {
         db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).delete().await()
-        Log.d(TAG, "Deleted public location for user $userID")
       } catch (e: Exception) {
-        Log.w(TAG, "Could not delete public location (may not exist): ${e.message}")
+        // Continue execution
       }
 
       // 6. Finally delete the account document itself
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
-      Log.d(TAG, "Successfully deleted account with UID: $userID")
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
-      Log.e(TAG, "Error deleting account: ${e.message}", e)
       throw e
     }
   }
@@ -763,12 +760,10 @@ class AccountRepositoryFirestore(
         try {
           doc.toPublicLocation()
         } catch (e: Exception) {
-          Log.w(TAG, "Failed to parse public location ${doc.id}: ${e.message}")
           null
         }
       }
     } catch (e: Exception) {
-      Log.e(TAG, "Error fetching public locations: ${e.message}", e)
       emptyList()
     }
   }
@@ -787,7 +782,6 @@ class AccountRepositoryFirestore(
                   try {
                     doc.toPublicLocation()
                   } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse public location ${doc.id}: ${e.message}")
                     null
                   }
                 }
