@@ -190,8 +190,8 @@ dependencies {
 
   // Firebase
   // Use Firebase BOM from version catalog for maintainability
-  val firebaseBom = libs.firebase.bom
-  implementation(firebaseBom)
+  //  val firebaseBom = libs.firebase.bom
+  //  implementation(firebaseBom)
   // Firebase Storage KTX (provides Firebase.storage extension).
   implementation(libs.firebase.storage.ktx)
   implementation(libs.firebase.database.ktx)
