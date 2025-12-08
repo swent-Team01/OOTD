@@ -252,19 +252,19 @@ private fun AccountHeader(
             Modifier.padding(top = 8.dp)
                 .testTag(AccountPageTestTags.FRIEND_COUNT_TEXT)
                 .clickable(onClick = onFriendCountClick)
-                .background(colorScheme.tertiaryContainer, RoundedCornerShape(50))
+                .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
                 .padding(horizontal = 14.dp, vertical = 10.dp)) {
           Text(
               text = "$friendCount friends",
               style =
                   Typography.bodyLarge.copy(
                       fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
-              color = colorScheme.onTertiaryContainer)
+              color = colorScheme.onSecondaryContainer)
           Spacer(modifier = Modifier.width(8.dp))
           Icon(
               imageVector = Icons.Filled.Group,
               contentDescription = "View friends",
-              tint = colorScheme.onTertiaryContainer)
+              tint = colorScheme.onSecondaryContainer)
         }
   }
 
