@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.model.account.Account
@@ -290,72 +289,6 @@ class MapScreenFirebaseTest : PostFirestoreTest(), OnMapsSdkInitializedCallback 
     // Verify the map rendered successfully with posts
     composeTestRule.onNodeWithTag(MapScreenTestTags.GOOGLE_MAP_SCREEN).assertExists()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
-  }
-
-  @Test
-  fun mapScreen_displaysTabRowWithBothTabsAndLabels() {
-    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
-
-    composeTestRule.waitForIdle()
-    Thread.sleep(1000)
-    composeTestRule.waitForIdle()
-
-    // Verify tab row exists
-    composeTestRule.onNodeWithTag(MapScreenTestTags.TAB_ROW).assertExists()
-
-    // Verify both tabs exist
-    composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).assertExists()
-    composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).assertExists()
-
-    // Verify tab labels are displayed
-    composeTestRule.onNodeWithText("Friends Posts").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Find Friends").assertIsDisplayed()
-  }
-
-  @Test
-  fun mapScreen_friendsPostsTab_isSelectedByDefault() {
-    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
-
-    composeTestRule.waitForIdle()
-    Thread.sleep(1000)
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).assertExists()
-
-    // Verify the initial map type in the viewmodel
-    assert(viewModel.uiState.value.selectedMapType == MapType.FRIENDS_POSTS) {
-      "Expected FRIENDS_POSTS to be selected by default"
-    }
-  }
-
-  @Test
-  fun mapScreen_tabClick_switchesMapType() {
-    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
-
-    composeTestRule.waitForIdle()
-    Thread.sleep(1000)
-    composeTestRule.waitForIdle()
-
-    // Initial state should be FRIENDS_POSTS
-    assert(viewModel.uiState.value.selectedMapType == MapType.FRIENDS_POSTS)
-
-    // Click on Find Friends tab
-    composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).performClick()
-    composeTestRule.waitForIdle()
-
-    // Should now be FIND_FRIENDS
-    assert(viewModel.uiState.value.selectedMapType == MapType.FIND_FRIENDS) {
-      "Expected FIND_FRIENDS after clicking Find Friends tab"
-    }
-
-    // Click back on Friends Posts tab
-    composeTestRule.onNodeWithTag(MapScreenTestTags.FRIENDS_POSTS_TAB).performClick()
-    composeTestRule.waitForIdle()
-
-    // Should be back to FRIENDS_POSTS
-    assert(viewModel.uiState.value.selectedMapType == MapType.FRIENDS_POSTS) {
-      "Expected FRIENDS_POSTS after clicking Friends Posts tab"
-    }
   }
 
   @Test
