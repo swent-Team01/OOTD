@@ -116,7 +116,6 @@ class AccountScreenTest {
             onPostClick = { postId -> onPostClickCalledWithId = postId })
       }
     }
-    composeTestRule.waitForIdle()
   }
 
   private fun setContent(state: AccountPageViewState) {
@@ -130,7 +129,6 @@ class AccountScreenTest {
             onToggleStar = {})
       }
     }
-    composeTestRule.waitForIdle()
   }
 
   @Test
@@ -177,15 +175,10 @@ class AccountScreenTest {
 
     setContent()
 
-    // "Your posts :" section should still be displayed
-    composeTestRule.onNodeWithTag(AccountPageTestTags.YOUR_POST_SECTION).assertIsDisplayed()
-
-    // But no post items should exist
-    composeTestRule
-        .onAllNodesWithTag(AccountPageTestTags.POST_TAG)
-        .fetchSemanticsNodes()
-        .size
-        .let { count -> assert(count == 0) { "Expected 0 posts, found $count" } }
+    composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).assertIsDisplayed()
+      composeTestRule
+          .onNodeWithTag(AccountPageTestTags.POST_TAG)
+          .assertTextContains("No posts !")
   }
 
   @Test
@@ -227,7 +220,6 @@ class AccountScreenTest {
     composeTestRule.onNodeWithTag(AccountPageTestTags.SETTINGS_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(AccountPageTestTags.USERNAME_TEXT).assertIsDisplayed()
     composeTestRule.onNodeWithTag(AccountPageTestTags.FRIEND_COUNT_TEXT).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AccountPageTestTags.YOUR_POST_SECTION).assertIsDisplayed()
   }
 
   @Test
