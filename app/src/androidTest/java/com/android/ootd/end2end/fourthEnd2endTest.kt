@@ -18,6 +18,7 @@ import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addPostWithOneItem
 import com.android.ootd.utils.checkNumberOfPostsInFeed
 import com.android.ootd.utils.checkOutMap
+import com.android.ootd.utils.checkOutfitView
 import com.android.ootd.utils.checkPostAppearsInFeed
 import com.android.ootd.utils.checkPostsAppearInAccountTab
 import com.android.ootd.utils.fullRegisterSequence
@@ -25,6 +26,7 @@ import com.android.ootd.utils.loginWithoutRegistering
 import com.android.ootd.utils.openNotificationsScreenAndAcceptNotification
 import com.android.ootd.utils.searchAndFollowUser
 import com.android.ootd.utils.signOutAndVerifyAuthScreen
+import com.android.ootd.utils.verifyPressingLocationGoesToMap
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -88,13 +90,12 @@ class FourthEnd2EndTest : FirestoreTest() {
    * 7. Logout from second user and login as first user
    * 8. Accept follow request from second user from first user's account
    * 9. Check that both posts of the users appear in the first user's feed
-   * 10. Check that you can see your posts in the account tab. 11 - TBD. TODO: Check Map
-   *     functionality
-   *
-   * LIMITATIONS:
+   * 10. Check that you can see your posts in the account tab. functionality
+   * 11. Checks that the map appears and that pressing on the post location leads to the map
+   * 12. Check that pressing the image and liking it in the image view works LIMITATIONS:
    * - Taking photos launches external activities that break ComposeTestRule
-   *
-   * This test:
+   * - The map marker functionality cannot be tested as they are not composables so they cannot be
+   *   clicked. This test:
    * - Uses the REAL OOTDApp composable with the full NavHost navigation graph.
    * - Skips the authentication step as it was tested in the other 2 end to end tests.
    * - Uses the firebase emulator databases for a closer experience to what the application should
@@ -122,7 +123,8 @@ class FourthEnd2EndTest : FirestoreTest() {
         composeTestRule = composeTestRule, username = "user_1", dateOfBirth = testDateofBirth)
 
     // STEP 2: Add a post in the feed of the first user
-    addPostWithOneItem(composeTestRule) // Test adding item from inventory works as well
+    addPostWithOneItem(
+        composeTestRule, addLocation = true) // Test adding item from inventory works as well
 
     // STEP 3: Make sure the post appears in the feed
     checkPostAppearsInFeed(composeTestRule)
@@ -138,7 +140,7 @@ class FourthEnd2EndTest : FirestoreTest() {
         acceptBetaScreen = false)
 
     // STEP 5: Create a post with one item for the second user
-    addPostWithOneItem(composeTestRule)
+    addPostWithOneItem(composeTestRule, addLocation = true)
 
     // STEP 6: Follow the first user from the second user account
     searchAndFollowUser(composeTestRule, "user_1")
@@ -160,8 +162,11 @@ class FourthEnd2EndTest : FirestoreTest() {
 
     checkPostsAppearInAccountTab(composeTestRule = composeTestRule)
 
-    // STEP 11 - TBD: Check map functionality
-    // To be completed in a next PR after Julien's changes are merged.
+    // STEP 11 - Checks that the map appears and that pressing on the post location leads to the map
     checkOutMap(composeTestRule = composeTestRule)
+    verifyPressingLocationGoesToMap(composeTestRule = composeTestRule)
+
+    // STEP 12 - Check that pressing the image and liking it in the image view works
+    checkOutfitView(composeTestRule = composeTestRule)
   }
 }

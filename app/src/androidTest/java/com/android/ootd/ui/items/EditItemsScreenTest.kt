@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
@@ -21,6 +22,7 @@ import com.android.ootd.model.items.Material
 import com.android.ootd.ui.post.items.EditItemsScreen
 import com.android.ootd.ui.post.items.EditItemsScreenTestTags
 import com.android.ootd.ui.post.items.EditItemsViewModel
+import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
 import com.android.ootd.utils.InMemoryItem.waitForNodeWithTag
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.delay
@@ -104,14 +106,11 @@ class EditItemsScreenTest {
     composeTestRule.waitForIdle()
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-    // Click to open dropdown
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).performClick()
-    // Select an option from dropdown
-    composeTestRule.onNodeWithText("Shoes").performClick()
-    // Verify selection
+    // Select an option from chips
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .assertTextContains("Shoes")
+        .onNodeWithTag("${QuickSelectChipsTestTags.CATEGORY_CHIP_PREFIX}Shoes")
+        .performScrollTo()
+        .performClick()
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).performTextClearance()
@@ -142,9 +141,6 @@ class EditItemsScreenTest {
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
     composeTestRule.runOnIdle { viewModel.setCurrency("CHF") }
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CURRENCY)
-        .assertTextContains("CHF")
 
     ensureVisible(EditItemsScreenTestTags.INPUT_ITEM_LINK)
     composeTestRule

@@ -403,4 +403,64 @@ class MapViewModelTest {
     assertEquals(testLocation.latitude, latLng.latitude, 0.0001)
     assertEquals(testLocation.longitude, latLng.longitude, 0.0001)
   }
+
+  @Test
+  fun initialMapType_isFriendsPosts() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    assertEquals(MapType.FRIENDS_POSTS, uiState.selectedMapType)
+  }
+
+  @Test
+  fun setMapType_togglesBetweenMaps() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // Initial state
+    assertEquals(MapType.FRIENDS_POSTS, viewModel.uiState.value.selectedMapType)
+
+    // Toggle to FIND_FRIENDS
+    viewModel.setMapType(MapType.FIND_FRIENDS)
+    assertEquals(MapType.FIND_FRIENDS, viewModel.uiState.value.selectedMapType)
+
+    // Toggle back to FRIENDS_POSTS
+    viewModel.setMapType(MapType.FRIENDS_POSTS)
+    assertEquals(MapType.FRIENDS_POSTS, viewModel.uiState.value.selectedMapType)
+
+    // Toggle again
+    viewModel.setMapType(MapType.FIND_FRIENDS)
+    assertEquals(MapType.FIND_FRIENDS, viewModel.uiState.value.selectedMapType)
+  }
+
+  @Test
+  fun setMapType_doesNotAffectOtherUIState() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val initialLocation = viewModel.uiState.value.userLocation
+    val initialAccount = viewModel.uiState.value.currentAccount
+    val initialPosts = viewModel.uiState.value.posts
+    val initialLoading = viewModel.uiState.value.isLoading
+
+    viewModel.setMapType(MapType.FIND_FRIENDS)
+
+    val updatedState = viewModel.uiState.value
+    assertEquals(initialLocation, updatedState.userLocation)
+    assertEquals(initialAccount, updatedState.currentAccount)
+    assertEquals(initialPosts, updatedState.posts)
+    assertEquals(initialLoading, updatedState.isLoading)
+    // Only selectedMapType should change
+    assertEquals(MapType.FIND_FRIENDS, updatedState.selectedMapType)
+  }
 }

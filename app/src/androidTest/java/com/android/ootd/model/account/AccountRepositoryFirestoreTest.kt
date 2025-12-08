@@ -411,7 +411,16 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun deleteAccount_successfullyDeletesAccountAndAssociatedData() = runTest {
     // Create account
-    accountRepository.addAccount(account1)
+    add(account1, account2)
+
+    // Add friends (bidirectional)
+    accountRepository.addFriend(account1.uid, account2.uid)
+
+    // Verify friends exist before deletion
+    val account1Before = accountRepository.getAccount(account1.uid)
+    assertTrue(account1Before.friendUids.contains(account2.uid))
+    val account2Before = accountRepository.getAccount(account2.uid)
+    assertTrue(account2Before.friendUids.contains(account1.uid))
 
     val storage = FirebaseEmulator.storage
 
@@ -485,6 +494,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val postStorageException =
         kotlin.runCatching { postImageRef.downloadUrl.await() }.exceptionOrNull()
     assertTrue(postStorageException != null)
+
+    // Verify friend has been removed from the friend's friend list
+    val account2After = accountRepository.getAccount(account2.uid)
+    assertFalse(account2After.friendUids.contains(account1.uid))
   }
 
   @Test
