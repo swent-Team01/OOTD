@@ -17,6 +17,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.Cluster
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.clustering.view.DefaultClusterRenderer
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,15 +38,19 @@ import kotlinx.coroutines.withContext
  * @param map GoogleMap instance
  * @param clusterManager ClusterManager instance
  * @param userRepository Repository to fetch user profile pictures
+ * @param mainDispatcher Dispatcher for main thread operations (default: Dispatchers.Main)
+ * @param ioDispatcher Dispatcher for IO operations (default: Dispatchers.IO)
  */
 open class ClusterRenderer<T : ProfileMarkerItem>(
     private val context: Context,
     map: GoogleMap,
     clusterManager: ClusterManager<T>,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : DefaultClusterRenderer<T>(context, map, clusterManager) {
 
-  private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+  private val coroutineScope = CoroutineScope(SupervisorJob() + mainDispatcher)
   private val profilePictureCache = mutableMapOf<String, Bitmap?>()
   private val markerCache = mutableMapOf<String, Marker>()
 
@@ -97,7 +102,7 @@ open class ClusterRenderer<T : ProfileMarkerItem>(
           val user = userRepository.getUser(userId)
           if (user.profilePicture.isNotBlank()) {
             val bitmap =
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                   val request =
                       ImageRequest.Builder(context)
                           .data(user.profilePicture)
@@ -108,7 +113,7 @@ open class ClusterRenderer<T : ProfileMarkerItem>(
                   (result as? SuccessResult)?.drawable?.let { (it as? BitmapDrawable)?.bitmap }
                 }
             profilePictureCache[userId] = bitmap
-            withContext(Dispatchers.Main) {
+            withContext(mainDispatcher) {
               markerCache[item.markerId]?.setIcon(
                   bitmap?.let {
                     BitmapDescriptorFactory.fromBitmap(MarkerUtils.createCircularBitmap(it))
