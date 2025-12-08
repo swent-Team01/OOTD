@@ -217,42 +217,46 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
         }
   }
 
+  ProfilePictureConfirmDialogs(
+      showEditProfileConfirm = showEditProfileConfirm,
+      showDeleteProfileConfirm = showDeleteProfileConfirm,
+      onDismissEdit = { showEditProfileConfirm = false },
+      onDismissDelete = { showDeleteProfileConfirm = false },
+      onEditConfirmed = {
+        showEditProfileConfirm = false
+        showImageSourceDialog = true
+      },
+      onDeleteConfirmed = {
+        showDeleteProfileConfirm = false
+        viewModel.clearProfilePicture()
+      })
+}
+
+@Composable
+private fun ProfilePictureConfirmDialogs(
+    showEditProfileConfirm: Boolean,
+    showDeleteProfileConfirm: Boolean,
+    onDismissEdit: () -> Unit,
+    onDismissDelete: () -> Unit,
+    onEditConfirmed: () -> Unit,
+    onDeleteConfirmed: () -> Unit
+) {
   if (showEditProfileConfirm) {
     AlertDialog(
-        onDismissRequest = { showEditProfileConfirm = false },
+        onDismissRequest = onDismissEdit,
         title = { Text("Change profile picture?") },
         text = { Text("You can reselect or take a new photo to replace the current one.") },
-        confirmButton = {
-          TextButton(
-              onClick = {
-                showEditProfileConfirm = false
-                showImageSourceDialog = true
-              }) {
-                Text("Continue")
-              }
-        },
-        dismissButton = {
-          TextButton(onClick = { showEditProfileConfirm = false }) { Text("Cancel") }
-        })
+        confirmButton = { TextButton(onClick = onEditConfirmed) { Text("Continue") } },
+        dismissButton = { TextButton(onClick = onDismissEdit) { Text("Cancel") } })
   }
 
   if (showDeleteProfileConfirm) {
     AlertDialog(
-        onDismissRequest = { showDeleteProfileConfirm = false },
+        onDismissRequest = onDismissDelete,
         title = { Text("Remove profile picture?") },
         text = { Text("This will clear the selected photo.") },
-        confirmButton = {
-          TextButton(
-              onClick = {
-                showDeleteProfileConfirm = false
-                viewModel.clearProfilePicture()
-              }) {
-                Text("Remove")
-              }
-        },
-        dismissButton = {
-          TextButton(onClick = { showDeleteProfileConfirm = false }) { Text("Cancel") }
-        })
+        confirmButton = { TextButton(onClick = onDeleteConfirmed) { Text("Remove") } },
+        dismissButton = { TextButton(onClick = onDismissDelete) { Text("Cancel") } })
   }
 }
 

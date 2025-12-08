@@ -309,46 +309,20 @@ private fun AccountScreenContent(
       showImageSourceDialog = showImageSourceDialog,
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
 
-  // Confirm before changing profile picture
-  if (showEditProfileConfirm) {
-    AlertDialog(
-        onDismissRequest = { showEditProfileConfirm = false },
-        title = { Text("Change profile picture?") },
-        text = { Text("This will replace your current profile picture.") },
-        confirmButton = {
-          TextButton(
-              onClick = {
-                showEditProfileConfirm = false
-                showImageSourceDialog = true
-              }) {
-                Text("Continue")
-              }
-        },
-        dismissButton = {
-          TextButton(onClick = { showEditProfileConfirm = false }) { Text("Cancel") }
-        })
-  }
-
-  // Confirm before deleting profile picture
-  if (showDeleteProfileConfirm) {
-    AlertDialog(
-        onDismissRequest = { showDeleteProfileConfirm = false },
-        title = { Text("Remove profile picture?") },
-        text = { Text("This cannot be undone.") },
-        confirmButton = {
-          TextButton(
-              onClick = {
-                showDeleteProfileConfirm = false
-                accountViewModel.deleteProfilePicture()
-                Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
-              }) {
-                Text("Remove")
-              }
-        },
-        dismissButton = {
-          TextButton(onClick = { showDeleteProfileConfirm = false }) { Text("Cancel") }
-        })
-  }
+  ProfilePictureConfirmDialogs(
+      showEditProfileConfirm = showEditProfileConfirm,
+      showDeleteProfileConfirm = showDeleteProfileConfirm,
+      onDismissEdit = { showEditProfileConfirm = false },
+      onDismissDelete = { showDeleteProfileConfirm = false },
+      onEditConfirmed = {
+        showEditProfileConfirm = false
+        showImageSourceDialog = true
+      },
+      onDeleteConfirmed = {
+        showDeleteProfileConfirm = false
+        accountViewModel.deleteProfilePicture()
+        Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+      })
 
   // More options dialog with Delete Account button
   if (showMoreAccountDialog) {
@@ -700,4 +674,32 @@ internal fun handlePickedProfileImage(
                 context, error.localizedMessage ?: "Failed to upload image", Toast.LENGTH_SHORT)
             .show()
       })
+}
+
+@Composable
+private fun ProfilePictureConfirmDialogs(
+    showEditProfileConfirm: Boolean,
+    showDeleteProfileConfirm: Boolean,
+    onDismissEdit: () -> Unit,
+    onDismissDelete: () -> Unit,
+    onEditConfirmed: () -> Unit,
+    onDeleteConfirmed: () -> Unit
+) {
+  if (showEditProfileConfirm) {
+    AlertDialog(
+        onDismissRequest = onDismissEdit,
+        title = { Text("Change profile picture?") },
+        text = { Text("This will replace your current profile picture.") },
+        confirmButton = { TextButton(onClick = onEditConfirmed) { Text("Continue") } },
+        dismissButton = { TextButton(onClick = onDismissEdit) { Text("Cancel") } })
+  }
+
+  if (showDeleteProfileConfirm) {
+    AlertDialog(
+        onDismissRequest = onDismissDelete,
+        title = { Text("Remove profile picture?") },
+        text = { Text("This cannot be undone.") },
+        confirmButton = { TextButton(onClick = onDeleteConfirmed) { Text("Remove") } },
+        dismissButton = { TextButton(onClick = onDismissDelete) { Text("Cancel") } })
+  }
 }
