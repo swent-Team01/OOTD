@@ -166,8 +166,7 @@ fun DisplayUserPosts(
             Image(
                 painter = painterResource(id = R.drawable.hanger),
                 contentDescription = "No posts",
-                modifier = Modifier.size(48.dp).testTag("PostHangerIcon")
-            )
+                modifier = Modifier.size(48.dp).testTag("PostHangerIcon"))
             Spacer(modifier = Modifier.height(8.dp))
             ShowText(
                 text = "No posts yet !",
