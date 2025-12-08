@@ -213,14 +213,18 @@ class AccountRepositoryInMemory : AccountRepository {
 
     // Sync public location based on new privacy setting
     if (!updatedAccount.isPrivate) {
-      // Account is now public - add to publicLocations
-      val publicLocation =
-          PublicLocation(
-              ownerId = updatedAccount.ownerId,
-              username = updatedAccount.username,
-              location = updatedAccount.location)
-      publicLocations[userID] = publicLocation
-      publicLocationUpdates.value = publicLocations.values.toList()
+      // Account is now public - add to publicLocations only if location is valid
+      if (isValidLocation(updatedAccount.location)) {
+        val publicLocation =
+            PublicLocation(
+                ownerId = updatedAccount.ownerId,
+                username = updatedAccount.username,
+                location = updatedAccount.location)
+        publicLocations[userID] = publicLocation
+        publicLocationUpdates.value = publicLocations.values.toList()
+      } else {
+        throw InvalidLocationException()
+      }
     } else {
       // Account is now private - remove from publicLocations
       publicLocations.remove(userID)
