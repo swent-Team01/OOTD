@@ -160,7 +160,8 @@ private fun FriendsPostsMap(
     onPostClick: (String) -> Unit,
     context: Context
 ) {
-  val clusterItems = viewModel.getPostsWithAdjustedLocations()
+  val uiState by viewModel.uiState.collectAsState()
+  val clusterItems = viewModel.getPostsWithAdjustedLocations(uiState.posts)
 
   ClusteredMap(
       modifier = modifier,
@@ -187,7 +188,8 @@ private fun FindFriendsMap(
     viewModel: MapViewModel,
     context: Context
 ) {
-  val clusterItems = viewModel.getPublicLocationsWithAdjusted()
+  val uiState by viewModel.uiState.collectAsState()
+  val clusterItems = viewModel.getPublicLocationsWithAdjusted(uiState.publicLocations)
 
   ClusteredMap(
       modifier = modifier,

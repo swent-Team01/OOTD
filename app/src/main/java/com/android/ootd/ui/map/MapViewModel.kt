@@ -156,11 +156,11 @@ class MapViewModel(
    * Get posts with adjusted locations to prevent overlapping markers. When multiple posts share the
    * same location, they are offset in a circular pattern.
    */
-  fun getPostsWithAdjustedLocations(): List<PostMarker> {
-    return _uiState.value.posts
+  fun getPostsWithAdjustedLocations(posts: List<OutfitPost>): List<PostMarker> {
+    return posts
         .map { it.asLocatable }
         .withAdjustedLocations()
-        .zip(_uiState.value.posts)
+        .zip(posts)
         .map { (adjusted, post) -> PostMarker(post, adjusted.adjustedLocation) }
   }
 
@@ -168,11 +168,13 @@ class MapViewModel(
    * Get public locations with adjusted positions to prevent overlapping markers. When multiple
    * public locations share the same location, they are offset in a circular pattern.
    */
-  fun getPublicLocationsWithAdjusted(): List<PublicProfileMarker> {
-    return _uiState.value.publicLocations
+  fun getPublicLocationsWithAdjusted(
+      publicLocations: List<PublicLocation>
+  ): List<PublicProfileMarker> {
+    return publicLocations
         .map { it.asLocatable }
         .withAdjustedLocations()
-        .zip(_uiState.value.publicLocations)
+        .zip(publicLocations)
         .map { (adjusted, publicLocation) ->
           PublicProfileMarker(publicLocation, adjusted.adjustedLocation)
         }
