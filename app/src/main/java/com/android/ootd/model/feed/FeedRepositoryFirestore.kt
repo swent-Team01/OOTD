@@ -136,12 +136,22 @@ open class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepo
       order: Direction = Direction.ASCENDING
   ): List<OutfitPost> {
     val base = db.collection(POSTS_COLLECTION_PATH).whereIn(ownerAttributeName, ownerIds)
-    val query =
+    val orderedQuery =
         (if (cutoff != null) base.whereGreaterThanOrEqualTo("timestamp", cutoff) else base).orderBy(
             "timestamp", order)
 
-    val snapshot = withTimeout(5_000) { query.get().await() }
-    return snapshot.documents.mapNotNull { mapToPost(it) }
+    fun filterValidTimestamp(docs: List<DocumentSnapshot>): List<DocumentSnapshot> =
+        docs.filter { doc -> (doc.get("timestamp") as? Number)?.toLong() != null }
+
+    return try {
+      val snapshot = withTimeout(5_000) { orderedQuery.get().await() }
+      filterValidTimestamp(snapshot.documents).mapNotNull { mapToPost(it) }
+    } catch (e: Exception) {
+      // If ordering fails due to corrupted/mixed data, fall back to unordered fetch and filter
+      Log.w("FeedRepositoryFirestore", "Ordered fetch failed, falling back unordered", e)
+      val snapshot = withTimeout(5_000) { base.get().await() }
+      filterValidTimestamp(snapshot.documents).mapNotNull { mapToPost(it) }
+    }
   }
 
   override suspend fun getPublicFeed(): List<OutfitPost> {
@@ -225,7 +235,7 @@ open class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepo
     return try {
       val postUuid = doc.getString("postUID") ?: ""
       val ownerId = doc.getString("ownerId") ?: ""
-      val timestamp = doc.getLong("timestamp") ?: 0L
+      val timestamp = (doc.get("timestamp") as? Number)?.toLong() ?: 0L
       val description = doc.getString("description") ?: ""
       val itemsList = doc["itemsID"] as? List<*>
       val itemUuids = itemsList?.mapNotNull { it as? String } ?: emptyList()
