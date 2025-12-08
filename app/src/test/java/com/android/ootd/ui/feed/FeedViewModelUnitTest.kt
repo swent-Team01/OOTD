@@ -110,7 +110,6 @@ class FeedViewModelUnitTest {
   @Test
   fun `refreshFeedFromFirestore calls getRecentFeedForUids when isPublicFeed is false`() = runTest {
     // Setup
-    val friendPosts = listOf(OutfitPost(postUID = "friend1"))
     val account = Account(uid = "me", friendUids = listOf("friend1"))
 
     // Set current account
@@ -191,7 +190,12 @@ class FeedViewModelUnitTest {
 
     // Mock repository calls
     coEvery { feedRepository.getCachedFriendFeed(any()) } returns emptyList()
-    coEvery { feedRepository.getRecentFeedForUids(any()) } returns posts
+    coEvery { feedRepository.getRecentFeedForUids(any()) } coAnswers
+        {
+          kotlinx.coroutines.delay(500) // Simulate network delay
+          posts
+        }
+
     coEvery { feedRepository.hasPostedToday(any()) } returns false
     coEvery { likesRepository.isPostLikedByUser(any(), any()) } returns false
     coEvery { likesRepository.getLikeCount(any()) } returns 0

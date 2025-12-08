@@ -1,6 +1,5 @@
 package com.android.ootd.ui.feed
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,7 +42,6 @@ object FeedScreenTestTags {
   const val REFRESHER = "feedRefresher"
 }
 
-@SuppressLint("SuspiciousIndentation")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
@@ -105,18 +103,18 @@ private fun FeedScaffold(
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {}
 ) {
-  val snackbarHostState = remember { SnackbarHostState() }
+  val snackBarHostState = remember { SnackbarHostState() }
 
   LaunchedEffect(errorMessage) {
     errorMessage?.let { message ->
-      snackbarHostState.showSnackbar(message)
+      snackBarHostState.showSnackbar(message)
       onClearError()
     }
   }
 
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
-      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+      snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
       topBar = {
         Column {
           OOTDTopBar(
