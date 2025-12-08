@@ -29,6 +29,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
 const val ACCOUNT_COLLECTION_PATH = "accounts"
+const val PUBLIC_LOCATIONS_COLLECTION_PATH = "publicLocations"
 private const val ITEMS_PATH = "images/items"
 const val USER_NOT_LOGGED = "User not logged in"
 
@@ -38,6 +39,26 @@ class TakenUserException(message: String) : Exception(message)
 class TakenAccountException(message: String) : Exception(message)
 
 class UnknowUserID : Exception("No account with such userID")
+
+/** Convert domain PublicLocation to Firestore-friendly Map */
+private fun PublicLocation.toFirestoreMap(): Map<String, Any> =
+    mapOf("ownerId" to ownerId, "username" to username, "location" to mapFromLocation(location))
+
+/** Convert Firestore DocumentSnapshot to domain PublicLocation */
+private fun DocumentSnapshot.toPublicLocation(): PublicLocation {
+  val ownerId = getString("ownerId") ?: id
+  val username = getString("username") ?: ""
+
+  val locationRaw = this["location"]
+  val location =
+      when (locationRaw) {
+        null -> throw MissingLocationException()
+        is Map<*, *> -> locationFromMap(locationRaw)
+        else -> throw MissingLocationException()
+      }
+
+  return PublicLocation(ownerId = ownerId, username = username, location = location)
+}
 
 /** Convert domain Account to Firestore-friendly Map (excludes uid as it's the document id) */
 private fun Account.toFirestoreMap(): Map<String, Any> =
@@ -321,10 +342,33 @@ class AccountRepositoryFirestore(
             ?: throw IllegalStateException("Failed to transform document with ID $userID")
 
     val newPrivacySetting = !myAccount.isPrivate
+
+    // Update privacy setting in accounts collection
     db.collection(ACCOUNT_COLLECTION_PATH)
         .document(userID)
         .update("isPrivate", newPrivacySetting)
         .await()
+
+    // Sync public location based on new privacy setting
+    if (!newPrivacySetting) {
+      // Account is now public - add to publicLocations only if location is valid
+      if (isValidLocation(myAccount.location)) {
+        val publicLocation =
+            PublicLocation(
+                ownerId = myAccount.ownerId,
+                username = myAccount.username,
+                location = myAccount.location)
+        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH)
+            .document(userID)
+            .set(publicLocation.toFirestoreMap())
+            .await()
+      } else {
+        throw InvalidLocationException()
+      }
+    } else {
+      // Account is now private - remove from publicLocations
+      db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).delete().await()
+    }
 
     return newPrivacySetting
   }
@@ -342,11 +386,19 @@ class AccountRepositoryFirestore(
       // 3. Delete all items from user
       deleteUserItems(userID)
 
-      // 3. Remove all friends
+      // 4. Remove all friends
       val account = getAccount(userID)
       deleteUserFriends(account)
 
-      // 5. Finally delete the account document itself
+      // 5. Delete public location if exists
+      try {
+        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).delete().await()
+        Log.d(TAG, "Deleted public location for user $userID")
+      } catch (e: Exception) {
+        Log.w(TAG, "Could not delete public location (may not exist): ${e.message}")
+      }
+
+      // 6. Finally delete the account document itself
       db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
       Log.d(TAG, "Successfully deleted account with UID: $userID")
     } catch (_: NoSuchElementException) {
@@ -393,6 +445,16 @@ class AccountRepositoryFirestore(
                   "profilePicture" to newProfilePic,
                   "location" to mapFromLocation(newLocation)))
           .await()
+
+      // If account is public, sync the public location
+      if (!user.isPrivate) {
+        val publicLocation =
+            PublicLocation(ownerId = userID, username = newUsername, location = newLocation)
+        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH)
+            .document(userID)
+            .set(publicLocation.toFirestoreMap())
+            .await()
+      }
     } catch (_: NoSuchElementException) {
       throw UnknowUserID()
     } catch (e: Exception) {
@@ -688,6 +750,48 @@ class AccountRepositoryFirestore(
             }
           } else {
             Log.w(TAG, "Account document $userID does not exist")
+          }
+        }
+
+    awaitClose { listener.remove() }
+  }
+
+  override suspend fun getPublicLocations(): List<PublicLocation> {
+    return try {
+      val snapshot = db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).get().await()
+      snapshot.documents.mapNotNull { doc ->
+        try {
+          doc.toPublicLocation()
+        } catch (e: Exception) {
+          Log.w(TAG, "Failed to parse public location ${doc.id}: ${e.message}")
+          null
+        }
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "Error fetching public locations: ${e.message}", e)
+      emptyList()
+    }
+  }
+
+  override fun observePublicLocations(): Flow<List<PublicLocation>> = callbackFlow {
+    val listener =
+        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            close(error)
+            return@addSnapshotListener
+          }
+
+          if (snapshot != null) {
+            val publicLocations =
+                snapshot.documents.mapNotNull { doc ->
+                  try {
+                    doc.toPublicLocation()
+                  } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse public location ${doc.id}: ${e.message}")
+                    null
+                  }
+                }
+            trySend(publicLocations)
           }
         }
 
