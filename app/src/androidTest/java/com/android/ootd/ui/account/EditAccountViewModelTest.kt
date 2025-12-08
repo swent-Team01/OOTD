@@ -282,7 +282,8 @@ class EditAccountViewModelTest {
 
   @Test
   fun onTogglePrivacy_success_updatesStateWithRepositoryValue() = runTest {
-    stubAccount("test-uid", username = "testuser", picture = "")
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = false)
     coEvery { accountRepository.togglePrivacy("test-uid") } returns true
 
     initVM()

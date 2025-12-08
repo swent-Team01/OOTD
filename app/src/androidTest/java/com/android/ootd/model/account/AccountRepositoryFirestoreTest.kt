@@ -543,19 +543,14 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun togglePrivacy_togglesAndPersists() = runTest {
-    // Add account with valid location so it can be made public
-    val accountWithLocation = account1.copy(location = EPFL_LOCATION)
+    val accountWithLocation = account1.copy(location = EPFL_LOCATION, isPrivate = false)
     accountRepository.addAccount(accountWithLocation)
-
     val first = accountRepository.togglePrivacy(account1.uid)
     assertTrue(first)
-
     val doc1 = doc(account1.uid)
     assertTrue(doc1.getBoolean("isPrivate") == true)
-
     val second = accountRepository.togglePrivacy(account1.uid)
     assertFalse(second)
-
     val doc2 = doc(account1.uid)
     assertTrue(doc2.getBoolean("isPrivate") == false)
   }
