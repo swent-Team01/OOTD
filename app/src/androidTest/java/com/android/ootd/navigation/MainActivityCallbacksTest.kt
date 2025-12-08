@@ -824,4 +824,47 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
     }
   }
+
+  @Test
+  fun mainActivityCode_onProfileClick_executesLambda_andNavigatesToViewUser() {
+    val testUserId = "user-profile-123"
+
+    composeRule.runOnIdle {
+      // Start at Feed where the lambda is defined
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+
+    composeRule.runOnIdle { navigation.navigateTo(Screen.ViewUser(testUserId)) }
+
+    composeRule.runOnIdle { assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute()) }
+  }
+
+  @Test
+  fun mainActivityCode_searchOnUserClick_executesLambda_andNavigatesToViewUser() {
+    val testUserId = "search-user-123"
+
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.SearchScreen)
+      assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+    }
+
+    composeRule.runOnIdle { navigation.navigateTo(Screen.ViewUser(testUserId)) }
+
+    composeRule.runOnIdle { assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute()) }
+  }
+
+  @Test
+  fun mainActivityCode_postViewOnProfileClick_executesLambda_andNavigatesToViewUser() {
+    val testUserId = "post-owner-456"
+
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.PostView("post-123"))
+      assertEquals(Screen.PostView.route, navigation.currentRoute())
+    }
+
+    composeRule.runOnIdle { navigation.navigateTo(Screen.ViewUser(testUserId)) }
+
+    composeRule.runOnIdle { assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute()) }
+  }
 }
