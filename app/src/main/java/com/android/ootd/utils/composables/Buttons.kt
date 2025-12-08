@@ -4,14 +4,18 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -193,6 +197,36 @@ fun CircularIconButton(
         contentDescription = contentDescription,
         tint = iconTint,
         modifier = Modifier.size(iconSize))
+  }
+}
+
+/**
+ * Reusable pill showing a friend count with an icon, clickable for navigation/dialogs.
+ *
+ * @param friendCount number of friends to display
+ * @param modifier optional modifier for tagging/placement
+ * @param onClick invoked when the chip is tapped
+ */
+@Composable
+fun FriendCountChip(friendCount: Int, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            modifier
+                .clickable(onClick = onClick)
+                .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
+                .padding(horizontal = 14.dp, vertical = 10.dp)) {
+          Text(
+              text = "$friendCount friends",
+              style = Typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+              color = colorScheme.onSecondaryContainer)
+          Spacer(modifier = Modifier.size(8.dp))
+          Icon(
+              imageVector = Icons.Filled.Group,
+              contentDescription = "View friends",
+              tint = colorScheme.onSecondaryContainer)
+        }
   }
 }
 

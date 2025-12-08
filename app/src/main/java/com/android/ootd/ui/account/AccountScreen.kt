@@ -2,7 +2,6 @@ package com.android.ootd.ui.account
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,15 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
@@ -60,6 +56,7 @@ import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
+import com.android.ootd.utils.composables.FriendCountChip
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -245,28 +242,10 @@ private fun AccountHeader(
 
   Spacer(modifier = Modifier.height(9.dp))
 
-  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier =
-            Modifier.padding(top = 8.dp)
-                .testTag(AccountPageTestTags.FRIEND_COUNT_TEXT)
-                .clickable(onClick = onFriendCountClick)
-                .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
-                .padding(horizontal = 14.dp, vertical = 10.dp)) {
-          Text(
-              text = "$friendCount friends",
-              style =
-                  Typography.bodyLarge.copy(
-                      fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
-              color = colorScheme.onSecondaryContainer)
-          Spacer(modifier = Modifier.width(8.dp))
-          Icon(
-              imageVector = Icons.Filled.Group,
-              contentDescription = "View friends",
-              tint = colorScheme.onSecondaryContainer)
-        }
-  }
+  FriendCountChip(
+      friendCount = friendCount,
+      modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT),
+      onClick = onFriendCountClick)
 
   Spacer(modifier = Modifier.height(30.dp))
 }
