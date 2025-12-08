@@ -118,8 +118,8 @@ class PostClusterRendererTest {
   fun renderer_handlesCacheOperations() {
     val renderer = createRenderer()
 
-    // Access the cache via reflection to test cache functionality
-    val cacheField = PostClusterRenderer::class.java.getDeclaredField("profilePictureCache")
+    // Access the cache via reflection from parent class ProfileClusterRenderer
+    val cacheField = ProfileClusterRenderer::class.java.getDeclaredField("profilePictureCache")
     cacheField.isAccessible = true
     @Suppress("UNCHECKED_CAST") val cache = cacheField.get(renderer) as MutableMap<String, Any?>
 
@@ -140,8 +140,8 @@ class PostClusterRendererTest {
   fun renderer_handlesMarkerCacheOperations() {
     val renderer = createRenderer()
 
-    // Access the marker cache via reflection
-    val cacheField = PostClusterRenderer::class.java.getDeclaredField("markerCache")
+    // Access the marker cache via reflection from parent class
+    val cacheField = ProfileClusterRenderer::class.java.getDeclaredField("markerCache")
     cacheField.isAccessible = true
     @Suppress("UNCHECKED_CAST") val cache = cacheField.get(renderer) as MutableMap<String, Any?>
 
@@ -174,7 +174,7 @@ class PostClusterRendererTest {
     advanceUntilIdle()
 
     // Should cache null for user without profile picture
-    val cacheField = PostClusterRenderer::class.java.getDeclaredField("profilePictureCache")
+    val cacheField = ProfileClusterRenderer::class.java.getDeclaredField("profilePictureCache")
     cacheField.isAccessible = true
     @Suppress("UNCHECKED_CAST") val cache = cacheField.get(renderer) as MutableMap<String, Any?>
     assertEquals(true, cache.containsKey("user456"))
@@ -191,7 +191,7 @@ class PostClusterRendererTest {
     advanceUntilIdle()
 
     // Should cache null on exception
-    val cacheField = PostClusterRenderer::class.java.getDeclaredField("profilePictureCache")
+    val cacheField = ProfileClusterRenderer::class.java.getDeclaredField("profilePictureCache")
     cacheField.isAccessible = true
     @Suppress("UNCHECKED_CAST") val cache = cacheField.get(renderer) as MutableMap<String, Any?>
     assertEquals(true, cache.containsKey("user789"))
@@ -204,14 +204,15 @@ class PostClusterRendererTest {
       username: String,
       item: PostMarker
   ) {
+    // Method is now in parent class ProfileClusterRenderer with generic signature
     val method =
-        PostClusterRenderer::class
+        ProfileClusterRenderer::class
             .java
             .getDeclaredMethod(
                 "loadProfilePicture",
                 String::class.java,
                 String::class.java,
-                PostMarker::class.java)
+                ProfileMarkerItem::class.java)
     method.isAccessible = true
     method.invoke(renderer, userId, username, item)
   }
