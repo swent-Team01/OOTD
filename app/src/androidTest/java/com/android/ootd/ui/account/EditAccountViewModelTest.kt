@@ -323,24 +323,15 @@ class EditAccountViewModelTest {
   fun onTogglePrivacy_invalidLocation_revertsAndShowsLocationError() = runTest {
     coEvery { accountRepository.getAccount("test-uid") } returns
         Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = true)
-    // Throw InvalidLocationException when toggling privacy
     coEvery { accountRepository.togglePrivacy("test-uid") } throws InvalidLocationException()
-
     initVM()
-
-    // Emit authenticated user and wait for load
     signInAs(mockFirebaseUser)
 
-    // Verify account data has been loaded and initial state is private
     assertTrue("Initial state should be private", viewModel.uiState.value.isPrivate)
     assertFalse("Should not be loading", viewModel.uiState.value.isLoading)
-
     viewModel.onTogglePrivacy()
     advanceUntilIdle()
-
-    // Privacy should remain true (reverted)
     assertTrue("Privacy should remain true after exception", viewModel.uiState.value.isPrivate)
-    // Error message should be set (any error message is acceptable)
     assertNotNull("Error message should be set", viewModel.uiState.value.errorMsg)
     assertFalse("Error message should not be empty", viewModel.uiState.value.errorMsg!!.isEmpty())
   }
