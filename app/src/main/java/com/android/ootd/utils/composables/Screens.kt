@@ -53,6 +53,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
@@ -155,8 +156,27 @@ fun DisplayUserPosts(
     modifier: Modifier = Modifier,
     displayPerRow: Int = 3,
     padding: Dp,
-    spacing: Dp
+    spacing: Dp,
 ) {
+  if (posts.isEmpty()) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(id = R.drawable.hanger),
+                contentDescription = "No posts",
+                modifier = Modifier.size(48.dp).testTag("PostHangerIcon"))
+            Spacer(modifier = Modifier.height(8.dp))
+            ShowText(
+                text = "No posts yet !",
+                style = Typography.bodyLarge,
+                color = OnSurfaceVariant,
+                modifier = modifier)
+          }
+        }
+    return
+  }
   val color = colorScheme
   val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
   val configuration = LocalConfiguration.current

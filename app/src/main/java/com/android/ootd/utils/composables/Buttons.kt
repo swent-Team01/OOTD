@@ -43,6 +43,7 @@ import com.android.ootd.R
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 
 /**
@@ -297,7 +298,7 @@ fun OOTDTabRow(
                         if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal)
               },
               selectedContentColor = Primary,
-              unselectedContentColor = Color.Black,
+              unselectedContentColor = Tertiary,
               modifier = tabModifiers.getOrElse(index) { Modifier })
         }
       }

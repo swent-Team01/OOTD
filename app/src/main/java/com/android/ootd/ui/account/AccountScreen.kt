@@ -48,11 +48,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
-import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.inventory.InventoryGrid
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -74,11 +72,9 @@ object AccountPageTestTags {
   const val FRIEND_LIST_DIALOG = "accountPageFriendListDialog"
   const val FRIEND_LIST_ITEM = "accountPageFriendListItem"
   const val LOADING = "accountPageLoading"
-  const val YOUR_POST_SECTION = "yourPostsStart"
   const val POST_TAG = "postTag"
   const val POSTS_TAB = "accountPagePostsTab"
   const val STARRED_TAB = "accountPageStarredTab"
-  const val OUTFIT_GRID_POST = "outfitGridPost"
 }
 
 @Composable
@@ -242,6 +238,11 @@ private fun AccountHeader(
 
   Spacer(modifier = Modifier.height(9.dp))
 
+  val friendText = if (friendCount == 1) "friend" else "friends"
+  ShowText(
+      text = "$friendCount $friendText",
+      style = Typography.bodyLarge,
+      modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
   FriendCountChip(
       friendCount = friendCount,
       modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT),
@@ -293,7 +294,13 @@ private fun AccountTabBody(
     screenHeight: Dp
 ) {
   when (uiState.selectedTab) {
-    AccountTab.Posts -> PostsTabContent(posts = uiState.posts, onPostClick = onPostClick)
+    AccountTab.Posts ->
+        DisplayUserPosts(
+            posts = uiState.posts,
+            onPostClick = onPostClick,
+            modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
+            padding = 22.dp,
+            spacing = 8.dp)
     AccountTab.Starred ->
         StarredTabContent(
             starredItems = uiState.starredItems,
@@ -301,25 +308,6 @@ private fun AccountTabBody(
             onToggleStar = onToggleStar,
             screenHeight = screenHeight)
   }
-}
-
-@Composable
-private fun PostsTabContent(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
-  ShowText(
-      text = "Your posts :",
-      style = Typography.bodyLarge,
-      modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
-      textAlign = TextAlign.Left,
-      fontFamily = Bodoni)
-
-  Spacer(modifier = Modifier.height(16.dp))
-
-  DisplayUserPosts(
-      posts = posts,
-      onPostClick = onPostClick,
-      modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
-      padding = 22.dp,
-      spacing = 8.dp)
 }
 
 @Composable
