@@ -23,6 +23,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** Enum representing the type of map to display. */
+enum class MapType {
+  FRIENDS_POSTS,
+  FIND_FRIENDS
+}
+
 /**
  * Data class representing a post with an adjusted location to prevent marker overlap.
  *
@@ -43,6 +49,7 @@ data class PostWithAdjustedLocation(
  * @property userLocation The user's location from their account
  * @property focusLocation The location to focus on (if provided via navigation)
  * @property isLoading Whether the location is being loaded
+ * @property selectedMapType The currently selected map type
  */
 data class MapUiState(
     val posts: List<OutfitPost> = emptyList(),
@@ -50,7 +57,8 @@ data class MapUiState(
     val userLocation: Location = emptyLocation,
     val focusLocation: Location? = null,
     val isLoading: Boolean = true,
-    val errorMsg: String? = null
+    val errorMsg: String? = null,
+    val selectedMapType: MapType = MapType.FRIENDS_POSTS
 )
 
 /**
@@ -183,5 +191,10 @@ class MapViewModel(
         latitude = location.latitude + latOffset,
         longitude = location.longitude + lonOffset,
         name = location.name)
+  }
+
+  /** Switch between Friends Posts and Public Profiles map. */
+  fun setMapType(mapType: MapType) {
+    _uiState.value = _uiState.value.copy(selectedMapType = mapType)
   }
 }

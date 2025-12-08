@@ -25,7 +25,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,7 +43,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -172,61 +170,96 @@ fun AddItemsScreen(
         },
         content = { innerPadding ->
           Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
-            FieldsList(
+            ItemFieldsListLayout(
                 modifier =
                     Modifier.fillMaxWidth()
                         .padding(18.dp)
                         .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
                         .testTag(AddItemScreenTestTags.ALL_FIELDS),
-
-                // image pick
-                showDialog = showDialog,
-                onShowDialogChange = { showDialog = it },
-                onTakePhoto = {
-                  showDialog = false
-                  showCamera = true
-                },
-                onPickFromGallery = {
-                  showDialog = false
-                  galleryLauncher.launch("image/*")
-                },
-
-                // category
-                category = itemsUIState.category,
-                invalidCategory = itemsUIState.invalidCategory,
-                onCategoryChange = { addItemsViewModel.setCategory(it) },
-                onCategoryValidate = { addItemsViewModel.validateCategory() },
-
-                // type
-                type = itemsUIState.type,
-                typeSuggestions = itemsUIState.typeSuggestion,
-                onTypeChange = {
-                  addItemsViewModel.setType(it)
-                  addItemsViewModel.updateTypeSuggestions(it)
-                },
-
-                // brand / price / link / material / currency
-                brand = itemsUIState.brand,
-                onBrandChange = addItemsViewModel::setBrand,
-                price = itemsUIState.price,
-                onPriceChange = addItemsViewModel::setPrice,
-                currency = itemsUIState.currency,
-                onCurrencyChange = addItemsViewModel::setCurrency,
-                link = itemsUIState.link,
-                onLinkChange = addItemsViewModel::setLink,
-                material = itemsUIState.materialText,
-                onMaterialChange = addItemsViewModel::setMaterial,
-                condition = itemsUIState.condition,
-                onConditionChange = addItemsViewModel::setCondition,
-                size = itemsUIState.size,
-                onSizeChange = addItemsViewModel::setSize,
-                fitType = itemsUIState.fitType,
-                onFitTypeChange = addItemsViewModel::setFitType,
-                style = itemsUIState.style,
-                onStyleChange = addItemsViewModel::setStyle,
-                notes = itemsUIState.notes,
-                onNotesChange = addItemsViewModel::setNotes,
-            )
+                layoutConfig =
+                    ItemFieldsLayoutConfig(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top),
+                slots =
+                    ItemFieldsListSlots(
+                        imagePicker = {
+                          ImagePickerRow(
+                              showDialog = showDialog,
+                              onShowDialogChange = { showDialog = it },
+                              onTakePhoto = {
+                                showDialog = false
+                                showCamera = true
+                              },
+                              onPickFromGallery = {
+                                showDialog = false
+                                galleryLauncher.launch("image/*")
+                              })
+                        },
+                        categoryField = {
+                          CategoryField(
+                              category = itemsUIState.category,
+                              onChange = addItemsViewModel::setCategory,
+                              testTag = AddItemScreenTestTags.INPUT_CATEGORY,
+                              invalidCategory = itemsUIState.invalidCategory,
+                              onValidate = addItemsViewModel::validateCategory)
+                        },
+                        typeField = {
+                          TypeField(
+                              type = itemsUIState.type,
+                              suggestions = itemsUIState.typeSuggestion,
+                              onChange = {
+                                addItemsViewModel.setType(it)
+                                addItemsViewModel.updateTypeSuggestions(it)
+                              },
+                              testTag = AddItemScreenTestTags.INPUT_TYPE,
+                              dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
+                              expandOnChange = true)
+                        },
+                        primaryFields = {
+                          ItemPrimaryFields(
+                              brand = itemsUIState.brand,
+                              onBrandChange = addItemsViewModel::setBrand,
+                              brandTag = AddItemScreenTestTags.INPUT_BRAND,
+                              price = itemsUIState.price,
+                              onPriceChange = addItemsViewModel::setPrice,
+                              priceTag = AddItemScreenTestTags.INPUT_PRICE,
+                              currency = itemsUIState.currency,
+                              onCurrencyChange = addItemsViewModel::setCurrency,
+                              currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
+                              size = itemsUIState.size,
+                              onSizeChange = addItemsViewModel::setSize,
+                              sizeTag = AddItemScreenTestTags.INPUT_SIZE,
+                              link = itemsUIState.link,
+                              onLinkChange = addItemsViewModel::setLink,
+                              linkTag = AddItemScreenTestTags.INPUT_LINK)
+                        },
+                        additionalDetails = {
+                          AdditionalDetailsSection(
+                              state =
+                                  AdditionalDetailsState(
+                                      condition = itemsUIState.condition,
+                                      onConditionChange = addItemsViewModel::setCondition,
+                                      material = itemsUIState.materialText,
+                                      onMaterialChange = addItemsViewModel::setMaterial,
+                                      fitType = itemsUIState.fitType,
+                                      onFitTypeChange = addItemsViewModel::setFitType,
+                                      style = itemsUIState.style,
+                                      onStyleChange = addItemsViewModel::setStyle,
+                                      notes = itemsUIState.notes,
+                                      onNotesChange = addItemsViewModel::setNotes),
+                              tags =
+                                  AdditionalDetailsTags(
+                                      toggle = AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE,
+                                      section = AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION,
+                                      conditionField = AddItemScreenTestTags.INPUT_CONDITION,
+                                      materialField = AddItemScreenTestTags.INPUT_MATERIAL,
+                                      fitTypeField = AddItemScreenTestTags.INPUT_FIT_TYPE,
+                                      fitTypeDropdown = AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS,
+                                      styleField = AddItemScreenTestTags.INPUT_STYLE,
+                                      styleDropdown = AddItemScreenTestTags.STYLE_SUGGESTIONS,
+                                      notesField = AddItemScreenTestTags.INPUT_NOTES))
+                        },
+                        actionButtons = { Spacer(modifier = Modifier.height(24.dp)) }))
 
             // top image preview overlays the list
             ItemsImagePreview(
@@ -252,139 +285,15 @@ fun AddItemsScreen(
 }
 
 @Composable
-private fun FieldsList(
-    modifier: Modifier,
+private fun ImagePickerRow(
     showDialog: Boolean,
     onShowDialogChange: (Boolean) -> Unit,
-    onTakePhoto: () -> Unit,
-    onPickFromGallery: () -> Unit,
-    category: String,
-    invalidCategory: String?,
-    onCategoryChange: (String) -> Unit,
-    onCategoryValidate: () -> Unit,
-    type: String,
-    typeSuggestions: List<String>,
-    onTypeChange: (String) -> Unit,
-    brand: String,
-    onBrandChange: (String) -> Unit,
-    price: Double,
-    onPriceChange: (Double) -> Unit,
-    currency: String,
-    onCurrencyChange: (String) -> Unit,
-    link: String,
-    onLinkChange: (String) -> Unit,
-    material: String,
-    onMaterialChange: (String) -> Unit,
-    condition: String,
-    onConditionChange: (String) -> Unit,
-    size: String,
-    onSizeChange: (String) -> Unit,
-    fitType: String,
-    onFitTypeChange: (String) -> Unit,
-    style: String,
-    onStyleChange: (String) -> Unit,
-    notes: String,
-    onNotesChange: (String) -> Unit,
-    // Preview-only flags (default false for runtime)
-    additionalExpandedPreview: Boolean = false,
-    conditionMenuExpandedPreview: Boolean = false,
-) {
-  val detailsTags =
-      AdditionalDetailsTags(
-          toggle = AddItemScreenTestTags.ADDITIONAL_DETAILS_TOGGLE,
-          section = AddItemScreenTestTags.ADDITIONAL_DETAILS_SECTION,
-          conditionField = AddItemScreenTestTags.INPUT_CONDITION,
-          materialField = AddItemScreenTestTags.INPUT_MATERIAL,
-          fitTypeField = AddItemScreenTestTags.INPUT_FIT_TYPE,
-          fitTypeDropdown = AddItemScreenTestTags.FIT_TYPE_SUGGESTIONS,
-          styleField = AddItemScreenTestTags.INPUT_STYLE,
-          styleDropdown = AddItemScreenTestTags.STYLE_SUGGESTIONS,
-          notesField = AddItemScreenTestTags.INPUT_NOTES)
-
-  ItemFieldsListLayout(
-      modifier = modifier,
-      layoutConfig =
-          ItemFieldsLayoutConfig(
-              horizontalAlignment = Alignment.CenterHorizontally,
-              verticalArrangement = Arrangement.Top),
-      slots =
-          ItemFieldsListSlots(
-              imagePicker = {
-                ImagePickerRow(
-                    onOpenDialog = { onShowDialogChange(true) },
-                    showDialog = showDialog,
-                    onDismissDialog = { onShowDialogChange(false) },
-                    onTakePhoto = onTakePhoto,
-                    onPickFromGallery = onPickFromGallery)
-              },
-              categoryField = {
-                CategoryField(
-                    category = category,
-                    onChange = onCategoryChange,
-                    testTag = AddItemScreenTestTags.INPUT_CATEGORY,
-                    invalidCategory = invalidCategory,
-                    onValidate = onCategoryValidate,
-                    dropdownTestTag = AddItemScreenTestTags.CATEGORY_SUGGESTION)
-              },
-              typeField = {
-                TypeField(
-                    type = type,
-                    suggestions = typeSuggestions,
-                    onChange = onTypeChange,
-                    testTag = AddItemScreenTestTags.INPUT_TYPE,
-                    dropdownTestTag = AddItemScreenTestTags.TYPE_SUGGESTIONS,
-                    expandOnChange = true)
-              },
-              primaryFields = {
-                ItemPrimaryFields(
-                    brand = brand,
-                    onBrandChange = onBrandChange,
-                    brandTag = AddItemScreenTestTags.INPUT_BRAND,
-                    price = price,
-                    onPriceChange = onPriceChange,
-                    priceTag = AddItemScreenTestTags.INPUT_PRICE,
-                    currency = currency,
-                    onCurrencyChange = onCurrencyChange,
-                    currencyTag = AddItemScreenTestTags.INPUT_CURRENCY,
-                    size = size,
-                    onSizeChange = onSizeChange,
-                    sizeTag = AddItemScreenTestTags.INPUT_SIZE,
-                    link = link,
-                    onLinkChange = onLinkChange,
-                    linkTag = AddItemScreenTestTags.INPUT_LINK)
-              },
-              additionalDetails = {
-                AdditionalDetailsSection(
-                    state =
-                        AdditionalDetailsState(
-                            condition = condition,
-                            onConditionChange = onConditionChange,
-                            material = material,
-                            onMaterialChange = onMaterialChange,
-                            fitType = fitType,
-                            onFitTypeChange = onFitTypeChange,
-                            style = style,
-                            onStyleChange = onStyleChange,
-                            notes = notes,
-                            onNotesChange = onNotesChange,
-                            expandedInitially = additionalExpandedPreview,
-                            condExpandedInitially = conditionMenuExpandedPreview),
-                    tags = detailsTags)
-              },
-              actionButtons = { Spacer(modifier = Modifier.height(24.dp)) }))
-}
-
-@Composable
-private fun ImagePickerRow(
-    onOpenDialog: () -> Unit,
-    showDialog: Boolean,
-    onDismissDialog: () -> Unit,
     onTakePhoto: () -> Unit,
     onPickFromGallery: () -> Unit,
 ) {
   Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Button(
-        onClick = onOpenDialog,
+        onClick = { onShowDialogChange(true) },
         colors = ButtonDefaults.buttonColors(containerColor = Primary),
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER)) {
@@ -401,7 +310,7 @@ private fun ImagePickerRow(
   if (showDialog) {
     AlertDialog(
         modifier = Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG),
-        onDismissRequest = onDismissDialog,
+        onDismissRequest = { onShowDialogChange(false) },
         title = { Text(text = "Select Image") },
         text = {
           Column {
@@ -419,95 +328,5 @@ private fun ImagePickerRow(
         },
         confirmButton = {},
         dismissButton = {})
-  }
-}
-
-@Preview(name = "Add Items", showBackground = true)
-@Composable
-fun AddItemsScreenSmallPreview() {
-  MaterialTheme {
-    val maxImageSize = 180.dp
-    val minImageSize = 80.dp
-
-    var showDialog by remember { mutableStateOf(false) }
-    val currentImageSizeState = remember { mutableStateOf(maxImageSize) }
-    val imageScaleState = remember { mutableFloatStateOf(1f) }
-
-    val nestedScrollConnection =
-        rememberImageResizeScrollConnection(
-            currentImageSize = currentImageSizeState,
-            imageScale = imageScaleState,
-            minImageSize = minImageSize,
-            maxImageSize = maxImageSize)
-
-    Box(modifier = Modifier.fillMaxSize()) {
-      Scaffold(
-          topBar = {
-            OOTDTopBar(
-                textModifier = Modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
-                centerText = "ADD ITEMS",
-                leftComposable = {
-                  BackArrow(
-                      onBackClick = {},
-                      modifier = Modifier.testTag(AddItemScreenTestTags.GO_BACK_BUTTON))
-                })
-          },
-          content = { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding).nestedScroll(nestedScrollConnection)) {
-              FieldsList(
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .padding(18.dp)
-                          .offset { IntOffset(0, currentImageSizeState.value.roundToPx()) }
-                          .testTag(AddItemScreenTestTags.ALL_FIELDS),
-                  showDialog = showDialog,
-                  onShowDialogChange = { showDialog = it },
-                  onTakePhoto = { showDialog = false },
-                  onPickFromGallery = { showDialog = false },
-                  category = "Tops",
-                  invalidCategory = null,
-                  onCategoryChange = {},
-                  onCategoryValidate = {},
-                  type = "T-Shirt",
-                  typeSuggestions = listOf("T-Shirt", "Sweater", "Jacket"),
-                  onTypeChange = {},
-                  brand = "BrandX",
-                  onBrandChange = {},
-                  price = 19.99,
-                  onPriceChange = {},
-                  currency = "CHF",
-                  onCurrencyChange = {},
-                  link = "https://example.com/item",
-                  onLinkChange = {},
-                  material = "Cotton",
-                  onMaterialChange = {},
-                  condition = "New",
-                  onConditionChange = {},
-                  size = "M",
-                  onSizeChange = {},
-                  fitType = "Regular",
-                  onFitTypeChange = {},
-                  style = "Casual",
-                  onStyleChange = {},
-                  notes = "Great condition",
-                  onNotesChange = {},
-                  additionalExpandedPreview = true,
-                  conditionMenuExpandedPreview = false)
-              ItemsImagePreview(
-                  localUri = null,
-                  remoteUrl = "",
-                  maxImageSize = maxImageSize,
-                  imageScale = imageScaleState.floatValue,
-                  currentSize = currentImageSizeState.value,
-                  testTag = AddItemScreenTestTags.IMAGE_PREVIEW,
-                  placeholderIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_photo_placeholder),
-                        contentDescription = "Placeholder icon",
-                        modifier = Modifier.size(64.dp))
-                  })
-            }
-          })
-    }
   }
 }
