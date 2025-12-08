@@ -61,6 +61,12 @@ class AccountRepositoryInMemory : AccountRepository {
   // StateFlow to track account changes for real-time observation
   private val accountUpdates = MutableStateFlow<Pair<String, Account?>>(Pair("", null))
 
+  // In-memory storage for public locations
+  private val publicLocations = mutableMapOf<String, PublicLocation>()
+
+  // StateFlow to track public location changes for real-time observation
+  private val publicLocationUpdates = MutableStateFlow<List<PublicLocation>>(emptyList())
+
   override suspend fun createAccount(
       user: User,
       userEmail: String,
@@ -153,6 +159,10 @@ class AccountRepositoryInMemory : AccountRepository {
   // replaces removeAccount
   override suspend fun deleteAccount(userID: String) {
     if (accounts.containsKey(userID)) {
+      // Remove public location if exists
+      publicLocations.remove(userID)
+      publicLocationUpdates.value = publicLocations.values.toList()
+
       accounts.remove(userID)
     } else {
       throw NoSuchElementException("Account with ID $userID not found")
@@ -175,6 +185,17 @@ class AccountRepositoryInMemory : AccountRepository {
             location = location.takeIf { isValidLocation(it) } ?: acc.location)
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
+
+    // Sync public location if account is public
+    if (!updatedAccount.isPrivate) {
+      val publicLocation =
+          PublicLocation(
+              ownerId = updatedAccount.ownerId,
+              username = updatedAccount.username,
+              location = updatedAccount.location)
+      publicLocations[userID] = publicLocation
+      publicLocationUpdates.value = publicLocations.values.toList()
+    }
   }
 
   override suspend fun deleteProfilePicture(userID: String) {
@@ -189,6 +210,23 @@ class AccountRepositoryInMemory : AccountRepository {
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
+
+    // Sync public location based on new privacy setting
+    if (!updatedAccount.isPrivate) {
+      // Account is now public - add to publicLocations
+      val publicLocation =
+          PublicLocation(
+              ownerId = updatedAccount.ownerId,
+              username = updatedAccount.username,
+              location = updatedAccount.location)
+      publicLocations[userID] = publicLocation
+      publicLocationUpdates.value = publicLocations.values.toList()
+    } else {
+      // Account is now private - remove from publicLocations
+      publicLocations.remove(userID)
+      publicLocationUpdates.value = publicLocations.values.toList()
+    }
+
     return updatedAccount.isPrivate
   }
 
@@ -286,5 +324,13 @@ class AccountRepositoryInMemory : AccountRepository {
         }
     accounts[currentUser] = account.copy(starredItemUids = updatedList)
     return updatedList
+  }
+
+  override suspend fun getPublicLocations(): List<PublicLocation> {
+    return publicLocations.values.toList()
+  }
+
+  override fun observePublicLocations(): Flow<List<PublicLocation>> {
+    return publicLocationUpdates.onStart { emit(publicLocations.values.toList()) }
   }
 }
