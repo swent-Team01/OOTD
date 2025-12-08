@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -124,6 +125,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val locationError = locationField.left.value && locationUiState.selectedLocation == null
 
   val onGPSClick = rememberGPSClickHandler(viewModel, locationPermissionLauncher)
+  var showEditProfileConfirm by remember { mutableStateOf(false) }
+  var showDeleteProfileConfirm by remember { mutableStateOf(false) }
 
   HandleRegistrationEffects(
       errorMsg = registerUiState.errorMsg,
@@ -161,8 +164,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           AvatarSection(
               avatarUri = registerUiState.localProfilePictureUri?.toString() ?: "",
               username = registerUiState.username,
-              onEditClick = { showImageSourceDialog = true },
-              deleteProfilePicture = { viewModel.clearProfilePicture() },
+              onEditClick = { showEditProfileConfirm = true },
+              deleteProfilePicture = { showDeleteProfileConfirm = true },
           )
 
           UsernameField(
@@ -212,6 +215,44 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
                       registerUiState, locationUiState, usernameError, dateError, locationError),
               onRegisterClick = viewModel::registerUser)
         }
+  }
+
+  if (showEditProfileConfirm) {
+    AlertDialog(
+        onDismissRequest = { showEditProfileConfirm = false },
+        title = { Text("Change profile picture?") },
+        text = { Text("You can reselect or take a new photo to replace the current one.") },
+        confirmButton = {
+          TextButton(
+              onClick = {
+                showEditProfileConfirm = false
+                showImageSourceDialog = true
+              }) {
+                Text("Continue")
+              }
+        },
+        dismissButton = {
+          TextButton(onClick = { showEditProfileConfirm = false }) { Text("Cancel") }
+        })
+  }
+
+  if (showDeleteProfileConfirm) {
+    AlertDialog(
+        onDismissRequest = { showDeleteProfileConfirm = false },
+        title = { Text("Remove profile picture?") },
+        text = { Text("This will clear the selected photo.") },
+        confirmButton = {
+          TextButton(
+              onClick = {
+                showDeleteProfileConfirm = false
+                viewModel.clearProfilePicture()
+              }) {
+                Text("Remove")
+              }
+        },
+        dismissButton = {
+          TextButton(onClick = { showDeleteProfileConfirm = false }) { Text("Cancel") }
+        })
   }
 }
 
