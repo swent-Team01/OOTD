@@ -3,10 +3,8 @@ package com.android.ootd.ui.map
 import com.google.maps.android.clustering.ClusterItem
 
 /**
- * Interface for cluster items that display profile pictures.
- *
- * Provides the necessary information for rendering profile-based markers on the map with clustering
- * support.
+ * Interface for cluster items that display profile pictures. Provides the necessary information for
+ * rendering profile-based markers on the map with clustering support.
  */
 interface ProfileMarkerItem : ClusterItem {
   /** The user ID of the profile owner (used for caching profile pictures) */

@@ -5,10 +5,9 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
 
 /**
- * PublicLocation model representing publicly visible location data for accounts.
- *
- * This is stored separately from Account to allow authenticated users to see locations of public
- * accounts without exposing other account details.
+ * PublicLocation model representing publicly visible location data for accounts. This is stored
+ * separately from Account to allow authenticated users to see locations of public accounts without
+ * exposing other account details.
  *
  * @property ownerId unique identifier matching the account owner's ID
  * @property username display name of the account owner
