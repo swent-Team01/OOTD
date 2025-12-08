@@ -50,13 +50,15 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.map.LocationSelectionViewState
+import com.android.ootd.ui.post.PostViewTestTags.FIRST_LIKE_BUTTON
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.ClickableProfileColumn
+import com.android.ootd.utils.composables.ClickableProfileRow
 import com.android.ootd.utils.composables.OOTDTopBar
-import com.android.ootd.utils.composables.ProfilePicture
 import com.android.ootd.utils.composables.ShowText
 import kotlinx.coroutines.launch
 
@@ -75,6 +77,9 @@ object PostViewTestTags {
   const val SAVE_EDITED_DESCRIPTION_BUTTON = "saveEditedDescriptionButton"
   const val CANCEL_EDITING_BUTTON = "cancelEditingButton"
   const val EDIT_DESCRIPTION_FIELD = "editDescriptionField"
+  const val LIKED_USER_PROFILE_PREFIX = "likedUserProfile_"
+  const val LIKED_USER_USERNAME_PREFIX = "likedUserUsername_"
+  const val FIRST_LIKE_BUTTON = "firstLikeButton"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -104,6 +109,7 @@ fun PostViewScreen(
     postId: String,
     onBack: () -> Unit,
     onDeleted: () -> Unit = { onBack() },
+    onProfileClick: (String) -> Unit = {},
     viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId))
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -152,6 +158,7 @@ fun PostViewScreen(
                   onToggleLike = { viewModel.toggleLike() },
                   modifier = Modifier.fillMaxSize(),
                   viewModel = viewModel,
+                  onProfileClick = onProfileClick,
                   onDeletePost = {
                     viewModel.deletePost(
                         onSuccess = { onDeleted() },
@@ -177,6 +184,7 @@ fun PostDetailsContent(
     onToggleLike: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostViewViewModel,
+    onProfileClick: (String) -> Unit,
     onDeletePost: () -> Unit
 ) {
   val post = uiState.post!!
@@ -225,6 +233,8 @@ fun PostDetailsContent(
       PostOwnerSection(
           username = uiState.ownerUsername,
           profilePicture = uiState.ownerProfilePicture,
+          ownerId = post.ownerId,
+          onProfileClick = onProfileClick,
           onEditClicked = { onStartEditing() },
           onDeletePost = onDeletePost,
           isOwner = uiState.isOwner)
@@ -248,7 +258,7 @@ fun PostDetailsContent(
           likeCount = uiState.likedByUsers.size,
           onToggleLike = onToggleLike)
 
-      LikedUsersRow(likedUsers = uiState.likedByUsers)
+      LikedUsersRow(likedUsers = uiState.likedByUsers, onProfileClick = onProfileClick)
     }
   }
 }
@@ -354,23 +364,23 @@ private fun DescriptionEditor(
 fun PostOwnerSection(
     username: String?,
     profilePicture: String?,
+    ownerId: String,
+    onProfileClick: (String) -> Unit,
     onEditClicked: () -> Unit,
     onDeletePost: () -> Unit,
     isOwner: Boolean = false
 ) {
   Box(Modifier.fillMaxWidth()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      ProfilePicture(
-          size = 48.dp,
-          profilePicture = profilePicture ?: "",
-          username = username ?: "",
-          textStyle = Typography.titleMedium)
-
-      Spacer(Modifier.width(12.dp))
-
-      Text(text = username ?: "Unknown User", style = Typography.titleLarge, color = Primary)
-
-      Spacer(Modifier.weight(1f))
+      ClickableProfileRow(
+          userId = ownerId,
+          username = username ?: "Unknown User",
+          profilePictureUrl = profilePicture ?: "",
+          profileSize = 48.dp,
+          onProfileClick = onProfileClick,
+          usernameStyle = Typography.titleLarge,
+          usernameColor = Primary,
+          modifier = Modifier.weight(1f))
 
       // Dropdown menu for post options
       if (isOwner) DropdownMenuWithDetails(onEditClicked, onDeletePost)
@@ -566,7 +576,8 @@ private fun PostHeroImage(
                         AssistChipDefaults.assistChipColors(
                             containerColor = Color.White.copy(alpha = 0.2f),
                             labelColor = Color.White,
-                            leadingIconContentColor = Color.White))
+                            leadingIconContentColor = Color.White),
+                    modifier = Modifier.testTag(FIRST_LIKE_BUTTON))
               }
         }
       }
@@ -608,30 +619,24 @@ fun PostDescription(
  * @ param likedUsers List of users who liked the post
  */
 @Composable
-fun LikedUsersRow(likedUsers: List<User>) {
+fun LikedUsersRow(likedUsers: List<User>, onProfileClick: (String) -> Unit) {
   LazyRow(
       horizontalArrangement = Arrangement.spacedBy(16.dp),
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         items(likedUsers.size) { index ->
           val user = likedUsers[index]
 
-          Column(
-              horizontalAlignment = Alignment.CenterHorizontally,
-              modifier = Modifier.width(64.dp)) {
-                ProfilePicture(
-                    size = 48.dp,
-                    profilePicture = user.profilePicture,
-                    username = user.username,
-                    textStyle = Typography.bodyMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = user.username,
-                    style = Typography.labelSmall,
-                    color = Primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center)
-              }
+          ClickableProfileColumn(
+              userId = user.uid,
+              username = user.username,
+              profilePictureUrl = user.profilePicture,
+              profileSize = 48.dp,
+              onProfileClick = onProfileClick,
+              usernameStyle = Typography.labelSmall,
+              usernameColor = Primary,
+              modifier = Modifier.width(64.dp),
+              profileTestTag = PostViewTestTags.LIKED_USER_PROFILE_PREFIX + user.uid,
+              usernameTestTag = PostViewTestTags.LIKED_USER_USERNAME_PREFIX + user.uid)
         }
       }
 }

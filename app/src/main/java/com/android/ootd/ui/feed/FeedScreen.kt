@@ -50,7 +50,8 @@ fun FeedScreen(
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
     onOpenPost: (String) -> Unit = {},
-    onLocationClick: (Location) -> Unit = {}
+    onLocationClick: (Location) -> Unit = {},
+    onProfileClick: (String) -> Unit = {}
 ) {
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
@@ -78,6 +79,7 @@ fun FeedScreen(
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
       isPublicFeed = uiState.isPublicFeed,
       onToggleFeed = { feedViewModel.toggleFeedType() },
+      onProfileClick = onProfileClick,
       isRefreshing = isRefreshing,
       onRefresh = { feedViewModel.onPullToRefreshTrigger() })
 }
@@ -100,6 +102,7 @@ private fun FeedScaffold(
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
     onToggleFeed: () -> Unit = {},
+    onProfileClick: (String) -> Unit,
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {}
 ) {
@@ -162,6 +165,7 @@ private fun FeedScaffold(
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
                   onLikeClick = onLikeClick,
+                  onProfileClick = onProfileClick,
                   isRefreshing = isRefreshing,
                   onRefresh = onRefresh)
 
@@ -197,6 +201,7 @@ fun FeedList(
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
     onLocationClick: (Location) -> Unit = {},
+    onProfileClick: (String) -> Unit = {},
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {}
 ) {
@@ -219,7 +224,8 @@ fun FeedList(
                 onLikeClick = { onLikeClick(post) },
                 onSeeFitClick = { onSeeFitClick(post) },
                 onCardClick = { onPostClick(post.postUID) },
-                onLocationClick = onLocationClick)
+                onLocationClick = onLocationClick,
+                onProfileClick = onProfileClick)
           }
         }
       })
@@ -262,6 +268,7 @@ fun FeedScreenPreview() {
         likes = emptyMap(),
         likeCounts = emptyMap(),
         onLikeClick = {},
-        onOpenPost = {})
+        onOpenPost = {},
+        onProfileClick = {})
   }
 }

@@ -42,6 +42,7 @@ object OutfitPostCardTestTags {
   const val OUTFIT_POST_CARD = "outfitPostCard"
   const val POST_USERNAME = "postUsername"
   const val POST_IMAGE = "postImage"
+  const val POST_IMAGE_BOX = "postImageBox"
   const val POST_DESCRIPTION = "postDescription"
   const val SEE_FIT_BUTTON = "seeFitButton"
   const val PROFILE_PIC = "profilePic"
@@ -62,7 +63,7 @@ object OutfitPostCardTestTags {
  * @param post The outfit post data.
  */
 @Composable
-private fun ProfileSection(post: OutfitPost) {
+private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = {}) {
   val totalLifetime = 24 * 60 * 60 * 1000L // 24h in ms
   val now = System.currentTimeMillis()
   // Calculate remaining lifetime
@@ -90,12 +91,13 @@ private fun ProfileSection(post: OutfitPost) {
           size = 36.dp,
           profilePicture = profilePic,
           username = post.name,
-          textStyle = Typography.titleMedium)
+          textStyle = Typography.titleMedium,
+          onClick = { onProfileClick(post.ownerId) })
     }
 
     Spacer(modifier = Modifier.width(8.dp))
 
-    Column {
+    Column(modifier = Modifier.clickable { onProfileClick(post.ownerId) }) {
       Text(
           text = post.name,
           style = Typography.titleLarge,
@@ -170,6 +172,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
               .height(260.dp)
               .clip(RoundedCornerShape(12.dp))
               .background(Color.White)
+              .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
         AsyncImage(
             model = post.outfitURL.ifBlank { null },
@@ -259,7 +262,8 @@ fun OutfitPostCard(
     onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {},
     onCardClick: (String) -> Unit = {},
-    onLocationClick: (Location) -> Unit = {}
+    onLocationClick: (Location) -> Unit = {},
+    onProfileClick: (String) -> Unit = {}
 ) {
   Box(
       modifier =
@@ -274,7 +278,7 @@ fun OutfitPostCard(
             colors = CardDefaults.cardColors(containerColor = Secondary),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
               Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                ProfileSection(post)
+                ProfileSection(post, onProfileClick = onProfileClick)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Click to get details enabled only when not blurred
