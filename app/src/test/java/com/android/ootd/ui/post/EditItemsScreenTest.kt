@@ -6,7 +6,6 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasContentDescription
@@ -28,6 +27,7 @@ import com.android.ootd.ui.post.items.EditItemsScreen
 import com.android.ootd.ui.post.items.EditItemsScreenSmallPreview
 import com.android.ootd.ui.post.items.EditItemsScreenTestTags
 import com.android.ootd.ui.post.items.EditItemsViewModel
+import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Before
@@ -57,6 +57,7 @@ class EditItemsScreenTest {
             }
             .isSuccess
     if (!alreadyVisible) {
+      scrollTo(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
       composeTestRule
           .onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
           .performClick()
@@ -101,13 +102,12 @@ class EditItemsScreenTest {
   }
 
   @Test
-  fun `edit preview keeps additional details collapsed by default`() {
+  fun `edit preview shows placeholder`() {
     composeTestRule.setContent { EditItemsScreenSmallPreview() }
 
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).assertExists()
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_SECTION, useUnmergedTree = true)
-        .assertIsNotDisplayed()
+        .onNodeWithText("Preview placeholder - use emulator for full preview")
+        .assertIsDisplayed()
   }
 
   @Test
@@ -178,19 +178,14 @@ class EditItemsScreenTest {
   }
 
   @Test
-  fun `category dropdown shows and selects option`() {
+  fun `category selector allows selecting option`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    // Click to open dropdown
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).performClick()
-
-    // Select an option
-    composeTestRule.onNodeWithText("Clothing").performClick()
-
-    // Verify selection
+    // Click the chip directly
     composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .assertTextContains("Clothing")
+        .onNodeWithTag("${QuickSelectChipsTestTags.CATEGORY_CHIP_PREFIX}Clothing")
+        .performClick()
+    assert(mockViewModel.uiState.value.category == "Clothing")
   }
 
   @Test
@@ -268,10 +263,8 @@ class EditItemsScreenTest {
     mockViewModel.loadItem(item)
 
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
+    assert(mockViewModel.uiState.value.category == "Clothing")
 
-    composeTestRule
-        .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY)
-        .assertTextContains("Clothing")
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE)
         .assertTextContains("T-shirt")
@@ -281,6 +274,8 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_PRICE)
         .assertTextContains("49.99")
+
+    scrollTo(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE)
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.ADDITIONAL_DETAILS_TOGGLE).performClick()
     composeTestRule.waitForIdle()
     composeTestRule

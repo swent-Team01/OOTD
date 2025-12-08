@@ -34,6 +34,7 @@ import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.post.PostViewTestTags
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
+import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
@@ -157,8 +158,10 @@ fun addPostWithOneItem(
     clickWithWait(composeTestRule, PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION)
     clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
 
-    clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
-    composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
+    // Select category via chip
+    val clothingChip = "${QuickSelectChipsTestTags.CATEGORY_CHIP_PREFIX}Clothing"
+    verifyElementAppearsWithTimer(composeTestRule, clothingChip)
+    composeTestRule.onNodeWithTag(clothingChip).performClick()
 
     composeTestRule.waitUntil(timeoutMillis = 5_000) {
       composeTestRule
@@ -210,11 +213,10 @@ suspend fun addItemFromInventory(
   assert(userId != "")
   // clickWithWait(composeTestRule, AddItemScreenTestTags.IMAGE_PICKER)
 
-  clickWithWait(composeTestRule, AddItemScreenTestTags.INPUT_CATEGORY)
-
-  verifyElementAppearsWithTimer(composeTestRule, AddItemScreenTestTags.CATEGORY_SUGGESTION)
-
-  composeTestRule.onAllNodesWithTag(AddItemScreenTestTags.CATEGORY_SUGGESTION)[0].performClick()
+  // Select category via chip
+  val clothingChip = "${QuickSelectChipsTestTags.CATEGORY_CHIP_PREFIX}Clothing"
+  verifyElementAppearsWithTimer(composeTestRule, clothingChip)
+  composeTestRule.onNodeWithTag(clothingChip).performClick()
 
   composeTestRule.waitUntil(timeoutMillis = 5_000) {
     composeTestRule
