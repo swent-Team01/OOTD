@@ -722,4 +722,21 @@ class NavigationTest {
       assertEquals(testUserId, extractedUserId)
     }
   }
+
+  @Test
+  fun navigateToUserProfile_whenCurrentUser_navigatesToAccountView() {
+    composeRule.runOnIdle {
+      val currentUserId = "my-user-id"
+      navigation.navigateToUserProfile(currentUserId, currentUserId)
+      assertEquals(Screen.AccountView.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun navigateToUserProfile_whenOtherUser_navigatesToViewUser() {
+    composeRule.runOnIdle {
+      navigation.navigateToUserProfile("other-user-id", "my-user-id")
+      assertTrue(navigation.currentRoute().contains("viewUser"))
+    }
+  }
 }

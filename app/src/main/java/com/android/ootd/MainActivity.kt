@@ -309,6 +309,7 @@ fun OOTDApp(
               // 3. FeedScreen route (top-level, for authenticated users)
               navigation(startDestination = Screen.Feed.route, route = Screen.Feed.name) {
                 composable(Screen.Feed.route) {
+                  val currentUserId = Firebase.auth.currentUser?.uid
                   FeedScreen(
                       onAddPostClick = { navigationActions.navigateTo(Screen.FitCheck()) },
                       onNotificationIconClick = {
@@ -327,15 +328,16 @@ fun OOTDApp(
                                 longitude = location.longitude,
                                 locationName = location.name))
                       },
-                      onProfileClick = { ownerId ->
-                        navigationActions.navigateTo(Screen.ViewUser(ownerId))
+                      onProfileClick = { userId ->
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
                       })
                 }
 
                 composable(Screen.SearchScreen.route) {
+                  val currentUserId = Firebase.auth.currentUser?.uid
                   UserSearchScreen(
                       onUserClick = { userId ->
-                        navigationActions.navigateTo(Screen.ViewUser(userId))
+                        navigationActions.navigateToUserProfile(userId, currentUserId) // ← USE HERE
                       })
                 }
 
@@ -512,13 +514,14 @@ fun OOTDApp(
                     arguments = listOf(navArgument("postId") { type = NavType.StringType })) {
                         navBackStackEntry ->
                       val postId = navBackStackEntry.arguments?.getString("postId")
+                      val currentUserId = Firebase.auth.currentUser?.uid
 
                       if (postId != null) {
                         PostViewScreen(
                             postId = postId,
                             onBack = { navigationActions.goBack() },
-                            onProfileClick = { ownerId ->
-                              navigationActions.navigateTo(Screen.ViewUser(ownerId))
+                            onProfileClick = { userId ->
+                              navigationActions.navigateToUserProfile(userId, currentUserId)
                             })
                       }
                     }
@@ -550,11 +553,12 @@ fun OOTDApp(
                     }
 
                 composable(route = Screen.NotificationsScreen.route) {
+                  val currentUserId = Firebase.auth.currentUser?.uid
                   NotificationsScreen(
                       testMode = testMode,
                       onBackClick = { navigationActions.goBack() },
                       onProfileClick = { userId ->
-                        navigationActions.navigateTo(Screen.ViewUser(userId))
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
                       })
                 }
               }
