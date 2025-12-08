@@ -16,11 +16,14 @@ import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Data class representing the UI state for the Account Page.
@@ -70,47 +73,90 @@ class AccountPageViewModel(
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
     private val itemsRepository: ItemsRepository = ItemsRepositoryProvider.repository
 ) : ViewModel() {
+
+  companion object {
+    const val NETWORK_TIMEOUT_MS = 2000L
+  }
+
   private val _uiState = MutableStateFlow(AccountPageViewState())
   val uiState: StateFlow<AccountPageViewState> = _uiState.asStateFlow()
+
+  private var hasLoadedInitialData = false
 
   init {
     retrieveUserData()
   }
 
   /**
-   * Retrieves the current user's data from repositories.
+   * Retrieves the current user's data from repositories using offline-first pattern.
    *
-   * Fetches the user's profile information, account details, and posts, then updates the UI state.
-   * Sets [AccountPageViewState.isLoading] to true during the fetch operation and false when
-   * complete. If an error occurs, sets [AccountPageViewState.errorMsg] with the error message.
+   * Uses parallel fetching with timeouts to handle offline scenarios gracefully. Firestore's
+   * offline cache provides immediate data while network calls timeout when offline. Sets
+   * [AccountPageViewState.isLoading] to true during fetch and false when complete.
    */
   private fun retrieveUserData() {
-    _uiState.update { it.copy(isLoading = true) }
+    _uiState.update { it.copy(isLoading = true, errorMsg = null) }
     viewModelScope.launch {
       try {
         val currentUserID = accountService.currentUserId
-        val user = userRepository.getUser(currentUserID)
-        val account = accountRepository.getAccount(currentUserID)
-        val usersPosts =
-            feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
-        val starredIds = accountRepository.refreshStarredItems(currentUserID)
-        val starredItems =
-            if (starredIds.isEmpty()) emptyList()
-            else itemsRepository.getItemsByIdsAcrossOwners(starredIds)
-        Log.d(currentLog, "Refreshed starred items: ${starredIds.joinToString()}")
-        _uiState.update {
-          it.copy(
-              username = user.username,
-              profilePicture = user.profilePicture,
-              posts = usersPosts,
-              friends = account.friendUids,
-              starredItems = starredItems,
-              starredItemIds = starredIds.toSet(),
-              isLoading = false)
+
+        // Fetch all data in parallel with timeouts for offline resilience
+        coroutineScope {
+          val userDeferred = async {
+            withTimeoutOrNull(NETWORK_TIMEOUT_MS) { userRepository.getUser(currentUserID) }
+          }
+          val accountDeferred = async {
+            withTimeoutOrNull(NETWORK_TIMEOUT_MS) { accountRepository.getAccount(currentUserID) }
+          }
+          val postsDeferred = async {
+            withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+              feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
+            }
+          }
+          val starredIdsDeferred = async {
+            withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+              accountRepository.refreshStarredItems(currentUserID)
+            }
+          }
+
+          val user = userDeferred.await()
+          val account = accountDeferred.await()
+          val posts = postsDeferred.await()
+          val starredIds = starredIdsDeferred.await()
+
+          // Fetch starred items only if we have IDs (also parallel-safe since it depends on
+          // starredIds)
+          val starredItems =
+              if (starredIds.isNullOrEmpty()) {
+                emptyList()
+              } else {
+                withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+                  itemsRepository.getItemsByIdsAcrossOwners(starredIds)
+                }
+              }
+
+          if (user != null) {
+            Log.d(currentLog, "Loaded data, starred items: ${starredIds?.joinToString() ?: "none"}")
+            hasLoadedInitialData = true
+            _uiState.update {
+              it.copy(
+                  username = user.username,
+                  profilePicture = user.profilePicture,
+                  posts = posts ?: emptyList(),
+                  friends = account?.friendUids ?: emptyList(),
+                  starredItems = starredItems ?: emptyList(),
+                  starredItemIds = starredIds?.toSet() ?: emptySet(),
+                  isLoading = false)
+            }
+          } else {
+            // User data timed out - likely offline with no cache
+            _uiState.update {
+              it.copy(errorMsg = "Unable to load account - check connection", isLoading = false)
+            }
+          }
         }
-        clearErrorMsg()
       } catch (e: Exception) {
-        Log.e(currentLog, "Error fetching user data : ${e.message}")
+        Log.e(currentLog, "Error fetching user data: ${e.message}")
         _uiState.update {
           it.copy(errorMsg = e.localizedMessage ?: "Failed to load account data", isLoading = false)
         }
@@ -118,7 +164,14 @@ class AccountPageViewModel(
     }
   }
 
-  /** Refreshes the user's account data. */
+  /** Refreshes the user's account data only if not already loaded. */
+  fun refreshUserDataIfNeeded() {
+    if (!hasLoadedInitialData) {
+      retrieveUserData()
+    }
+  }
+
+  /** Force refreshes the user's account data (for pull-to-refresh scenarios). */
   fun refreshUserData() {
     retrieveUserData()
   }
