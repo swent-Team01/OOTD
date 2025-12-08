@@ -1,7 +1,7 @@
 [versions]
 agp = "8.13.0"
 coilCompose = "2.7.0"
-exifinterface = "1.4.1"
+exifinterface = "1.4.2"
 firebaseBom = "34.3.0"
 kotlin = "2.1.10"
 coreKtx = "1.12.0"
