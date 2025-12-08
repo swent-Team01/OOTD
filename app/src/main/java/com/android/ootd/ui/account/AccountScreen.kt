@@ -198,8 +198,9 @@ private fun AccountHeader(
 
   Spacer(modifier = Modifier.height(9.dp))
 
+  val friendText = if (friendCount == 1) "friend" else "friends"
   ShowText(
-      text = "$friendCount friends",
+      text = "$friendCount $friendText",
       style = Typography.bodyLarge,
       modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
 
