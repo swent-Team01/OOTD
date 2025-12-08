@@ -57,7 +57,8 @@ class MapViewModelTest {
           ownerId = testUserId,
           username = "testUser",
           location = testLocation,
-          friendUids = listOf("friend1", "friend2"))
+          friendUids = listOf("friend1", "friend2"),
+          isPrivate = false)
 
   @Before
   fun setUp() {
@@ -188,7 +189,7 @@ class MapViewModelTest {
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    var adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+    var adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
     assertEquals(1, adjustedPosts.size)
     assertEquals(post, adjustedPosts[0].post)
     assertEquals(testLocation.latitude, adjustedPosts[0].position.latitude, 0.0001)
@@ -199,7 +200,7 @@ class MapViewModelTest {
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+    adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
     assertTrue(adjustedPosts.isEmpty())
   }
 
@@ -226,7 +227,7 @@ class MapViewModelTest {
       viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
       advanceUntilIdle()
 
-      val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+      val adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
 
       // Verify count
       assertEquals(count, adjustedPosts.size)
@@ -268,7 +269,7 @@ class MapViewModelTest {
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
 
     assertEquals(3, adjustedPosts.size)
 
@@ -491,7 +492,7 @@ class MapViewModelTest {
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    val adjusted = viewModel.getPublicLocationsWithAdjusted()
+    val adjusted = viewModel.getPublicLocationsWithAdjusted(viewModel.uiState.value.publicLocations)
     assertEquals(3, adjusted.size)
     // First two should have different positions
     val pos1 = adjusted[0].position
