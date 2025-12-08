@@ -99,17 +99,14 @@ class AccountRepositoryInMemoryTest {
     assertEquals(refreshed, repository.getStarredItems("user1"))
   }
 
-  // Public Location Syncing Tests
-
   @Test
   fun togglePrivacy_createsPublicLocationWhenAccountBecomesPublic() = runBlocking {
     setValidLocation("user1")
     assertFalse(repository.togglePrivacy("user1"))
-
-    val publicLocations = repository.getPublicLocations()
-    assertEquals(1, publicLocations.size)
-    assertEquals(repository.getAccount("user1").username, publicLocations[0].username)
-    assertEquals("user1", publicLocations[0].ownerId)
+    val locations = repository.getPublicLocations()
+    assertEquals(1, locations.size)
+    assertEquals(repository.getAccount("user1").username, locations[0].username)
+    assertEquals("user1", locations[0].ownerId)
   }
 
   @Test
@@ -125,7 +122,6 @@ class AccountRepositoryInMemoryTest {
     setValidLocation("user1")
     makePublic("user1")
     assertEquals(1, repository.getPublicLocations().size)
-
     assertTrue(repository.togglePrivacy("user1"))
     assertEquals(0, repository.getPublicLocations().size)
   }
@@ -134,14 +130,11 @@ class AccountRepositoryInMemoryTest {
   fun editAccount_syncsPublicLocationWhenAccountIsPublic() = runBlocking {
     setValidLocation("user1", EPFL_LOCATION)
     makePublic("user1")
-
     repository.editAccount("user1", "updated_alice", "1990-01-01", "pic.jpg", NY_LOCATION)
-
-    val publicLocations = repository.getPublicLocations()
-    assertEquals(1, publicLocations.size)
-    assertEquals("updated_alice", publicLocations[0].username)
-    assertEquals(NY_LOCATION.latitude, publicLocations[0].location.latitude, 0.0001)
-    assertEquals(NY_LOCATION.longitude, publicLocations[0].location.longitude, 0.0001)
+    val loc = repository.getPublicLocations()[0]
+    assertEquals("updated_alice", loc.username)
+    assertEquals(NY_LOCATION.latitude, loc.location.latitude, 0.0001)
+    assertEquals(NY_LOCATION.longitude, loc.location.longitude, 0.0001)
   }
 
   @Test
@@ -155,7 +148,6 @@ class AccountRepositoryInMemoryTest {
     setValidLocation("user2", EPFL_LOCATION)
     makePublic("user2")
     assertEquals(1, repository.getPublicLocations().size)
-
     repository.deleteAccount("user2")
     assertEquals(0, repository.getPublicLocations().size)
   }
@@ -166,11 +158,10 @@ class AccountRepositoryInMemoryTest {
     setValidLocation("user2", NY_LOCATION)
     makePublic("user1")
     makePublic("user2")
-
-    val publicLocations = repository.getPublicLocations()
-    assertEquals(2, publicLocations.size)
-    assertTrue(publicLocations.any { it.ownerId == "user1" })
-    assertTrue(publicLocations.any { it.ownerId == "user2" })
+    val locations = repository.getPublicLocations()
+    assertEquals(2, locations.size)
+    assertTrue(locations.any { it.ownerId == "user1" })
+    assertTrue(locations.any { it.ownerId == "user2" })
   }
 
   @Test
@@ -181,16 +172,13 @@ class AccountRepositoryInMemoryTest {
   @Test
   fun observePublicLocations_emitsUpdatesWhenPublicLocationChanges() = runBlocking {
     setValidLocation("user1", EPFL_LOCATION)
-
-    val initialLocations = repository.getPublicLocations()
-    assertEquals(0, initialLocations.size)
+    assertEquals(0, repository.getPublicLocations().size)
 
     repository.togglePrivacy("user1")
-    val afterPublic = repository.getPublicLocations()
-    assertEquals(1, afterPublic.size)
-    assertEquals("user1", afterPublic[0].ownerId)
+    assertEquals(1, repository.getPublicLocations().size)
+    assertEquals("user1", repository.getPublicLocations()[0].ownerId)
 
     repository.togglePrivacy("user1")
-    val afterPrivate = repository.getPublicLocations()
+    assertEquals(0, repository.getPublicLocations().size)
   }
 }
