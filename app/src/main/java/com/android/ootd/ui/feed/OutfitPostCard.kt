@@ -21,11 +21,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
@@ -171,8 +173,14 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
               .clip(RoundedCornerShape(12.dp))
               .background(Color.White)
               .then(modifier)) {
+        val context = LocalContext.current
+
         AsyncImage(
-            model = post.outfitURL.ifBlank { null },
+            model =
+                ImageRequest.Builder(context)
+                    .data(post.outfitURL.ifBlank { null })
+                    .crossfade(true)
+                    .build(),
             contentDescription = "Outfit image",
             modifier =
                 Modifier.fillMaxSize()
