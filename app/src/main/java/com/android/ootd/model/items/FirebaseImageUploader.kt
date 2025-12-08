@@ -2,9 +2,10 @@ package com.android.ootd.model.items
 
 import android.net.Uri
 import android.util.Log
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.ktx.storage
+import com.google.firebase.storage.storage
 import kotlinx.coroutines.tasks.await
 
 /**

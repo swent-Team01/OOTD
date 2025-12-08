@@ -4,6 +4,7 @@ import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -88,7 +90,12 @@ private fun ImagePreviewBox(imageUri: Uri) {
 
 /** Description input field with character counter */
 @Composable
-private fun DescriptionInputField(description: String, onDescriptionChange: (String) -> Unit) {
+private fun DescriptionInputField(
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    onGenerateDescription: () -> Unit,
+    isGenerating: Boolean
+) {
   val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
 
   Column(modifier = Modifier.fillMaxWidth()) {
@@ -103,14 +110,39 @@ private fun DescriptionInputField(description: String, onDescriptionChange: (Str
         placeholder = "Add a short caption for your FitCheck",
         modifier = Modifier.fillMaxWidth().testTag(FitCheckScreenTestTags.DESCRIPTION_INPUT),
         singleLine = false,
-        maxLines = 2)
-    ShowText(
-        text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
-        style = Typography.bodySmall,
-        modifier =
-            Modifier.align(Alignment.End)
-                .padding(top = 4.dp, end = 4.dp)
-                .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
+        maxLines = 10)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically) {
+          OutlinedButton(
+              onClick = onGenerateDescription,
+              enabled = !isGenerating,
+              border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+              shape = RoundedCornerShape(12.dp)) {
+                if (isGenerating) {
+                  CircularProgressIndicator(
+                      modifier = Modifier.size(16.dp),
+                      color = MaterialTheme.colorScheme.primary,
+                      strokeWidth = 2.dp)
+                  Spacer(modifier = Modifier.width(8.dp))
+                  Text("Generating...", style = Typography.labelLarge)
+                } else {
+                  Icon(
+                      imageVector = Icons.Filled.AutoAwesome,
+                      contentDescription = "AI",
+                      modifier = Modifier.size(18.dp))
+                  Spacer(modifier = Modifier.width(8.dp))
+                  Text("Auto-generate", style = Typography.labelLarge)
+                }
+              }
+
+          ShowText(
+              text = "$remainingChars/$MAX_DESCRIPTION_LENGTH characters left",
+              style = Typography.bodySmall,
+              modifier =
+                  Modifier.padding(end = 4.dp).testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
+        }
   }
 }
 
@@ -218,6 +250,24 @@ fun FitCheckScreen(
       onChooseFromGallery = { galleryLauncher.launch("image/*") },
       onTakePhoto = { showCamera = true },
       onDescriptionChange = { fitCheckViewModel.setDescription(it) },
+      onGenerateDescription = {
+        if (uiState.image != Uri.EMPTY) {
+          try {
+            val source =
+                android.graphics.ImageDecoder.createSource(context.contentResolver, uiState.image)
+            val bitmap =
+                android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                  decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                  decoder.isMutableRequired = true
+                }
+            fitCheckViewModel.generateDescription(bitmap)
+          } catch (e: Exception) {
+            fitCheckViewModel.setErrorMsg("Failed to load image for AI generation")
+          }
+        } else {
+          fitCheckViewModel.setErrorMsg("Please select an image first")
+        }
+      },
       onClearError = { fitCheckViewModel.clearError() },
       onGPSClick = onGPSClick,
       onLocationSelect = { fitCheckViewModel.setLocation(it) },
@@ -234,6 +284,7 @@ private fun FitCheckScreenContent(
     onChooseFromGallery: () -> Unit = {},
     onTakePhoto: () -> Unit = {},
     onDescriptionChange: (String) -> Unit = {},
+    onGenerateDescription: () -> Unit = {},
     onClearError: () -> Unit = {},
     onGPSClick: () -> Unit = {},
     onLocationSelect: (Location) -> Unit = {},
@@ -253,8 +304,8 @@ private fun FitCheckScreenContent(
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON))
             })
       },
-      bottomBar = {
-        Button(
+      floatingActionButton = {
+        ExtendedFloatingActionButton(
             onClick = {
               if (overridePhoto || uiState.isPhotoValid) {
                 onClearError()
@@ -267,24 +318,15 @@ private fun FitCheckScreenContent(
                 onDescriptionChange(uiState.description) // no-op; real screen sets error
               }
             },
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(80.dp)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .testTag(FitCheckScreenTestTags.NEXT_BUTTON),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary),
-            shape = RoundedCornerShape(16.dp)) {
-              Row(
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.Center) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Add items",
-                        tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add items", color = Color.White)
-                  }
-            }
+            modifier = Modifier.testTag(FitCheckScreenTestTags.NEXT_BUTTON),
+            containerColor = Primary,
+            contentColor = Color.White,
+            icon = {
+              Icon(
+                  imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                  contentDescription = "Add items")
+            },
+            text = { Text("Add items") })
       }) { innerPadding ->
         Column(
             modifier =
@@ -296,6 +338,17 @@ private fun FitCheckScreenContent(
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
               // Image preview
               ImagePreviewBox(imageUri = uiState.image)
+
+              // Add photo button
+              Button(
+                  onClick = { showDialog = true },
+                  shape = RoundedCornerShape(24.dp),
+                  modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                    Text(
+                        if (uiState.image == Uri.EMPTY) "Add Fit Photo" else "Change Photo",
+                        color = Color.White)
+                  }
 
               // Error message
               uiState.errorMessage?.let { msg ->
@@ -309,16 +362,10 @@ private fun FitCheckScreenContent(
 
               // Description field with counter
               DescriptionInputField(
-                  description = uiState.description, onDescriptionChange = onDescriptionChange)
-
-              // Add photo button
-              Button(
-                  onClick = { showDialog = true },
-                  shape = RoundedCornerShape(24.dp),
-                  modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Text("Add Fit Photo", color = Color.White)
-                  }
+                  description = uiState.description,
+                  onDescriptionChange = onDescriptionChange,
+                  onGenerateDescription = onGenerateDescription,
+                  isGenerating = uiState.isLoading)
 
               // Location section (optional)
               locationSelectionViewModel?.let { viewModel ->

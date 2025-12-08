@@ -8,8 +8,8 @@ import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

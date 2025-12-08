@@ -1,5 +1,6 @@
 package com.android.ootd.ui.post
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -8,6 +9,10 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
+import com.google.firebase.Firebase
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.type.content
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -118,5 +123,29 @@ class FitCheckViewModel(
   /** Clears the error message in the UI state. */
   fun clearError() {
     _uiState.value = _uiState.value.copy(errorMessage = null)
+  }
+
+  fun generateDescription(bitmap: Bitmap) {
+    _uiState.value = _uiState.value.copy(isLoading = true)
+    viewModelScope.launch {
+      try {
+        val model =
+            Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel("gemini-2.5-flash")
+
+        val response =
+            model.generateContent(
+                content {
+                  image(bitmap)
+                  text(
+                      "Make a description for a social media app of the image you got as input. Make it joyfull. Only output around 100 characters. Do not add anything else")
+                })
+
+        _uiState.value = _uiState.value.copy(description = response.text ?: "", isLoading = false)
+      } catch (e: Exception) {
+        _uiState.value =
+            _uiState.value.copy(
+                errorMessage = "Failed to generate description: ${e.message}", isLoading = false)
+      }
+    }
   }
 }

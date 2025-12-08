@@ -197,7 +197,16 @@ dependencies {
   implementation(libs.firebase.database.ktx)
   implementation(libs.firebase.firestore)
   implementation(libs.firebase.auth.ktx)
+  implementation(libs.firebase.auth.ktx)
   implementation(libs.firebase.auth)
+
+  // Import the BoM for the Firebase platform
+  implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+
+  // Add the dependency for the Firebase AI Logic library
+  // When using the BoM, you don't specify versions in Firebase library dependencies
+  implementation("com.google.firebase:firebase-ai")
+  // implementation(libs.firebase.vertexai)
 
   // Credential Manager (for Google Sign-In)
   implementation(libs.credentials)

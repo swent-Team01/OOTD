@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.consent.Consent
 import com.android.ootd.model.consent.ConsentRepository
 import com.android.ootd.model.consent.ConsentRepositoryProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

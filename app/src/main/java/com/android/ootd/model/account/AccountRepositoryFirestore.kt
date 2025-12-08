@@ -14,12 +14,12 @@ import com.android.ootd.model.user.USER_COLLECTION_PATH
 import com.android.ootd.model.user.User
 import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.android.ootd.utils.LocationUtils.mapFromLocation
-import com.google.firebase.auth.ktx.auth
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
-import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.awaitClose

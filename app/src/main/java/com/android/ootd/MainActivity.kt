@@ -67,9 +67,9 @@ import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.theme.OOTDTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.auth.ktx.auth
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.ktx.Firebase
 import okhttp3.OkHttpClient
 
 /**

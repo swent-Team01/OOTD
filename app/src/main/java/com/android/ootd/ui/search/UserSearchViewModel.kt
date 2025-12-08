@@ -11,8 +11,8 @@ import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

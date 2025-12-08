@@ -8,8 +8,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 class NotificationSyncWorker(
     context: Context,
