@@ -2,12 +2,9 @@
 agp = "8.13.0"
 coilCompose = "2.7.0"
 exifinterface = "1.4.1"
-firebaseBom = "34.6.0"
 kotlin = "2.1.10"
 coreKtx = "1.12.0"
 ktfmt = "0.25.0"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
 appcompat = "1.6.1"
 material = "1.11.0"
 composeBom = "2024.02.02"
@@ -17,7 +14,6 @@ lifecycleRuntimeKtx = "2.7.0"
 kaspresso = "1.5.5"
 robolectric = "4.11.1"
 sonar = "5.1.0.4882"
-gms = "4.4.2"
 navigationCompose = "2.8.5"
 
 # Firebase
@@ -52,12 +48,9 @@ guava = "33.5.0-android"
 
 # Testing Unit
 junit = "4.13.2"
-mockitoCore = "5.13.0"
-mockitoKotlin = "5.4.0"
 mockk = "1.14.6"
 mockkAgent = "1.14.6"
 datastoreCore = "1.1.7"
-firebaseStorageKtx = "22.0.1"
 playServicesLocation = "21.3.0"
 foundationLayout = "1.9.4"
 foundation = "1.9.4"
@@ -70,13 +63,8 @@ workTesting = "2.11.0"
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
-firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-firebase-storage = { module = "com.google.firebase:firebase-storage" }
-#noinspection SimilarGradleDependency
 firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx", version.ref = "firebaseStorage" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -111,7 +99,6 @@ credentials = { module = "androidx.credentials:credentials", version.ref = "cred
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
-firebase-vertexai = { module = "com.google.firebase:firebase-vertexai" }
 firebase-database-ktx = { module = "com.google.firebase:firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
@@ -136,7 +123,6 @@ accompanist-permissions = { module = "com.google.accompanist:accompanist-permiss
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
-google-firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
@@ -151,4 +137,3 @@ jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "k
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 sonar = { id = "org.sonarqube", version.ref = "sonar" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-gms = { id = "com.google.gms.google-services", version.ref = "gms" }

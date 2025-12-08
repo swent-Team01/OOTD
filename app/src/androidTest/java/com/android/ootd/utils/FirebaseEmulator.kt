@@ -67,6 +67,9 @@ object FirebaseEmulator {
               androidx.test.core.app.ApplicationProvider.getApplicationContext<
                   android.content.Context>()
 
+          // Clean up DataStore files BEFORE deleting Firebase apps
+          cleanupDataStoreFiles(context)
+
           // Delete all Firebase app instances
           val apps = FirebaseApp.getApps(context).toList()
           apps.forEach { app ->
@@ -77,8 +80,15 @@ object FirebaseEmulator {
             }
           }
 
-          // Give Firebase time to clean up
-          Thread.sleep(200)
+          // Give Firebase MUCH more time to clean up DataStore instances
+          System.gc()
+          System.runFinalization()
+          Thread.sleep(2000)
+
+          // Clean up DataStore files again after deletion
+          cleanupDataStoreFiles(context)
+          System.gc()
+          Thread.sleep(500)
 
           // Reinitialize the default Firebase app
           val newApp = FirebaseApp.initializeApp(context)
@@ -133,6 +143,37 @@ object FirebaseEmulator {
 
   fun clearFirestoreEmulator() {
     clearEmulator(firestoreEndpoint)
+  }
+
+  /**
+   * Helper function to clean up DataStore files that may be locking Firebase resources. This is
+   * called both before and after Firebase app deletion to ensure clean state.
+   */
+  private fun cleanupDataStoreFiles(context: android.content.Context) {
+    try {
+      val dataStoreDir = java.io.File(context.filesDir, "datastore")
+      if (dataStoreDir.exists() && dataStoreDir.isDirectory) {
+        var deletedCount = 0
+        dataStoreDir.listFiles()?.forEach { file ->
+          // Delete all Firebase-related DataStore files
+          if (file.name.contains("Firebase") || file.name.contains("HeartBeat")) {
+            try {
+              if (file.delete()) {
+                deletedCount++
+                Log.d("FirebaseEmulator", "Deleted DataStore file: ${file.name}")
+              }
+            } catch (ex: Exception) {
+              Log.w("FirebaseEmulator", "Could not delete ${file.name}: ${ex.message}")
+            }
+          }
+        }
+        if (deletedCount > 0) {
+          Log.d("FirebaseEmulator", "Cleaned up $deletedCount DataStore files")
+        }
+      }
+    } catch (e: Exception) {
+      Log.w("FirebaseEmulator", "Error cleaning DataStore files", e)
+    }
   }
 
   /**

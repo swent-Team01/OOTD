@@ -4,6 +4,7 @@ import NotificationRepository
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.ai.AIModelProvider
 import com.android.ootd.model.consent.ConsentRepository
 import com.android.ootd.model.consent.ConsentRepositoryFirestore
 import com.android.ootd.model.consent.ConsentRepositoryProvider
@@ -89,6 +90,7 @@ abstract class BaseTest() {
     UserRepositoryProvider.repository = UserRepositoryFirestore(FirebaseEmulator.firestore)
     ConsentRepositoryProvider.repository = ConsentRepositoryFirestore(FirebaseEmulator.firestore)
     ItemsRepositoryProvider.repository = ItemsRepositoryFirestore(FirebaseEmulator.firestore)
+    AIModelProvider.useMock() // Use mock AI model to avoid Firebase AI DataStore issues
   }
 
   @After
@@ -97,5 +99,6 @@ abstract class BaseTest() {
       FirebaseEmulator.auth.signOut()
       FirebaseEmulator.clearAuthEmulator()
     }
+    AIModelProvider.reset() // Reset to default Firebase AI model
   }
 }

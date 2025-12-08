@@ -64,6 +64,7 @@ class FourthEnd2EndTest : FirestoreTest() {
     fakeGoogleIdToken =
         FakeJwtGenerator.createFakeGoogleIdToken(currentUser.uid, email = "greg@gmail.com")
     fakeCredentialManager = FakeCredentialManager.create(fakeGoogleIdToken)
+    initTestNavController()
   }
 
   fun initTestNavController() {
@@ -106,7 +107,6 @@ class FourthEnd2EndTest : FirestoreTest() {
     /** Add user before tests start* */
     FirebaseEmulator.auth.signOut()
 
-    initTestNavController()
     composeTestRule.setContent {
       OOTDTheme {
         OOTDApp(

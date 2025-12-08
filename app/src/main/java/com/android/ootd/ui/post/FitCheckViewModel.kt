@@ -5,14 +5,12 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.ai.AIModel
+import com.android.ootd.model.ai.AIModelProvider
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
-import com.google.firebase.Firebase
-import com.google.firebase.ai.ai
-import com.google.firebase.ai.type.GenerativeBackend
-import com.google.firebase.ai.type.content
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,7 +58,8 @@ data class FitCheckUIState(
  * preview or publishing steps.
  */
 class FitCheckViewModel(
-    private val repository: ItemsRepository = ItemsRepositoryProvider.repository
+    private val repository: ItemsRepository = ItemsRepositoryProvider.repository,
+    private val aiModel: AIModel = AIModelProvider.model
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(FitCheckUIState())
   val uiState: StateFlow<FitCheckUIState> = _uiState.asStateFlow()
@@ -129,18 +128,12 @@ class FitCheckViewModel(
     _uiState.value = _uiState.value.copy(isLoading = true)
     viewModelScope.launch {
       try {
-        val model =
-            Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel("gemini-2.5-flash")
+        val prompt =
+            "Write an engaging description for a social media app of the image you got as input. Make it joyfull and include any detailed you see in the image. Only output around 100 characters. Do not add anything else"
 
-        val response =
-            model.generateContent(
-                content {
-                  image(bitmap)
-                  text(
-                      "Write an engaging description for a social media app of the image you got as input. Make it joyfull and include any detailed you see in the image. Only output around 100 characters. Do not add anything else")
-                })
+        val generatedText = aiModel.generateText(bitmap, prompt)
 
-        _uiState.value = _uiState.value.copy(description = response.text ?: "", isLoading = false)
+        _uiState.value = _uiState.value.copy(description = generatedText ?: "", isLoading = false)
       } catch (e: Exception) {
         _uiState.value =
             _uiState.value.copy(

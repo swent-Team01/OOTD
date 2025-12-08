@@ -44,6 +44,7 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunnerArguments["clearPackageData"] = "true"
     vectorDrawables { useSupportLibrary = true }
     manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
   }
@@ -104,6 +105,7 @@ android {
       isIncludeAndroidResources = true
       isReturnDefaultValues = true
     }
+    execution = "ANDROIDX_TEST_ORCHESTRATOR"
   }
 
   packaging {
@@ -226,6 +228,9 @@ dependencies {
   androidTestImplementation(libs.mockk.android)
   androidTestImplementation(libs.mockk.agent.android)
   testImplementation(libs.mockk)
+
+  // Test Orchestrator - runs each test in its own process to avoid state leakage
+  androidTestUtil("androidx.test:orchestrator:1.5.0")
 
   // ------------- Jetpack Compose ------------------
   val composeBom = platform(libs.compose.bom)
