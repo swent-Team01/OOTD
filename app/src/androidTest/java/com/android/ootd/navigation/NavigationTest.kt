@@ -724,17 +724,14 @@ class NavigationTest {
   }
 
   @Test
-  fun navigateToUserProfile_whenCurrentUser_navigatesToAccountView() {
+  fun navigateToUserProfile_routesCorrectly() {
     composeRule.runOnIdle {
-      val currentUserId = "my-user-id"
-      navigation.navigateToUserProfile(currentUserId, currentUserId)
+      // Current user -> AccountView
+      navigation.navigateToUserProfile("my-user-id", "my-user-id")
       assertEquals(Screen.AccountView.route, navigation.currentRoute())
-    }
-  }
+      navigation.goBack()
 
-  @Test
-  fun navigateToUserProfile_whenOtherUser_navigatesToViewUser() {
-    composeRule.runOnIdle {
+      // Other user -> ViewUser
       navigation.navigateToUserProfile("other-user-id", "my-user-id")
       assertTrue(navigation.currentRoute().contains("viewUser"))
     }
