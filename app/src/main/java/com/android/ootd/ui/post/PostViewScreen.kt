@@ -76,6 +76,8 @@ object PostViewTestTags {
   const val SAVE_EDITED_DESCRIPTION_BUTTON = "saveEditedDescriptionButton"
   const val CANCEL_EDITING_BUTTON = "cancelEditingButton"
   const val EDIT_DESCRIPTION_FIELD = "editDescriptionField"
+  const val LIKED_USER_PROFILE_PREFIX = "likedUserProfile_"
+  const val LIKED_USER_USERNAME_PREFIX = "likedUserUsername_"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -629,7 +631,9 @@ fun LikedUsersRow(likedUsers: List<User>, onProfileClick: (String) -> Unit) {
               onProfileClick = onProfileClick,
               usernameStyle = Typography.labelSmall,
               usernameColor = Primary,
-              modifier = Modifier.width(64.dp))
+              modifier = Modifier.width(64.dp),
+              profileTestTag = PostViewTestTags.LIKED_USER_PROFILE_PREFIX + user.uid,
+              usernameTestTag = PostViewTestTags.LIKED_USER_USERNAME_PREFIX + user.uid)
         }
       }
 }

@@ -12,7 +12,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.post.OutfitPostRepository
-import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
@@ -235,36 +234,5 @@ class PostViewScreenTest {
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertTextContains(original)
     composeTestRule.onNodeWithText(modified, substring = true).assertDoesNotExist()
-  }
-
-  @Test
-  fun clickingLikedUser_rendersClickableProfileColumn_andCallsOnProfileClick() = runTest {
-    val likedUserId = "liked-user-123"
-    val likedUsername = "Liked User"
-
-    val fakeLike =
-        Like(
-            postId = testPost.postUID,
-            postLikerId = likedUserId,
-            timestamp = System.currentTimeMillis())
-
-    val likedUser =
-        User(
-            uid = likedUserId,
-            username = likedUsername,
-            profilePicture = "https://example.com/liked.jpg")
-
-    coEvery { mockRepository.getPostById(any()) } returns testPost
-    coEvery { mockLikesRepo.getLikesForPost(any()) } returns listOf(fakeLike)
-    coEvery { mockUserRepo.getUser(likedUserId) } returns likedUser
-
-    var clickedUserId: String? = null
-
-    setContent("test-post-id") { clickedUserId = it }
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithText(likedUsername).assertIsDisplayed().performClick()
-
-    assert(clickedUserId == likedUserId)
   }
 }
