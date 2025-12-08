@@ -23,6 +23,7 @@ private const val testingUsername = "user1"
 private const val NOTIFICATION_TYPE_FOLLOW_REQUEST = "FOLLOW_REQUEST"
 
 data class SearchUserUIState(
+    val currentUsername: String = "",
     val username: String = "",
     val userSuggestions: List<User> = emptyList(),
     val selectedUser: User? = null,
@@ -53,12 +54,20 @@ class UserSearchViewModel(
   }
 
   private fun searchUsernames(query: String) {
+    val myUID = testingUsername.takeIf { overrideUser } ?: (Firebase.auth.currentUser?.uid ?: "")
+    check(myUID.isNotEmpty()) { "The user is not authenticated" }
+
     viewModelScope.launch {
       try {
+        if (_uiState.value.currentUsername.isEmpty()) {
+          val currentUser = userRepository.getUser(myUID)
+          _uiState.value = _uiState.value.copy(currentUsername = currentUser.username)
+        }
         val allUsers = userRepository.getAllUsers()
         val suggestions =
             allUsers
                 .filter { it.username.startsWith(query, ignoreCase = true) }
+                .filter { it.username != _uiState.value.currentUsername }
                 .take(MAX_NUMBER_SUGGESTIONS)
 
         _uiState.value =
