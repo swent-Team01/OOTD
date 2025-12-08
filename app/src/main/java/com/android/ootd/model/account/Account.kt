@@ -26,7 +26,7 @@ data class Account(
     val googleAccountEmail: String = "",
     val profilePicture: String = "",
     val friendUids: List<String> = emptyList(),
-    val isPrivate: Boolean = false,
+    val isPrivate: Boolean = true,
     val location: Location = emptyLocation,
     val itemsUids: List<String> = emptyList(),
     val starredItemUids: List<String> = emptyList()
