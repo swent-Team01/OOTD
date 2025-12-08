@@ -22,6 +22,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 /** Enum representing the type of map to display. */
@@ -130,15 +131,17 @@ class MapViewModel(
   private fun observePublicLocations() {
     publicLocationsObserverJob =
         viewModelScope.launch {
-          try {
-            accountRepository.observePublicLocations().collect { publicLocations ->
-              val validLocations = publicLocations.filter { isValidLocation(it.location) }
-              _uiState.value = _uiState.value.copy(publicLocations = validLocations)
-            }
-          } catch (e: Exception) {
-            _uiState.value =
-                _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
-          }
+          accountRepository
+              .observePublicLocations()
+              .catch { e ->
+                _uiState.value =
+                    _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
+              }
+              .collect { publicLocations ->
+                _uiState.value =
+                    _uiState.value.copy(
+                        publicLocations = publicLocations.filter { isValidLocation(it.location) })
+              }
         }
   }
 
