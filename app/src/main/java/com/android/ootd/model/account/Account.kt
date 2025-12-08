@@ -34,3 +34,6 @@ data class Account(
 
 /** Exception thrown when a required location is missing. */
 class MissingLocationException : Exception("Location must be selected")
+
+/** Exception thrown when a location is invalid (e.g., has blank name or invalid coordinates). */
+class InvalidLocationException : Exception("Location is invalid and cannot be made public")
