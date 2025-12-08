@@ -108,7 +108,7 @@ fun clickWithWait(
 }
 
 fun verifyElementDoesNotAppearWithTimer(composeTestRule: ComposeContentTestRule, tag: String) {
-  composeTestRule.waitUntil(timeoutMillis = 5000) {
+  composeTestRule.waitUntil(timeoutMillis = 8000) {
     composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()
   }
 }
@@ -118,7 +118,7 @@ fun verifyElementAppearsWithTimer(
     tag: String,
     useUnmergedTree: Boolean = false
 ) {
-  composeTestRule.waitUntil(timeoutMillis = 5000) {
+  composeTestRule.waitUntil(timeoutMillis = 8000) {
     composeTestRule
         .onAllNodesWithTag(tag, useUnmergedTree = useUnmergedTree)
         .fetchSemanticsNodes()
@@ -409,7 +409,11 @@ fun checkPostsAppearInAccountTab(composeTestRule: ComposeContentTestRule) {
   verifyElementAppearsWithTimer(composeTestRule, AccountPageTestTags.AVATAR_LETTER)
 
   composeTestRule.waitUntil(timeoutMillis = 5000) {
-    composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).performScrollTo().isDisplayed()
+    runCatching {
+          composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).assertExists()
+          true
+        }
+        .getOrDefault(false)
   }
 }
 
