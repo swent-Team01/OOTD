@@ -176,7 +176,8 @@ class AccountScreenTest {
     setContent()
 
     composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).assertTextContains("No posts !")
+    composeTestRule.onNodeWithTag(AccountPageTestTags.POST_TAG).assertTextContains("No posts yet !")
+    composeTestRule.onNodeWithTag("PostHangerIcon").assertIsDisplayed()
   }
 
   @Test
