@@ -21,42 +21,48 @@ class AccountRepositoryInMemory : AccountRepository {
                   ownerId = "user1",
                   username = nameList[0],
                   profilePicture = "u1.jpg",
-                  friendUids = listOf("user2", "user3")),
+                  friendUids = listOf("user2", "user3"),
+                  isPrivate = true),
           "user2" to
               Account(
                   uid = "user2",
                   ownerId = "user2",
                   username = nameList[1],
                   profilePicture = "u2.jpg",
-                  friendUids = listOf("user1")),
+                  friendUids = listOf("user1"),
+                  isPrivate = true),
           "user3" to
               Account(
                   uid = "user3",
                   ownerId = "user3",
                   username = nameList[2],
                   profilePicture = "u3.jpg",
-                  friendUids = emptyList()),
+                  friendUids = emptyList(),
+                  isPrivate = true),
           "user4" to
               Account(
                   uid = "user4",
                   ownerId = "user4",
                   username = nameList[3],
                   profilePicture = "u4.jpg",
-                  friendUids = listOf("user1", "user2")),
+                  friendUids = listOf("user1", "user2"),
+                  isPrivate = true),
           "user5" to
               Account(
                   uid = "user5",
                   ownerId = "user5",
                   username = nameList[4],
                   profilePicture = "u5.jpg",
-                  friendUids = emptyList()),
+                  friendUids = emptyList(),
+                  isPrivate = true),
           "nonRegisterUser" to
               Account(
                   uid = "nonRegisterUser",
                   ownerId = "nonRegisterUser",
                   username = "",
                   profilePicture = "u0.jpg",
-                  friendUids = listOf()))
+                  friendUids = listOf(),
+                  isPrivate = true))
 
   // StateFlow to track account changes for real-time observation
   private val accountUpdates = MutableStateFlow<Pair<String, Account?>>(Pair("", null))
@@ -207,24 +213,26 @@ class AccountRepositoryInMemory : AccountRepository {
 
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
+
+    // If making account public, validate location BEFORE toggling
+    if (account.isPrivate && !isValidLocation(account.location)) {
+      throw InvalidLocationException()
+    }
+
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
 
     // Sync public location based on new privacy setting
     if (!updatedAccount.isPrivate) {
-      // Account is now public - add to publicLocations only if location is valid
-      if (isValidLocation(updatedAccount.location)) {
-        val publicLocation =
-            PublicLocation(
-                ownerId = updatedAccount.ownerId,
-                username = updatedAccount.username,
-                location = updatedAccount.location)
-        publicLocations[userID] = publicLocation
-        publicLocationUpdates.value = publicLocations.values.toList()
-      } else {
-        throw InvalidLocationException()
-      }
+      // Account is now public - add to publicLocations
+      val publicLocation =
+          PublicLocation(
+              ownerId = updatedAccount.ownerId,
+              username = updatedAccount.username,
+              location = updatedAccount.location)
+      publicLocations[userID] = publicLocation
+      publicLocationUpdates.value = publicLocations.values.toList()
     } else {
       // Account is now private - remove from publicLocations
       publicLocations.remove(userID)
