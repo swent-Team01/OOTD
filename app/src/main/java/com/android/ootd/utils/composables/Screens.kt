@@ -53,6 +53,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
@@ -157,6 +158,14 @@ fun DisplayUserPosts(
     padding: Dp,
     spacing: Dp
 ) {
+  if (posts.isEmpty()) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center) {
+          ShowText(text = "No posts !", style = Typography.bodyLarge, color = OnSurfaceVariant, modifier = modifier)
+        }
+    return
+  }
   val color = colorScheme
   val defaultPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
   val configuration = LocalConfiguration.current
