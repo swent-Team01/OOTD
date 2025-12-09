@@ -2,10 +2,8 @@ package com.android.ootd.ui.account
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,11 +15,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -239,14 +234,11 @@ private fun AccountHeader(
   Spacer(modifier = Modifier.height(9.dp))
 
   val friendText = if (friendCount == 1) "friend" else "friends"
-  ShowText(
-      text = "$friendCount $friendText",
-      style = Typography.bodyLarge,
-      modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
   FriendCountChip(
       friendCount = friendCount,
       modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT),
-      onClick = onFriendCountClick)
+      onClick = onFriendCountClick,
+      label = "$friendCount $friendText")
 
   Spacer(modifier = Modifier.height(30.dp))
 }
@@ -267,23 +259,6 @@ private fun AccountTabs(
                 if (tab == AccountTab.Posts) AccountPageTestTags.POSTS_TAB
                 else AccountPageTestTags.STARRED_TAB)
           })
-}
-
-@Composable
-private fun TabLabel(tab: AccountTab) {
-  if (tab == AccountTab.Starred) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          Icon(
-              imageVector = Icons.Filled.Star,
-              contentDescription = "Starred Tab",
-              tint = colorScheme.primary)
-          Text("Starred")
-        }
-  } else {
-    Text("Posts")
-  }
 }
 
 @Composable

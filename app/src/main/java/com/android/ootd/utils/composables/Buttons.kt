@@ -28,7 +28,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -209,24 +208,28 @@ fun CircularIconButton(
  * @param onClick invoked when the chip is tapped
  */
 @Composable
-fun FriendCountChip(friendCount: Int, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun FriendCountChip(
+    friendCount: Int,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    label: String? = null
+) {
+  val text = label ?: "$friendCount friends"
   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
                 .clickable(onClick = onClick)
-                .background(colorScheme.secondaryContainer, RoundedCornerShape(50))
+                .background(Secondary, RoundedCornerShape(50))
                 .padding(horizontal = 14.dp, vertical = 10.dp)) {
           Text(
-              text = "$friendCount friends",
+              text = text,
               style = Typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-              color = colorScheme.onSecondaryContainer)
+              color = Primary)
           Spacer(modifier = Modifier.size(8.dp))
           Icon(
-              imageVector = Icons.Filled.Group,
-              contentDescription = "View friends",
-              tint = colorScheme.onSecondaryContainer)
+              imageVector = Icons.Filled.Group, contentDescription = "View friends", tint = Primary)
         }
   }
 }
