@@ -107,7 +107,7 @@ class AccountPageViewModel(
             account.friendUids.mapNotNull { friendId ->
               runCatching { userRepository.getUser(friendId) }.getOrNull()
             }
-        Log.d(currentLog, "Refreshed starred items: ${starredIds.joinToString()}")
+        Log.i(currentLog, "Refreshed starred items: ${starredIds.joinToString()}")
         _uiState.update {
           it.copy(
               username = user.username,
