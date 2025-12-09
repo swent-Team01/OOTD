@@ -56,8 +56,16 @@ fun BottomNavigationBar(
     selectedRoute: String,
     onTabSelected: (Screen) -> Unit,
 ) {
+  // Normalize current route for matching (strip query/arguments if present)
+  val baseRoute = selectedRoute.substringBefore("?").substringBefore("/")
+
   // Map current route string to a Tab; default to Feed
-  val selectedTab = tabList.find { it.destination.route == selectedRoute }
+  val selectedTab =
+      tabList.find { tab ->
+        val tabRoute = tab.destination.route
+        baseRoute == tabRoute || selectedRoute.startsWith(tabRoute)
+      } ?: Tab.Feed
+
   BottomNavigationMenu(
       tabs = tabs,
       selectedTab = selectedTab,
