@@ -12,26 +12,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.UserRepositoryProvider
 import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.compose.CameraPositionState
-import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.GoogleMap as ComposeGoogleMap
 import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.CoroutineScope
 
 /*
  * Disclaimer: This takes inspiration from
@@ -59,7 +57,6 @@ object MapScreenTestTags {
 fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
-  val coroutineScope = rememberCoroutineScope()
 
   Scaffold(
       modifier = Modifier.testTag(MapScreenTestTags.SCREEN),
@@ -85,8 +82,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
                     uiState = uiState,
                     viewModel = viewModel,
                     onPostClick = onPostClick,
-                    context = context,
-                    coroutineScope = coroutineScope)
+                    context = context)
               }
             }
       })
@@ -98,8 +94,7 @@ private fun MapContent(
     uiState: MapUiState,
     viewModel: MapViewModel,
     onPostClick: (String) -> Unit,
-    context: Context,
-    coroutineScope: CoroutineScope
+    context: Context
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
     // Tab selector for switching between maps
@@ -123,14 +118,16 @@ private fun MapContent(
         FriendsPostsMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            posts = uiState.posts,
             viewModel = viewModel,
             onPostClick = onPostClick,
-            context = context,
-            coroutineScope = coroutineScope)
+            context = context)
       }
       MapType.FIND_FRIENDS -> {
-        FindFriendsMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState)
+        FindFriendsMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            viewModel = viewModel,
+            context = context)
       }
     }
   }
@@ -159,32 +156,87 @@ private fun MapTabRow(selectedMapType: MapType, onMapTypeChange: (MapType) -> Un
 private fun FriendsPostsMap(
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState,
-    posts: List<OutfitPost>,
     viewModel: MapViewModel,
     onPostClick: (String) -> Unit,
-    context: Context,
-    coroutineScope: CoroutineScope
+    context: Context
 ) {
-  GoogleMap(
+  val uiState by viewModel.uiState.collectAsState()
+  val clusterItems = viewModel.getPostsWithAdjustedLocations(uiState.posts)
+
+  ClusteredMap(
+      modifier = modifier,
+      cameraPositionState = cameraPositionState,
+      items = clusterItems,
+      context = context,
+      createRenderer = { map, clusterManager ->
+        PostClusterRenderer(
+            context = context,
+            map = map,
+            clusterManager = clusterManager,
+            userRepository = UserRepositoryProvider.repository)
+      },
+      onItemClick = { item -> onPostClick(item.post.postUID) })
+}
+
+/** Map displaying public profiles with clustering. */
+@SuppressLint("PotentialBehaviorOverride")
+@OptIn(MapsComposeExperimentalApi::class)
+@Composable
+private fun FindFriendsMap(
+    modifier: Modifier = Modifier,
+    cameraPositionState: CameraPositionState,
+    viewModel: MapViewModel,
+    context: Context
+) {
+  val uiState by viewModel.uiState.collectAsState()
+  val clusterItems = viewModel.getPublicLocationsWithAdjusted(uiState.publicLocations)
+
+  ClusteredMap(
+      modifier = modifier,
+      cameraPositionState = cameraPositionState,
+      items = clusterItems,
+      context = context,
+      createRenderer = { map, clusterManager ->
+        PublicProfileClusterRenderer(
+            context = context,
+            map = map,
+            clusterManager = clusterManager,
+            userRepository = UserRepositoryProvider.repository)
+      },
+      onItemClick = {
+        // TODO: Add navigation to user profile
+      })
+}
+
+/**
+ * Generic composable for displaying a map with clustered markers.
+ *
+ * @param T The type of cluster item, must implement ProfileMarkerItem
+ * @param items The list of cluster items to display
+ * @param createRenderer Factory function to create the appropriate renderer
+ * @param onItemClick Callback when a cluster item is clicked
+ */
+@SuppressLint("PotentialBehaviorOverride")
+@OptIn(MapsComposeExperimentalApi::class)
+@Composable
+private fun <T : ProfileMarkerItem> ClusteredMap(
+    modifier: Modifier = Modifier,
+    cameraPositionState: CameraPositionState,
+    items: List<T>,
+    context: Context,
+    createRenderer: (GoogleMap, ClusterManager<T>) -> ClusterRenderer<T>,
+    onItemClick: (T) -> Unit = {}
+) {
+  ComposeGoogleMap(
       modifier = modifier.testTag(MapScreenTestTags.GOOGLE_MAP_SCREEN),
       cameraPositionState = cameraPositionState) {
 
         // Set up marker clustering
-        MapEffect(key1 = posts) { map ->
-          val clusterManager = ClusterManager<PostMarker>(context, map)
+        MapEffect(key1 = items) { map ->
+          val clusterManager = ClusterManager<T>(context, map)
 
-          // Set custom renderer for clusters
-          val renderer =
-              PostClusterRenderer(
-                  context = context,
-                  map = map,
-                  clusterManager = clusterManager,
-                  userRepository = UserRepositoryProvider.repository,
-                  coroutineScope = coroutineScope)
-          // Assign renderer to correctly display markers
-          clusterManager.renderer = renderer
+          clusterManager.renderer = createRenderer(map, clusterManager)
 
-          // Set cluster click listener for when clicking on clusters
           clusterManager.setOnClusterClickListener { cluster ->
             // Zoom into the cluster
             val builder = LatLngBounds.builder()
@@ -194,36 +246,17 @@ private fun FriendsPostsMap(
             true
           }
 
-          // Set item click listener
           clusterManager.setOnClusterItemClickListener { item ->
-            onPostClick(item.post.postUID)
+            onItemClick(item)
             true
           }
 
-          // Set up map listeners to forward to cluster manager
           map.setOnCameraIdleListener(clusterManager)
           map.setOnMarkerClickListener(clusterManager)
 
-          // Clear existing items and add new ones with adjusted locations
           clusterManager.clearItems()
-          val postsWithAdjusted = viewModel.getPostsWithAdjustedLocations()
-          val clusterItems = postsWithAdjusted.map { PostMarker(it.post, it.adjustedLocation) }
-          clusterManager.addItems(clusterItems)
+          clusterManager.addItems(items)
           clusterManager.cluster()
         }
-      }
-}
-
-/** Map displaying public profiles (currently empty, will be implemented later). */
-@OptIn(MapsComposeExperimentalApi::class)
-@Composable
-private fun FindFriendsMap(
-    modifier: Modifier = Modifier,
-    cameraPositionState: CameraPositionState
-) {
-  GoogleMap(
-      modifier = modifier.testTag(MapScreenTestTags.GOOGLE_MAP_SCREEN),
-      cameraPositionState = cameraPositionState) {
-        // For now, just display an empty map
       }
 }

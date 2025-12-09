@@ -2,6 +2,7 @@ package com.android.ootd.ui.items
 
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.PublicLocation
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.map.Location
@@ -113,4 +114,8 @@ class FakeAccountRepository : AccountRepository {
   override suspend fun removeStarredItem(itemUid: String): Boolean = true
 
   override suspend fun toggleStarredItem(itemUid: String): List<String> = emptyList()
+
+  override suspend fun getPublicLocations(): List<PublicLocation> = emptyList()
+
+  override fun observePublicLocations(): Flow<List<PublicLocation>> = flowOf(emptyList())
 }

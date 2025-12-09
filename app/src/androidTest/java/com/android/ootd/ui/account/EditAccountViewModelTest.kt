@@ -5,6 +5,7 @@ import androidx.credentials.CredentialManager
 import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.InvalidLocationException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
@@ -281,7 +282,8 @@ class EditAccountViewModelTest {
 
   @Test
   fun onTogglePrivacy_success_updatesStateWithRepositoryValue() = runTest {
-    stubAccount("test-uid", username = "testuser", picture = "")
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = false)
     coEvery { accountRepository.togglePrivacy("test-uid") } returns true
 
     initVM()
@@ -316,6 +318,23 @@ class EditAccountViewModelTest {
 
     assertTrue(viewModel.uiState.value.isPrivate)
     assertNotNull(viewModel.uiState.value.errorMsg)
+  }
+
+  @Test
+  fun onTogglePrivacy_invalidLocation_revertsAndShowsLocationError() = runTest {
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = true)
+    coEvery { accountRepository.togglePrivacy("test-uid") } throws InvalidLocationException()
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    assertTrue("Initial state should be private", viewModel.uiState.value.isPrivate)
+    assertFalse("Should not be loading", viewModel.uiState.value.isLoading)
+    viewModel.onTogglePrivacy()
+    advanceUntilIdle()
+    assertTrue("Privacy should remain true after exception", viewModel.uiState.value.isPrivate)
+    assertNotNull("Error message should be set", viewModel.uiState.value.errorMsg)
+    assertFalse("Error message should not be empty", viewModel.uiState.value.errorMsg!!.isEmpty())
   }
 
   @Test

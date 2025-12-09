@@ -26,7 +26,7 @@ data class Account(
     val googleAccountEmail: String = "",
     val profilePicture: String = "",
     val friendUids: List<String> = emptyList(),
-    val isPrivate: Boolean = false,
+    val isPrivate: Boolean = true,
     val location: Location = emptyLocation,
     val itemsUids: List<String> = emptyList(),
     val starredItemUids: List<String> = emptyList()
@@ -34,3 +34,6 @@ data class Account(
 
 /** Exception thrown when a required location is missing. */
 class MissingLocationException : Exception("Location must be selected")
+
+/** Exception thrown when a location is invalid (e.g., has blank name or invalid coordinates). */
+class InvalidLocationException : Exception("Location is invalid and cannot be made public")

@@ -181,7 +181,13 @@ service cloud.firestore {
              );
     }
 
+    // Public locations: readable by any authenticated user
+        match /publicLocations/{ownerId} {
+          allow read: if isAuthed();
 
+          // Only the account owner can write
+          allow write: if isAuthed() && request.auth.uid == ownerId;
+        }
 
     // Default deny for documents except items
     match /{document=**} {

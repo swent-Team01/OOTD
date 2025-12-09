@@ -574,7 +574,10 @@ private fun PrivacyToggleRow(
               modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_MENU),
               text = {
                 Text(
-                    "Private: only you and mutual friends can view your posts. Public: everyone can view.",
+                    "Private: Only your app uses your location to center the map" +
+                        " — it won’t be shown to others.\n" +
+                        "Public: Your location is displayed on the public map" +
+                        " so others can discover you.",
                     style = typography.bodySmall.copy(fontFamily = Bodoni),
                     color = colors.onSurface)
               },
