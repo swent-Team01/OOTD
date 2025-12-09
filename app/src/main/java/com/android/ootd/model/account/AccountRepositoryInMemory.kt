@@ -21,48 +21,42 @@ class AccountRepositoryInMemory : AccountRepository {
                   ownerId = "user1",
                   username = nameList[0],
                   profilePicture = "u1.jpg",
-                  friendUids = listOf("user2", "user3"),
-                  isPrivate = true),
+                  friendUids = listOf("user2", "user3")),
           "user2" to
               Account(
                   uid = "user2",
                   ownerId = "user2",
                   username = nameList[1],
                   profilePicture = "u2.jpg",
-                  friendUids = listOf("user1"),
-                  isPrivate = true),
+                  friendUids = listOf("user1")),
           "user3" to
               Account(
                   uid = "user3",
                   ownerId = "user3",
                   username = nameList[2],
                   profilePicture = "u3.jpg",
-                  friendUids = emptyList(),
-                  isPrivate = true),
+                  friendUids = emptyList()),
           "user4" to
               Account(
                   uid = "user4",
                   ownerId = "user4",
                   username = nameList[3],
                   profilePicture = "u4.jpg",
-                  friendUids = listOf("user1", "user2"),
-                  isPrivate = true),
+                  friendUids = listOf("user1", "user2")),
           "user5" to
               Account(
                   uid = "user5",
                   ownerId = "user5",
                   username = nameList[4],
                   profilePicture = "u5.jpg",
-                  friendUids = emptyList(),
-                  isPrivate = true),
+                  friendUids = emptyList()),
           "nonRegisterUser" to
               Account(
                   uid = "nonRegisterUser",
                   ownerId = "nonRegisterUser",
                   username = "",
                   profilePicture = "u0.jpg",
-                  friendUids = listOf(),
-                  isPrivate = true))
+                  friendUids = listOf()))
 
   private val accountUpdates = MutableStateFlow<Pair<String, Account?>>(Pair("", null))
   private val publicLocations = mutableMapOf<String, PublicLocation>()
