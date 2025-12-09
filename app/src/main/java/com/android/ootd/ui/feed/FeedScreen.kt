@@ -68,6 +68,7 @@ fun FeedScreen(
       errorMessage = uiState.errorMessage,
       onClearError = { feedViewModel.setErrorMessage(null) },
       onAddPostClick = onAddPostClick,
+      onBlurredClick = onAddPostClick,
       onNotificationIconClick = onNotificationIconClick,
       onSeeFitClick = onSeeFitClick,
       onOpenPost = onOpenPost,
@@ -89,6 +90,7 @@ private fun FeedScaffold(
     errorMessage: String?,
     onClearError: () -> Unit,
     onAddPostClick: () -> Unit,
+    onBlurredClick: () -> Unit = {},
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
     onOpenPost: (String) -> Unit,
@@ -154,6 +156,7 @@ private fun FeedScaffold(
                   posts = posts,
                   likes = likes,
                   likeCounts = likeCounts,
+                  onBlurredClick = onBlurredClick,
                   onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
@@ -188,6 +191,7 @@ fun FeedList(
     isBlurred: Boolean,
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
+    onBlurredClick: () -> Unit = {},
     onSeeFitClick: (OutfitPost) -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
@@ -207,6 +211,7 @@ fun FeedList(
           onLikeClick = { onLikeClick(post) },
           onSeeFitClick = { onSeeFitClick(post) },
           onCardClick = { onPostClick(post.postUID) },
+          onBlurredClick = onBlurredClick,
           onLocationClick = onLocationClick,
           onProfileClick = onProfileClick)
     }
@@ -249,6 +254,7 @@ fun FeedScreenPreview() {
         onNotificationIconClick = {},
         likes = emptyMap(),
         likeCounts = emptyMap(),
+        onBlurredClick = {},
         onLikeClick = {},
         onOpenPost = {},
         onProfileClick = {})

@@ -262,6 +262,7 @@ fun OutfitPostCard(
     onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {},
     onCardClick: (String) -> Unit = {},
+    onBlurredClick: () -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
     onProfileClick: (String) -> Unit = {}
 ) {
@@ -284,7 +285,7 @@ fun OutfitPostCard(
                 // Click to get details enabled only when not blurred
                 val clickableModifier =
                     if (isBlurred) {
-                      Modifier
+                      Modifier.clickable { onBlurredClick() }
                     } else {
                       Modifier.clickable { onCardClick(post.postUID) }
                     }
