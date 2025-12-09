@@ -96,6 +96,14 @@ open class FeedViewModel(
   }
 
   /**
+   * Triggers a refresh of the feed posts. This function launches a coroutine in the ViewModel scope
+   * to perform the refresh operation.
+   */
+  fun doRefreshFeed() {
+    viewModelScope.launch { refreshFeed() }
+  }
+
+  /**
    * Refreshes the feed posts from Firestore and fetches the posts locally for the current account
    * and updates the UI state accordingly. So that, it can also work in offline mode using cached
    * data. This function performs the following steps:
@@ -106,7 +114,7 @@ open class FeedViewModel(
    * 4. Updates the UI state with the final data including whether the user has posted today.
    * 5. Handles loading states and errors appropriately.
    */
-  suspend fun refreshFeed() {
+  private suspend fun refreshFeed() {
     val account = _uiState.value.currentAccount ?: return
 
     val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

@@ -115,7 +115,7 @@ class FeedViewModelUnitTest {
     // Set current account
     viewModel.setCurrentAccount(account)
 
-    viewModel.refreshFeed()
+    viewModel.doRefreshFeed()
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Should NOT call getPublicFeed
@@ -147,7 +147,7 @@ class FeedViewModelUnitTest {
     coEvery { likesRepository.getLikeCount("post2") } returns 0
 
     // Initial refresh to populate feed
-    viewModel.refreshFeed()
+    viewModel.doRefreshFeed()
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Verify initial state
