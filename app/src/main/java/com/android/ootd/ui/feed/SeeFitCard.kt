@@ -29,5 +29,7 @@ fun ItemCard(
       testTag = SeeFitScreenTestTags.getTestTagForItem(item),
       starButtonTestTag = SeeFitScreenTestTags.getStarButtonTag(item),
       editButtonTestTag = SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON,
-      imageTestTag = SeeFitScreenTestTags.ITEM_CARD_IMAGE)
+      imageTestTag = SeeFitScreenTestTags.ITEM_CARD_IMAGE,
+      categoryTestTag = SeeFitScreenTestTags.ITEM_CARD_CATEGORY,
+      typeTestTag = SeeFitScreenTestTags.ITEM_CARD_TYPE)
 }

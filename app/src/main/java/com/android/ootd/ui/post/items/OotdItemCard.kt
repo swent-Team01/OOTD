@@ -62,6 +62,8 @@ fun OotdItemCard(
     starButtonTestTag: String? = null,
     editButtonTestTag: String? = null,
     imageTestTag: String? = null,
+    categoryTestTag: String? = null,
+    typeTestTag: String? = null,
     showPrice: Boolean = true,
     showCategory: Boolean = true
 ) {
@@ -86,7 +88,7 @@ fun OotdItemCard(
             EditButton(onClick = { onEditClick(item.itemUuid) }, testTag, editButtonTestTag)
           }
 
-          ItemInfo(item, testTag, showCategory)
+          ItemInfo(item, testTag, showCategory, categoryTestTag, typeTestTag)
         }
       }
 }
@@ -183,7 +185,13 @@ private fun BoxScope.EditButton(
 }
 
 @Composable
-private fun BoxScope.ItemInfo(item: Item, parentTestTag: String, showCategory: Boolean) {
+private fun BoxScope.ItemInfo(
+    item: Item,
+    parentTestTag: String,
+    showCategory: Boolean,
+    categoryTestTag: String?,
+    typeTestTag: String?
+) {
   val brandText = item.brand.orEmpty()
   Column(
       modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp),
@@ -194,14 +202,14 @@ private fun BoxScope.ItemInfo(item: Item, parentTestTag: String, showCategory: B
               text = item.category.uppercase(),
               style = Typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
               color = White,
-              modifier = Modifier.testTag("${parentTestTag}_category"))
+              modifier = Modifier.testTag(categoryTestTag ?: "${parentTestTag}_category"))
         }
         ShowText(
             text = item.type.orEmpty(),
             style = Typography.bodyLarge,
             color = White,
             textAlign = TextAlign.Start,
-            modifier = Modifier.testTag("${parentTestTag}_type"))
+            modifier = Modifier.testTag(typeTestTag ?: "${parentTestTag}_type"))
         if (brandText.isNotBlank()) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             ShowText(
