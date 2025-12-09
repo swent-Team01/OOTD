@@ -383,10 +383,10 @@ class AccountRepositoryFirestore(
     val account = getAccount(userID)
     deleteUserFriends(account)
 
-    try {
+    val publicLocationDoc =
+        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).get().await()
+    if (publicLocationDoc.exists()) {
       db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH).document(userID).delete().await()
-    } catch (_: Exception) {
-      // Public location may not exist, safe to ignore
     }
 
     db.collection(ACCOUNT_COLLECTION_PATH).document(userID).delete().await()
