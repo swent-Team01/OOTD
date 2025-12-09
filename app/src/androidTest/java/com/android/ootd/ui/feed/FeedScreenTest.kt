@@ -300,8 +300,9 @@ class FeedScreenTest : FirestoreTest() {
 
     val result = feedRepository.getFeedForUids(listOf(currentUid))
 
-    // Corrupted should be filtered out; valid may be present, but corrupted must not appear
+    // Corrupted should be filtered out; valid post should not be blocked by bad data
     assertTrue(result.none { it.postUID == "corrupted" })
+    result.find { it.postUID == "valid" }?.let { assertEquals("valid", it.postUID) }
   }
 
   @Test

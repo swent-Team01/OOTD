@@ -208,7 +208,7 @@ fun CircularIconButton(
  * @param onClick invoked when the chip is tapped
  */
 @Composable
-fun FriendCountChip(
+fun FriendsNumberBadge(
     friendCount: Int,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},

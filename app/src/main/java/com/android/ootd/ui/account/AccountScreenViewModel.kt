@@ -30,8 +30,12 @@ import kotlinx.coroutines.launch
  * @property profilePicture The URL or path to the user's profile picture.
  * @property posts The list of outfit posts created by the user.
  * @property friends The list of friend user IDs.
+ * @property friendDetails The list of friend user details.
  * @property isLoading Indicates whether data is currently being loaded.
  * @property errorMsg An optional error message to display in the UI.
+ * @property starredItems The list of items marked as starred by the user.
+ * @property starredItemIds The set of item IDs marked as starred by the user.
+ * @property selectedTab The currently selected tab in the UI.
  */
 @Keep
 data class AccountPageViewState(

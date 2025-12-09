@@ -49,7 +49,7 @@ import com.android.ootd.ui.inventory.InventoryGrid
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
-import com.android.ootd.utils.composables.FriendCountChip
+import com.android.ootd.utils.composables.FriendsNumberBadge
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -171,8 +171,9 @@ fun AccountPageContent(
           } else {
             LazyColumn(modifier = Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)) {
               val friendsToShow =
-                  if (uiState.friendDetails.isNotEmpty()) uiState.friendDetails
-                  else uiState.friends.map { id -> User(uid = id, username = id) }
+                  uiState.friendDetails.ifEmpty {
+                    uiState.friends.map { id -> User(uid = id, username = id) }
+                  }
               items(friendsToShow, key = { it.uid }) { friend ->
                 Column(
                     modifier =
@@ -234,7 +235,7 @@ private fun AccountHeader(
   Spacer(modifier = Modifier.height(9.dp))
 
   val friendText = if (friendCount == 1) "friend" else "friends"
-  FriendCountChip(
+  FriendsNumberBadge(
       friendCount = friendCount,
       modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT),
       onClick = onFriendCountClick,
