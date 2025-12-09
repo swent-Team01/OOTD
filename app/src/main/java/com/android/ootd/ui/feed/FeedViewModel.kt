@@ -60,6 +60,8 @@ open class FeedViewModel(
 
   private val _uiState = MutableStateFlow(FeedUiState())
   val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+
+  // Indicates whether a refresh operation is in progress
   private val _isRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
@@ -93,7 +95,17 @@ open class FeedViewModel(
     }
   }
 
-  /** Refreshes the feed posts from Firestore for the current account. */
+  /**
+   * Refreshes the feed posts from Firestore and fetches the posts locally for the current account
+   * and updates the UI state accordingly. So that, it can also work in offline mode using cached
+   * data. This function performs the following steps:
+   * 1. Loads cached posts from Firestore local cache and updates the UI state immediately.
+   * 2. Attempts to fetch fresh posts from Firestore with a short timeout. If successful, updates
+   *    the UI state with the fresh data.
+   * 3. Fetches like status and counts for the posts.
+   * 4. Updates the UI state with the final data including whether the user has posted today.
+   * 5. Handles loading states and errors appropriately.
+   */
   suspend fun refreshFeed() {
     val account = _uiState.value.currentAccount ?: return
 
@@ -114,7 +126,13 @@ open class FeedViewModel(
         updateCachedPosts(filteredCached)
 
         // Update UI instantly from cache and suppress loading overlay
-        _uiState.value = _uiState.value.copy(feedPosts = filteredCached, isLoading = false)
+        _uiState.value =
+            _uiState.value.copy(
+                feedPosts = filteredCached,
+                isLoading = false,
+                hasPostedToday =
+                    computeHasPostedToday(
+                        cachedPublicFeed + cachedPrivateFeed, account.uid, todayStart))
       }
 
       // 2) Try fast online refresh with a short timeout. Show loading only if no cache.
@@ -164,6 +182,7 @@ open class FeedViewModel(
     }
   }
 
+  /** Loads cached posts based on the current feed type. */
   private suspend fun loadCachedPosts(account: Account): List<OutfitPost> =
       if (_uiState.value.isPublicFeed) repository.getCachedPublicFeed()
       else repository.getCachedFriendFeed(account.friendUids + account.uid)
@@ -176,6 +195,7 @@ open class FeedViewModel(
     }
   }
 
+  /** Fetches like status and counts for the given posts and account. */
   private suspend fun fetchLikesForPosts(
       posts: List<OutfitPost>,
       account: Account
@@ -197,6 +217,7 @@ open class FeedViewModel(
     return Pair(likesMap, likeCounts)
   }
 
+  /** Filters posts based on the feed type and user ID. */
   private fun filterPosts(posts: List<OutfitPost>, uid: String, time: Long): List<OutfitPost> {
     return if (_uiState.value.isPublicFeed) posts
     else
@@ -207,6 +228,7 @@ open class FeedViewModel(
         }
   }
 
+  /** Computes whether the user has posted today considering both local and remote data. */
   private suspend fun computeHasPostedToday(
       posts: List<OutfitPost>,
       uid: String,
@@ -303,7 +325,12 @@ open class FeedViewModel(
     }
   }
 
-  /** Handles pull-to-refresh action by the user. */
+  /**
+   * Handles pull-to-refresh action by the user.
+   *
+   * Sets the refreshing state and triggers a feed refresh. If a refresh is already in progress, it
+   * avoids starting another one. This call avoids multiple simultaneous refreshes.
+   */
   fun onPullToRefreshTrigger() {
     // Avoid multiple simultaneous refreshes
     if (_isRefreshing.value) return
