@@ -1,9 +1,11 @@
 package com.android.ootd.ui.account
 
+import android.accounts.NetworkErrorException
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
 import com.android.ootd.model.authentication.AccountService
@@ -34,6 +36,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  * @property friends The list of friend user IDs.
  * @property isLoading Indicates whether data is currently being loaded.
  * @property errorMsg An optional error message to display in the UI.
+ * @property starredItems The list of items the user has starred/wishlisted.
+ * @property starredItemIds The set of item UUIDs that are starred for quick lookup.
+ * @property selectedTab The currently selected tab in the account page (Posts or Starred).
  */
 @Keep
 data class AccountPageViewState(
@@ -42,6 +47,7 @@ data class AccountPageViewState(
     val posts: List<OutfitPost> = emptyList(),
     val friends: List<String> = emptyList(),
     val isLoading: Boolean = false,
+    val hasLoadedInitialData: Boolean = false,
     val errorMsg: String? = null,
     val starredItems: List<Item> = emptyList(),
     val starredItemIds: Set<String> = emptySet(),
@@ -78,102 +84,132 @@ class AccountPageViewModel(
     const val NETWORK_TIMEOUT_MS = 2000L
   }
 
+  private var cachedAccount: Account = Account()
+  private var cachedPosts: List<OutfitPost> = emptyList()
+  private var cachedStarredIds: List<String> = emptyList()
   private val _uiState = MutableStateFlow(AccountPageViewState())
   val uiState: StateFlow<AccountPageViewState> = _uiState.asStateFlow()
 
-  private var hasLoadedInitialData = false
-
   init {
-    retrieveUserData()
+    loadAccountData()
   }
 
   /**
-   * Retrieves the current user's data from repositories using offline-first pattern.
+   * Loads the user's account data using offline-first pattern.
    *
-   * Uses parallel fetching with timeouts to handle offline scenarios gracefully. Firestore's
-   * offline cache provides immediate data while network calls timeout when offline. Sets
-   * [AccountPageViewState.isLoading] to true during fetch and false when complete.
+   * First loads from cache immediately (non-blocking), then fetches fresh data in the background.
+   * This provides instant UI updates from cache while ensuring data freshness.
    */
-  private fun retrieveUserData() {
-    _uiState.update { it.copy(isLoading = true, errorMsg = null) }
+  fun loadAccountData() {
     viewModelScope.launch {
+      _uiState.update { it.copy(errorMsg = null) }
       try {
         val currentUserID = accountService.currentUserId
-
-        // Fetch all data in parallel with timeouts for offline resilience
-        coroutineScope {
-          val userDeferred = async {
-            withTimeoutOrNull(NETWORK_TIMEOUT_MS) { userRepository.getUser(currentUserID) }
-          }
-          val accountDeferred = async {
-            withTimeoutOrNull(NETWORK_TIMEOUT_MS) { accountRepository.getAccount(currentUserID) }
-          }
-          val postsDeferred = async {
-            withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-              feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
-            }
-          }
-          val starredIdsDeferred = async {
-            withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-              accountRepository.refreshStarredItems(currentUserID)
-            }
-          }
-
-          val user = userDeferred.await()
-          val account = accountDeferred.await()
-          val posts = postsDeferred.await()
-          val starredIds = starredIdsDeferred.await()
-
-          // Fetch starred items only if we have IDs (also parallel-safe since it depends on
-          // starredIds)
-          val starredItems =
-              if (starredIds.isNullOrEmpty()) {
+        val cachedUser = userRepository.getUser(currentUserID)
+        // Offline so load from cache
+        if (uiState.value.hasLoadedInitialData && cachedUser.uid.isBlank()) {
+          // Cached account is not empty
+          val cachedStarredItems =
+              if (cachedStarredIds.isEmpty()) {
                 emptyList()
               } else {
+                itemsRepository.getItemsByIdsAcrossOwners(cachedStarredIds)
+              }
+          _uiState.update {
+            it.copy(
+                username = cachedAccount.username,
+                profilePicture = cachedUser.profilePicture,
+                posts = cachedPosts,
+                friends = cachedAccount.friendUids,
+                starredItems = cachedStarredItems,
+                starredItemIds = cachedStarredIds.toSet(),
+                isLoading = false)
+          }
+        } else if (!uiState.value.hasLoadedInitialData && cachedUser.uid.isBlank()) {
+          throw NetworkErrorException("User is offline and has no cached data !")
+        } // Other cases covered by loading the data
+
+        // Display cached data immediately
+        Log.d(
+            currentLog,
+            "Loaded cached data, starred items: ${
+                  cachedStarredIds.joinToString().ifEmpty { "none" }
+              }")
+
+        // Fetch fresh data in background
+        viewModelScope.launch {
+          try {
+            coroutineScope {
+              val userDeferred = async {
+                withTimeoutOrNull(NETWORK_TIMEOUT_MS) { userRepository.getUser(currentUserID) }
+              }
+              val accountDeferred = async {
                 withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-                  itemsRepository.getItemsByIdsAcrossOwners(starredIds)
+                  accountRepository.getAccount(currentUserID)
+                }
+              }
+              val postsDeferred = async {
+                withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+                  feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
+                }
+              }
+              val starredIdsDeferred = async {
+                withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+                  accountRepository.refreshStarredItems(currentUserID)
                 }
               }
 
-          if (user != null) {
-            Log.d(currentLog, "Loaded data, starred items: ${starredIds?.joinToString() ?: "none"}")
-            hasLoadedInitialData = true
-            _uiState.update {
-              it.copy(
-                  username = user.username,
-                  profilePicture = user.profilePicture,
-                  posts = posts ?: emptyList(),
-                  friends = account?.friendUids ?: emptyList(),
-                  starredItems = starredItems ?: emptyList(),
-                  starredItemIds = starredIds?.toSet() ?: emptySet(),
-                  isLoading = false)
+              val freshUser = userDeferred.await()
+              val freshAccount = accountDeferred.await()
+              val freshPosts = postsDeferred.await()
+              val freshStarredIds = starredIdsDeferred.await()
+
+              // Fetch starred items only if we have IDs
+              val freshStarredItems =
+                  if (freshStarredIds.isNullOrEmpty()) {
+                    emptyList()
+                  } else {
+                    withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+                      itemsRepository.getItemsByIdsAcrossOwners(freshStarredIds)
+                    }
+                  }
+
+              if (freshUser != null && freshUser.uid.isNotBlank()) {
+                Log.d(
+                    currentLog,
+                    "Loaded fresh data, starred items: ${freshStarredIds?.joinToString() ?: "none"}")
+                _uiState.update {
+                  it.copy(
+                      username = freshUser.username,
+                      profilePicture = freshUser.profilePicture,
+                      posts = freshPosts ?: cachedPosts,
+                      friends = freshAccount?.friendUids ?: it.friends,
+                      starredItems = freshStarredItems ?: it.starredItems,
+                      starredItemIds = freshStarredIds?.toSet() ?: it.starredItemIds,
+                      isLoading = false,
+                      hasLoadedInitialData = true)
+                }
+              }
             }
-          } else {
-            // User data timed out - likely offline with no cache
-            _uiState.update {
-              it.copy(errorMsg = "Unable to load account - check connection", isLoading = false)
+          } catch (e: Exception) {
+            // Silently fail background refresh -> user already sees cached data
+            if (_uiState.value.username.isEmpty()) {
+              Log.e(currentLog, "Error fetching fresh user data: ${e.message}")
+              _uiState.update {
+                it.copy(
+                    errorMsg = e.localizedMessage ?: "Failed to load account data",
+                    isLoading = false)
+              }
             }
           }
         }
       } catch (e: Exception) {
-        Log.e(currentLog, "Error fetching user data: ${e.message}")
+        Log.e(currentLog, "Error fetching cached user data: ${e.message}")
         _uiState.update {
           it.copy(errorMsg = e.localizedMessage ?: "Failed to load account data", isLoading = false)
         }
       }
     }
-  }
-
-  /** Refreshes the user's account data only if not already loaded. */
-  fun refreshUserDataIfNeeded() {
-    if (!hasLoadedInitialData) {
-      retrieveUserData()
-    }
-  }
-
-  /** Force refreshes the user's account data (for pull-to-refresh scenarios). */
-  fun refreshUserData() {
-    retrieveUserData()
   }
 
   /**
