@@ -305,8 +305,7 @@ private fun FitCheckScreenContent(
                   onBackClick = onBackClick,
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON))
             })
-      },
-      bottomBar = {}) { innerPadding ->
+      }) { innerPadding ->
         Column(
             modifier =
                 Modifier.padding(innerPadding)

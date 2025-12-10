@@ -166,7 +166,6 @@ class FitCheckScreenTest {
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertIsDisplayed()
 
     composeTestRule.mainClock.advanceTimeBy(5_500)
-    composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertDoesNotExist()
   }
