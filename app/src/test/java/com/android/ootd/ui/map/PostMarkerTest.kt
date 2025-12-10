@@ -65,6 +65,23 @@ class PostMarkerTest {
   }
 
   @Test
+  fun profileMarkerItem_userId_correct_atrributes() {
+    val marker = PostMarker(testPost)
+    assertEquals("user123", marker.userId)
+    assertEquals("test-post-1", marker.markerId)
+    assertEquals("TestUser", marker.displayName)
+  }
+
+  @Test
+  fun adjustedLocation_usesProvidedLocation() {
+    val adjustedLoc = Location(46.5200, 6.6330, "Adjusted")
+    val marker = PostMarker(testPost, adjustedLoc)
+    val position = marker.getPosition()
+    assertEquals(adjustedLoc.latitude, position.latitude, 0.0001)
+    assertEquals(adjustedLoc.longitude, position.longitude, 0.0001)
+  }
+
+  @Test
   fun getPosition_handlesMultipleLocations() {
     val locations =
         listOf(

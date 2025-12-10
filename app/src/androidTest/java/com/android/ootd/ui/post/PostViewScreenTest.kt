@@ -59,6 +59,12 @@ class PostViewScreenTest {
           username = "Owner Name",
           profilePicture = "https://example.com/pfp.jpg")
 
+  private val likedUser =
+      User(
+          uid = "liked-user-1",
+          username = "Liked User",
+          profilePicture = "https://example.com/liked.jpg")
+
   @Before
   fun setup() {
     mockRepository = mockk(relaxed = true)
@@ -80,13 +86,17 @@ class PostViewScreenTest {
     clearAllMocks()
   }
 
-  private fun setContent(postId: String) {
+  private fun setContent(postId: String, onProfileClick: (String) -> Unit = {}) {
     viewModel =
         PostViewViewModel(postId, mockRepository, mockUserRepo, mockLikesRepo, mockAccountService)
 
     composeTestRule.setContent {
       OOTDTheme {
-        PostViewScreen(postId = postId, onBack = { onBackCalled = true }, viewModel = viewModel)
+        PostViewScreen(
+            postId = postId,
+            onBack = { onBackCalled = true },
+            onProfileClick = onProfileClick,
+            viewModel = viewModel)
       }
     }
     composeTestRule.waitForIdle()

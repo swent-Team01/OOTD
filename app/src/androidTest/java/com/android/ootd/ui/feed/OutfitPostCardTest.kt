@@ -29,7 +29,8 @@ class OutfitPostCardTest {
       onLikeClick: (String) -> Unit = {},
       onSeeFitClick: (String) -> Unit = {},
       onCardClick: (String) -> Unit = {},
-      onLocationClick: (Location) -> Unit = {}
+      onLocationClick: (Location) -> Unit = {},
+      onProfileClick: (String) -> Unit = {}
   ) =
       composeTestRule.setContent {
         // Wrap in a scrollable column to handle content taller than the test screen
@@ -46,11 +47,12 @@ class OutfitPostCardTest {
                   onLikeClick = onLikeClick,
                   onSeeFitClick = onSeeFitClick,
                   onCardClick = onCardClick,
-                  onLocationClick = onLocationClick)
+                  onLocationClick = onLocationClick,
+                  onProfileClick = onProfileClick)
             }
       }
 
-  private fun n(tag: String) = composeTestRule.onNodeWithTag(tag)
+  private fun n(tag: String) = composeTestRule.onNodeWithTag(tag, useUnmergedTree = true)
 
   private fun post(
       name: String = "Test User",

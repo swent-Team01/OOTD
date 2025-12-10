@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.PublicLocation
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
@@ -112,6 +113,10 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun removeStarredItem(itemUid: String): Boolean = true
 
         override suspend fun toggleStarredItem(itemUid: String): List<String> = emptyList()
+
+        override suspend fun getPublicLocations(): List<PublicLocation> = emptyList()
+
+        override fun observePublicLocations(): Flow<List<PublicLocation>> = flowOf(emptyList())
       }
 
   private fun fakeItemsRepo(items: List<Item>, postItems: List<Item> = emptyList()) =

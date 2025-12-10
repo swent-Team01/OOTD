@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.OOTDerror
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionButton
 import com.android.ootd.utils.composables.ProfilePicture
@@ -210,12 +211,11 @@ fun AvatarSection(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Button(
-                    onClick = {
-                      deleteProfilePicture()
-                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
-                    },
+                    onClick = { deleteProfilePicture() },
                     shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = OOTDerror, contentColor = colors.onError),
                     modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
                       Text(
                           text = "Delete",

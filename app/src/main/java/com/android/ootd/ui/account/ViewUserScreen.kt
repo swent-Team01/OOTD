@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.OnSurface
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -146,33 +146,36 @@ private fun ViewUserProfileContent(
 
         Spacer(modifier = Modifier.height(9.dp))
 
-        ShowText(
-            text = friendStatusText, style = Typography.bodyLarge, color = colorScheme.onSurface)
+        ShowText(text = friendStatusText, style = Typography.bodyLarge, color = OnSurface)
 
         Spacer(modifier = Modifier.height(9.dp))
 
+        val friendCount = uiState.friendCount
+        val friendText = if (friendCount == 1) "friend" else "friends"
         // Friend count
         ShowText(
-            text = "${uiState.friendCount} friends",
+            text = "$friendCount $friendText",
             style = Typography.bodyLarge,
-            color = colorScheme.onSurface,
+            color = OnSurface,
             modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
 
         Spacer(modifier = Modifier.height(30.dp))
 
         // Posts section
         if (uiState.isFriend) {
-          ShowText(
-              text = "Posts :",
-              style = Typography.bodyLarge,
-              textAlign = TextAlign.Left,
-              fontFamily = Bodoni,
-              modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
+          val posts = uiState.friendPosts
+          if (posts.isNotEmpty()) {
+            ShowText(
+                text = "${uiState.username}'s posts :",
+                style = Typography.bodyLarge,
+                textAlign = TextAlign.Left,
+                modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
 
-          Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+          }
 
           DisplayUserPosts(
-              posts = uiState.friendPosts,
+              posts = posts,
               onPostClick = onPostClick,
               modifier = Modifier.testTag(ViewUserScreenTags.POST_TAG),
               padding = 22.dp,
@@ -182,7 +185,7 @@ private fun ViewUserProfileContent(
               text = "Add this user as a friend to see their posts",
               style = Typography.bodyMedium,
               textAlign = TextAlign.Center,
-              color = colorScheme.onSurface,
+              color = OnSurface,
               modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
         }
       }

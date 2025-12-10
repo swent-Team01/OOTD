@@ -111,7 +111,7 @@ private fun BoxScope.GradientOverlay() {
 
 @Composable
 private fun BoxScope.PriceChip(item: Item) {
-  val hasPrice = item.price != null && item.currency != null
+  val hasPrice = item.price != null && item.price != 0.0 && item.currency != null
   if (!hasPrice) return
 
   Box(

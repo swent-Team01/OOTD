@@ -203,8 +203,10 @@ class EditAccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    // Click edit button
+    // Click edit button and confirm change
     selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithText("Change profile picture?").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Continue").performClick()
     composeTestRule.waitForIdle()
 
     // Verify dialog appears with options
@@ -220,6 +222,7 @@ class EditAccountScreenTest {
 
     // Open dialog
     selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithText("Continue").performClick()
     composeTestRule.waitForIdle()
 
     // Select Camera
@@ -236,6 +239,7 @@ class EditAccountScreenTest {
 
     // Open dialog
     selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithText("Continue").performClick()
     composeTestRule.waitForIdle()
 
     // Select Gallery
@@ -369,6 +373,9 @@ class EditAccountScreenTest {
 
     // Click delete button
     selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
+    // Confirm dialog and proceed
+    composeTestRule.onNodeWithText("Remove profile picture?").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Remove").performClick()
     composeTestRule.waitForIdle()
 
     // Verify both repositories were called

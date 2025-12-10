@@ -63,7 +63,7 @@ class BottomNavigationBarTest {
   @Test
   fun bottomBar_clickAccount_navigatesToAccount() {
     composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account)).performClick()
-    composeRule.onNodeWithTag(AccountPageTestTags.YOUR_POST_SECTION).assertIsDisplayed()
+    composeRule.onNodeWithTag(AccountPageTestTags.USERNAME_TEXT).assertIsDisplayed()
   }
 
   @Test

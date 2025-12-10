@@ -1,8 +1,6 @@
 package com.android.ootd.ui.notifications
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,9 +9,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,13 +29,14 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ClickableProfileRow
 
 @Composable
 fun FollowRequestCard(
     followRequestItem: FollowRequestItem,
     onAccept: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onProfileClick: (String) -> Unit = {}
 ) {
   Card(
       modifier =
@@ -56,35 +52,25 @@ fun FollowRequestCard(
                     .fillMaxHeight()
                     .padding(horizontal = 16.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically) {
-              // Profile picture placeholder
-              Box(
-                  modifier = Modifier.size(48.dp).clip(CircleShape).background(Primary),
-                  contentAlignment = Alignment.Center) {
-                    ProfilePicture(
-                        size = 48.dp,
-                        profilePicture = followRequestItem.senderUser.profilePicture,
-                        username = followRequestItem.senderUser.username,
-                        textStyle = Typography.titleMedium.copy(fontSize = 20.sp))
+              ClickableProfileRow(
+                  userId = followRequestItem.senderUser.uid,
+                  username = followRequestItem.senderUser.username,
+                  profilePictureUrl = followRequestItem.senderUser.profilePicture,
+                  profileSize = 48.dp,
+                  onProfileClick = onProfileClick,
+                  usernameStyle =
+                      Typography.titleMedium.copy(
+                          fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+                  usernameColor = OnSecondaryContainer,
+                  modifier = Modifier.weight(1f)) {
+                    // Notification message below username
+                    Text(
+                        text = followRequestItem.notification.content,
+                        fontSize = 14.sp,
+                        color = OnSecondaryContainer,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                   }
-
-              Spacer(modifier = Modifier.width(12.dp))
-
-              // Username and message - now in a Column that takes available space
-              Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text(
-                    text = followRequestItem.senderUser.username,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = OnSecondaryContainer,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                Text(
-                    text = followRequestItem.notification.content,
-                    fontSize = 14.sp,
-                    color = OnSecondaryContainer,
-                    maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-              }
 
               Spacer(modifier = Modifier.width(8.dp))
 
