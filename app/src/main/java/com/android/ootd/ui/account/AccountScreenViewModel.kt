@@ -105,10 +105,12 @@ class AccountPageViewModel(
     viewModelScope.launch {
       _uiState.update { it.copy(errorMsg = null) }
       try {
+        val loadedData = uiState.value.hasLoadedInitialData
+        if (!loadedData) _uiState.update { it.copy(isLoading = true) }
         val currentUserID = accountService.currentUserId
         val cachedUser = userRepository.getUser(currentUserID)
         // Offline so load from cache
-        if (uiState.value.hasLoadedInitialData && cachedUser.uid.isBlank()) {
+        if (loadedData && cachedUser.uid.isBlank()) {
           // Cached account is not empty
           val cachedStarredItems =
               if (cachedStarredIds.isEmpty()) {
@@ -126,7 +128,7 @@ class AccountPageViewModel(
                 starredItemIds = cachedStarredIds.toSet(),
                 isLoading = false)
           }
-        } else if (!uiState.value.hasLoadedInitialData && cachedUser.uid.isBlank()) {
+        } else if (!loadedData && cachedUser.uid.isBlank()) {
           throw NetworkErrorException("User is offline and has no cached data !")
         } // Other cases covered by loading the data
 

@@ -45,6 +45,7 @@ class AccountScreenViewModelTest {
           username = "testuser",
           profilePicture = "https://example.com/profile.jpg")
 
+  private val testUserNoPfp = testUser.copy(uid = "no-pfp", profilePicture = "")
   private val testAccount =
       Account(
           uid = "test-uid",
@@ -133,13 +134,27 @@ class AccountScreenViewModelTest {
   fun uiState_sets_loading_true_initially() = runTest {
     coEvery { mockUserRepository.getUser("test-uid") } coAnswers
         {
-          kotlinx.coroutines.delay(100)
+          kotlinx.coroutines.delay(1000)
           testUser
+        }
+    coEvery { mockAccountRepository.getAccount("test-uid") } coAnswers
+        {
+          kotlinx.coroutines.delay(1000)
+          testAccount
+        }
+    coEvery { mockFeedRepository.getFeedForUids(listOf("test-uid")) } coAnswers
+        {
+          kotlinx.coroutines.delay(1000)
+          testPosts
         }
 
     viewModel =
         AccountPageViewModel(
             mockAccountService, mockAccountRepository, mockUserRepository, mockFeedRepository)
+
+    // Advance dispatcher to let the coroutine start and set isLoading = true
+    // but not complete the data loading
+    testDispatcher.scheduler.advanceTimeBy(50)
 
     // Should be loading before data arrives
     assertTrue(viewModel.uiState.value.isLoading)
@@ -301,7 +316,11 @@ class AccountScreenViewModelTest {
 
   @Test
   fun uiState_handles_user_without_profile_picture() = runTest {
-    coEvery { mockUserRepository.getUser("test-uid") } returns testUser.copy(profilePicture = "")
+    every { mockAccountService.currentUserId } returns "no-pfp"
+    coEvery { mockUserRepository.getUser("no-pfp") } returns testUserNoPfp
+    coEvery { mockAccountRepository.getAccount("no-pfp") } returns
+        testAccount.copy(uid = "no-pfp", ownerId = "no-pfp", profilePicture = "")
+    coEvery { mockFeedRepository.getFeedForUids(listOf("no-pfp")) } returns testPosts
 
     viewModel =
         AccountPageViewModel(
