@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,19 +17,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -43,7 +51,10 @@ import com.android.ootd.utils.composables.PermissionRequestScreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlin.math.max
+import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 object CameraScreenTestTags {
@@ -90,6 +101,7 @@ fun CameraScreen(
         Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
           when {
             cameraUiState.showPreview && cameraUiState.capturedImageUri != null -> {
+              val context = LocalContext.current
               // Show preview screen
               ImagePreviewScreen(
                   imageUri = cameraUiState.capturedImageUri!!,
@@ -102,7 +114,8 @@ fun CameraScreen(
                   onClose = {
                     cameraViewModel.reset()
                     onDismiss()
-                  })
+                  },
+                  onSaveBitmap = { bitmap -> cameraViewModel.saveCroppedImage(context, bitmap) })
             }
             cameraPermissionState.status.isGranted -> {
               CameraView(
@@ -276,9 +289,11 @@ private fun ImagePreviewScreen(
     imageUri: Uri,
     onRetake: () -> Unit,
     onApprove: (Uri) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onSaveBitmap: suspend (Bitmap) -> Uri
 ) {
   val context = LocalContext.current
+  val scope = rememberCoroutineScope()
 
   var isCropping by remember { mutableStateOf(false) }
   var croppedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -322,8 +337,17 @@ private fun ImagePreviewScreen(
   }
 
   Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-    if (isCropping) {
-      Text("Crop will be implemented later on !")
+    if (isCropping && bitmap != null) {
+      CropImageScreen(
+          bitmap = bitmap!!,
+          onCrop = { croppedBitmap ->
+            scope.launch {
+              val newUri = onSaveBitmap(croppedBitmap)
+              croppedImageUri = newUri
+              isCropping = false
+            }
+          },
+          onCancel = { isCropping = false })
     } else {
       // Preview mode
       Box(modifier = Modifier.fillMaxSize()) {
@@ -399,6 +423,26 @@ private fun ImagePreviewScreen(
                       Text("Retake", color = White, style = Typography.bodyMedium)
                     }
 
+                    // Crop button
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                      IconButton(
+                          onClick = { isCropping = true },
+                          enabled = bitmap != null,
+                          modifier =
+                              Modifier.size(56.dp)
+                                  .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                  .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                  .testTag(CameraScreenTestTags.CROP_BUTTON)) {
+                            Icon(
+                                imageVector = Icons.Default.Crop,
+                                contentDescription = "Crop",
+                                tint = White,
+                                modifier = Modifier.size(28.dp))
+                          }
+                      Spacer(modifier = Modifier.height(8.dp))
+                      Text("Crop", color = White, style = Typography.bodyMedium)
+                    }
+
                     // Approve button
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                       IconButton(
@@ -420,5 +464,179 @@ private fun ImagePreviewScreen(
             }
       }
     }
+  }
+}
+
+@Composable
+fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Unit) {
+  var scale by remember { mutableFloatStateOf(1f) }
+  var offset by remember { mutableStateOf(Offset.Zero) }
+  var containerSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+
+  Box(
+      modifier =
+          Modifier.fillMaxSize().background(Color.Black).onGloballyPositioned { coordinates ->
+            containerSize = coordinates.size.toSize()
+          }) {
+        // Image with gestures
+        Box(
+            modifier =
+                Modifier.fillMaxSize()
+                    .clipToBounds() // Ensure image doesn't draw outside
+                    .pointerInput(Unit) {
+                      detectTransformGestures { _, pan, zoom, _ ->
+                        scale = max(1f, scale * zoom)
+                        offset += pan
+                      }
+                    }) {
+              Image(
+                  bitmap = bitmap.asImageBitmap(),
+                  contentDescription = "Crop Image",
+                  modifier =
+                      Modifier.fillMaxSize()
+                          .graphicsLayer(
+                              scaleX = scale,
+                              scaleY = scale,
+                              translationX = offset.x,
+                              translationY = offset.y),
+                  contentScale = ContentScale.Fit)
+            }
+
+        // Crop Overlay (Square in center)
+        val cropSize = min(containerSize.width, containerSize.height) * 0.8f
+
+        // Draw semi-transparent overlay with clear hole
+        Canvas(modifier = Modifier.fillMaxSize()) {
+          val cx = size.width / 2
+          val cy = size.height / 2
+          val cropLeft = cx - cropSize / 2
+          val cropTop = cy - cropSize / 2
+
+          // Draw dim background
+          // Top
+          drawRect(
+              color = Color.Black.copy(alpha = 0.5f),
+              topLeft = Offset(0f, 0f),
+              size = androidx.compose.ui.geometry.Size(size.width, cropTop))
+          // Bottom
+          drawRect(
+              color = Color.Black.copy(alpha = 0.5f),
+              topLeft = Offset(0f, cropTop + cropSize),
+              size =
+                  androidx.compose.ui.geometry.Size(size.width, size.height - (cropTop + cropSize)))
+          // Left
+          drawRect(
+              color = Color.Black.copy(alpha = 0.5f),
+              topLeft = Offset(0f, cropTop),
+              size = androidx.compose.ui.geometry.Size(cropLeft, cropSize))
+          // Right
+          drawRect(
+              color = Color.Black.copy(alpha = 0.5f),
+              topLeft = Offset(cropLeft + cropSize, cropTop),
+              size =
+                  androidx.compose.ui.geometry.Size(size.width - (cropLeft + cropSize), cropSize))
+
+          // Draw border
+          drawRect(
+              color = Color.White,
+              topLeft = Offset(cropLeft, cropTop),
+              size = androidx.compose.ui.geometry.Size(cropSize, cropSize),
+              style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+        }
+
+        // Buttons
+        Row(
+            modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp, start = 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween) {
+              Button(
+                  onClick = onCancel,
+                  colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)) {
+                    Text("Cancel")
+                  }
+
+              Button(
+                  onClick = {
+                    val cropRect = calculateCropRect(bitmap, containerSize, scale, offset, cropSize)
+                    val helper = ImageOrientationHelper()
+                    val result = helper.cropBitmap(bitmap, cropRect)
+                    result.onSuccess { onCrop(it) }
+                  },
+                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                    Text("Crop")
+                  }
+            }
+      }
+}
+
+fun calculateCropRect(
+    bitmap: Bitmap,
+    containerSize: androidx.compose.ui.geometry.Size,
+    scale: Float,
+    offset: Offset,
+    cropSizePx: Float
+): android.graphics.Rect {
+  if (containerSize.width == 0f || containerSize.height == 0f)
+      return android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
+
+  val bitmapRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+  val containerRatio = containerSize.width / containerSize.height
+
+  val displayedWidth: Float
+  val displayedHeight: Float
+
+  if (bitmapRatio > containerRatio) {
+    displayedWidth = containerSize.width
+    displayedHeight = containerSize.width / bitmapRatio
+  } else {
+    displayedHeight = containerSize.height
+    displayedWidth = containerSize.height * bitmapRatio
+  }
+
+  val cx = containerSize.width / 2
+  val cy = containerSize.height / 2
+
+  val cropLeft = cx - cropSizePx / 2
+  val cropTop = cy - cropSizePx / 2
+  val cropRight = cx + cropSizePx / 2
+  val cropBottom = cy + cropSizePx / 2
+
+  val imageLeft = cx - displayedWidth / 2
+  val imageTop = cy - displayedHeight / 2
+
+  fun screenToBitmap(sx: Float, sy: Float): Pair<Int, Int> {
+    val dx = sx - offset.x - cx
+    val dy = sy - offset.y - cy
+
+    val unscaledDx = dx / scale
+    val unscaledDy = dy / scale
+
+    val displayedX = unscaledDx + cx
+    val displayedY = unscaledDy + cy
+
+    val localX = displayedX - imageLeft
+    val localY = displayedY - imageTop
+
+    val bitmapX = localX * (bitmap.width / displayedWidth)
+    val bitmapY = localY * (bitmap.height / displayedHeight)
+
+    return Pair(bitmapX.toInt(), bitmapY.toInt())
+  }
+
+  val (l, t) = screenToBitmap(cropLeft, cropTop)
+  val (r, b) = screenToBitmap(cropRight, cropBottom)
+
+  val finalL = max(0, min(bitmap.width, l))
+  val finalT = max(0, min(bitmap.height, t))
+  val finalR = max(0, min(bitmap.width, r))
+  val finalB = max(0, min(bitmap.height, b))
+
+  // Ensure valid rect
+  return if (finalL < finalR && finalT < finalB) {
+    android.graphics.Rect(finalL, finalT, finalR, finalB)
+  } else {
+    android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
   }
 }

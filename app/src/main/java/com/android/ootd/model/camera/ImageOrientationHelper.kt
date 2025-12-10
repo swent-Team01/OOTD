@@ -155,4 +155,22 @@ class ImageOrientationHelper {
       bitmap
     }
   }
+
+  /**
+   * Crops a bitmap to the specified rectangle.
+   *
+   * @param bitmap The source bitmap
+   * @param cropRect The rectangle to crop
+   * @return The cropped bitmap
+   */
+  fun cropBitmap(bitmap: Bitmap, cropRect: android.graphics.Rect): Result<Bitmap> {
+    return try {
+      val croppedBitmap =
+          Bitmap.createBitmap(
+              bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
+      Result.success(croppedBitmap)
+    } catch (e: Exception) {
+      Result.failure(e)
+    }
+  }
 }

@@ -15,10 +15,12 @@ import com.android.ootd.model.camera.CameraRepository
 import com.android.ootd.model.camera.CameraRepositoryImplementation
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * UI state for the Camera screen.
@@ -285,5 +287,16 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
         onError("Failed to get camera provider: ${e.message}")
       }
     }
+  }
+
+  /**
+   * Saves the cropped image to a file.
+   *
+   * @param context The context for saving the file
+   * @param bitmap The cropped bitmap
+   * @return The URI of the saved image
+   */
+  suspend fun saveCroppedImage(context: Context, bitmap: android.graphics.Bitmap): Uri {
+    return withContext(Dispatchers.IO) { repository.saveBitmap(context, bitmap) }
   }
 }
