@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.camera.core.ImageCapture
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -80,6 +79,8 @@ fun CameraScreen(
   val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
   val cameraUiState by cameraViewModel.uiState.collectAsState()
 
+  DisposableEffect(Unit) { onDispose { cameraViewModel.unbindCamera() } }
+
   Dialog(
       onDismissRequest = {
         cameraViewModel.reset()
@@ -140,7 +141,6 @@ private fun CameraView(
   val lifecycleOwner = LocalLifecycleOwner.current
   val cameraUiState by cameraViewModel.uiState.collectAsState()
 
-  var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
   val previewView = remember { PreviewView(context) }
 
   // Rebind camera when lensFacing changes
@@ -148,8 +148,7 @@ private fun CameraView(
     cameraViewModel.getCameraProvider(
         context,
         onSuccess = { cameraProvider ->
-          val capture = cameraViewModel.bindCamera(cameraProvider, previewView, lifecycleOwner)
-          imageCapture = capture
+          cameraViewModel.bindCamera(cameraProvider, previewView, lifecycleOwner)
         },
         onError = { error -> cameraViewModel.setError(error) })
   }
@@ -240,16 +239,13 @@ private fun CameraView(
                     contentAlignment = Alignment.Center) {
                       IconButton(
                           onClick = {
-                            imageCapture?.let { capture ->
-                              cameraViewModel.capturePhoto(
-                                  context = context,
-                                  imageCapture = capture,
-                                  onSuccess = {
-                                    // Just set the captured image, don't close or call
-                                    // onImageCaptured
-                                    // The preview screen will handle that
-                                  })
-                            }
+                            cameraViewModel.capturePhoto(
+                                context = context,
+                                onSuccess = {
+                                  // Just set the captured image, don't close or call
+                                  // onImageCaptured
+                                  // The preview screen will handle that
+                                })
                           },
                           enabled = !cameraUiState.isCapturing,
                           modifier =
@@ -374,39 +370,52 @@ private fun ImagePreviewScreen(
         // Bottom action buttons
         Box(
             modifier =
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 60.dp)) {
+                Modifier.align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
+                    .padding(bottom = 48.dp, top = 24.dp)) {
               Row(
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .background(Primary.copy(alpha = 0.8f))
-                          .padding(vertical = 20.dp, horizontal = 16.dp),
-                  horizontalArrangement = Arrangement.SpaceEvenly,
+                  modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically) {
                     // Retake button
-                    Button(
-                        onClick = onRetake,
-                        modifier = Modifier.testTag(CameraScreenTestTags.RETAKE_BUTTON),
-                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary)) {
-                          Icon(
-                              imageVector = Icons.Default.Refresh,
-                              contentDescription = "Retake",
-                              modifier = Modifier.size(24.dp))
-                          Spacer(modifier = Modifier.width(8.dp))
-                          Text("Retake")
-                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                      IconButton(
+                          onClick = onRetake,
+                          modifier =
+                              Modifier.size(56.dp)
+                                  .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                  .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                  .testTag(CameraScreenTestTags.RETAKE_BUTTON)) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Retake",
+                                tint = White,
+                                modifier = Modifier.size(28.dp))
+                          }
+                      Spacer(modifier = Modifier.height(8.dp))
+                      Text("Retake", color = White, style = Typography.bodyMedium)
+                    }
 
                     // Approve button
-                    Button(
-                        onClick = { onApprove(currentImageUri) },
-                        modifier = Modifier.testTag(CameraScreenTestTags.APPROVE_BUTTON),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                          Icon(
-                              imageVector = Icons.Default.Check,
-                              contentDescription = "Approve",
-                              modifier = Modifier.size(24.dp))
-                          Spacer(modifier = Modifier.width(8.dp))
-                          Text("Approve")
-                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                      IconButton(
+                          onClick = { onApprove(currentImageUri) },
+                          modifier =
+                              Modifier.size(56.dp)
+                                  .background(Primary, CircleShape)
+                                  .testTag(CameraScreenTestTags.APPROVE_BUTTON)) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Approve",
+                                tint = White,
+                                modifier = Modifier.size(28.dp))
+                          }
+                      Spacer(modifier = Modifier.height(8.dp))
+                      Text("Approve", color = White, style = Typography.bodyMedium)
+                    }
                   }
             }
       }
