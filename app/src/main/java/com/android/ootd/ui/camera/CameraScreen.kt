@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -23,13 +24,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -467,81 +469,106 @@ private fun ImagePreviewScreen(
   }
 }
 
+private enum class CropHandle {
+  TopLeft,
+  TopRight,
+  BottomLeft,
+  BottomRight,
+  Center,
+  None
+}
+
 @Composable
 fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Unit) {
-  var scale by remember { mutableFloatStateOf(1f) }
-  var offset by remember { mutableStateOf(Offset.Zero) }
   var containerSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+  var cropRect by remember { mutableStateOf(Rect.Zero) }
+  var imageRect by remember { mutableStateOf(Rect.Zero) }
+  var activeHandle by remember { mutableStateOf(CropHandle.None) }
 
   Box(
       modifier =
-          Modifier.fillMaxSize().background(Color.Black).onGloballyPositioned { coordinates ->
-            containerSize = coordinates.size.toSize()
-          }) {
-        // Image with gestures
-        Box(
-            modifier =
-                Modifier.fillMaxSize()
-                    .clipToBounds() // Ensure image doesn't draw outside
-                    .pointerInput(Unit) {
-                      detectTransformGestures { _, pan, zoom, _ ->
-                        scale = max(1f, scale * zoom)
-                        offset += pan
+          Modifier.fillMaxSize()
+              .background(Color.Black)
+              .onGloballyPositioned { coordinates ->
+                if (containerSize == androidx.compose.ui.geometry.Size.Zero) {
+                  containerSize = coordinates.size.toSize()
+
+                  val bitmapRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
+                  val containerRatio = containerSize.width / containerSize.height
+
+                  val displayedWidth: Float
+                  val displayedHeight: Float
+
+                  if (bitmapRatio > containerRatio) {
+                    displayedWidth = containerSize.width
+                    displayedHeight = containerSize.width / bitmapRatio
+                  } else {
+                    displayedHeight = containerSize.height
+                    displayedWidth = containerSize.height * bitmapRatio
+                  }
+
+                  val cx = containerSize.width / 2
+                  val cy = containerSize.height / 2
+
+                  imageRect =
+                      Rect(
+                          left = cx - displayedWidth / 2,
+                          top = cy - displayedHeight / 2,
+                          right = cx + displayedWidth / 2,
+                          bottom = cy + displayedHeight / 2)
+                  // Initialize crop rect to 80% of image
+                  cropRect = imageRect.inflate(-min(displayedWidth, displayedHeight) * 0.1f)
+                }
+              }
+              .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset -> activeHandle = getHitHandle(offset, cropRect) },
+                    onDrag = { change, dragAmount ->
+                      change.consume()
+                      if (activeHandle != CropHandle.None) {
+                        cropRect = updateCropRect(cropRect, imageRect, activeHandle, dragAmount)
                       }
-                    }) {
-              Image(
-                  bitmap = bitmap.asImageBitmap(),
-                  contentDescription = "Crop Image",
-                  modifier =
-                      Modifier.fillMaxSize()
-                          .graphicsLayer(
-                              scaleX = scale,
-                              scaleY = scale,
-                              translationX = offset.x,
-                              translationY = offset.y),
-                  contentScale = ContentScale.Fit)
-            }
+                    },
+                    onDragEnd = { activeHandle = CropHandle.None },
+                    onDragCancel = { activeHandle = CropHandle.None })
+              }) {
+        // Display Image
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = "Crop Image",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit)
 
-        // Crop Overlay (Square in center)
-        val cropSize = min(containerSize.width, containerSize.height) * 0.8f
-
-        // Draw semi-transparent overlay with clear hole
+        // Draw Overlay
         Canvas(modifier = Modifier.fillMaxSize()) {
-          val cx = size.width / 2
-          val cy = size.height / 2
-          val cropLeft = cx - cropSize / 2
-          val cropTop = cy - cropSize / 2
+          // Draw dimmed background outside cropRect
+          val path = Path().apply { addRect(Rect(0f, 0f, size.width, size.height)) }
+          val cropPath = Path().apply { addRect(cropRect) }
 
-          // Draw dim background
-          // Top
-          drawRect(
-              color = Color.Black.copy(alpha = 0.5f),
-              topLeft = Offset(0f, 0f),
-              size = androidx.compose.ui.geometry.Size(size.width, cropTop))
-          // Bottom
-          drawRect(
-              color = Color.Black.copy(alpha = 0.5f),
-              topLeft = Offset(0f, cropTop + cropSize),
-              size =
-                  androidx.compose.ui.geometry.Size(size.width, size.height - (cropTop + cropSize)))
-          // Left
-          drawRect(
-              color = Color.Black.copy(alpha = 0.5f),
-              topLeft = Offset(0f, cropTop),
-              size = androidx.compose.ui.geometry.Size(cropLeft, cropSize))
-          // Right
-          drawRect(
-              color = Color.Black.copy(alpha = 0.5f),
-              topLeft = Offset(cropLeft + cropSize, cropTop),
-              size =
-                  androidx.compose.ui.geometry.Size(size.width - (cropLeft + cropSize), cropSize))
+          // Clip out the crop rect
+          clipPath(cropPath, clipOp = ClipOp.Difference) {
+            drawRect(Color.Black.copy(alpha = 0.6f))
+          }
 
-          // Draw border
+          // Draw crop border
           drawRect(
               color = Color.White,
-              topLeft = Offset(cropLeft, cropTop),
-              size = androidx.compose.ui.geometry.Size(cropSize, cropSize),
+              topLeft = cropRect.topLeft,
+              size = cropRect.size,
               style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+
+          // Draw corners
+          val handleSize = 20.dp.toPx()
+          val handleColor = Color.White
+
+          // TopLeft
+          drawCircle(handleColor, radius = handleSize / 2, center = cropRect.topLeft)
+          // TopRight
+          drawCircle(handleColor, radius = handleSize / 2, center = cropRect.topRight)
+          // BottomLeft
+          drawCircle(handleColor, radius = handleSize / 2, center = cropRect.bottomLeft)
+          // BottomRight
+          drawCircle(handleColor, radius = handleSize / 2, center = cropRect.bottomRight)
         }
 
         // Buttons
@@ -559,9 +586,9 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
 
               Button(
                   onClick = {
-                    val cropRect = calculateCropRect(bitmap, containerSize, scale, offset, cropSize)
+                    val finalCropRect = calculateCropRect(bitmap, imageRect, cropRect)
                     val helper = ImageOrientationHelper()
-                    val result = helper.cropBitmap(bitmap, cropRect)
+                    val result = helper.cropBitmap(bitmap, finalCropRect)
                     result.onSuccess { onCrop(it) }
                   },
                   colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
@@ -571,72 +598,63 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
       }
 }
 
-fun calculateCropRect(
-    bitmap: Bitmap,
-    containerSize: androidx.compose.ui.geometry.Size,
-    scale: Float,
-    offset: Offset,
-    cropSizePx: Float
-): android.graphics.Rect {
-  if (containerSize.width == 0f || containerSize.height == 0f)
-      return android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
+private fun getHitHandle(offset: Offset, rect: Rect, threshold: Float = 100f): CropHandle {
+  if ((offset - rect.topLeft).getDistance() < threshold) return CropHandle.TopLeft
+  if ((offset - rect.topRight).getDistance() < threshold) return CropHandle.TopRight
+  if ((offset - rect.bottomLeft).getDistance() < threshold) return CropHandle.BottomLeft
+  if ((offset - rect.bottomRight).getDistance() < threshold) return CropHandle.BottomRight
+  if (rect.contains(offset)) return CropHandle.Center
+  return CropHandle.None
+}
 
-  val bitmapRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
-  val containerRatio = containerSize.width / containerSize.height
+private fun updateCropRect(current: Rect, bounds: Rect, handle: CropHandle, drag: Offset): Rect {
+  var newLeft = current.left
+  var newTop = current.top
+  var newRight = current.right
+  var newBottom = current.bottom
 
-  val displayedWidth: Float
-  val displayedHeight: Float
+  val minSize = 100f
 
-  if (bitmapRatio > containerRatio) {
-    displayedWidth = containerSize.width
-    displayedHeight = containerSize.width / bitmapRatio
-  } else {
-    displayedHeight = containerSize.height
-    displayedWidth = containerSize.height * bitmapRatio
+  when (handle) {
+    CropHandle.TopLeft -> {
+      newLeft = (newLeft + drag.x).coerceIn(bounds.left, newRight - minSize)
+      newTop = (newTop + drag.y).coerceIn(bounds.top, newBottom - minSize)
+    }
+    CropHandle.TopRight -> {
+      newRight = (newRight + drag.x).coerceIn(newLeft + minSize, bounds.right)
+      newTop = (newTop + drag.y).coerceIn(bounds.top, newBottom - minSize)
+    }
+    CropHandle.BottomLeft -> {
+      newLeft = (newLeft + drag.x).coerceIn(bounds.left, newRight - minSize)
+      newBottom = (newBottom + drag.y).coerceIn(newTop + minSize, bounds.bottom)
+    }
+    CropHandle.BottomRight -> {
+      newRight = (newRight + drag.x).coerceIn(newLeft + minSize, bounds.right)
+      newBottom = (newBottom + drag.y).coerceIn(newTop + minSize, bounds.bottom)
+    }
+    CropHandle.Center -> {
+      val width = current.width
+      val height = current.height
+      newLeft = (newLeft + drag.x).coerceIn(bounds.left, bounds.right - width)
+      newTop = (newTop + drag.y).coerceIn(bounds.top, bounds.bottom - height)
+      newRight = newLeft + width
+      newBottom = newTop + height
+    }
+    CropHandle.None -> {}
   }
 
-  val cx = containerSize.width / 2
-  val cy = containerSize.height / 2
+  return Rect(newLeft, newTop, newRight, newBottom)
+}
 
-  val cropLeft = cx - cropSizePx / 2
-  val cropTop = cy - cropSizePx / 2
-  val cropRight = cx + cropSizePx / 2
-  val cropBottom = cy + cropSizePx / 2
+fun calculateCropRect(bitmap: Bitmap, imageRect: Rect, cropRect: Rect): android.graphics.Rect {
+  val scaleX = bitmap.width / imageRect.width
+  val scaleY = bitmap.height / imageRect.height
 
-  val imageLeft = cx - displayedWidth / 2
-  val imageTop = cy - displayedHeight / 2
+  val x = ((cropRect.left - imageRect.left) * scaleX).toInt()
+  val y = ((cropRect.top - imageRect.top) * scaleY).toInt()
+  val width = (cropRect.width * scaleX).toInt()
+  val height = (cropRect.height * scaleY).toInt()
 
-  fun screenToBitmap(sx: Float, sy: Float): Pair<Int, Int> {
-    val dx = sx - offset.x - cx
-    val dy = sy - offset.y - cy
-
-    val unscaledDx = dx / scale
-    val unscaledDy = dy / scale
-
-    val displayedX = unscaledDx + cx
-    val displayedY = unscaledDy + cy
-
-    val localX = displayedX - imageLeft
-    val localY = displayedY - imageTop
-
-    val bitmapX = localX * (bitmap.width / displayedWidth)
-    val bitmapY = localY * (bitmap.height / displayedHeight)
-
-    return Pair(bitmapX.toInt(), bitmapY.toInt())
-  }
-
-  val (l, t) = screenToBitmap(cropLeft, cropTop)
-  val (r, b) = screenToBitmap(cropRight, cropBottom)
-
-  val finalL = max(0, min(bitmap.width, l))
-  val finalT = max(0, min(bitmap.height, t))
-  val finalR = max(0, min(bitmap.width, r))
-  val finalB = max(0, min(bitmap.height, b))
-
-  // Ensure valid rect
-  return if (finalL < finalR && finalT < finalB) {
-    android.graphics.Rect(finalL, finalT, finalR, finalB)
-  } else {
-    android.graphics.Rect(0, 0, bitmap.width, bitmap.height)
-  }
+  return android.graphics.Rect(
+      max(0, x), max(0, y), min(bitmap.width, x + width), min(bitmap.height, y + height))
 }
