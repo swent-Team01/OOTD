@@ -136,6 +136,10 @@ fun addPostWithOneItem(
     inventoryItemUuid: String = "",
     addLocation: Boolean = false
 ) {
+  // Ensure we're on the feed tab and the UI is ready
+  clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB, useUnmergedTree = true)
+  verifyFeedScreenAppears(composeTestRule)
+
   verifyElementAppearsWithTimer(
       composeTestRule, FeedScreenTestTags.ADD_POST_FAB, timeoutMillis = 15_000)
 
