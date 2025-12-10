@@ -299,13 +299,9 @@ class FitCheckScreenTest {
         .performScrollTo()
         .assertIsDisplayed()
         .performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle {
-      val selectedLocation = locationViewModel.uiState.value.selectedLocation
-      assert(selectedLocation != null)
-      assert(
-          selectedLocation?.name == "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
+    composeTestRule.waitUntil(timeoutMillis = 5_000) {
+      locationViewModel.uiState.value.selectedLocation?.name ==
+          "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland"
     }
   }
 

@@ -142,8 +142,11 @@ fun addPostWithOneItem(
     clickWithWait(
         composeTestRule, LocationSelectionTestTags.LOCATION_DEFAULT_EPFL, shouldScroll = true)
   }
+  verifyElementAppearsWithTimer(
+      composeTestRule, FitCheckScreenTestTags.DESCRIPTION_INPUT, useUnmergedTree = true)
   composeTestRule
-      .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
+      .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT, useUnmergedTree = true)
+      .performScrollTo()
       .performTextInput("Sample description")
 
   clickWithWait(composeTestRule, FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
