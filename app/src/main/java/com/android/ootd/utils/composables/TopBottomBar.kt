@@ -22,7 +22,7 @@ import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 
 /**
@@ -104,7 +104,7 @@ fun BottomNavigationMenu(
           colors =
               NavigationBarItemDefaults.colors(
                   selectedIconColor = Primary,
-                  unselectedIconColor = Secondary,
+                  unselectedIconColor = Tertiary,
                   indicatorColor = Color.Transparent),
           modifier = Modifier.padding(top = 8.dp).testTag(NavigationTestTags.getTabTestTag(tab)))
     }
