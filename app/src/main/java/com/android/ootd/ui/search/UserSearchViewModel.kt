@@ -33,6 +33,8 @@ data class SearchUserUIState(
     val errorMessage: String? = null
 )
 
+private const val THE_USER_IS_NOT_AUTHENTICATED = "The user is not authenticated"
+
 class UserSearchViewModel(
     private val userRepository: UserRepository = UserRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
@@ -55,7 +57,7 @@ class UserSearchViewModel(
 
   private fun searchUsernames(query: String) {
     val myUID = testingUsername.takeIf { overrideUser } ?: (Firebase.auth.currentUser?.uid ?: "")
-    check(myUID.isNotEmpty()) { "The user is not authenticated" }
+    check(myUID.isNotEmpty()) { THE_USER_IS_NOT_AUTHENTICATED }
 
     viewModelScope.launch {
       try {
@@ -83,7 +85,7 @@ class UserSearchViewModel(
 
   fun selectUsername(user: User) {
     val myUID = testingUsername.takeIf { overrideUser } ?: (Firebase.auth.currentUser?.uid ?: "")
-    check(myUID.isNotEmpty()) { "The user is not authenticated" }
+    check(myUID.isNotEmpty()) { THE_USER_IS_NOT_AUTHENTICATED }
 
     viewModelScope.launch {
       try {
@@ -140,7 +142,7 @@ class UserSearchViewModel(
         // OverrideUser is only used for the preview screen for easier testing
         val myUID =
             testingUsername.takeIf { overrideUser } ?: (Firebase.auth.currentUser?.uid ?: "")
-        check(myUID.isNotEmpty()) { "The user is not authenticated" }
+        check(myUID.isNotEmpty()) { THE_USER_IS_NOT_AUTHENTICATED }
 
         val selected = checkNotNull(_uiState.value.selectedUser) { "There is no selected user" }
         val friendID = selected.uid
