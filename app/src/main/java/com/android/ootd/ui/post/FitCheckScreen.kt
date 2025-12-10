@@ -2,6 +2,7 @@ package com.android.ootd.ui.post
 
 import android.Manifest
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.BackArrow
@@ -240,8 +242,50 @@ private fun FitCheckScreenContent(
     overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
+  val hasPhoto = uiState.image != Uri.EMPTY
+  val context = LocalContext.current
+
+  val onAddItemsClick: () -> Unit = {
+    if (overridePhoto || uiState.isPhotoValid) {
+      onClearError()
+      // Get the location from the locationSelectionViewModel if available, otherwise use
+      // emptyLocation
+      val finalLocation =
+          locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
+      onNextClick(uiState.image.toString(), uiState.description, finalLocation)
+    } else {
+      onDescriptionChange(uiState.description) // no-op; real screen sets error
+      Toast.makeText(context, "You must add a picture before adding items !", Toast.LENGTH_SHORT)
+          .show()
+    }
+  }
 
   Scaffold(
+      floatingActionButton = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically) {
+              val containerColor = if (hasPhoto) Primary else Color.White
+              val contentColor = if (hasPhoto) Color.White else Tertiary
+
+              ExtendedFloatingActionButton(
+                  onClick = onAddItemsClick,
+                  containerColor = containerColor,
+                  contentColor = contentColor,
+                  modifier =
+                      Modifier.testTag(FitCheckScreenTestTags.NEXT_BUTTON)
+                          .defaultMinSize(minWidth = 180.dp, minHeight = 56.dp),
+                  icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Add items",
+                        tint = contentColor)
+                  },
+                  text = { Text("Add items", color = contentColor) })
+            }
+      },
+      floatingActionButtonPosition = FabPosition.End,
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
       topBar = {
         OOTDTopBar(
@@ -253,39 +297,7 @@ private fun FitCheckScreenContent(
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON))
             })
       },
-      bottomBar = {
-        Button(
-            onClick = {
-              if (overridePhoto || uiState.isPhotoValid) {
-                onClearError()
-                // Get the location from the locationSelectionViewModel if available, otherwise use
-                // emptyLocation
-                val finalLocation =
-                    locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
-                onNextClick(uiState.image.toString(), uiState.description, finalLocation)
-              } else {
-                onDescriptionChange(uiState.description) // no-op; real screen sets error
-              }
-            },
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(80.dp)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .testTag(FitCheckScreenTestTags.NEXT_BUTTON),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary),
-            shape = RoundedCornerShape(16.dp)) {
-              Row(
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.Center) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Add items",
-                        tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add items", color = Color.White)
-                  }
-            }
-      }) { innerPadding ->
+      bottomBar = {}) { innerPadding ->
         Column(
             modifier =
                 Modifier.padding(innerPadding)
