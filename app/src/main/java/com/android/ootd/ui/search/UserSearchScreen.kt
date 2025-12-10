@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,7 +19,6 @@ import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.composables.OOTDTopBar
 
 object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
@@ -39,15 +37,14 @@ fun UserSearchScreen(
           Modifier.fillMaxSize()
               .background(Background)
               .verticalScroll(rememberScrollState())
-              .padding(vertical = 32.dp, horizontal = 20.dp)
               .testTag(SearchScreenTestTags.SEARCH_SCREEN),
       verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        OOTDTopBar()
 
         // Search bar
         UserSelectionField(
             usernameText = uiState.username,
             onUsernameTextChanged = viewModel::updateUsername,
+            onUserSuggestionClicked = onUserClick,
             usernameSuggestions = uiState.userSuggestions,
             expanded = uiState.suggestionsExpanded)
 

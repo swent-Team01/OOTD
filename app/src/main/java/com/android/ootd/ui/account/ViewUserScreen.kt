@@ -88,7 +88,8 @@ fun ViewUserProfile(
   if (uiState.isLoading) {
     LoadingScreen(modifier = Modifier.testTag(ViewUserScreenTags.LOADING_TAG))
   } else {
-    ViewUserProfileContent(uiState, onBackButton, onPostClick)
+    ViewUserProfileContent(
+        uiState, onBackButton, onPostClick, onFollowClick = { viewModel.pressFollowButton() })
   }
 }
 
@@ -103,7 +104,8 @@ fun ViewUserProfile(
 private fun ViewUserProfileContent(
     uiState: ViewUserData,
     onBackButton: () -> Unit,
-    onPostClick: (String) -> Unit
+    onPostClick: (String) -> Unit,
+    onFollowClick: () -> Unit
 ) {
   val scrollState = rememberScrollState()
 
@@ -142,7 +144,10 @@ private fun ViewUserProfileContent(
         Spacer(modifier = Modifier.height(18.dp))
 
         // Follow Button
-        ViewUserFollowButton(uiState.isFriend, onFollowClick = {})
+        ViewUserFollowButton(
+            uiState.isFriend,
+            hasRequestPending = uiState.hasRequestPending,
+            onFollowClick = onFollowClick)
 
         Spacer(modifier = Modifier.height(9.dp))
 
@@ -201,12 +206,17 @@ private fun ViewUserProfileContent(
  * @param onFollowClick Callback invoked when the button is clicked
  */
 @Composable
-private fun ViewUserFollowButton(isFriend: Boolean, onFollowClick: () -> Unit) {
+private fun ViewUserFollowButton(
+    isFriend: Boolean,
+    hasRequestPending: Boolean,
+    onFollowClick: () -> Unit
+) {
+  val insideText = if (isFriend) "Unfollow" else if (!hasRequestPending) "Follow" else "Requested"
   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Button(
         onClick = onFollowClick,
         modifier = Modifier.testTag(ViewUserScreenTags.FOLLOW_BUTTON_TAG)) {
-          Text(text = if (isFriend) "Unfollow" else "Follow")
+          Text(text = insideText)
         }
   }
 }

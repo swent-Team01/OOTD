@@ -32,6 +32,7 @@ object UserSelectionFieldTestTags {
 fun UserSelectionField(
     usernameText: String,
     onUsernameTextChanged: (String) -> Unit,
+    onUserSuggestionClicked: (String) -> Unit,
     usernameSuggestions: List<User>,
     expanded: Boolean,
     onBackPressed: () -> Unit = {}
@@ -97,7 +98,7 @@ fun UserSelectionField(
           usernameSuggestions.forEach { user ->
             UserSuggestionItem(
                 user = user,
-                onClick = {},
+                onClick = { onUserSuggestionClicked(user.uid) },
                 modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
           }
         }
