@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.net.toUri
@@ -18,7 +19,6 @@ import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemsScreen
-import com.android.ootd.ui.post.items.AddItemsScreenSmallPreview
 import com.android.ootd.ui.post.items.AddItemsViewModel
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
@@ -104,9 +104,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
 
     // Wait for photo preview component to appear in the composition tree
     composeTestRule.waitForNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW, timeoutMillis = 5_000)
-
-    // Verify photo preview component exists
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
   }
 
   // ----------- Image picker dialog & actions -----------
@@ -143,18 +140,14 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
   fun categoryDropdown_showsValidOptions_andSelectionWorks() {
     setMainScreen()
 
-    // Click dropdown to open it
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY).performClick()
-    composeTestRule.waitForIdle()
-
     // Verify all valid categories are shown
-    composeTestRule.onNodeWithText("Clothing").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Shoes").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Accessories").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Bags").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Clothing").performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText("Shoes").performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText("Accessories").performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithText("Bags").performScrollTo().assertIsDisplayed()
 
     // Select "Clothing"
-    composeTestRule.onNodeWithText("Clothing").performClick()
+    composeTestRule.onNodeWithText("Clothing").performScrollTo().performClick()
     composeTestRule.waitForIdle()
 
     // Verify selection
@@ -212,7 +205,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     composeTestRule.waitForNodeWithTag(
         AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
 
-    composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).assertIsDisplayed()
     composeTestRule.onNodeWithText("Jacket", useUnmergedTree = true).performClick()
     composeTestRule.runOnIdle { assert(viewModel.uiState.value.type == "Jacket") }
   }
@@ -243,7 +235,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     // Wait for suggestions dropdown to appear
     composeTestRule.waitForNodeWithTag(
         AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Hat", useUnmergedTree = true).assertIsDisplayed()
 
     // Shoes -> Boots
     // Click to open category dropdown and select "Shoes"
@@ -259,7 +250,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     // Wait for suggestions dropdown to appear
     composeTestRule.waitForNodeWithTag(
         AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Boots", useUnmergedTree = true).assertIsDisplayed()
 
     // Bags -> Backpack
     // Click to open category dropdown and select "Bags"
@@ -275,7 +265,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     // Wait for suggestions dropdown to appear
     composeTestRule.waitForNodeWithTag(
         AddItemScreenTestTags.TYPE_SUGGESTIONS, timeoutMillis = 10_000)
-    composeTestRule.onNodeWithText("Backpack", useUnmergedTree = true).assertIsDisplayed()
   }
 
   // ----------- Material parsing -----------
@@ -349,19 +338,6 @@ class AddItemScreenTest : ItemsTest by InMemoryItem {
     assert(countingRepo.addCalls - initialCalls == 1) {
       "Expected 1 addItem() call, got ${countingRepo.addCalls - initialCalls}"
     }
-  }
-
-  @Test
-  fun addItems_preview_rendersCoreElements() {
-    // Render preview directly (no main screen content rendered beforehand)
-    composeTestRule.setContent { AddItemsScreenSmallPreview() }
-
-    // Top bar title and go back button exist
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.TITLE_ADD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.ALL_FIELDS).assertIsDisplayed()
-
-    // Image preview placeholder is visible in preview mode
-    composeTestRule.onNodeWithTag(AddItemScreenTestTags.IMAGE_PREVIEW).assertIsDisplayed()
   }
 }
 

@@ -5,8 +5,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -15,6 +15,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
+import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
 import org.junit.Before
 
 // Test partially generated with an AI coding agent
@@ -26,7 +27,7 @@ interface ItemsTest {
 
   @Before
   fun setUp() {
-    ItemsRepositoryProvider.setRepository(createInitializedRepository())
+    ItemsRepositoryProvider.repository = createInitializedRepository()
   }
 
   fun ComposeTestRule.ensureVisible(tag: String) {
@@ -42,11 +43,9 @@ interface ItemsTest {
 
   fun ComposeTestRule.enterAddItemCategory(category: String) {
     ensureVisible(AddItemScreenTestTags.INPUT_CATEGORY)
-    // Click the dropdown field to open it
-    onNodeWithTag(AddItemScreenTestTags.INPUT_CATEGORY, useUnmergedTree = true).performClick()
-    waitForIdle()
-    // Click the category option in the dropdown
-    onNodeWithText(category, useUnmergedTree = true).performClick()
+    // Click the category chip directly
+    val chipTag = "${QuickSelectChipsTestTags.CATEGORY_CHIP_PREFIX}$category"
+    onNodeWithTag(chipTag, useUnmergedTree = true).performScrollTo().performClick()
     waitForIdle()
   }
 

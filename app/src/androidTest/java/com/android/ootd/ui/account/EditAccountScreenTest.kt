@@ -160,6 +160,8 @@ class EditAccountScreenTest {
     // selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
     selectTestTag(UiTestTags.TAG_ACCOUNT_TITLE).assertIsDisplayed()
     selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_MORE_BUTTON).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_ACCOUNT_BACK).assertIsDisplayed()
 
     // No photo -> letter avatar shown, image absent
     selectTestTag(UiTestTags.TAG_ACCOUNT_AVATAR_LETTER).assertIsDisplayed()
@@ -201,8 +203,10 @@ class EditAccountScreenTest {
     signIn(mockFirebaseUser)
     setContent()
 
-    // Click edit button
+    // Click edit button and confirm change
     selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithText("Change profile picture?").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Continue").performClick()
     composeTestRule.waitForIdle()
 
     // Verify dialog appears with options
@@ -218,6 +222,7 @@ class EditAccountScreenTest {
 
     // Open dialog
     selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithText("Continue").performClick()
     composeTestRule.waitForIdle()
 
     // Select Camera
@@ -234,6 +239,7 @@ class EditAccountScreenTest {
 
     // Open dialog
     selectTestTag(UiTestTags.TAG_ACCOUNT_EDIT).performClick()
+    composeTestRule.onNodeWithText("Continue").performClick()
     composeTestRule.waitForIdle()
 
     // Select Gallery
@@ -367,6 +373,9 @@ class EditAccountScreenTest {
 
     // Click delete button
     selectTestTag(UiTestTags.TAG_ACCOUNT_DELETE).performClick()
+    // Confirm dialog and proceed
+    composeTestRule.onNodeWithText("Remove profile picture?").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Remove").performClick()
     composeTestRule.waitForIdle()
 
     // Verify both repositories were called
@@ -393,8 +402,9 @@ class EditAccountScreenTest {
 
     composeTestRule.setContent {
       ProfilePictureEditor(
-          viewModel = viewModel,
           context = ctx,
+          uploadProfilePicture = viewModel::uploadImageToStorage,
+          editProfilePicture = { url -> viewModel.editUser(profilePicture = url) },
           showImageSourceDialog = showDialog,
           onShowImageSourceDialogChange = { showDialog = it })
     }
@@ -715,5 +725,84 @@ class EditAccountScreenTest {
     // Use shared test helper
     composeTestRule.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions(
         viewModel.locationSelectionViewModel, UiTestTags.TAG_USERNAME_FIELD)
+  }
+
+  // --- Delete Account UI tests ---
+
+  @Test
+  fun moreOptionsDialog_cancelButton_dismissesDialog() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Open dialog
+    selectTestTag(UiTestTags.TAG_MORE_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+    selectTestTag(UiTestTags.TAG_MORE_DIALOG).assertIsDisplayed()
+
+    // Click cancel
+    composeTestRule.onNodeWithText("Cancel").performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dialog dismissed
+    selectTestTag(UiTestTags.TAG_MORE_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun deleteConfirmDialog_cancelButton_dismissesDialog() {
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Navigate to confirmation dialog
+    selectTestTag(UiTestTags.TAG_MORE_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+    selectTestTag(UiTestTags.TAG_DELETE_ACCOUNT_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+    selectTestTag(UiTestTags.TAG_DELETE_CONFIRM_DIALOG).assertIsDisplayed()
+
+    // Click cancel
+    selectTestTag(UiTestTags.TAG_DELETE_CANCEL_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify dialog dismissed
+    selectTestTag(UiTestTags.TAG_DELETE_CONFIRM_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun deleteConfirmDialog_confirmButton_callsDeleteAccount() {
+    every { mockAccountService.currentUserId } returns "test-uid"
+    coEvery { mockAccountRepository.deleteAccount("test-uid") } returns Unit
+    coEvery { mockUserRepository.deleteUser("test-uid") } returns Unit
+    coEvery { mockAccountService.signOut() } returns Result.success(Unit)
+
+    signIn(mockFirebaseUser)
+    setContent()
+
+    // Navigate to confirmation dialog
+    selectTestTag(UiTestTags.TAG_MORE_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+    selectTestTag(UiTestTags.TAG_DELETE_ACCOUNT_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify confirmation dialog appears and more options dialog is dismissed
+    selectTestTag(UiTestTags.TAG_MORE_DIALOG).assertDoesNotExist()
+    selectTestTag(UiTestTags.TAG_DELETE_CONFIRM_DIALOG).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Delete Account?").assertIsDisplayed()
+    composeTestRule
+        .onNodeWithText("This action cannot be undone", substring = true)
+        .assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_DELETE_CONFIRM_BUTTON).assertIsDisplayed()
+    selectTestTag(UiTestTags.TAG_DELETE_CANCEL_BUTTON).assertIsDisplayed()
+
+    // Click confirm delete
+    selectTestTag(UiTestTags.TAG_DELETE_CONFIRM_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Wait for deletion to complete
+    composeTestRule.waitUntil(timeoutMillis = 5000) { viewModel.uiState.value.signedOut }
+
+    // Verify deletion was triggered
+    coVerify(exactly = 1) { mockAccountRepository.deleteAccount("test-uid") }
+    coVerify(exactly = 1) { mockUserRepository.deleteUser("test-uid") }
+    coVerify(exactly = 1) { mockAccountService.signOut() }
   }
 }

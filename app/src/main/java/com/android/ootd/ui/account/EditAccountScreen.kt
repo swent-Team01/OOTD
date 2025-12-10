@@ -20,17 +20,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,6 +54,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight.Companion.ExtraBold
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
@@ -58,6 +65,7 @@ import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.ActionButton
@@ -65,7 +73,7 @@ import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
-import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -86,6 +94,12 @@ object UiTestTags {
   const val TAG_ACCOUNT_LOADING = "account_loading"
   const val TAG_PRIVACY_HELP_ICON = "account_privacy_help_icon"
   const val TAG_PRIVACY_HELP_MENU = "account_privacy_help_menu"
+  const val TAG_MORE_BUTTON = "account_more_button"
+  const val TAG_MORE_DIALOG = "account_more_dialog"
+  const val TAG_DELETE_ACCOUNT_BUTTON = "account_delete_account_button"
+  const val TAG_DELETE_CONFIRM_DIALOG = "account_delete_confirm_dialog"
+  const val TAG_DELETE_CONFIRM_BUTTON = "account_delete_confirm_button"
+  const val TAG_DELETE_CANCEL_BUTTON = "account_delete_cancel_button"
 }
 
 /**
@@ -170,6 +184,10 @@ private fun AccountScreenContent(
 
   // State for image source dialog
   var showImageSourceDialog by remember { mutableStateOf(false) }
+  var showEditProfileConfirm by remember { mutableStateOf(false) }
+  var showDeleteProfileConfirm by remember { mutableStateOf(false) }
+  var showMoreAccountDialog by remember { mutableStateOf(false) }
+  var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
   Scaffold(
       topBar = {
@@ -179,6 +197,14 @@ private fun AccountScreenContent(
             leftComposable = {
               BackArrow(
                   onBackClick = onBack, modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_BACK))
+            },
+            rightComposable = {
+              ActionIconButton(
+                  onClick = { showMoreAccountDialog = true },
+                  icon = Icons.Filled.MoreHoriz,
+                  contentDescription = "More options",
+                  tint = colorScheme.onBackground,
+                  modifier = Modifier.testTag(UiTestTags.TAG_MORE_BUTTON))
             })
       }) { paddingValues ->
         Column(
@@ -192,8 +218,8 @@ private fun AccountScreenContent(
                 AvatarSection(
                     avatarUri = uiState.profilePicture,
                     username = uiState.username,
-                    onEditClick = { showImageSourceDialog = true },
-                    accountViewModel,
+                    onEditClick = { showEditProfileConfirm = true },
+                    deleteProfilePicture = { showDeleteProfileConfirm = true },
                     context = context)
               }
 
@@ -278,72 +304,147 @@ private fun AccountScreenContent(
 
   // Profile picture editor dialog
   ProfilePictureEditor(
-      viewModel = accountViewModel,
       context = context,
+      uploadProfilePicture = accountViewModel::uploadImageToStorage,
+      editProfilePicture = { url -> accountViewModel.editUser(profilePicture = url) },
       showImageSourceDialog = showImageSourceDialog,
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
+
+  ProfilePictureConfirmDialogs(
+      showEdit = showEditProfileConfirm,
+      showDelete = showDeleteProfileConfirm,
+      onDismissEdit = { showEditProfileConfirm = false },
+      onDismissDelete = { showDeleteProfileConfirm = false },
+      onEditConfirmed = {
+        showEditProfileConfirm = false
+        showImageSourceDialog = true
+      },
+      onDeleteConfirmed = {
+        showDeleteProfileConfirm = false
+        accountViewModel.deleteProfilePicture()
+        Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+      })
+
+  // More options dialog with Delete Account button
+  if (showMoreAccountDialog) {
+    MoreOptionsDialog(
+        onDismiss = { showMoreAccountDialog = false },
+        onDeleteAccountClick = {
+          showMoreAccountDialog = false
+          showDeleteConfirmDialog = true
+        })
+  }
+
+  // Delete account confirmation dialog
+  if (showDeleteConfirmDialog) {
+    DeleteConfirmationDialog(
+        onDismiss = { showDeleteConfirmDialog = false },
+        onConfirm = {
+          showDeleteConfirmDialog = false
+          accountViewModel.deleteAccount()
+        })
+  }
 }
 
+/**
+ * Dialog showing additional account options, including the Delete Account button.
+ *
+ * @param onDismiss Callback invoked when the dialog is dismissed.
+ * @param onDeleteAccountClick Callback invoked when the Delete Account button is clicked.
+ */
 @Composable
-private fun AvatarSection(
-    avatarUri: String,
-    username: String,
-    onEditClick: () -> Unit,
-    accountViewModel: AccountViewModel,
-    modifier: Modifier = Modifier,
-    context: Context = LocalContext.current
-) {
+private fun MoreOptionsDialog(onDismiss: () -> Unit, onDeleteAccountClick: () -> Unit) {
   val colors = LightColorScheme
   val typography = Typography
 
-  Column(
-      modifier = modifier.testTag(UiTestTags.TAG_ACCOUNT_AVATAR_CONTAINER).fillMaxWidth(),
-      horizontalAlignment = Alignment.CenterHorizontally) {
-        // Avatar image/letter
-        val tag =
-            UiTestTags.TAG_ACCOUNT_AVATAR_IMAGE.takeIf { avatarUri.isNotBlank() }
-                ?: UiTestTags.TAG_ACCOUNT_AVATAR_LETTER
-        ProfilePicture(
-            Modifier.testTag(tag),
-            120.dp,
-            avatarUri,
-            username,
-            typography.headlineMedium.copy(fontFamily = Bodoni))
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        val editProfilePicture = if (avatarUri.isNotBlank()) "Edit" else "Upload"
-
-        // Edit and Delete buttons under avatar
-        Row(
-            modifier = Modifier.wrapContentWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
-              ActionButton(
-                  onButtonClick = onEditClick,
-                  modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_EDIT),
-                  buttonText = editProfilePicture)
-
-              // Delete button - only show if user has a profile picture
-              if (avatarUri.isNotBlank()) {
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Button(
-                    onClick = {
-                      accountViewModel.deleteProfilePicture()
-                      Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
-                    },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.tertiary),
-                    modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
-                      Text(
-                          text = "Delete",
-                          color = colors.onError,
-                          style = typography.titleMedium.copy(fontFamily = Bodoni))
-                    }
-              }
+  AlertDialog(
+      containerColor = Secondary,
+      onDismissRequest = onDismiss,
+      modifier = Modifier.testTag(UiTestTags.TAG_MORE_DIALOG),
+      title = {
+        Text(
+            text = "More Options",
+            style = typography.titleMedium.copy(fontFamily = Bodoni, fontWeight = ExtraBold),
+            color = colors.onSurface)
+      },
+      text = {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              Button(
+                  onClick = onDeleteAccountClick,
+                  modifier = Modifier.testTag(UiTestTags.TAG_DELETE_ACCOUNT_BUTTON).fillMaxWidth(),
+                  colors = ButtonDefaults.buttonColors(containerColor = colors.error),
+                  shape = CircleShape,
+                  contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = colors.onError,
+                        modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Delete Account",
+                        style = typography.bodyMedium.copy(fontFamily = Bodoni),
+                        color = colors.onError)
+                  }
             }
-      }
+      },
+      confirmButton = {},
+      dismissButton = {
+        TextButton(onClick = onDismiss) {
+          Text(text = "Cancel", style = typography.bodyMedium, color = colors.primary)
+        }
+      })
+}
+
+/**
+ * Confirmation dialog shown before deleting the user's account. This is a destructive action that
+ * cannot be undone.
+ *
+ * @param onDismiss Callback invoked when the dialog is dismissed or cancelled.
+ * @param onConfirm Callback invoked when the user confirms account deletion.
+ */
+@Composable
+private fun DeleteConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+  val colors = LightColorScheme
+  val typography = Typography
+
+  AlertDialog(
+      containerColor = Secondary,
+      onDismissRequest = onDismiss,
+      modifier = Modifier.testTag(UiTestTags.TAG_DELETE_CONFIRM_DIALOG),
+      title = {
+        Text(
+            text = "Delete Account?",
+            style = typography.titleMedium.copy(fontFamily = Bodoni, fontWeight = ExtraBold),
+            color = colors.error)
+      },
+      text = {
+        Text(
+            text =
+                "This action cannot be undone. All your data, including posts, items, and profile information will be permanently deleted.",
+            style = typography.bodyMedium.copy(fontFamily = Bodoni),
+            color = colors.onSurface)
+      },
+      confirmButton = {
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.testTag(UiTestTags.TAG_DELETE_CONFIRM_BUTTON),
+            colors = ButtonDefaults.buttonColors(containerColor = colors.error),
+            shape = CircleShape) {
+              Text(
+                  text = "Delete",
+                  style = typography.bodyMedium.copy(fontFamily = Bodoni),
+                  color = colors.onError)
+            }
+      },
+      dismissButton = {
+        TextButton(
+            onClick = onDismiss, modifier = Modifier.testTag(UiTestTags.TAG_DELETE_CANCEL_BUTTON)) {
+              Text(text = "Cancel", style = typography.bodyMedium, color = colors.primary)
+            }
+      })
 }
 
 @Composable
@@ -491,7 +592,10 @@ private fun PrivacyToggleRow(
               modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_MENU),
               text = {
                 Text(
-                    "Private: only you and mutual friends can view your posts. Public: everyone can view.",
+                    "Private: Only your app uses your location to center the map" +
+                        " — it won’t be shown to others.\n" +
+                        "Public: Your location is displayed on the public map" +
+                        " so others can discover you.",
                     style = typography.bodySmall.copy(fontFamily = Bodoni),
                     color = colors.onSurface)
               },

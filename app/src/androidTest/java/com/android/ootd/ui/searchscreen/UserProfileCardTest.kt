@@ -18,6 +18,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
+// Disclaimer: Some parts of the tests were written with the help of AI and verified by human
+
 @RunWith(Parameterized::class)
 class UserProfileCardTest(private val uid: String, private val name: String) {
   @get:Rule val composeTestRule = createComposeRule()
@@ -74,7 +76,18 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   @Test
   fun seeCardErrorPreview() {
     composeTestRule.setContent { UserProfileCardWithErrorPreview() }
-    assertCardIsDisplayed(composeTestRule)
+
+    // Card and button should be displayed
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.PROFILE_CARD).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).assertIsDisplayed()
+
+    // Error message should be displayed
+    composeTestRule.onNodeWithTag(UserProfileCardTestTags.ERROR_MESSAGE).assertIsDisplayed()
+
+    // Username/avatar should NOT be displayed when there's an error
+    composeTestRule
+        .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
+        .assertDoesNotExist()
   }
 
   @Test
@@ -98,10 +111,14 @@ class UserProfileCardTest(private val uid: String, private val name: String) {
   fun onClickIsNotCalledWhenUserIsNull() {
     var clickCount = 0
     setCustomProfileCard(composeTestRule, { clickCount++ }, { clickCount++ }, null)
+
+    // Follow button should not work when user is null
     composeTestRule.onNodeWithTag(UserProfileCardTestTags.USER_FOLLOW_BUTTON).performClick()
+
+    // Username and avatar should not exist when user is null
     composeTestRule
         .onNodeWithTag(UserProfileCardTestTags.USERNAME_TEXT, useUnmergedTree = true)
-        .performClick()
+        .assertDoesNotExist()
     composeTestRule
         .onNodeWithTag(UserProfileCardTestTags.AVATAR_LETTER, useUnmergedTree = true)
         .assertDoesNotExist()

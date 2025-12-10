@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.ui.account.AvatarSection
+import com.android.ootd.ui.account.ProfilePictureEditor
 import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
@@ -32,6 +34,7 @@ import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
+import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -96,7 +99,15 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val usernameField = rememberFieldState()
   val dateField = rememberFieldState()
   val locationField = rememberFieldState()
+  val context = LocalContext.current
   var showDatePicker by remember { mutableStateOf(false) }
+  var showImageSourceDialog by remember { mutableStateOf(false) }
+
+  // Reset the form when the screen is first shown
+  DisposableEffect(Unit) {
+    viewModel.refresh()
+    onDispose {}
+  }
 
   val locationPermissionLauncher =
       rememberLauncherForActivityResult(
@@ -114,6 +125,8 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val locationError = locationField.left.value && locationUiState.selectedLocation == null
 
   val onGPSClick = rememberGPSClickHandler(viewModel, locationPermissionLauncher)
+  var showEditProfileConfirm by remember { mutableStateOf(false) }
+  var showDeleteProfileConfirm by remember { mutableStateOf(false) }
 
   HandleRegistrationEffects(
       errorMsg = registerUiState.errorMsg,
@@ -123,6 +136,13 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
       onRegisteredHandled = viewModel::markRegisteredHandled,
       onRegister = onRegister,
       onHideDatePicker = { showDatePicker = false })
+
+  ProfilePictureEditor(
+      context = context,
+      editProfilePictureLocal = viewModel::setProfilePicture,
+      showImageSourceDialog = showImageSourceDialog,
+      onShowImageSourceDialogChange = { showImageSourceDialog = it },
+      isLocal = true)
 
   UpdateFieldColors(usernameField, usernameError)
   UpdateFieldColors(dateField, dateError)
@@ -140,6 +160,13 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
           RegisterHeader()
 
           Spacer(modifier = Modifier.height(SPACER))
+
+          AvatarSection(
+              avatarUri = registerUiState.localProfilePictureUri?.toString() ?: "",
+              username = registerUiState.username,
+              onEditClick = { showEditProfileConfirm = true },
+              deleteProfilePicture = { showDeleteProfileConfirm = true },
+          )
 
           UsernameField(
               value = registerUiState.username,
@@ -189,6 +216,21 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               onRegisterClick = viewModel::registerUser)
         }
   }
+
+  ProfilePictureConfirmDialogs(
+      showEdit = showEditProfileConfirm,
+      showDelete = showDeleteProfileConfirm,
+      onDismissEdit = { showEditProfileConfirm = false },
+      onDismissDelete = { showDeleteProfileConfirm = false },
+      onEditConfirmed = {
+        showEditProfileConfirm = false
+        showImageSourceDialog = true
+      },
+      onDeleteConfirmed = {
+        showDeleteProfileConfirm = false
+        viewModel.clearProfilePicture()
+      },
+      editText = "You can reselect or take a new photo to replace the current one.")
 }
 
 /** Handles the GPS button click, checking for location permissions and requesting if needed. */

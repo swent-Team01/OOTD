@@ -2,6 +2,7 @@ package com.android.ootd.ui.map
 
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.PublicLocation
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
@@ -56,7 +57,8 @@ class MapViewModelTest {
           ownerId = testUserId,
           username = "testUser",
           location = testLocation,
-          friendUids = listOf("friend1", "friend2"))
+          friendUids = listOf("friend1", "friend2"),
+          isPrivate = false)
 
   @Before
   fun setUp() {
@@ -187,19 +189,18 @@ class MapViewModelTest {
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    var adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+    var adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
     assertEquals(1, adjustedPosts.size)
     assertEquals(post, adjustedPosts[0].post)
-    assertEquals(testLocation.latitude, adjustedPosts[0].adjustedLocation.latitude, 0.0001)
-    assertEquals(testLocation.longitude, adjustedPosts[0].adjustedLocation.longitude, 0.0001)
-    assertEquals(1, adjustedPosts[0].overlappingCount)
+    assertEquals(testLocation.latitude, adjustedPosts[0].position.latitude, 0.0001)
+    assertEquals(testLocation.longitude, adjustedPosts[0].position.longitude, 0.0001)
 
     // Test with empty list
     coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+    adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
     assertTrue(adjustedPosts.isEmpty())
   }
 
@@ -226,23 +227,20 @@ class MapViewModelTest {
       viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
       advanceUntilIdle()
 
-      val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+      val adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
 
       // Verify count
       assertEquals(count, adjustedPosts.size)
 
-      // All should have same overlappingCount
-      adjustedPosts.forEach { assertEquals(count, it.overlappingCount) }
-
       // All adjusted locations should be unique
       val adjustedLocations =
-          adjustedPosts.map { "${it.adjustedLocation.latitude},${it.adjustedLocation.longitude}" }
+          adjustedPosts.map { "${it.position.latitude},${it.position.longitude}" }
       assertEquals(count, adjustedLocations.distinct().size)
 
       // All adjusted locations should be close to original (within ~30 meters)
       adjustedPosts.forEach { adjusted ->
-        val latDiff = kotlin.math.abs(adjusted.adjustedLocation.latitude - sameLocation.latitude)
-        val lonDiff = kotlin.math.abs(adjusted.adjustedLocation.longitude - sameLocation.longitude)
+        val latDiff = kotlin.math.abs(adjusted.position.latitude - sameLocation.latitude)
+        val lonDiff = kotlin.math.abs(adjusted.position.longitude - sameLocation.longitude)
         assertTrue("Latitude offset too large: $latDiff for count $count", latDiff < 0.0006)
         assertTrue("Longitude offset too large: $lonDiff for count $count", lonDiff < 0.0006)
       }
@@ -271,23 +269,20 @@ class MapViewModelTest {
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    val adjustedPosts = viewModel.getPostsWithAdjustedLocations()
+    val adjustedPosts = viewModel.getPostsWithAdjustedLocations(viewModel.uiState.value.posts)
 
     assertEquals(3, adjustedPosts.size)
 
-    // First two posts should have overlappingCount = 2 and different adjusted locations
-    assertEquals(2, adjustedPosts[0].overlappingCount)
-    assertEquals(2, adjustedPosts[1].overlappingCount)
-    val loc1 = adjustedPosts[0].adjustedLocation
-    val loc2 = adjustedPosts[1].adjustedLocation
+    // First two posts should have different adjusted locations
+    val pos1 = adjustedPosts[0].position
+    val pos2 = adjustedPosts[1].position
     assertTrue(
         "Locations should be different",
-        loc1.latitude != loc2.latitude || loc1.longitude != loc2.longitude)
+        pos1.latitude != pos2.latitude || pos1.longitude != pos2.longitude)
 
-    // Third post should have overlappingCount = 1 and original location
-    assertEquals(1, adjustedPosts[2].overlappingCount)
-    assertEquals(location2.latitude, adjustedPosts[2].adjustedLocation.latitude, 0.0001)
-    assertEquals(location2.longitude, adjustedPosts[2].adjustedLocation.longitude, 0.0001)
+    // Third post should use original location
+    assertEquals(location2.latitude, adjustedPosts[2].position.latitude, 0.0001)
+    assertEquals(location2.longitude, adjustedPosts[2].position.longitude, 0.0001)
   }
 
   @Test
@@ -402,5 +397,106 @@ class MapViewModelTest {
     // Should return user location when focus is null
     assertEquals(testLocation.latitude, latLng.latitude, 0.0001)
     assertEquals(testLocation.longitude, latLng.longitude, 0.0001)
+  }
+
+  @Test
+  fun initialMapType_isFriendsPosts() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val uiState = viewModel.uiState.value
+    assertEquals(MapType.FRIENDS_POSTS, uiState.selectedMapType)
+  }
+
+  @Test
+  fun setMapType_togglesBetweenMaps() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // Initial state
+    assertEquals(MapType.FRIENDS_POSTS, viewModel.uiState.value.selectedMapType)
+
+    // Toggle to FIND_FRIENDS
+    viewModel.setMapType(MapType.FIND_FRIENDS)
+    assertEquals(MapType.FIND_FRIENDS, viewModel.uiState.value.selectedMapType)
+
+    // Toggle back to FRIENDS_POSTS
+    viewModel.setMapType(MapType.FRIENDS_POSTS)
+    assertEquals(MapType.FRIENDS_POSTS, viewModel.uiState.value.selectedMapType)
+
+    // Toggle again
+    viewModel.setMapType(MapType.FIND_FRIENDS)
+    assertEquals(MapType.FIND_FRIENDS, viewModel.uiState.value.selectedMapType)
+  }
+
+  @Test
+  fun setMapType_doesNotAffectOtherUIState() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val initialLocation = viewModel.uiState.value.userLocation
+    val initialAccount = viewModel.uiState.value.currentAccount
+    val initialPosts = viewModel.uiState.value.posts
+    val initialLoading = viewModel.uiState.value.isLoading
+
+    viewModel.setMapType(MapType.FIND_FRIENDS)
+
+    val updatedState = viewModel.uiState.value
+    assertEquals(initialLocation, updatedState.userLocation)
+    assertEquals(initialAccount, updatedState.currentAccount)
+    assertEquals(initialPosts, updatedState.posts)
+    assertEquals(initialLoading, updatedState.isLoading)
+    // Only selectedMapType should change
+    assertEquals(MapType.FIND_FRIENDS, updatedState.selectedMapType)
+  }
+
+  @Test
+  fun observePublicLocations_filtersValidLocations() = runTest {
+    val validPublicLocation = PublicLocation("user1", "Alice", testLocation)
+    val invalidPublicLocation = PublicLocation("user2", "Bob", emptyLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockAccountRepository.observePublicLocations() } returns
+        flowOf(listOf(validPublicLocation, invalidPublicLocation))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    assertEquals(1, viewModel.uiState.value.publicLocations.size)
+    assertEquals("user1", viewModel.uiState.value.publicLocations[0].ownerId)
+  }
+
+  @Test
+  fun getPublicLocationsWithAdjusted_handlesOverlappingLocations() = runTest {
+    val location = Location(46.5, 6.6, "Same")
+    val publicLocs =
+        listOf(
+            PublicLocation("user1", "Alice", location),
+            PublicLocation("user2", "Bob", location),
+            PublicLocation("user3", "Charlie", Location(47.0, 7.0, "Different")))
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockAccountRepository.observePublicLocations() } returns flowOf(publicLocs)
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val adjusted = viewModel.getPublicLocationsWithAdjusted(viewModel.uiState.value.publicLocations)
+    assertEquals(3, adjusted.size)
+    // First two should have different positions
+    val pos1 = adjusted[0].position
+    val pos2 = adjusted[1].position
+    assert(pos1.latitude != pos2.latitude || pos1.longitude != pos2.longitude)
   }
 }

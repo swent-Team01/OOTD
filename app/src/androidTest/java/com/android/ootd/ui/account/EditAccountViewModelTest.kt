@@ -5,6 +5,7 @@ import androidx.credentials.CredentialManager
 import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
+import com.android.ootd.model.account.InvalidLocationException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.LocationRepository
@@ -281,7 +282,8 @@ class EditAccountViewModelTest {
 
   @Test
   fun onTogglePrivacy_success_updatesStateWithRepositoryValue() = runTest {
-    stubAccount("test-uid", username = "testuser", picture = "")
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = false)
     coEvery { accountRepository.togglePrivacy("test-uid") } returns true
 
     initVM()
@@ -316,6 +318,23 @@ class EditAccountViewModelTest {
 
     assertTrue(viewModel.uiState.value.isPrivate)
     assertNotNull(viewModel.uiState.value.errorMsg)
+  }
+
+  @Test
+  fun onTogglePrivacy_invalidLocation_revertsAndShowsLocationError() = runTest {
+    coEvery { accountRepository.getAccount("test-uid") } returns
+        Account(uid = "test-uid", username = "testuser", profilePicture = "", isPrivate = true)
+    coEvery { accountRepository.togglePrivacy("test-uid") } throws InvalidLocationException()
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    assertTrue("Initial state should be private", viewModel.uiState.value.isPrivate)
+    assertFalse("Should not be loading", viewModel.uiState.value.isLoading)
+    viewModel.onTogglePrivacy()
+    advanceUntilIdle()
+    assertTrue("Privacy should remain true after exception", viewModel.uiState.value.isPrivate)
+    assertNotNull("Error message should be set", viewModel.uiState.value.errorMsg)
+    assertFalse("Error message should not be empty", viewModel.uiState.value.errorMsg!!.isEmpty())
   }
 
   @Test
@@ -572,5 +591,99 @@ class EditAccountViewModelTest {
     assertEquals(uploadedUrl, resultUrl)
     assertNull(errorThrown)
     assertNull(vm.uiState.value.errorMsg)
+  }
+
+  // --- Delete Account tests ---
+
+  @Test
+  fun deleteAccount_success_deletesDataAndSignsOut() = runTest {
+    coEvery { accountRepository.deleteAccount("test-uid") } just Runs
+    coEvery { userRepository.deleteUser("test-uid") } just Runs
+    coEvery { accountService.signOut() } returns Result.success(Unit)
+
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    assertFalse(viewModel.uiState.value.signedOut)
+
+    viewModel.deleteAccount()
+    advanceUntilIdle()
+
+    // Verify all deletion calls were made in correct order
+    coVerify(exactly = 1) { accountRepository.deleteAccount("test-uid") }
+    coVerify(exactly = 1) { userRepository.deleteUser("test-uid") }
+    coVerify(exactly = 1) { accountService.signOut() }
+
+    // Verify state is cleared and signedOut is true
+    assertTrue(viewModel.uiState.value.signedOut)
+    assertNull(viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.isLoading)
+  }
+
+  @Test
+  fun deleteAccount_failure_accountRepository_setsErrorMessage() = runTest {
+    coEvery { accountRepository.deleteAccount("test-uid") } throws
+        Exception("Failed to delete account data")
+
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    viewModel.deleteAccount()
+    advanceUntilIdle()
+
+    // Verify error is set and user is NOT signed out
+    assertFalse(viewModel.uiState.value.signedOut)
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.errorMsg!!.contains("Failed deleting account"))
+    assertFalse(viewModel.uiState.value.isLoading)
+
+    // Verify user repository delete was not called
+    coVerify(exactly = 0) { userRepository.deleteUser(any()) }
+    coVerify(exactly = 0) { accountService.signOut() }
+  }
+
+  @Test
+  fun deleteAccount_failure_userRepository_setsErrorMessage() = runTest {
+    coEvery { accountRepository.deleteAccount("test-uid") } just Runs
+    coEvery { userRepository.deleteUser("test-uid") } throws Exception("Failed to delete user data")
+
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    viewModel.deleteAccount()
+    advanceUntilIdle()
+
+    // Verify error is set and user is NOT signed out
+    assertFalse(viewModel.uiState.value.signedOut)
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.errorMsg!!.contains("Failed deleting account"))
+    assertFalse(viewModel.uiState.value.isLoading)
+
+    // Verify account was deleted but sign out was not called
+    coVerify(exactly = 1) { accountRepository.deleteAccount("test-uid") }
+    coVerify(exactly = 0) { accountService.signOut() }
+  }
+
+  @Test
+  fun deleteAccount_setsLoadingWhileProcessing() = runTest {
+    coEvery { accountRepository.deleteAccount("test-uid") } just Runs
+    coEvery { userRepository.deleteUser("test-uid") } just Runs
+    coEvery { accountService.signOut() } returns Result.success(Unit)
+
+    initVM()
+    signInAs(mockFirebaseUser)
+
+    assertFalse(viewModel.uiState.value.isLoading)
+
+    // Start delete but don't complete
+    viewModel.deleteAccount()
+    testScheduler.advanceTimeBy(1)
+
+    // Now complete the operation
+    advanceUntilIdle()
+
+    // Should no longer be loading after completion
+    assertFalse(viewModel.uiState.value.isLoading)
+    assertTrue(viewModel.uiState.value.signedOut)
   }
 }

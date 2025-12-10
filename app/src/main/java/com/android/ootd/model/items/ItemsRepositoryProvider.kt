@@ -31,7 +31,6 @@ object ItemsRepositoryProvider {
 
   /** The current repository instance being used. Defaults to Firestore repository. */
   var repository: ItemsRepository = firestoreRepository
-    private set
 
   /**
    * Switches to using the Firestore repository. This is the default repository for production use.
@@ -46,15 +45,6 @@ object ItemsRepositoryProvider {
    */
   fun useLocal() {
     repository = localRepository
-  }
-
-  /**
-   * Sets a custom repository implementation. Useful for testing with mock repositories.
-   *
-   * @param customRepository The repository instance to use.
-   */
-  fun setRepository(customRepository: ItemsRepository) {
-    repository = customRepository
   }
 
   /**

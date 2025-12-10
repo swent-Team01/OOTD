@@ -1,10 +1,12 @@
 package com.android.ootd.model.user
 
+import android.net.Uri
 import com.android.ootd.LocationProvider
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.map.Location
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.register.RegisterViewModel
+import com.android.ootd.utils.ImageUploader
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -130,7 +132,7 @@ class RegisterViewModelTest {
 
     // Whitespace trimming - valid after trim
     stubSuccess()
-    register("  validUser  ")
+    register("  validUser  ", "01/01/2003")
     coVerify(exactly = 1) { userRepository.createUser("validUser", testUid, testUid) }
     assertTrue(viewModel.uiState.value.registered)
   }
@@ -165,7 +167,9 @@ class RegisterViewModelTest {
     assertFalse(viewModel.uiState.value.registered)
 
     // refresh clears state
-    register("") // trigger error
+    register(
+        "",
+    ) // trigger error
     viewModel.refresh()
     assertNull(viewModel.uiState.value.errorMsg)
     assertFalse(viewModel.uiState.value.isLoading)
@@ -174,10 +178,12 @@ class RegisterViewModelTest {
     // Registration without DOB uses empty string
     stubSuccess() // Re-stub for the next registration
     viewModel.setDateOfBirth("") // Clear the DOB
-    register("testUser2")
-    coVerify(atLeast = 1) {
-      accountRepository.createAccount(match { it.username == "testUser2" }, testEmail, "", any())
-    }
+    // Note: This will fail age validation, so we expect an error instead
+    viewModel.setUsername("testUser2")
+    viewModel.registerUser()
+    advanceUntilIdle()
+    assertEquals("Date of birth is required", viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.registered)
 
     // Repos called in order: accountRepo first, then userRepo
     val callOrder = mutableListOf<String>()
@@ -191,7 +197,7 @@ class RegisterViewModelTest {
           callOrder.add("user")
           Unit
         }
-    register("orderTest")
+    register("orderTest", "01/01/2001")
     assertTrue(callOrder.contains("account"))
     assertTrue(callOrder.contains("user"))
     assertEquals("account", callOrder[callOrder.size - 2])
@@ -220,6 +226,7 @@ class RegisterViewModelTest {
             locationSelectionViewModel = customLocationVM,
             auth = auth)
     customVM.setUsername("emailTest")
+    customVM.setDateOfBirth("01/10/2001")
     customVM.registerUser()
     advanceUntilIdle()
 
@@ -233,16 +240,16 @@ class RegisterViewModelTest {
     stubSuccess()
 
     // Exactly 3 characters (minimum)
-    register("abc")
+    register("abc", "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
     coVerify(atLeast = 1) { userRepository.createUser("abc", testUid, testUid) }
 
     // Exactly 20 characters (maximum)
-    register("a".repeat(20))
+    register("a".repeat(20), "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
 
     // Underscores allowed
-    register("valid_user_123")
+    register("valid_user_123", "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
 
     // Loading state transitions correctly
@@ -251,16 +258,17 @@ class RegisterViewModelTest {
           kotlinx.coroutines.delay(100)
         }
     viewModel.setUsername("slowUser")
+    viewModel.setDateOfBirth("01/01/2003")
     viewModel.registerUser()
     assertTrue(viewModel.uiState.value.isLoading)
     advanceUntilIdle()
     assertFalse(viewModel.uiState.value.isLoading)
 
-    // Multiple attempts after error work
+    // Multiple attempts after error work. Should throw Username error first
     register("ab") // error
     assertNotNull(viewModel.uiState.value.errorMsg)
     stubSuccess()
-    register("validAfterError")
+    register("validAfterError", "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
   }
 
@@ -274,14 +282,14 @@ class RegisterViewModelTest {
     coEvery { accountRepository.createAccount(any(), any(), any(), any()) } throws
         Exception("Account error")
 
-    register(username)
+    register(username, "01/01/2003")
     assertFalse(viewModel.uiState.value.isLoading)
     assertFalse(viewModel.uiState.value.registered)
     assertNotNull(viewModel.uiState.value.errorMsg)
 
     // Both operations must succeed for registered=true
     coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
-    register("bothSucceed")
+    register("bothSucceed", "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
     assertNull(viewModel.uiState.value.errorMsg)
 
@@ -291,6 +299,7 @@ class RegisterViewModelTest {
           assertFalse(viewModel.uiState.value.registered)
         }
     viewModel.setUsername("checkDuring")
+    viewModel.setDateOfBirth("01/01/2003")
     viewModel.registerUser()
     assertFalse(viewModel.uiState.value.registered) // false while loading
     advanceUntilIdle()
@@ -349,5 +358,274 @@ class RegisterViewModelTest {
 
     // Verify the location from LocationSelectionViewModel was used
     coVerify { accountRepository.createAccount(any(), any(), any(), testLocation) }
+  }
+
+  // ========== Refresh Functionality Tests ==========
+
+  @Test
+  fun refresh_clearsAllFieldsAndState() = runTest {
+    // Set up some state
+    viewModel.setUsername("testUser")
+    viewModel.setDateOfBirth("15/06/2005")
+    viewModel.emitError("Test error message")
+    viewModel.showLoading(true)
+
+    // Verify state is populated
+    assertEquals("testUser", viewModel.uiState.value.username)
+    assertEquals("15/06/2005", viewModel.uiState.value.dateOfBirth)
+    assertEquals("Test error message", viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.isLoading)
+
+    // Call refresh
+    viewModel.refresh()
+    coVerify { locationSelectionViewModel.clearSelectedLocation() }
+
+    // Verify all fields are reset to default values
+    assertEquals("", viewModel.uiState.value.username)
+    assertEquals("", viewModel.uiState.value.dateOfBirth)
+    assertNull(viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.isLoading)
+    assertFalse(viewModel.uiState.value.registered)
+    assertEquals("", viewModel.uiState.value.uid)
+    assertEquals("", viewModel.uiState.value.userEmail)
+    assertEquals(null, viewModel.uiState.value.localProfilePictureUri)
+  }
+
+  @Test
+  fun refresh_afterFailedRegistration_allowsNewRegistration() = runTest {
+    // Trigger a registration error
+    register("ab") // Too short
+    assertNotNull(viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.registered)
+
+    // Refresh
+    viewModel.refresh()
+    assertNull(viewModel.uiState.value.errorMsg)
+
+    // Now register successfully
+    stubSuccess()
+    register("validUser", "01/01/2000")
+    assertTrue(viewModel.uiState.value.registered)
+    assertNull(viewModel.uiState.value.errorMsg)
+  }
+
+  // ========== Age Validation Tests ==========
+
+  @Test
+  fun ageValidation_userUnder13_showsError() = runTest {
+    stubSuccess()
+
+    // Calculate a date of birth for someone who is 10 years old
+    val oneDayShort = java.time.LocalDate.now().minusYears(13).plusDays(1)
+    val dob = oneDayShort.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+
+    viewModel.setUsername("validUser")
+    viewModel.setDateOfBirth(dob)
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertEquals("User must be at least 13", viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.registered)
+    coVerify(exactly = 0) { userRepository.createUser(any(), any(), any()) }
+    coVerify(exactly = 0) { accountRepository.createAccount(any(), any(), any(), any()) }
+  }
+
+  @Test
+  fun ageValidation_userExactly13_allowsRegistration() = runTest {
+    stubSuccess()
+
+    // Calculate a date of birth for someone who is exactly 13 years old
+    val thirteenYearsAgo = java.time.LocalDate.now().minusYears(13)
+    val dob = thirteenYearsAgo.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+
+    viewModel.setUsername("validUser")
+    viewModel.setDateOfBirth(dob)
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertNull(viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.registered)
+    coVerify(atLeast = 1) { userRepository.createUser("validUser", testUid, testUid) }
+  }
+
+  @Test
+  fun ageValidation_userOver13_allowsRegistration() = runTest {
+    stubSuccess()
+
+    // Test with someone who is 25 years old
+    val twentyFiveYearsAgo = java.time.LocalDate.now().minusYears(25)
+    val dob = twentyFiveYearsAgo.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+
+    viewModel.setUsername("validUser")
+    viewModel.setDateOfBirth(dob)
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertNull(viewModel.uiState.value.errorMsg)
+    assertTrue(viewModel.uiState.value.registered)
+    coVerify(atLeast = 1) { userRepository.createUser("validUser", testUid, testUid) }
+  }
+
+  @Test
+  fun ageValidation_blankDateOfBirth_showsError() = runTest {
+    stubSuccess()
+
+    viewModel.setUsername("validUser")
+    viewModel.setDateOfBirth("")
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertEquals("Date of birth is required", viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.registered)
+    coVerify(exactly = 0) { userRepository.createUser(any(), any(), any()) }
+  }
+
+  @Test
+  fun ageValidation_invalidDateFormat_showsError() = runTest {
+    stubSuccess()
+
+    viewModel.setUsername("validUser")
+    viewModel.setDateOfBirth("invalid-date")
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertEquals("Invalid date format", viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.registered)
+    coVerify(exactly = 0) { userRepository.createUser(any(), any(), any()) }
+  }
+
+  @Test
+  fun ageValidation_wrongDateFormat_showsError() = runTest {
+    stubSuccess()
+
+    viewModel.setUsername("validUser")
+    // Using MM/dd/yyyy instead of dd/MM/yyyy
+    viewModel.setDateOfBirth("01/15/2000")
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertEquals("Invalid date format", viewModel.uiState.value.errorMsg)
+    assertFalse(viewModel.uiState.value.registered)
+  }
+
+  @Test
+  fun ageValidation_checkedBeforeUsernameValidation() = runTest {
+    // Set invalid username but also invalid age
+    val tenYearsAgo = java.time.LocalDate.now().minusYears(10)
+    val dob = tenYearsAgo.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+
+    viewModel.setUsername("abc")
+    viewModel.setDateOfBirth(dob) // Too young
+    viewModel.registerUser()
+    advanceUntilIdle()
+
+    assertEquals("User must be at least 13", viewModel.uiState.value.errorMsg)
+  }
+
+  // ========== Profile Picture Upload Tests ==========
+
+  @Test
+  fun uploadProfilePicture_successPath_uploadsAndUsesUrl() = runTest {
+    val uploadedUrl = "https://storage.test/profile_pictures/$testUid.jpg"
+    val localUri = Uri.parse("file:///local/pic.jpg")
+
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { _, _ -> ImageUploader.UploadResult(true, uploadedUrl) })
+
+    coEvery { userRepository.createUser(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    vm.setProfilePicture(localUri)
+    vm.registerUser()
+    advanceUntilIdle()
+
+    assertTrue(vm.uiState.value.registered)
+    coVerify { userRepository.createUser("testUser", testUid, testUid, uploadedUrl) }
+  }
+
+  @Test
+  fun uploadProfilePicture_failurePath_usesOriginalUrl() = runTest {
+    val localUri = Uri.parse("file:///local/pic.jpg")
+
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { uri, _ -> ImageUploader.UploadResult(false, uri, "Upload failed") })
+
+    coEvery { userRepository.createUser(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    vm.setProfilePicture(localUri)
+    vm.registerUser()
+    advanceUntilIdle()
+
+    assertTrue(vm.uiState.value.registered)
+    coVerify { userRepository.createUser("testUser", testUid, testUid, localUri.toString()) }
+  }
+
+  @Test
+  fun uploadProfilePicture_nullUri_skipsUpload() = runTest {
+    var uploaderCalled = false
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { _, _ ->
+              uploaderCalled = true
+              ImageUploader.UploadResult(true, "")
+            })
+
+    coEvery { userRepository.createUser(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    // Don't set profile picture
+    vm.registerUser()
+    advanceUntilIdle()
+
+    assertTrue(vm.uiState.value.registered)
+    assertFalse(uploaderCalled)
+    coVerify { userRepository.createUser("testUser", testUid, testUid, "") }
+  }
+
+  @Test
+  fun uploadProfilePicture_nullUser_returnsOriginalUrl() = runTest {
+    every { auth.currentUser } returns null
+
+    var uploaderCalled = false
+    val vm =
+        RegisterViewModel(
+            userRepository = userRepository,
+            accountRepository = accountRepository,
+            locationSelectionViewModel = locationSelectionViewModel,
+            auth = auth,
+            uploader = { _, _ ->
+              uploaderCalled = true
+              ImageUploader.UploadResult(true, "url")
+            })
+
+    vm.setUsername("testUser")
+    vm.setDateOfBirth("01/01/2000")
+    vm.setProfilePicture(Uri.parse("file:///pic.jpg"))
+    vm.registerUser()
+    advanceUntilIdle()
+
+    // Registration should fail because user is null (different error path)
+    assertFalse(uploaderCalled)
   }
 }

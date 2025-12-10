@@ -48,6 +48,28 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     return e as T
   }
 
+  // Helper methods for public location tests
+  private suspend fun publicLocDoc(uid: String) =
+      FirebaseEmulator.firestore
+          .collection(PUBLIC_LOCATIONS_COLLECTION_PATH)
+          .document(uid)
+          .get()
+          .await()
+
+  private suspend fun makePublic(uid: String) {
+    accountRepository.togglePrivacy(uid) // Make private if not
+    accountRepository.togglePrivacy(uid) // Make public
+  }
+
+  private fun assertLocationMatch(
+      docSnapshot: com.google.firebase.firestore.DocumentSnapshot,
+      expectedLocation: com.android.ootd.model.map.Location
+  ) {
+    val locMap = docSnapshot.get("location") as? Map<*, *>
+    assertEquals(expectedLocation.latitude, (locMap?.get("latitude") as? Double) ?: 0.0, 0.0001)
+    assertEquals(expectedLocation.longitude, (locMap?.get("longitude") as? Double) ?: 0.0, 0.0001)
+  }
+
   @Test
   fun addAccount_successfullyAddsNewAccount() = runTest {
     accountRepository.addAccount(account1)
@@ -411,7 +433,16 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   @Test
   fun deleteAccount_successfullyDeletesAccountAndAssociatedData() = runTest {
     // Create account
-    accountRepository.addAccount(account1)
+    add(account1, account2)
+
+    // Add friends (bidirectional)
+    accountRepository.addFriend(account1.uid, account2.uid)
+
+    // Verify friends exist before deletion
+    val account1Before = accountRepository.getAccount(account1.uid)
+    assertTrue(account1Before.friendUids.contains(account2.uid))
+    val account2Before = accountRepository.getAccount(account2.uid)
+    assertTrue(account2Before.friendUids.contains(account1.uid))
 
     val storage = FirebaseEmulator.storage
 
@@ -485,6 +516,10 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     val postStorageException =
         kotlin.runCatching { postImageRef.downloadUrl.await() }.exceptionOrNull()
     assertTrue(postStorageException != null)
+
+    // Verify friend has been removed from the friend's friend list
+    val account2After = accountRepository.getAccount(account2.uid)
+    assertFalse(account2After.friendUids.contains(account1.uid))
   }
 
   @Test
@@ -508,17 +543,14 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
 
   @Test
   fun togglePrivacy_togglesAndPersists() = runTest {
-    accountRepository.addAccount(account1)
-
+    val accountWithLocation = account1.copy(location = EPFL_LOCATION, isPrivate = false)
+    accountRepository.addAccount(accountWithLocation)
     val first = accountRepository.togglePrivacy(account1.uid)
     assertTrue(first)
-
     val doc1 = doc(account1.uid)
     assertTrue(doc1.getBoolean("isPrivate") == true)
-
     val second = accountRepository.togglePrivacy(account1.uid)
     assertFalse(second)
-
     val doc2 = doc(account1.uid)
     assertTrue(doc2.getBoolean("isPrivate") == false)
   }
@@ -528,6 +560,101 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     expectThrows<NoSuchElementException>("authenticated user") {
       accountRepository.togglePrivacy("nonexistent")
     }
+  }
+
+  // Public Location Syncing Tests
+
+  @Test
+  fun togglePrivacy_createsPublicLocationWhenAccountBecomesPublic() = runTest {
+    add(account1.copy(isPrivate = true, location = EPFL_LOCATION))
+    assertFalse(accountRepository.togglePrivacy(account1.uid))
+
+    val doc = publicLocDoc(account1.uid)
+    assertTrue(doc.exists())
+    assertEquals(account1.uid, doc.getString("ownerId"))
+    assertEquals(account1.username, doc.getString("username"))
+    assertLocationMatch(doc, EPFL_LOCATION)
+  }
+
+  @Test
+  fun togglePrivacy_throwsInvalidLocationExceptionWhenLocationIsInvalid() = runTest {
+    add(account1.copy(isPrivate = true))
+    expectThrows<InvalidLocationException> { accountRepository.togglePrivacy(account1.uid) }
+    assertFalse(publicLocDoc(account1.uid).exists())
+  }
+
+  @Test
+  fun editAccount_syncsPublicLocationWhenAccountIsPublic() = runTest {
+    add(account1.copy(isPrivate = false, location = EPFL_LOCATION))
+    makePublic(account1.uid)
+
+    accountRepository.editAccount(
+        account1.uid,
+        "updated_alice",
+        account1.birthday,
+        account1.profilePicture,
+        LAUSANNE_LOCATION)
+
+    val doc = publicLocDoc(account1.uid)
+    assertTrue(doc.exists())
+    assertEquals("updated_alice", doc.getString("username"))
+    assertLocationMatch(doc, LAUSANNE_LOCATION)
+  }
+
+  @Test
+  fun editAccount_doesNotSyncPublicLocationWhenAccountIsPrivate() = runTest {
+    add(account1.copy(isPrivate = true, location = EPFL_LOCATION))
+    accountRepository.editAccount(
+        account1.uid, "new_username", account1.birthday, account1.profilePicture, LAUSANNE_LOCATION)
+    assertFalse(publicLocDoc(account1.uid).exists())
+  }
+
+  @Test
+  fun deleteAccount_removesPublicLocationIfExists() = runTest {
+    add(account1.copy(isPrivate = false, location = EPFL_LOCATION))
+    makePublic(account1.uid)
+    assertTrue(publicLocDoc(account1.uid).exists())
+
+    accountRepository.deleteAccount(account1.uid)
+    assertFalse(publicLocDoc(account1.uid).exists())
+  }
+
+  @Test
+  fun getPublicLocations_returnsAllPublicAccounts() = runTest {
+    val public1 = account1.copy(isPrivate = false, location = EPFL_LOCATION)
+    add(public1)
+    makePublic(public1.uid)
+
+    val locations = accountRepository.getPublicLocations()
+    assertEquals(1, locations.size)
+    val loc1 = locations.find { it.ownerId == public1.uid }!!
+    assertEquals(public1.username, loc1.username)
+    assertEquals(EPFL_LOCATION.latitude, loc1.location.latitude, 0.0001)
+    assertEquals(EPFL_LOCATION.longitude, loc1.location.longitude, 0.0001)
+  }
+
+  @Test
+  fun getPublicLocations_returnsEmptyListWhenNoPublicAccounts() = runTest {
+    assertTrue(accountRepository.getPublicLocations().isEmpty())
+  }
+
+  @Test
+  fun observePublicLocations_emitsUpdatesWhenPublicLocationChanges() = runTest {
+    add(account1.copy(isPrivate = false, location = EPFL_LOCATION))
+
+    val emissions = mutableListOf<List<PublicLocation>>()
+    val job = launch { accountRepository.observePublicLocations().collect { emissions.add(it) } }
+
+    kotlinx.coroutines.delay(500)
+    makePublic(account1.uid)
+    kotlinx.coroutines.delay(500)
+    accountRepository.togglePrivacy(account1.uid)
+    kotlinx.coroutines.delay(500)
+
+    job.cancel()
+    assertTrue(emissions.size >= 2)
+    assertTrue(emissions.any { it.isNotEmpty() })
+    assertTrue(emissions.last().isEmpty())
   }
 
   @Test

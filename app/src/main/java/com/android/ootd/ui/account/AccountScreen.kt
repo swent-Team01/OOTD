@@ -2,24 +2,24 @@ package com.android.ootd.ui.account
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,13 +43,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
-import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.inventory.InventoryGrid
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
+import com.android.ootd.utils.composables.FriendsNumberBadge
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
@@ -64,8 +64,9 @@ object AccountPageTestTags {
   const val AVATAR_LETTER = "accountPageAvatarLetter"
   const val USERNAME_TEXT = "accountPageUsernameText"
   const val FRIEND_COUNT_TEXT = "accountPageFriendCountText"
+  const val FRIEND_LIST_DIALOG = "accountPageFriendListDialog"
+  const val FRIEND_LIST_ITEM = "accountPageFriendListItem"
   const val LOADING = "accountPageLoading"
-  const val YOUR_POST_SECTION = "yourPostsStart"
   const val POST_TAG = "postTag"
   const val POSTS_TAB = "accountPagePostsTab"
   const val STARRED_TAB = "accountPageStarredTab"
@@ -130,6 +131,7 @@ fun AccountPageContent(
 ) {
   val scrollState = rememberScrollState()
   val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+  var showFriendList by remember { mutableStateOf(false) }
 
   Column(
       modifier =
@@ -141,7 +143,8 @@ fun AccountPageContent(
             username = uiState.username,
             profilePicture = uiState.profilePicture,
             friendCount = uiState.friends.size,
-            onEditAccount = onEditAccount)
+            onEditAccount = onEditAccount,
+            onFriendCountClick = { showFriendList = true })
 
         AccountTabs(
             selectedTab = uiState.selectedTab,
@@ -156,6 +159,37 @@ fun AccountPageContent(
             onToggleStar = onToggleStar,
             screenHeight = screenHeight)
       }
+
+  if (showFriendList) {
+    AlertDialog(
+        onDismissRequest = { showFriendList = false },
+        confirmButton = { TextButton(onClick = { showFriendList = false }) { Text("Close") } },
+        title = { Text("Friends (${uiState.friends.size})") },
+        text = {
+          if (uiState.friends.isEmpty()) {
+            Text("No friends yet.")
+          } else {
+            LazyColumn(modifier = Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)) {
+              val friendsToShow =
+                  uiState.friendDetails.ifEmpty {
+                    uiState.friends.map { id -> User(uid = id, username = id) }
+                  }
+              items(friendsToShow, key = { it.uid }) { friend ->
+                Column(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                            .testTag(AccountPageTestTags.FRIEND_LIST_ITEM)) {
+                      Text(friend.username.ifBlank { friend.uid }, style = Typography.bodyLarge)
+                    }
+                if (friend != friendsToShow.last()) {
+                  Divider()
+                }
+              }
+            }
+          }
+        })
+  }
 }
 
 @Composable
@@ -163,7 +197,8 @@ private fun AccountHeader(
     username: String,
     profilePicture: String,
     friendCount: Int,
-    onEditAccount: () -> Unit
+    onEditAccount: () -> Unit,
+    onFriendCountClick: () -> Unit
 ) {
   OOTDTopBar(
       textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
@@ -199,10 +234,12 @@ private fun AccountHeader(
 
   Spacer(modifier = Modifier.height(9.dp))
 
-  ShowText(
-      text = "$friendCount friends",
-      style = Typography.bodyLarge,
-      modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT))
+  val friendText = if (friendCount == 1) "friend" else "friends"
+  FriendsNumberBadge(
+      friendCount = friendCount,
+      modifier = Modifier.testTag(AccountPageTestTags.FRIEND_COUNT_TEXT),
+      onClick = onFriendCountClick,
+      label = "$friendCount $friendText")
 
   Spacer(modifier = Modifier.height(30.dp))
 }
@@ -226,23 +263,6 @@ private fun AccountTabs(
 }
 
 @Composable
-private fun TabLabel(tab: AccountTab) {
-  if (tab == AccountTab.Starred) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          Icon(
-              imageVector = Icons.Filled.Star,
-              contentDescription = "Starred Tab",
-              tint = colorScheme.primary)
-          Text("Starred")
-        }
-  } else {
-    Text("Posts")
-  }
-}
-
-@Composable
 private fun AccountTabBody(
     uiState: AccountPageViewState,
     onPostClick: (String) -> Unit,
@@ -250,7 +270,13 @@ private fun AccountTabBody(
     screenHeight: Dp
 ) {
   when (uiState.selectedTab) {
-    AccountTab.Posts -> PostsTabContent(posts = uiState.posts, onPostClick = onPostClick)
+    AccountTab.Posts ->
+        DisplayUserPosts(
+            posts = uiState.posts,
+            onPostClick = onPostClick,
+            modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
+            padding = 22.dp,
+            spacing = 8.dp)
     AccountTab.Starred ->
         StarredTabContent(
             starredItems = uiState.starredItems,
@@ -258,25 +284,6 @@ private fun AccountTabBody(
             onToggleStar = onToggleStar,
             screenHeight = screenHeight)
   }
-}
-
-@Composable
-private fun PostsTabContent(posts: List<OutfitPost>, onPostClick: (String) -> Unit) {
-  ShowText(
-      text = "Your posts :",
-      style = Typography.bodyLarge,
-      modifier = Modifier.testTag(AccountPageTestTags.YOUR_POST_SECTION),
-      textAlign = TextAlign.Left,
-      fontFamily = Bodoni)
-
-  Spacer(modifier = Modifier.height(16.dp))
-
-  DisplayUserPosts(
-      posts = posts,
-      onPostClick = onPostClick,
-      modifier = Modifier.testTag(AccountPageTestTags.POST_TAG),
-      padding = 22.dp,
-      spacing = 8.dp)
 }
 
 @Composable

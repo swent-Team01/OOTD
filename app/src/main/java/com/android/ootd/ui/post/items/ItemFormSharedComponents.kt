@@ -90,29 +90,36 @@ fun AdditionalDetailsSection(
         visible = expanded,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically()) {
-          Column(modifier = Modifier.fillMaxWidth().testTag(tags.section)) {
-            ConditionDropdown(
-                condition = state.condition,
-                onConditionChange = state.onConditionChange,
-                testTag = tags.conditionField,
-                expandedInitially = state.condExpandedInitially)
-            MaterialField(
-                materialText = state.material,
-                onChange = state.onMaterialChange,
-                testTag = tags.materialField)
-            FitTypeField(
-                fitType = state.fitType,
-                onChange = state.onFitTypeChange,
-                testTag = tags.fitTypeField,
-                dropdownTestTag = tags.fitTypeDropdown)
-            StyleField(
-                style = state.style,
-                onChange = state.onStyleChange,
-                testTag = tags.styleField,
-                dropdownTestTag = tags.styleDropdown)
-            NotesField(
-                notes = state.notes, onChange = state.onNotesChange, testTag = tags.notesField)
-          }
+          Column(
+              modifier = Modifier.fillMaxWidth().testTag(tags.section),
+              verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Condition with quick-select chips
+                ConditionQuickSelector(
+                    selectedCondition = state.condition,
+                    onConditionSelected = state.onConditionChange,
+                    containerTestTag = tags.conditionField)
+
+                // Fit Type with quick-select chips
+                FitTypeQuickSelector(
+                    selectedFitType = state.fitType,
+                    onFitTypeSelected = state.onFitTypeChange,
+                    containerTestTag = tags.fitTypeField)
+
+                // Style with quick-select chips
+                StyleQuickSelector(
+                    selectedStyle = state.style,
+                    onStyleSelected = state.onStyleChange,
+                    containerTestTag = tags.styleField)
+
+                // Material text field
+                MaterialField(
+                    materialText = state.material,
+                    onChange = state.onMaterialChange,
+                    testTag = tags.materialField)
+                // Notes text field
+                NotesField(
+                    notes = state.notes, onChange = state.onNotesChange, testTag = tags.notesField)
+              }
         }
   }
 }
