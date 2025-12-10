@@ -49,8 +49,6 @@ fun UserSearchScreen(
             usernameText = uiState.username,
             onUsernameTextChanged = viewModel::updateUsername,
             usernameSuggestions = uiState.userSuggestions,
-            onUsernameSuggestionSelected = viewModel::selectUsername,
-            onSuggestionsDismissed = viewModel::suggestionsDismissed,
             expanded = uiState.suggestionsExpanded)
 
         Spacer(modifier = Modifier.height(24.dp))

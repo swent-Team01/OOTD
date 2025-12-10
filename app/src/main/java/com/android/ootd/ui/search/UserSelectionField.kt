@@ -33,8 +33,6 @@ fun UserSelectionField(
     usernameText: String,
     onUsernameTextChanged: (String) -> Unit,
     usernameSuggestions: List<User>,
-    onUsernameSuggestionSelected: (User) -> Unit,
-    onSuggestionsDismissed: () -> Unit,
     expanded: Boolean,
     onBackPressed: () -> Unit = {}
 ) {
