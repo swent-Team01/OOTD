@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private const val NOTIFICATION_TYPE_FOLLOW_REQUEST = "FOLLOW_REQUEST"
-private const val testingUsername = "user1"
 
 /**
  * Data class representing the UI state for viewing another user's profile.
@@ -74,8 +73,7 @@ class ViewUserViewModel(
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
     private val notificationRepository: NotificationRepository =
-        NotificationRepositoryProvider.repository,
-    private val overrideUser: Boolean = false
+        NotificationRepositoryProvider.repository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ViewUserData())
@@ -109,7 +107,7 @@ class ViewUserViewModel(
         val friend = userRepository.getUser(friendId)
         val friendPosts = postsToShow(friendId, isFriend)
         val isRequestPending = checkForPendingRequest(currentUserId, friendId)
-        //        val friendCount = accountRepository.getFriends(friendId).size
+
         _uiState.update {
           it.copy(
               username = friend.username,
@@ -117,7 +115,6 @@ class ViewUserViewModel(
               hasRequestPending = isRequestPending,
               profilePicture = friend.profilePicture,
               friendPosts = friendPosts,
-              //              friendCount = friendCount,
               isLoading = false)
         }
       } catch (e: Exception) {

@@ -1,5 +1,6 @@
 package com.android.ootd.ui.account
 
+import NotificationRepository
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.feed.FeedRepository
@@ -32,6 +33,7 @@ class ViewUserViewModelTest {
   private lateinit var mockUserRepository: UserRepository
   private lateinit var mockAccountRepository: AccountRepository
   private lateinit var mockFeedRepository: FeedRepository
+  private lateinit var mockNotificationRepository: NotificationRepository
   private val testDispatcher = StandardTestDispatcher()
 
   private val testCurrentUserId = "currentUserId"
@@ -53,7 +55,7 @@ class ViewUserViewModelTest {
     mockUserRepository = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockFeedRepository = mockk(relaxed = true)
-
+    mockNotificationRepository = mockk(relaxed = true)
     coEvery { mockAccountService.currentUserId } returns testCurrentUserId
   }
 
@@ -66,7 +68,11 @@ class ViewUserViewModelTest {
   fun `initial state is loading with empty data`() = runTest {
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
 
     val state = viewModel.uiState.value
     assertTrue(state.isLoading)
@@ -83,7 +89,11 @@ class ViewUserViewModelTest {
   fun `update with blank friendId does not trigger refresh`() = runTest {
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
 
     viewModel.update("")
     advanceUntilIdle()
@@ -101,7 +111,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -128,7 +142,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -153,7 +171,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -174,7 +196,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -195,7 +221,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -214,7 +244,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -233,7 +267,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -250,7 +288,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -263,7 +305,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
     viewModel.update(testFriendId)
     advanceUntilIdle()
 
@@ -285,7 +331,11 @@ class ViewUserViewModelTest {
 
     viewModel =
         ViewUserViewModel(
-            mockAccountService, mockUserRepository, mockAccountRepository, mockFeedRepository)
+            mockAccountService,
+            mockUserRepository,
+            mockAccountRepository,
+            mockFeedRepository,
+            mockNotificationRepository)
 
     viewModel.update("friend1")
     advanceUntilIdle()
