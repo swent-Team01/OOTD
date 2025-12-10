@@ -81,7 +81,14 @@ private fun ImagePreviewBox(imageUri: Uri) {
           val context = LocalContext.current
 
           AsyncImage(
-              model = ImageRequest.Builder(context).data(imageUri).crossfade(true).build(),
+              model =
+                  ImageRequest.Builder(context)
+                      .data(imageUri)
+                      .crossfade(true)
+                      .allowHardware(false)
+                      .memoryCacheKey(imageUri.toString())
+                      .diskCacheKey(imageUri.toString())
+                      .build(),
               contentDescription = "Selected photo",
               modifier = Modifier.fillMaxSize(),
               contentScale = ContentScale.Crop)
