@@ -1,12 +1,8 @@
 package com.android.ootd.ui.search
 
-import NotificationRepository
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.ootd.model.account.AccountRepository
-import com.android.ootd.model.account.AccountRepositoryProvider
-import com.android.ootd.model.notifications.NotificationRepositoryProvider
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
@@ -16,24 +12,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 private const val MAX_NUMBER_SUGGESTIONS = 5
-private const val testingUsername = "user1"
 
 data class SearchUserUIState(
     val username: String = "",
     val userSuggestions: List<User> = emptyList(),
     val selectedUser: User? = null,
     val isSelectedUserFollowed: Boolean = false,
-    val hasRequestPending: Boolean = false,
     val suggestionsExpanded: Boolean = false,
     val errorMessage: String? = null
 )
 
 class UserSearchViewModel(
-    private val userRepository: UserRepository = UserRepositoryProvider.repository,
-    private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    private val notificationRepository: NotificationRepository =
-        NotificationRepositoryProvider.repository,
-    private val overrideUser: Boolean = false
+    private val userRepository: UserRepository = UserRepositoryProvider.repository
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(SearchUserUIState())

@@ -15,7 +15,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
@@ -57,11 +56,7 @@ fun UserSearchScreen(
 @Composable
 fun UserSearchScreenPreview() {
   OOTDTheme {
-    val mockViewModel =
-        UserSearchViewModel(
-            userRepository = UserRepositoryInMemory(),
-            accountRepository = AccountRepositoryInMemory(),
-            overrideUser = true)
+    val mockViewModel = UserSearchViewModel(userRepository = UserRepositoryInMemory())
     UserSearchScreen(viewModel = mockViewModel, onUserClick = {})
   }
 }
