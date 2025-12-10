@@ -85,6 +85,7 @@ class AccountPageViewModel(
   }
 
   private var cachedAccount: Account = Account()
+
   private var cachedPosts: List<OutfitPost> = emptyList()
   private var cachedStarredIds: List<String> = emptyList()
   private val _uiState = MutableStateFlow(AccountPageViewState())
@@ -118,7 +119,7 @@ class AccountPageViewModel(
           _uiState.update {
             it.copy(
                 username = cachedAccount.username,
-                profilePicture = cachedUser.profilePicture,
+                profilePicture = cachedAccount.profilePicture,
                 posts = cachedPosts,
                 friends = cachedAccount.friendUids,
                 starredItems = cachedStarredItems,
@@ -140,9 +141,6 @@ class AccountPageViewModel(
         viewModelScope.launch {
           try {
             coroutineScope {
-              val userDeferred = async {
-                withTimeoutOrNull(NETWORK_TIMEOUT_MS) { userRepository.getUser(currentUserID) }
-              }
               val accountDeferred = async {
                 withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
                   accountRepository.getAccount(currentUserID)
@@ -159,10 +157,12 @@ class AccountPageViewModel(
                 }
               }
 
-              val freshUser = userDeferred.await()
               val freshAccount = accountDeferred.await()
               val freshPosts = postsDeferred.await()
               val freshStarredIds = starredIdsDeferred.await()
+              cachedAccount = freshAccount.takeIf { it != null } ?: cachedAccount
+              cachedPosts = freshPosts.takeIf { it != null } ?: cachedPosts
+              cachedStarredIds = freshStarredIds.takeIf { it != null } ?: cachedStarredIds
 
               // Fetch starred items only if we have IDs
               val freshStarredItems =
@@ -174,16 +174,16 @@ class AccountPageViewModel(
                     }
                   }
 
-              if (freshUser != null && freshUser.uid.isNotBlank()) {
+              if (freshAccount != null && cachedAccount.uid.isNotBlank()) {
                 Log.d(
                     currentLog,
                     "Loaded fresh data, starred items: ${freshStarredIds?.joinToString() ?: "none"}")
                 _uiState.update {
                   it.copy(
-                      username = freshUser.username,
-                      profilePicture = freshUser.profilePicture,
+                      username = cachedAccount.username,
+                      profilePicture = cachedAccount.profilePicture,
                       posts = freshPosts ?: cachedPosts,
-                      friends = freshAccount?.friendUids ?: it.friends,
+                      friends = cachedAccount.friendUids,
                       starredItems = freshStarredItems ?: it.starredItems,
                       starredItemIds = freshStarredIds?.toSet() ?: it.starredItemIds,
                       isLoading = false,
