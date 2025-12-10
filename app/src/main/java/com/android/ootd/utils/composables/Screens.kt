@@ -6,12 +6,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -29,6 +32,8 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,10 +46,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextAlign.Companion.Center
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -57,6 +64,8 @@ import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
+
+// Disclaimer: Some parts of the code were written with the help of AI and verified by human
 
 /**
  * Displays text with customizable styling.
@@ -96,6 +105,7 @@ fun ShowText(
  * @param username The username, used to display the first letter as a fallback.
  * @param textStyle The text style for the username letter. Defaults to typography.headlineLarge.
  * @param shape The shape of the profile picture container. Defaults to CircleShape.
+ * @param onClick Optional click handler for the profile picture.
  */
 @Composable
 fun ProfilePicture(
@@ -104,32 +114,47 @@ fun ProfilePicture(
     profilePicture: String,
     username: String,
     textStyle: TextStyle = Typography.headlineLarge,
-    shape: RoundedCornerShape = CircleShape
+    shape: RoundedCornerShape = CircleShape,
+    onClick: (() -> Unit)? = null
 ) {
   val color = colorScheme
   val defaultAvatarPainter = remember(color.tertiary) { ColorPainter(color.tertiary) }
 
   if (profilePicture.isNotBlank()) {
+    // We apply modifier directly
     AsyncImage(
         model = profilePicture,
         contentDescription = "Profile Picture",
         placeholder = defaultAvatarPainter,
         error = defaultAvatarPainter,
         contentScale = ContentScale.Crop,
-        modifier = modifier.size(size).clip(shape))
+        modifier =
+            modifier
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                .size(size)
+                .clip(shape))
   } else if (username.isNotBlank()) {
+    // We apply the modifier to the Box only
     Box(
-        modifier = Modifier.size(size).clip(shape).background(Primary),
+        modifier =
+            modifier
+                .semantics(mergeDescendants = true) {}
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                .size(size)
+                .clip(shape)
+                .background(Primary),
         contentAlignment = Alignment.Center) {
-          ShowText(
-              text = username.first().uppercase(),
-              style = textStyle,
-              color = Secondary,
-              modifier = modifier) // Only test tag
+          Text(text = username.first().uppercase(), style = textStyle, color = Secondary)
         }
   } else {
+    // Defaulting to person icon
     Box(
-        modifier = modifier.size(size).clip(shape).background(color.tertiary),
+        modifier =
+            modifier
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                .size(size)
+                .clip(shape)
+                .background(color.tertiary),
         contentAlignment = Alignment.Center) {
           Icon(
               imageVector = Icons.Default.Person,
@@ -363,4 +388,147 @@ fun CommonTextField(
       trailingIcon = trailingIcon,
       colors = commonTextFieldColors(),
       modifier = modifier.fillMaxWidth())
+}
+
+/**
+ * A composable that provides pull-to-refresh functionality.
+ *
+ * @param modifier The modifier to be applied to the pull-to-refresh container.
+ * @param content The content to be displayed inside the pull-to-refresh container.
+ * @param onRefresh The callback to be invoked when a refresh is triggered.
+ * @param isRefreshing A boolean indicating whether a refresh is currently in progress.
+ */
+@Composable
+fun PullToRefresh(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit = {},
+    onRefresh: () -> Unit = {},
+    isRefreshing: Boolean = false
+) {
+
+  val state = rememberPullToRefreshState()
+  PullToRefreshBox(
+      modifier = modifier, state = state, isRefreshing = isRefreshing, onRefresh = onRefresh) {
+        content()
+      }
+}
+
+/**
+ * A reusable clickable profile row with picture + username + optional content. The entire ROW is
+ * clickable
+ *
+ * @param userId The user's unique ID (passed to onClick)
+ * @param username The display name of the user
+ * @param profilePictureUrl The URL of the user's profile picture
+ * @param profileSize The size of the profile picture
+ * @param onProfileClick Callback when the row is clicked, receives userId
+ * @param modifier Optional modifier for the row
+ * @param enabled Whether the row is clickable (default true)
+ * @param showUsername Whether to display the username (default true)
+ * @param usernameStyle Text style for the username
+ * @param usernameColor Color for the username text
+ * @param usernameModifier Modifier for the username text
+ * @param profileTestTag Test tag for the profile picture
+ * @param usernameTestTag Test tag for the username
+ * @param horizontalSpacing Spacing between profile picture and username
+ * @param additionalContent Optional composable for extra content
+ */
+@Composable
+fun ClickableProfileRow(
+    userId: String,
+    username: String,
+    profilePictureUrl: String,
+    profileSize: Dp,
+    onProfileClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    showUsername: Boolean = true,
+    usernameStyle: TextStyle = Typography.titleLarge,
+    usernameColor: Color = Primary,
+    usernameModifier: Modifier = Modifier,
+    profileTestTag: String? = null,
+    usernameTestTag: String? = null,
+    horizontalSpacing: Dp = 8.dp,
+    additionalContent: @Composable ColumnScope.() -> Unit = {}
+) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = modifier.clickable(enabled = enabled) { onProfileClick(userId) }) {
+        ProfilePicture(
+            modifier = if (profileTestTag != null) Modifier.testTag(profileTestTag) else Modifier,
+            size = profileSize,
+            profilePicture = profilePictureUrl,
+            username = username,
+            textStyle = Typography.bodySmall)
+
+        if (showUsername) {
+          Spacer(modifier = Modifier.width(horizontalSpacing))
+
+          Column {
+            Text(
+                text = username,
+                style = usernameStyle,
+                color = usernameColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    usernameModifier.then(
+                        if (usernameTestTag != null) Modifier.testTag(usernameTestTag)
+                        else Modifier))
+
+            additionalContent()
+          }
+        }
+      }
+}
+
+/**
+ * A clickable profile displayed vertically (picture on top, username below). The entire COLUMN is
+ * clickable
+ *
+ * @param userId The user's unique ID (passed to onClick)
+ * @param username The display name of the user
+ * @param profilePictureUrl The URL of the user's profile picture
+ * @param profileSize The size of the profile picture
+ * @param onProfileClick Callback when clicked, receives userId
+ * @param modifier Optional modifier
+ * @param usernameStyle Text style for the username
+ * @param usernameColor Color for the username
+ * @param profileTestTag Test tag for the profile picture
+ * @param usernameTestTag Test tag for the username
+ */
+@Composable
+fun ClickableProfileColumn(
+    userId: String,
+    username: String,
+    profilePictureUrl: String,
+    profileSize: Dp = 48.dp,
+    onProfileClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    usernameStyle: TextStyle = Typography.labelSmall,
+    usernameColor: Color = Primary,
+    profileTestTag: String? = null,
+    usernameTestTag: String? = null
+) {
+  Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      modifier = modifier.clickable { onProfileClick(userId) }) {
+        ProfilePicture(
+            size = profileSize,
+            profilePicture = profilePictureUrl,
+            username = username,
+            textStyle = Typography.bodyMedium,
+            modifier = if (profileTestTag != null) Modifier.testTag(profileTestTag) else Modifier)
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = username,
+            style = usernameStyle,
+            color = usernameColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = Center,
+            modifier = if (usernameTestTag != null) Modifier.testTag(usernameTestTag) else Modifier)
+      }
 }

@@ -16,6 +16,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import kotlinx.coroutines.async
@@ -34,6 +35,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * @property profilePicture The URL or path to the user's profile picture.
  * @property posts The list of outfit posts created by the user.
  * @property friends The list of friend user IDs.
+ * @property friendDetails The list of friend user details.
  * @property isLoading Indicates whether data is currently being loaded.
  * @property errorMsg An optional error message to display in the UI.
  * @property starredItems The list of items the user has starred/wishlisted.
@@ -46,6 +48,7 @@ data class AccountPageViewState(
     val profilePicture: String = "",
     val posts: List<OutfitPost> = emptyList(),
     val friends: List<String> = emptyList(),
+    val friendDetails: List<User> = emptyList(),
     val isLoading: Boolean = false,
     val hasLoadedInitialData: Boolean = false,
     val errorMsg: String? = null,
@@ -88,6 +91,7 @@ class AccountPageViewModel(
 
   private var cachedPosts: List<OutfitPost> = emptyList()
   private var cachedStarredIds: List<String> = emptyList()
+  private var cachedFriendDetails: List<User> = emptyList()
   private val _uiState = MutableStateFlow(AccountPageViewState())
   val uiState: StateFlow<AccountPageViewState> = _uiState.asStateFlow()
 
@@ -124,6 +128,7 @@ class AccountPageViewModel(
                 profilePicture = cachedAccount.profilePicture,
                 posts = cachedPosts,
                 friends = cachedAccount.friendUids,
+                friendDetails = cachedFriendDetails,
                 starredItems = cachedStarredItems,
                 starredItemIds = cachedStarredIds.toSet(),
                 isLoading = false)
@@ -158,6 +163,10 @@ class AccountPageViewModel(
               cachedAccount = freshAccount.takeIf { it != null } ?: cachedAccount
               cachedPosts = freshPosts.takeIf { it != null } ?: cachedPosts
               cachedStarredIds = freshStarredIds.takeIf { it != null } ?: cachedStarredIds
+              cachedFriendDetails =
+                  cachedAccount.friendUids.mapNotNull { friendId ->
+                    runCatching { userRepository.getUser(friendId) }.getOrNull()
+                  }
 
               // Fetch starred items only if we have IDs
               val freshStarredItems =
@@ -179,6 +188,7 @@ class AccountPageViewModel(
                       profilePicture = cachedAccount.profilePicture,
                       posts = freshPosts ?: cachedPosts,
                       friends = cachedAccount.friendUids,
+                      friendDetails = cachedFriendDetails,
                       starredItems = freshStarredItems ?: it.starredItems,
                       starredItemIds = freshStarredIds?.toSet() ?: it.starredItemIds,
                       isLoading = false,

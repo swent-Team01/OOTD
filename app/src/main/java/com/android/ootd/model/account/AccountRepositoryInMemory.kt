@@ -58,8 +58,9 @@ class AccountRepositoryInMemory : AccountRepository {
                   profilePicture = "u0.jpg",
                   friendUids = listOf()))
 
-  // StateFlow to track account changes for real-time observation
   private val accountUpdates = MutableStateFlow<Pair<String, Account?>>(Pair("", null))
+  private val publicLocations = mutableMapOf<String, PublicLocation>()
+  private val publicLocationUpdates = MutableStateFlow<List<PublicLocation>>(emptyList())
 
   override suspend fun createAccount(
       user: User,
@@ -67,7 +68,6 @@ class AccountRepositoryInMemory : AccountRepository {
       dateOfBirth: String,
       location: Location
   ) {
-    // Check if username already exists
     if (accounts.values.any { it.username == user.username && it.username.isNotBlank() }) {
       throw TakenUserException("Username already in use")
     }
@@ -112,9 +112,8 @@ class AccountRepositoryInMemory : AccountRepository {
       throw NoSuchElementException("Friend with ID $friendID not found")
     }
 
-    // Check if friend already exists in the list
     if (account.friendUids.any { it == friendID }) {
-      return true // Already friends, do nothing (mimics arrayUnion behavior)
+      return true
     }
 
     val updatedFriendUids = account.friendUids + friendID
@@ -131,7 +130,6 @@ class AccountRepositoryInMemory : AccountRepository {
       throw NoSuchElementException("Friend with ID $friendID not found")
     }
 
-    // If the friend is not there, we don't do anything
     if (account.friendUids.none { it == friendID }) {
       return
     }
@@ -143,16 +141,14 @@ class AccountRepositoryInMemory : AccountRepository {
   }
 
   override suspend fun isMyFriend(userID: String, friendID: String): Boolean {
-    // Here the userID does not matter because this class is used for testing,
-    // and this way I would not have to redo all the tests I already written.
-
     val account = getAccount(currentUser)
     return account.friendUids.isNotEmpty() && account.friendUids.any { it == friendID }
   }
 
-  // replaces removeAccount
   override suspend fun deleteAccount(userID: String) {
     if (accounts.containsKey(userID)) {
+      publicLocations.remove(userID)
+      publicLocationUpdates.value = publicLocations.values.toList()
       accounts.remove(userID)
     } else {
       throw NoSuchElementException("Account with ID $userID not found")
@@ -175,6 +171,16 @@ class AccountRepositoryInMemory : AccountRepository {
             location = location.takeIf { isValidLocation(it) } ?: acc.location)
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
+
+    if (!updatedAccount.isPrivate) {
+      val publicLocation =
+          PublicLocation(
+              ownerId = updatedAccount.ownerId,
+              username = updatedAccount.username,
+              location = updatedAccount.location)
+      publicLocations[userID] = publicLocation
+      publicLocationUpdates.value = publicLocations.values.toList()
+    }
   }
 
   override suspend fun deleteProfilePicture(userID: String) {
@@ -186,9 +192,28 @@ class AccountRepositoryInMemory : AccountRepository {
 
   override suspend fun togglePrivacy(userID: String): Boolean {
     val account = getAccount(userID)
+
+    if (account.isPrivate && !isValidLocation(account.location)) {
+      throw InvalidLocationException()
+    }
+
     val updatedAccount = account.copy(isPrivate = !account.isPrivate)
     accounts[userID] = updatedAccount
     accountUpdates.value = Pair(userID, updatedAccount)
+
+    if (!updatedAccount.isPrivate) {
+      val publicLocation =
+          PublicLocation(
+              ownerId = updatedAccount.ownerId,
+              username = updatedAccount.username,
+              location = updatedAccount.location)
+      publicLocations[userID] = publicLocation
+      publicLocationUpdates.value = publicLocations.values.toList()
+    } else {
+      publicLocations.remove(userID)
+      publicLocationUpdates.value = publicLocations.values.toList()
+    }
+
     return updatedAccount.isPrivate
   }
 
@@ -198,47 +223,33 @@ class AccountRepositoryInMemory : AccountRepository {
   }
 
   override suspend fun addItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-
-      if (account.itemsUids.contains(itemUid)) {
-        return true
-      }
-
-      val updatedItemsUids = account.itemsUids + itemUid
-      val updatedAccount = account.copy(itemsUids = updatedItemsUids)
-      accounts[currentUser] = updatedAccount
-      accountUpdates.value = Pair(currentUser, updatedAccount)
-      true
-    } catch (_: Exception) {
-      false
+    val account = getAccount(currentUser)
+    if (account.itemsUids.contains(itemUid)) {
+      return true
     }
+    val updatedItemsUids = account.itemsUids + itemUid
+    val updatedAccount = account.copy(itemsUids = updatedItemsUids)
+    accounts[currentUser] = updatedAccount
+    accountUpdates.value = Pair(currentUser, updatedAccount)
+    return true
   }
 
   override suspend fun removeItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-
-      if (!account.itemsUids.contains(itemUid)) {
-        return true
-      }
-
-      val updatedItemsUids = account.itemsUids - itemUid
-      val updatedAccount = account.copy(itemsUids = updatedItemsUids)
-      accounts[currentUser] = updatedAccount
-      accountUpdates.value = Pair(currentUser, updatedAccount)
-      true
-    } catch (_: Exception) {
-      false
+    val account = getAccount(currentUser)
+    if (!account.itemsUids.contains(itemUid)) {
+      return true
     }
+    val updatedItemsUids = account.itemsUids - itemUid
+    val updatedAccount = account.copy(itemsUids = updatedItemsUids)
+    accounts[currentUser] = updatedAccount
+    accountUpdates.value = Pair(currentUser, updatedAccount)
+    return true
   }
 
   override fun observeAccount(userID: String): Flow<Account> {
-    // Emit initial account state
     val initialAccount =
         accounts[userID] ?: throw NoSuchElementException("Account with ID $userID not found")
 
-    // Return a flow that emits the initial account and then updates for this specific user
     return accountUpdates
         .filter { (uid, _) -> uid == userID }
         .map { (_, account) ->
@@ -255,25 +266,17 @@ class AccountRepositoryInMemory : AccountRepository {
   override suspend fun refreshStarredItems(userID: String): List<String> = getStarredItems(userID)
 
   override suspend fun addStarredItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-      if (account.starredItemUids.contains(itemUid)) return true
-      accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids + itemUid)
-      true
-    } catch (_: Exception) {
-      false
-    }
+    val account = getAccount(currentUser)
+    if (account.starredItemUids.contains(itemUid)) return true
+    accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids + itemUid)
+    return true
   }
 
   override suspend fun removeStarredItem(itemUid: String): Boolean {
-    return try {
-      val account = getAccount(currentUser)
-      if (!account.starredItemUids.contains(itemUid)) return true
-      accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids - itemUid)
-      true
-    } catch (_: Exception) {
-      false
-    }
+    val account = getAccount(currentUser)
+    if (!account.starredItemUids.contains(itemUid)) return true
+    accounts[currentUser] = account.copy(starredItemUids = account.starredItemUids - itemUid)
+    return true
   }
 
   override suspend fun toggleStarredItem(itemUid: String): List<String> {
@@ -286,5 +289,13 @@ class AccountRepositoryInMemory : AccountRepository {
         }
     accounts[currentUser] = account.copy(starredItemUids = updatedList)
     return updatedList
+  }
+
+  override suspend fun getPublicLocations(): List<PublicLocation> {
+    return publicLocations.values.toList()
+  }
+
+  override fun observePublicLocations(): Flow<List<PublicLocation>> {
+    return publicLocationUpdates.onStart { emit(publicLocations.values.toList()) }
   }
 }
