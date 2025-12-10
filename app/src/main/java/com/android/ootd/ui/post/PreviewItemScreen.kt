@@ -87,6 +87,7 @@ import com.android.ootd.utils.composables.ShowText
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
+  const val EMPTY_ITEM_CTA = "emptyItemCta"
   const val ITEM_LIST = "itemList"
   const val POST_BUTTON = "postButton"
   const val EXPAND_ICON = "expandCard"
@@ -288,7 +289,8 @@ fun PreviewItemScreenContent(
               scrollBehavior = scrollBehavior,
               innerPadding = innerPadding,
               onEditItem = onEditItem,
-              onRemoveItem = onRemoveItem)
+              onRemoveItem = onRemoveItem,
+              onAddItemClick = { showAddItemDialog = true })
         }
 
     // Add Item Dialog
@@ -461,7 +463,8 @@ private fun PreviewItemList(
     scrollBehavior: TopAppBarScrollBehavior,
     innerPadding: PaddingValues,
     onEditItem: (String) -> Unit,
-    onRemoveItem: (String) -> Unit
+    onRemoveItem: (String) -> Unit,
+    onAddItemClick: () -> Unit
 ) {
   if (itemsList.isNotEmpty()) {
     LazyColumn(
@@ -481,12 +484,12 @@ private fun PreviewItemList(
           }
         }
   } else {
-    EmptyItemPlaceholder()
+    EmptyItemPlaceholder(onAddItemClick)
   }
 }
 
 @Composable
-private fun EmptyItemPlaceholder() {
+private fun EmptyItemPlaceholder(onAddItemClick: () -> Unit) {
   Column(
       modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -500,9 +503,14 @@ private fun EmptyItemPlaceholder() {
                     fontSize = 20.sp, fontWeight = FontWeight.Medium, color = OnSurfaceVariant),
             color = OnSurfaceVariant)
         Spacer(Modifier.height(12.dp))
-        ShowText(
-            text = "Don't forget to add your items",
-            style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+        TextButton(
+            onClick = onAddItemClick,
+            modifier = Modifier.testTag(PreviewItemScreenTestTags.EMPTY_ITEM_CTA)) {
+              Text(
+                  text = "Don't forget to add your items !",
+                  style =
+                      Typography.bodyMedium.copy(fontWeight = FontWeight.Medium, color = Primary))
+            }
       }
 }
 
