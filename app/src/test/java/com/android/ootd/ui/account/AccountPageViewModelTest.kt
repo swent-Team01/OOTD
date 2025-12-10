@@ -156,6 +156,11 @@ class AccountPageViewModelTest {
             username = "JohnDoe",
             profilePicture = "",
             friends = listOf("f1", "f2", "f3"),
+            friendDetails =
+                listOf(
+                    User(uid = "f1", username = "Alice"),
+                    User(uid = "f2", username = "Bob"),
+                    User(uid = "f3", username = "Cara")),
             posts = emptyList(),
             isLoading = false,
             starredItems =
@@ -184,6 +189,33 @@ class AccountPageViewModelTest {
     composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_COUNT_TEXT).assertIsDisplayed()
     composeRule.onNodeWithTag(AccountPageTestTags.STARRED_TAB).assertIsDisplayed().performClick()
     composeRule.runOnIdle { assertEquals(AccountTab.Starred, selected) }
+  }
+
+  @Test
+  fun `clicking friend count shows friend list dialog`() {
+    val sampleState =
+        AccountPageViewState(
+            username = "JohnDoe",
+            profilePicture = "",
+            friends = listOf("f1", "f2"),
+            friendDetails =
+                listOf(User(uid = "f1", username = "Alice"), User(uid = "f2", username = "Bob")))
+
+    composeRule.setContent {
+      OOTDTheme {
+        AccountPageContent(
+            uiState = sampleState,
+            onEditAccount = {},
+            onPostClick = {},
+            onSelectTab = {},
+            onToggleStar = {})
+      }
+    }
+
+    composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_COUNT_TEXT).performClick()
+    composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_LIST_DIALOG).assertIsDisplayed()
+    composeRule.onNodeWithText("Alice").assertIsDisplayed()
+    composeRule.onNodeWithText("Bob").assertIsDisplayed()
   }
 
   private fun createViewModel() {

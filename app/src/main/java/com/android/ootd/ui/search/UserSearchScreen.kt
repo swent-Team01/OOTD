@@ -1,12 +1,17 @@
 package com.android.ootd.ui.search
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,8 +21,7 @@ import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.OOTDTopBar
 
 object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
@@ -37,20 +41,9 @@ fun UserSearchScreen(
               .background(Background)
               .verticalScroll(rememberScrollState())
               .padding(vertical = 32.dp, horizontal = 20.dp)
-              .testTag(SearchScreenTestTags.SEARCH_SCREEN)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-          Spacer(modifier = Modifier.width(48.dp))
-
-          Spacer(modifier = Modifier.weight(1f))
-
-          Text(text = "OOTD", style = Typography.headlineLarge, color = Primary)
-
-          Spacer(modifier = Modifier.weight(1f))
-
-          Spacer(modifier = Modifier.width(48.dp))
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+              .testTag(SearchScreenTestTags.SEARCH_SCREEN),
+      verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        OOTDTopBar()
 
         // Search bar
         UserSelectionField(

@@ -73,6 +73,7 @@ import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 
 // Test tag constants for UI tests
 object UiTestTags {
@@ -183,6 +184,8 @@ private fun AccountScreenContent(
 
   // State for image source dialog
   var showImageSourceDialog by remember { mutableStateOf(false) }
+  var showEditProfileConfirm by remember { mutableStateOf(false) }
+  var showDeleteProfileConfirm by remember { mutableStateOf(false) }
   var showMoreAccountDialog by remember { mutableStateOf(false) }
   var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
@@ -215,8 +218,8 @@ private fun AccountScreenContent(
                 AvatarSection(
                     avatarUri = uiState.profilePicture,
                     username = uiState.username,
-                    onEditClick = { showImageSourceDialog = true },
-                    deleteProfilePicture = { accountViewModel.deleteProfilePicture() },
+                    onEditClick = { showEditProfileConfirm = true },
+                    deleteProfilePicture = { showDeleteProfileConfirm = true },
                     context = context)
               }
 
@@ -306,6 +309,21 @@ private fun AccountScreenContent(
       editProfilePicture = { url -> accountViewModel.editUser(profilePicture = url) },
       showImageSourceDialog = showImageSourceDialog,
       onShowImageSourceDialogChange = { showImageSourceDialog = it })
+
+  ProfilePictureConfirmDialogs(
+      showEdit = showEditProfileConfirm,
+      showDelete = showDeleteProfileConfirm,
+      onDismissEdit = { showEditProfileConfirm = false },
+      onDismissDelete = { showDeleteProfileConfirm = false },
+      onEditConfirmed = {
+        showEditProfileConfirm = false
+        showImageSourceDialog = true
+      },
+      onDeleteConfirmed = {
+        showDeleteProfileConfirm = false
+        accountViewModel.deleteProfilePicture()
+        Toast.makeText(context, "Profile picture removed", Toast.LENGTH_SHORT).show()
+      })
 
   // More options dialog with Delete Account button
   if (showMoreAccountDialog) {
