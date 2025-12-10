@@ -1,6 +1,5 @@
 package com.android.ootd.ui.comments
 
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -426,9 +425,6 @@ private fun AddCommentSection(
                               context = context)
 
                       result.onSuccess {
-                        Log.d(
-                            "AddCommentSection",
-                            "Comment added, clearing text and calling onCommentAdded")
                         commentText = ""
                         onCommentAdded()
                       }

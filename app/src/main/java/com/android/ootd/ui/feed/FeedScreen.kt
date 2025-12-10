@@ -1,6 +1,5 @@
 package com.android.ootd.ui.feed
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -90,18 +89,11 @@ fun FeedScreen(
       onRefresh = { feedViewModel.onPullToRefreshTrigger() },
       onCommentClick = { post -> selectedPostForComments = post })
 
-
   // Comments Bottom Sheet
   selectedPostForComments?.let { selectedPost ->
     val currentUserId = uiState.currentAccount?.uid ?: return@let
     val latestPosts = uiState.feedPosts
     val currentPost = latestPosts.find { it.postUID == selectedPost.postUID } ?: selectedPost
-
-    Log.d("FeedScreen", "=== RENDERING COMMENT SHEET ===")
-    Log.d("FeedScreen", "Selected post ID: ${selectedPost.postUID}")
-    Log.d("FeedScreen", "Selected post has ${selectedPost.comments.size} comments")
-    Log.d("FeedScreen", "Current post (from feed) has ${currentPost.comments.size} comments")
-    Log.d("FeedScreen", "Using currentPost for CommentBottomSheet")
 
     CommentBottomSheet(
         post = currentPost,
@@ -109,7 +101,6 @@ fun FeedScreen(
         onDismiss = { selectedPostForComments = null },
         onCommentAdded = {
           // Refresh this specific post to show new comments
-          Log.d("FeedScreen", "onCommentAdded called, refreshing post ${currentPost.postUID}")
           feedViewModel.refreshPost(currentPost.postUID)
         },
         viewModel = commentViewModel)
@@ -133,7 +124,7 @@ private fun FeedScaffold(
     likeCounts: Map<String, Int> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
-    onCommentClick: (OutfitPost) -> Unit = {}
+    onCommentClick: (OutfitPost) -> Unit = {},
     onToggleFeed: () -> Unit = {},
     onProfileClick: (String) -> Unit,
     isRefreshing: Boolean = false,
