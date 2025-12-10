@@ -153,4 +153,18 @@ interface AccountRepository {
    * @return The updated list of starred item IDs after the toggle.
    */
   suspend fun toggleStarredItem(itemUid: String): List<String>
+
+  /**
+   * Get all public locations for displaying on the find friends map.
+   *
+   * @return List of public locations from all users who have set isPrivate = false
+   */
+  suspend fun getPublicLocations(): List<PublicLocation>
+
+  /**
+   * Observe real-time updates to public locations.
+   *
+   * @return Flow that emits the updated list of public locations when any change occurs
+   */
+  fun observePublicLocations(): Flow<List<PublicLocation>>
 }

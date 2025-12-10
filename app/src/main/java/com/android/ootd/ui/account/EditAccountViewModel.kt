@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.account.InvalidLocationException
 import com.android.ootd.model.authentication.AccountService
 import com.android.ootd.model.authentication.AccountServiceFirebase
 import com.android.ootd.model.map.Location
@@ -197,9 +198,16 @@ class AccountViewModel(
       try {
         val newValue = accountRepository.togglePrivacy(uid)
         _uiState.update { it.copy(isPrivate = newValue, errorMsg = null) }
-      } catch (e: Exception) {
+      } catch (e: InvalidLocationException) {
         _uiState.update {
-          it.copy(isPrivate = previous, errorMsg = e.localizedMessage ?: "Failed to toggle privacy")
+          it.copy(
+              isPrivate = previous,
+              errorMsg = e.message ?: "Location is invalid and cannot be made public")
+        }
+      } catch (e: Exception) {
+        // Handle all other errors
+        _uiState.update {
+          it.copy(isPrivate = previous, errorMsg = e.message ?: "Failed to toggle privacy")
         }
       } finally {
         isTogglingPrivacy = false

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.AccountRepositoryProvider
+import com.android.ootd.model.account.PublicLocation
 import com.android.ootd.model.feed.FeedRepository
 import com.android.ootd.model.feed.FeedRepositoryProvider
 import com.android.ootd.model.map.Location
@@ -21,6 +22,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 /** Enum representing the type of map to display. */
@@ -30,22 +32,10 @@ enum class MapType {
 }
 
 /**
- * Data class representing a post with an adjusted location to prevent marker overlap.
- *
- * @property post The original outfit post
- * @property adjustedLocation The location adjusted to prevent overlap with other markers
- * @property overlappingCount The number of posts at the same original location
- */
-data class PostWithAdjustedLocation(
-    val post: OutfitPost,
-    val adjustedLocation: Location,
-    val overlappingCount: Int
-)
-
-/**
  * UI state for the Map screen.
  *
  * @property posts The list of outfit posts to display on the map
+ * @property publicLocations The list of public locations to display on the find friends map
  * @property userLocation The user's location from their account
  * @property focusLocation The location to focus on (if provided via navigation)
  * @property isLoading Whether the location is being loaded
@@ -53,6 +43,7 @@ data class PostWithAdjustedLocation(
  */
 data class MapUiState(
     val posts: List<OutfitPost> = emptyList(),
+    val publicLocations: List<PublicLocation> = emptyList(),
     val currentAccount: Account? = null,
     val userLocation: Location = emptyLocation,
     val focusLocation: Location? = null,
@@ -78,9 +69,11 @@ class MapViewModel(
 
   // Job to observe posts; allows cancellation when account changes
   private var postsObserverJob: Job? = null
+  private var publicLocationsObserverJob: Job? = null
 
   init {
     observeAuthAndLoadAccount()
+    observePublicLocations()
   }
 
   /** Observes Firebase Auth state changes and loads the current account accordingly. */
@@ -134,6 +127,24 @@ class MapViewModel(
     }
   }
 
+  /** Observe public locations in real-time for the Find Friends map. */
+  private fun observePublicLocations() {
+    publicLocationsObserverJob =
+        viewModelScope.launch {
+          accountRepository
+              .observePublicLocations()
+              .catch { e ->
+                _uiState.value =
+                    _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
+              }
+              .collect { publicLocations ->
+                _uiState.value =
+                    _uiState.value.copy(
+                        publicLocations = publicLocations.filter { isValidLocation(it.location) })
+              }
+        }
+  }
+
   /** Get user's current location as LatLng for map centering. */
   fun getUserLatLng(): LatLng {
     return _uiState.value.userLocation.toLatLng()
@@ -148,23 +159,50 @@ class MapViewModel(
    * Get posts with adjusted locations to prevent overlapping markers. When multiple posts share the
    * same location, they are offset in a circular pattern.
    */
-  fun getPostsWithAdjustedLocations(): List<PostWithAdjustedLocation> {
-    val posts = _uiState.value.posts
-    val locationGroups = posts.groupBy { "${it.location.latitude},${it.location.longitude}" }
+  fun getPostsWithAdjustedLocations(posts: List<OutfitPost>): List<PostMarker> {
+    return posts
+        .map { it.asLocatable }
+        .withAdjustedLocations()
+        .zip(posts)
+        .map { (adjusted, post) -> PostMarker(post, adjusted.adjustedLocation) }
+  }
 
-    return posts.map { post ->
-      val locationKey = "${post.location.latitude},${post.location.longitude}"
-      val postsAtSameLocation = locationGroups[locationKey] ?: listOf(post)
-      val overlappingCount = postsAtSameLocation.size
+  /**
+   * Get public locations with adjusted positions to prevent overlapping markers. When multiple
+   * public locations share the same location, they are offset in a circular pattern.
+   */
+  fun getPublicLocationsWithAdjusted(
+      publicLocations: List<PublicLocation>
+  ): List<PublicProfileMarker> {
+    return publicLocations
+        .map { it.asLocatable }
+        .withAdjustedLocations()
+        .zip(publicLocations)
+        .map { (adjusted, publicLocation) ->
+          PublicProfileMarker(publicLocation, adjusted.adjustedLocation)
+        }
+  }
+
+  /**
+   * Generic function to adjust locations for any list of locatable items. When multiple items share
+   * the same location, they are offset in a circular pattern.
+   */
+  private fun <T : Locatable> List<T>.withAdjustedLocations(): List<ItemWithAdjustedLocation<T>> {
+    val locationGroups = this.groupBy { "${it.location.latitude},${it.location.longitude}" }
+
+    return this.map { item ->
+      val locationKey = "${item.location.latitude},${item.location.longitude}"
+      val itemsAtSameLocation = locationGroups[locationKey] ?: listOf(item)
+      val overlappingCount = itemsAtSameLocation.size
 
       if (overlappingCount == 1) {
         // No overlap, use original location
-        PostWithAdjustedLocation(post, post.location, 1)
+        ItemWithAdjustedLocation(item, item.location, 1)
       } else {
-        // Multiple posts at same location - offset them in a circle
-        val index = postsAtSameLocation.indexOf(post)
-        val adjustedLocation = offsetLocation(post.location, index, overlappingCount)
-        PostWithAdjustedLocation(post, adjustedLocation, overlappingCount)
+        // Multiple items at same location - offset them in a circle
+        val index = itemsAtSameLocation.indexOf(item)
+        val adjustedLocation = offsetLocation(item.location, index, overlappingCount)
+        ItemWithAdjustedLocation(item, adjustedLocation, overlappingCount)
       }
     }
   }
@@ -198,3 +236,35 @@ class MapViewModel(
     _uiState.value = _uiState.value.copy(selectedMapType = mapType)
   }
 }
+
+/** Interface for items that have a location and can be adjusted to prevent overlap. */
+interface Locatable {
+  val location: Location
+}
+
+/**
+ * Generic wrapper for items with adjusted locations to prevent marker overlap.
+ *
+ * @property item The original item with a location
+ * @property adjustedLocation The location adjusted to prevent overlap with other markers
+ * @property overlappingCount The number of items at the same original location
+ */
+data class ItemWithAdjustedLocation<T : Locatable>(
+    val item: T,
+    val adjustedLocation: Location,
+    val overlappingCount: Int
+)
+
+// Extension to make OutfitPost locatable
+private val OutfitPost.asLocatable: Locatable
+  get() =
+      object : Locatable {
+        override val location: Location = this@asLocatable.location
+      }
+
+// Extension to make PublicLocation locatable
+private val PublicLocation.asLocatable: Locatable
+  get() =
+      object : Locatable {
+        override val location: Location = this@asLocatable.location
+      }

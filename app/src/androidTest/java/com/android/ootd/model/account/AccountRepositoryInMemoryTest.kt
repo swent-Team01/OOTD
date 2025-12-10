@@ -314,11 +314,17 @@ class AccountRepositoryInMemoryTest {
 
   @Test
   fun togglePrivacy_variants() = runTest {
-    val initial = repository.getAccount("user1").isPrivate
-    assertEquals(!initial, repository.togglePrivacy("user1"))
-    assertEquals(!initial, repository.getAccount("user1").isPrivate)
+    // Set valid locations for the users so they can be made public
+    repository.editAccount("user1", "", "", "", EPFL_LOCATION)
+    repository.editAccount("user2", "", "", "", EPFL_LOCATION)
 
-    repository.togglePrivacy("user1")
+    val initial = repository.getAccount("user1").isPrivate
+    val newPrivacy = repository.togglePrivacy("user1")
+    assertEquals(!initial, newPrivacy)
+    assertEquals(newPrivacy, repository.getAccount("user1").isPrivate)
+
+    val secondToggle = repository.togglePrivacy("user1")
+    assertEquals(initial, secondToggle)
     assertEquals(initial, repository.getAccount("user1").isPrivate)
 
     val u2Initial = repository.getAccount("user2").isPrivate

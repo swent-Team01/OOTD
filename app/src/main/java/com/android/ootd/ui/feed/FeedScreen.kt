@@ -28,6 +28,7 @@ import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.NotificationButton
 import com.android.ootd.utils.composables.OOTDTabRow
 import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.PullToRefresh
 import com.android.ootd.utils.composables.ShowText
 
 object FeedScreenTestTags {
@@ -38,6 +39,7 @@ object FeedScreenTestTags {
   const val FEED_LIST = "feedList"
   const val NAVIGATE_TO_NOTIFICATIONS_SCREEN = "navigateToNotificationsScreen"
   const val LOADING_OVERLAY = "feedLoadingOverlay"
+  const val REFRESHER = "feedRefresher"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,11 +56,11 @@ fun FeedScreen(
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
+  val isRefreshing by feedViewModel.isRefreshing.collectAsState()
 
   LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
-
-    // try refreshing if online
-    feedViewModel.refreshFeedFromFirestore()
+    // Refresh feed when account changes or feed type changes
+    feedViewModel.doRefreshFeed()
   }
 
   FeedScaffold(
@@ -78,7 +80,9 @@ fun FeedScreen(
       onLikeClick = { post -> feedViewModel.onToggleLike(post.postUID) },
       isPublicFeed = uiState.isPublicFeed,
       onToggleFeed = { feedViewModel.toggleFeedType() },
-      onProfileClick = onProfileClick)
+      onProfileClick = onProfileClick,
+      isRefreshing = isRefreshing,
+      onRefresh = { feedViewModel.onPullToRefreshTrigger() })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,20 +104,22 @@ private fun FeedScaffold(
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
     onToggleFeed: () -> Unit = {},
-    onProfileClick: (String) -> Unit
+    onProfileClick: (String) -> Unit,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {}
 ) {
-  val snackbarHostState = remember { SnackbarHostState() }
+  val snackBarHostState = remember { SnackbarHostState() }
 
   LaunchedEffect(errorMessage) {
     errorMessage?.let { message ->
-      snackbarHostState.showSnackbar(message)
+      snackBarHostState.showSnackbar(message)
       onClearError()
     }
   }
 
   Scaffold(
       modifier = Modifier.testTag(FeedScreenTestTags.SCREEN),
-      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+      snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
       topBar = {
         Column {
           OOTDTopBar(
@@ -150,6 +156,7 @@ private fun FeedScaffold(
                 Modifier.fillMaxSize()
                     .padding(top = paddingValues.calculateTopPadding())
                     .background(Background)) {
+
               // Renders the list of posts when user has posted.
               FeedList(
                   isBlurred = !hasPostedToday,
@@ -161,10 +168,12 @@ private fun FeedScaffold(
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
                   onLikeClick = onLikeClick,
-                  onProfileClick = onProfileClick)
+                  onProfileClick = onProfileClick,
+                  isRefreshing = isRefreshing,
+                  onRefresh = onRefresh)
 
-              // Loading overlay
-              if (isLoading) {
+              // Loading overlay and hides it while refreshing
+              if (isLoading && !isRefreshing) {
                 AnimatedVisibility(visible = true) {
                   LoadingScreen(
                       modifier = Modifier.testTag(FeedScreenTestTags.LOADING_OVERLAY),
@@ -196,26 +205,34 @@ fun FeedList(
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
     onLocationClick: (Location) -> Unit = {},
-    onProfileClick: (String) -> Unit = {}
+    onProfileClick: (String) -> Unit = {},
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {}
 ) {
-  LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
-    items(posts) { post ->
-      val isLiked = likes[post.postUID] ?: false
-      val count = likeCounts[post.postUID] ?: 0
+  PullToRefresh(
+      modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.REFRESHER),
+      content = {
+        LazyColumn(modifier = Modifier.fillMaxSize().testTag(FeedScreenTestTags.FEED_LIST)) {
+          items(posts) { post ->
+            val isLiked = likes[post.postUID] ?: false
+            val count = likeCounts[post.postUID] ?: 0
 
-      OutfitPostCard(
-          post = post,
-          isBlurred = isBlurred,
-          isLiked = isLiked,
-          likeCount = count,
-          onLikeClick = { onLikeClick(post) },
-          onSeeFitClick = { onSeeFitClick(post) },
-          onCardClick = { onPostClick(post.postUID) },
-          onBlurredClick = onBlurredClick,
-          onLocationClick = onLocationClick,
-          onProfileClick = onProfileClick)
-    }
-  }
+            OutfitPostCard(
+                post = post,
+                isBlurred = isBlurred,
+                isLiked = isLiked,
+                likeCount = count,
+                onLikeClick = { onLikeClick(post) },
+                onSeeFitClick = { onSeeFitClick(post) },
+                onCardClick = { onPostClick(post.postUID) },
+                onBlurredClick = onBlurredClick,
+                onLocationClick = onLocationClick,
+                onProfileClick = onProfileClick)
+          }
+        }
+      },
+      onRefresh = onRefresh,
+      isRefreshing = isRefreshing)
 }
 
 @Preview(showBackground = true)

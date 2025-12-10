@@ -14,7 +14,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import kotlin.time.Clock.System.now
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -111,13 +110,12 @@ class FeedViewModelUnitTest {
   @Test
   fun `refreshFeedFromFirestore calls getRecentFeedForUids when isPublicFeed is false`() = runTest {
     // Setup
-    val friendPosts = listOf(OutfitPost(postUID = "friend1"))
     val account = Account(uid = "me", friendUids = listOf("friend1"))
 
     // Set current account
     viewModel.setCurrentAccount(account)
 
-    viewModel.refreshFeedFromFirestore()
+    viewModel.doRefreshFeed()
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Should NOT call getPublicFeed
@@ -149,7 +147,7 @@ class FeedViewModelUnitTest {
     coEvery { likesRepository.getLikeCount("post2") } returns 0
 
     // Initial refresh to populate feed
-    viewModel.refreshFeedFromFirestore()
+    viewModel.doRefreshFeed()
     testDispatcher.scheduler.advanceUntilIdle()
 
     // Verify initial state
@@ -180,5 +178,48 @@ class FeedViewModelUnitTest {
     assertEquals(1, state.feedPosts.find { it.postUID == "post1" }?.comments?.size)
 
     coVerify { postRepo.getPostById("post1") }
+  }
+
+  @Test
+  fun `onPullToRefreshTrigger sets isRefreshing state and triggers feed refresh`() = runTest {
+    // Setup
+    val account = Account(uid = "testUser", friendUids = listOf("friend1"))
+    val posts = listOf(OutfitPost(postUID = "post1", ownerId = "friend1"))
+
+    viewModel.setCurrentAccount(account)
+
+    // Mock repository calls
+    coEvery { feedRepository.getCachedFriendFeed(any()) } returns emptyList()
+    coEvery { feedRepository.getRecentFeedForUids(any()) } coAnswers
+        {
+          kotlinx.coroutines.delay(500) // Simulate network delay
+          posts
+        }
+
+    coEvery { feedRepository.hasPostedToday(any()) } returns false
+    coEvery { likesRepository.isPostLikedByUser(any(), any()) } returns false
+    coEvery { likesRepository.getLikeCount(any()) } returns 0
+
+    // Initially isRefreshing should be false
+    assertFalse(viewModel.isRefreshing.value)
+
+    // Trigger pull to refresh
+    viewModel.onPullToRefreshTrigger()
+
+    // Advance time slightly to let the coroutine start
+    testDispatcher.scheduler.advanceTimeBy(100)
+
+    // isRefreshing should be true during the refresh
+    assertTrue(viewModel.isRefreshing.value)
+
+    // Advance time to complete the delay and refresh
+    testDispatcher.scheduler.advanceTimeBy(2100)
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // isRefreshing should be false after refresh completes
+    assertFalse(viewModel.isRefreshing.value)
+
+    // Verify that feed was refreshed
+    coVerify { feedRepository.getRecentFeedForUids(any()) }
   }
 }

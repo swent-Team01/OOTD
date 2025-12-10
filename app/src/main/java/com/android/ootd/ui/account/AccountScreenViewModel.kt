@@ -14,6 +14,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,8 +30,12 @@ import kotlinx.coroutines.launch
  * @property profilePicture The URL or path to the user's profile picture.
  * @property posts The list of outfit posts created by the user.
  * @property friends The list of friend user IDs.
+ * @property friendDetails The list of friend user details.
  * @property isLoading Indicates whether data is currently being loaded.
  * @property errorMsg An optional error message to display in the UI.
+ * @property starredItems The list of items marked as starred by the user.
+ * @property starredItemIds The set of item IDs marked as starred by the user.
+ * @property selectedTab The currently selected tab in the UI.
  */
 @Keep
 data class AccountPageViewState(
@@ -38,6 +43,7 @@ data class AccountPageViewState(
     val profilePicture: String = "",
     val posts: List<OutfitPost> = emptyList(),
     val friends: List<String> = emptyList(),
+    val friendDetails: List<User> = emptyList(),
     val isLoading: Boolean = false,
     val errorMsg: String? = null,
     val starredItems: List<Item> = emptyList(),
@@ -97,13 +103,18 @@ class AccountPageViewModel(
         val starredItems =
             if (starredIds.isEmpty()) emptyList()
             else itemsRepository.getItemsByIdsAcrossOwners(starredIds)
-        Log.d(currentLog, "Refreshed starred items: ${starredIds.joinToString()}")
+        val friendDetails =
+            account.friendUids.mapNotNull { friendId ->
+              runCatching { userRepository.getUser(friendId) }.getOrNull()
+            }
+        Log.i(currentLog, "Refreshed starred items: ${starredIds.joinToString()}")
         _uiState.update {
           it.copy(
               username = user.username,
               profilePicture = user.profilePicture,
               posts = usersPosts,
               friends = account.friendUids,
+              friendDetails = friendDetails,
               starredItems = starredItems,
               starredItemIds = starredIds.toSet(),
               isLoading = false)
