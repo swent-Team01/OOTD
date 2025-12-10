@@ -132,13 +132,6 @@ class AccountPageViewModel(
           throw NetworkErrorException("User is offline and has no cached data !")
         } // Other cases covered by loading the data
 
-        // Display cached data immediately
-        Log.d(
-            currentLog,
-            "Loaded cached data, starred items: ${
-                  cachedStarredIds.joinToString().ifEmpty { "none" }
-              }")
-
         // Fetch fresh data in background
         viewModelScope.launch {
           try {
