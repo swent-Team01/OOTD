@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -55,18 +54,6 @@ fun UserSearchScreen(
             expanded = uiState.suggestionsExpanded)
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        if (uiState.selectedUser != null) {
-          UserProfileCard(
-              modifier = Modifier.fillMaxWidth().weight(1f),
-              selectedUser = uiState.selectedUser,
-              isSelectedUserFollowed = uiState.isSelectedUserFollowed,
-              hasRequestPending = uiState.hasRequestPending,
-              errorMessage = uiState.errorMessage,
-              onFollowClick = { viewModel.pressFollowButton() },
-              onUserClick = { onUserClick(uiState.selectedUser!!.uid) },
-              onErrorDismiss = { viewModel.clearError() })
-        }
       }
 }
 
