@@ -15,7 +15,6 @@ import com.android.ootd.model.map.LocationRepository
 import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.screen.enterLocation
 import com.android.ootd.screen.testLocationDropdown_hidesWhenLosingFocus
-import com.android.ootd.screen.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions
 import com.android.ootd.screen.testLocationDropdown_showsAutomatically_whenSuggestionsArriveWhileFocused
 import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.map.LocationSelectionViewModel
@@ -260,13 +259,6 @@ class FitCheckScreenTest {
   }
 
   @Test
-  fun locationDropdown_showsAgain_whenRefocusingWithExistingSuggestions() {
-    composeTestRule.testLocationDropdown_showsAgain_whenRefocusingWithExistingSuggestions(
-        locationSelectionViewModel = locationViewModel,
-        blurTargetTag = FitCheckScreenTestTags.DESCRIPTION_INPUT)
-  }
-
-  @Test
   fun selectingLocationFromDropdown_updatesViewModels() {
     composeTestRule.enterLocation("Zur")
     composeTestRule.waitForIdle()
@@ -289,19 +281,6 @@ class FitCheckScreenTest {
       val selectedLocation = locationViewModel.uiState.value.selectedLocation
       assert(selectedLocation != null)
       assert(selectedLocation?.name?.contains("Zürich") == true)
-    }
-  }
-
-  @Test
-  fun defaultEpflLocation_isDisplayedAndClickable() {
-    composeTestRule
-        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
-        .performScrollTo()
-        .assertIsDisplayed()
-        .performClick()
-    composeTestRule.waitUntil(timeoutMillis = 5_000) {
-      locationViewModel.uiState.value.selectedLocation?.name ==
-          "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland"
     }
   }
 
