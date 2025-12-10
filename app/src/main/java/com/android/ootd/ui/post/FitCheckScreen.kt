@@ -55,6 +55,7 @@ object FitCheckScreenTestTags {
   const val CHOOSE_GALLERY_BUTTON = "fitCheckGalleryButton"
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
+  const val MISSING_PHOTO_WARNING = "fitCheckMissingPhotoWarning"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
   const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
@@ -332,7 +333,9 @@ private fun FitCheckScreenContent(
                     text = "Please add a photo before continuing.",
                     color = MaterialTheme.colorScheme.error,
                     style = Typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 8.dp))
+                    modifier =
+                        Modifier.padding(horizontal = 8.dp)
+                            .testTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING))
               }
 
               // Description field with counter

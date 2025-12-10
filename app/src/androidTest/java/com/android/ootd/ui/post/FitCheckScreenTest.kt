@@ -157,6 +157,21 @@ class FitCheckScreenTest {
     }
   }
 
+  @Test
+  fun missingPhotoWarning_showsAndHidesAfterDelay() {
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertDoesNotExist()
+
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertIsDisplayed()
+
+    composeTestRule.mainClock.advanceTimeBy(5_500)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertDoesNotExist()
+  }
+
   // ========== Location Tests ==========
 
   @Test

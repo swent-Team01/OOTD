@@ -91,6 +91,7 @@ object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_CTA = "emptyItemCta"
   const val ITEM_LIST = "itemList"
   const val POST_BUTTON = "postButton"
+  const val MISSING_ITEMS_WARNING = "missingItemsWarning"
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
@@ -316,7 +317,9 @@ fun PreviewItemScreenContent(
         Text(
             text = "Please add at least one item before posting your outfit.",
             style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.error),
-            modifier = Modifier.padding(bottom = 140.dp))
+            modifier =
+                Modifier.padding(bottom = 140.dp)
+                    .testTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING))
       }
     }
 

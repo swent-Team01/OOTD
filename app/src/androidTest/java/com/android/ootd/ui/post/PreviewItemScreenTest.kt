@@ -175,6 +175,22 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun missingItemsWarning_showsAndAutoHides() {
+    setContent()
+    n(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertDoesNotExist()
+
+    n(PreviewItemScreenTestTags.POST_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    n(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertIsDisplayed()
+
+    composeTestRule.mainClock.advanceTimeBy(5_500)
+    composeTestRule.waitForIdle()
+
+    n(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertDoesNotExist()
+  }
+
+  @Test
   fun emptyStateCta_opensAddItemDialog() {
     setContent()
     n(PreviewItemScreenTestTags.ADD_ITEM_DIALOG).assertDoesNotExist()
