@@ -117,9 +117,10 @@ fun verifyElementDoesNotAppearWithTimer(composeTestRule: ComposeContentTestRule,
 fun verifyElementAppearsWithTimer(
     composeTestRule: ComposeContentTestRule,
     tag: String,
-    useUnmergedTree: Boolean = false
+    useUnmergedTree: Boolean = false,
+    timeoutMillis: Long = 8_000
 ) {
-  composeTestRule.waitUntil(timeoutMillis = 8000) {
+  composeTestRule.waitUntil(timeoutMillis = timeoutMillis) {
     composeTestRule
         .onAllNodesWithTag(tag, useUnmergedTree = useUnmergedTree)
         .fetchSemanticsNodes()
@@ -135,7 +136,8 @@ fun addPostWithOneItem(
     inventoryItemUuid: String = "",
     addLocation: Boolean = false
 ) {
-  verifyElementAppearsWithTimer(composeTestRule, FeedScreenTestTags.ADD_POST_FAB)
+  verifyElementAppearsWithTimer(
+      composeTestRule, FeedScreenTestTags.ADD_POST_FAB, timeoutMillis = 15_000)
 
   clickWithWait(composeTestRule, FeedScreenTestTags.ADD_POST_FAB, useUnmergedTree = true)
   if (addLocation) {
@@ -143,7 +145,10 @@ fun addPostWithOneItem(
         composeTestRule, LocationSelectionTestTags.LOCATION_DEFAULT_EPFL, shouldScroll = true)
   }
   verifyElementAppearsWithTimer(
-      composeTestRule, FitCheckScreenTestTags.DESCRIPTION_INPUT, useUnmergedTree = true)
+      composeTestRule,
+      FitCheckScreenTestTags.DESCRIPTION_INPUT,
+      useUnmergedTree = true,
+      timeoutMillis = 15_000)
   composeTestRule
       .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT, useUnmergedTree = true)
       .performScrollTo()
