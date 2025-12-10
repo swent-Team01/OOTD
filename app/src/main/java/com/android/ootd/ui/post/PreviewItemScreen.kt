@@ -84,6 +84,7 @@ import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CenteredLoadingState
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
+import kotlinx.coroutines.delay
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
@@ -203,6 +204,16 @@ fun PreviewItemScreenContent(
   val itemsList = ui.items
   val hasItems = itemsList.isNotEmpty()
   var showAddItemDialog by remember { mutableStateOf(false) }
+  var showMissingItemsWarning by remember { mutableStateOf(false) }
+
+  LaunchedEffect(hasItems) { if (hasItems) showMissingItemsWarning = false }
+
+  LaunchedEffect(showMissingItemsWarning) {
+    if (showMissingItemsWarning) {
+      delay(5_000)
+      showMissingItemsWarning = false
+    }
+  }
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
@@ -255,8 +266,7 @@ fun PreviewItemScreenContent(
                         }
                   } else {
                     OutlinedButton(
-                        onClick = {},
-                        enabled = false,
+                        onClick = { showMissingItemsWarning = true },
                         modifier =
                             Modifier.height(47.dp)
                                 .width(140.dp)
@@ -300,6 +310,15 @@ fun PreviewItemScreenContent(
         onAddItem = onAddItem,
         onSelectFromInventory = onSelectFromInventory,
         onDismiss = { showAddItemDialog = false })
+
+    if (showMissingItemsWarning) {
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Text(
+            text = "Please add at least one item before posting your outfit.",
+            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.error),
+            modifier = Modifier.padding(bottom = 140.dp))
+      }
+    }
 
     if (ui.isLoading && !enablePreview) {
       CenteredLoadingState(message = "Publishing your outfit...", textColor = Tertiary)

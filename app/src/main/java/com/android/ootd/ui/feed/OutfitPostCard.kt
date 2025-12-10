@@ -49,7 +49,6 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
-
   const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"

@@ -2,7 +2,6 @@ package com.android.ootd.ui.post
 
 import android.Manifest
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -42,6 +41,7 @@ import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
+import kotlinx.coroutines.delay
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -243,7 +243,16 @@ private fun FitCheckScreenContent(
 ) {
   var showDialog by remember { mutableStateOf(false) }
   val hasPhoto = uiState.image != Uri.EMPTY
-  val context = LocalContext.current
+  var showMissingPhotoWarning by remember { mutableStateOf(false) }
+
+  LaunchedEffect(hasPhoto) { if (hasPhoto) showMissingPhotoWarning = false }
+
+  LaunchedEffect(showMissingPhotoWarning) {
+    if (showMissingPhotoWarning) {
+      delay(5_000)
+      showMissingPhotoWarning = false
+    }
+  }
 
   val onAddItemsClick: () -> Unit = {
     if (overridePhoto || uiState.isPhotoValid) {
@@ -255,8 +264,7 @@ private fun FitCheckScreenContent(
       onNextClick(uiState.image.toString(), uiState.description, finalLocation)
     } else {
       onDescriptionChange(uiState.description) // no-op; real screen sets error
-      Toast.makeText(context, "You must add a picture before adding items !", Toast.LENGTH_SHORT)
-          .show()
+      showMissingPhotoWarning = true
     }
   }
 
@@ -266,8 +274,8 @@ private fun FitCheckScreenContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically) {
-              val containerColor = if (hasPhoto) Primary else Color.White
-              val contentColor = if (hasPhoto) Color.White else Tertiary
+              val containerColor = if (hasPhoto) Primary else Tertiary
+              val contentColor = if (hasPhoto) Color.White else Color.White
 
               ExtendedFloatingActionButton(
                   onClick = onAddItemsClick,
@@ -317,6 +325,14 @@ private fun FitCheckScreenContent(
                     style = Typography.bodyMedium,
                     modifier =
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+              }
+
+              if (showMissingPhotoWarning) {
+                Text(
+                    text = "Please add a photo before continuing.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = Typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 8.dp))
               }
 
               // Description field with counter
