@@ -328,6 +328,7 @@ private fun FitCheckScreenContent(
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
               }
 
+              // Alert message in case user has not added a picture
               if (showMissingPhotoWarning) {
                 Text(
                     text = "Please add a photo before continuing.",
