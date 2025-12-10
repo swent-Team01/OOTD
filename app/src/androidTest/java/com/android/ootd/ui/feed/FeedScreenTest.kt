@@ -246,6 +246,34 @@ class FeedScreenTest : FirestoreTest() {
     composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN).assertExists()
   }
 
+  @Test
+  fun feedScreen_pullToRefresh_triggersRefreshCallback() {
+    var refreshCallbackInvoked = false
+    val posts = listOf(OutfitPost("1", "user1", "https://example.com/1.jpg"))
+
+    composeTestRule.setContent {
+      FeedList(
+          posts = posts,
+          isBlurred = false,
+          onPostClick = {},
+          isRefreshing = false,
+          onRefresh = { refreshCallbackInvoked = true })
+    }
+
+    // Verify the refresher component exists
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.REFRESHER).assertExists()
+
+    // Perform swipe down gesture to trigger refresh
+    composeTestRule.onNodeWithTag(FeedScreenTestTags.REFRESHER).performTouchInput {
+      swipeDown(startY = top, endY = bottom)
+    }
+
+    composeTestRule.waitForIdle()
+
+    // Verify the refresh callback was invoked
+    assertTrue(refreshCallbackInvoked)
+  }
+
   // ========================================================================
   // Repository Tests
   // ========================================================================
