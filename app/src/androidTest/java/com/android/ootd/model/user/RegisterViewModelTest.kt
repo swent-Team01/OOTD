@@ -285,10 +285,18 @@ class RegisterViewModelTest {
     register(username, "01/01/2003")
     assertFalse(viewModel.uiState.value.isLoading)
     assertFalse(viewModel.uiState.value.registered)
+    assertTrue(viewModel.uiState.value.isPrivate) // Default is private
+
+    // Toggle privacy and verify it switches
+    viewModel.setAccountPrivacy()
+    assertFalse(viewModel.uiState.value.isPrivate)
+    viewModel.setAccountPrivacy()
+    assertTrue(viewModel.uiState.value.isPrivate)
+
     assertNotNull(viewModel.uiState.value.errorMsg)
 
     // Both operations must succeed for registered=true
-    coEvery { accountRepository.createAccount(any(), any(), any(), any()) } returns Unit
+    coEvery { accountRepository.createAccount(any(), any(), any(), any(), any()) } returns Unit
     register("bothSucceed", "01/01/2003")
     assertTrue(viewModel.uiState.value.registered)
     assertNull(viewModel.uiState.value.errorMsg)
