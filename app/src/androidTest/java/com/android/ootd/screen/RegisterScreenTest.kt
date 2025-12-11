@@ -230,6 +230,7 @@ class RegisterScreenTest {
     composeTestRule.enterDate("10102020")
     composeTestRule.waitForIdle()
 
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.PRIVACY_TOGGLE).performScrollTo()
     composeTestRule.onNodeWithText("Private").assertIsDisplayed()
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.PRIVACY_TOGGLE).performClick()
     composeTestRule.onNodeWithText("Public").assertIsDisplayed()

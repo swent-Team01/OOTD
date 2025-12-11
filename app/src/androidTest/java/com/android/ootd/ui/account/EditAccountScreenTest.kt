@@ -12,10 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isDisplayed
-import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -316,8 +313,7 @@ class EditAccountScreenTest {
       composeTestRule.onAllNodesWithText("Public").fetchSemanticsNodes().isNotEmpty()
     }
 
-    val switchMatcher = isToggleable() and hasAnyAncestor(hasTestTag(UiTestTags.TAG_PRIVACY_TOGGLE))
-    composeTestRule.onNode(switchMatcher).performClick()
+    selectTestTag(UiTestTags.TAG_PRIVACY_TOGGLE).performClick()
     composeTestRule.waitForIdle()
 
     // Wait for the text to update to Private
