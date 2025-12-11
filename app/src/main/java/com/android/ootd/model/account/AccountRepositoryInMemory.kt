@@ -66,7 +66,8 @@ class AccountRepositoryInMemory : AccountRepository {
       user: User,
       userEmail: String,
       dateOfBirth: String,
-      location: Location
+      location: Location,
+      isPrivate: Boolean
   ) {
     if (accounts.values.any { it.username == user.username && it.username.isNotBlank() }) {
       throw TakenUserException("Username already in use")
@@ -80,7 +81,8 @@ class AccountRepositoryInMemory : AccountRepository {
             username = user.username,
             birthday = dateOfBirth,
             profilePicture = user.profilePicture,
-            location = location)
+            location = location,
+            isPrivate = isPrivate)
     addAccount(newAccount)
   }
 

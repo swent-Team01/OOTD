@@ -82,6 +82,13 @@ class RegisterScreenTest {
     composeTestRule.onNodeWithTag(RegisterScreenTestTags.WELCOME_TITLE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
 
+    // Verify privacy toggle is displayed and works
+    composeTestRule
+        .onNodeWithTag(RegisterScreenTestTags.PRIVACY_TOGGLE)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule.onNodeWithText("Private").assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(RegisterScreenTestTags.ERROR_MESSAGE, useUnmergedTree = true)
         .assertIsNotDisplayed()
@@ -222,6 +229,11 @@ class RegisterScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.enterDate("10102020")
     composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.PRIVACY_TOGGLE).performScrollTo()
+    composeTestRule.onNodeWithText("Private").assertIsDisplayed()
+    composeTestRule.onNodeWithTag(RegisterScreenTestTags.PRIVACY_TOGGLE).performClick()
+    composeTestRule.onNodeWithText("Public").assertIsDisplayed()
 
     // Set a valid location
     composeTestRule.runOnUiThread {
