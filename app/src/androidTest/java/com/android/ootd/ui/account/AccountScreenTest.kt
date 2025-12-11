@@ -86,6 +86,9 @@ class AccountScreenTest {
 
   @Before
   fun setup() {
+    // Clear static cache to ensure clean state for each test
+    AccountPageViewModel.clearStaticCache()
+
     mockAccountService = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockUserRepository = mockk(relaxed = true)

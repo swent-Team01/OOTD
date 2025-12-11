@@ -3,6 +3,7 @@ package com.android.ootd.ui.account
 import android.accounts.NetworkErrorException
 import android.util.Log
 import androidx.annotation.Keep
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.account.Account
@@ -96,6 +97,12 @@ class AccountPageViewModel(
 
     private var staticCache: ViewModelCache? = null
     private var staticCacheUserId: String? = null
+
+    @VisibleForTesting
+    fun clearStaticCache() {
+      staticCache = null
+      staticCacheUserId = null
+    }
   }
 
   private var cachedAccount: Account = Account()
