@@ -109,110 +109,129 @@ class AccountPageViewModel(
     viewModelScope.launch {
       _uiState.update { it.copy(errorMsg = null) }
       try {
-        val loadedData = uiState.value.hasLoadedInitialData
-        if (!loadedData) _uiState.update { it.copy(isLoading = true) }
         val currentUserID = accountService.currentUserId
         val cachedUser = userRepository.getUser(currentUserID)
-        // Offline so load from cache
-        if (loadedData && cachedUser.uid.isBlank()) {
-          // Cached account is not empty
-          val cachedStarredItems =
-              if (cachedStarredIds.isEmpty()) {
-                emptyList()
-              } else {
-                itemsRepository.getItemsByIdsAcrossOwners(cachedStarredIds)
-              }
-          _uiState.update {
-            it.copy(
-                username = cachedAccount.username,
-                profilePicture = cachedAccount.profilePicture,
-                posts = cachedPosts,
-                friends = cachedAccount.friendUids,
-                friendDetails = cachedFriendDetails,
-                starredItems = cachedStarredItems,
-                starredItemIds = cachedStarredIds.toSet(),
-                isLoading = false)
-          }
-        } else if (!loadedData && cachedUser.uid.isBlank()) {
-          throw NetworkErrorException("User is offline and has no cached data !")
-        } // Other cases covered by loading the data
-
-        // Fetch fresh data in background
-        viewModelScope.launch {
-          try {
-            coroutineScope {
-              val accountDeferred = async {
-                withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-                  accountRepository.getAccount(currentUserID)
-                }
-              }
-              val postsDeferred = async {
-                withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-                  feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
-                }
-              }
-              val starredIdsDeferred = async {
-                withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-                  accountRepository.refreshStarredItems(currentUserID)
-                }
-              }
-
-              val freshAccount = accountDeferred.await()
-              val freshPosts = postsDeferred.await()
-              val freshStarredIds = starredIdsDeferred.await()
-              cachedAccount = freshAccount.takeIf { it != null } ?: cachedAccount
-              cachedPosts = freshPosts.takeIf { it != null } ?: cachedPosts
-              cachedStarredIds = freshStarredIds.takeIf { it != null } ?: cachedStarredIds
-              cachedFriendDetails =
-                  cachedAccount.friendUids.mapNotNull { friendId ->
-                    runCatching { userRepository.getUser(friendId) }.getOrNull()
-                  }
-
-              // Fetch starred items only if we have IDs
-              val freshStarredItems =
-                  if (freshStarredIds.isNullOrEmpty()) {
-                    emptyList()
-                  } else {
-                    withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
-                      itemsRepository.getItemsByIdsAcrossOwners(freshStarredIds)
-                    }
-                  }
-
-              if (freshAccount != null && cachedAccount.uid.isNotBlank()) {
-                Log.d(
-                    currentLog,
-                    "Loaded fresh data, starred items: ${freshStarredIds?.joinToString() ?: "none"}")
-                _uiState.update {
-                  it.copy(
-                      username = cachedAccount.username,
-                      profilePicture = cachedAccount.profilePicture,
-                      posts = freshPosts ?: cachedPosts,
-                      friends = cachedAccount.friendUids,
-                      friendDetails = cachedFriendDetails,
-                      starredItems = freshStarredItems ?: it.starredItems,
-                      starredItemIds = freshStarredIds?.toSet() ?: it.starredItemIds,
-                      isLoading = false,
-                      hasLoadedInitialData = true)
-                }
-              }
-            }
-          } catch (e: Exception) {
-            // Silently fail background refresh -> user already sees cached data
-            if (_uiState.value.username.isEmpty()) {
-              Log.e(currentLog, "Error fetching fresh user data: ${e.message}")
-              _uiState.update {
-                it.copy(
-                    errorMsg = e.localizedMessage ?: "Failed to load account data",
-                    isLoading = false)
-              }
-            }
-          }
-        }
+        handleCachedData(cachedUser)
+        fetchFreshDataInBackground(currentUserID)
       } catch (e: Exception) {
         Log.e(currentLog, "Error fetching cached user data: ${e.message}")
         _uiState.update {
           it.copy(errorMsg = e.localizedMessage ?: "Failed to load account data", isLoading = false)
         }
+      }
+    }
+  }
+
+  private suspend fun handleCachedData(cachedUser: User) {
+    val hasLoadedInitial = _uiState.value.hasLoadedInitialData
+    val isOffline = cachedUser.uid.isBlank()
+
+    when {
+      hasLoadedInitial && isOffline -> updateStateFromCache()
+      !hasLoadedInitial && isOffline ->
+          throw NetworkErrorException("User is offline and has no cached data !")
+    }
+  }
+
+  private suspend fun updateStateFromCache() {
+    val cachedStarredItems =
+        if (cachedStarredIds.isEmpty()) emptyList()
+        else itemsRepository.getItemsByIdsAcrossOwners(cachedStarredIds)
+
+    _uiState.update {
+      it.copy(
+          username = cachedAccount.username,
+          profilePicture = cachedAccount.profilePicture,
+          posts = cachedPosts,
+          friends = cachedAccount.friendUids,
+          friendDetails = cachedFriendDetails,
+          starredItems = cachedStarredItems,
+          starredItemIds = cachedStarredIds.toSet(),
+          isLoading = false)
+    }
+  }
+
+  private fun fetchFreshDataInBackground(currentUserID: String) {
+    viewModelScope.launch {
+      try {
+        val freshData = fetchFreshData(currentUserID)
+        updateCachedData(freshData)
+
+        val freshStarredItems = fetchStarredItems(freshData.starredIds)
+        updateStateWithFreshData(freshData, freshStarredItems)
+      } catch (e: Exception) {
+        handleBackgroundFetchError(e)
+      }
+    }
+  }
+
+  private data class FreshData(
+      val account: Account?,
+      val posts: List<OutfitPost>?,
+      val starredIds: List<String>?
+  )
+
+  private suspend fun fetchFreshData(currentUserID: String): FreshData = coroutineScope {
+    val accountDeferred = async {
+      withTimeoutOrNull(NETWORK_TIMEOUT_MS) { accountRepository.getAccount(currentUserID) }
+    }
+    val postsDeferred = async {
+      withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+        feedRepository.getFeedForUids(listOf(currentUserID)).sortedBy { it.timestamp }
+      }
+    }
+    val starredIdsDeferred = async {
+      withTimeoutOrNull(NETWORK_TIMEOUT_MS) { accountRepository.refreshStarredItems(currentUserID) }
+    }
+
+    FreshData(
+        account = accountDeferred.await(),
+        posts = postsDeferred.await(),
+        starredIds = starredIdsDeferred.await())
+  }
+
+  private suspend fun updateCachedData(freshData: FreshData) {
+    cachedAccount = freshData.account ?: cachedAccount
+    cachedPosts = freshData.posts ?: cachedPosts
+    cachedStarredIds = freshData.starredIds ?: cachedStarredIds
+    cachedFriendDetails =
+        cachedAccount.friendUids.mapNotNull { friendId ->
+          runCatching { userRepository.getUser(friendId) }.getOrNull()
+        }
+  }
+
+  private suspend fun fetchStarredItems(starredIds: List<String>?): List<Item>? {
+    if (starredIds.isNullOrEmpty()) return emptyList()
+    return withTimeoutOrNull(NETWORK_TIMEOUT_MS) {
+      itemsRepository.getItemsByIdsAcrossOwners(starredIds)
+    }
+  }
+
+  private fun updateStateWithFreshData(freshData: FreshData, freshStarredItems: List<Item>?) {
+    if (freshData.account == null || cachedAccount.uid.isBlank()) return
+
+    Log.d(
+        currentLog,
+        "Loaded fresh data, starred items: ${freshData.starredIds?.joinToString() ?: "none"}")
+    _uiState.update {
+      it.copy(
+          username = cachedAccount.username,
+          profilePicture = cachedAccount.profilePicture,
+          posts = freshData.posts ?: cachedPosts,
+          friends = cachedAccount.friendUids,
+          friendDetails = cachedFriendDetails,
+          starredItems = freshStarredItems ?: it.starredItems,
+          starredItemIds = freshData.starredIds?.toSet() ?: it.starredItemIds,
+          isLoading = false,
+          hasLoadedInitialData = true)
+    }
+  }
+
+  private fun handleBackgroundFetchError(e: Exception) {
+    if (_uiState.value.username.isEmpty()) {
+      Log.e(currentLog, "Error fetching fresh user data: ${e.message}")
+      _uiState.update {
+        it.copy(errorMsg = e.localizedMessage ?: "Failed to load account data", isLoading = false)
       }
     }
   }
