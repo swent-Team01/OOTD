@@ -23,18 +23,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -73,6 +68,7 @@ import com.android.ootd.utils.composables.ActionIconButton
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
+import com.android.ootd.utils.composables.PrivacyToggleRow
 import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 
 // Test tag constants for UI tests
@@ -283,7 +279,7 @@ private fun AccountScreenContent(
                     showPrivacyHelp = uiState.showPrivacyHelp,
                     onHelpClick = onHelpClick,
                     onHelpDismiss = onHelpDismiss,
-                    modifier = Modifier.fillMaxWidth().testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
+                    modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_TOGGLE))
               }
 
               Spacer(modifier = Modifier.height(24.dp))
@@ -558,73 +554,6 @@ private fun LocationField(
       isError = hasLocationError,
       onFocusChanged = viewModel::onLocationFieldFocusChanged,
       modifier = Modifier.testTag(RegisterScreenTestTags.INPUT_REGISTER_LOCATION))
-}
-
-@Composable
-private fun PrivacyToggleRow(
-    isPrivate: Boolean,
-    onToggle: () -> Unit,
-    showPrivacyHelp: Boolean,
-    onHelpClick: () -> Unit,
-    onHelpDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-  val colors = LightColorScheme
-  val typography = Typography
-
-  Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(
-          text = "Privacy",
-          style = typography.titleMedium.copy(fontFamily = Bodoni),
-          color = colors.primary,
-          modifier = Modifier.padding(start = 4.dp))
-      Spacer(modifier = Modifier.width(2.dp))
-      Box {
-        ActionIconButton(
-            onClick = onHelpClick,
-            icon = Icons.Outlined.Info,
-            contentDescription = "Privacy help",
-            modifier = Modifier.size(32.dp).testTag(UiTestTags.TAG_PRIVACY_HELP_ICON),
-            size = 20.dp)
-        DropdownMenu(expanded = showPrivacyHelp, onDismissRequest = onHelpDismiss) {
-          DropdownMenuItem(
-              modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_MENU),
-              text = {
-                Text(
-                    "Private: Only your app uses your location to center the map" +
-                        " — it won’t be shown to others.\n" +
-                        "Public: Your location is displayed on the public map" +
-                        " so others can discover you.",
-                    style = typography.bodySmall.copy(fontFamily = Bodoni),
-                    color = colors.onSurface)
-              },
-              onClick = onHelpDismiss)
-        }
-      }
-    }
-
-    Spacer(modifier = Modifier.weight(1f))
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-          Text(
-              text = if (isPrivate) "Private" else "Public",
-              style = typography.bodyMedium.copy(fontFamily = Bodoni),
-              color = colors.onSurface)
-          Switch(
-              checked = isPrivate,
-              onCheckedChange = { onToggle() },
-              modifier = Modifier.height(32.dp),
-              colors =
-                  SwitchDefaults.colors(
-                      checkedThumbColor = colors.onPrimary,
-                      checkedTrackColor = colors.primary,
-                      uncheckedThumbColor = colors.onPrimary,
-                      uncheckedTrackColor = colors.outlineVariant))
-        }
-  }
 }
 
 /**
