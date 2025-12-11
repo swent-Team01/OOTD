@@ -5,6 +5,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.firestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import io.mockk.InternalPlatformDsl.toArray
 import okhttp3.MediaType.Companion.toMediaType
@@ -48,6 +49,9 @@ object FirebaseEmulator {
         Firebase.auth.useEmulator(HOST, AUTH_PORT)
         Firebase.firestore.useEmulator(HOST, FIRESTORE_PORT)
         FirebaseStorage.getInstance().useEmulator(HOST, STORAGE_PORT)
+
+        Firebase.firestore.firestoreSettings = firestoreSettings { isPersistenceEnabled = false }
+
         initialized = true
 
         assert(Firebase.firestore.firestoreSettings.host.contains(HOST)) {
@@ -88,6 +92,9 @@ object FirebaseEmulator {
           Firebase.auth.useEmulator(HOST, AUTH_PORT)
           Firebase.firestore.useEmulator(HOST, FIRESTORE_PORT)
           FirebaseStorage.getInstance().useEmulator(HOST, STORAGE_PORT)
+
+          Firebase.firestore.firestoreSettings = firestoreSettings { isPersistenceEnabled = false }
+
           initialized = true
 
           assert(Firebase.firestore.firestoreSettings.host.contains(HOST)) {

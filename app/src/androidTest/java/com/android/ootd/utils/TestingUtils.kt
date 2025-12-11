@@ -140,6 +140,16 @@ fun addPostWithOneItem(
   clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB, useUnmergedTree = true)
   verifyFeedScreenAppears(composeTestRule)
 
+  // Wait for any loading overlay to disappear before looking for FAB
+  // The FAB is only visible when isLoading = false and hasPostedToday = false
+  composeTestRule.waitUntil(timeoutMillis = 10_000) {
+    composeTestRule
+        .onAllNodesWithTag(FeedScreenTestTags.LOADING_OVERLAY)
+        .fetchSemanticsNodes()
+        .isEmpty()
+  }
+
+  // Wait for the FAB to appear - if it doesn't appear, the user has already posted today
   verifyElementAppearsWithTimer(
       composeTestRule, FeedScreenTestTags.ADD_POST_FAB, timeoutMillis = 15_000)
 
@@ -220,6 +230,8 @@ suspend fun addItemFromInventory(
     userId: String
 ) {
   val initialItemNumber = itemsRepository.getAllItems().count()
+  val initialAccountItems = accountRepository.getItemsList(userId).size
+
   clickWithWait(composeTestRule, NavigationTestTags.INVENTORY_TAB)
   clickWithWait(composeTestRule, InventoryScreenTestTags.ADD_ITEM_FAB)
   assert(userId != "")
@@ -237,11 +249,19 @@ suspend fun addItemFromInventory(
         .isNotEmpty()
   }
   clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
+
   val finalItemNumber = itemsRepository.getAllItems().count()
-  assert(finalItemNumber == initialItemNumber + 1)
+  assert(finalItemNumber == initialItemNumber + 1) {
+    "Expected ${initialItemNumber + 1} items but found $finalItemNumber"
+  }
+
   val accountItems = accountRepository.getItemsList(userId)
-  assert(accountItems.size == 1)
-  val itemUuid = itemsRepository.getAllItems()[0].itemUuid
+  assert(accountItems.size == initialAccountItems + 1) {
+    "Expected ${initialAccountItems + 1} items for user but found ${accountItems.size}"
+  }
+
+  // Get the most recently added item (the last one in the list)
+  val itemUuid = itemsRepository.getAllItems().last().itemUuid
 
   verifyElementAppearsWithTimer(
       composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${itemUuid}", useUnmergedTree = true)
