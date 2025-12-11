@@ -10,7 +10,9 @@ import com.android.ootd.ui.comments.CommentBottomSheet
 import com.android.ootd.ui.comments.CommentScreenTestTags
 import com.android.ootd.ui.comments.CommentUiState
 import com.android.ootd.ui.comments.CommentViewModel
+import com.android.ootd.ui.comments.formatTimestamp
 import io.mockk.*
+import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
 import org.junit.Rule
@@ -50,6 +52,32 @@ class CommentBottomSheetTest {
   }
 
   // -------- Header tests --------
+  @Test
+  fun formatTimestamp_allTimeRanges_returnCorrectFormats() {
+    val now = System.currentTimeMillis()
+
+    val testCases =
+        listOf(
+            30_000L to "Just now", // 30 seconds
+            59_000L to "Just now", // 59 seconds
+            60_000L to "1m ago", // 1 minute
+            5 * 60_000L to "5m ago", // 5 minutes
+            59 * 60_000L to "59m ago", // 59 minutes
+            60 * 60_000L to "1h ago", // 1 hour
+            3 * 60 * 60_000L to "3h ago", // 3 hours
+            23 * 60 * 60_000L to "23h ago", // 23 hours
+            24 * 60 * 60_000L to "1d ago", // 1 day
+            2 * 24 * 60 * 60_000L to "2d ago", // 2 days
+            7 * 24 * 60 * 60_000L to "7d ago", // 7 days
+            30 * 24 * 60 * 60_000L to "30d ago" // 30 days
+            )
+
+    testCases.forEach { (millisAgo, expected) ->
+      val timestamp = now - millisAgo
+      val result = formatTimestamp(timestamp)
+      assertEquals(expected, result)
+    }
+  }
 
   @Test
   fun commentBottomSheet_displaysHeader_withCorrectCommentCount() {
