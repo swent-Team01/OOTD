@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
  * @property userEmail The user's email address. Empty string by default.
  * @property localProfilePictureUri The local URI of the selected profile picture for preview. This
  *   stays local until registration. Null by default.
+ * @property isPrivate The accounts privacy upon creation (public or private)
  * @property errorMsg An optional error message to display to the user when validation or
  *   registration fails. Null when no error is present.
  * @property isLoading Indicates whether a registration operation is currently in progress. False by
@@ -52,6 +53,7 @@ data class RegisterUserViewModel(
     val dateOfBirth: String = "",
     val userEmail: String = "",
     val localProfilePictureUri: Uri? = null,
+    val isPrivate: Boolean = true,
     val errorMsg: String? = null,
     val isLoading: Boolean = false,
     val registered: Boolean = false,
@@ -146,6 +148,11 @@ class RegisterViewModel(
    */
   fun setDateOfBirth(date: String) {
     _uiState.value = _uiState.value.copy(dateOfBirth = date)
+  }
+
+  /** Toggles the account privacy setting in the UI state. */
+  fun setAccountPrivacy() {
+    _uiState.value = _uiState.value.copy(isPrivate = !_uiState.value.isPrivate)
   }
 
   /**
@@ -252,7 +259,8 @@ class RegisterViewModel(
                 profilePicture = uploadedPictureUrl)
 
         // Create account with the uploaded picture URL
-        accountRepository.createAccount(user, email, uiState.value.dateOfBirth, location)
+        accountRepository.createAccount(
+            user, email, uiState.value.dateOfBirth, location, uiState.value.isPrivate)
 
         // Create user with the uploaded picture URL
         userRepository.createUser(
