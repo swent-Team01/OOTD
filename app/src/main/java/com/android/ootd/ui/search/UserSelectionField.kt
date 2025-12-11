@@ -117,7 +117,11 @@ fun UserSuggestionItem(user: User, onClick: () -> Unit, modifier: Modifier = Mod
               .padding(horizontal = 16.dp, vertical = 12.dp),
       verticalAlignment = Alignment.CenterVertically) {
         // Profile image
-        ProfilePicture(size = 48.dp, profilePicture = user.profilePicture, username = user.username)
+        ProfilePicture(
+            size = 48.dp,
+            profilePicture = user.profilePicture,
+            username = user.username,
+            textStyle = Typography.bodyMedium)
 
         Spacer(modifier = Modifier.width(12.dp))
 
