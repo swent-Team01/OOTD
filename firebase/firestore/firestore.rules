@@ -105,6 +105,13 @@ service cloud.firestore {
            && isFriend(request.auth.uid, resource.data.ownerId)
            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']);
 
+    // Allows ANYONE to update ONLY the comments field in public posts
+    allow update: if isAuthed()
+           && request.auth.uid != resource.data.ownerId
+           && resource.data.isPublic == true
+           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']);
+
+
     allow delete: if isAuthed()
            && (resource == null || resource.data.ownerId == request.auth.uid);
 
@@ -182,12 +189,15 @@ service cloud.firestore {
     }
 
     // Public locations: readable by any authenticated user
-        match /publicLocations/{ownerId} {
-          allow read: if isAuthed();
+    match /publicLocations/{ownerId} {
+      allow read: if isAuthed();
 
-          // Only the account owner can write
-          allow write: if isAuthed() && request.auth.uid == ownerId;
-        }
+      // Only the account owner can write
+      allow write: if isAuthed() && request.auth.uid == ownerId;
+    }
+
+
+
 
     // Default deny for documents except items
     match /{document=**} {
