@@ -10,10 +10,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.outlined.Comment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -486,61 +484,34 @@ private fun ImageSourceDialog(
 ) {
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("Add Reaction Image", style = Typography.titleLarge, color = Primary) },
+      title = { Text("Add Reaction Image") },
       text = {
-        Column(
-            modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-              // Camera option
-              OutlinedButton(
-                  onClick = onCameraSelected,
-                  modifier =
-                      Modifier.fillMaxWidth().testTag(CommentScreenTestTags.CAMERA_OPTION_BUTTON),
-                  colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),
-                  shape = RoundedCornerShape(12.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text("Take Photo", style = Typography.bodyLarge)
-                  }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          TextButton(
+              onClick = onCameraSelected,
+              modifier =
+                  Modifier.fillMaxWidth().testTag(CommentScreenTestTags.CAMERA_OPTION_BUTTON)) {
+                Text("Take Photo")
+              }
 
-              // Gallery option
-              OutlinedButton(
-                  onClick = onGallerySelected,
-                  modifier =
-                      Modifier.fillMaxWidth().testTag(CommentScreenTestTags.GALLERY_OPTION_BUTTON),
-                  colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),
-                  shape = RoundedCornerShape(12.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text("Choose from Gallery", style = Typography.bodyLarge)
-                  }
-            }
+          TextButton(
+              onClick = onGallerySelected,
+              modifier =
+                  Modifier.fillMaxWidth().testTag(CommentScreenTestTags.GALLERY_OPTION_BUTTON)) {
+                Text("Choose from Gallery")
+              }
+        }
       },
-      confirmButton = {},
-      dismissButton = {
-        TextButton(
-            onClick = onDismiss,
-            modifier = Modifier.testTag(CommentScreenTestTags.CANCEL_IMAGE_SOURCE_BUTTON)) {
-              Text("Cancel", color = Primary)
-            }
-      },
-      containerColor = Secondary,
-      titleContentColor = Primary,
-      textContentColor = OnSecondaryContainer)
+      confirmButton = {})
 }
 
 /**
- * Formats a timestamp into a human-readable relative time string.
+ * Formats a timestamp into a relative time string for displaying on comment.
  *
  * @param timestamp The timestamp in milliseconds
  * @return Formatted string like "Just now", "5m ago", "2h ago", "3d ago"
  */
-private fun formatTimestamp(timestamp: Long): String {
+internal fun formatTimestamp(timestamp: Long): String {
   val now = System.currentTimeMillis()
   val diff = now - timestamp
 
