@@ -255,7 +255,7 @@ private fun CommentItem(
               profileSize = 40.dp,
               onProfileClick = onProfileClick,
               showUsername = true,
-              usernameStyle = Typography.titleSmall,
+              usernameStyle = Typography.titleMedium,
               usernameColor = Primary,
               modifier = Modifier.weight(1f),
               additionalContent = {
