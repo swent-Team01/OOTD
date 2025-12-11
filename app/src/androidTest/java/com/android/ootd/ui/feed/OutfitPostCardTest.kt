@@ -1,7 +1,5 @@
 package com.android.ootd.ui.feed
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.android.ootd.model.map.Location
@@ -33,23 +31,16 @@ class OutfitPostCardTest {
       onProfileClick: (String) -> Unit = {}
   ) =
       composeTestRule.setContent {
-        // Wrap in a scrollable column to handle content taller than the test screen
-        androidx.compose.foundation.layout.Column(
-            modifier =
-                androidx.compose.ui.Modifier.fillMaxSize()
-                    .verticalScroll(androidx.compose.foundation.rememberScrollState()) // Add this
-            ) {
-              OutfitPostCard(
-                  post = post,
-                  isBlurred = isBlurred,
-                  isLiked = isLiked,
-                  likeCount = likeCount,
-                  onLikeClick = onLikeClick,
-                  onSeeFitClick = onSeeFitClick,
-                  onCardClick = onCardClick,
-                  onLocationClick = onLocationClick,
-                  onProfileClick = onProfileClick)
-            }
+        OutfitPostCard(
+            post = post,
+            isBlurred = isBlurred,
+            isLiked = isLiked,
+            likeCount = likeCount,
+            onLikeClick = onLikeClick,
+            onSeeFitClick = onSeeFitClick,
+            onCardClick = onCardClick,
+            onLocationClick = onLocationClick,
+            onProfileClick = onProfileClick)
       }
 
   private fun n(tag: String) = composeTestRule.onNodeWithTag(tag, useUnmergedTree = true)
@@ -185,7 +176,7 @@ class OutfitPostCardTest {
     val postWithLongLocation = post(location = Location(46.5, 6.6, longLocationName))
     setCard(postWithLongLocation)
 
-    n(OutfitPostCardTestTags.POST_LOCATION).performScrollTo().assertIsDisplayed()
+    n(OutfitPostCardTestTags.POST_LOCATION).assertIsDisplayed()
     // Should be truncated to 47 chars + "..."
     val displayedText =
         n(OutfitPostCardTestTags.POST_LOCATION)

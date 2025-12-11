@@ -1,6 +1,5 @@
 package com.android.ootd.ui.feed
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,15 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
@@ -166,33 +164,24 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
  * @param post The outfit post data.
  * @param isBlurred Whether the post image should be blurred (locked).
  */
-@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier = Modifier) {
   Box(
       modifier =
           Modifier.fillMaxWidth()
+              .height(260.dp)
               .clip(RoundedCornerShape(12.dp))
-              .background(White)
+              .background(Color.White)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
-        val context = LocalContext.current
-
         AsyncImage(
-            model =
-                ImageRequest.Builder(context)
-                    .data(post.outfitURL.ifBlank { null })
-                    .crossfade(true)
-                    .allowHardware(false)
-                    .memoryCacheKey(post.postUID) // Ensures unique cache key per image ID
-                    .diskCacheKey(post.postUID) // Ensures unique disk cache key per image ID
-                    .build(),
+            model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
             modifier =
                 Modifier.fillMaxSize()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Crop,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
