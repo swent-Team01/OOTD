@@ -34,7 +34,7 @@ import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.composables.ProfilePicture
+import com.android.ootd.utils.composables.ClickableProfileRow
 import kotlinx.coroutines.launch
 
 object CommentScreenTestTags {
@@ -71,6 +71,7 @@ fun CommentBottomSheet(
     currentUserId: String,
     onDismiss: () -> Unit,
     onCommentAdded: () -> Unit,
+    onProfileClick: (String) -> Unit = {},
     viewModel: CommentViewModel = viewModel()
 ) {
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -111,7 +112,8 @@ fun CommentBottomSheet(
                           onCommentAdded()
                         }
                       }
-                    })
+                    },
+                    onProfileClick = onProfileClick)
               }
 
               HorizontalDivider(color = Tertiary.copy(alpha = 0.3f))
@@ -171,7 +173,8 @@ private fun CommentsList(
     comments: List<Comment>,
     currentUserId: String,
     viewModel: CommentViewModel,
-    onDeleteComment: (Comment) -> Unit
+    onDeleteComment: (Comment) -> Unit,
+    onProfileClick: (String) -> Unit = {}
 ) {
   if (comments.isEmpty()) {
     // Empty state
@@ -207,7 +210,8 @@ private fun CommentsList(
                 comment = comment,
                 currentUserId = currentUserId,
                 viewModel = viewModel,
-                onDeleteComment = { onDeleteComment(comment) })
+                onDeleteComment = { onDeleteComment(comment) },
+                onProfileClick = onProfileClick)
           }
         }
   }
@@ -226,7 +230,8 @@ private fun CommentItem(
     comment: Comment,
     currentUserId: String,
     viewModel: CommentViewModel,
-    onDeleteComment: () -> Unit
+    onDeleteComment: () -> Unit,
+    onProfileClick: (String) -> Unit = {}
 ) {
   // Fetch user data
   var userData by remember { mutableStateOf<com.android.ootd.model.user.User?>(null) }
@@ -235,70 +240,70 @@ private fun CommentItem(
 
   val isOwnComment = comment.ownerId == currentUserId
 
-  Row(
+  Column(
       modifier =
           Modifier.fillMaxWidth()
-              .testTag("${CommentScreenTestTags.COMMENT_ITEM}_${comment.commentId}"),
-      horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Profile picture (circular, 40dp)
-        ProfilePicture(
-            size = 40.dp,
-            profilePicture = userData?.profilePicture ?: "",
-            username = userData?.username ?: "User",
-            textStyle = Typography.bodyMedium)
+              .testTag("${CommentScreenTestTags.COMMENT_ITEM}_${comment.commentId}")) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
 
-        // Comment content
-        Column(modifier = Modifier.weight(1f)) {
-          // Username and timestamp
-          Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = userData?.username ?: "Loading...",
-                    style = Typography.titleSmall,
-                    color = Primary,
-                    fontWeight = FontWeight.Bold)
-
+          // Profile picture + username + timestamp (clickable and same format as we see on the post
+          // crads)
+          ClickableProfileRow(
+              userId = comment.ownerId,
+              username = userData?.username ?: "Loading...",
+              profilePictureUrl = userData?.profilePicture ?: "",
+              profileSize = 40.dp,
+              onProfileClick = onProfileClick,
+              showUsername = true,
+              usernameStyle = Typography.titleSmall,
+              usernameColor = Primary,
+              modifier = Modifier.weight(1f),
+              additionalContent = {
+                // Timestamp below username
                 Text(
                     text = formatTimestamp(comment.timestamp),
                     style = Typography.bodySmall,
                     color = Tertiary)
-              }
+              })
 
-          Spacer(modifier = Modifier.height(4.dp))
-
-          // Comment text
-          Text(text = comment.text, style = Typography.bodyMedium, color = OnSecondaryContainer)
-
-          // Reaction image (if exists)
-          if (comment.reactionImage.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            AsyncImage(
-                model = comment.reactionImage,
-                contentDescription = "Reaction image",
+          // Delete button (only for own comments)
+          if (isOwnComment) {
+            IconButton(
+                onClick = onDeleteComment,
                 modifier =
-                    Modifier.size(80.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .testTag("${CommentScreenTestTags.REACTION_IMAGE}_${comment.commentId}"),
-                contentScale = ContentScale.Crop)
+                    Modifier.testTag(
+                        "${CommentScreenTestTags.DELETE_COMMENT_BUTTON}_${comment.commentId}")) {
+                  Icon(
+                      imageVector = Icons.Default.Delete,
+                      contentDescription = "Delete comment",
+                      tint = MaterialTheme.colorScheme.error)
+                }
           }
         }
 
-        // Delete button (only for own comments)
-        if (isOwnComment) {
-          IconButton(
-              onClick = onDeleteComment,
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Comment text
+        Text(
+            text = comment.text,
+            style = Typography.bodyMedium,
+            color = OnSecondaryContainer,
+            modifier = Modifier.padding(start = 48.dp))
+
+        // Reaction image (if exists)
+        if (comment.reactionImage.isNotEmpty()) {
+          Spacer(modifier = Modifier.height(8.dp))
+
+          AsyncImage(
+              model = comment.reactionImage,
+              contentDescription = "Reaction image",
               modifier =
-                  Modifier.testTag(
-                      "${CommentScreenTestTags.DELETE_COMMENT_BUTTON}_${comment.commentId}")) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete comment",
-                    tint = MaterialTheme.colorScheme.error)
-              }
+                  Modifier.padding(start = 48.dp)
+                      .size(80.dp)
+                      .clip(CircleShape)
+                      .background(Color.White)
+                      .testTag("${CommentScreenTestTags.REACTION_IMAGE}_${comment.commentId}"),
+              contentScale = ContentScale.Crop)
         }
       }
 }
@@ -484,21 +489,21 @@ private fun ImageSourceDialog(
 ) {
   AlertDialog(
       onDismissRequest = onDismiss,
-      title = { Text("Add Reaction Image") },
+      // title = { Text("Add Reaction Image") },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           TextButton(
               onClick = onCameraSelected,
               modifier =
                   Modifier.fillMaxWidth().testTag(CommentScreenTestTags.CAMERA_OPTION_BUTTON)) {
-                Text("Take Photo")
+                Text("Take Photo", style = Typography.bodyLarge)
               }
 
           TextButton(
               onClick = onGallerySelected,
               modifier =
                   Modifier.fillMaxWidth().testTag(CommentScreenTestTags.GALLERY_OPTION_BUTTON)) {
-                Text("Choose from Gallery")
+                Text("Choose from Gallery", style = Typography.bodyLarge)
               }
         }
       },
