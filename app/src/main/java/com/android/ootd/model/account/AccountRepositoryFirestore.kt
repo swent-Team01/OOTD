@@ -171,7 +171,8 @@ class AccountRepositoryFirestore(
       user: User,
       userEmail: String,
       dateOfBirth: String,
-      location: Location
+      location: Location,
+      isPrivate: Boolean
   ) {
     if (userExists(user)) {
       Log.e(TAG, "Username already in use")
@@ -186,7 +187,8 @@ class AccountRepositoryFirestore(
             username = user.username,
             birthday = dateOfBirth,
             profilePicture = user.profilePicture,
-            location = location)
+            location = location,
+            isPrivate = isPrivate)
     try {
       addAccount(newAccount)
     } catch (e: Exception) {

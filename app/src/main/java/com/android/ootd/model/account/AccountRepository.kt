@@ -12,7 +12,8 @@ interface AccountRepository {
       user: User,
       userEmail: String = "",
       dateOfBirth: String,
-      location: Location
+      location: Location,
+      isPrivate: Boolean = true
   )
 
   /**
