@@ -103,6 +103,7 @@ fun FeedScreen(
           // Refresh this specific post to show new comments
           feedViewModel.refreshPost(currentPost.postUID)
         },
+        onProfileClick = onProfileClick,
         viewModel = commentViewModel)
   }
 }
