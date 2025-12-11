@@ -64,10 +64,13 @@ class UserSearchScreenTest : FirestoreTest() {
     accountRepository.addAccount(
         Account(uid = currentUser.uid, username = lastUsername, ownerId = currentUser.uid))
     accountRepository.addAccount(
-        Account(uid = currentUser.uid, username = secondUsername, ownerId = currentUser.uid))
+        Account(uid = "test_uid", username = lastUsername + "suffix", ownerId = currentUser.uid))
 
     userRepository.addUser(
         User(uid = currentUser.uid, ownerId = currentUser.uid, username = lastUsername))
+
+    userRepository.addUser(
+        User(uid = "test_uid", ownerId = currentUser.uid, username = lastUsername + "suffix"))
 
     // Input text to trigger dropdown
     composeTestRule
@@ -83,9 +86,9 @@ class UserSearchScreenTest : FirestoreTest() {
       composeTestRule
           .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
           .fetchSemanticsNodes()
-          .size == 1
+          .size == 2 // Make sure that multiple suggestions are rendered
     }
-    // Verify the text of the first (and only) suggestion
+    // Verify the text of the first suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .assertTextEquals(lastUsername)
