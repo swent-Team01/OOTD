@@ -3,6 +3,7 @@ package com.android.ootd.ui.map
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
@@ -323,6 +324,14 @@ class MapScreenFirebaseTest : PostFirestoreTest(), OnMapsSdkInitializedCallback 
     composeTestRule.waitForIdle()
     Thread.sleep(1000)
     composeTestRule.waitForIdle()
+
+    // Wait for the tab row to be displayed
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(MapScreenTestTags.FIND_FRIENDS_TAB)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
     val initialPosts = viewModel.uiState.value.posts
     val initialAccount = viewModel.uiState.value.currentAccount
