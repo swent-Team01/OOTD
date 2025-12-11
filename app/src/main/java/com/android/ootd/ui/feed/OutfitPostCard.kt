@@ -175,6 +175,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
               .clip(RoundedCornerShape(12.dp))
               .background(White)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
+              .aspectRatio(3f / 4f)
               .then(modifier)) {
         val context = LocalContext.current
 
@@ -189,10 +190,10 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
                     .build(),
             contentDescription = "Outfit image",
             modifier =
-                Modifier.fillMaxSize()
+                Modifier.fillMaxWidth()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.FillHeight,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
