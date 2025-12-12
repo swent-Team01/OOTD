@@ -52,7 +52,8 @@ class FakeAccountRepository : AccountRepository {
       user: User,
       userEmail: String,
       dateOfBirth: String,
-      location: Location
+      location: Location,
+      isPrivate: Boolean
   ) {
     // no-op
   }

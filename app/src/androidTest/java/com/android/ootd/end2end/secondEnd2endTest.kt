@@ -38,15 +38,14 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
    * 6. User enters username, date of birth and location
    * 7. User clicks Save button
    * 8. App navigates directly to Feed screen (consent already given via mock)
-   * 9. User searches for "greg" in the username field
-   * 10. User selects greg from the suggestions
-   * 11. User clicks Follow button on greg's profile
-   * 12. User clicks notification icon and goes to notification screen.
-   * 13. User accepts follow notification
-   * 14. User goes to inventory checks no items are there
-   * 15. User checks the add item button is there
-   * 16. User clicks Sign Out button
-   * 17. App navigates back to Authentication screen
+   * 9. User searches for "greg_2" in the username field
+   * 10. User selects greg_2 from the suggestions
+   * 11. User clicks notification icon and goes to notification screen.
+   * 12. User accepts follow notification
+   * 13. User goes to inventory checks no items are there
+   * 14. User checks the add item button is there
+   * 15. User clicks Sign Out button
+   * 16. App navigates back to Authentication screen
    *
    * LIMITATIONS:
    * - Taking photos launches external activities that break ComposeTestRule
@@ -85,22 +84,20 @@ class SecondEnd2EndTest : BaseEnd2EndTest() {
       // Steps 7-8: Save registration and navigate to feed
       saveRegistrationAndNavigateToFeed()
 
-      // Step 9: Navigate to search screen
+      // Step 9-10: Go to search screen and search for greg_2
       navigateToSearchScreen()
+      searchForUser()
 
-      // Step 10-11: Searches for Greg and follows him
-      searchAndFollowUser()
-
-      // Step 12: Open notifications screen
+      // Step 11: Open notifications screen
       openNotificationsScreen()
 
-      // Step 13: Accept follow notification
+      // Step 12: Accept follow notification
       acceptFollowNotification()
 
-      // Step 14-15: Navigate to inventory and check add item button exists
+      // Step 13-14: Navigate to inventory and check add item button exists
       navigateToInventoryAndCheckAddItemButton()
 
-      // Step 16-17: Sign out and verify auth screen
+      // Step 15-16: Sign out and verify auth screen
       signOutAndVerifyAuthScreen(
           composeTestRule = composeTestRule, testNavController = testNavController)
     }
