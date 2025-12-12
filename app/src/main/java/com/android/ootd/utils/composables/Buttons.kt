@@ -5,20 +5,26 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +32,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
@@ -34,11 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.ootd.R
+import com.android.ootd.ui.account.UiTestTags
+import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -305,4 +316,71 @@ fun OOTDTabRow(
               modifier = tabModifiers.getOrElse(index) { Modifier })
         }
       }
+}
+
+@Composable
+fun PrivacyToggleRow(
+    isPrivate: Boolean,
+    onToggle: () -> Unit,
+    showPrivacyHelp: Boolean,
+    onHelpClick: () -> Unit,
+    onHelpDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+  val colors = LightColorScheme
+  val typography = Typography
+
+  Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(
+          text = "Privacy",
+          style = typography.titleMedium.copy(fontFamily = Bodoni),
+          color = colors.primary,
+          modifier = Modifier.padding(start = 4.dp))
+      Spacer(modifier = Modifier.width(2.dp))
+      Box {
+        ActionIconButton(
+            onClick = onHelpClick,
+            icon = Icons.Outlined.Info,
+            contentDescription = "Privacy help",
+            modifier = Modifier.size(32.dp).testTag(UiTestTags.TAG_PRIVACY_HELP_ICON),
+            size = 20.dp)
+        DropdownMenu(expanded = showPrivacyHelp, onDismissRequest = onHelpDismiss) {
+          DropdownMenuItem(
+              modifier = Modifier.testTag(UiTestTags.TAG_PRIVACY_HELP_MENU),
+              text = {
+                Text(
+                    "Private: Only your app uses your location to center the map" +
+                        " — it won’t be shown to others.\n" +
+                        "Public: Your location is displayed on the public map" +
+                        " so others can discover you.",
+                    style = typography.bodySmall.copy(fontFamily = Bodoni),
+                    color = colors.onSurface)
+              },
+              onClick = onHelpDismiss)
+        }
+      }
+    }
+
+    Spacer(modifier = Modifier.weight(1f))
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+          Text(
+              text = if (isPrivate) "Private" else "Public",
+              style = typography.bodyMedium.copy(fontFamily = Bodoni),
+              color = colors.onSurface)
+          Switch(
+              checked = isPrivate,
+              onCheckedChange = { onToggle() },
+              modifier = modifier.height(32.dp),
+              colors =
+                  SwitchDefaults.colors(
+                      checkedThumbColor = colors.onPrimary,
+                      checkedTrackColor = colors.primary,
+                      uncheckedThumbColor = colors.onPrimary,
+                      uncheckedTrackColor = colors.outlineVariant))
+        }
+  }
 }

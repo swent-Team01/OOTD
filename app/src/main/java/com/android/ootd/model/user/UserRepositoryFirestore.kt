@@ -6,6 +6,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import java.util.UUID
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.tasks.await
 
 const val USER_COLLECTION_PATH = "users"
@@ -122,6 +123,9 @@ class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepositor
 
       transformUserDocument(userDoc)
           ?: throw IllegalStateException("Failed to transform document with ID $userID")
+    } catch (e: TimeoutCancellationException) {
+      Log.w(TAG, "User in offline mode")
+      return User()
     } catch (e: Exception) {
       Log.e(TAG, "Error getting user $userID: ${e.message}", e)
       throw e

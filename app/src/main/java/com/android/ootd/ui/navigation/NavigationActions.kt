@@ -42,7 +42,7 @@ sealed class Screen(
       Screen(route = "accountEdit", name = "Account Edit", isTopLevelDestination = false)
 
   object AccountView :
-      Screen(route = "accountView", name = "Account View", isTopLevelDestination = true)
+      Screen(route = "accountView", name = "Account View", isTopLevelDestination = false)
 
   data class FitCheck(val postUuid: String = "") :
       Screen(route = "fitCheck?postUuid=$postUuid", name = "FitCheck") {

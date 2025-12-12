@@ -5,11 +5,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import com.android.ootd.model.account.Account
 import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.account.PublicLocation
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
+import com.android.ootd.model.map.Location
+import com.android.ootd.model.user.User
 import com.android.ootd.utils.InMemoryItem
 import com.android.ootd.utils.ItemsTest
 import com.google.firebase.auth.FirebaseAuth
@@ -65,15 +68,16 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
         override suspend fun getItemsList(userID: String) = listOf("1", "2", "3")
 
         override suspend fun createAccount(
-            user: com.android.ootd.model.user.User,
+            user: User,
             userEmail: String,
             dateOfBirth: String,
-            location: com.android.ootd.model.map.Location
+            location: Location,
+            isPrivate: Boolean
         ) {}
 
-        override suspend fun addAccount(account: com.android.ootd.model.account.Account) {}
+        override suspend fun addAccount(account: Account) {}
 
-        override suspend fun getAccount(userID: String) = com.android.ootd.model.account.Account()
+        override suspend fun getAccount(userID: String) = Account()
 
         override suspend fun accountExists(userID: String) = true
 
@@ -92,7 +96,7 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
             username: String,
             birthDay: String,
             picture: String,
-            location: com.android.ootd.model.map.Location
+            location: Location
         ) {}
 
         override suspend fun deleteProfilePicture(userID: String) {}
@@ -101,8 +105,7 @@ class SelectInventoryItemScreenTest : ItemsTest by InMemoryItem {
 
         override suspend fun removeItem(itemUid: String) = true
 
-        override fun observeAccount(userID: String): Flow<com.android.ootd.model.account.Account> =
-            flowOf(com.android.ootd.model.account.Account())
+        override fun observeAccount(userID: String): Flow<Account> = flowOf(Account())
 
         override suspend fun getStarredItems(userID: String): List<String> = emptyList()
 

@@ -34,6 +34,7 @@ import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
+import com.android.ootd.utils.composables.PrivacyToggleRow
 import com.android.ootd.utils.composables.ProfilePictureConfirmDialogs
 import java.time.Instant
 import java.time.ZoneId
@@ -76,6 +77,9 @@ object RegisterScreenTestTags {
 
   /** Test tag for the circular progression when loading */
   const val REGISTER_LOADING = "registerLoading"
+
+  /** Test tag for the privacy toggle row */
+  const val PRIVACY_TOGGLE = "registerPrivacyToggle"
 }
 
 private val SPACER = 16.dp
@@ -127,6 +131,7 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
   val onGPSClick = rememberGPSClickHandler(viewModel, locationPermissionLauncher)
   var showEditProfileConfirm by remember { mutableStateOf(false) }
   var showDeleteProfileConfirm by remember { mutableStateOf(false) }
+  var showPrivacyHelp by remember { mutableStateOf(false) }
 
   HandleRegistrationEffects(
       errorMsg = registerUiState.errorMsg,
@@ -207,6 +212,14 @@ fun RegisterScreen(viewModel: RegisterViewModel = viewModel(), onRegister: () ->
               onGPSClick = onGPSClick)
 
           Spacer(modifier = Modifier.height(SPACER))
+
+          PrivacyToggleRow(
+              isPrivate = registerUiState.isPrivate,
+              onToggle = { viewModel.setAccountPrivacy() },
+              showPrivacyHelp = showPrivacyHelp,
+              onHelpClick = { showPrivacyHelp = true },
+              onHelpDismiss = { showPrivacyHelp = false },
+              modifier = Modifier.testTag(RegisterScreenTestTags.PRIVACY_TOGGLE))
 
           RegisterFooter(
               isLoading = registerUiState.isLoading,

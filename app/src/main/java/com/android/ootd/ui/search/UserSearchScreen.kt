@@ -5,9 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,11 +15,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.ootd.model.account.AccountRepositoryInMemory
 import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
-import com.android.ootd.utils.composables.OOTDTopBar
 
 object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
@@ -40,33 +36,18 @@ fun UserSearchScreen(
           Modifier.fillMaxSize()
               .background(Background)
               .verticalScroll(rememberScrollState())
-              .padding(vertical = 32.dp, horizontal = 20.dp)
               .testTag(SearchScreenTestTags.SEARCH_SCREEN),
       verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        OOTDTopBar()
 
         // Search bar
         UserSelectionField(
             usernameText = uiState.username,
             onUsernameTextChanged = viewModel::updateUsername,
+            onUserSuggestionClicked = onUserClick,
             usernameSuggestions = uiState.userSuggestions,
-            onUsernameSuggestionSelected = viewModel::selectUsername,
-            onSuggestionsDismissed = viewModel::suggestionsDismissed,
             expanded = uiState.suggestionsExpanded)
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        if (uiState.selectedUser != null) {
-          UserProfileCard(
-              modifier = Modifier.fillMaxWidth().weight(1f),
-              selectedUser = uiState.selectedUser,
-              isSelectedUserFollowed = uiState.isSelectedUserFollowed,
-              hasRequestPending = uiState.hasRequestPending,
-              errorMessage = uiState.errorMessage,
-              onFollowClick = { viewModel.pressFollowButton() },
-              onUserClick = { onUserClick(uiState.selectedUser!!.uid) },
-              onErrorDismiss = { viewModel.clearError() })
-        }
       }
 }
 
@@ -75,11 +56,7 @@ fun UserSearchScreen(
 @Composable
 fun UserSearchScreenPreview() {
   OOTDTheme {
-    val mockViewModel =
-        UserSearchViewModel(
-            userRepository = UserRepositoryInMemory(),
-            accountRepository = AccountRepositoryInMemory(),
-            overrideUser = true)
+    val mockViewModel = UserSearchViewModel(userRepository = UserRepositoryInMemory())
     UserSearchScreen(viewModel = mockViewModel, onUserClick = {})
   }
 }

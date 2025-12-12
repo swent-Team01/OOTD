@@ -17,6 +17,7 @@ import com.android.ootd.screen.enterDate
 import com.android.ootd.screen.enterUsername
 import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
+import com.android.ootd.ui.account.ViewUserScreenTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
 import com.android.ootd.ui.consent.BetaConsentScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
@@ -36,7 +37,6 @@ import com.android.ootd.ui.post.PreviewItemScreenTestTags
 import com.android.ootd.ui.post.items.AddItemScreenTestTags
 import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
-import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
@@ -409,7 +409,8 @@ fun searchAndFollowUser(composeTestRule: ComposeContentTestRule, username: Strin
   composeTestRule
       .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
       .performClick()
-  clickWithWait(composeTestRule, UserProfileCardTestTags.USER_FOLLOW_BUTTON)
+  clickWithWait(composeTestRule, ViewUserScreenTags.FOLLOW_BUTTON_TAG)
+  clickWithWait(composeTestRule, ViewUserScreenTags.BACK_BUTTON_TAG)
 }
 
 fun loginWithoutRegistering(composeTestRule: ComposeContentTestRule) {
