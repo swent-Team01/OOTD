@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.android.ootd.R
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.OnSurface
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -131,12 +132,13 @@ fun OnboardingScreen(
               Text(
                   text = "Get to know OOTD",
                   style = Typography.headlineMedium,
-                  modifier = Modifier.testTag(OnboardingScreenTestTags.TITLE))
+                  modifier = Modifier.testTag(OnboardingScreenTestTags.TITLE),
+                  color = OnSurface)
               Spacer(modifier = Modifier.height(4.dp))
               Text(
                   text = "Quick tips to start sharing your outfits",
                   style = Typography.bodyMedium,
-                  color = OnSurfaceVariant,
+                  color = OnSurface,
                   modifier = Modifier.testTag(OnboardingScreenTestTags.SUBTITLE))
 
               Spacer(modifier = Modifier.height(16.dp))
@@ -159,19 +161,21 @@ fun OnboardingScreen(
                             Text(
                                 text = onboardingPage.emoji,
                                 style = Typography.headlineLarge,
-                                modifier = Modifier.padding(bottom = 4.dp))
+                                modifier = Modifier.padding(bottom = 4.dp),
+                                color = OnSurface)
                             Text(
                                 text = onboardingPage.title,
                                 style = Typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 modifier =
                                     Modifier.testTag(
-                                        "${OnboardingScreenTestTags.PAGE_TITLE_PREFIX}$page"))
+                                        "${OnboardingScreenTestTags.PAGE_TITLE_PREFIX}$page"),
+                                color = OnSurface)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = onboardingPage.description,
                                 style = Typography.bodyMedium,
-                                color = OnSurfaceVariant)
+                                color = OnSurface)
                             onboardingPage.imageRes?.let { resId ->
                               val painter = painterResource(id = resId)
                               val ratio =
