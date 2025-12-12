@@ -15,10 +15,12 @@ import com.android.ootd.model.camera.CameraRepository
 import com.android.ootd.model.camera.CameraRepositoryImplementation
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * UI state for the Camera screen.
@@ -61,6 +63,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
 
   private var cameraProvider: ProcessCameraProvider? = null
   private var camera: Camera? = null
+  private var imageCapture: ImageCapture? = null
   private var zoomStateObserver: Observer<androidx.camera.core.ZoomState>? = null
 
   // ExecutorService managed by ViewModel to ensure proper cleanup
@@ -81,6 +84,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
     camera = null
     cameraProvider = null
     zoomStateObserver = null
+    imageCapture = null
   }
 
   /** Toggles between front and back camera. */
@@ -137,19 +141,30 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
     _uiState.value = CameraUIState()
   }
 
+  /** Unbinds all use cases from the camera provider. */
+  fun unbindCamera() {
+    try {
+      cameraProvider?.unbindAll()
+      imageCapture = null
+      camera = null
+      zoomStateObserver = null
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to unbind camera", e)
+    }
+  }
+
   /**
    * Binds the camera to the lifecycle using the repository.
    *
    * @param cameraProvider The ProcessCameraProvider instance
    * @param previewView The PreviewView to display camera preview
    * @param lifecycleOwner The LifecycleOwner to bind the camera to
-   * @return ImageCapture instance on success, null on failure
    */
   fun bindCamera(
       cameraProvider: ProcessCameraProvider,
       previewView: PreviewView,
       lifecycleOwner: LifecycleOwner
-  ): ImageCapture? {
+  ) {
 
     // Remove observer from OLD camera first to prevent race conditions
     val oldCamera = camera
@@ -162,17 +177,15 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
     // Clear references before binding new camera
     camera = null
     zoomStateObserver = null
+    imageCapture = null
 
     val result =
         repository.bindCamera(
             cameraProvider, previewView, lifecycleOwner, _uiState.value.lensFacing)
 
-    return result
-        .getOrElse { exception ->
-          setError("Failed to bind camera: ${exception.message}")
-          null
-        }
-        ?.let { (cameraInstance, imageCapture) ->
+    result
+        .onFailure { exception -> setError("Failed to bind camera: ${exception.message}") }
+        .onSuccess { (cameraInstance, captureInstance) ->
           // Create new observer BEFORE setting camera reference
           val newObserver =
               Observer<androidx.camera.core.ZoomState> { zoomState ->
@@ -189,8 +202,7 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
           // THEN update references atomically to prevent race conditions
           camera = cameraInstance
           zoomStateObserver = newObserver
-
-          imageCapture
+          imageCapture = captureInstance
         }
   }
 
@@ -216,16 +228,21 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
    * Captures a photo using the repository. Uses the ViewModel's managed executor.
    *
    * @param context The context for creating the output file
-   * @param imageCapture The ImageCapture instance
    * @param onSuccess Callback when image is successfully captured
    */
-  fun capturePhoto(context: Context, imageCapture: ImageCapture, onSuccess: (Uri) -> Unit) {
+  fun capturePhoto(context: Context, onSuccess: (Uri) -> Unit) {
+    val capture = imageCapture
+    if (capture == null) {
+      setError("Camera not ready")
+      return
+    }
+
     setCapturing(true)
     Log.i(TAG, "Starting photo capture")
 
     repository.capturePhoto(
         context = context,
-        imageCapture = imageCapture,
+        imageCapture = capture,
         executor = cameraExecutor,
         onSuccess = { uri ->
           Log.i(TAG, "Photo captured successfully: $uri")
@@ -270,5 +287,16 @@ class CameraViewModel(private val repository: CameraRepository = CameraRepositor
         onError("Failed to get camera provider: ${e.message}")
       }
     }
+  }
+
+  /**
+   * Saves the cropped image to a file.
+   *
+   * @param context The context for saving the file
+   * @param bitmap The cropped bitmap
+   * @return The URI of the saved image
+   */
+  suspend fun saveCroppedImage(context: Context, bitmap: android.graphics.Bitmap): Uri {
+    return withContext(Dispatchers.IO) { repository.saveBitmap(context, bitmap) }
   }
 }

@@ -13,6 +13,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -162,5 +163,15 @@ class CameraRepositoryImplementation : CameraRepository {
       Log.e(TAG, "Error deleting cached image", e)
       false
     }
+  }
+
+  override fun saveBitmap(context: Context, bitmap: android.graphics.Bitmap): Uri {
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val photoFile = File(context.cacheDir, "$IMAGE_FILE_PREFIX$timestamp$IMAGE_FILE_EXTENSION")
+
+    FileOutputStream(photoFile).use { out ->
+      bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, out)
+    }
+    return Uri.fromFile(photoFile)
   }
 }

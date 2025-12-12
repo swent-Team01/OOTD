@@ -23,12 +23,23 @@ class ImageOrientationHelper {
    */
   fun loadBitmapWithCorrectOrientation(context: Context, imageUri: Uri): Result<Bitmap> {
     return try {
+      // First decode with inJustDecodeBounds=true to check dimensions
+      val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+      context.contentResolver.openInputStream(imageUri)?.use { input ->
+        BitmapFactory.decodeStream(input, null, options)
+      }
+
+      // Calculate inSampleSize to avoid OOM
+      // Target roughly 1080p (1920x1080) which is plenty for preview
+      options.inSampleSize = calculateInSampleSize(options, 1080, 1920)
+      options.inJustDecodeBounds = false
+
       // Load the bitmap
       val inputStream =
           context.contentResolver.openInputStream(imageUri)
               ?: return Result.failure(IOException("Failed to open input stream for $imageUri"))
 
-      val bitmap = BitmapFactory.decodeStream(inputStream)
+      val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
       inputStream.close()
 
       if (bitmap == null) {
@@ -45,6 +56,29 @@ class ImageOrientationHelper {
     } catch (e: Exception) {
       Result.failure(e)
     }
+  }
+
+  private fun calculateInSampleSize(
+      options: BitmapFactory.Options,
+      reqWidth: Int,
+      reqHeight: Int
+  ): Int {
+    // Raw height and width of image
+    val (height: Int, width: Int) = options.outHeight to options.outWidth
+    var inSampleSize = 1
+
+    if (height > reqHeight || width > reqWidth) {
+      val halfHeight: Int = height / 2
+      val halfWidth: Int = width / 2
+
+      // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+      // height and width larger than the requested height and width.
+      while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+        inSampleSize *= 2
+      }
+    }
+
+    return inSampleSize
   }
 
   /**
@@ -119,6 +153,24 @@ class ImageOrientationHelper {
     } catch (_: OutOfMemoryError) {
       // If we run out of memory, return the original bitmap
       bitmap
+    }
+  }
+
+  /**
+   * Crops a bitmap to the specified rectangle.
+   *
+   * @param bitmap The source bitmap
+   * @param cropRect The rectangle to crop
+   * @return The cropped bitmap
+   */
+  fun cropBitmap(bitmap: Bitmap, cropRect: android.graphics.Rect): Result<Bitmap> {
+    return try {
+      val croppedBitmap =
+          Bitmap.createBitmap(
+              bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
+      Result.success(croppedBitmap)
+    } catch (e: Exception) {
+      Result.failure(e)
     }
   }
 }

@@ -75,4 +75,13 @@ interface CameraRepository {
    * @return true if the file was successfully deleted, false otherwise
    */
   fun deleteCachedImage(context: Context, imageUri: Uri): Boolean
+
+  /**
+   * Saves a bitmap to a file in the cache directory.
+   *
+   * @param context The context for accessing the cache directory
+   * @param bitmap The bitmap to save
+   * @return The URI of the saved image
+   */
+  fun saveBitmap(context: Context, bitmap: android.graphics.Bitmap): Uri
 }
