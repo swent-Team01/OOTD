@@ -14,10 +14,6 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.ootd.OOTDApp
 import com.android.ootd.model.account.AccountRepositoryFirestore
 import com.android.ootd.model.account.AccountRepositoryProvider
-import com.android.ootd.model.consent.Consent
-import com.android.ootd.model.consent.ConsentRepository
-import com.android.ootd.model.consent.ConsentRepositoryFirestore
-import com.android.ootd.model.consent.ConsentRepositoryProvider
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.ItemsRepositoryProvider
 import com.android.ootd.model.map.Location
@@ -36,6 +32,7 @@ import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
+import com.android.ootd.ui.onboarding.OnboardingViewModel
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
@@ -69,7 +66,6 @@ open class BaseEnd2EndTest {
   lateinit var mockAccountRepository: AccountRepositoryFirestore
   lateinit var mockNotificationRepository: NotificationRepositoryFirestore
   lateinit var mockLocationRepository: LocationRepository
-  lateinit var mockConsentRepository: ConsentRepository
   lateinit var testUserId: String
   lateinit var testUsername: String
   lateinit var fakeGoogleIdToken: String
@@ -87,7 +83,6 @@ open class BaseEnd2EndTest {
     mockUserRepository = mockk(relaxed = true)
     mockAccountRepository = mockk(relaxed = true)
     mockLocationRepository = mockk(relaxed = true)
-    mockConsentRepository = mockk(relaxed = true)
     mockItemsRepository = mockk(relaxed = true)
     mockNotificationRepository = mockk(relaxed = true)
     // Inject mock repositories into the providers so the app uses them instead of real Firestore
@@ -95,7 +90,6 @@ open class BaseEnd2EndTest {
     AccountRepositoryProvider.repository = mockAccountRepository
     NotificationRepositoryProvider.repository = mockNotificationRepository
     LocationRepositoryProvider.repository = mockLocationRepository
-    ConsentRepositoryProvider.repository = mockConsentRepository
     ItemsRepositoryProvider.repository = mockItemsRepository
 
     // Generate unique identifiers for each test run to avoid conflicts
@@ -103,12 +97,11 @@ open class BaseEnd2EndTest {
     testUserId = "test_user_$timestamp"
     testUsername = "user$timestamp"
 
-    // Pre-populate SharedPreferences with consent data to skip consent screen
-    val consentPrefs = context.getSharedPreferences("ootd_beta_consent", Context.MODE_PRIVATE)
-    consentPrefs.edit().apply {
-      putBoolean("ootd_consent_given", true)
-      putLong("ootd_consent_timestamp", timestamp)
-      putString("ootd_consent_uuid", "test_consent_uuid_$timestamp")
+    // Pre-populate SharedPreferences with onboarding flag to skip onboarding screen
+    val onboardingPrefs =
+        context.getSharedPreferences(OnboardingViewModel.PREFS_NAME, Context.MODE_PRIVATE)
+    onboardingPrefs.edit().apply {
+      putBoolean(OnboardingViewModel.KEY_ONBOARDING_SEEN, true)
       apply()
     }
     // Create a fake Google ID token for a new user
@@ -123,8 +116,9 @@ open class BaseEnd2EndTest {
     unmockkAll()
 
     // Clean up SharedPreferences
-    val consentPrefs = context.getSharedPreferences("ootd_beta_consent", Context.MODE_PRIVATE)
-    consentPrefs.edit().clear().apply()
+    val onboardingPrefs =
+        context.getSharedPreferences(OnboardingViewModel.PREFS_NAME, Context.MODE_PRIVATE)
+    onboardingPrefs.edit().clear().apply()
 
     // Restore the real repositories after test completes
     UserRepositoryProvider.repository = UserRepositoryFirestore(Firebase.firestore)
@@ -132,7 +126,7 @@ open class BaseEnd2EndTest {
     LocationRepositoryProvider.repository =
         com.android.ootd.model.map.NominatimLocationRepository(
             com.android.ootd.HttpClientProvider.client)
-    ConsentRepositoryProvider.repository = ConsentRepositoryFirestore(Firebase.firestore)
+    // Onboarding flag is purely local; no repository to restore
   }
 
   fun initializeMocksForTest() {
@@ -162,15 +156,6 @@ open class BaseEnd2EndTest {
     // Mock successful account creation
     coEvery { mockAccountRepository.createAccount(any(), any(), any(), any()) } returns Unit
     coEvery { mockAccountRepository.accountExists(any()) } returns false
-
-    // Mock consent as already given (user has consented, so consent screen will be skipped)
-    val mockConsent =
-        Consent(
-            consentUuid = "mock_consent_uuid",
-            userId = testUserId,
-            timestamp = System.currentTimeMillis(),
-            version = "1.0")
-    coEvery { mockConsentRepository.getConsentByUserId(any()) } returns mockConsent
   }
 
   fun initTestNavController() {
@@ -290,7 +275,7 @@ open class BaseEnd2EndTest {
    * 5. Waits for automatic navigation to the Feed screen
    * 6. Verifies the Feed screen is displayed
    *
-   * Note: Navigation to Feed assumes consent is already given (mocked in test setup). If consent is
+   * Note: Navigation to Feed assumes onboarding is already marked as seen (mocked in test setup).
    * not given, the app would navigate to the Consent screen instead.
    */
   fun saveRegistrationAndNavigateToFeed() {
