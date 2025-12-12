@@ -82,29 +82,22 @@ fun AccountPage(
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
 
+  // Refresh data when the screen resumes
+  DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_RESUME) {
+        accountModel.loadAccountData()
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
+
   LaunchedEffect(uiState.errorMsg) {
     uiState.errorMsg?.let { msg ->
       Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
       accountModel.clearErrorMsg()
     }
-  }
-
-  LaunchedEffect(uiState.selectedTab) {
-    if (uiState.selectedTab == AccountTab.Starred) {
-      accountModel.refreshUserData()
-    }
-  }
-
-  DisposableEffect(lifecycleOwner) {
-    // Refresh starred items whenever we return to the account screen so stars from friends'
-    // See Fit dialogs show up immediately.
-    val observer = LifecycleEventObserver { _, event ->
-      if (event == Lifecycle.Event.ON_RESUME) {
-        accountModel.refreshUserData()
-      }
-    }
-    lifecycleOwner.lifecycle.addObserver(observer)
-    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
   }
 
   if (uiState.isLoading) {
