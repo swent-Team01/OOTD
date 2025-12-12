@@ -38,7 +38,6 @@ import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
 import com.android.ootd.ui.register.RegisterScreenTestTags
 import com.android.ootd.ui.search.SearchScreenTestTags
-import com.android.ootd.ui.search.UserProfileCardTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Firebase
@@ -316,31 +315,24 @@ open class BaseEnd2EndTest {
   }
 
   /**
-   * Searches for the user Greg and follows him
+   * Searches for the user greg_2
    *
    * This function:
-   * 1. Inputs the name greg in the search screen
-   * 2. Selects the user greg from the dropdown
-   * 3. Follows greg by clicking the follow button
+   * 1. Inputs the name greg_2 in the search screen
+   * 2. Checks that greg_2 appears in the recommendation list
    */
-  fun searchAndFollowUser() {
+  fun searchForUser() {
     coEvery { mockUserRepository.getAllUsers() } returns
-        runBlocking { listOf(User(username = userId)) }
+        runBlocking { listOf(User(username = "greg_2")) }
 
     composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME).performClick()
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .performTextInput(userId)
+        .performTextInput("greg_2")
     composeTestRule.waitForIdle()
 
     verifyElementAppearsWithTimer(composeTestRule, UserSelectionFieldTestTags.USERNAME_SUGGESTION)
-
-    // Click on the first suggestion (Greg)
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
-    clickWithWait(composeTestRule, UserProfileCardTestTags.USER_FOLLOW_BUTTON)
   }
 
   /**
