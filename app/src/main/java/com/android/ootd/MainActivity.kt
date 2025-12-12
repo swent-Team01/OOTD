@@ -45,9 +45,6 @@ import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.ViewUserProfile
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
-import com.android.ootd.ui.consent.BetaConsentScreen
-import com.android.ootd.ui.consent.BetaConsentViewModel
-import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.inventory.InventoryScreen
@@ -57,6 +54,9 @@ import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreen
+import com.android.ootd.ui.onboarding.OnboardingScreen
+import com.android.ootd.ui.onboarding.OnboardingViewModel
+import com.android.ootd.ui.onboarding.OnboardingViewModelFactory
 import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.post.PostViewScreen
 import com.android.ootd.ui.post.PreviewItemScreen
@@ -191,8 +191,8 @@ fun OOTDApp(
               Screen.NotificationsScreen.route)
 
   // Create ViewModel using factory to properly inject SharedPreferences
-  val betaConsentViewModel: BetaConsentViewModel =
-      viewModel(factory = BetaConsentViewModelFactory(context))
+  val onboardingViewModel: OnboardingViewModel =
+      viewModel(factory = OnboardingViewModelFactory(context))
 
   val isNotificationsPermissionGranted =
       testMode ||
@@ -261,36 +261,33 @@ fun OOTDApp(
                 composable(Screen.RegisterUsername.route) {
                   RegisterScreen(
                       onRegister = {
-                        // After registration, show beta consent if not already given
-                        if (betaConsentViewModel.getConsentStatus()) {
+                        // After registration, show onboarding if not already seen
+                        if (onboardingViewModel.getConsentStatus()) {
                           navigationActions.navigateTo(Screen.Feed)
                         } else {
-                          navigationActions.navigateTo(Screen.BetaConsent)
+                          navigationActions.navigateTo(Screen.Onboarding)
                         }
                       })
                 }
-                composable(Screen.BetaConsent.route) {
-                  val consentSaved by betaConsentViewModel.consentSaved.collectAsState()
-                  val isLoading by betaConsentViewModel.isLoading.collectAsState()
-                  val error by betaConsentViewModel.error.collectAsState()
+                composable(Screen.Onboarding.route) {
+                  val consentSaved by onboardingViewModel.consentSaved.collectAsState()
+                  val isLoading by onboardingViewModel.isLoading.collectAsState()
+                  val error by onboardingViewModel.error.collectAsState()
 
                   // Navigate to Feed when consent is successfully saved
                   LaunchedEffect(consentSaved) {
                     if (consentSaved) {
-                      betaConsentViewModel.resetConsentSavedFlag()
+                      onboardingViewModel.resetConsentSavedFlag()
                       navigationActions.navigateTo(Screen.Feed)
                     }
                   }
 
-                  BetaConsentScreen(
-                      onAgree = { betaConsentViewModel.recordConsent() },
-                      onDecline = {
-                        // If user declines, sign them out and return to authentication
-                        navigationActions.navigateTo(Screen.Authentication)
-                      },
+                  OnboardingScreen(
+                      onAgree = { onboardingViewModel.recordConsent() },
+                      onSkip = { onboardingViewModel.recordConsent() },
                       isLoading = isLoading,
                       errorMessage = error,
-                      onErrorDismiss = { betaConsentViewModel.clearError() })
+                      onErrorDismiss = { onboardingViewModel.clearError() })
                 }
               }
 
