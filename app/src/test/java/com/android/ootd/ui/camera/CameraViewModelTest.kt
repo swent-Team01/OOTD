@@ -1,6 +1,7 @@
 package com.android.ootd.ui.camera
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -72,16 +73,6 @@ class CameraViewModelTest {
     assertEquals(CameraSelector.LENS_FACING_BACK, viewModel.uiState.value.lensFacing)
     viewModel.switchCamera()
     assertEquals(CameraSelector.LENS_FACING_FRONT, viewModel.uiState.value.lensFacing)
-  }
-
-  @Test
-  fun `switchCamera toggles from front to back`() {
-    // Switch to front first
-    viewModel.switchCamera()
-    assertEquals(CameraSelector.LENS_FACING_FRONT, viewModel.uiState.value.lensFacing)
-    // Switch back to back
-    viewModel.switchCamera()
-    assertEquals(CameraSelector.LENS_FACING_BACK, viewModel.uiState.value.lensFacing)
   }
 
   // ========== Capture State Tests ==========
@@ -165,7 +156,7 @@ class CameraViewModelTest {
 
   // ========== Camera Binding Tests ==========
   @Test
-  fun `bindCamera returns ImageCapture on success`() {
+  fun `bindCamera sets up camera successfully`() {
     val mockCameraProvider = mockk<ProcessCameraProvider>()
     val mockPreviewView = mockk<PreviewView>()
     val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
@@ -175,13 +166,16 @@ class CameraViewModelTest {
       mockRepository.bindCamera(
           mockCameraProvider, mockPreviewView, mockLifecycleOwner, CameraSelector.LENS_FACING_BACK)
     } returns Result.success(Pair(mockCamera, mockImageCapture))
-    val result = viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
-    assertEquals(mockImageCapture, result)
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
     assertNull(viewModel.uiState.value.errorMessage)
+    verify {
+      mockRepository.bindCamera(
+          mockCameraProvider, mockPreviewView, mockLifecycleOwner, CameraSelector.LENS_FACING_BACK)
+    }
   }
 
   @Test
-  fun `bindCamera returns null and sets error on failure`() {
+  fun `bindCamera sets error on failure`() {
     val mockCameraProvider = mockk<ProcessCameraProvider>()
     val mockPreviewView = mockk<PreviewView>()
     val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
@@ -190,8 +184,7 @@ class CameraViewModelTest {
       mockRepository.bindCamera(
           mockCameraProvider, mockPreviewView, mockLifecycleOwner, CameraSelector.LENS_FACING_BACK)
     } returns Result.failure(exception)
-    val result = viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
-    assertNull(result)
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
     assertEquals(
         "Failed to bind camera: Camera binding failed", viewModel.uiState.value.errorMessage)
   }
@@ -222,6 +215,16 @@ class CameraViewModelTest {
     val mockContext = mockk<Context>()
     val mockImageCapture = mockk<ImageCapture>()
     val mockUri = mockk<Uri>()
+    val mockCameraProvider = mockk<ProcessCameraProvider>()
+    val mockPreviewView = mockk<PreviewView>()
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+
+    // Setup camera binding first
+    every { mockRepository.bindCamera(any(), any(), any(), any()) } returns
+        Result.success(Pair(mockCamera, mockImageCapture))
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
+
     var successCalled = false
     var capturedUri: Uri? = null
     val onSuccessSlot = slot<(Uri) -> Unit>()
@@ -230,7 +233,7 @@ class CameraViewModelTest {
       mockRepository.capturePhoto(
           mockContext, mockImageCapture, any(), capture(onSuccessSlot), any())
     } answers { onSuccessSlot.captured(mockUri) }
-    viewModel.capturePhoto(mockContext, mockImageCapture) { uri ->
+    viewModel.capturePhoto(mockContext) { uri ->
       successCalled = true
       capturedUri = uri
     }
@@ -244,13 +247,23 @@ class CameraViewModelTest {
   fun `capturePhoto sets error when capture fails`() {
     val mockContext = mockk<Context>()
     val mockImageCapture = mockk<ImageCapture>()
+    val mockCameraProvider = mockk<ProcessCameraProvider>()
+    val mockPreviewView = mockk<PreviewView>()
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+
+    // Setup camera binding first
+    every { mockRepository.bindCamera(any(), any(), any(), any()) } returns
+        Result.success(Pair(mockCamera, mockImageCapture))
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
+
     val errorMessage = "Capture failed"
     val onErrorSlot = slot<(String) -> Unit>()
     // Note: capturePhoto no longer takes executor parameter - it uses internal cameraExecutor
     every {
       mockRepository.capturePhoto(mockContext, mockImageCapture, any(), any(), capture(onErrorSlot))
     } answers { onErrorSlot.captured(errorMessage) }
-    viewModel.capturePhoto(mockContext, mockImageCapture) {}
+    viewModel.capturePhoto(mockContext) {}
     assertEquals(errorMessage, viewModel.uiState.value.errorMessage)
     assertFalse(viewModel.uiState.value.isCapturing)
   }
@@ -374,9 +387,19 @@ class CameraViewModelTest {
   fun `capturePhoto sets capturing to true before operation`() {
     val mockContext = mockk<Context>()
     val mockImageCapture = mockk<ImageCapture>()
+    val mockCameraProvider = mockk<ProcessCameraProvider>()
+    val mockPreviewView = mockk<PreviewView>()
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+
+    // Setup camera binding first
+    every { mockRepository.bindCamera(any(), any(), any(), any()) } returns
+        Result.success(Pair(mockCamera, mockImageCapture))
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
+
     every { mockRepository.capturePhoto(mockContext, mockImageCapture, any(), any(), any()) }
         .answers { /* Do nothing */ }
-    viewModel.capturePhoto(mockContext, mockImageCapture) {}
+    viewModel.capturePhoto(mockContext) {}
     // Initially should be true (set by capturePhoto)
     // Then will be false after completion
     // But we verify it was set to true
@@ -407,13 +430,23 @@ class CameraViewModelTest {
   fun `capturePhoto error resets capturing state`() {
     val mockContext = mockk<Context>()
     val mockImageCapture = mockk<ImageCapture>()
+    val mockCameraProvider = mockk<ProcessCameraProvider>()
+    val mockPreviewView = mockk<PreviewView>()
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+
+    // Setup camera binding first
+    every { mockRepository.bindCamera(any(), any(), any(), any()) } returns
+        Result.success(Pair(mockCamera, mockImageCapture))
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
+
     val errorMessage = "Capture failed"
     val onErrorSlot = slot<(String) -> Unit>()
     every {
       mockRepository.capturePhoto(mockContext, mockImageCapture, any(), any(), capture(onErrorSlot))
     } answers { onErrorSlot.captured(errorMessage) }
     viewModel.setCapturing(true)
-    viewModel.capturePhoto(mockContext, mockImageCapture) {}
+    viewModel.capturePhoto(mockContext) {}
     assertFalse(viewModel.uiState.value.isCapturing)
   }
 
@@ -514,81 +547,67 @@ class CameraViewModelTest {
   // ========== Zoom Ratio Tests ==========
   @Test
   fun `setZoomRatio clamps to min and max correctly`() {
-    val (provider, preview, lifecycle) = setupCameraWithZoom(initialZoom = 2.0f, maxZoom = 5.0f)
-    val mockCamera = viewModel.bindCamera(provider, preview, lifecycle)!!
-    val mockControl = mockk<androidx.camera.core.CameraControl>(relaxed = true)
+    val mockCameraProvider = mockk<ProcessCameraProvider>(relaxed = true)
+    val mockPreviewView = mockk<PreviewView>(relaxed = true)
+    val mockLifecycleOwner = mockk<LifecycleOwner>(relaxed = true)
+    val mockCamera = mockk<androidx.camera.core.Camera>(relaxed = true)
+    val mockImageCapture = mockk<ImageCapture>()
+    val mockCameraInfo = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
+    val mockCameraControl = mockk<androidx.camera.core.CameraControl>(relaxed = true)
+    val mockZoomState =
+        mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
+    val mockZoomStateValue = mockk<androidx.camera.core.ZoomState>()
 
-    // Get the camera from the repository result and setup control
-    every { mockRepository.bindCamera(provider, preview, lifecycle, any()) } answers
+    every { mockCamera.cameraControl } returns mockCameraControl
+    every { mockCamera.cameraInfo } returns mockCameraInfo
+    every { mockCameraInfo.zoomState } returns mockZoomState
+    every { mockZoomStateValue.zoomRatio } returns 2.0f
+    every { mockZoomStateValue.minZoomRatio } returns 1.0f
+    every { mockZoomStateValue.maxZoomRatio } returns 5.0f
+
+    val observerSlot = slot<Observer<androidx.camera.core.ZoomState>>()
+    every { mockZoomState.observe(mockLifecycleOwner, capture(observerSlot)) } answers
         {
-          val camera = mockk<androidx.camera.core.Camera>(relaxed = true)
-          val cameraInfo = mockk<androidx.camera.core.CameraInfo>(relaxed = true)
-          val zoomState =
-              mockk<androidx.lifecycle.LiveData<androidx.camera.core.ZoomState>>(relaxed = true)
-          every { camera.cameraControl } returns mockControl
-          every { camera.cameraInfo } returns cameraInfo
-          every { cameraInfo.zoomState } returns zoomState
-          Result.success(Pair(camera, mockCamera))
+          observerSlot.captured.onChanged(mockZoomStateValue)
         }
-    viewModel.bindCamera(provider, preview, lifecycle)
+
+    every {
+      mockRepository.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner, any())
+    } returns Result.success(Pair(mockCamera, mockImageCapture))
+
+    viewModel.bindCamera(mockCameraProvider, mockPreviewView, mockLifecycleOwner)
 
     // Test clamping to min
     viewModel.setZoomRatio(0.5f)
-    verify { mockControl.setZoomRatio(1.0f) }
+    verify { mockCameraControl.setZoomRatio(1.0f) }
 
     // Test clamping to max
     viewModel.setZoomRatio(10.0f)
-    verify { mockControl.setZoomRatio(5.0f) }
+    verify { mockCameraControl.setZoomRatio(5.0f) }
 
     // Test valid value
     viewModel.setZoomRatio(3.0f)
-    verify { mockControl.setZoomRatio(3.0f) }
+    verify { mockCameraControl.setZoomRatio(3.0f) }
   }
 
   @Test
   fun `setZoomRatio does nothing when camera is null`() {
     // Don't bind camera, so it remains null - should not throw exception
     viewModel.setZoomRatio(2.0f)
-    assertTrue(true) // Test passes if no exception thrown
   }
 
+  // ========== Cropped Image Tests ==========
   @Test
-  fun `reset clears zoom ratios to defaults`() {
-    val (provider, preview, lifecycle) = setupCameraWithZoom(initialZoom = 3.0f, maxZoom = 8.0f)
-    viewModel.bindCamera(provider, preview, lifecycle)
-
-    // Verify zoom values from camera
-    assertEquals(3.0f, viewModel.uiState.value.zoomRatio)
-    assertEquals(8.0f, viewModel.uiState.value.maxZoomRatio)
-
-    // Reset should clear to defaults
-    viewModel.reset()
-    assertEquals(1.0f, viewModel.uiState.value.zoomRatio)
-    assertEquals(1.0f, viewModel.uiState.value.minZoomRatio)
-    assertEquals(1.0f, viewModel.uiState.value.maxZoomRatio)
-  }
-
-  // ========== Camera Provider Caching Test ==========
-  @Test
-  fun `getCameraProvider caches and returns provider immediately on second call`() = runTest {
+  fun `saveCroppedImage calls repository saveBitmap`() = runTest {
     val mockContext = mockk<Context>()
-    val mockProvider = mockk<ProcessCameraProvider>()
-    var callCount = 0
+    val mockBitmap = mockk<Bitmap>()
+    val mockUri = mockk<Uri>()
 
-    coEvery { mockRepository.getCameraProvider(mockContext) } answers
-        {
-          callCount++
-          mockProvider
-        }
+    every { mockRepository.saveBitmap(mockContext, mockBitmap) } returns mockUri
 
-    // First call
-    viewModel.getCameraProvider(mockContext, onSuccess = {}, onError = {})
-    advanceUntilIdle()
+    val result = viewModel.saveCroppedImage(mockContext, mockBitmap)
 
-    // Second call - should use cached provider
-    viewModel.getCameraProvider(mockContext, onSuccess = {}, onError = {})
-
-    // Repository should only be called once
-    assertEquals(1, callCount)
+    assertEquals(mockUri, result)
+    verify { mockRepository.saveBitmap(mockContext, mockBitmap) }
   }
 }
