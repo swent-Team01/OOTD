@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -52,6 +53,7 @@ import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapViewModel
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
@@ -70,6 +72,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 /**
@@ -386,15 +389,28 @@ fun OOTDApp(
                             null
                           }
 
+                      val mapViewModel: MapViewModel =
+                          if (focusLocation != null) {
+                            viewModel(factory = MapViewModelFactory(focusLocation))
+                          } else {
+                            viewModel()
+                          }
+
+                      val coroutineScope = rememberCoroutineScope()
+
                       MapScreen(
-                          viewModel =
-                              if (focusLocation != null) {
-                                viewModel(factory = MapViewModelFactory(focusLocation))
-                              } else {
-                                viewModel()
-                              },
+                          viewModel = mapViewModel,
                           onPostClick = { postId ->
-                            navigationActions.navigateTo(Screen.PostView(postId))
+                            // Check if user has posted today before navigating
+                            coroutineScope.launch {
+                              val hasPosted = mapViewModel.hasUserPostedToday()
+                              if (hasPosted) {
+                                navigationActions.navigateTo(Screen.PostView(postId))
+                              } else {
+                                mapViewModel.showSnackbar(
+                                    "You have to do a fitcheck before you can view the posts")
+                              }
+                            }
                           })
                     }
 
