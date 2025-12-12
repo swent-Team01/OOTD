@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -274,6 +275,7 @@ fun OutfitPostCard(
     onCardClick: (String) -> Unit = {},
     onBlurredClick: () -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
+    onCommentClick: (OutfitPost) -> Unit = {},
     onProfileClick: (String) -> Unit = {}
 ) {
   Box(
@@ -302,11 +304,22 @@ fun OutfitPostCard(
                 PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location, onClick = { onLocationClick(post.location) })
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
-                LikeRow(
-                    isLiked = isLiked,
-                    likeCount = likeCount,
-                    enabled = !isBlurred,
-                    onClick = { onLikeClick(post.postUID) })
+                // Reactions row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                      LikeRow(
+                          isLiked = isLiked,
+                          likeCount = likeCount,
+                          enabled = !isBlurred,
+                          onClick = { onLikeClick(post.postUID) })
+
+                      CommentButton(
+                          commentCount = post.comments.size,
+                          enabled = !isBlurred,
+                          onClick = { onCommentClick(post) })
+                    }
               }
 
               Spacer(modifier = Modifier.height(8.dp))
@@ -333,6 +346,30 @@ fun OutfitPostCard(
                     })
               }
         }
+      }
+}
+
+/**
+ * Composable displaying the comment button and comment count.
+ *
+ * @param commentCount The total number of comments for the post.
+ * @param enabled Whether the comment button is enabled (disabled when post is blurred).
+ * @param onClick Callback when the comment button is clicked.
+ */
+@Composable
+private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Unit) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.clickable(enabled = enabled) { onClick() }.testTag("commentButton")) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.Comment,
+            contentDescription = "Comments",
+            tint = if (enabled) OnSecondaryContainer else Tertiary)
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = commentCount.toString(),
+            style = Typography.bodyMedium,
+            color = if (enabled) OnSecondaryContainer else Tertiary)
       }
 }
 

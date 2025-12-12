@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.comments.CommentBottomSheet
+import com.android.ootd.ui.comments.CommentViewModel
 import com.android.ootd.ui.feed.FeedScreenTestTags.NAVIGATE_TO_NOTIFICATIONS_SCREEN
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDTheme
@@ -46,6 +48,7 @@ object FeedScreenTestTags {
 @Composable
 fun FeedScreen(
     feedViewModel: FeedViewModel = viewModel(),
+    commentViewModel: CommentViewModel = viewModel(),
     onAddPostClick: () -> Unit,
     onNotificationIconClick: () -> Unit = {},
     onSeeFitClick: (String) -> Unit = {},
@@ -56,6 +59,8 @@ fun FeedScreen(
   val uiState by feedViewModel.uiState.collectAsState()
   val hasPostedToday = uiState.hasPostedToday
   val posts = uiState.feedPosts
+  // Tracks which post's comments are being viewed, set back to null when comments sheet is closed
+  var selectedPostForComments by remember { mutableStateOf<OutfitPost?>(null) }
   val isRefreshing by feedViewModel.isRefreshing.collectAsState()
 
   LaunchedEffect(uiState.currentAccount?.uid, uiState.hasPostedToday, uiState.isPublicFeed) {
@@ -82,7 +87,26 @@ fun FeedScreen(
       onToggleFeed = { feedViewModel.toggleFeedType() },
       onProfileClick = onProfileClick,
       isRefreshing = isRefreshing,
-      onRefresh = { feedViewModel.onPullToRefreshTrigger() })
+      onRefresh = { feedViewModel.onPullToRefreshTrigger() },
+      onCommentClick = { post -> selectedPostForComments = post })
+
+  // Comments Bottom Sheet
+  selectedPostForComments?.let { selectedPost ->
+    val currentUserId = uiState.currentAccount?.uid ?: return@let
+    val latestPosts = uiState.feedPosts
+    val currentPost = latestPosts.find { it.postUID == selectedPost.postUID } ?: selectedPost
+
+    CommentBottomSheet(
+        post = currentPost,
+        currentUserId = currentUserId,
+        onDismiss = { selectedPostForComments = null },
+        onCommentAdded = {
+          // Refresh this specific post to show new comments
+          feedViewModel.refreshPost(currentPost.postUID)
+        },
+        onProfileClick = onProfileClick,
+        viewModel = commentViewModel)
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,6 +127,7 @@ private fun FeedScaffold(
     likeCounts: Map<String, Int> = emptyMap(),
     onLikeClick: (OutfitPost) -> Unit = {},
     isPublicFeed: Boolean = false,
+    onCommentClick: (OutfitPost) -> Unit = {},
     onToggleFeed: () -> Unit = {},
     onProfileClick: (String) -> Unit,
     isRefreshing: Boolean = false,
@@ -168,6 +193,7 @@ private fun FeedScaffold(
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
                   onLikeClick = onLikeClick,
+                  onCommentClick = onCommentClick,
                   onProfileClick = onProfileClick,
                   isRefreshing = isRefreshing,
                   onRefresh = onRefresh)
@@ -205,6 +231,7 @@ fun FeedList(
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
     onLocationClick: (Location) -> Unit = {},
+    onCommentClick: (OutfitPost) -> Unit = {},
     onProfileClick: (String) -> Unit = {},
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {}
@@ -227,7 +254,8 @@ fun FeedList(
                 onCardClick = { onPostClick(post.postUID) },
                 onBlurredClick = onBlurredClick,
                 onLocationClick = onLocationClick,
-                onProfileClick = onProfileClick)
+                onProfileClick = onProfileClick,
+                onCommentClick = onCommentClick)
           }
         }
       },
