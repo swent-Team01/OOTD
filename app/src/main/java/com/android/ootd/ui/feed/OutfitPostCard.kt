@@ -193,7 +193,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
                 Modifier.fillMaxWidth()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.FillHeight,
+            contentScale = ContentScale.FillWidth,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
