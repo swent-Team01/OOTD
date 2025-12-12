@@ -35,12 +35,14 @@ import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
+import kotlinx.coroutines.delay
 
 object FitCheckScreenTestTags {
   const val SCREEN = "fitCheckScreen"
@@ -54,6 +56,7 @@ object FitCheckScreenTestTags {
   const val CHOOSE_GALLERY_BUTTON = "fitCheckGalleryButton"
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
+  const val MISSING_PHOTO_WARNING = "fitCheckMissingPhotoWarning"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
   const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
@@ -250,8 +253,58 @@ private fun FitCheckScreenContent(
     overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
+  val hasPhoto = uiState.image != Uri.EMPTY
+  var showMissingPhotoWarning by remember { mutableStateOf(false) }
+
+  LaunchedEffect(hasPhoto) { if (hasPhoto) showMissingPhotoWarning = false }
+
+  LaunchedEffect(showMissingPhotoWarning) {
+    if (showMissingPhotoWarning) {
+      delay(5_000)
+      showMissingPhotoWarning = false
+    }
+  }
+
+  val onAddItemsClick: () -> Unit = {
+    if (overridePhoto || uiState.isPhotoValid) {
+      onClearError()
+      // Get the location from the locationSelectionViewModel if available, otherwise use
+      // emptyLocation
+      val finalLocation =
+          locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
+      onNextClick(uiState.image.toString(), uiState.description, finalLocation)
+    } else {
+      onDescriptionChange(uiState.description) // no-op; real screen sets error
+      showMissingPhotoWarning = true
+    }
+  }
 
   Scaffold(
+      floatingActionButton = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically) {
+              val containerColor = if (hasPhoto) Primary else Tertiary
+              val contentColor = if (hasPhoto) Color.White else Color.White
+
+              ExtendedFloatingActionButton(
+                  onClick = onAddItemsClick,
+                  containerColor = containerColor,
+                  contentColor = contentColor,
+                  modifier =
+                      Modifier.testTag(FitCheckScreenTestTags.NEXT_BUTTON)
+                          .defaultMinSize(minWidth = 180.dp, minHeight = 56.dp),
+                  icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Add items",
+                        tint = contentColor)
+                  },
+                  text = { Text("Add items", color = contentColor) })
+            }
+      },
+      floatingActionButtonPosition = FabPosition.End,
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
       topBar = {
         OOTDTopBar(
@@ -262,39 +315,6 @@ private fun FitCheckScreenContent(
                   onBackClick = onBackClick,
                   modifier = Modifier.testTag(FitCheckScreenTestTags.BACK_BUTTON))
             })
-      },
-      bottomBar = {
-        Button(
-            onClick = {
-              if (overridePhoto || uiState.isPhotoValid) {
-                onClearError()
-                // Get the location from the locationSelectionViewModel if available, otherwise use
-                // emptyLocation
-                val finalLocation =
-                    locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
-                onNextClick(uiState.image.toString(), uiState.description, finalLocation)
-              } else {
-                onDescriptionChange(uiState.description) // no-op; real screen sets error
-              }
-            },
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(80.dp)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .testTag(FitCheckScreenTestTags.NEXT_BUTTON),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary),
-            shape = RoundedCornerShape(16.dp)) {
-              Row(
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.Center) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Add items",
-                        tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add items", color = Color.White)
-                  }
-            }
       }) { innerPadding ->
         Column(
             modifier =
@@ -315,6 +335,17 @@ private fun FitCheckScreenContent(
                     style = Typography.bodyMedium,
                     modifier =
                         Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+              }
+
+              // Alert message in case user has not added a picture
+              if (showMissingPhotoWarning) {
+                Text(
+                    text = "Please add a photo before continuing.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = Typography.bodyMedium,
+                    modifier =
+                        Modifier.padding(horizontal = 8.dp)
+                            .testTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING))
               }
 
               // Description field with counter

@@ -929,7 +929,12 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
     accountRepository.addAccount(account1)
 
     val itemUids = listOf("item1", "item2", "item3")
-    itemUids.forEach { accountRepository.addItem(it) }
+    for (itemUid in itemUids) {
+      val result = accountRepository.addItem(itemUid)
+      assertTrue("Failed to add item $itemUid", result)
+    }
+
+    kotlinx.coroutines.delay(100)
 
     val itemsList = accountRepository.getItemsList(account1.uid)
     assertEquals(3, itemsList.size)

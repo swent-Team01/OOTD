@@ -7,6 +7,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -120,6 +121,17 @@ class LocationSelectionViewModelTest {
     assertEquals("Zürich", viewModel.uiState.value.locationQuery)
     assertEquals(sampleLocations, viewModel.uiState.value.locationSuggestions)
   }
+
+  @Test
+  fun setLocationQuery_populatesSuggestions_afterDebounceDelay() =
+      runTest(testDispatcher) {
+        coEvery { locationRepository.search("Zur") } returns sampleLocations.take(1)
+
+        viewModel.setLocationQuery("Zur")
+        advanceTimeBy(1_100) // debounce delay inside ViewModel
+
+        assertEquals(sampleLocations.take(1), viewModel.uiState.value.locationSuggestions)
+      }
 
   // ========== Loading State Tests ==========
 

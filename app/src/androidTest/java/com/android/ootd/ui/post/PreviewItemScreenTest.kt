@@ -175,6 +175,33 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
   }
 
   @Test
+  fun missingItemsWarning_showsAndAutoHides() {
+    setContent()
+    n(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertDoesNotExist()
+
+    n(PreviewItemScreenTestTags.POST_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    n(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertIsDisplayed()
+
+    composeTestRule.mainClock.advanceTimeBy(5_500)
+    composeTestRule.waitForIdle()
+
+    n(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertDoesNotExist()
+  }
+
+  @Test
+  fun emptyStateCta_opensAddItemDialog() {
+    setContent()
+    n(PreviewItemScreenTestTags.ADD_ITEM_DIALOG).assertDoesNotExist()
+
+    n(PreviewItemScreenTestTags.EMPTY_ITEM_CTA).performClick()
+    composeTestRule.waitForIdle()
+
+    n(PreviewItemScreenTestTags.ADD_ITEM_DIALOG).assertIsDisplayed()
+  }
+
+  @Test
   fun nonEmptyList_showsItems_expandCollapse_materialsAndPrice() {
     val i = item(materials = listOf(Material("Cotton", 70.0), Material("Polyester", 30.0)))
     setContent(items = listOf(i, item1))

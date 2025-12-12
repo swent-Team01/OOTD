@@ -53,7 +53,6 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
-
   const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"
@@ -274,6 +273,7 @@ fun OutfitPostCard(
     onLikeClick: (String) -> Unit,
     onSeeFitClick: (String) -> Unit = {},
     onCardClick: (String) -> Unit = {},
+    onBlurredClick: () -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
     onCommentClick: (OutfitPost) -> Unit = {},
     onProfileClick: (String) -> Unit = {}
@@ -297,7 +297,7 @@ fun OutfitPostCard(
                 // Click to get details enabled only when not blurred
                 val clickableModifier =
                     if (isBlurred) {
-                      Modifier
+                      Modifier.clickable { onBlurredClick() }
                     } else {
                       Modifier.clickable { onCardClick(post.postUID) }
                     }

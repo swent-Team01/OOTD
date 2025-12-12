@@ -131,5 +131,10 @@ fun ComposeTestRule.testLocationDropdown_showsAgain_whenRefocusingWithExistingSu
   waitForIdle()
 
   // Assert: dropdown should show again
+  waitUntil(timeoutMillis = 5_000) {
+    onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)
+        .fetchSemanticsNodes()
+        .isNotEmpty()
+  }
   onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION).assertCountEquals(1)
 }
