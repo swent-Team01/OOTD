@@ -76,7 +76,8 @@ fun OnboardingScreen(
     listOf(
         OnboardingPage(
             title = "Capture your outfit with a FitCheck",
-            description = "Take a photo of your outfit of the day to share with your friends.",
+            description =
+                "Take a photo of your outfit of the day to share with your friends and to view their posts.",
             accent = Primary,
             emoji = "📸"),
         OnboardingPage(
@@ -111,11 +112,17 @@ fun OnboardingScreen(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.Start) {
               Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(
+                Button(
                     onClick = onSkip,
                     enabled = !isLoading,
-                    modifier = Modifier.testTag(OnboardingScreenTestTags.SKIP_BUTTON)) {
-                      Text("Skip", style = Typography.labelLarge, color = OnSurfaceVariant)
+                    modifier = Modifier.testTag(OnboardingScreenTestTags.SKIP_BUTTON),
+                    shape = RoundedCornerShape(50),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = colors.secondaryContainer,
+                            contentColor = OnSurfaceVariant),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
+                      Text("Skip", style = Typography.labelLarge)
                     }
               }
 
