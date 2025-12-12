@@ -74,6 +74,9 @@ object CameraScreenTestTags {
   const val APPROVE_BUTTON = "approveButton"
   const val CROP_BUTTON = "cropButton"
   const val ERROR_MESSAGE = "errorMessage"
+  const val CROP_SCREEN_CONTAINER = "cropScreenContainer"
+  const val CROP_CANCEL_BUTTON = "cropCancelButton"
+  const val CROP_SAVE_BUTTON = "cropSaveButton"
 }
 
 /**
@@ -501,6 +504,7 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
       modifier =
           Modifier.fillMaxSize()
               .background(Color.Black)
+              .testTag(CameraScreenTestTags.CROP_SCREEN_CONTAINER)
               .onGloballyPositioned { coordinates ->
                 if (containerSize == androidx.compose.ui.geometry.Size.Zero) {
                   containerSize = coordinates.size.toSize()
@@ -596,9 +600,11 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
                   modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onCancel) {
-                      Text("Cancel", color = White, style = Typography.titleMedium)
-                    }
+                    TextButton(
+                        onClick = onCancel,
+                        modifier = Modifier.testTag(CameraScreenTestTags.CROP_CANCEL_BUTTON)) {
+                          Text("Cancel", color = White, style = Typography.titleMedium)
+                        }
 
                     Button(
                         onClick = {
@@ -607,6 +613,7 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
                           val result = helper.cropBitmap(bitmap, finalCropRect)
                           result.onSuccess { onCrop(it) }
                         },
+                        modifier = Modifier.testTag(CameraScreenTestTags.CROP_SAVE_BUTTON),
                         colors = ButtonDefaults.buttonColors(containerColor = Tertiary),
                         shape = CircleShape,
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp)) {
