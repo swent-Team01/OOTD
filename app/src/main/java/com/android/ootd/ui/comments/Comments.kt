@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -185,7 +186,7 @@ private fun CommentsList(
               horizontalAlignment = Alignment.CenterHorizontally,
               verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(
-                    imageVector = Icons.Outlined.Comment,
+                    imageVector = Icons.AutoMirrored.Outlined.Comment,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = Tertiary)

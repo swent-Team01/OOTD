@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.outlined.Comment
@@ -351,7 +352,7 @@ private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Un
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.clickable(enabled = enabled) { onClick() }.testTag("commentButton")) {
         Icon(
-            imageVector = Icons.Outlined.Comment,
+            imageVector = Icons.AutoMirrored.Outlined.Comment,
             contentDescription = "Comments",
             tint = if (enabled) OnSecondaryContainer else Tertiary)
         Spacer(modifier = Modifier.width(4.dp))
