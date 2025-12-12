@@ -38,6 +38,7 @@ import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.TertiaryContainer
 import com.android.ootd.ui.theme.Typography
 import kotlinx.coroutines.launch
 
@@ -90,14 +91,14 @@ fun OnboardingScreen(
             title = "See friends' posts and star their items so you can always have them !",
             description =
                 "Browse the feed, open fits you love, and star the pieces you want to remember so you can store them in your account.",
-            accent = colors.tertiaryContainer,
+            accent = TertiaryContainer,
             emoji = "⭐",
             imageRes = R.drawable.star_items),
         OnboardingPage(
             title = "Use the map or public feed to find new friends",
             description =
                 "Hop to the map to spot nearby users or follow people from the public feed to grow your circle and enhance your experience.",
-            accent = colors.secondaryContainer,
+            accent = Secondary,
             emoji = "🗺️",
             imageRes = R.drawable.find_friends))
   }
@@ -119,8 +120,7 @@ fun OnboardingScreen(
                     shape = RoundedCornerShape(50),
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor = colors.secondaryContainer,
-                            contentColor = OnSurfaceVariant),
+                            containerColor = Secondary, contentColor = OnSurfaceVariant),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
                       Text("Skip", style = Typography.labelLarge)
                     }
@@ -229,7 +229,7 @@ fun OnboardingScreen(
                                   .background(
                                       color =
                                           if (isSelected) Primary
-                                          else colors.outline.copy(alpha = 0.4f),
+                                          else OnSurfaceVariant.copy(alpha = 0.4f),
                                       shape = CircleShape))
                     }
                   }
