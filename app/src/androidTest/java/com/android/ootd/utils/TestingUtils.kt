@@ -353,7 +353,12 @@ fun fullRegisterSequence(
     acceptBetaScreen: Boolean = true
 ) {
   verifyElementAppearsWithTimer(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON)
-  clickWithWait(composeTestRule, SignInScreenTestTags.LOGIN_BUTTON, true)
+  clickWithWait(
+      composeTestRule,
+      SignInScreenTestTags.LOGIN_BUTTON,
+      shouldScroll = true,
+      useUnmergedTree = true)
+  composeTestRule.waitForIdle()
 
   // Use default logins
   enterUsername(composeTestRule, username)
@@ -363,6 +368,7 @@ fun fullRegisterSequence(
   // Finish registration
 
   clickWithWait(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE, shouldScroll = true)
+  composeTestRule.waitForIdle()
   // Go through the confirmation screen:
   if (acceptBetaScreen) {
     clickWithWait(composeTestRule, OnboardingScreenTestTags.SKIP_BUTTON)
