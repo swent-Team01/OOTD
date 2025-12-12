@@ -9,9 +9,8 @@
 [![Build Status](https://github.com/swent-Team01/OOTD/actions/workflows/ci.yml/badge.svg)](https://github.com/swent-Team01/OOTD/actions)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.1.10-blue.svg)](https://kotlinlang.org)
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
-[![License](https://img.shields.io/badge/License-Not%20Yet%20Licensed-red.svg)](#-license)
 
-[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Usage](#-usage) • [Contributing](#-contributing)
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Contributing](#-contributing)
 
 </div>
 
@@ -41,7 +40,7 @@ OOTD provides a dedicated social platform where users can:
 
 ---
 
-## ✨ Features
+## Features
 
 ### User Management
 - **Google Sign-In**: Quick and secure authentication
@@ -83,13 +82,6 @@ OOTD provides a dedicated social platform where users can:
 - **Dark/Light Mode**: Choose your preferred theme
 - **Smooth Animations**: Polished transitions and interactions
 - **Offline Support**: Access your wardrobe even without internet
-
----
-
-## Screenshots
-
-<!-- TODO: Add actual app screenshots -->
-_Screenshots coming soon! Check back later or visit our [Figma designs](https://www.figma.com/design/EQfCuEx3jJpUSZ3NKc4DE5/stefan.taga-s-team-library?t=1rG02nxGubCxY31q-0)._
 
 ---
 
@@ -437,28 +429,6 @@ Have an idea? We'd love to hear it!
 
 ---
 
-## Security & Privacy
-
-> 🔐 **Read our full [Security Policy](SECURITY.md)** for vulnerability reporting and security guidelines.
-
-### Security Best Practices
-
-- **API Keys**: Never commit API keys or secrets. Use `local.properties` for local development.
-- **Firebase Rules**: We have strict Firestore and Storage security rules. Test rule changes thoroughly.
-- **User Data**: All user data is encrypted in transit and at rest.
-- **Permissions**: Request only necessary permissions and explain why they're needed.
-
-### Reporting Security Issues
-
-If you discover a security vulnerability, please follow our [Security Policy](SECURITY.md):
-
-1. **Do NOT** open a public issue
-2. Use [GitHub Security Advisories](https://github.com/swent-Team01/OOTD/security/advisories/new) or email maintainers
-3. Provide detailed information about the vulnerability
-4. Allow time for a fix before public disclosure
-
----
-
 ## License
 
 This project is currently **not licensed** for public use. All rights are reserved by the OOTD development team. 
@@ -485,19 +455,19 @@ This project is currently **not licensed** for public use. All rights are reserv
 
 ---
 
-## 👥 Team
+## Team
 
 OOTD is developed and maintained by a dedicated team of software engineering students:
 
-| Name | Role | GitHub |
-|------|------|--------|
-| **Marc Kallergis** | Lead Developer | [@MarcK0909](https://github.com/MarcK0909) |
-| **Corentin Steinhauser** | Backend Engineer | [@cocoStein](https://github.com/cocoStein) |
-| **Clemens Möbius** | Frontend Engineer | [@Clemensito](https://github.com/Clemensito) |
-| **Stefan Taga** | UI/UX Designer | [@stefantaga24](https://github.com/stefantaga24) |
-| **Julien Meric** | QA Engineer | [@j-meric](https://github.com/j-meric) |
-| **Bianca Pitu** | Full-Stack Developer | [@bbianca2004](https://github.com/bbianca2004) |
-| **Aslı Ünlüer** | Full-Stack Developer | [@asunluer](https://github.com/asunluer) |
+| Name | GitHub |
+|------|--------|
+| **Marc Kallergis** | [@MarcK0909](https://github.com/MarcK0909) |
+| **Corentin Steinhauser** | [@cocoStein](https://github.com/cocoStein) |
+| **Clemens Möbius** | [@Clemensito](https://github.com/Clemensito) |
+| **Stefan Taga** | [@stefantaga24](https://github.com/stefantaga24) |
+| **Julien Meric** | [@j-meric](https://github.com/j-meric) |
+| **Bianca Pitu** | [@bbianca2004](https://github.com/bbianca2004) |
+| **Aslı Ünlüer** | [@asunluer](https://github.com/asunluer) |
 
 ---
 
@@ -541,7 +511,7 @@ This project leverages incredible open-source tools and services:
 
 **Made with ❤️ by the OOTD Team**
 
-*A SWENT 2025 Project*
+*A SWENT [CS-311](https://edu.epfl.ch/coursebook/en/the-software-enterprise-from-ideas-to-products-CS-311) 2025 Project*
 
 [⬆ Back to Top](#-ootd---outfit-of-the-day)
 
