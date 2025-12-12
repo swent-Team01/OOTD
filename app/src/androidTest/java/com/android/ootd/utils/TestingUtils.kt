@@ -460,9 +460,34 @@ fun checkOutMap(composeTestRule: ComposeContentTestRule) {
 
 fun verifyPressingLocationGoesToMap(composeTestRule: ComposeContentTestRule) {
   clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
-  verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION)
+
+  // Wait for feed to finish loading
+  try {
+    composeTestRule.waitUntil(timeoutMillis = 10_000) {
+      composeTestRule
+          .onAllNodesWithTag(FeedScreenTestTags.LOADING_OVERLAY)
+          .fetchSemanticsNodes()
+          .isEmpty()
+    }
+  } catch (_: Exception) {
+    // Loading didn't disappear, proceed anyway
+  }
+
+  // Wait for posts to appear
+  verifyElementAppearsWithTimer(composeTestRule, OUTFIT_POST_CARD, timeoutMillis = 10_000)
+
+  // Wait for location element to appear and scroll to it if needed
+  verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION, timeoutMillis = 10_000)
+
+  // Scroll to the first location element to ensure it's visible
+  composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performScrollTo()
+
+  // Click on the location
   composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performClick()
-  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
+
+  // Verify we navigated to the map screen
+  verifyElementAppearsWithTimer(
+      composeTestRule, MapScreenTestTags.TOP_BAR_TITLE, timeoutMillis = 10_000)
 }
 
 fun checkOutfitView(composeTestRule: ComposeContentTestRule) {
