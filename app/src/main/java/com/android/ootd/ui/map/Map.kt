@@ -64,7 +64,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
         OOTDTopBar(
             modifier = Modifier.testTag(MapScreenTestTags.TOP_BAR),
             textModifier = Modifier.testTag(MapScreenTestTags.TOP_BAR_TITLE),
-            centerText = "MAP")
+            centerText = "OOTD")
       },
       content = { paddingValues ->
         Box(
