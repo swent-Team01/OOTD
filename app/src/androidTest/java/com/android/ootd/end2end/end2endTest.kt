@@ -49,7 +49,7 @@ class End2EndTest : BaseEnd2EndTest() {
    * 5. App automatically navigates to Registration screen
    * 6. User enters username, date of birth, and location
    * 7. User clicks Save button
-   * 8. App navigates directly to Feed screen (consent already given via mock)
+   * 8. App navigates directly to Feed screen (onboarding flagged as seen via test setup)
    * 9. User navigates to Search screen via bottom navigation tab
    * 10. User returns to Feed screen via bottom navigation tab
    * 11. User clicks "Do a Fit Check" button to start posting a new outfit

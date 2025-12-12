@@ -19,7 +19,6 @@ import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.account.ViewUserScreenTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
-import com.android.ootd.ui.consent.BetaConsentScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.OUTFIT_POST_CARD
@@ -31,6 +30,7 @@ import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
+import com.android.ootd.ui.onboarding.OnboardingScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.post.PostViewTestTags
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
@@ -117,10 +117,9 @@ fun verifyElementDoesNotAppearWithTimer(composeTestRule: ComposeContentTestRule,
 fun verifyElementAppearsWithTimer(
     composeTestRule: ComposeContentTestRule,
     tag: String,
-    useUnmergedTree: Boolean = false,
-    timeoutMillis: Long = 8_000
+    useUnmergedTree: Boolean = false
 ) {
-  composeTestRule.waitUntil(timeoutMillis = timeoutMillis) {
+  composeTestRule.waitUntil(timeoutMillis = 8000) {
     composeTestRule
         .onAllNodesWithTag(tag, useUnmergedTree = useUnmergedTree)
         .fetchSemanticsNodes()
@@ -136,36 +135,15 @@ fun addPostWithOneItem(
     inventoryItemUuid: String = "",
     addLocation: Boolean = false
 ) {
-  // Ensure we're on the feed tab and the UI is ready
-  clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB, useUnmergedTree = true)
-  verifyFeedScreenAppears(composeTestRule)
-
-  // Wait for any loading overlay to disappear before looking for FAB
-  // The FAB is only visible when isLoading = false and hasPostedToday = false
-  composeTestRule.waitUntil(timeoutMillis = 10_000) {
-    composeTestRule
-        .onAllNodesWithTag(FeedScreenTestTags.LOADING_OVERLAY)
-        .fetchSemanticsNodes()
-        .isEmpty()
-  }
-
-  // Wait for the FAB to appear - if it doesn't appear, the user has already posted today
-  verifyElementAppearsWithTimer(
-      composeTestRule, FeedScreenTestTags.ADD_POST_FAB, timeoutMillis = 15_000)
+  verifyElementAppearsWithTimer(composeTestRule, FeedScreenTestTags.ADD_POST_FAB)
 
   clickWithWait(composeTestRule, FeedScreenTestTags.ADD_POST_FAB, useUnmergedTree = true)
   if (addLocation) {
     clickWithWait(
         composeTestRule, LocationSelectionTestTags.LOCATION_DEFAULT_EPFL, shouldScroll = true)
   }
-  verifyElementAppearsWithTimer(
-      composeTestRule,
-      FitCheckScreenTestTags.DESCRIPTION_INPUT,
-      useUnmergedTree = true,
-      timeoutMillis = 15_000)
   composeTestRule
-      .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT, useUnmergedTree = true)
-      .performScrollTo()
+      .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
       .performTextInput("Sample description")
 
   clickWithWait(composeTestRule, FitCheckScreenTestTags.ADD_PHOTO_BUTTON)
@@ -230,8 +208,6 @@ suspend fun addItemFromInventory(
     userId: String
 ) {
   val initialItemNumber = itemsRepository.getAllItems().count()
-  val initialAccountItems = accountRepository.getItemsList(userId).size
-
   clickWithWait(composeTestRule, NavigationTestTags.INVENTORY_TAB)
   clickWithWait(composeTestRule, InventoryScreenTestTags.ADD_ITEM_FAB)
   assert(userId != "")
@@ -249,19 +225,11 @@ suspend fun addItemFromInventory(
         .isNotEmpty()
   }
   clickWithWait(composeTestRule, AddItemScreenTestTags.ADD_ITEM_BUTTON)
-
   val finalItemNumber = itemsRepository.getAllItems().count()
-  assert(finalItemNumber == initialItemNumber + 1) {
-    "Expected ${initialItemNumber + 1} items but found $finalItemNumber"
-  }
-
+  assert(finalItemNumber == initialItemNumber + 1)
   val accountItems = accountRepository.getItemsList(userId)
-  assert(accountItems.size == initialAccountItems + 1) {
-    "Expected ${initialAccountItems + 1} items for user but found ${accountItems.size}"
-  }
-
-  // Get the most recently added item (the last one in the list)
-  val itemUuid = itemsRepository.getAllItems().last().itemUuid
+  assert(accountItems.size == 1)
+  val itemUuid = itemsRepository.getAllItems()[0].itemUuid
 
   verifyElementAppearsWithTimer(
       composeTestRule, "${InventoryScreenTestTags.ITEM_CARD}_${itemUuid}", useUnmergedTree = true)
@@ -383,8 +351,7 @@ fun fullRegisterSequence(
   clickWithWait(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE, shouldScroll = true)
   // Go through the confirmation screen:
   if (acceptBetaScreen) {
-    clickWithWait(composeTestRule, BetaConsentScreenTestTags.CHECKBOX)
-    clickWithWait(composeTestRule, BetaConsentScreenTestTags.AGREE_BUTTON)
+    clickWithWait(composeTestRule, OnboardingScreenTestTags.SKIP_BUTTON)
   }
   verifyFeedScreenAppears(composeTestRule)
 }
@@ -460,34 +427,19 @@ fun checkOutMap(composeTestRule: ComposeContentTestRule) {
 
 fun verifyPressingLocationGoesToMap(composeTestRule: ComposeContentTestRule) {
   clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
+  verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION)
 
-  // Wait for feed to finish loading
-  try {
-    composeTestRule.waitUntil(timeoutMillis = 10_000) {
-      composeTestRule
-          .onAllNodesWithTag(FeedScreenTestTags.LOADING_OVERLAY)
-          .fetchSemanticsNodes()
-          .isEmpty()
-    }
-  } catch (_: Exception) {
-    // Loading didn't disappear, proceed anyway
-  }
-
-  // Wait for posts to appear
-  verifyElementAppearsWithTimer(composeTestRule, OUTFIT_POST_CARD, timeoutMillis = 10_000)
-
-  // Wait for location element to appear and scroll to it if needed
-  verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION, timeoutMillis = 10_000)
-
-  // Scroll to the first location element to ensure it's visible
+  // Ensure the first location chip is visible before clicking
   composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performScrollTo()
-
-  // Click on the location
   composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performClick()
 
-  // Verify we navigated to the map screen
-  verifyElementAppearsWithTimer(
-      composeTestRule, MapScreenTestTags.TOP_BAR_TITLE, timeoutMillis = 10_000)
+  // Allow extra time for navigation and map rendering
+  composeTestRule.waitUntil(timeoutMillis = 10_000) {
+    composeTestRule
+        .onAllNodesWithTag(MapScreenTestTags.TOP_BAR_TITLE)
+        .fetchSemanticsNodes()
+        .isNotEmpty()
+  }
 }
 
 fun checkOutfitView(composeTestRule: ComposeContentTestRule) {
