@@ -428,8 +428,18 @@ fun checkOutMap(composeTestRule: ComposeContentTestRule) {
 fun verifyPressingLocationGoesToMap(composeTestRule: ComposeContentTestRule) {
   clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
   verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION)
+
+  // Ensure the first location chip is visible before clicking
+  composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performScrollTo()
   composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performClick()
-  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
+
+  // Allow extra time for navigation and map rendering
+  composeTestRule.waitUntil(timeoutMillis = 10_000) {
+    composeTestRule
+        .onAllNodesWithTag(MapScreenTestTags.TOP_BAR_TITLE)
+        .fetchSemanticsNodes()
+        .isNotEmpty()
+  }
 }
 
 fun checkOutfitView(composeTestRule: ComposeContentTestRule) {
