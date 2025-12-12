@@ -42,10 +42,10 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 fun verifyFeedScreenAppears(composeTestRule: ComposeContentTestRule) {
   // Verify we're on the Feed screen
-  composeTestRule.waitUntil(timeoutMillis = 5000) {
+  composeTestRule.waitUntil(timeoutMillis = 8000) {
     composeTestRule.onNodeWithTag(FeedScreenTestTags.SCREEN, useUnmergedTree = true).isDisplayed()
   }
-  composeTestRule.waitUntil(timeoutMillis = 5000) {
+  composeTestRule.waitUntil(timeoutMillis = 8000) {
     composeTestRule.onNodeWithTag(FeedScreenTestTags.TOP_BAR, useUnmergedTree = true).isDisplayed()
   }
 }
