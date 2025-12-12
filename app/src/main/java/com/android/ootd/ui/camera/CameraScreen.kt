@@ -14,7 +14,6 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -26,12 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -46,6 +47,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.camera.ImageOrientationHelper
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.CircularIconButton
@@ -183,96 +185,106 @@ private fun CameraView(
               }
             })
 
-    // Close button (top-left)
-    CircularIconButton(
-        onClick = onClose,
-        icon = Icons.Default.Close,
-        contentDescription = "Close Camera",
+    // Top Bar with Close button
+    Box(
         modifier =
-            Modifier.align(Alignment.TopStart)
-                .padding(16.dp)
-                .testTag(CameraScreenTestTags.CLOSE_BUTTON),
-        backgroundColor = Primary.copy(alpha = 0.5f),
-        iconTint = White,
-        iconSize = 36.dp)
+            Modifier.align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent)))
+                .padding(16.dp)) {
+          CircularIconButton(
+              onClick = onClose,
+              icon = Icons.Default.Close,
+              contentDescription = "Close Camera",
+              modifier =
+                  Modifier.align(Alignment.TopStart).testTag(CameraScreenTestTags.CLOSE_BUTTON),
+              backgroundColor = Primary.copy(alpha = 0.3f),
+              iconTint = White,
+              iconSize = 24.dp)
+        }
 
     // Bottom controls
     Column(
-        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+        modifier =
+            Modifier.align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
+                .padding(bottom = 48.dp, top = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
 
           // Zoom Slider
           if (cameraUiState.maxZoomRatio > cameraUiState.minZoomRatio) {
             Row(
                 modifier =
-                    Modifier.padding(top = 80.dp, start = 16.dp, end = 16.dp)
-                        .background(Primary.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.Start,
+                    Modifier.padding(bottom = 24.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically) {
+                  Text(
+                      text = "${String.format("%.1f", cameraUiState.zoomRatio)}x",
+                      color = White,
+                      style = Typography.labelLarge,
+                      modifier = Modifier.padding(end = 8.dp))
                   Slider(
                       value = cameraUiState.zoomRatio,
                       onValueChange = { newRatio -> cameraViewModel.setZoomRatio(newRatio) },
                       valueRange = cameraUiState.minZoomRatio..cameraUiState.maxZoomRatio,
-                      modifier = Modifier.width(220.dp).testTag(CameraScreenTestTags.ZOOM_SLIDER),
+                      modifier = Modifier.width(150.dp).testTag(CameraScreenTestTags.ZOOM_SLIDER),
                       colors =
                           SliderDefaults.colors(
-                              thumbColor = Tertiary,
+                              thumbColor = White,
                               activeTrackColor = Tertiary,
                               inactiveTrackColor = White.copy(alpha = 0.3f)))
-
-                  Spacer(modifier = Modifier.size(8.dp))
-
-                  Text(
-                      text = "${String.format("%.1f", cameraUiState.zoomRatio)}x",
-                      color = White,
-                      style = Typography.bodyMedium)
                 }
           }
 
-          Spacer(modifier = Modifier.size(8.dp))
-
           Row(
-              modifier =
-                  Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, bottom = 140.dp),
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
               horizontalArrangement = Arrangement.SpaceEvenly,
               verticalAlignment = Alignment.CenterVertically) {
                 // Switch Camera Button
                 IconButton(
                     onClick = { cameraViewModel.switchCamera() },
-                    modifier = Modifier.testTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON)) {
+                    modifier =
+                        Modifier.size(48.dp)
+                            .background(White.copy(alpha = 0.2f), CircleShape)
+                            .testTag(CameraScreenTestTags.SWITCH_CAMERA_BUTTON)) {
                       Icon(
                           imageVector = Icons.Default.Refresh,
                           contentDescription = "Switch Camera",
                           tint = White,
-                          modifier = Modifier.size(32.dp))
+                          modifier = Modifier.size(24.dp))
                     }
 
                 // Capture Button
                 Box(
-                    modifier = Modifier.size(72.dp).border(4.dp, Tertiary, CircleShape),
-                    contentAlignment = Alignment.Center) {
-                      IconButton(
-                          onClick = {
-                            cameraViewModel.capturePhoto(
-                                context = context,
-                                onSuccess = {
-                                  // Just set the captured image, don't close or call
-                                  // onImageCaptured
-                                  // The preview screen will handle that
-                                })
-                          },
-                          enabled = !cameraUiState.isCapturing,
-                          modifier =
-                              Modifier.size(60.dp)
-                                  .background(Primary, CircleShape)
-                                  .testTag(CameraScreenTestTags.CAPTURE_BUTTON)) {
-                            // Empty icon button - the circle is the visual
-                          }
-                    }
+                    modifier =
+                        Modifier.size(80.dp)
+                            .border(4.dp, Secondary, CircleShape)
+                            .padding(6.dp)
+                            .background(
+                                if (cameraUiState.isCapturing) Color.Gray else Primary, CircleShape)
+                            .testTag(CameraScreenTestTags.CAPTURE_BUTTON)
+                            .pointerInput(Unit) {
+                              awaitPointerEventScope {
+                                while (true) {
+                                  val event = awaitPointerEvent()
+                                  if (event.type == PointerEventType.Press) {
+                                    if (!cameraUiState.isCapturing) {
+                                      cameraViewModel.capturePhoto(
+                                          context = context, onSuccess = {})
+                                    }
+                                  }
+                                }
+                              }
+                            })
 
                 // Placeholder for symmetry on the bottom bar
-                Spacer(modifier = Modifier.size(32.dp))
+                Spacer(modifier = Modifier.size(48.dp))
               }
         }
   }
@@ -399,7 +411,7 @@ private fun ImagePreviewScreen(
                 Modifier.align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                        Brush.verticalGradient(
                             colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
                     .padding(bottom = 48.dp, top = 24.dp)) {
               Row(
@@ -412,8 +424,8 @@ private fun ImagePreviewScreen(
                           onClick = onRetake,
                           modifier =
                               Modifier.size(56.dp)
-                                  .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                                  .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                  .background(White.copy(alpha = 0.2f), CircleShape)
+                                  .border(1.dp, White.copy(alpha = 0.5f), CircleShape)
                                   .testTag(CameraScreenTestTags.RETAKE_BUTTON)) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -572,27 +584,34 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
         }
 
         // Buttons
-        Row(
+        Box(
             modifier =
                 Modifier.align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp, start = 16.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween) {
-              Button(
-                  onClick = onCancel,
-                  colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)) {
-                    Text("Cancel")
-                  }
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
+                    .padding(bottom = 48.dp, top = 24.dp)) {
+              Row(
+                  modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onCancel) {
+                      Text("Cancel", color = White, style = Typography.titleMedium)
+                    }
 
-              Button(
-                  onClick = {
-                    val finalCropRect = calculateCropRect(bitmap, imageRect, cropRect)
-                    val helper = ImageOrientationHelper()
-                    val result = helper.cropBitmap(bitmap, finalCropRect)
-                    result.onSuccess { onCrop(it) }
-                  },
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Text("Crop")
+                    Button(
+                        onClick = {
+                          val finalCropRect = calculateCropRect(bitmap, imageRect, cropRect)
+                          val helper = ImageOrientationHelper()
+                          val result = helper.cropBitmap(bitmap, finalCropRect)
+                          result.onSuccess { onCrop(it) }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Tertiary),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp)) {
+                          Text("Save", color = White, style = Typography.titleMedium)
+                        }
                   }
             }
       }
