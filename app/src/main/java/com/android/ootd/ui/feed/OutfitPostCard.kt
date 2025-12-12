@@ -193,7 +193,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .aspectRatio(3f / 4f)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.FillHeight,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
