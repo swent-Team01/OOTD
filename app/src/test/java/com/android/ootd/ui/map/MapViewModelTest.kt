@@ -499,4 +499,135 @@ class MapViewModelTest {
     val pos2 = adjusted[1].position
     assert(pos1.latitude != pos2.latitude || pos1.longitude != pos2.longitude)
   }
+
+  @Test
+  fun hasUserPostedToday_returnsTrue_whenUserHasPosted() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockFeedRepository.hasPostedToday(testUserId) } returns true
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertTrue(hasPosted)
+  }
+
+  @Test
+  fun hasUserPostedToday_returnsFalse_whenUserHasNotPosted() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockFeedRepository.hasPostedToday(testUserId) } returns false
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertFalse(hasPosted)
+  }
+
+  @Test
+  fun hasUserPostedToday_returnsFalse_whenNoUserIsLoggedIn() = runTest {
+    every { mockFirebaseAuth.currentUser } returns null
+
+    coEvery { mockAccountRepository.observeAccount(any()) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertFalse(hasPosted)
+  }
+
+  @Test
+  fun hasUserPostedToday_returnsFalse_onException() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockFeedRepository.hasPostedToday(testUserId) } throws Exception("Network error")
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertFalse(hasPosted)
+  }
+
+  @Test
+  fun showSnackbar_setsSnackbarMessage() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val testMessage = "Test snackbar message"
+    viewModel.showSnackbar(testMessage)
+
+    assertEquals(testMessage, viewModel.uiState.value.snackbarMessage)
+  }
+
+  @Test
+  fun clearSnackbar_removesSnackbarMessage() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // First set a message
+    viewModel.showSnackbar("Test message")
+    assertEquals("Test message", viewModel.uiState.value.snackbarMessage)
+
+    // Then clear it
+    viewModel.clearSnackbar()
+    assertEquals(null, viewModel.uiState.value.snackbarMessage)
+  }
+
+  @Test
+  fun snackbarMessage_initiallyNull() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    assertEquals(null, viewModel.uiState.value.snackbarMessage)
+  }
+
+  @Test
+  fun showSnackbar_canBeCalledMultipleTimes() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    viewModel.showSnackbar("Message 1")
+    assertEquals("Message 1", viewModel.uiState.value.snackbarMessage)
+
+    viewModel.showSnackbar("Message 2")
+    assertEquals("Message 2", viewModel.uiState.value.snackbarMessage)
+  }
+
+  @Test
+  fun snackbarMessage_doesNotAffectOtherState() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val initialLocation = viewModel.uiState.value.userLocation
+    val initialAccount = viewModel.uiState.value.currentAccount
+    val initialMapType = viewModel.uiState.value.selectedMapType
+
+    viewModel.showSnackbar("Test message")
+
+    val updatedState = viewModel.uiState.value
+    assertEquals(initialLocation, updatedState.userLocation)
+    assertEquals(initialAccount, updatedState.currentAccount)
+    assertEquals(initialMapType, updatedState.selectedMapType)
+    assertEquals("Test message", updatedState.snackbarMessage)
+  }
 }

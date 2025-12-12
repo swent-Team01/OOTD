@@ -42,7 +42,7 @@ sealed class Screen(
       Screen(route = "accountEdit", name = "Account Edit", isTopLevelDestination = false)
 
   object AccountView :
-      Screen(route = "accountView", name = "Account View", isTopLevelDestination = false)
+      Screen(route = "accountView", name = "Account View", isTopLevelDestination = true)
 
   data class FitCheck(val postUuid: String = "") :
       Screen(route = "fitCheck?postUuid=$postUuid", name = "FitCheck") {
@@ -91,7 +91,7 @@ sealed class Screen(
       Screen(
           route = buildMapRoute(latitude, longitude, locationName),
           name = "Map",
-          isTopLevelDestination = false) {
+          isTopLevelDestination = true) {
     companion object {
       const val route = "map?lat={lat}&lon={lon}&name={name}"
 
@@ -105,10 +105,10 @@ sealed class Screen(
     }
   }
 
-  object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
+  object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = true)
 
   object InventoryScreen :
-      Screen(route = "inventory", name = "Inventory", isTopLevelDestination = false)
+      Screen(route = "inventory", name = "Inventory", isTopLevelDestination = true)
 
   object NotificationsScreen :
       Screen(route = "notifications", name = "Notifications", isTopLevelDestination = false)

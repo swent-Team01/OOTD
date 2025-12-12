@@ -49,7 +49,8 @@ data class MapUiState(
     val focusLocation: Location? = null,
     val isLoading: Boolean = true,
     val errorMsg: String? = null,
-    val selectedMapType: MapType = MapType.FRIENDS_POSTS
+    val selectedMapType: MapType = MapType.FRIENDS_POSTS,
+    val snackbarMessage: String? = null
 )
 
 /**
@@ -234,6 +235,26 @@ class MapViewModel(
   /** Switch between Friends Posts and Public Profiles map. */
   fun setMapType(mapType: MapType) {
     _uiState.value = _uiState.value.copy(selectedMapType = mapType)
+  }
+
+  /** Check if the user has posted today based on the current account's posts. */
+  suspend fun hasUserPostedToday(): Boolean {
+    val currentUserId = Firebase.auth.currentUser?.uid ?: return false
+    return try {
+      feedRepository.hasPostedToday(currentUserId)
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  /** Show a snackbar message. */
+  fun showSnackbar(message: String) {
+    _uiState.value = _uiState.value.copy(snackbarMessage = message)
+  }
+
+  /** Clear the snackbar message. */
+  fun clearSnackbar() {
+    _uiState.value = _uiState.value.copy(snackbarMessage = null)
   }
 }
 

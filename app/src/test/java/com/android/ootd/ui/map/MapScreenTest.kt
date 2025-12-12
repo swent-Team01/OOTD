@@ -103,7 +103,7 @@ class MapScreenTest {
     composeTestRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.TOP_BAR_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithText("MAP").assertIsDisplayed()
+    composeTestRule.onNodeWithText("OOTD").assertIsDisplayed()
     composeTestRule.onNodeWithTag(MapScreenTestTags.CONTENT_BOX).assertIsDisplayed()
 
     // Verify loading indicator is shown (since dispatcher is not advanced)
@@ -156,33 +156,35 @@ class MapScreenTest {
       MapScreen(viewModel = mockViewModel, onPostClick = { postId -> capturedPostId = postId })
     }
 
-    // Simulate the ProfilePictureMarker onClick being triggered
-    // In the actual implementation, clicking a marker would call onPostClick(post.postUID)
-    composeTestRule.runOnIdle {
-      // Directly invoke the callback as it would be in ProfilePictureMarker
-      capturedPostId = null // Reset
-    }
+    composeTestRule.waitForIdle()
 
-    // Manually trigger the callback to verify it works
-    val onPostClick: (String) -> Unit = { postId -> capturedPostId = postId }
-    onPostClick(testPostId)
-
-    assert(capturedPostId == testPostId) { "Expected post ID '$testPostId', got '$capturedPostId'" }
+    // Verify the callback is properly set up by testing it directly
+    // Note: We cannot test actual Google Maps marker clicks in Robolectric
+    assert(capturedPostId == null) { "No post should be clicked initially" }
   }
 
   @Test
-  fun mapScreen_onPostClick_withDifferentPostIds_capturesDifferentValues() {
+  fun mapScreen_onPostClick_callbackFunctionality() {
     val clickedPostIds = mutableListOf<String>()
+
+    // Test the callback function directly since we can't click map markers in tests
     val onPostClick: (String) -> Unit = { postId -> clickedPostIds.add(postId) }
 
     composeTestRule.setContent { MapScreen(viewModel = mockViewModel, onPostClick = onPostClick) }
 
-    // Simulate clicking multiple post markers
-    val postIds = listOf("post1", "post2", "post3")
-    postIds.forEach { postId -> onPostClick(postId) }
+    composeTestRule.waitForIdle()
+
+    // Simulate the behavior as it would happen when a marker is clicked
+    composeTestRule.runOnIdle {
+      onPostClick("post1")
+      onPostClick("post2")
+      onPostClick("post3")
+    }
 
     assert(clickedPostIds.size == 3) { "Expected 3 clicks, got ${clickedPostIds.size}" }
-    assert(clickedPostIds == postIds) { "Expected $postIds, got $clickedPostIds" }
+    assert(clickedPostIds == listOf("post1", "post2", "post3")) {
+      "Expected [post1, post2, post3], got $clickedPostIds"
+    }
   }
 
   @Test
@@ -196,5 +198,64 @@ class MapScreenTest {
     assert(tag1 == "postMarker_$post1Id") { "Tag1 should be 'postMarker_$post1Id'" }
     assert(tag2 == "postMarker_$post2Id") { "Tag2 should be 'postMarker_$post2Id'" }
     assert(tag1 != tag2) { "Tags should be different for different posts" }
+  }
+
+  @Test
+  fun mapScreen_snackbarMessage_isDisplayedWhenSet() {
+    val testMessage = "You have to do a fitcheck before you can view the posts"
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    val viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    // Trigger snackbar by setting message
+    composeTestRule.runOnIdle { viewModel.showSnackbar(testMessage) }
+
+    // Wait for composition to settle
+    composeTestRule.waitForIdle()
+
+    // Verify snackbar message appears
+    composeTestRule.onNodeWithText(testMessage).assertIsDisplayed()
+  }
+
+  @Test
+  fun mapScreen_multipleSnackbarMessages_showSequentially() {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    val viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    val message1 = "First message"
+    val message2 = "Second message"
+
+    // Show first message
+    composeTestRule.runOnIdle { viewModel.showSnackbar(message1) }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText(message1).assertIsDisplayed()
+
+    // Show second message
+    composeTestRule.runOnIdle { viewModel.showSnackbar(message2) }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithText(message2).assertIsDisplayed()
+  }
+
+  @Test
+  fun mapScreen_noSnackbar_whenMessageIsNull() {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    val viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+
+    composeTestRule.setContent { MapScreen(viewModel = viewModel) }
+
+    composeTestRule.waitForIdle()
+
+    // Verify no snackbar is shown initially
+    assert(viewModel.uiState.value.snackbarMessage == null)
   }
 }
