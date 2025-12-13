@@ -2,6 +2,8 @@ package com.android.ootd.ui.account
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -216,6 +218,41 @@ class AccountPageViewModelTest {
     composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_LIST_DIALOG).assertIsDisplayed()
     composeRule.onNodeWithText("Alice").assertIsDisplayed()
     composeRule.onNodeWithText("Bob").assertIsDisplayed()
+  }
+
+  @Test
+  fun `clicking friend entry dismisses dialog and triggers callback`() {
+    val sampleState =
+        AccountPageViewState(
+            username = "JohnDoe",
+            profilePicture = "",
+            friends = listOf("f1", "f2"),
+            friendDetails =
+                listOf(
+                    User(uid = "f1", username = "Alice", profilePicture = ""),
+                    User(uid = "f2", username = "Bob", profilePicture = "")))
+    var clickedFriend: String? = null
+
+    composeRule.setContent {
+      OOTDTheme {
+        AccountPageContent(
+            uiState = sampleState,
+            onEditAccount = {},
+            onPostClick = {},
+            onSelectTab = {},
+            onToggleStar = {},
+            onFriendClick = { clickedFriend = it })
+      }
+    }
+
+    composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_COUNT_TEXT).performClick()
+    composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_LIST_DIALOG).assertIsDisplayed()
+
+    composeRule.onAllNodesWithTag(AccountPageTestTags.FRIEND_LIST_ITEM).onFirst().performClick()
+    composeRule.waitForIdle()
+
+    composeRule.onNodeWithTag(AccountPageTestTags.FRIEND_LIST_DIALOG).assertDoesNotExist()
+    assertEquals("f1", clickedFriend)
   }
 
   private fun createViewModel() {

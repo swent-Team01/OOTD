@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -93,6 +94,7 @@ object PreviewItemScreenTestTags {
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
   const val REMOVE_ITEM_BUTTON = "removeItemButton"
+  const val REMOVE_ITEM_CONFIRM_BUTTON = "removeItemConfirmButton"
   const val CREATE_ITEM_BUTTON = "createItemButton"
   const val GO_BACK_BUTTON = "goBackButton"
   const val SCREEN_TITLE = "screenTitle"
@@ -309,6 +311,7 @@ fun PreviewItemScreenContent(
 @Composable
 fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
   var isExpanded by remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
   val expandIcon =
       if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
   Card(
@@ -371,7 +374,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     }
               }
           Row(
-              modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
+              modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 ActionIconButton(
                     onClick = { onClick(item.itemUuid) },
@@ -382,7 +385,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     tint = OnSurface)
 
                 ActionIconButton(
-                    onClick = onRemove,
+                    onClick = { showDeleteDialog = true },
                     modifier =
                         Modifier.size(24.dp).testTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON),
                     icon = Icons.Default.Delete,
@@ -392,9 +395,31 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     onClick = { isExpanded = !isExpanded },
                     icon = expandIcon,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.EXPAND_ICON),
+                    modifier =
+                        Modifier.offset(y = (-12).dp) // To align icons
+                            .testTag(PreviewItemScreenTestTags.EXPAND_ICON),
                     tint = OnSurface)
               }
+        }
+        if (showDeleteDialog) {
+          AlertDialog(
+              onDismissRequest = { showDeleteDialog = false },
+              title = { Text("Remove item from outfit?") },
+              text = { Text("This will remove the item from your post preview.") },
+              confirmButton = {
+                TextButton(
+                    onClick = {
+                      showDeleteDialog = false
+                      onRemove()
+                    },
+                    modifier =
+                        Modifier.testTag(PreviewItemScreenTestTags.REMOVE_ITEM_CONFIRM_BUTTON)) {
+                      Text("Remove")
+                    }
+              },
+              dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+              })
         }
       }
 }

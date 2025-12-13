@@ -339,10 +339,14 @@ fun OOTDApp(
                 }
 
                 composable(Screen.AccountView.route) {
+                  val currentUserId = Firebase.auth.currentUser?.uid
                   AccountPage(
                       onEditAccount = { navigationActions.navigateTo(Screen.AccountEdit) },
                       onPostClick = { postId ->
                         navigationActions.navigateTo(Screen.PostView(postId))
+                      },
+                      onFriendClick = { userId ->
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
                       })
                 }
                 composable(Screen.AccountEdit.route) {

@@ -41,6 +41,10 @@ class OutfitItemComposableTest {
 
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON).assertIsDisplayed()
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.REMOVE_ITEM_BUTTON).performClick()
+    composeRule
+        .onNodeWithTag(PreviewItemScreenTestTags.REMOVE_ITEM_CONFIRM_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
 
     assertTrue(removed)
   }

@@ -11,6 +11,8 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -28,8 +30,10 @@ import com.android.ootd.ui.post.items.EditItemsScreenSmallPreview
 import com.android.ootd.ui.post.items.EditItemsScreenTestTags
 import com.android.ootd.ui.post.items.EditItemsViewModel
 import com.android.ootd.ui.post.items.QuickSelectChipsTestTags
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -326,5 +330,29 @@ class EditItemsScreenTest {
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM)
         .assert(hasContentDescription("Delete Item"))
+  }
+
+  @Test
+  fun `delete button shows confirmation and calls delete`() {
+    val spyViewModel = spyk(mockViewModel, recordPrivateCalls = true)
+    val item =
+        Item(
+            itemUuid = "item-1",
+            postUuids = emptyList(),
+            ownerId = "owner",
+            image = ImageData("img-1", "url"),
+            category = "Top")
+    spyViewModel.loadItem(item)
+
+    composeTestRule.setContent { EditItemsScreen(editItemsViewModel = spyViewModel) }
+
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.BUTTON_DELETE_ITEM).performClick()
+    composeTestRule
+        .onAllNodesWithTag(EditItemsScreenTestTags.BUTTON_DELETE_CONFIRM)
+        .onFirst()
+        .assertExists()
+        .performClick()
+
+    coVerify { spyViewModel.deleteItem() }
   }
 }
