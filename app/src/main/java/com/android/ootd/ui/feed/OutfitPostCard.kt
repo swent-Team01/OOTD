@@ -171,7 +171,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
           Modifier.fillMaxWidth()
               .clip(RoundedCornerShape(12.dp))
               .background(White)
-              .aspectRatio(3f / 4f)
+              .height(260.dp)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
         AsyncImage(
@@ -181,7 +181,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
                 Modifier.fillMaxSize()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.FillWidth,
+            contentScale = ContentScale.Crop,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
