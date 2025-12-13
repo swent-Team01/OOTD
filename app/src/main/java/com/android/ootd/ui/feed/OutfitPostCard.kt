@@ -109,10 +109,12 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
             remainingMs <= 0L -> {
               "Expired" to OutfitPostCardTestTags.EXPIRED_INDICATOR
             }
+
             remainingMs < 60 * 60 * 1000L -> {
               val mins = (remainingMs / (60 * 1000L)).coerceAtLeast(1)
               "${mins}m left" to OutfitPostCardTestTags.REMAINING_TIME
             }
+
             else -> {
               val hrs = (remainingMs / (60 * 60 * 1000L)).coerceAtLeast(1)
               "${hrs}h left" to OutfitPostCardTestTags.REMAINING_TIME
@@ -171,17 +173,17 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
           Modifier.fillMaxWidth()
               .clip(RoundedCornerShape(12.dp))
               .background(White)
-              .height(260.dp)
+              .aspectRatio(3f / 4f)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
         AsyncImage(
             model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
             modifier =
-                Modifier.fillMaxSize()
+                Modifier.fillMaxWidth()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.FillWidth,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
