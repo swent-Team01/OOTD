@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -371,7 +372,7 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     }
               }
           Row(
-              modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
+              modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
               horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 ActionIconButton(
                     onClick = { onClick(item.itemUuid) },
@@ -392,7 +393,9 @@ fun OutfitItem(item: Item, onClick: (String) -> Unit, onRemove: () -> Unit) {
                     onClick = { isExpanded = !isExpanded },
                     icon = expandIcon,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    modifier = Modifier.testTag(PreviewItemScreenTestTags.EXPAND_ICON),
+                    modifier =
+                        Modifier.offset(y = (-12).dp)
+                            .testTag(PreviewItemScreenTestTags.EXPAND_ICON),
                     tint = OnSurface)
               }
         }
