@@ -88,7 +88,10 @@ fun clickWithWait(
     shouldScroll: Boolean = false,
     useUnmergedTree: Boolean = false
 ) {
-  composeTestRule.waitUntil(timeoutMillis = 8000) {
+
+  composeTestRule.waitForIdle()
+
+  composeTestRule.waitUntil(timeoutMillis = 5000) {
     if (shouldScroll) {
       composeTestRule
           .onNodeWithTag(tag, useUnmergedTree = useUnmergedTree)
