@@ -50,7 +50,6 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
-
   const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"
@@ -176,7 +175,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
         AsyncImage(
-            model = post.outfitURL,
+            model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
             modifier =
                 Modifier.fillMaxSize()
