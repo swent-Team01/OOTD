@@ -80,8 +80,8 @@ sealed class Screen(
     }
   }
 
-  object BetaConsent :
-      Screen(route = "betaConsent", name = "BetaConsent", isTopLevelDestination = true)
+  object Onboarding :
+      Screen(route = "onboarding", name = "Onboarding", isTopLevelDestination = true)
 
   data class Map(
       val latitude: Double? = null,
