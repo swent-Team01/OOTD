@@ -15,6 +15,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -543,5 +545,32 @@ class MapViewModelTest {
     val publicLocations = viewModel.uiState.value.publicLocations
     assertEquals(2, publicLocations.size)
     assertTrue(publicLocations.all { it.ownerId in setOf("user1", "user2") })
+  }
+
+  @Test
+  fun observePublicLocations_filtersCurrentUserEvenWithRaceCondition() = runTest {
+    val currentUserLoc = PublicLocation(testUserId, "Current User", testLocation)
+    val otherUserLoc = PublicLocation("user1", "Alice", Location(47.0, 7.0, "Other"))
+
+    // Simulate race condition: public locations arrive before account is loaded
+    val accountFlow = MutableStateFlow<Account?>(null)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns accountFlow.filterNotNull()
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockAccountRepository.observePublicLocations() } returns
+        flowOf(listOf(currentUserLoc, otherUserLoc))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // Now load the account
+    accountFlow.value = testAccount
+    advanceUntilIdle()
+
+    // After account loads, current user should be filtered out
+    val finalPublicLocations = viewModel.uiState.value.publicLocations
+    assertEquals(1, finalPublicLocations.size)
+    assertEquals("user1", finalPublicLocations[0].ownerId)
+    assertFalse(finalPublicLocations.any { it.ownerId == testUserId })
   }
 }
