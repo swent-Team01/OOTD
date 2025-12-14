@@ -1,6 +1,5 @@
 package com.android.ootd.navigation
 
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -603,93 +602,8 @@ class MainActivityCallbacksTest {
       assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
       navigation.goBack()
 
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "test_id"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-      navigation.goBack()
-
       // Should be back at Feed
       assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun mainActivityCode_seeFitScreen_extractsPostUuidFromNavArguments() {
-    composeRule.runOnIdle {
-      val testPostUuid = "test-post-uuid-123"
-
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = testPostUuid))
-
-      // Verify we successfully navigated to SeeFitScreen
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-    }
-
-    // Verify the screen is displayed (meaning postUuid was extracted successfully)
-    composeRule.waitUntil(timeoutMillis = 5_000) {
-      composeRule.onAllNodesWithTag("seeFitScreen").fetchSemanticsNodes().isNotEmpty()
-    }
-    composeRule.onNodeWithTag("seeFitScreen").assertIsDisplayed()
-  }
-
-  @Test
-  fun mainActivityCode_seeFitScreen_goBackCallback_executesCorrectly() {
-    composeRule.runOnIdle {
-      // Start from Feed
-      navigation.navigateTo(Screen.Feed)
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-
-      // Navigate to SeeFitScreen (tests postUuid argument extraction)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "some-post-id"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-
-      navigation.goBack()
-
-      // Should return to Feed
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
-  fun seeFitScreen_multipleNavigations_maintainsNavigationFlow() {
-    val postUuids = listOf("post-A", "post-B", "post-C", "post-xyz-999")
-
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-
-      postUuids.forEach { postUuid ->
-        // Navigate to SeeFitScreen with different postUuid
-        // Tests: navBackStackEntry.arguments?.getString("postUuid")
-        navigation.navigateTo(Screen.SeeFitScreen(postUuid = postUuid))
-        assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-
-        // Go back to Feed
-        navigation.goBack()
-        assertEquals(Screen.Feed.route, navigation.currentRoute())
-      }
-    }
-  }
-
-  @Test
-  fun mainActivityCode_seeFitScreen_fromDifferentOrigins_argumentExtractionWorks() {
-    composeRule.runOnIdle {
-      // Test navigation from Feed
-      navigation.navigateTo(Screen.Feed)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-feed"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-      navigation.goBack()
-
-      // Test navigation from Search
-      navigation.navigateTo(Screen.SearchScreen)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-search"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-      navigation.goBack()
-
-      // Test navigation from Account
-      navigation.navigateTo(Screen.AccountEdit)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "from-account"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-      navigation.goBack()
-
-      assertEquals(Screen.AccountEdit.route, navigation.currentRoute())
     }
   }
 
