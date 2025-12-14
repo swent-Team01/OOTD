@@ -142,16 +142,17 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
 @Composable
 private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_BUTTON)) {
-          Icon(
-              imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-              contentDescription = if (isLiked) "Liked" else "Unliked",
-              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer)
-        }
-    Spacer(modifier = Modifier.width(1.dp))
+    Icon(
+        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+        contentDescription = if (isLiked) "Liked" else "Unliked",
+        tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer,
+        modifier =
+            Modifier.size(26.dp)
+                .clickable(enabled = enabled, onClick = onClick)
+                .testTag(OutfitPostCardTestTags.LIKE_BUTTON))
+
+    Spacer(modifier = Modifier.width(4.dp))
+
     Text(
         text = likeCount.toString(),
         style = Typography.bodyMedium,
@@ -296,6 +297,7 @@ fun OutfitPostCard(
                 PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location, onClick = { onLocationClick(post.location) })
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
+                Spacer(modifier = Modifier.height(8.dp))
                 // Reactions row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -354,8 +356,11 @@ private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Un
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.Comment,
             contentDescription = "Comments",
-            tint = if (enabled) OnSecondaryContainer else Tertiary)
+            tint = if (enabled) OnSecondaryContainer else Tertiary,
+            modifier = Modifier.size(26.dp).offset(y = 1.dp))
+
         Spacer(modifier = Modifier.width(4.dp))
+
         Text(
             text = commentCount.toString(),
             style = Typography.bodyMedium,
