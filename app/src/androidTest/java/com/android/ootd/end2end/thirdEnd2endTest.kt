@@ -141,7 +141,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
     searchItemInInventory(
         composeTestRule, itemCategory = firstItemCategory, itemUuid = firstItemUuid)
 
-    clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
+    clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB, true)
 
     // STEP 4: Create a post with the item that was added in inventory.
     addPostWithOneItem(
