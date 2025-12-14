@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -31,6 +33,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 
 data class AdditionalDetailsTags(
@@ -67,6 +70,9 @@ fun AdditionalDetailsSection(
     title: String = "Enter additional details"
 ) {
   var expanded by remember { mutableStateOf(state.expandedInitially) }
+  val toggleBackground = Secondary
+  val contentColor = Primary
+
   Column(modifier = Modifier.fillMaxWidth()) {
     Row(
         modifier =
@@ -74,7 +80,8 @@ fun AdditionalDetailsSection(
                 .clickable { expanded = !expanded }
                 .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
                 .testTag(tags.toggle)
-                .padding(vertical = 8.dp),
+                .background(toggleBackground, shape = CircleShape)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
           androidx.compose.material3.Icon(
@@ -82,8 +89,8 @@ fun AdditionalDetailsSection(
                   if (expanded) Icons.Filled.KeyboardArrowDown
                   else Icons.AutoMirrored.Filled.KeyboardArrowRight,
               contentDescription = if (expanded) "Collapse" else "Expand",
-              tint = Primary)
-          Text(text = title, style = Typography.bodyLarge.copy(color = Primary))
+              tint = contentColor)
+          Text(text = title, style = Typography.bodyLarge.copy(color = contentColor))
         }
 
     AnimatedVisibility(

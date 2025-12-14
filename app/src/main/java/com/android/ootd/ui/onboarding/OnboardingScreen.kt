@@ -39,7 +39,6 @@ import com.android.ootd.ui.theme.OnSurface
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
-import com.android.ootd.ui.theme.TertiaryContainer
 import com.android.ootd.ui.theme.Typography
 import kotlinx.coroutines.launch
 
@@ -86,20 +85,20 @@ fun OnboardingScreen(
             title = "Add your items to your post",
             description =
                 "Break outfits into pieces so you can tag, re-use, and build your closet over time.",
-            accent = Secondary,
+            accent = Primary,
             emoji = "👕"),
         OnboardingPage(
             title = "See friends' posts and star their items so you can always have them !",
             description =
                 "Browse the feed, open fits you love, and star the pieces you want to remember so you can store them in your account.",
-            accent = TertiaryContainer,
+            accent = Primary,
             emoji = "⭐",
             imageRes = R.drawable.star_items),
         OnboardingPage(
             title = "Use the map or public feed to find new friends",
             description =
                 "Hop to the map to spot nearby users or follow people from the public feed to grow your circle and enhance your experience.",
-            accent = Secondary,
+            accent = Primary,
             emoji = "🗺️",
             imageRes = R.drawable.find_friends))
   }
