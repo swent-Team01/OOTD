@@ -37,8 +37,7 @@ class OutfitPostCardTest {
         androidx.compose.foundation.layout.Column(
             modifier =
                 androidx.compose.ui.Modifier.fillMaxSize()
-                    .verticalScroll(androidx.compose.foundation.rememberScrollState()) // Add this
-            ) {
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())) {
               OutfitPostCard(
                   post = post,
                   isBlurred = isBlurred,
@@ -80,7 +79,8 @@ class OutfitPostCardTest {
 
     // Like button + count should appear
     n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
-    n(OutfitPostCardTestTags.LIKE_COUNT).assertIsDisplayed()
+    composeTestRule.waitForIdle()
+    n(OutfitPostCardTestTags.LIKE_COUNT).performScrollTo().assertIsDisplayed()
   }
 
   @Test

@@ -22,13 +22,11 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
@@ -52,7 +50,6 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
-
   const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"
@@ -112,10 +109,12 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
             remainingMs <= 0L -> {
               "Expired" to OutfitPostCardTestTags.EXPIRED_INDICATOR
             }
+
             remainingMs < 60 * 60 * 1000L -> {
               val mins = (remainingMs / (60 * 1000L)).coerceAtLeast(1)
               "${mins}m left" to OutfitPostCardTestTags.REMAINING_TIME
             }
+
             else -> {
               val hrs = (remainingMs / (60 * 60 * 1000L)).coerceAtLeast(1)
               "${hrs}h left" to OutfitPostCardTestTags.REMAINING_TIME
@@ -174,25 +173,18 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
           Modifier.fillMaxWidth()
               .clip(RoundedCornerShape(12.dp))
               .background(White)
+              .aspectRatio(3f / 4f)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
-              .then(modifier)) {
-        val context = LocalContext.current
-
+              .then(modifier),
+      contentAlignment = Alignment.Center) {
         AsyncImage(
-            model =
-                ImageRequest.Builder(context)
-                    .data(post.outfitURL.ifBlank { null })
-                    .crossfade(true)
-                    .allowHardware(false)
-                    .memoryCacheKey(post.postUID) // Ensures unique cache key per image ID
-                    .diskCacheKey(post.postUID) // Ensures unique disk cache key per image ID
-                    .build(),
+            model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
             modifier =
-                Modifier.fillMaxSize()
+                Modifier.fillMaxWidth()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Crop,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
@@ -299,8 +291,6 @@ fun OutfitPostCard(
                           onClick = { onCommentClick(post) })
                     }
               }
-
-              Spacer(modifier = Modifier.height(8.dp))
             }
 
         // Blur overlay for locked posts

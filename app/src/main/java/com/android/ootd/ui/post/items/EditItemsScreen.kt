@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -71,6 +73,7 @@ object EditItemsScreenTestTags {
   const val INPUT_ITEM_LINK = "inputItemLink"
   const val BUTTON_SAVE_CHANGES = "buttonSaveChanges"
   const val BUTTON_DELETE_ITEM = "buttonDeleteItem"
+  const val BUTTON_DELETE_CONFIRM = "buttonDeleteConfirm"
   const val ALL_FIELDS = "allFields"
   const val TYPE_SUGGESTIONS = "typeSuggestions"
   const val ADDITIONAL_DETAILS_TOGGLE = "edit_additionalDetailsToggle"
@@ -123,6 +126,7 @@ fun EditItemsScreen(
         ->
         if (uri != null) editItemsViewModel.setPhoto(uri)
       }
+  var showDeleteDialog by remember { mutableStateOf(false) }
 
   if (showCamera) {
     CameraScreen(
@@ -146,7 +150,7 @@ fun EditItemsScreen(
                 // Delete FAB
                 val isDeleteEnabled = itemsUIState.itemId.isNotEmpty()
                 FloatingActionButton(
-                    onClick = { if (isDeleteEnabled) editItemsViewModel.deleteItem() },
+                    onClick = { if (isDeleteEnabled) showDeleteDialog = true },
                     containerColor =
                         if (isDeleteEnabled) MaterialTheme.colorScheme.error else Color.Gray,
                     modifier =
@@ -296,6 +300,24 @@ fun EditItemsScreen(
                     })
               }
         })
+
+    if (showDeleteDialog) {
+      AlertDialog(
+          onDismissRequest = { showDeleteDialog = false },
+          title = { Text("Delete item?") },
+          text = { Text("This will permanently delete the item from your inventory.") },
+          confirmButton = {
+            TextButton(
+                onClick = {
+                  showDeleteDialog = false
+                  editItemsViewModel.deleteItem()
+                },
+                modifier = Modifier.testTag(EditItemsScreenTestTags.BUTTON_DELETE_CONFIRM)) {
+                  Text("Delete")
+                }
+          },
+          dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } })
+    }
 
     if (itemsUIState.isLoading) {
       CenteredLoadingState(message = "Uploading item...")
