@@ -82,7 +82,7 @@ class OutfitPostCardTest {
     // Like button + count should appear
     n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
     composeTestRule.waitForIdle()
-    n(OutfitPostCardTestTags.LIKE_COUNT).assertIsDisplayed()
+    n(OutfitPostCardTestTags.LIKE_COUNT).performScrollTo().assertIsDisplayed()
   }
 
   @Test
