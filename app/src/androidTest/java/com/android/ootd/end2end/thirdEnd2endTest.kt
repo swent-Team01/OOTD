@@ -20,10 +20,16 @@ import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
 import com.android.ootd.utils.checkItemAppearsInPost
+import com.android.ootd.utils.checkNumberOfPostsInFeed
 import com.android.ootd.utils.checkPostAppearsInFeed
+import com.android.ootd.utils.checkStarFunctionalityForItem
 import com.android.ootd.utils.clickWithWait
 import com.android.ootd.utils.fullRegisterSequence
+import com.android.ootd.utils.loginWithoutRegistering
+import com.android.ootd.utils.openNotificationsScreenAndAcceptNotification
+import com.android.ootd.utils.searchAndFollowUser
 import com.android.ootd.utils.searchItemInInventory
+import com.android.ootd.utils.signOutAndVerifyAuthScreen
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -157,43 +163,42 @@ class ThirdEnd2EndTest : FirestoreTest() {
     checkPostAppearsInFeed(composeTestRule)
 
     checkItemAppearsInPost(composeTestRule)
-    //    // STEP 5: Check that the star functionality works as intended
-    //    Log.d(TAG, "STEP5: toggle star on item in inventory")
-    //    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
-    //    // STEP 6: Create second user to interact with the first one
-    //    Log.d(TAG, "STEP6: sign out user_1 and register user_2")
-    //    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
-    //    FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
-    //
-    //    fullRegisterSequence(
-    //        composeTestRule = composeTestRule,
-    //        username = "user_2",
-    //        dateOfBirth = testDateofBirth,
-    //        acceptBetaScreen = false)
-    //
-    //    // STEP 7: Create post for the second user
-    //    Log.d(TAG, "STEP7: user_2 creates a post")
-    //    addPostWithOneItem(composeTestRule)
-    //
-    //    // STEP 8: Make the second user follow the first user
-    //    Log.d(TAG, "STEP8: user_2 follows user_1")
-    //    searchAndFollowUser(composeTestRule, "user_1")
-    //
-    //    // STEP 9: Logout from the second user and login into the first user
-    //    Log.d(TAG, "STEP9: switch back to user_1 credentials")
-    //    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
-    //    FakeCredentialManager.changeCredential(fakeGoogleIdToken)
-    //
-    //    Log.d(TAG, "STEP9b: loginWithoutRegistering for user_1")
-    //    loginWithoutRegistering(composeTestRule = composeTestRule)
-    //
-    //    // STEP 10: Accept the follow request of the second user on the first user account
-    //    Log.d(TAG, "STEP10: accept follow request in notifications")
-    //    openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
-    //
-    //    // STEP 11: Verify that the first user can now see the post of the first user
-    //    Log.d(TAG, "STEP11: verify feed contains posts from followed users")
-    //    checkNumberOfPostsInFeed(composeTestRule = composeTestRule,
-    // userRepository.getAllUsers().size)
+    // STEP 5: Check that the star functionality works as intended
+    Log.d(TAG, "STEP5: toggle star on item in inventory")
+    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
+    // STEP 6: Create second user to interact with the first one
+    Log.d(TAG, "STEP6: sign out user_1 and register user_2")
+    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
+    FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
+
+    fullRegisterSequence(
+        composeTestRule = composeTestRule,
+        username = "user_2",
+        dateOfBirth = testDateofBirth,
+        acceptBetaScreen = false)
+
+    // STEP 7: Create post for the second user
+    Log.d(TAG, "STEP7: user_2 creates a post")
+    addPostWithOneItem(composeTestRule)
+
+    // STEP 8: Make the second user follow the first user
+    Log.d(TAG, "STEP8: user_2 follows user_1")
+    searchAndFollowUser(composeTestRule, "user_1")
+
+    // STEP 9: Logout from the second user and login into the first user
+    Log.d(TAG, "STEP9: switch back to user_1 credentials")
+    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
+    FakeCredentialManager.changeCredential(fakeGoogleIdToken)
+
+    Log.d(TAG, "STEP9b: loginWithoutRegistering for user_1")
+    loginWithoutRegistering(composeTestRule = composeTestRule)
+
+    // STEP 10: Accept the follow request of the second user on the first user account
+    Log.d(TAG, "STEP10: accept follow request in notifications")
+    openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
+
+    // STEP 11: Verify that the first user can now see the post of the first user
+    Log.d(TAG, "STEP11: verify feed contains posts from followed users")
+    checkNumberOfPostsInFeed(composeTestRule = composeTestRule, userRepository.getAllUsers().size)
   }
 }
