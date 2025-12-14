@@ -112,6 +112,7 @@ class ViewUserViewModel(
           it.copy(
               username = friend.username,
               friendId = friendId,
+              friendCount = friend.friendCount,
               hasRequestPending = isRequestPending,
               profilePicture = friend.profilePicture,
               friendPosts = friendPosts,
@@ -168,7 +169,9 @@ class ViewUserViewModel(
         if (_uiState.value.isFriend) {
           // Already followed → unfollow
           accountRepository.removeFriend(currentUserId, friendId)
-          _uiState.value = _uiState.value.copy(isFriend = false, errorMsg = null)
+          _uiState.value =
+              _uiState.value.copy(
+                  isFriend = false, errorMsg = null, friendCount = _uiState.value.friendCount - 1)
           return@launch
         }
 

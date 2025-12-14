@@ -36,6 +36,18 @@ service cloud.firestore {
                        && resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthed()
            && (resource == null || resource.data.ownerId == request.auth.uid);
+        // Non-owner can update ONLY to increment friendCount by 1 when adding themselves as friend
+        // This happens when they accept a follow request and add themselves to the account's friendUids
+        allow update: if isAuthed()
+                       && request.auth.uid != userId
+                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friendCount'])
+                       && hasFollowNotification(userId);
+
+        // Non-owner can update ONLY to decrement friendCount by 1 when removing themselves as friend
+        allow update: if isAuthed()
+                         && request.auth.uid != userId
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friendCount'])
+                         && isFriend(request.auth.uid, resource.data.ownerId);
     }
 
     // Notifications: read your own, write your own

@@ -149,7 +149,7 @@ class FourthEnd2EndTest : FirestoreTest() {
         username = "user_2",
         dateOfBirth = testDateofBirth,
         acceptBetaScreen = false)
-
+    val user2UID = FirebaseEmulator.auth.currentUser?.uid ?: ""
     // STEP 5: Create a post with one item for the second user
     Log.d(TAG, "STEP5: add post with location for user_2")
     addPostWithOneItem(composeTestRule, addLocation = true)
@@ -169,6 +169,12 @@ class FourthEnd2EndTest : FirestoreTest() {
     // STEP 8: Accept follow request from second user from first user's account
     Log.d(TAG, "STEP8: accept follow request in notifications")
     openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
+
+    val user1 = userRepository.getUser(FirebaseEmulator.auth.currentUser?.uid ?: "")
+    assert(user1.friendCount == 1)
+
+    val user2 = userRepository.getUser(user2UID)
+    assert(user2.friendCount == 1)
 
     // STEP 9: Check that both posts of the users appear in the first user's feed
     Log.d(TAG, "STEP9: check number of posts in feed for user_1")
