@@ -172,6 +172,18 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
   }
 
+  /** Helper function to scroll to the items section since it's below the fold on CI emulators */
+  private fun scrollToItemsSection() {
+    try {
+      composeTestRule
+          .onNodeWithTag(PostViewTestTags.SCREEN)
+          .performScrollToNode(hasTestTag(PostViewTestTags.ITEMS_SECTION))
+      composeTestRule.waitForIdle()
+    } catch (e: Exception) {
+      // Items section might not exist or already visible, continue
+    }
+  }
+
   @Test
   fun screen_displays_post_image_when_loaded_successfully() = runTest {
     coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
@@ -324,10 +336,11 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Verify items section title is displayed
     composeTestRule.onNodeWithTag(PostViewTestTags.ITEMS_SECTION_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Outfit Items").assertIsDisplayed()
+    composeTestRule.onNodeWithText("FIT ITEMS").assertIsDisplayed()
   }
 
   @Test
@@ -340,6 +353,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Verify items grid is displayed
     composeTestRule.onNodeWithTag(ItemsTestTags.ITEMS_GRID).assertIsDisplayed()
@@ -359,6 +373,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Verify empty state message is displayed
     composeTestRule.onNodeWithText("No items associated with this post.").assertIsDisplayed()
@@ -374,6 +389,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Dialog should not exist initially
     composeTestRule.onNodeWithTag(ItemsTestTags.ITEM_DETAILS_DIALOG).assertDoesNotExist()
@@ -404,6 +420,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Click on item to open dialog
     composeTestRule.onNodeWithTag(ItemsTestTags.getTestTagForItem(testItem1)).performClick()
@@ -447,6 +464,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Open dialog
     composeTestRule.onNodeWithTag(ItemsTestTags.getTestTagForItem(testItem1)).performClick()
@@ -546,6 +564,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Verify edit button does NOT exist
     composeTestRule
@@ -565,6 +584,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToItemsSection()
 
     // Verify star button is displayed
     composeTestRule.onNodeWithTag(ItemsTestTags.getStarButtonTag(testItem1)).assertIsDisplayed()
@@ -601,6 +621,8 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+
+    scrollToItemsSection()
 
     // Click star button
     composeTestRule.onNodeWithTag(ItemsTestTags.getStarButtonTag(testItem1)).performClick()
@@ -710,6 +732,8 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+
+    scrollToItemsSection()
 
     // Verify grid is displayed
     composeTestRule.onNodeWithTag(ItemsTestTags.ITEMS_GRID).assertIsDisplayed()
