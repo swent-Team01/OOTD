@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.theme.Background
@@ -81,9 +82,9 @@ fun UserSelectionField(
         }
 
     Text(
-        text = "Click to find friends on the map",
+        text = "Click to find public friends on the map",
         color = Tertiary, // or your OnSurfaceVariant color
-        style = Typography.bodySmall,
+        style = Typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
         modifier =
             Modifier.clickable { /*TODO: Add functionality to move to maps*/ }
                 .testTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
