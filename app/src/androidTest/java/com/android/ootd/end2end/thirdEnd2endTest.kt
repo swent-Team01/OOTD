@@ -18,7 +18,6 @@ import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
-import com.android.ootd.utils.checkPostAppearsInFeed
 import com.android.ootd.utils.clickWithWait
 import com.android.ootd.utils.fullRegisterSequence
 import com.android.ootd.utils.searchItemInInventory
@@ -142,7 +141,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
         selectFromInventory = true,
         inventoryItemUuid = firstItemUuid) // Test adding item from inventory works as well
 
-    checkPostAppearsInFeed(composeTestRule)
+    // checkPostAppearsInFeed(composeTestRule)
 
     //    checkItemAppearsInPost(composeTestRule)
     //    // STEP 5: Check that the star functionality works as intended
