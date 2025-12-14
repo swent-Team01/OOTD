@@ -249,7 +249,6 @@ fun FeedList(
                 isLiked = isLiked,
                 likeCount = count,
                 onLikeClick = { onLikeClick(post) },
-                onSeeFitClick = { onSeeFitClick(post) },
                 onCardClick = { onPostClick(post.postUID) },
                 onLocationClick = onLocationClick,
                 onProfileClick = onProfileClick,
