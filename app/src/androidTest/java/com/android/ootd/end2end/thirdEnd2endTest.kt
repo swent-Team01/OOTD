@@ -19,6 +19,7 @@ import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
+import com.android.ootd.utils.checkItemAppearsInPost
 import com.android.ootd.utils.checkNumberOfPostsInFeed
 import com.android.ootd.utils.checkPostAppearsInFeed
 import com.android.ootd.utils.checkStarFunctionalityForItem
@@ -162,7 +163,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
     checkPostAppearsInFeed(composeTestRule)
 
     // Uncomment later when the issue fixed
-    // checkItemAppearsInPost(composeTestRule)
+     checkItemAppearsInPost(composeTestRule)
 
     // STEP 5: Check that the star functionality works as intended
     Log.d(TAG, "STEP5: toggle star on item in inventory")
