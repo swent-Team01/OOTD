@@ -17,6 +17,7 @@ import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.ProfilePicture
@@ -26,6 +27,7 @@ object UserSelectionFieldTestTags {
   const val USERNAME_SUGGESTION = "usernameSuggestion"
   const val NO_RESULTS_MESSAGE = "noResultsMessage"
   const val BACK_BUTTON = "backButton"
+  const val USERS_CLOSE_TO_YOU = "usersCloseToYou"
 }
 
 @Composable
@@ -77,6 +79,15 @@ fun UserSelectionField(
                       .testTag(UserSelectionFieldTestTags.INPUT_USERNAME),
               singleLine = true)
         }
+
+    Text(
+        text = "Click to find friends on the map",
+        color = Tertiary, // or your OnSurfaceVariant color
+        style = Typography.bodySmall,
+        modifier =
+            Modifier.clickable { /*TODO: Add functionality to move to maps*/ }
+                .testTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+                .padding(start = 16.dp))
 
     // Results list
     if (expanded && usernameText.isNotEmpty()) { // Added check for non-empty text
