@@ -138,9 +138,21 @@ class MapViewModel(
                     _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
               }
               .collect { publicLocations ->
+                val currentAccount = _uiState.value.currentAccount
+                val excludedUids =
+                    if (currentAccount != null) {
+                      // Exclude current user and their friends
+                      setOf(currentAccount.uid) + currentAccount.friendUids
+                    } else {
+                      emptySet()
+                    }
+
                 _uiState.value =
                     _uiState.value.copy(
-                        publicLocations = publicLocations.filter { isValidLocation(it.location) })
+                        publicLocations =
+                            publicLocations.filter {
+                              isValidLocation(it.location) && it.ownerId !in excludedUids
+                            })
               }
         }
   }
