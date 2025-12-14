@@ -387,6 +387,8 @@ fun OOTDApp(
                             null
                           }
 
+                      val currentUserId = Firebase.auth.currentUser?.uid
+
                       MapScreen(
                           viewModel =
                               if (focusLocation != null) {
@@ -396,6 +398,9 @@ fun OOTDApp(
                               },
                           onPostClick = { postId ->
                             navigationActions.navigateTo(Screen.PostView(postId))
+                          },
+                          onUserProfileClick = { userId ->
+                            navigationActions.navigateToUserProfile(userId, currentUserId)
                           })
                     }
 
