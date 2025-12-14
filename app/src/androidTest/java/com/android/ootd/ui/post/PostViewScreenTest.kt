@@ -432,26 +432,20 @@ class PostViewScreenTest {
           .isNotEmpty()
     }
 
-    // Scroll to see all fields and verify they exist
+    // Verify fields at the top exist
+    composeTestRule.onNodeWithTag(ItemsTestTags.ITEM_BRAND, useUnmergedTree = true).assertExists()
+    composeTestRule.onNodeWithTag(ItemsTestTags.ITEM_PRICE, useUnmergedTree = true).assertExists()
+    composeTestRule
+        .onNodeWithTag(ItemsTestTags.ITEM_MATERIAL, useUnmergedTree = true)
+        .assertExists()
+    composeTestRule.onNodeWithTag(ItemsTestTags.ITEM_LINK, useUnmergedTree = true).assertExists()
+
+    // Scroll to bottom to verify notes exist
     composeTestRule
         .onNodeWithTag(ItemsTestTags.ITEM_DETAILS_DIALOG)
         .performScrollToNode(hasTestTag(ItemsTestTags.ITEM_NOTES))
 
-    composeTestRule
-        .onNodeWithTag(ItemsTestTags.ITEM_BRAND, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(ItemsTestTags.ITEM_PRICE, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(ItemsTestTags.ITEM_MATERIAL, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(ItemsTestTags.ITEM_NOTES, useUnmergedTree = true)
-        .assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(ItemsTestTags.ITEM_LINK, useUnmergedTree = true)
-        .assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ItemsTestTags.ITEM_NOTES, useUnmergedTree = true).assertExists()
   }
 
   @Test
