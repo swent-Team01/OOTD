@@ -186,7 +186,7 @@ fun checkPostAppearsInFeed(composeTestRule: ComposeContentTestRule) {
 }
 
 fun checkItemAppearsInPost(composeTestRule: ComposeContentTestRule) {
-  clickWithWait(composeTestRule, OutfitPostCardTestTags.SEE_FIT_BUTTON)
+  clickWithWait(composeTestRule, OutfitPostCardTestTags.SEE_FIT_BUTTON, shouldScroll = true)
   //  verifyElementAppearsWithTimer(composeTestRule, SeeFitScreenTestTags.ITEMS_GRID)
   //  clickWithWait(composeTestRule, SeeFitScreenTestTags.NAVIGATE_TO_FEED_SCREEN)
 }
