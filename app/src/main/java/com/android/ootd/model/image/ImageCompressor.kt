@@ -3,6 +3,7 @@ package com.android.ootd.model.image
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import java.io.ByteArrayOutputStream
@@ -16,7 +17,8 @@ import kotlinx.coroutines.withContext
  *
  * The compression is performed based on a specified size threshold. If the image size exceeds the
  * threshold, it will be compressed iteratively by reducing quality until it meets the size
- * requirement or reaches a minimum quality level.
+ * requirement or reaches a minimum quality level. This compressor also handles image rotation based
+ * on EXIF data to ensure correct orientation.
  *
  * This compressor is implemented based on https://www.youtube.com/watch?v=Q0Njj-rfEXE
  *
@@ -57,13 +59,30 @@ class ImageCompressor(
           return@withContext inputBytes
         }
 
+        // Read EXIF orientation
+        val exif =
+            context.contentResolver.openInputStream(contentUri)?.use {
+              androidx.exifinterface.media.ExifInterface(it)
+            }
+
+        // Get rotation degrees from EXIF data
+        val rotationDegrees = exif?.rotationDegrees ?: 0
+
+        // Decode the image bytes into a Bitmap
+        val bitmap =
+            BitmapFactory.decodeByteArray(inputBytes, 0, inputBytes.size) ?: return@withContext null
+        // Rotate the bitmap if necessary
+        val rotatedBitmap =
+            if (rotationDegrees != 0) {
+              val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+              Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            } else {
+              bitmap
+            }
+
         ensureActive()
 
         withContext(dispatcherProvider.default) {
-          val bitmap = BitmapFactory.decodeByteArray(inputBytes, 0, inputBytes.size)
-
-          ensureActive()
-
           val compressFormat =
               when (mimeType) {
                 "image/png" -> Bitmap.CompressFormat.PNG // lossless == quality is ignored
@@ -81,7 +100,7 @@ class ImageCompressor(
           var quality = 90
           do {
             ByteArrayOutputStream().use { outputStream ->
-              bitmap.compress(compressFormat, quality, outputStream)
+              rotatedBitmap.compress(compressFormat, quality, outputStream)
               outputBytes = outputStream.toByteArray()
               quality -= (quality * 0.1).roundToInt()
             }
