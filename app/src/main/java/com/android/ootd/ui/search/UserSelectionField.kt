@@ -4,8 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,6 +18,7 @@ import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.ProfilePicture
 
 object UserSelectionFieldTestTags {
@@ -43,14 +42,9 @@ fun UserSelectionField(
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically) {
-          IconButton(
-              onClick = onBackPressed,
-              modifier = Modifier.testTag(UserSelectionFieldTestTags.BACK_BUTTON)) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = OnSurfaceVariant)
-              }
+          BackArrow(
+              onBackClick = onBackPressed,
+              modifier = Modifier.testTag(UserSelectionFieldTestTags.BACK_BUTTON))
 
           Spacer(modifier = Modifier.width(8.dp))
 
