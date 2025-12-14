@@ -173,7 +173,7 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
           Modifier.fillMaxWidth()
               .clip(RoundedCornerShape(12.dp))
               .background(White)
-              .height(500.dp)
+              .height(400.dp)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
               .then(modifier)) {
         AsyncImage(
