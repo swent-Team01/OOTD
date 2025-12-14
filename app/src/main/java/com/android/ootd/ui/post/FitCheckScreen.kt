@@ -77,8 +77,6 @@ private fun ImagePreviewBox(imageUri: Uri) {
               modifier = Modifier.size(80.dp).testTag(FitCheckScreenTestTags.PLACEHOLDER_ICON),
               tint = Color.Gray)
         } else {
-          val context = LocalContext.current
-
           AsyncImage(
               model = imageUri,
               contentDescription = "Selected photo",
