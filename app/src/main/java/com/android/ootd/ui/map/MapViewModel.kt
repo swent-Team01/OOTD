@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /** Enum representing the type of map to display. */
@@ -137,8 +138,8 @@ class MapViewModel(
                 _uiState.value =
                     _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
               }
-              .collect { publicLocations ->
-                val currentAccount = _uiState.value.currentAccount
+              .combine(_uiState) { publicLocations, state ->
+                val currentAccount = state.currentAccount
                 val excludedUids =
                     if (currentAccount != null) {
                       // Exclude current user and their friends
@@ -147,12 +148,12 @@ class MapViewModel(
                       emptySet()
                     }
 
-                _uiState.value =
-                    _uiState.value.copy(
-                        publicLocations =
-                            publicLocations.filter {
-                              isValidLocation(it.location) && it.ownerId !in excludedUids
-                            })
+                publicLocations.filter {
+                  isValidLocation(it.location) && it.ownerId !in excludedUids
+                }
+              }
+              .collect { filteredPublicLocations ->
+                _uiState.value = _uiState.value.copy(publicLocations = filteredPublicLocations)
               }
         }
   }
