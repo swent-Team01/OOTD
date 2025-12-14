@@ -658,6 +658,87 @@ class AccountRepositoryFirestoreTest : AccountFirestoreTest() {
   }
 
   @Test
+  fun addAccount_publicAccountIsAddedToPublicLocations() = runTest {
+    val publicAccount = account1.copy(isPrivate = false, location = EPFL_LOCATION)
+
+    accountRepository.addAccount(publicAccount)
+
+    val publicLocDoc = publicLocDoc(publicAccount.uid)
+    assertTrue(publicLocDoc.exists())
+    assertEquals(publicAccount.uid, publicLocDoc.getString("ownerId"))
+    assertEquals(publicAccount.username, publicLocDoc.getString("username"))
+
+    val publicLocations = accountRepository.getPublicLocations()
+    assertTrue(publicLocations.any { it.ownerId == publicAccount.uid })
+  }
+
+  @Test
+  fun addAccount_privateAccountIsNotAddedToPublicLocations() = runTest {
+    val privateAccount = account1.copy(isPrivate = true, location = EPFL_LOCATION)
+
+    accountRepository.addAccount(privateAccount)
+
+    val publicLocDoc = publicLocDoc(privateAccount.uid)
+    assertFalse(publicLocDoc.exists())
+
+    val publicLocations = accountRepository.getPublicLocations()
+    assertFalse(publicLocations.any { it.ownerId == privateAccount.uid })
+  }
+
+  @Test
+  fun addAccount_publicAccountWithInvalidLocationIsNotAddedToPublicLocations() = runTest {
+    val publicAccountInvalidLoc = account1.copy(isPrivate = false, location = emptyLocation)
+
+    accountRepository.addAccount(publicAccountInvalidLoc)
+
+    val publicLocDoc = publicLocDoc(publicAccountInvalidLoc.uid)
+    assertFalse(publicLocDoc.exists())
+
+    val publicLocations = accountRepository.getPublicLocations()
+    assertFalse(publicLocations.any { it.ownerId == publicAccountInvalidLoc.uid })
+  }
+
+  @Test
+  fun createAccount_publicAccountIsAddedToPublicLocations() = runTest {
+    val user =
+        User(
+            uid = currentUser.uid,
+            ownerId = currentUser.uid,
+            username = "public_test_user",
+            profilePicture = "")
+
+    accountRepository.createAccount(
+        user, testEmail, testDateOfBirth, EPFL_LOCATION, isPrivate = false)
+
+    val publicLocDoc = publicLocDoc(user.uid)
+    assertTrue(publicLocDoc.exists())
+    assertEquals(user.uid, publicLocDoc.getString("ownerId"))
+    assertEquals(user.username, publicLocDoc.getString("username"))
+
+    val publicLocations = accountRepository.getPublicLocations()
+    assertTrue(publicLocations.any { it.ownerId == user.uid && it.username == user.username })
+  }
+
+  @Test
+  fun createAccount_privateAccountIsNotAddedToPublicLocations() = runTest {
+    val user =
+        User(
+            uid = currentUser.uid,
+            ownerId = currentUser.uid,
+            username = "private_test_user",
+            profilePicture = "")
+
+    accountRepository.createAccount(
+        user, testEmail, testDateOfBirth, EPFL_LOCATION, isPrivate = true)
+
+    val publicLocDoc = publicLocDoc(user.uid)
+    assertFalse(publicLocDoc.exists())
+
+    val publicLocations = accountRepository.getPublicLocations()
+    assertFalse(publicLocations.any { it.ownerId == user.uid })
+  }
+
+  @Test
   fun createAccount_persistsLocationToFirestore() = runTest {
     val user =
         User(
