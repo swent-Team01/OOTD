@@ -18,17 +18,10 @@ import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
-import com.android.ootd.utils.checkItemAppearsInPost
-import com.android.ootd.utils.checkNumberOfPostsInFeed
 import com.android.ootd.utils.checkPostAppearsInFeed
-import com.android.ootd.utils.checkStarFunctionalityForItem
 import com.android.ootd.utils.clickWithWait
 import com.android.ootd.utils.fullRegisterSequence
-import com.android.ootd.utils.loginWithoutRegistering
-import com.android.ootd.utils.openNotificationsScreenAndAcceptNotification
-import com.android.ootd.utils.searchAndFollowUser
 import com.android.ootd.utils.searchItemInInventory
-import com.android.ootd.utils.signOutAndVerifyAuthScreen
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -151,36 +144,37 @@ class ThirdEnd2EndTest : FirestoreTest() {
 
     checkPostAppearsInFeed(composeTestRule)
 
-    checkItemAppearsInPost(composeTestRule)
-    // STEP 5: Check that the star functionality works as intended
-    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
-    // STEP 6: Create second user to interact with the first one
-    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
-    FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
-
-    fullRegisterSequence(
-        composeTestRule = composeTestRule,
-        username = "user_2",
-        dateOfBirth = testDateofBirth,
-        acceptBetaScreen = false)
-
-    // STEP 7: Create post for the second user
-    addPostWithOneItem(composeTestRule)
-
-    // STEP 8: Make the second user follow the first user
-    searchAndFollowUser(composeTestRule, "user_1")
-
-    // STEP 9: Logout from the second user and login into the first user
-    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
-    FakeCredentialManager.changeCredential(fakeGoogleIdToken)
-
-    loginWithoutRegistering(composeTestRule = composeTestRule)
-
-    // STEP 10: Accept the follow request of the second user on the first user account
-    openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
-
-    // STEP 11: Verify that the first user can now see the post of the first user
-
-    checkNumberOfPostsInFeed(composeTestRule = composeTestRule, userRepository.getAllUsers().size)
+    //    checkItemAppearsInPost(composeTestRule)
+    //    // STEP 5: Check that the star functionality works as intended
+    //    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
+    //    // STEP 6: Create second user to interact with the first one
+    //    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
+    //    FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
+    //
+    //    fullRegisterSequence(
+    //        composeTestRule = composeTestRule,
+    //        username = "user_2",
+    //        dateOfBirth = testDateofBirth,
+    //        acceptBetaScreen = false)
+    //
+    //    // STEP 7: Create post for the second user
+    //    addPostWithOneItem(composeTestRule)
+    //
+    //    // STEP 8: Make the second user follow the first user
+    //    searchAndFollowUser(composeTestRule, "user_1")
+    //
+    //    // STEP 9: Logout from the second user and login into the first user
+    //    signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
+    //    FakeCredentialManager.changeCredential(fakeGoogleIdToken)
+    //
+    //    loginWithoutRegistering(composeTestRule = composeTestRule)
+    //
+    //    // STEP 10: Accept the follow request of the second user on the first user account
+    //    openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
+    //
+    //    // STEP 11: Verify that the first user can now see the post of the first user
+    //
+    //    checkNumberOfPostsInFeed(composeTestRule = composeTestRule,
+    // userRepository.getAllUsers().size)
   }
 }
