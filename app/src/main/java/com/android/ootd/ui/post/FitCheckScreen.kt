@@ -26,7 +26,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.android.ootd.R
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
@@ -81,14 +80,7 @@ private fun ImagePreviewBox(imageUri: Uri) {
           val context = LocalContext.current
 
           AsyncImage(
-              model =
-                  ImageRequest.Builder(context)
-                      .data(imageUri)
-                      .crossfade(true)
-                      .allowHardware(false)
-                      .memoryCacheKey(imageUri.toString())
-                      .diskCacheKey(imageUri.toString())
-                      .build(),
+              model = imageUri,
               contentDescription = "Selected photo",
               modifier = Modifier.fillMaxSize(),
               contentScale = ContentScale.Crop)
