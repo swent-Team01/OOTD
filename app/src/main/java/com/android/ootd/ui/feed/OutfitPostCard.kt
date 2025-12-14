@@ -299,8 +299,6 @@ fun OutfitPostCard(
                     enabled = !isBlurred,
                     onClick = { onLikeClick(post.postUID) })
               }
-
-              Spacer(modifier = Modifier.height(8.dp))
             }
 
         // Blur overlay for locked posts
