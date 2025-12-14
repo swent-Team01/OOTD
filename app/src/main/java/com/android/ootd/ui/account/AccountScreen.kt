@@ -1,5 +1,6 @@
 package com.android.ootd.ui.account
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,7 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -120,6 +121,7 @@ fun AccountPage(
   }
 }
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun AccountPageContent(
     uiState: AccountPageViewState,
@@ -169,23 +171,26 @@ fun AccountPageContent(
           if (uiState.friends.isEmpty()) {
             Text("No friends yet.")
           } else {
-            LazyColumn(modifier = Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)) {
-              val friendsToShow =
-                  uiState.friendDetails.ifEmpty {
-                    uiState.friends.map { id -> User(uid = id, username = id) }
-                  }
-              items(
-                  friendsToShow, key = { it.uid.ifBlank { it.ownerId.ifBlank { it.username } } }) {
-                      friend ->
-                    FriendListItem(
-                        friend = friend,
-                        onClick = { userId ->
-                          showFriendList = false
-                          onFriendClick(userId)
-                        })
-                    if (friend != friendsToShow.last()) Divider()
-                  }
-            }
+            LazyColumn(
+                modifier =
+                    Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)
+                        .heightIn(max = screenHeight * 0.6f)) {
+                  val friendsToShow =
+                      uiState.friendDetails.ifEmpty {
+                        uiState.friends.map { id -> User(uid = id, username = id) }
+                      }
+                  items(
+                      friendsToShow,
+                      key = { it.uid.ifBlank { it.ownerId.ifBlank { it.username } } }) { friend ->
+                        FriendListItem(
+                            friend = friend,
+                            onClick = { userId ->
+                              showFriendList = false
+                              onFriendClick(userId)
+                            })
+                        if (friend != friendsToShow.last()) HorizontalDivider()
+                      }
+                }
           }
         })
   }
