@@ -19,6 +19,7 @@ import com.android.ootd.utils.FirebaseEmulator
 import com.android.ootd.utils.FirestoreTest
 import com.android.ootd.utils.addItemFromInventory
 import com.android.ootd.utils.addPostWithOneItem
+import com.android.ootd.utils.checkItemAppearsInPost
 import com.android.ootd.utils.checkPostAppearsInFeed
 import com.android.ootd.utils.clickWithWait
 import com.android.ootd.utils.fullRegisterSequence
@@ -155,7 +156,7 @@ class ThirdEnd2EndTest : FirestoreTest() {
     Log.d(TAG, "STEP4b: verify post and item details")
     checkPostAppearsInFeed(composeTestRule)
 
-    //    checkItemAppearsInPost(composeTestRule)
+    checkItemAppearsInPost(composeTestRule)
     //    // STEP 5: Check that the star functionality works as intended
     //    Log.d(TAG, "STEP5: toggle star on item in inventory")
     //    checkStarFunctionalityForItem(composeTestRule, firstItemUuid)
