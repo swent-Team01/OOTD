@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -350,7 +351,7 @@ private fun ImagePickerRow(
     Button(
         onClick = { onShowDialogChange(true) },
         colors = ButtonDefaults.buttonColors(containerColor = Primary),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(24.dp),
         modifier = Modifier.testTag(EditItemsScreenTestTags.IMAGE_PICKER_BUTTON)) {
           Icon(
               painter = painterResource(R.drawable.ic_photo_placeholder),

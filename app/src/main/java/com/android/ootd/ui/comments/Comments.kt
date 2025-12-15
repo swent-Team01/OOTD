@@ -13,7 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +32,7 @@ import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.theme.Background
+import com.android.ootd.ui.theme.OOTDerror
 import com.android.ootd.ui.theme.OnSurface
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
@@ -301,14 +304,14 @@ private fun CommentItem(
           IconButton(
               onClick = onDeleteComment,
               modifier =
-                  Modifier.size(24.dp)
+                  Modifier.size(32.dp)
                       .testTag(
                           "${CommentScreenTestTags.DELETE_COMMENT_BUTTON}_${comment.commentId}")) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Default.Delete,
                     contentDescription = "Delete comment",
-                    tint = OnSurfaceVariant,
-                    modifier = Modifier.size(16.dp))
+                    tint = OOTDerror,
+                    modifier = Modifier.size(20.dp))
               }
         }
       }
@@ -337,6 +340,7 @@ private fun AddCommentSection(
   val scope = rememberCoroutineScope()
 
   val maxChars = 500
+  val remainingChars = maxChars - commentText.length
 
   // Gallery launcher for selecting existing images
   val galleryLauncher =
@@ -364,93 +368,100 @@ private fun AddCommentSection(
                         .testTag(CommentScreenTestTags.SELECTED_IMAGE_PREVIEW),
                 contentScale = ContentScale.Crop)
 
-            IconButton(
-                onClick = { viewModel.setSelectedImage(null) },
+            // Remove button overlay
+            Icon(
+                imageVector = Icons.Default.Cancel,
+                contentDescription = "Remove image",
+                tint = MaterialTheme.colorScheme.surface,
                 modifier =
                     Modifier.size(24.dp)
+                        .clickable(onClick = { viewModel.setSelectedImage(null) })
                         .align(Alignment.TopEnd)
-                        .offset(x = 6.dp, y = (-6).dp)
-                        .background(OnSurface, CircleShape)) {
-                  Icon(
-                      imageVector = Icons.Default.Close,
-                      contentDescription = "Remove image",
-                      tint = Background,
-                      modifier = Modifier.size(16.dp))
-                }
+                        .background(OOTDerror, CircleShape))
           }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.Bottom) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+          Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
 
-              // Add Image Button
-              IconButton(
-                  onClick = { showImageSourceDialog = true },
-                  modifier = Modifier.testTag(CommentScreenTestTags.ADD_IMAGE_BUTTON)) {
+            // Add Image Button
+            IconButton(
+                onClick = { showImageSourceDialog = true },
+                modifier = Modifier.size(38.dp).testTag(CommentScreenTestTags.ADD_IMAGE_BUTTON)) {
+                  Icon(
+                      imageVector = Icons.Default.AddPhotoAlternate,
+                      contentDescription = "Add reaction image",
+                      tint = Primary,
+                      modifier = Modifier.size(24.dp))
+                }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Text Input
+            OutlinedTextField(
+                value = commentText,
+                onValueChange = { if (it.length <= maxChars) commentText = it },
+                modifier = Modifier.weight(1f).testTag(CommentScreenTestTags.COMMENT_TEXT_FIELD),
+                placeholder = {
+                  Text("Add a comment...", style = Typography.bodyLarge, color = Tertiary)
+                },
+                maxLines = 4,
+                shape = RoundedCornerShape(24.dp),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Tertiary,
+                        focusedContainerColor = Background,
+                        unfocusedContainerColor = Background),
+                textStyle = Typography.bodyLarge)
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Post Button
+            val isEnabled = commentText.isNotBlank() && !uiState.isSubmitting
+            IconButton(
+                onClick = {
+                  scope.launch {
+                    val result =
+                        viewModel.addComment(
+                            postId = postId,
+                            userId = currentUserId,
+                            text = commentText,
+                            imageUri = uiState.selectedImage,
+                            context = context)
+
+                    result.onSuccess {
+                      commentText = ""
+                      onCommentAdded()
+                    }
+                  }
+                },
+                enabled = isEnabled,
+                modifier =
+                    Modifier.size(48.dp) // Match standard touch target size
+                        .background(if (isEnabled) Primary else Tertiary, CircleShape)
+                        .testTag(CommentScreenTestTags.POST_COMMENT_BUTTON)) {
+                  if (uiState.isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp), color = Background, strokeWidth = 2.dp)
+                  } else {
                     Icon(
-                        imageVector = Icons.Default.AddPhotoAlternate,
-                        contentDescription = "Add reaction image",
-                        tint = Primary)
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Post",
+                        tint = Background,
+                        modifier =
+                            Modifier.padding(start = 2.dp)) // Visual correction for send icon
                   }
+                }
+          }
 
-              // Text Input
-              OutlinedTextField(
-                  value = commentText,
-                  onValueChange = { if (it.length <= maxChars) commentText = it },
-                  modifier = Modifier.weight(1f).testTag(CommentScreenTestTags.COMMENT_TEXT_FIELD),
-                  placeholder = {
-                    Text("Add a comment...", style = Typography.bodyLarge, color = Tertiary)
-                  },
-                  maxLines = 4,
-                  shape = RoundedCornerShape(24.dp),
-                  colors =
-                      OutlinedTextFieldDefaults.colors(
-                          focusedBorderColor = Primary,
-                          unfocusedBorderColor = Tertiary,
-                          focusedContainerColor = Background,
-                          unfocusedContainerColor = Background),
-                  textStyle = Typography.bodyLarge)
-
-              Spacer(modifier = Modifier.width(8.dp))
-
-              // Post Button
-              val isEnabled = commentText.isNotBlank() && !uiState.isSubmitting
-              IconButton(
-                  onClick = {
-                    scope.launch {
-                      val result =
-                          viewModel.addComment(
-                              postId = postId,
-                              userId = currentUserId,
-                              text = commentText,
-                              imageUri = uiState.selectedImage,
-                              context = context)
-
-                      result.onSuccess {
-                        commentText = ""
-                        onCommentAdded()
-                      }
-                    }
-                  },
-                  enabled = isEnabled,
-                  modifier =
-                      Modifier.size(48.dp) // Match standard touch target size
-                          .background(if (isEnabled) Primary else Tertiary, CircleShape)
-                          .testTag(CommentScreenTestTags.POST_COMMENT_BUTTON)) {
-                    if (uiState.isSubmitting) {
-                      CircularProgressIndicator(
-                          modifier = Modifier.size(20.dp), color = Background, strokeWidth = 2.dp)
-                    } else {
-                      Icon(
-                          imageVector = Icons.AutoMirrored.Filled.Send,
-                          contentDescription = "Post",
-                          tint = Background,
-                          modifier =
-                              Modifier.padding(start = 2.dp)) // Visual correction for send icon
-                    }
-                  }
-            }
+          // Character counter below the input row
+          Text(
+              text = "$remainingChars characters remaining",
+              style = Typography.bodySmall,
+              color = if (remainingChars < 50) OOTDerror else Tertiary,
+              modifier = Modifier.padding(start = 46.dp, top = 4.dp))
+        }
       }
 
   // Image source dialog (Camera or Gallery)
