@@ -4,8 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -13,13 +11,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
+import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.ProfilePicture
 
 object UserSelectionFieldTestTags {
@@ -27,6 +28,7 @@ object UserSelectionFieldTestTags {
   const val USERNAME_SUGGESTION = "usernameSuggestion"
   const val NO_RESULTS_MESSAGE = "noResultsMessage"
   const val BACK_BUTTON = "backButton"
+  const val USERS_CLOSE_TO_YOU = "usersCloseToYou"
 }
 
 @Composable
@@ -43,14 +45,9 @@ fun UserSelectionField(
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically) {
-          IconButton(
-              onClick = onBackPressed,
-              modifier = Modifier.testTag(UserSelectionFieldTestTags.BACK_BUTTON)) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = OnSurfaceVariant)
-              }
+          BackArrow(
+              onBackClick = onBackPressed,
+              modifier = Modifier.testTag(UserSelectionFieldTestTags.BACK_BUTTON))
 
           Spacer(modifier = Modifier.width(8.dp))
 
@@ -83,6 +80,15 @@ fun UserSelectionField(
                       .testTag(UserSelectionFieldTestTags.INPUT_USERNAME),
               singleLine = true)
         }
+
+    Text(
+        text = "Click to find public friends on the map",
+        color = Tertiary, // or your OnSurfaceVariant color
+        style = Typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
+        modifier =
+            Modifier.clickable { /*TODO: Add functionality to move to maps*/ }
+                .testTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+                .padding(start = 16.dp))
 
     // Results list
     if (expanded && usernameText.isNotEmpty()) { // Added check for non-empty text

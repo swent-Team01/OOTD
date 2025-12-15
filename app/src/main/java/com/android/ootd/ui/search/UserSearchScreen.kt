@@ -27,7 +27,8 @@ object SearchScreenTestTags {
 @Composable
 fun UserSearchScreen(
     viewModel: UserSearchViewModel = viewModel(),
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onBackPressed: () -> Unit = {},
 ) {
   val uiState by viewModel.uiState.collectAsState()
 
@@ -44,6 +45,7 @@ fun UserSearchScreen(
             usernameText = uiState.username,
             onUsernameTextChanged = viewModel::updateUsername,
             onUserSuggestionClicked = onUserClick,
+            onBackPressed = onBackPressed,
             usernameSuggestions = uiState.userSuggestions,
             expanded = uiState.suggestionsExpanded)
 
