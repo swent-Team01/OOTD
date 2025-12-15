@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,11 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.model.items.Item
-
-enum class ItemGridLayout {
-  VERTICAL_GRID, // 2-column grid, scrolls vertically
-  HORIZONTAL_ROW // Single row, scrolls horizontally
-}
 
 /**
  * Test tags for item-related UI components. Used by ItemCard, ItemGridScreen, and
@@ -68,10 +60,15 @@ object ItemsTestTags {
 }
 
 /**
- * Screen displaying a grid or row of items.
+ * Displays a horizontal scrollable row of items.
  *
  * @param items List of items to display
- * @param layout Whether to show as vertical grid or horizontal row
+ * @param modifier Modifier for the container
+ * @param onEditItem Callback when edit button is clicked (owner only)
+ * @param isOwner Whether the current user owns these items
+ * @param starredItemIds Set of item IDs that are starred
+ * @param onToggleStar Callback when star button is clicked
+ * @param showStarToggle Whether to show the star toggle button (typically for non-owners)
  */
 @Composable
 fun ItemGridScreen(
@@ -81,55 +78,29 @@ fun ItemGridScreen(
     isOwner: Boolean = false,
     starredItemIds: Set<String> = emptySet(),
     onToggleStar: (Item) -> Unit = {},
-    showStarToggle: Boolean = false,
-    layout: ItemGridLayout =
-        ItemGridLayout.VERTICAL_GRID // Defaults to grid for backward compatibility
+    showStarToggle: Boolean = false
 ) {
 
   var selectedItem by remember { mutableStateOf<Item?>(null) }
 
   Box(modifier = modifier) {
-    when (layout) {
-      ItemGridLayout.VERTICAL_GRID -> {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.testTag(ItemsTestTags.ITEMS_GRID),
-            contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-              items(items) { item ->
-                ItemCard(
-                    item = item,
-                    onClick = { selectedItem = item },
-                    onEditClick = { onEditItem(item.itemUuid) },
-                    isOwner = isOwner,
-                    isStarred = starredItemIds.contains(item.itemUuid),
-                    onToggleStar = { onToggleStar(item) },
-                    showStarToggle = showStarToggle)
-              }
+    LazyRow(
+        modifier = Modifier.testTag(ItemsTestTags.ITEMS_GRID),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
+          items(items) { item ->
+            Box(modifier = Modifier.width(180.dp)) {
+              ItemCard(
+                  item = item,
+                  onClick = { selectedItem = item },
+                  onEditClick = { onEditItem(item.itemUuid) },
+                  isOwner = isOwner,
+                  isStarred = starredItemIds.contains(item.itemUuid),
+                  onToggleStar = { onToggleStar(item) },
+                  showStarToggle = showStarToggle)
             }
-      }
-
-      ItemGridLayout.HORIZONTAL_ROW -> {
-        LazyRow(
-            modifier = Modifier.testTag(ItemsTestTags.ITEMS_GRID),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
-              items(items) { item ->
-                Box(modifier = Modifier.width(180.dp)) {
-                  ItemCard(
-                      item = item,
-                      onClick = { selectedItem = item },
-                      onEditClick = { onEditItem(item.itemUuid) },
-                      isOwner = isOwner,
-                      isStarred = starredItemIds.contains(item.itemUuid),
-                      onToggleStar = { onToggleStar(item) },
-                      showStarToggle = showStarToggle)
-                }
-              }
-            }
-      }
-    }
+          }
+        }
 
     selectedItem?.let { item ->
       SeeItemDetailsDialog(item = item, onDismissRequest = { selectedItem = null })
