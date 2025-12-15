@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.camera.CameraScreen
@@ -172,8 +171,7 @@ fun AvatarSection(
     username: String,
     onEditClick: () -> Unit,
     deleteProfilePicture: () -> Unit,
-    modifier: Modifier = Modifier,
-    context: Context = LocalContext.current
+    modifier: Modifier = Modifier
 ) {
   val colors = LightColorScheme
   val typography = Typography

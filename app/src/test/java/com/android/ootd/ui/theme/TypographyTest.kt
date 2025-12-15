@@ -22,7 +22,7 @@ class TypographyTest {
         "displayLarge should use Bodoni font family", NotoSans, displayLarge.fontFamily)
     // displayLarge was made bold in the app theme
     Assert.assertEquals(
-        "displayLarge should use Bold weight", FontWeight.Companion.Bold, displayLarge.fontWeight)
+        "displayLarge should use Bold weight", FontWeight.Bold, displayLarge.fontWeight)
     Assert.assertEquals("displayLarge should have 36sp font size", 36.sp, displayLarge.fontSize)
   }
 
@@ -32,7 +32,7 @@ class TypographyTest {
 
     Assert.assertEquals("titleLarge should use Bodoni font family", NotoSans, titleLarge.fontFamily)
     Assert.assertEquals(
-        "titleLarge should use Normal weight", FontWeight.Companion.Normal, titleLarge.fontWeight)
+        "titleLarge should use Normal weight", FontWeight.Normal, titleLarge.fontWeight)
     Assert.assertEquals("titleLarge should have 20sp font size", 20.sp, titleLarge.fontSize)
   }
 
@@ -42,7 +42,7 @@ class TypographyTest {
 
     Assert.assertEquals("bodyLarge should use Bodoni font family", NotoSans, bodyLarge.fontFamily)
     Assert.assertEquals(
-        "bodyLarge should use Normal weight", FontWeight.Companion.Normal, bodyLarge.fontWeight)
+        "bodyLarge should use Normal weight", FontWeight.Normal, bodyLarge.fontWeight)
     Assert.assertEquals("bodyLarge should have 16sp font size", 16.sp, bodyLarge.fontSize)
     Assert.assertEquals("bodyLarge should have 24sp line height", 24.sp, bodyLarge.lineHeight)
   }
@@ -53,7 +53,7 @@ class TypographyTest {
 
     Assert.assertEquals("bodySmall should use Bodoni font family", NotoSans, bodySmall.fontFamily)
     Assert.assertEquals(
-        "bodySmall should use Normal weight", FontWeight.Companion.Normal, bodySmall.fontWeight)
+        "bodySmall should use Normal weight", FontWeight.Normal, bodySmall.fontWeight)
     Assert.assertEquals("bodySmall should have 13sp font size", 13.sp, bodySmall.fontSize)
   }
 
@@ -64,9 +64,7 @@ class TypographyTest {
     Assert.assertEquals(
         "headlineMedium should use Bodoni font family", NotoSans, headlineMedium.fontFamily)
     Assert.assertEquals(
-        "headlineMedium should use Bold weight",
-        FontWeight.Companion.Bold,
-        headlineMedium.fontWeight)
+        "headlineMedium should use Bold weight", FontWeight.Bold, headlineMedium.fontWeight)
     Assert.assertEquals("headlineMedium should have 48sp font size", 48.sp, headlineMedium.fontSize)
   }
 
@@ -106,24 +104,16 @@ class TypographyTest {
   @Test
   fun typography_fontWeights_areAsConfigured() {
     Assert.assertEquals(
-        "displayLarge should use Bold weight",
-        FontWeight.Companion.Bold,
-        Typography.displayLarge.fontWeight)
+        "displayLarge should use Bold weight", FontWeight.Bold, Typography.displayLarge.fontWeight)
     Assert.assertEquals(
-        "titleLarge should use Normal weight",
-        FontWeight.Companion.Normal,
-        Typography.titleLarge.fontWeight)
+        "titleLarge should use Normal weight", FontWeight.Normal, Typography.titleLarge.fontWeight)
     Assert.assertEquals(
-        "bodyLarge should use Normal weight",
-        FontWeight.Companion.Normal,
-        Typography.bodyLarge.fontWeight)
+        "bodyLarge should use Normal weight", FontWeight.Normal, Typography.bodyLarge.fontWeight)
     Assert.assertEquals(
-        "bodySmall should use Normal weight",
-        FontWeight.Companion.Normal,
-        Typography.bodySmall.fontWeight)
+        "bodySmall should use Normal weight", FontWeight.Normal, Typography.bodySmall.fontWeight)
     Assert.assertEquals(
         "headlineMedium should use Bold weight",
-        FontWeight.Companion.Bold,
+        FontWeight.Bold,
         Typography.headlineMedium.fontWeight)
   }
 

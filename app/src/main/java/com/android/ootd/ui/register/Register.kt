@@ -45,8 +45,6 @@ import java.util.Locale
  * Test tags for the Register screen components. Used to identify UI elements in automated tests.
  */
 object RegisterScreenTestTags {
-  /** Test tag for the app logo image */
-  const val APP_LOGO = "appLogo"
 
   /** Test tag for the username input field */
   const val INPUT_REGISTER_UNAME = "inputRegisterUname"
