@@ -146,7 +146,7 @@ private fun CommentHeader(commentCount: Int, onClose: () -> Unit) {
         Text(
             text = "Comments ($commentCount)",
             style = Typography.titleLarge,
-            color = OnSurface,
+            color = Primary,
             fontWeight = FontWeight.Bold)
 
         IconButton(
@@ -263,7 +263,7 @@ private fun CommentItem(
             Text(
                 text = userData?.username ?: "Loading...",
                 style = Typography.bodyLarge,
-                color = OnSurface,
+                color = Primary,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable { onProfileClick(comment.ownerId) })
 
@@ -272,7 +272,7 @@ private fun CommentItem(
             Text(
                 text = formatTimestamp(comment.timestamp),
                 style = Typography.bodySmall,
-                color = OnSurfaceVariant)
+                color = Tertiary)
           }
 
           Spacer(modifier = Modifier.height(4.dp))
