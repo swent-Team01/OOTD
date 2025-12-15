@@ -44,7 +44,7 @@ okhttp = "4.12.0"
 camerax = "1.5.1"
 
 # Accompanist (for permissions)
-accompanist = "0.34.0"
+accompanist = "0.37.3"
 
 # Guava (for CameraX ListenableFuture)
 guava = "33.5.0-android"
