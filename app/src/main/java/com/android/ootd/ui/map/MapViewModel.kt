@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Enum representing the type of map to display. */
@@ -264,12 +265,12 @@ class MapViewModel(
 
   /** Show a snackbar message. */
   fun showSnackbar(message: String) {
-    _uiState.value = _uiState.value.copy(snackbarMessage = message)
+    _uiState.update { it.copy(snackbarMessage = message) }
   }
 
   /** Clear the snackbar message. */
   fun clearSnackbar() {
-    _uiState.value = _uiState.value.copy(snackbarMessage = null)
+    _uiState.update { it.copy(snackbarMessage = null) }
   }
 }
 
