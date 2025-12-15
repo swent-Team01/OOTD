@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.R
 import com.android.ootd.ui.camera.CameraScreen
 import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
@@ -58,10 +61,12 @@ import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CenteredLoadingState
+import com.android.ootd.utils.composables.ImageSelectionDialog
 import com.android.ootd.utils.composables.OOTDTopBar
 
 object EditItemsScreenTestTags {
   const val PLACEHOLDER_PICTURE = "placeholderPicture"
+  const val IMAGE_PICKER_BUTTON = "imagePickerButton"
   const val INPUT_ADD_PICTURE_GALLERY = "inputAddPictureGallery"
   const val INPUT_ADD_PICTURE_CAMERA = "inputAddPictureCamera"
   const val INPUT_ITEM_CATEGORY = "inputItemCategory"
@@ -100,6 +105,7 @@ fun EditItemsScreen(
   val errorMsg = itemsUIState.errorMessage
   val context = LocalContext.current
   var showCamera by remember { mutableStateOf(false) }
+  var showImageDialog by remember { mutableStateOf(false) }
 
   LaunchedEffect(itemsUIState.isSaveSuccessful) { if (itemsUIState.isSaveSuccessful) goBack() }
   LaunchedEffect(itemsUIState.isDeleteSuccessful) { if (itemsUIState.isDeleteSuccessful) goBack() }
@@ -204,8 +210,16 @@ fun EditItemsScreen(
                         ItemFieldsListSlots(
                             imagePicker = {
                               ImagePickerRow(
-                                  onPickFromGallery = { galleryLauncher.launch("image/*") },
-                                  onOpenCamera = { showCamera = true })
+                                  showDialog = showImageDialog,
+                                  onShowDialogChange = { showImageDialog = it },
+                                  onPickFromGallery = {
+                                    showImageDialog = false
+                                    galleryLauncher.launch("image/*")
+                                  },
+                                  onOpenCamera = {
+                                    showImageDialog = false
+                                    showCamera = true
+                                  })
                             },
                             categoryField = {
                               CategoryField(
@@ -326,20 +340,35 @@ fun EditItemsScreen(
 }
 
 @Composable
-private fun ImagePickerRow(onPickFromGallery: () -> Unit, onOpenCamera: () -> Unit) {
-  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun ImagePickerRow(
+    showDialog: Boolean,
+    onShowDialogChange: (Boolean) -> Unit,
+    onPickFromGallery: () -> Unit,
+    onOpenCamera: () -> Unit
+) {
+  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Button(
-        onClick = onPickFromGallery,
-        modifier = Modifier.weight(1f).testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY),
-        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-          Text("Select from Gallery")
+        onClick = { onShowDialogChange(true) },
+        colors = ButtonDefaults.buttonColors(containerColor = Primary),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        modifier = Modifier.testTag(EditItemsScreenTestTags.IMAGE_PICKER_BUTTON)) {
+          Icon(
+              painter = painterResource(R.drawable.ic_photo_placeholder),
+              contentDescription = "Upload",
+              tint = White,
+              modifier = Modifier.size(16.dp))
+          Spacer(Modifier.width(8.dp))
+          Text(text = "Change picture", color = White)
         }
-    Button(
-        onClick = onOpenCamera,
-        modifier = Modifier.weight(1f).testTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA),
-        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-          Text("Take a new picture")
-        }
+  }
+
+  if (showDialog) {
+    ImageSelectionDialog(
+        onDismissRequest = { onShowDialogChange(false) },
+        onTakePhoto = onOpenCamera,
+        onPickFromGallery = onPickFromGallery,
+        takePhotoTag = EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA,
+        pickGalleryTag = EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY)
   }
 }
 
