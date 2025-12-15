@@ -54,6 +54,9 @@ object FitCheckScreenTestTags {
   const val CHOOSE_GALLERY_BUTTON = "fitCheckGalleryButton"
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
+  const val MISSING_PHOTO_WARNING = "fitCheckMissingPhotoWarning"
+  const val MISSING_PHOTO_WARNING_ADD_BUTTON = "fitCheckMissingPhotoWarningAddButton"
+  const val MISSING_PHOTO_WARNING_CANCEL_BUTTON = "fitCheckMissingPhotoWarningCancelButton"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
   const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
@@ -236,7 +239,7 @@ fun FitCheckScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FitCheckScreenContent(
+internal fun FitCheckScreenContent(
     uiState: FitCheckUIState,
     locationSelectionViewModel: LocationSelectionViewModel? = null,
     onNextClick: (String, String, Location) -> Unit = { _, _, _ -> },
@@ -250,6 +253,10 @@ private fun FitCheckScreenContent(
     overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
+  var showMissingPhotoWarning by remember { mutableStateOf(false) }
+  val hasPhoto = uiState.image != Uri.EMPTY
+
+  LaunchedEffect(hasPhoto) { if (hasPhoto) showMissingPhotoWarning = false }
 
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
@@ -274,7 +281,7 @@ private fun FitCheckScreenContent(
                     locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
                 onNextClick(uiState.image.toString(), uiState.description, finalLocation)
               } else {
-                onDescriptionChange(uiState.description) // no-op; real screen sets error
+                showMissingPhotoWarning = true
               }
             },
             modifier =
@@ -345,6 +352,35 @@ private fun FitCheckScreenContent(
                   onTakePhoto = onTakePhoto,
                   onChooseFromGallery = onChooseFromGallery)
             }
+
+        // Missing Photo Warning Dialog
+        if (showMissingPhotoWarning) {
+          AlertDialog(
+              modifier = Modifier.testTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING),
+              onDismissRequest = { showMissingPhotoWarning = false },
+              title = { Text("Add a Photo") },
+              text = { Text("Please add a photo before continuing to add items.") },
+              confirmButton = {
+                TextButton(
+                    onClick = {
+                      showMissingPhotoWarning = false
+                      showDialog = true
+                    },
+                    modifier =
+                        Modifier.testTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING_ADD_BUTTON)) {
+                      Text("Add Photo")
+                    }
+              },
+              dismissButton = {
+                TextButton(
+                    onClick = { showMissingPhotoWarning = false },
+                    modifier =
+                        Modifier.testTag(
+                            FitCheckScreenTestTags.MISSING_PHOTO_WARNING_CANCEL_BUTTON)) {
+                      Text("Cancel")
+                    }
+              })
+        }
       }
 }
 
