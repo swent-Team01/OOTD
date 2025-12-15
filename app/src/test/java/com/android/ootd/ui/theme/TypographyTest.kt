@@ -19,18 +19,19 @@ class TypographyTest {
     val displayLarge = Typography.displayLarge
 
     Assert.assertEquals(
-        "displayLarge should use Bodoni font family", NotoSans, displayLarge.fontFamily)
+        "displayLarge should use DmSerifText font family", DmSerifText, displayLarge.fontFamily)
     // displayLarge was made bold in the app theme
     Assert.assertEquals(
-        "displayLarge should use Bold weight", FontWeight.Bold, displayLarge.fontWeight)
-    Assert.assertEquals("displayLarge should have 36sp font size", 36.sp, displayLarge.fontSize)
+        "displayLarge should use Normal weight", FontWeight.Normal, displayLarge.fontWeight)
+    Assert.assertEquals("displayLarge should have 42sp font size", 42.sp, displayLarge.fontSize)
   }
 
   @Test
   fun typography_titleLarge_usesBodoniFont() {
     val titleLarge = Typography.titleLarge
 
-    Assert.assertEquals("titleLarge should use Bodoni font family", NotoSans, titleLarge.fontFamily)
+    Assert.assertEquals(
+        "titleLarge should use DmSerifText font family", DmSerifText, titleLarge.fontFamily)
     Assert.assertEquals(
         "titleLarge should use Normal weight", FontWeight.Normal, titleLarge.fontWeight)
     Assert.assertEquals("titleLarge should have 20sp font size", 20.sp, titleLarge.fontSize)
@@ -62,37 +63,16 @@ class TypographyTest {
     val headlineMedium = Typography.headlineMedium
 
     Assert.assertEquals(
-        "headlineMedium should use Bodoni font family", NotoSans, headlineMedium.fontFamily)
+        "headlineMedium should use DmSerifText font family", DmSerifText, headlineMedium.fontFamily)
     Assert.assertEquals(
         "headlineMedium should use Bold weight", FontWeight.Bold, headlineMedium.fontWeight)
     Assert.assertEquals("headlineMedium should have 48sp font size", 48.sp, headlineMedium.fontSize)
   }
 
   @Test
-  fun typography_allBodoniStyles_useSameFontFamily() {
-    val displayLarge = Typography.displayLarge
-    val titleLarge = Typography.titleLarge
-    val bodyLarge = Typography.bodyLarge
-    val bodySmall = Typography.bodySmall
-
-    Assert.assertEquals(
-        "All typography styles should use the same Bodoni font family",
-        displayLarge.fontFamily,
-        titleLarge.fontFamily)
-    Assert.assertEquals(
-        "All typography styles should use the same Bodoni font family",
-        titleLarge.fontFamily,
-        bodyLarge.fontFamily)
-    Assert.assertEquals(
-        "All typography styles should use the same Bodoni font family",
-        bodyLarge.fontFamily,
-        bodySmall.fontFamily)
-  }
-
-  @Test
   fun typography_fontSizes_areCorrect() {
     Assert.assertEquals(
-        "displayLarge font size should be 36sp", 36.sp, Typography.displayLarge.fontSize)
+        "displayLarge font size should be 36sp", 42.sp, Typography.displayLarge.fontSize)
     Assert.assertEquals(
         "titleLarge font size should be 20sp", 20.sp, Typography.titleLarge.fontSize)
     Assert.assertEquals("bodyLarge font size should be 16sp", 16.sp, Typography.bodyLarge.fontSize)
@@ -104,7 +84,9 @@ class TypographyTest {
   @Test
   fun typography_fontWeights_areAsConfigured() {
     Assert.assertEquals(
-        "displayLarge should use Bold weight", FontWeight.Bold, Typography.displayLarge.fontWeight)
+        "displayLarge should use Bold weight",
+        FontWeight.Normal,
+        Typography.displayLarge.fontWeight)
     Assert.assertEquals(
         "titleLarge should use Normal weight", FontWeight.Normal, Typography.titleLarge.fontWeight)
     Assert.assertEquals(
@@ -118,34 +100,19 @@ class TypographyTest {
   }
 
   @Test
-  fun typography_usesConsistentFontFamily() {
-    // Verify that all text styles use Bodoni font
-    val styles =
-        listOf(
-            Typography.displayLarge,
-            Typography.titleLarge,
-            Typography.bodyLarge,
-            Typography.bodySmall,
-            Typography.headlineMedium)
-
-    styles.forEach { style ->
-      Assert.assertNotNull("Text style should have a font family", style.fontFamily)
-      Assert.assertEquals("Text style should use Bodoni font family", NotoSans, style.fontFamily)
-    }
-  }
-
-  @Test
   fun bodoni_fontFamily_isUsedInTypography() {
     // Verify that the Bodoni font family instance is actually used in Typography
     Assert.assertTrue(
-        "Bodoni should be used in displayLarge", Typography.displayLarge.fontFamily == NotoSans)
+        "DmSerifText should be used in displayLarge",
+        Typography.displayLarge.fontFamily == DmSerifText)
     Assert.assertTrue(
-        "Bodoni should be used in titleLarge", Typography.titleLarge.fontFamily == NotoSans)
+        "DmSerifText should be used in titleLarge", Typography.titleLarge.fontFamily == DmSerifText)
     Assert.assertTrue(
-        "Bodoni should be used in bodyLarge", Typography.bodyLarge.fontFamily == NotoSans)
+        "NotoSans should be used in bodyLarge", Typography.bodyLarge.fontFamily == NotoSans)
     Assert.assertTrue(
-        "Bodoni should be used in bodySmall", Typography.bodySmall.fontFamily == NotoSans)
+        "NotoSans should be used in bodySmall", Typography.bodySmall.fontFamily == NotoSans)
     Assert.assertTrue(
-        "Bodoni should be used in headlineMedium", Typography.headlineMedium.fontFamily == NotoSans)
+        "DmSerifText should be used in headlineMedium",
+        Typography.headlineMedium.fontFamily == DmSerifText)
   }
 }

@@ -8,15 +8,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.android.ootd.R
 
-val NotoSans = FontFamily.SansSerif
+val NotoSans = FontFamily(Font(R.font.noto_sans, FontWeight.Normal))
 
-val DmSerifText = FontFamily(Font(R.font.bodoni, FontWeight.Normal))
+val DmSerifText = FontFamily(Font(R.font.dm_serif_text, FontWeight.Normal))
 // Set of Material typography styles to start with
 val Typography =
     Typography(
         // header 1 - make header bold
         displayLarge =
-            TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Bold, fontSize = 36.sp),
+            TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Normal, fontSize = 42.sp),
         // header 2
         titleLarge =
             TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Normal, fontSize = 20.sp),
