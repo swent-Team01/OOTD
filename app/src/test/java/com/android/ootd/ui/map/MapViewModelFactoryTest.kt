@@ -78,7 +78,12 @@ class MapViewModelFactoryTest {
 
   @Test
   fun factory_withFocusLocation_createsViewModelWithFocusLocation() {
-    val factory = MapViewModelFactory(testFocusLocation, mockFeedRepository, mockAccountRepository)
+    val factory =
+        MapViewModelFactory(
+            focusLocation = testFocusLocation,
+            initialMapType = MapType.FRIENDS_POSTS,
+            feedRepository = mockFeedRepository,
+            accountRepository = mockAccountRepository)
 
     val viewModel = factory.create(MapViewModel::class.java)
 
@@ -92,6 +97,7 @@ class MapViewModelFactoryTest {
     val factory =
         MapViewModelFactory(
             focusLocation = null,
+            initialMapType = MapType.FRIENDS_POSTS,
             feedRepository = mockFeedRepository,
             accountRepository = mockAccountRepository)
 
@@ -106,7 +112,10 @@ class MapViewModelFactoryTest {
   fun factory_defaultConstructor_createsViewModelWithNullFocus() {
     val factory =
         MapViewModelFactory(
-            feedRepository = mockFeedRepository, accountRepository = mockAccountRepository)
+            focusLocation = null,
+            initialMapType = MapType.FRIENDS_POSTS,
+            feedRepository = mockFeedRepository,
+            accountRepository = mockAccountRepository)
 
     val viewModel = factory.create(MapViewModel::class.java)
 
@@ -116,7 +125,12 @@ class MapViewModelFactoryTest {
 
   @Test(expected = IllegalArgumentException::class)
   fun factory_withInvalidViewModelClass_throwsException() {
-    val factory = MapViewModelFactory(testFocusLocation, mockFeedRepository, mockAccountRepository)
+    val factory =
+        MapViewModelFactory(
+            focusLocation = testFocusLocation,
+            initialMapType = MapType.FRIENDS_POSTS,
+            feedRepository = mockFeedRepository,
+            accountRepository = mockAccountRepository)
 
     // Try to create a different ViewModel type - should throw
     factory.create(InvalidViewModel::class.java)
@@ -124,7 +138,12 @@ class MapViewModelFactoryTest {
 
   @Test
   fun factory_createsMultipleInstances_withSameFocusLocation() {
-    val factory = MapViewModelFactory(testFocusLocation, mockFeedRepository, mockAccountRepository)
+    val factory =
+        MapViewModelFactory(
+            focusLocation = testFocusLocation,
+            initialMapType = MapType.FRIENDS_POSTS,
+            feedRepository = mockFeedRepository,
+            accountRepository = mockAccountRepository)
 
     val viewModel1 = factory.create(MapViewModel::class.java)
     val viewModel2 = factory.create(MapViewModel::class.java)

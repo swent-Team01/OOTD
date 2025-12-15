@@ -38,7 +38,8 @@ fun UserSelectionField(
     onUserSuggestionClicked: (String) -> Unit,
     usernameSuggestions: List<User>,
     expanded: Boolean,
-    onBackPressed: () -> Unit = {}
+    onBackPressed: () -> Unit = {},
+    onFindFriendsClick: () -> Unit = {}
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
     // Search bar
@@ -86,7 +87,7 @@ fun UserSelectionField(
         color = Tertiary, // or your OnSurfaceVariant color
         style = Typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
         modifier =
-            Modifier.clickable { /*TODO: Add functionality to move to maps*/ }
+            Modifier.clickable { onFindFriendsClick() }
                 .testTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
                 .padding(start = 16.dp))
 

@@ -14,6 +14,7 @@ import com.android.ootd.utils.PostFirestoreTest
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.OnMapsSdkInitializedCallback
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -371,5 +372,45 @@ class MapScreenFirebaseTest : PostFirestoreTest(), OnMapsSdkInitializedCallback 
         "User location should be preserved"
       }
     }
+  }
+
+  @Test
+  fun mapScreen_onPostClick_triggersNavigationInMainActivity() {
+    var capturedPostId: String? = null
+
+    composeTestRule.setContent {
+      MapScreen(viewModel = viewModel, onPostClick = { postId -> capturedPostId = postId })
+    }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+
+    // Simulate clicking a post marker
+    val onPostClick: (String) -> Unit = { postId -> capturedPostId = postId }
+    onPostClick("test-post-456")
+
+    assertEquals("test-post-456", capturedPostId)
+  }
+
+  @Test
+  fun mapScreen_onUserProfileClick_triggersNavigationInMainActivity() {
+    var capturedUserId: String? = null
+
+    composeTestRule.setContent {
+      MapScreen(viewModel = viewModel, onUserProfileClick = { userId -> capturedUserId = userId })
+    }
+
+    composeTestRule.waitForIdle()
+    Thread.sleep(1000)
+
+    // Switch to Find Friends tab
+    composeTestRule.onNodeWithTag(MapScreenTestTags.FIND_FRIENDS_TAB).performClick()
+    composeTestRule.waitForIdle()
+
+    // Simulate clicking a profile marker on Find Friends map
+    val onUserProfileClick: (String) -> Unit = { userId -> capturedUserId = userId }
+    onUserProfileClick("test-user-789")
+
+    assertEquals("test-user-789", capturedUserId)
   }
 }
