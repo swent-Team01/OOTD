@@ -6,10 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Comment
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.rounded.ChatBubbleOutline
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -150,7 +150,7 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
         }
 
     Icon(
-        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+        imageVector = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
         contentDescription = if (isLiked) "Liked" else "Unliked",
         tint = iconTint,
         modifier =
@@ -364,7 +364,7 @@ private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Un
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.clickable(enabled = enabled) { onClick() }.testTag("commentButton")) {
         Icon(
-            imageVector = Icons.AutoMirrored.Outlined.Comment,
+            imageVector = Icons.Rounded.ChatBubbleOutline,
             contentDescription = "Comments",
             tint = if (enabled) OnSecondaryContainer else Tertiary,
             modifier = Modifier.size(26.dp).offset(y = 1.dp))
