@@ -329,6 +329,7 @@ fun OOTDApp(
                 composable(Screen.SearchScreen.route) {
                   val currentUserId = Firebase.auth.currentUser?.uid
                   UserSearchScreen(
+                      onBackPressed = { navigationActions.goBack() },
                       onUserClick = { userId ->
                         navigationActions.navigateToUserProfile(userId, currentUserId) // ← USE HERE
                       })

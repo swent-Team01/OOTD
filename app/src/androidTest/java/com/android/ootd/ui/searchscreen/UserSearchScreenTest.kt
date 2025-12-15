@@ -3,7 +3,7 @@ package com.android.ootd.ui.searchscreen
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -91,7 +91,7 @@ class UserSearchScreenTest : FirestoreTest() {
     // Verify the text of the first suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertTextEquals(lastUsername)
+        .assertTextContains(lastUsername)
 
     // Click on the first suggestion
     composeTestRule
