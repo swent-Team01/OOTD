@@ -62,10 +62,12 @@ data class MapUiState(
 class MapViewModel(
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    focusLocation: Location? = null
+    focusLocation: Location? = null,
+    initialMapType: MapType = MapType.FRIENDS_POSTS
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(MapUiState(focusLocation = focusLocation))
+  private val _uiState =
+      MutableStateFlow(MapUiState(focusLocation = focusLocation, selectedMapType = initialMapType))
   val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
   // Job to observe posts; allows cancellation when account changes
