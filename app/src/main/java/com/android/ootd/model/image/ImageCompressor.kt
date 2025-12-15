@@ -75,7 +75,11 @@ class ImageCompressor(
         val rotatedBitmap =
             if (rotationDegrees != 0) {
               val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-              Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+              val rotated =
+                  Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+              // Recycle the original bitmap to free memory - it's no longer needed
+              bitmap.recycle()
+              rotated
             } else {
               bitmap
             }
