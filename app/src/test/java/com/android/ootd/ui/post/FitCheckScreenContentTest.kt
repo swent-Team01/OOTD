@@ -54,33 +54,6 @@ class FitCheckScreenContentTest {
     composeRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
 
     composeRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertIsDisplayed()
-    composeRule.onNodeWithText("Add a Photo").assertIsDisplayed()
-    composeRule
-        .onNodeWithText("Please add a photo before continuing to add items.")
-        .assertIsDisplayed()
-  }
-
-  @Test
-  fun missingPhotoWarning_addPhotoButton_opensPhotoSelectionDialog() {
-    setContentWithState(createEmptyState(), overridePhoto = false)
-    composeRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
-
-    composeRule
-        .onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING_ADD_BUTTON)
-        .performClick()
-
-    composeRule.onNodeWithTag(FitCheckScreenTestTags.ALERT_DIALOG).assertIsDisplayed()
-  }
-
-  @Test
-  fun missingPhotoWarning_cancelButton_dismissesDialog() {
-    setContentWithState(createEmptyState(), overridePhoto = false)
-    composeRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
-
-    composeRule
-        .onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING_CANCEL_BUTTON)
-        .performClick()
-
-    composeRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertDoesNotExist()
+    composeRule.onNodeWithText("Please add a photo before continuing.").assertIsDisplayed()
   }
 }

@@ -57,37 +57,13 @@ class PreviewItemScreenContentTest {
           isPublished = false)
 
   @Test
-  fun postButtonDisabled_showsMissingItemsWarningDialog() {
+  fun postButton_withoutItems_showsMissingItemsWarning() {
     setContentWithState(createEmptyState())
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
 
     composeRule.onNodeWithTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertIsDisplayed()
-    composeRule.onNodeWithText("Add Items to Your Outfit").assertIsDisplayed()
     composeRule
         .onNodeWithText("Please add at least one item before posting your outfit.")
         .assertIsDisplayed()
-  }
-
-  @Test
-  fun missingItemsWarningDialog_addItemButton_opensAddItemDialog() {
-    setContentWithState(createEmptyState())
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertIsDisplayed()
-
-    composeRule
-        .onNodeWithTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING_ADD_BUTTON)
-        .performClick()
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG).assertIsDisplayed()
-  }
-
-  @Test
-  fun missingItemsWarningDialog_cancelButton_dismissesDialog() {
-    setContentWithState(createEmptyState())
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
-    composeRule
-        .onNodeWithTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING_CANCEL_BUTTON)
-        .performClick()
-
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING).assertDoesNotExist()
   }
 }

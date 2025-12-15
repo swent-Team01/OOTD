@@ -92,8 +92,6 @@ object PreviewItemScreenTestTags {
   const val ITEM_LIST = "itemList"
   const val POST_BUTTON = "postButton"
   const val MISSING_ITEMS_WARNING = "missingItemsWarning"
-  const val MISSING_ITEMS_WARNING_ADD_BUTTON = "missingItemsWarningAddButton"
-  const val MISSING_ITEMS_WARNING_CANCEL_BUTTON = "missingItemsWarningCancelButton"
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
@@ -105,6 +103,8 @@ object PreviewItemScreenTestTags {
   const val ADD_ITEM_DIALOG = "addItemDialog"
   const val CREATE_NEW_ITEM_OPTION = "createNewItemOption"
   const val SELECT_FROM_INVENTORY_OPTION = "selectFromInventoryOption"
+
+  const val ADD_ITEM_TEXT = "Add Item"
 
   fun getTestTagForItem(item: Item): String = "item${item.itemUuid}"
 }
@@ -224,72 +224,15 @@ fun PreviewItemScreenContent(
               })
         },
         bottomBar = {
-          Column(modifier = Modifier.fillMaxWidth()) {
-            if (!enablePreview) {
-              Row(
-                  modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(
-                        text = "Post to Public Feed",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface)
-                    Switch(
-                        checked = ui.isPublic,
-                        onCheckedChange = onTogglePublic,
-                        colors =
-                            SwitchDefaults.colors(
-                                checkedThumbColor = Primary,
-                                checkedTrackColor = Secondary,
-                                uncheckedThumbColor = Secondary,
-                                uncheckedTrackColor = Tertiary))
-                  }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically) {
-                  if (overridePhoto || hasItems) {
-                    Button(
-                        onClick = onPublish,
-                        modifier =
-                            Modifier.height(47.dp)
-                                .width(140.dp)
-                                .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                          Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
-                          Spacer(Modifier.width(8.dp))
-                          Text("Post", color = White)
-                        }
-                  } else {
-                    OutlinedButton(
-                        onClick = { showMissingItemsWarning = true },
-                        modifier =
-                            Modifier.height(47.dp)
-                                .width(140.dp)
-                                .testTag(PreviewItemScreenTestTags.POST_BUTTON),
-                        border = BorderStroke(2.dp, Tertiary)) {
-                          Icon(
-                              Icons.Default.Check,
-                              contentDescription = "Post (add items first)",
-                              tint = Primary)
-                          Spacer(Modifier.width(8.dp))
-                          Text("Post", color = Primary)
-                        }
-                  }
-                  Button(
-                      onClick = { showAddItemDialog = true },
-                      modifier =
-                          Modifier.height(47.dp)
-                              .width(140.dp)
-                              .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
-                      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Item", tint = White)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Add Item", color = White)
-                      }
-                }
-          }
+          PreviewBottomBar(
+              enablePreview = enablePreview,
+              isPublic = ui.isPublic,
+              hasItems = hasItems,
+              overridePhoto = overridePhoto,
+              onTogglePublic = onTogglePublic,
+              onPublish = onPublish,
+              onShowMissingItemsWarning = { showMissingItemsWarning = true },
+              onShowAddItemDialog = { showAddItemDialog = true })
         }) { innerPadding ->
           PreviewItemList(
               itemsList = itemsList,
@@ -308,39 +251,137 @@ fun PreviewItemScreenContent(
         onSelectFromInventory = onSelectFromInventory,
         onDismiss = { showAddItemDialog = false })
 
-    // Missing Items Warning Dialog
+    // Missing Items Warning Text Overlay
     if (showMissingItemsWarning) {
-      AlertDialog(
-          modifier = Modifier.testTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING),
-          onDismissRequest = { showMissingItemsWarning = false },
-          title = { Text("Add Items to Your Outfit") },
-          text = { Text("Please add at least one item before posting your outfit.") },
-          confirmButton = {
-            TextButton(
-                onClick = {
-                  showMissingItemsWarning = false
-                  showAddItemDialog = true
-                },
-                modifier =
-                    Modifier.testTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING_ADD_BUTTON)) {
-                  Text("Add Item")
-                }
-          },
-          dismissButton = {
-            TextButton(
-                onClick = { showMissingItemsWarning = false },
-                modifier =
-                    Modifier.testTag(
-                        PreviewItemScreenTestTags.MISSING_ITEMS_WARNING_CANCEL_BUTTON)) {
-                  Text("Cancel")
-                }
-          })
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Text(
+            text = "Please add at least one item before posting your outfit.",
+            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.error),
+            modifier =
+                Modifier.padding(bottom = 140.dp)
+                    .testTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING))
+      }
     }
 
     if (ui.isLoading && !enablePreview) {
       CenteredLoadingState(message = "Publishing your outfit...", textColor = Tertiary)
     }
   }
+}
+
+@Composable
+private fun PreviewBottomBar(
+    enablePreview: Boolean,
+    isPublic: Boolean,
+    hasItems: Boolean,
+    overridePhoto: Boolean,
+    onTogglePublic: (Boolean) -> Unit,
+    onPublish: () -> Unit,
+    onShowMissingItemsWarning: () -> Unit,
+    onShowAddItemDialog: () -> Unit
+) {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    if (!enablePreview) {
+      PublicFeedToggle(isPublic = isPublic, onTogglePublic = onTogglePublic)
+    }
+    BottomActionButtons(
+        hasItems = hasItems,
+        overridePhoto = overridePhoto,
+        onPublish = onPublish,
+        onShowMissingItemsWarning = onShowMissingItemsWarning,
+        onShowAddItemDialog = onShowAddItemDialog)
+  }
+}
+
+@Composable
+private fun PublicFeedToggle(isPublic: Boolean, onTogglePublic: (Boolean) -> Unit) {
+  Row(
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(
+            text = "Post to Public Feed",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface)
+        Switch(
+            checked = isPublic,
+            onCheckedChange = onTogglePublic,
+            colors =
+                SwitchDefaults.colors(
+                    checkedThumbColor = Primary,
+                    checkedTrackColor = Secondary,
+                    uncheckedThumbColor = Secondary,
+                    uncheckedTrackColor = Tertiary))
+      }
+}
+
+@Composable
+private fun BottomActionButtons(
+    hasItems: Boolean,
+    overridePhoto: Boolean,
+    onPublish: () -> Unit,
+    onShowMissingItemsWarning: () -> Unit,
+    onShowAddItemDialog: () -> Unit
+) {
+  Row(
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+      horizontalArrangement = Arrangement.SpaceEvenly,
+      verticalAlignment = Alignment.CenterVertically) {
+        PostButton(
+            hasItems = hasItems,
+            overridePhoto = overridePhoto,
+            onPublish = onPublish,
+            onShowMissingItemsWarning = onShowMissingItemsWarning)
+        AddItemButton(onShowAddItemDialog = onShowAddItemDialog)
+      }
+}
+
+@Composable
+private fun PostButton(
+    hasItems: Boolean,
+    overridePhoto: Boolean,
+    onPublish: () -> Unit,
+    onShowMissingItemsWarning: () -> Unit
+) {
+  if (overridePhoto || hasItems) {
+    Button(
+        onClick = onPublish,
+        modifier =
+            Modifier.height(47.dp).width(140.dp).testTag(PreviewItemScreenTestTags.POST_BUTTON),
+        colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+          Icon(Icons.Default.Check, contentDescription = "Post", tint = White)
+          Spacer(Modifier.width(8.dp))
+          Text("Post", color = White)
+        }
+  } else {
+    OutlinedButton(
+        onClick = onShowMissingItemsWarning,
+        modifier =
+            Modifier.height(47.dp).width(140.dp).testTag(PreviewItemScreenTestTags.POST_BUTTON),
+        border = BorderStroke(2.dp, Tertiary)) {
+          Icon(Icons.Default.Check, contentDescription = "Post (add items first)", tint = Primary)
+          Spacer(Modifier.width(8.dp))
+          Text("Post", color = Primary)
+        }
+  }
+}
+
+@Composable
+private fun AddItemButton(onShowAddItemDialog: () -> Unit) {
+  Button(
+      onClick = onShowAddItemDialog,
+      modifier =
+          Modifier.height(47.dp)
+              .width(140.dp)
+              .testTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON),
+      colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+        Icon(
+            Icons.Default.Add,
+            contentDescription = PreviewItemScreenTestTags.ADD_ITEM_TEXT,
+            tint = White)
+        Spacer(Modifier.width(8.dp))
+        Text(PreviewItemScreenTestTags.ADD_ITEM_TEXT, color = White)
+      }
 }
 
 @SuppressLint("DefaultLocale")
@@ -586,7 +627,7 @@ private fun AddItemDialog(
   AlertDialog(
       modifier = Modifier.testTag(PreviewItemScreenTestTags.ADD_ITEM_DIALOG),
       onDismissRequest = onDismiss,
-      title = { Text(text = "Add Item to Outfit") },
+      title = { Text(text = "${PreviewItemScreenTestTags.ADD_ITEM_TEXT} to Outfit") },
       text = {
         Column {
           TextButton(
