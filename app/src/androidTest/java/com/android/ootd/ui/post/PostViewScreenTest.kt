@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -135,6 +136,7 @@ class PostViewScreenTest {
 
     composeTestRule
         .onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)
+        .performScrollTo()
         .assertIsDisplayed()
         .assertExists()
     // Open dropdown
@@ -189,7 +191,10 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Open edit mode
-    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)
+        .performScrollTo()
+        .performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
