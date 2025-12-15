@@ -31,7 +31,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -54,7 +53,6 @@ import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.post.PostViewTestTags.FIRST_LIKE_BUTTON
-import com.android.ootd.ui.post.items.ItemGridLayout
 import com.android.ootd.ui.post.items.ItemGridScreen
 import com.android.ootd.ui.post.items.commonTextFieldColors
 import com.android.ootd.ui.theme.*
@@ -111,6 +109,9 @@ private fun resolveLocation(
  *
  * @param postId The unique identifier of the post to display
  * @param onBack Callback to navigate back
+ * @param onDeleted Callback when the post is deleted
+ * @param onProfileClick Callback when a profile is clicked, providing the user ID
+ * @param onEditItem Callback when an item edit is requested, providing the item ID
  * @param viewModel ViewModel for managing post view state
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,7 +187,17 @@ fun PostViewScreen(
       }
 }
 
-/** Composable displaying the details of a post with integrated items section */
+/**
+ * Composable displaying the details of a post with integrated items section
+ *
+ * @param uiState The current UI state of the post view
+ * @param onToggleLike Callback to toggle the like status of the post
+ * @param modifier Modifier for styling
+ * @param viewModel ViewModel for managing post view state
+ * @param onProfileClick Callback when a profile is clicked, providing the user ID
+ * @param onEditItem Callback when an item edit is requested, providing the item ID
+ * @param onDeletePost Callback when the post is to be deleted
+ */
 @Composable
 fun PostDetailsContent(
     uiState: PostViewUiState,
@@ -312,7 +323,6 @@ private fun ItemsSectionNonScrollable(
       }
 
       else -> {
-        // Reuse ItemGridScreen with horizontal layout!
         ItemGridScreen(
             items = uiState.items,
             modifier = Modifier.fillMaxWidth(),
@@ -320,13 +330,24 @@ private fun ItemsSectionNonScrollable(
             isOwner = uiState.isOwner,
             starredItemIds = uiState.starredItemIds,
             onToggleStar = onToggleStar,
-            showStarToggle = !uiState.isOwner,
-            layout = ItemGridLayout.HORIZONTAL_ROW)
+            showStarToggle = !uiState.isOwner)
       }
     }
   }
 }
 
+/**
+ * Section for displaying and editing the post description
+ *
+ * @param isEditing Whether the description is in editing mode
+ * @param editedDescription The current edited description text
+ * @param ownerUsername The username of the post owner
+ * @param postDescription The original post description
+ * @param onDescriptionChange Callback when the description text changes
+ * @param onSave Callback when saving the edited description
+ * @param onCancel Callback when cancelling the edit
+ * @param locationSelectionViewModel ViewModel for managing location selection state
+ */
 @Composable
 private fun DescriptionSection(
     isEditing: Boolean,
@@ -360,6 +381,15 @@ private fun DescriptionSection(
   }
 }
 
+/**
+ * Editor composable for editing the post description and location
+ *
+ * @param editedDescription The current edited description text
+ * @param onDescriptionChange Callback when the description text changes
+ * @param onSave Callback when saving the edited description
+ * @param onCancel Callback when cancelling the edit
+ * @param locationSelectionViewModel ViewModel for managing location selection state
+ */
 @Composable
 private fun DescriptionEditor(
     editedDescription: String,
@@ -418,6 +448,17 @@ private fun DescriptionEditor(
       }
 }
 
+/**
+ * Section displaying the post owner's profile and options if the viewer is the owner
+ *
+ * @param username The username of the post owner
+ * @param profilePicture The profile picture URL of the post owner
+ * @param ownerId The unique identifier of the post owner
+ * @param onProfileClick Callback when the profile is clicked, providing the user ID
+ * @param onEditClicked Callback when the edit option is clicked
+ * @param onDeletePost Callback when the delete post option is confirmed
+ * @param isOwner Whether the current viewer is the owner of the post
+ */
 @Composable
 fun PostOwnerSection(
     username: String?,
@@ -497,19 +538,13 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
   }
 }
 
-@Composable
-fun PostImage(imageUrl: String) {
-  AsyncImage(
-      model = imageUrl,
-      contentDescription = "Post image",
-      contentScale = ContentScale.Crop,
-      modifier =
-          Modifier.fillMaxWidth()
-              .height(320.dp)
-              .testTag(PostViewTestTags.POST_IMAGE)
-              .clip(RoundedCornerShape(20.dp)))
-}
-
+/**
+ * Row displaying the like button and like count
+ *
+ * @param isLiked Whether the current user has liked the post
+ * @param likeCount The total number of likes on the post
+ * @param onToggleLike Callback to toggle the like status
+ */
 @Composable
 fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
   Row(
@@ -525,6 +560,13 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
       }
 }
 
+/**
+ * Row displaying the location of the post with expand/collapse functionality
+ *
+ * @param location The location string of the post
+ * @param isExpanded Whether the location text is expanded
+ * @param onToggleExpanded Callback to toggle the expanded state
+ */
 @Composable
 fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> Unit) {
   Surface(
@@ -565,6 +607,14 @@ fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> U
       }
 }
 
+/**
+ * Composable displaying the hero image of the post with like overlay
+ *
+ * @param imageUrl The URL of the post image
+ * @param likeCount The total number of likes on the post
+ * @param isLiked Whether the current user has liked the post
+ * @param onToggleLike Callback to toggle the like status
+ */
 @Composable
 private fun PostHeroImage(
     imageUrl: String,
@@ -617,6 +667,14 @@ private fun PostHeroImage(
       }
 }
 
+/**
+ * Composable displaying the post description with optional username prefix
+ *
+ * @param username The username of the post owner
+ * @param description The post description text
+ * @param modifier Modifier for styling
+ * @param textAlign Text alignment for the description
+ */
 @Composable
 fun PostDescription(
     username: String?,
@@ -642,6 +700,12 @@ fun PostDescription(
   }
 }
 
+/**
+ * Row displaying the profiles of users who liked the post
+ *
+ * @param likedUsers List of users who liked the post
+ * @param onProfileClick Callback when a profile is clicked, providing the user ID
+ */
 @Composable
 fun LikedUsersRow(likedUsers: List<User>, onProfileClick: (String) -> Unit) {
   LazyRow(
