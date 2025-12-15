@@ -215,8 +215,7 @@ private fun AccountScreenContent(
                     avatarUri = uiState.profilePicture,
                     username = uiState.username,
                     onEditClick = { showEditProfileConfirm = true },
-                    deleteProfilePicture = { showDeleteProfileConfirm = true },
-                    context = context)
+                    deleteProfilePicture = { showDeleteProfileConfirm = true })
               }
 
               Spacer(modifier = Modifier.height(12.dp))
