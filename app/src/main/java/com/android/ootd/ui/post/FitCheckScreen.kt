@@ -39,6 +39,7 @@ import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
+import com.android.ootd.utils.composables.ImageSelectionDialog
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
 
@@ -133,33 +134,19 @@ private fun PhotoSelectionDialog(
     onChooseFromGallery: () -> Unit
 ) {
   if (showDialog) {
-    AlertDialog(
+    ImageSelectionDialog(
         modifier = Modifier.testTag(FitCheckScreenTestTags.ALERT_DIALOG),
         onDismissRequest = onDismiss,
-        title = { Text("Select Photo") },
-        text = {
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(
-                onClick = {
-                  onDismiss()
-                  onTakePhoto()
-                },
-                modifier = Modifier.testTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)) {
-                  Text("Take Photo")
-                }
-
-            TextButton(
-                onClick = {
-                  onChooseFromGallery()
-                  onDismiss()
-                },
-                modifier = Modifier.testTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)) {
-                  Text("Choose from Gallery")
-                }
-          }
+        onTakePhoto = {
+          onDismiss()
+          onTakePhoto()
         },
-        confirmButton = {},
-        dismissButton = {})
+        onPickFromGallery = {
+          onChooseFromGallery()
+          onDismiss()
+        },
+        takePhotoTag = FitCheckScreenTestTags.TAKE_PHOTO_BUTTON,
+        pickGalleryTag = FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)
   }
 }
 

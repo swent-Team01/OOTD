@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Cancel
@@ -20,7 +21,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -31,13 +31,16 @@ import coil.compose.AsyncImage
 import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OOTDerror
-import com.android.ootd.ui.theme.OnSecondaryContainer
+import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
-import com.android.ootd.utils.composables.ClickableProfileRow
+import com.android.ootd.utils.composables.ImageSelectionDialog
+import com.android.ootd.utils.composables.ProfilePicture
 import kotlinx.coroutines.launch
 
 object CommentScreenTestTags {
@@ -94,7 +97,7 @@ fun CommentBottomSheet(
       onDismissRequest = onDismiss,
       sheetState = sheetState,
       modifier = Modifier.testTag(CommentScreenTestTags.COMMENT_BOTTOM_SHEET),
-      containerColor = Secondary) {
+      containerColor = Background) {
         Column(
             modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f) // 90% of screen height
             ) {
@@ -119,8 +122,6 @@ fun CommentBottomSheet(
                     onProfileClick = onProfileClick)
               }
 
-              HorizontalDivider(color = Tertiary.copy(alpha = 0.3f))
-
               // Input section (fixed at bottom)
               AddCommentSection(
                   postId = post.postUID,
@@ -142,10 +143,9 @@ fun CommentBottomSheet(
  */
 @Composable
 private fun CommentHeader(commentCount: Int, onClose: () -> Unit) {
-  Row(
-      modifier = Modifier.fillMaxWidth().padding(16.dp),
-      horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically) {
+  Box(
+      modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 24.dp),
+      contentAlignment = Alignment.Center) {
         Text(
             text = "Comments ($commentCount)",
             style = Typography.titleLarge,
@@ -154,11 +154,13 @@ private fun CommentHeader(commentCount: Int, onClose: () -> Unit) {
 
         IconButton(
             onClick = onClose,
-            modifier = Modifier.testTag(CommentScreenTestTags.CLOSE_COMMENTS_BUTTON)) {
+            modifier =
+                Modifier.align(Alignment.CenterEnd)
+                    .testTag(CommentScreenTestTags.CLOSE_COMMENTS_BUTTON)) {
               Icon(
                   imageVector = Icons.Default.Close,
                   contentDescription = "Close comments",
-                  tint = Primary)
+                  tint = OnSurfaceVariant)
             }
       }
 }
@@ -243,70 +245,74 @@ private fun CommentItem(
 
   val isOwnComment = comment.ownerId == currentUserId
 
-  Column(
+  Row(
       modifier =
           Modifier.fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 8.dp)
               .testTag("${CommentScreenTestTags.COMMENT_ITEM}_${comment.commentId}")) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        // Profile Picture
+        ProfilePicture(
+            modifier = Modifier.padding(top = 4.dp),
+            size = 40.dp,
+            profilePicture = userData?.profilePicture ?: "",
+            username = userData?.username ?: "",
+            onClick = { onProfileClick(comment.ownerId) })
 
-          // Profile picture + username + timestamp (clickable and same format as we see on the post
-          // crads)
-          ClickableProfileRow(
-              userId = comment.ownerId,
-              username = userData?.username ?: "Loading...",
-              profilePictureUrl = userData?.profilePicture ?: "",
-              profileSize = 40.dp,
-              onProfileClick = onProfileClick,
-              showUsername = true,
-              usernameStyle = Typography.titleMedium,
-              usernameColor = Primary,
-              modifier = Modifier.weight(1f),
-              additionalContent = {
-                // Timestamp below username
-                Text(
-                    text = formatTimestamp(comment.timestamp),
-                    style = Typography.bodySmall,
-                    color = Tertiary)
-              })
+        Spacer(modifier = Modifier.width(12.dp))
 
-          // Delete button (only for own comments)
-          if (isOwnComment) {
-            IconButton(
-                onClick = onDeleteComment,
+        Column(modifier = Modifier.weight(1f)) {
+          // Username and Timestamp
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = userData?.username ?: "Loading...",
+                style = Typography.bodyLarge,
+                color = Primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onProfileClick(comment.ownerId) })
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = formatTimestamp(comment.timestamp),
+                style = Typography.bodySmall,
+                color = Tertiary)
+          }
+
+          Spacer(modifier = Modifier.height(4.dp))
+
+          // Comment text
+          Text(text = comment.text, style = Typography.bodyLarge, color = OnSurface)
+
+          // Reaction image (if exists)
+          if (comment.reactionImage.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AsyncImage(
+                model = comment.reactionImage,
+                contentDescription = "Reaction image",
                 modifier =
-                    Modifier.testTag(
-                        "${CommentScreenTestTags.DELETE_COMMENT_BUTTON}_${comment.commentId}")) {
-                  Icon(
-                      imageVector = Icons.Default.Delete,
-                      contentDescription = "Delete comment",
-                      tint = MaterialTheme.colorScheme.error)
-                }
+                    Modifier.size(120.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Secondary)
+                        .testTag("${CommentScreenTestTags.REACTION_IMAGE}_${comment.commentId}"),
+                contentScale = ContentScale.Crop)
           }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Comment text
-        Text(
-            text = comment.text,
-            style = Typography.bodyMedium,
-            color = OnSecondaryContainer,
-            modifier = Modifier.padding(start = 48.dp))
-
-        // Reaction image (if exists)
-        if (comment.reactionImage.isNotEmpty()) {
-          Spacer(modifier = Modifier.height(8.dp))
-
-          AsyncImage(
-              model = comment.reactionImage,
-              contentDescription = "Reaction image",
+        // Delete button (only for own comments)
+        if (isOwnComment) {
+          IconButton(
+              onClick = onDeleteComment,
               modifier =
-                  Modifier.padding(start = 48.dp)
-                      .size(80.dp)
-                      .clip(CircleShape)
-                      .background(Color.White)
-                      .testTag("${CommentScreenTestTags.REACTION_IMAGE}_${comment.commentId}"),
-              contentScale = ContentScale.Crop)
+                  Modifier.size(32.dp)
+                      .testTag(
+                          "${CommentScreenTestTags.DELETE_COMMENT_BUTTON}_${comment.commentId}")) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete comment",
+                    tint = OOTDerror,
+                    modifier = Modifier.size(20.dp))
+              }
         }
       }
 }
@@ -345,123 +351,139 @@ private fun AddCommentSection(
   Column(
       modifier =
           Modifier.fillMaxWidth()
-              .background(Secondary)
-              .padding(16.dp)
+              .background(Background)
               .testTag(CommentScreenTestTags.ADD_COMMENT_SECTION)) {
-        // Text input with character counter
-        OutlinedTextField(
-            value = commentText,
-            onValueChange = { if (it.length <= maxChars) commentText = it },
-            modifier = Modifier.fillMaxWidth().testTag(CommentScreenTestTags.COMMENT_TEXT_FIELD),
-            placeholder = { Text("Add a comment...") },
-            maxLines = 4,
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Tertiary,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White),
-            supportingText = {
-              Text(
-                  text = "$remainingChars characters remaining",
-                  style = Typography.bodySmall,
-                  color = if (remainingChars < 50) MaterialTheme.colorScheme.error else Tertiary)
-            })
+        HorizontalDivider(color = Tertiary.copy(alpha = 0.3f))
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Selected Image Preview (if any)
+        uiState.selectedImage?.let { uri ->
+          Box(modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp)) {
+            AsyncImage(
+                model = uri,
+                contentDescription = "Selected image",
+                modifier =
+                    Modifier.size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Secondary)
+                        .testTag(CommentScreenTestTags.SELECTED_IMAGE_PREVIEW),
+                contentScale = ContentScale.Crop)
 
-        // Action buttons row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-              Row(
-                  horizontalArrangement = Arrangement.spacedBy(8.dp),
-                  verticalAlignment = Alignment.CenterVertically) {
-                    // Add image button
-                    IconButton(
-                        onClick = { showImageSourceDialog = true },
-                        modifier = Modifier.testTag(CommentScreenTestTags.ADD_IMAGE_BUTTON)) {
-                          Icon(
-                              imageVector = Icons.Default.AddPhotoAlternate,
-                              contentDescription = "Add reaction image",
-                              tint = Primary)
-                        }
+            // Remove button overlay
+            Icon(
+                imageVector = Icons.Default.Cancel,
+                contentDescription = "Remove image",
+                tint = MaterialTheme.colorScheme.surface,
+                modifier =
+                    Modifier.size(24.dp)
+                        .clickable(onClick = { viewModel.setSelectedImage(null) })
+                        .align(Alignment.TopEnd)
+                        .background(OOTDerror, CircleShape))
+          }
+        }
 
-                    // Image preview (circular, 40dp)
-                    uiState.selectedImage?.let { uri ->
-                      Box {
-                        AsyncImage(
-                            model = uri,
-                            contentDescription = "Selected image",
-                            modifier =
-                                Modifier.size(60.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White)
-                                    .testTag(CommentScreenTestTags.SELECTED_IMAGE_PREVIEW),
-                            contentScale = ContentScale.Crop)
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+          Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
 
-                        // Remove button overlay
+            // Text Input
+            OutlinedTextField(
+                value = commentText,
+                onValueChange = { if (it.length <= maxChars) commentText = it },
+                modifier = Modifier.weight(1f).testTag(CommentScreenTestTags.COMMENT_TEXT_FIELD),
+                placeholder = {
+                  Text("Add a comment...", style = Typography.bodyLarge, color = Tertiary)
+                },
+                maxLines = 4,
+                shape = RoundedCornerShape(24.dp),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Tertiary,
+                        focusedContainerColor = Background,
+                        unfocusedContainerColor = Background),
+                textStyle = Typography.bodyLarge)
 
-                        Icon(
-                            imageVector = Icons.Default.Cancel,
-                            contentDescription = "Remove image",
-                            tint = Color.White,
-                            modifier =
-                                Modifier.size(18.dp)
-                                    .clickable(onClick = { viewModel.setSelectedImage(null) })
-                                    .align(Alignment.TopEnd)
-                                    .background(OOTDerror, CircleShape))
-                      }
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Post Button
+            val isEnabled = commentText.isNotBlank() && !uiState.isSubmitting
+            IconButton(
+                onClick = {
+                  scope.launch {
+                    val result =
+                        viewModel.addComment(
+                            postId = postId,
+                            userId = currentUserId,
+                            text = commentText,
+                            imageUri = uiState.selectedImage,
+                            context = context)
+
+                    result.onSuccess {
+                      commentText = ""
+                      onCommentAdded()
                     }
                   }
-
-              // Post button
-              Button(
-                  onClick = {
-                    scope.launch {
-                      val result =
-                          viewModel.addComment(
-                              postId = postId,
-                              userId = currentUserId,
-                              text = commentText,
-                              imageUri = uiState.selectedImage,
-                              context = context)
-
-                      result.onSuccess {
-                        commentText = ""
-                        onCommentAdded()
-                      }
-                    }
-                  },
-                  enabled = commentText.isNotBlank() && !uiState.isSubmitting,
-                  modifier = Modifier.testTag(CommentScreenTestTags.POST_COMMENT_BUTTON),
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = Primary, contentColor = Color.White),
-                  shape = RoundedCornerShape(20.dp)) {
-                    if (uiState.isSubmitting) {
-                      CircularProgressIndicator(
-                          modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                      Text("Post", style = Typography.bodyMedium)
-                    }
+                },
+                enabled = isEnabled,
+                modifier =
+                    Modifier.size(48.dp) // Match standard touch target size
+                        .background(if (isEnabled) Primary else Tertiary, CircleShape)
+                        .testTag(CommentScreenTestTags.POST_COMMENT_BUTTON)) {
+                  if (uiState.isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp), color = Background, strokeWidth = 2.dp)
+                  } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Post",
+                        tint = Background,
+                        modifier =
+                            Modifier.padding(start = 2.dp)) // Visual correction for send icon
                   }
-            }
+                }
+          }
+
+          // Character counter and add picture button below the input row
+          Row(
+              modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$remainingChars characters remaining",
+                    style = Typography.bodySmall,
+                    color = if (remainingChars < 50) OOTDerror else Tertiary)
+
+                TextButton(
+                    onClick = { showImageSourceDialog = true },
+                    modifier = Modifier.testTag(CommentScreenTestTags.ADD_IMAGE_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.AddPhotoAlternate,
+                          contentDescription = null,
+                          tint = Primary,
+                          modifier = Modifier.size(16.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text(
+                          text = "Add picture reaction",
+                          style = Typography.bodyMedium,
+                          color = Primary)
+                    }
+              }
+        }
       }
 
   // Image source dialog (Camera or Gallery)
   if (showImageSourceDialog) {
-    ImageSourceDialog(
-        onDismiss = { showImageSourceDialog = false },
-        onCameraSelected = {
+    ImageSelectionDialog(
+        onDismissRequest = { showImageSourceDialog = false },
+        onTakePhoto = {
           showImageSourceDialog = false
           showCamera = true
         },
-        onGallerySelected = {
+        onPickFromGallery = {
           showImageSourceDialog = false
           galleryLauncher.launch("image/*")
-        })
+        },
+        takePhotoTag = CommentScreenTestTags.CAMERA_OPTION_BUTTON,
+        pickGalleryTag = CommentScreenTestTags.GALLERY_OPTION_BUTTON)
   }
 
   // Show custom camera
@@ -473,42 +495,6 @@ private fun AddCommentSection(
         },
         onDismiss = { showCamera = false })
   }
-}
-
-/**
- * Dialog for selecting image source (camera or gallery).
- *
- * @param onDismiss Callback when dialog is dismissed
- * @param onCameraSelected Callback when camera option is selected
- * @param onGallerySelected Callback when gallery option is selected
- */
-@Composable
-private fun ImageSourceDialog(
-    onDismiss: () -> Unit,
-    onCameraSelected: () -> Unit,
-    onGallerySelected: () -> Unit
-) {
-  AlertDialog(
-      onDismissRequest = onDismiss,
-      // title = { Text("Add Reaction Image") },
-      text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-          TextButton(
-              onClick = onCameraSelected,
-              modifier =
-                  Modifier.fillMaxWidth().testTag(CommentScreenTestTags.CAMERA_OPTION_BUTTON)) {
-                Text("Take Photo", style = Typography.bodyLarge)
-              }
-
-          TextButton(
-              onClick = onGallerySelected,
-              modifier =
-                  Modifier.fillMaxWidth().testTag(CommentScreenTestTags.GALLERY_OPTION_BUTTON)) {
-                Text("Choose from Gallery", style = Typography.bodyLarge)
-              }
-        }
-      },
-      confirmButton = {})
 }
 
 /**

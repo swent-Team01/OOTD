@@ -6,10 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Comment
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.rounded.ChatBubbleOutline
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -142,10 +142,17 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
 @Composable
 private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
+    val iconTint =
+        when {
+          !enabled -> Tertiary
+          isLiked -> MaterialTheme.colorScheme.error
+          else -> OnSecondaryContainer
+        }
+
     Icon(
-        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+        imageVector = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
         contentDescription = if (isLiked) "Liked" else "Unliked",
-        tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer,
+        tint = iconTint,
         modifier =
             Modifier.size(26.dp)
                 .clickable(enabled = enabled, onClick = onClick)
@@ -156,7 +163,7 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
     Text(
         text = likeCount.toString(),
         style = Typography.bodyMedium,
-        color = OnSecondaryContainer,
+        color = if (enabled) OnSecondaryContainer else Tertiary,
         modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
   }
 }
@@ -236,7 +243,10 @@ private fun DescriptionAndButton(
             shape = RoundedCornerShape(50),
             colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = Primary, contentColor = MaterialTheme.colorScheme.onPrimary),
+                    containerColor = Primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = Tertiary,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.testTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).height(36.dp)) {
               Text("See fit", style = Typography.bodySmall)
             }
@@ -354,7 +364,7 @@ private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Un
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.clickable(enabled = enabled) { onClick() }.testTag("commentButton")) {
         Icon(
-            imageVector = Icons.AutoMirrored.Outlined.Comment,
+            imageVector = Icons.Rounded.ChatBubbleOutline,
             contentDescription = "Comments",
             tint = if (enabled) OnSecondaryContainer else Tertiary,
             modifier = Modifier.size(26.dp).offset(y = 1.dp))
