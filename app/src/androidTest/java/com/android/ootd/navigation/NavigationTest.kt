@@ -15,6 +15,7 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
+import com.android.ootd.ui.map.MapType
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -91,10 +92,16 @@ class NavigationTest {
                       type = NavType.StringType
                       nullable = true
                       defaultValue = null
+                    },
+                    navArgument("mapType") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
                     })) { backStackEntry ->
               val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
               val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
               val name = backStackEntry.arguments?.getString("name")
+              val mapTypeStr = backStackEntry.arguments?.getString("mapType")
 
               val focusLocation =
                   if (lat != null && lon != null && name != null) {
@@ -103,10 +110,16 @@ class NavigationTest {
                     null
                   }
 
+              val initialMapType =
+                  when (mapTypeStr) {
+                    "FIND_FRIENDS" -> MapType.FIND_FRIENDS
+                    else -> MapType.FRIENDS_POSTS
+                  }
+
               MapScreen(
                   viewModel =
-                      if (focusLocation != null) {
-                        viewModel(factory = MapViewModelFactory(focusLocation))
+                      if (focusLocation != null || initialMapType != MapType.FRIENDS_POSTS) {
+                        viewModel(factory = MapViewModelFactory(focusLocation, initialMapType))
                       } else {
                         viewModel()
                       },

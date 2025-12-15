@@ -46,19 +46,20 @@ import com.android.ootd.ui.account.AccountScreen
 import com.android.ootd.ui.account.ViewUserProfile
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
-import com.android.ootd.ui.consent.BetaConsentScreen
-import com.android.ootd.ui.consent.BetaConsentViewModel
-import com.android.ootd.ui.consent.BetaConsentViewModelFactory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapType
 import com.android.ootd.ui.map.MapViewModel
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreen
+import com.android.ootd.ui.onboarding.OnboardingScreen
+import com.android.ootd.ui.onboarding.OnboardingViewModel
+import com.android.ootd.ui.onboarding.OnboardingViewModelFactory
 import com.android.ootd.ui.post.FitCheckScreen
 import com.android.ootd.ui.post.PostViewScreen
 import com.android.ootd.ui.post.PreviewItemScreen
@@ -194,8 +195,8 @@ fun OOTDApp(
               Screen.NotificationsScreen.route)
 
   // Create ViewModel using factory to properly inject SharedPreferences
-  val betaConsentViewModel: BetaConsentViewModel =
-      viewModel(factory = BetaConsentViewModelFactory(context))
+  val onboardingViewModel: OnboardingViewModel =
+      viewModel(factory = OnboardingViewModelFactory(context))
 
   val isNotificationsPermissionGranted =
       testMode ||
@@ -264,36 +265,33 @@ fun OOTDApp(
                 composable(Screen.RegisterUsername.route) {
                   RegisterScreen(
                       onRegister = {
-                        // After registration, show beta consent if not already given
-                        if (betaConsentViewModel.getConsentStatus()) {
+                        // After registration, show onboarding if not already seen
+                        if (onboardingViewModel.getConsentStatus()) {
                           navigationActions.navigateTo(Screen.Feed)
                         } else {
-                          navigationActions.navigateTo(Screen.BetaConsent)
+                          navigationActions.navigateTo(Screen.Onboarding)
                         }
                       })
                 }
-                composable(Screen.BetaConsent.route) {
-                  val consentSaved by betaConsentViewModel.consentSaved.collectAsState()
-                  val isLoading by betaConsentViewModel.isLoading.collectAsState()
-                  val error by betaConsentViewModel.error.collectAsState()
+                composable(Screen.Onboarding.route) {
+                  val consentSaved by onboardingViewModel.consentSaved.collectAsState()
+                  val isLoading by onboardingViewModel.isLoading.collectAsState()
+                  val error by onboardingViewModel.error.collectAsState()
 
                   // Navigate to Feed when consent is successfully saved
                   LaunchedEffect(consentSaved) {
                     if (consentSaved) {
-                      betaConsentViewModel.resetConsentSavedFlag()
+                      onboardingViewModel.resetConsentSavedFlag()
                       navigationActions.navigateTo(Screen.Feed)
                     }
                   }
 
-                  BetaConsentScreen(
-                      onAgree = { betaConsentViewModel.recordConsent() },
-                      onDecline = {
-                        // If user declines, sign them out and return to authentication
-                        navigationActions.navigateTo(Screen.Authentication)
-                      },
+                  OnboardingScreen(
+                      onAgree = { onboardingViewModel.recordConsent() },
+                      onSkip = { onboardingViewModel.recordConsent() },
                       isLoading = isLoading,
                       errorMessage = error,
-                      onErrorDismiss = { betaConsentViewModel.clearError() })
+                      onErrorDismiss = { onboardingViewModel.clearError() })
                 }
               }
 
@@ -339,16 +337,24 @@ fun OOTDApp(
                 composable(Screen.SearchScreen.route) {
                   val currentUserId = Firebase.auth.currentUser?.uid
                   UserSearchScreen(
+                      onBackPressed = { navigationActions.goBack() },
                       onUserClick = { userId ->
-                        navigationActions.navigateToUserProfile(userId, currentUserId) // ← USE HERE
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
+                      },
+                      onFindFriendsClick = {
+                        navigationActions.navigateTo(Screen.Map(mapType = "FIND_FRIENDS"))
                       })
                 }
 
                 composable(Screen.AccountView.route) {
+                  val currentUserId = Firebase.auth.currentUser?.uid
                   AccountPage(
                       onEditAccount = { navigationActions.navigateTo(Screen.AccountEdit) },
                       onPostClick = { postId ->
                         navigationActions.navigateTo(Screen.PostView(postId))
+                      },
+                      onFriendClick = { userId ->
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
                       })
                 }
                 composable(Screen.AccountEdit.route) {
@@ -376,10 +382,16 @@ fun OOTDApp(
                               type = NavType.StringType
                               nullable = true
                               defaultValue = null
+                            },
+                            navArgument("mapType") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
                             })) { backStackEntry ->
                       val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
                       val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
                       val name = backStackEntry.arguments?.getString("name")
+                      val mapTypeStr = backStackEntry.arguments?.getString("mapType")
 
                       // Create focus location only if all parameters are provided
                       val focusLocation =
@@ -387,6 +399,13 @@ fun OOTDApp(
                             Location(latitude = lat, longitude = lon, name = name)
                           } else {
                             null
+                          }
+
+                      // Parse map type from navigation argument
+                      val initialMapType =
+                          when (mapTypeStr) {
+                            "FIND_FRIENDS" -> MapType.FIND_FRIENDS
+                            else -> MapType.FRIENDS_POSTS
                           }
 
                       val mapViewModel: MapViewModel =
@@ -398,8 +417,17 @@ fun OOTDApp(
 
                       val coroutineScope = rememberCoroutineScope()
 
+                      val currentUserId = Firebase.auth.currentUser?.uid
+
                       MapScreen(
-                          viewModel = mapViewModel,
+                          viewModel =
+                              if (focusLocation != null ||
+                                  initialMapType != MapType.FRIENDS_POSTS) {
+                                viewModel(
+                                    factory = MapViewModelFactory(focusLocation, initialMapType))
+                              } else {
+                                viewModel()
+                              },
                           onPostClick = { postId ->
                             // Check if user has posted today before navigating
                             coroutineScope.launch {
@@ -411,6 +439,9 @@ fun OOTDApp(
                                     "You have to do a fitcheck before you can view the posts")
                               }
                             }
+                          },
+                          onUserProfileClick = { userId ->
+                            navigationActions.navigateToUserProfile(userId, currentUserId)
                           })
                     }
 

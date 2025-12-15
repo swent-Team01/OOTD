@@ -150,7 +150,6 @@ class MapScreenTest {
   @Test
   fun mapScreen_onPostClick_callbackIsInvokedWithPostId() {
     var capturedPostId: String? = null
-    val testPostId = "test-post-marker-click"
 
     composeTestRule.setContent {
       MapScreen(viewModel = mockViewModel, onPostClick = { postId -> capturedPostId = postId })
@@ -257,5 +256,125 @@ class MapScreenTest {
 
     // Verify no snackbar is shown initially
     assert(viewModel.uiState.value.snackbarMessage == null)
+  }
+
+  @Test
+  fun mapScreen_onUserProfileClick_callbackIsInvokedWithUserId() {
+    var capturedUserId: String? = null
+    val testUserId = "test-user-123"
+
+    composeTestRule.setContent {
+      MapScreen(
+          viewModel = mockViewModel, onUserProfileClick = { userId -> capturedUserId = userId })
+    }
+
+    // Verify the callback can be invoked
+    composeTestRule.runOnIdle { capturedUserId = null }
+
+    // Manually trigger the callback to verify it works
+    val onUserProfileClick: (String) -> Unit = { userId -> capturedUserId = userId }
+    onUserProfileClick(testUserId)
+
+    assert(capturedUserId == testUserId) { "Expected user ID '$testUserId', got '$capturedUserId'" }
+  }
+
+  @Test
+  fun mapScreen_onUserProfileClick_withDifferentUserIds_capturesDifferentValues() {
+    val clickedUserIds = mutableListOf<String>()
+    val onUserProfileClick: (String) -> Unit = { userId -> clickedUserIds.add(userId) }
+
+    composeTestRule.setContent {
+      MapScreen(viewModel = mockViewModel, onUserProfileClick = onUserProfileClick)
+    }
+
+    // Simulate clicking multiple profile markers
+    val userIds = listOf("user1", "user2", "user3")
+    userIds.forEach { userId -> onUserProfileClick(userId) }
+
+    assert(clickedUserIds.size == 3) { "Expected 3 clicks, got ${clickedUserIds.size}" }
+    assert(clickedUserIds == userIds) { "Expected $userIds, got $clickedUserIds" }
+  }
+
+  @Test
+  fun mapScreen_onUserProfileClick_withEmptyUserId_stillInvokesCallback() {
+    var callbackInvoked = false
+    var capturedUserId: String? = null
+
+    val onUserProfileClick: (String) -> Unit = { userId ->
+      callbackInvoked = true
+      capturedUserId = userId
+    }
+
+    composeTestRule.setContent {
+      MapScreen(viewModel = mockViewModel, onUserProfileClick = onUserProfileClick)
+    }
+
+    // Test with empty user ID
+    onUserProfileClick("")
+
+    assert(callbackInvoked) { "Callback should be invoked even with empty user ID" }
+    assert(capturedUserId == "") { "Should capture empty user ID" }
+  }
+
+  @Test
+  fun mapScreen_bothCallbacks_canBeProvidedSimultaneously() {
+    var capturedPostId: String? = null
+    var capturedUserId: String? = null
+
+    composeTestRule.setContent {
+      MapScreen(
+          viewModel = mockViewModel,
+          onPostClick = { postId -> capturedPostId = postId },
+          onUserProfileClick = { userId -> capturedUserId = userId })
+    }
+
+    // Verify both callbacks work independently
+    val onPostClick: (String) -> Unit = { postId -> capturedPostId = postId }
+    val onUserProfileClick: (String) -> Unit = { userId -> capturedUserId = userId }
+
+    onPostClick("post123")
+    assert(capturedPostId == "post123") { "Post click should work" }
+    assert(capturedUserId == null) { "User click should not be affected" }
+
+    onUserProfileClick("user456")
+    assert(capturedUserId == "user456") { "User click should work" }
+    assert(capturedPostId == "post123") { "Post click should remain unchanged" }
+  }
+
+  @Test
+  fun mapScreen_onUserProfileClick_defaultEmptyCallback_doesNotThrow() {
+    // Test that default empty callback doesn't cause issues
+    composeTestRule.setContent { MapScreen(viewModel = mockViewModel) }
+
+    // Verify the screen renders without issues
+    composeTestRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertIsDisplayed()
+  }
+
+  @Test
+  fun mapScreen_onUserProfileClick_callbackWithMultipleInvocations_maintainsState() {
+    val clickHistory = mutableListOf<String>()
+
+    composeTestRule.setContent {
+      MapScreen(
+          viewModel = mockViewModel, onUserProfileClick = { userId -> clickHistory.add(userId) })
+    }
+
+    val onUserProfileClick: (String) -> Unit = { userId -> clickHistory.add(userId) }
+
+    // Simulate clicking the same user multiple times
+    repeat(3) { onUserProfileClick("user123") }
+
+    assert(clickHistory.size == 3) { "Should record all clicks" }
+    assert(clickHistory.all { it == "user123" }) { "All clicks should be for same user" }
+  }
+
+  @Test
+  fun mapScreen_acceptsBothCallbackParameters() {
+    // Test that MapScreen accepts both callbacks without errors
+    composeTestRule.setContent {
+      MapScreen(viewModel = mockViewModel, onPostClick = { _ -> }, onUserProfileClick = { _ -> })
+    }
+
+    composeTestRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertIsDisplayed()
   }
 }

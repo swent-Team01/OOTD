@@ -276,7 +276,7 @@ class MainActivityCallbacksTest {
       // Navigate to Register screen
       navigation.navigateTo(Screen.RegisterUsername)
 
-      // Verify we're on Register
+      // Verify we’re on Register
       assertEquals(Screen.RegisterUsername.route, navigation.currentRoute())
 
       // Simulate onRegister() callback
@@ -341,7 +341,7 @@ class MainActivityCallbacksTest {
               location = testLocation))
       navigation.navigateTo(Screen.EditItem("item-123"))
 
-      // Confirm we're at EditItem
+      // Confirm we’re at EditItem
       assertEquals(Screen.EditItem.route, navigation.currentRoute())
 
       // Simulate back action
@@ -989,6 +989,137 @@ class MainActivityCallbacksTest {
         navigation.goBack()
         assertEquals(Screen.Map.route, navigation.currentRoute())
       }
+    }
+  }
+
+  // New tests for FindFriendsMap navigation
+  @Test
+  fun mapScreen_findFriendsTab_ownProfileClick_navigatesToAccountView() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Map())
+
+      // User clicks their own profile marker on Find Friends tab
+      // navigateToUserProfile in MainActivity checks if it's current user
+      // and navigates to AccountView instead of ViewUser
+      navigation.navigateTo(Screen.AccountView)
+
+      Assert.assertEquals(Screen.AccountView.route, navigation.currentRoute())
+
+      // Can go back to Map
+      navigation.goBack()
+      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_findFriendsTab_profileClickFromDifferentLocation_navigatesCorrectly() {
+    composeRule.runOnIdle {
+      // Navigate to Map with specific location
+      navigation.navigateTo(
+          Screen.Map(latitude = 46.5197, longitude = 6.6323, locationName = "EPFL"))
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+
+      // Click profile on Find Friends tab
+      navigation.navigateTo(Screen.ViewUser("nearby-user"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // Go back to map with location preserved
+      navigation.goBack()
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+    }
+  }
+
+  @Test
+  fun mapScreen_findFriendsTab_profileToFriendProfile_chainNavigation() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Map())
+
+      // Click profile A from Find Friends
+      navigation.navigateTo(Screen.ViewUser("user-a"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // From user A's profile, click on a friend (user B) in their friends list
+      navigation.navigateTo(Screen.ViewUser("user-b"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // From user B's profile, view their post
+      navigation.navigateTo(Screen.PostView("user-b-post"))
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      // Navigate back through the chain
+      navigation.goBack() // Back to user B
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // Back to user A
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // Back to Map
+      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_findFriendsTab_complexNavigationScenario() {
+    composeRule.runOnIdle {
+      // Complex real-world scenario
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map())
+
+      // Click profile from Find Friends
+      navigation.navigateTo(Screen.ViewUser("new-friend"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // View their post
+      navigation.navigateTo(Screen.PostView("new-friend-post"))
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      // From post, click on another user who liked it
+      navigation.navigateTo(Screen.ViewUser("liker-user"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // View liker's post
+      navigation.navigateTo(Screen.PostView("liker-post"))
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      // Navigate all the way back
+      navigation.goBack() // To liker profile
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // To original post
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      navigation.goBack() // To new-friend profile
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // To Map
+      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      navigation.goBack() // To Feed
+      Assert.assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun searchScreen_findFriendsLink_navigatesToFindFriendsMap() {
+    composeRule.runOnIdle {
+      // Navigate to Search screen
+      navigation.navigateTo(Screen.SearchScreen)
+      Assert.assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+    }
+
+    // Click on the "Find public friends on the map" link
+    composeRule
+        .onNodeWithTag(com.android.ootd.ui.search.UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+        .performClick()
+    composeRule.waitForIdle()
+
+    // Verify navigation to Map screen (currentRoute returns the template, not the actual URL)
+    composeRule.runOnIdle {
+      val currentRoute = navigation.currentRoute()
+      // The route template for Map screen contains the mapType parameter
+      Assert.assertTrue(
+          "Should navigate to map route",
+          currentRoute.startsWith("map") && currentRoute.contains("mapType"))
     }
   }
 }

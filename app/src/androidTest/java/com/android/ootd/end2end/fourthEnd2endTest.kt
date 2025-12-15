@@ -1,6 +1,7 @@
 package com.android.ootd.end2end
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.credentials.CredentialManager
 import androidx.navigation.compose.ComposeNavigator
@@ -47,6 +48,10 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FourthEnd2EndTest : FirestoreTest() {
   @get:Rule val composeTestRule = createComposeRule()
+
+  companion object {
+    private const val TAG = "FourthEnd2EndTest"
+  }
 
   val testLocation = Location(47.3769, 8.5417, "Zürich, Switzerland")
   val testDateofBirth = "10102010"
@@ -108,6 +113,7 @@ class FourthEnd2EndTest : FirestoreTest() {
     FirebaseEmulator.auth.signOut()
 
     initTestNavController()
+    Log.d(TAG, "Setting content and launching OOTDApp")
     composeTestRule.setContent {
       OOTDTheme {
         OOTDApp(
@@ -119,20 +125,25 @@ class FourthEnd2EndTest : FirestoreTest() {
     }
 
     // STEP 1: Login as the first user and go through the whole sign-in process
+    Log.d(TAG, "STEP1: fullRegisterSequence for user_1")
     fullRegisterSequence(
         composeTestRule = composeTestRule, username = "user_1", dateOfBirth = testDateofBirth)
 
     // STEP 2: Add a post in the feed of the first user
+    Log.d(TAG, "STEP2: add post with location for user_1")
     addPostWithOneItem(
         composeTestRule, addLocation = true) // Test adding item from inventory works as well
 
     // STEP 3: Make sure the post appears in the feed
+    Log.d(TAG, "STEP3: verify post appears in feed for user_1")
     checkPostAppearsInFeed(composeTestRule)
 
     // STEP 4: Logout and login as second user
+    Log.d(TAG, "STEP4: sign out user_1 and switch credentials to user_2")
     signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
     FakeCredentialManager.changeCredential(fakeGoogleIdToken2)
 
+    Log.d(TAG, "STEP4b: fullRegisterSequence for user_2 (skip onboarding flag)")
     fullRegisterSequence(
         composeTestRule = composeTestRule,
         username = "user_2",
@@ -140,29 +151,35 @@ class FourthEnd2EndTest : FirestoreTest() {
         acceptBetaScreen = false)
 
     // STEP 5: Create a post with one item for the second user
+    Log.d(TAG, "STEP5: add post with location for user_2")
     addPostWithOneItem(composeTestRule, addLocation = true)
 
     // STEP 6: Follow the first user from the second user account
+    Log.d(TAG, "STEP6: user_2 follows user_1")
     searchAndFollowUser(composeTestRule, "user_1")
 
     // STEP 7: Logout from second user and login as first user
+    Log.d(TAG, "STEP7: sign out user_2 and switch back to user_1")
     signOutAndVerifyAuthScreen(composeTestRule, testNavController = testNavController)
     FakeCredentialManager.changeCredential(fakeGoogleIdToken)
 
+    Log.d(TAG, "STEP7b: loginWithoutRegistering for user_1")
     loginWithoutRegistering(composeTestRule = composeTestRule)
 
     // STEP 8: Accept follow request from second user from first user's account
+    Log.d(TAG, "STEP8: accept follow request in notifications")
     openNotificationsScreenAndAcceptNotification(composeTestRule = composeTestRule)
 
     // STEP 9: Check that both posts of the users appear in the first user's feed
-
+    Log.d(TAG, "STEP9: check number of posts in feed for user_1")
     checkNumberOfPostsInFeed(composeTestRule = composeTestRule, userRepository.getAllUsers().size)
 
     // STEP 10: Check out whether you can see posts on your profile
-
+    Log.d(TAG, "STEP10: check posts appear in account tab")
     checkPostsAppearInAccountTab(composeTestRule = composeTestRule)
 
     // STEP 11 - Checks that the map appears and that pressing on the post location leads to the map
+    Log.d(TAG, "STEP11: verify map navigation from post location")
     checkOutMap(composeTestRule = composeTestRule)
     verifyPressingLocationGoesToMap(composeTestRule = composeTestRule)
 

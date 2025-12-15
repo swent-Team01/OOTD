@@ -1,22 +1,26 @@
 package com.android.ootd.ui.account
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +51,7 @@ import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.inventory.InventoryGrid
 import com.android.ootd.ui.theme.OOTDTheme
+import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
 import com.android.ootd.utils.composables.FriendsNumberBadge
@@ -76,7 +81,8 @@ object AccountPageTestTags {
 fun AccountPage(
     accountModel: AccountPageViewModel = viewModel(),
     onEditAccount: () -> Unit = {},
-    onPostClick: (String) -> Unit = {}
+    onPostClick: (String) -> Unit = {},
+    onFriendClick: (String) -> Unit = {}
 ) {
   val uiState by accountModel.uiState.collectAsState()
   val context = LocalContext.current
@@ -110,17 +116,20 @@ fun AccountPage(
         onEditAccount = onEditAccount,
         onPostClick = onPostClick,
         onSelectTab = accountModel::selectTab,
-        onToggleStar = accountModel::toggleStar)
+        onToggleStar = accountModel::toggleStar,
+        onFriendClick = onFriendClick)
   }
 }
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun AccountPageContent(
     uiState: AccountPageViewState,
     onEditAccount: () -> Unit,
     onPostClick: (String) -> Unit = {},
     onSelectTab: (AccountTab) -> Unit,
-    onToggleStar: (Item) -> Unit
+    onToggleStar: (Item) -> Unit,
+    onFriendClick: (String) -> Unit = {}
 ) {
   val scrollState = rememberScrollState()
   val screenHeight = LocalConfiguration.current.screenHeightDp.dp
@@ -162,27 +171,54 @@ fun AccountPageContent(
           if (uiState.friends.isEmpty()) {
             Text("No friends yet.")
           } else {
-            LazyColumn(modifier = Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)) {
-              val friendsToShow =
-                  uiState.friendDetails.ifEmpty {
-                    uiState.friends.map { id -> User(uid = id, username = id) }
-                  }
-              items(friendsToShow, key = { it.uid }) { friend ->
-                Column(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .testTag(AccountPageTestTags.FRIEND_LIST_ITEM)) {
-                      Text(friend.username.ifBlank { friend.uid }, style = Typography.bodyLarge)
-                    }
-                if (friend != friendsToShow.last()) {
-                  Divider()
+            LazyColumn(
+                modifier =
+                    Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)
+                        .heightIn(max = screenHeight * 0.6f)) {
+                  val friendsToShow =
+                      uiState.friendDetails.ifEmpty {
+                        uiState.friends.map { id -> User(uid = id, username = id) }
+                      }
+                  items(
+                      friendsToShow,
+                      key = { it.uid.ifBlank { it.ownerId.ifBlank { it.username } } }) { friend ->
+                        FriendListItem(
+                            friend = friend,
+                            onClick = { userId ->
+                              showFriendList = false
+                              onFriendClick(userId)
+                            })
+                        if (friend != friendsToShow.last()) HorizontalDivider()
+                      }
                 }
-              }
-            }
           }
         })
   }
+}
+
+@Composable
+private fun FriendListItem(friend: User, onClick: (String) -> Unit) {
+  val profileId = friend.uid.ifBlank { friend.ownerId }.ifBlank { friend.username }
+  val displayName = friend.username.ifBlank { profileId }
+  Row(
+      modifier =
+          Modifier.fillMaxWidth()
+              .clickable(enabled = profileId.isNotBlank()) { onClick(profileId) }
+              .padding(vertical = 8.dp)
+              .testTag(AccountPageTestTags.FRIEND_LIST_ITEM),
+      verticalAlignment = Alignment.CenterVertically) {
+        ProfilePicture(
+            modifier = Modifier,
+            size = 48.dp,
+            profilePicture = friend.profilePicture,
+            username = displayName,
+            shape = CircleShape)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+          Text(displayName, style = Typography.bodyLarge, color = colorScheme.onSurface)
+          Text("View profile", style = Typography.bodySmall, color = Primary)
+        }
+      }
 }
 
 @Composable
@@ -333,6 +369,7 @@ fun AccountPagePreview() {
         onEditAccount = {},
         onPostClick = {},
         onSelectTab = {},
-        onToggleStar = {})
+        onToggleStar = {},
+        onFriendClick = {})
   }
 }

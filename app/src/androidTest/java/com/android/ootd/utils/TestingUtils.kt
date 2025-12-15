@@ -19,7 +19,6 @@ import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.account.UiTestTags
 import com.android.ootd.ui.account.ViewUserScreenTags
 import com.android.ootd.ui.authentication.SignInScreenTestTags
-import com.android.ootd.ui.consent.BetaConsentScreenTestTags
 import com.android.ootd.ui.feed.FeedScreenTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.OUTFIT_POST_CARD
@@ -31,6 +30,7 @@ import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
+import com.android.ootd.ui.onboarding.OnboardingScreenTestTags
 import com.android.ootd.ui.post.FitCheckScreenTestTags
 import com.android.ootd.ui.post.PostViewTestTags
 import com.android.ootd.ui.post.PreviewItemScreenTestTags
@@ -187,7 +187,11 @@ fun checkPostAppearsInFeed(composeTestRule: ComposeContentTestRule) {
 }
 
 fun checkItemAppearsInPost(composeTestRule: ComposeContentTestRule) {
-  clickWithWait(composeTestRule, OutfitPostCardTestTags.SEE_FIT_BUTTON)
+  clickWithWait(
+      composeTestRule,
+      OutfitPostCardTestTags.SEE_FIT_BUTTON,
+      shouldScroll = true,
+      useUnmergedTree = true)
   verifyElementAppearsWithTimer(composeTestRule, SeeFitScreenTestTags.ITEMS_GRID)
   clickWithWait(composeTestRule, SeeFitScreenTestTags.NAVIGATE_TO_FEED_SCREEN)
 }
@@ -351,8 +355,7 @@ fun fullRegisterSequence(
   clickWithWait(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE, shouldScroll = true)
   // Go through the confirmation screen:
   if (acceptBetaScreen) {
-    clickWithWait(composeTestRule, BetaConsentScreenTestTags.CHECKBOX)
-    clickWithWait(composeTestRule, BetaConsentScreenTestTags.AGREE_BUTTON)
+    clickWithWait(composeTestRule, OnboardingScreenTestTags.SKIP_BUTTON)
   }
   verifyFeedScreenAppears(composeTestRule)
 }
@@ -429,8 +432,18 @@ fun checkOutMap(composeTestRule: ComposeContentTestRule) {
 fun verifyPressingLocationGoesToMap(composeTestRule: ComposeContentTestRule) {
   clickWithWait(composeTestRule, NavigationTestTags.FEED_TAB)
   verifyElementAppearsWithTimer(composeTestRule, POST_LOCATION)
+
+  // Ensure the first location chip is visible before clicking
+  composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performScrollTo()
   composeTestRule.onAllNodesWithTag(POST_LOCATION)[0].performClick()
-  verifyElementAppearsWithTimer(composeTestRule, MapScreenTestTags.TOP_BAR_TITLE)
+
+  // Allow extra time for navigation and map rendering
+  composeTestRule.waitUntil(timeoutMillis = 10_000) {
+    composeTestRule
+        .onAllNodesWithTag(MapScreenTestTags.TOP_BAR_TITLE)
+        .fetchSemanticsNodes()
+        .isNotEmpty()
+  }
 }
 
 fun checkOutfitView(composeTestRule: ComposeContentTestRule) {

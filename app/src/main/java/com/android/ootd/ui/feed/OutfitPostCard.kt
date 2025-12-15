@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -21,13 +22,11 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
@@ -52,7 +51,6 @@ object OutfitPostCardTestTags {
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
-
   const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"
@@ -112,10 +110,12 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
             remainingMs <= 0L -> {
               "Expired" to OutfitPostCardTestTags.EXPIRED_INDICATOR
             }
+
             remainingMs < 60 * 60 * 1000L -> {
               val mins = (remainingMs / (60 * 1000L)).coerceAtLeast(1)
               "${mins}m left" to OutfitPostCardTestTags.REMAINING_TIME
             }
+
             else -> {
               val hrs = (remainingMs / (60 * 60 * 1000L)).coerceAtLeast(1)
               "${hrs}h left" to OutfitPostCardTestTags.REMAINING_TIME
@@ -142,16 +142,17 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
 @Composable
 private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_BUTTON)) {
-          Icon(
-              imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-              contentDescription = if (isLiked) "Liked" else "Unliked",
-              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer)
-        }
-    Spacer(modifier = Modifier.width(1.dp))
+    Icon(
+        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+        contentDescription = if (isLiked) "Liked" else "Unliked",
+        tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer,
+        modifier =
+            Modifier.size(26.dp)
+                .clickable(enabled = enabled, onClick = onClick)
+                .testTag(OutfitPostCardTestTags.LIKE_BUTTON))
+
+    Spacer(modifier = Modifier.width(4.dp))
+
     Text(
         text = likeCount.toString(),
         style = Typography.bodyMedium,
@@ -174,25 +175,18 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
           Modifier.fillMaxWidth()
               .clip(RoundedCornerShape(12.dp))
               .background(White)
+              .aspectRatio(3f / 4f)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
-              .then(modifier)) {
-        val context = LocalContext.current
-
+              .then(modifier),
+      contentAlignment = Alignment.Center) {
         AsyncImage(
-            model =
-                ImageRequest.Builder(context)
-                    .data(post.outfitURL.ifBlank { null })
-                    .crossfade(true)
-                    .allowHardware(false)
-                    .memoryCacheKey(post.postUID) // Ensures unique cache key per image ID
-                    .diskCacheKey(post.postUID) // Ensures unique disk cache key per image ID
-                    .build(),
+            model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
             modifier =
-                Modifier.fillMaxSize()
+                Modifier.fillMaxWidth()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Crop,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
@@ -274,6 +268,7 @@ fun OutfitPostCard(
     onSeeFitClick: (String) -> Unit = {},
     onCardClick: (String) -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
+    onCommentClick: (OutfitPost) -> Unit = {},
     onProfileClick: (String) -> Unit = {}
 ) {
   Box(
@@ -302,14 +297,24 @@ fun OutfitPostCard(
                 PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location, onClick = { onLocationClick(post.location) })
                 DescriptionAndButton(post, isBlurred, onSeeFitClick)
-                LikeRow(
-                    isLiked = isLiked,
-                    likeCount = likeCount,
-                    enabled = !isBlurred,
-                    onClick = { onLikeClick(post.postUID) })
-              }
+                Spacer(modifier = Modifier.height(8.dp))
+                // Reactions row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                      LikeRow(
+                          isLiked = isLiked,
+                          likeCount = likeCount,
+                          enabled = !isBlurred,
+                          onClick = { onLikeClick(post.postUID) })
 
-              Spacer(modifier = Modifier.height(8.dp))
+                      CommentButton(
+                          commentCount = post.comments.size,
+                          enabled = !isBlurred,
+                          onClick = { onCommentClick(post) })
+                    }
+              }
             }
 
         // Blur overlay for locked posts
@@ -333,6 +338,33 @@ fun OutfitPostCard(
                     })
               }
         }
+      }
+}
+
+/**
+ * Composable displaying the comment button and comment count.
+ *
+ * @param commentCount The total number of comments for the post.
+ * @param enabled Whether the comment button is enabled (disabled when post is blurred).
+ * @param onClick Callback when the comment button is clicked.
+ */
+@Composable
+private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Unit) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.clickable(enabled = enabled) { onClick() }.testTag("commentButton")) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.Comment,
+            contentDescription = "Comments",
+            tint = if (enabled) OnSecondaryContainer else Tertiary,
+            modifier = Modifier.size(26.dp).offset(y = 1.dp))
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        Text(
+            text = commentCount.toString(),
+            style = Typography.bodyMedium,
+            color = if (enabled) OnSecondaryContainer else Tertiary)
       }
 }
 
