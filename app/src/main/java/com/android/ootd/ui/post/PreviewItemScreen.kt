@@ -88,8 +88,12 @@ import com.android.ootd.utils.composables.ShowText
 
 object PreviewItemScreenTestTags {
   const val EMPTY_ITEM_LIST_MSG = "emptyItemList"
+  const val EMPTY_ITEM_CTA = "emptyItemCta"
   const val ITEM_LIST = "itemList"
   const val POST_BUTTON = "postButton"
+  const val MISSING_ITEMS_WARNING = "missingItemsWarning"
+  const val MISSING_ITEMS_WARNING_ADD_BUTTON = "missingItemsWarningAddButton"
+  const val MISSING_ITEMS_WARNING_CANCEL_BUTTON = "missingItemsWarningCancelButton"
   const val EXPAND_ICON = "expandCard"
   const val IMAGE_ITEM_PREVIEW = "imageItemPreview"
   const val EDIT_ITEM_BUTTON = "editItemButton"
@@ -204,6 +208,9 @@ fun PreviewItemScreenContent(
   val itemsList = ui.items
   val hasItems = itemsList.isNotEmpty()
   var showAddItemDialog by remember { mutableStateOf(false) }
+  var showMissingItemsWarning by remember { mutableStateOf(false) }
+
+  LaunchedEffect(hasItems) { if (hasItems) showMissingItemsWarning = false }
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
@@ -256,8 +263,7 @@ fun PreviewItemScreenContent(
                         }
                   } else {
                     OutlinedButton(
-                        onClick = {},
-                        enabled = false,
+                        onClick = { showMissingItemsWarning = true },
                         modifier =
                             Modifier.height(47.dp)
                                 .width(140.dp)
@@ -290,7 +296,8 @@ fun PreviewItemScreenContent(
               scrollBehavior = scrollBehavior,
               innerPadding = innerPadding,
               onEditItem = onEditItem,
-              onRemoveItem = onRemoveItem)
+              onRemoveItem = onRemoveItem,
+              onAddItemClick = { showAddItemDialog = true })
         }
 
     // Add Item Dialog
@@ -300,6 +307,35 @@ fun PreviewItemScreenContent(
         onAddItem = onAddItem,
         onSelectFromInventory = onSelectFromInventory,
         onDismiss = { showAddItemDialog = false })
+
+    // Missing Items Warning Dialog
+    if (showMissingItemsWarning) {
+      AlertDialog(
+          modifier = Modifier.testTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING),
+          onDismissRequest = { showMissingItemsWarning = false },
+          title = { Text("Add Items to Your Outfit") },
+          text = { Text("Please add at least one item before posting your outfit.") },
+          confirmButton = {
+            TextButton(
+                onClick = {
+                  showMissingItemsWarning = false
+                  showAddItemDialog = true
+                },
+                modifier =
+                    Modifier.testTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING_ADD_BUTTON)) {
+                  Text("Add Item")
+                }
+          },
+          dismissButton = {
+            TextButton(
+                onClick = { showMissingItemsWarning = false },
+                modifier =
+                    Modifier.testTag(
+                        PreviewItemScreenTestTags.MISSING_ITEMS_WARNING_CANCEL_BUTTON)) {
+                  Text("Cancel")
+                }
+          })
+    }
 
     if (ui.isLoading && !enablePreview) {
       CenteredLoadingState(message = "Publishing your outfit...", textColor = Tertiary)
@@ -486,7 +522,8 @@ private fun PreviewItemList(
     scrollBehavior: TopAppBarScrollBehavior,
     innerPadding: PaddingValues,
     onEditItem: (String) -> Unit,
-    onRemoveItem: (String) -> Unit
+    onRemoveItem: (String) -> Unit,
+    onAddItemClick: () -> Unit
 ) {
   if (itemsList.isNotEmpty()) {
     LazyColumn(
@@ -506,12 +543,12 @@ private fun PreviewItemList(
           }
         }
   } else {
-    EmptyItemPlaceholder()
+    EmptyItemPlaceholder(onAddItemClick)
   }
 }
 
 @Composable
-private fun EmptyItemPlaceholder() {
+private fun EmptyItemPlaceholder(onAddItemClick: () -> Unit) {
   Column(
       modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -525,9 +562,14 @@ private fun EmptyItemPlaceholder() {
                     fontSize = 20.sp, fontWeight = FontWeight.Medium, color = OnSurfaceVariant),
             color = OnSurfaceVariant)
         Spacer(Modifier.height(12.dp))
-        ShowText(
-            text = "Don't forget to add your items",
-            style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+        TextButton(
+            onClick = onAddItemClick,
+            modifier = Modifier.testTag(PreviewItemScreenTestTags.EMPTY_ITEM_CTA)) {
+              Text(
+                  text = "Don't forget to add your items !",
+                  style =
+                      Typography.bodyMedium.copy(fontWeight = FontWeight.Medium, color = Primary))
+            }
       }
 }
 
