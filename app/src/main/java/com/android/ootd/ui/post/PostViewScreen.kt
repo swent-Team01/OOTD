@@ -30,7 +30,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -43,7 +42,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
@@ -453,24 +454,6 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
 }
 
 /**
- * Composable displaying the post image
- *
- * @ param imageUrl The URL of the post image
- */
-@Composable
-fun PostImage(imageUrl: String) {
-  AsyncImage(
-      model = imageUrl,
-      contentDescription = "Post image",
-      contentScale = ContentScale.Crop,
-      modifier =
-          Modifier.fillMaxWidth()
-              .height(320.dp)
-              .testTag(PostViewTestTags.POST_IMAGE)
-              .clip(RoundedCornerShape(20.dp)))
-}
-
-/**
  * Composable displaying the like button and like count
  *
  * @ param isLiked Whether the post is liked by the current user @ param likeCount The total number
@@ -532,6 +515,60 @@ fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> U
 }
 
 @Composable
+private fun ImagePlaceholder() {
+  Box(
+      modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f).background(Secondary),
+      contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = Primary)
+      }
+}
+
+@Composable
+private fun ImageErrorState() {
+  Box(
+      modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f).background(Secondary),
+      contentAlignment = Alignment.Center) {
+        Text("Failed to load image", color = OnSurface)
+      }
+}
+
+@Composable
+private fun BoxScope.ImageGradientOverlay() {
+  Box(
+      modifier =
+          Modifier.matchParentSize()
+              .background(
+                  Brush.verticalGradient(
+                      colors =
+                          listOf(
+                              Color.Transparent,
+                              Color.Black.copy(alpha = 0.25f),
+                              Color.Black.copy(alpha = 0.55f)))))
+}
+
+@Composable
+private fun BoxScope.LikeChip(likeCount: Int, isLiked: Boolean, onToggleLike: () -> Unit) {
+  Row(
+      modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically) {
+        val icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
+        AssistChip(
+            onClick = onToggleLike,
+            label = { Text("$likeCount likes") },
+            leadingIcon = {
+              Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            },
+            colors =
+                AssistChipDefaults.assistChipColors(
+                    containerColor = Color.White.copy(alpha = 0.2f),
+                    labelColor = Color.White,
+                    leadingIconContentColor = Color.White),
+            modifier = Modifier.testTag(FIRST_LIKE_BUTTON))
+      }
+}
+
+@Composable
 private fun PostHeroImage(
     imageUrl: String,
     likeCount: Int,
@@ -541,44 +578,21 @@ private fun PostHeroImage(
   Card(
       shape = RoundedCornerShape(24.dp),
       elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-      modifier = Modifier.fillMaxWidth().height(360.dp).testTag(PostViewTestTags.POST_IMAGE)) {
-        Box(modifier = Modifier.fillMaxSize()) {
-          AsyncImage(
+      modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.POST_IMAGE)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+          SubcomposeAsyncImage(
               model = imageUrl,
               contentDescription = "Post image",
-              modifier = Modifier.fillMaxSize(),
-              contentScale = ContentScale.Crop)
-          Box(
-              modifier =
-                  Modifier.matchParentSize()
-                      .background(
-                          Brush.verticalGradient(
-                              colors =
-                                  listOf(
-                                      Color.Transparent,
-                                      Color.Black.copy(alpha = 0.25f),
-                                      Color.Black.copy(alpha = 0.55f)))))
-          Row(
-              modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-              verticalAlignment = Alignment.CenterVertically) {
-                AssistChip(
-                    onClick = onToggleLike,
-                    label = { Text("$likeCount likes") },
-                    leadingIcon = {
-                      Icon(
-                          imageVector =
-                              if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                          contentDescription = null,
-                          modifier = Modifier.size(16.dp))
-                    },
-                    colors =
-                        AssistChipDefaults.assistChipColors(
-                            containerColor = Color.White.copy(alpha = 0.2f),
-                            labelColor = Color.White,
-                            leadingIconContentColor = Color.White),
-                    modifier = Modifier.testTag(FIRST_LIKE_BUTTON))
+              contentScale = ContentScale.FillWidth,
+              modifier = Modifier.fillMaxWidth()) {
+                when (painter.state) {
+                  is AsyncImagePainter.State.Loading -> ImagePlaceholder()
+                  is AsyncImagePainter.State.Error -> ImageErrorState()
+                  else -> SubcomposeAsyncImageContent()
+                }
               }
+          ImageGradientOverlay()
+          LikeChip(likeCount, isLiked, onToggleLike)
         }
       }
 }
