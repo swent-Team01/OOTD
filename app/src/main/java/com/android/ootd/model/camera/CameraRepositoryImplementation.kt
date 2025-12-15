@@ -34,6 +34,9 @@ class CameraRepositoryImplementation : CameraRepository {
     private const val CAMERA_PROVIDER_TIMEOUT_MS = 10_000L
     private const val IMAGE_FILE_PREFIX = "OOTD_"
     private const val IMAGE_FILE_EXTENSION = ".jpg"
+    private const val DATE_PATTERN = "yyyyMMdd_HHmmss"
+    private const val JPEG_QUALITY = 100
+    private const val MILLIS_PER_HOUR = 60 * 60 * 1000L
   }
 
   override fun bindCamera(
@@ -69,7 +72,7 @@ class CameraRepositoryImplementation : CameraRepository {
       onSuccess: (Uri) -> Unit,
       onError: (String) -> Unit
   ) {
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val timestamp = SimpleDateFormat(DATE_PATTERN, Locale.US).format(Date())
     val photoFile = File(context.cacheDir, "$IMAGE_FILE_PREFIX$timestamp$IMAGE_FILE_EXTENSION")
 
     val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -122,7 +125,7 @@ class CameraRepositoryImplementation : CameraRepository {
       }
 
   override fun cleanupOldCachedImages(context: Context, olderThanHours: Int) {
-    val cutoffTime = System.currentTimeMillis() - (olderThanHours * 60 * 60 * 1000L)
+    val cutoffTime = System.currentTimeMillis() - (olderThanHours * MILLIS_PER_HOUR)
 
     context.cacheDir
         .listFiles()
@@ -166,11 +169,11 @@ class CameraRepositoryImplementation : CameraRepository {
   }
 
   override fun saveBitmap(context: Context, bitmap: android.graphics.Bitmap): Uri {
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val timestamp = SimpleDateFormat(DATE_PATTERN, Locale.US).format(Date())
     val photoFile = File(context.cacheDir, "$IMAGE_FILE_PREFIX$timestamp$IMAGE_FILE_EXTENSION")
 
     FileOutputStream(photoFile).use { out ->
-      bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, out)
+      bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
     }
     return Uri.fromFile(photoFile)
   }

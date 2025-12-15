@@ -79,6 +79,9 @@ object CameraScreenTestTags {
   const val CROP_SAVE_BUTTON = "cropSaveButton"
 }
 
+private const val CROP_HIT_THRESHOLD_PX = 100f
+private const val CROP_MIN_SIZE_PX = 100f
+
 /**
  * A full-screen camera dialog that captures photos using CameraX.
  *
@@ -218,32 +221,7 @@ private fun CameraView(
                         colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
                 .padding(bottom = 48.dp, top = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
-
-          // Zoom Slider
-          if (cameraUiState.maxZoomRatio > cameraUiState.minZoomRatio) {
-            Row(
-                modifier =
-                    Modifier.padding(bottom = 24.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                  Text(
-                      text = "${String.format("%.1f", cameraUiState.zoomRatio)}x",
-                      color = White,
-                      style = Typography.labelLarge,
-                      modifier = Modifier.padding(end = 8.dp))
-                  Slider(
-                      value = cameraUiState.zoomRatio,
-                      onValueChange = { newRatio -> cameraViewModel.setZoomRatio(newRatio) },
-                      valueRange = cameraUiState.minZoomRatio..cameraUiState.maxZoomRatio,
-                      modifier = Modifier.width(150.dp).testTag(CameraScreenTestTags.ZOOM_SLIDER),
-                      colors =
-                          SliderDefaults.colors(
-                              thumbColor = White,
-                              activeTrackColor = Tertiary,
-                              inactiveTrackColor = White.copy(alpha = 0.3f)))
-                }
-          }
+          ZoomSliderBar(cameraUiState) { ratio -> cameraViewModel.setZoomRatio(ratio) }
 
           Row(
               modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
@@ -276,11 +254,9 @@ private fun CameraView(
                               awaitPointerEventScope {
                                 while (true) {
                                   val event = awaitPointerEvent()
-                                  if (event.type == PointerEventType.Press) {
-                                    if (!cameraUiState.isCapturing) {
-                                      cameraViewModel.capturePhoto(
-                                          context = context, onSuccess = {})
-                                    }
+                                  if (event.type == PointerEventType.Press &&
+                                      !cameraUiState.isCapturing) {
+                                    cameraViewModel.capturePhoto(context = context, onSuccess = {})
                                   }
                                 }
                               }
@@ -395,93 +371,157 @@ private fun ImagePreviewScreen(
           }
         }
 
-        // Close button
-        CircularIconButton(
-            onClick = onClose,
-            icon = Icons.Default.Close,
-            contentDescription = "Close Preview",
-            modifier =
-                Modifier.align(Alignment.TopStart)
-                    .padding(16.dp)
-                    .testTag(CameraScreenTestTags.CLOSE_BUTTON),
-            backgroundColor = Primary.copy(alpha = 0.5f),
-            iconTint = White,
-            iconSize = 36.dp)
-
-        // Bottom action buttons
+        // Top bar actions: Close and optional Reset
         Box(
             modifier =
-                Modifier.align(Alignment.BottomCenter)
+                Modifier.align(Alignment.TopCenter)
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
-                    .padding(bottom = 48.dp, top = 24.dp)) {
-              Row(
-                  modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically) {
-                    // Retake button
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                      IconButton(
-                          onClick = onRetake,
-                          modifier =
-                              Modifier.size(56.dp)
-                                  .background(White.copy(alpha = 0.2f), CircleShape)
-                                  .border(1.dp, White.copy(alpha = 0.5f), CircleShape)
-                                  .testTag(CameraScreenTestTags.RETAKE_BUTTON)) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Retake",
-                                tint = White,
-                                modifier = Modifier.size(28.dp))
-                          }
-                      Spacer(modifier = Modifier.height(8.dp))
-                      Text("Retake", color = White, style = Typography.bodyMedium)
-                    }
+                            colors = listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent)))
+                    .padding(16.dp)) {
+              CircularIconButton(
+                  onClick = onClose,
+                  icon = Icons.Default.Close,
+                  contentDescription = "Close Preview",
+                  modifier =
+                      Modifier.align(Alignment.TopStart).testTag(CameraScreenTestTags.CLOSE_BUTTON),
+                  backgroundColor = Primary.copy(alpha = 0.5f),
+                  iconTint = White,
+                  iconSize = 28.dp)
 
-                    // Crop button
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                      IconButton(
-                          onClick = { isCropping = true },
-                          enabled = bitmap != null,
-                          modifier =
-                              Modifier.size(56.dp)
-                                  .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                                  .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                                  .testTag(CameraScreenTestTags.CROP_BUTTON)) {
-                            Icon(
-                                imageVector = Icons.Default.Crop,
-                                contentDescription = "Crop",
-                                tint = White,
-                                modifier = Modifier.size(28.dp))
-                          }
-                      Spacer(modifier = Modifier.height(8.dp))
-                      Text("Crop", color = White, style = Typography.bodyMedium)
+              if (croppedImageUri != null) {
+                TextButton(
+                    onClick = { croppedImageUri = null },
+                    modifier =
+                        Modifier.align(Alignment.TopEnd)
+                            .border(1.dp, Secondary, CircleShape)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)) {
+                      Text("Reset", color = White, style = Typography.bodyMedium)
                     }
-
-                    // Approve button
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                      IconButton(
-                          onClick = { onApprove(currentImageUri) },
-                          modifier =
-                              Modifier.size(56.dp)
-                                  .background(Primary, CircleShape)
-                                  .testTag(CameraScreenTestTags.APPROVE_BUTTON)) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Approve",
-                                tint = White,
-                                modifier = Modifier.size(28.dp))
-                          }
-                      Spacer(modifier = Modifier.height(8.dp))
-                      Text("Approve", color = White, style = Typography.bodyMedium)
-                    }
-                  }
+              }
             }
+
+        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+          PreviewBottomActions(
+              hasBitmap = bitmap != null,
+              hasCropped = croppedImageUri != null,
+              onRetake = onRetake,
+              onCrop = { isCropping = true },
+              onApprove = { onApprove(currentImageUri) },
+              onReset = { croppedImageUri = null })
+        }
       }
     }
   }
+}
+
+@Composable
+private fun ZoomSliderBar(cameraUiState: CameraUIState, onChange: (Float) -> Unit) {
+  if (cameraUiState.maxZoomRatio > cameraUiState.minZoomRatio) {
+    Row(
+        modifier =
+            Modifier.padding(bottom = 24.dp)
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+          Text(
+              text = "${String.format("%.1f", cameraUiState.zoomRatio)}x",
+              color = White,
+              style = Typography.labelLarge,
+              modifier = Modifier.padding(end = 8.dp))
+          Slider(
+              value = cameraUiState.zoomRatio,
+              onValueChange = onChange,
+              valueRange = cameraUiState.minZoomRatio..cameraUiState.maxZoomRatio,
+              modifier = Modifier.width(150.dp).testTag(CameraScreenTestTags.ZOOM_SLIDER),
+              colors =
+                  SliderDefaults.colors(
+                      thumbColor = White,
+                      activeTrackColor = Tertiary,
+                      inactiveTrackColor = White.copy(alpha = 0.3f)))
+        }
+  }
+}
+
+@Composable
+private fun PreviewBottomActions(
+    hasBitmap: Boolean,
+    hasCropped: Boolean,
+    onRetake: () -> Unit,
+    onCrop: () -> Unit,
+    onApprove: () -> Unit,
+    onReset: () -> Unit
+) {
+  Box(
+      modifier =
+          Modifier.fillMaxWidth()
+              .background(
+                  Brush.verticalGradient(
+                      colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
+              .padding(bottom = 48.dp, top = 24.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+              // Retake
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = onRetake,
+                    modifier =
+                        Modifier.size(56.dp)
+                            .background(White.copy(alpha = 0.2f), CircleShape)
+                            .border(1.dp, White.copy(alpha = 0.5f), CircleShape)
+                            .testTag(CameraScreenTestTags.RETAKE_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Refresh,
+                          contentDescription = "Retake",
+                          tint = White,
+                          modifier = Modifier.size(28.dp))
+                    }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Retake", color = White, style = Typography.bodyMedium)
+              }
+
+              // Crop
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = onCrop,
+                    enabled = hasBitmap,
+                    modifier =
+                        Modifier.size(56.dp)
+                            .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                            .testTag(CameraScreenTestTags.CROP_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Crop,
+                          contentDescription = "Crop",
+                          tint = White,
+                          modifier = Modifier.size(28.dp))
+                    }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Crop", color = White, style = Typography.bodyMedium)
+              }
+
+              // Approve
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = onApprove,
+                    modifier =
+                        Modifier.size(56.dp)
+                            .background(Primary, CircleShape)
+                            .testTag(CameraScreenTestTags.APPROVE_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Check,
+                          contentDescription = "Approve",
+                          tint = White,
+                          modifier = Modifier.size(28.dp))
+                    }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Approve", color = White, style = Typography.bodyMedium)
+              }
+            }
+      }
 }
 
 private enum class CropHandle {
@@ -624,7 +664,11 @@ fun CropImageScreen(bitmap: Bitmap, onCrop: (Bitmap) -> Unit, onCancel: () -> Un
       }
 }
 
-private fun getHitHandle(offset: Offset, rect: Rect, threshold: Float = 100f): CropHandle {
+private fun getHitHandle(
+    offset: Offset,
+    rect: Rect,
+    threshold: Float = CROP_HIT_THRESHOLD_PX
+): CropHandle {
   if ((offset - rect.topLeft).getDistance() < threshold) return CropHandle.TopLeft
   if ((offset - rect.topRight).getDistance() < threshold) return CropHandle.TopRight
   if ((offset - rect.bottomLeft).getDistance() < threshold) return CropHandle.BottomLeft
@@ -639,7 +683,7 @@ private fun updateCropRect(current: Rect, bounds: Rect, handle: CropHandle, drag
   var newRight = current.right
   var newBottom = current.bottom
 
-  val minSize = 100f
+  val minSize = CROP_MIN_SIZE_PX
 
   when (handle) {
     CropHandle.TopLeft -> {
