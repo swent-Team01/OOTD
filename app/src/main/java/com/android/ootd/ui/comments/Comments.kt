@@ -3,6 +3,7 @@ package com.android.ootd.ui.comments
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -29,6 +31,7 @@ import coil.compose.AsyncImage
 import com.android.ootd.model.posts.Comment
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreen
+import com.android.ootd.ui.theme.OOTDerror
 import com.android.ootd.ui.theme.OnSecondaryContainer
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -392,25 +395,23 @@ private fun AddCommentSection(
                             model = uri,
                             contentDescription = "Selected image",
                             modifier =
-                                Modifier.size(40.dp)
+                                Modifier.size(60.dp)
                                     .clip(CircleShape)
                                     .background(Color.White)
                                     .testTag(CommentScreenTestTags.SELECTED_IMAGE_PREVIEW),
                             contentScale = ContentScale.Crop)
 
                         // Remove button overlay
-                        IconButton(
-                            onClick = { viewModel.setSelectedImage(null) },
+
+                        Icon(
+                            imageVector = Icons.Default.Cancel,
+                            contentDescription = "Remove image",
+                            tint = Color.White,
                             modifier =
-                                Modifier.size(20.dp)
+                                Modifier.size(18.dp)
+                                    .clickable(onClick = { viewModel.setSelectedImage(null) })
                                     .align(Alignment.TopEnd)
-                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)) {
-                              Icon(
-                                  imageVector = Icons.Default.Close,
-                                  contentDescription = "Remove image",
-                                  tint = Color.White,
-                                  modifier = Modifier.size(12.dp))
-                            }
+                                    .background(OOTDerror, CircleShape))
                       }
                     }
                   }
