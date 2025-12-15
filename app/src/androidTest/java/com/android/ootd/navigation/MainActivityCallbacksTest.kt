@@ -903,12 +903,12 @@ class MainActivityCallbacksTest {
         "Expected route to start with 'map', got '${navigation.currentRoute()}'"
       }
 
-      // Navigate to Search via bottom nav
+      // Navigate to Search via bottom nav (Search is not a top-level destination)
       navigation.navigateTo(Screen.SearchScreen)
       assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
 
-      // Navigate back to Map
-      navigation.navigateTo(Screen.Map())
+      // Go back from Search, then navigate to Map
+      navigation.goBack()
       assert(navigation.currentRoute().startsWith("map")) {
         "Expected route to start with 'map', got '${navigation.currentRoute()}'"
       }
@@ -996,6 +996,8 @@ class MainActivityCallbacksTest {
   @Test
   fun mapScreen_findFriendsTab_ownProfileClick_navigatesToAccountView() {
     composeRule.runOnIdle {
+      // Start from Feed to establish proper back stack
+      navigation.navigateTo(Screen.Feed)
       navigation.navigateTo(Screen.Map())
 
       // User clicks their own profile marker on Find Friends tab
@@ -1005,7 +1007,9 @@ class MainActivityCallbacksTest {
 
       Assert.assertEquals(Screen.AccountView.route, navigation.currentRoute())
 
-      // Can go back to Map
+      // Go back - since AccountView is not a top-level destination,
+      // and Map cleared the back stack to Feed when we navigated to it,
+      // going back from AccountView should return to Feed (the start destination)
       navigation.goBack()
       Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
     }
