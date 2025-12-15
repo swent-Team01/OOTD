@@ -28,7 +28,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** UI state for the PostView screen with unified loading/error states */
+/**
+ * UI state for the PostView screen
+ *
+ * @param post The outfit post being viewed
+ * @param ownerUsername The username of the post owner
+ * @param ownerProfilePicture The profile picture URL of the post owner
+ * @param likedByUsers List of users who liked the post
+ * @param isLikedByCurrentUser Whether the current user has liked the post
+ * @param items List of items associated with the post
+ * @param starredItemIds Set of item IDs that are starred by the current user
+ * @param isOwner Whether the current user is the owner of the post
+ * @param isLoading Whether data is currently being loaded
+ * @param error An error message, if any
+ */
 data class PostViewUiState(
     val post: OutfitPost? = null,
     val ownerUsername: String? = null,
@@ -73,6 +86,8 @@ class PostViewViewModel(
   /**
    * Load ALL post-related data (post, likes, items, stars) in parallel Uses a single unified
    * loading state
+   *
+   * @param postId The ID of the post to load
    */
   private fun loadPostWithItems(postId: String) {
     _uiState.value = _uiState.value.copy(isLoading = true, error = null)
@@ -115,7 +130,11 @@ class PostViewViewModel(
     }
   }
 
-  /** Load just the post data (post, owner, likes) Returns true if successful */
+  /**
+   * Load just the post data (post, owner, likes)
+   *
+   * @param postId The ID of the post to load Returns true if successful
+   */
   private suspend fun loadPostData(postId: String): Boolean {
     return try {
       // Load post object
@@ -154,7 +173,11 @@ class PostViewViewModel(
     }
   }
 
-  /** Load items for the post with offline/online fallback Returns true if successful */
+  /**
+   * Load items for the post with offline/online fallback
+   *
+   * @param postUuid The UUID of the post to load items for Returns true if successful
+   */
   private suspend fun loadItemsData(postUuid: String): Boolean {
     if (postUuid.isEmpty()) {
       Log.w(TAG, "Post UUID is empty. Cannot fetch items.")
