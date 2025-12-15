@@ -384,19 +384,6 @@ private fun AddCommentSection(
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
           Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
 
-            // Add Image Button
-            IconButton(
-                onClick = { showImageSourceDialog = true },
-                modifier = Modifier.size(38.dp).testTag(CommentScreenTestTags.ADD_IMAGE_BUTTON)) {
-                  Icon(
-                      imageVector = Icons.Default.AddPhotoAlternate,
-                      contentDescription = "Add reaction image",
-                      tint = Primary,
-                      modifier = Modifier.size(24.dp))
-                }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
             // Text Input
             OutlinedTextField(
                 value = commentText,
@@ -455,12 +442,31 @@ private fun AddCommentSection(
                 }
           }
 
-          // Character counter below the input row
-          Text(
-              text = "$remainingChars characters remaining",
-              style = Typography.bodySmall,
-              color = if (remainingChars < 50) OOTDerror else Tertiary,
-              modifier = Modifier.padding(start = 46.dp, top = 4.dp))
+          // Character counter and add picture button below the input row
+          Row(
+              modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$remainingChars characters remaining",
+                    style = Typography.bodySmall,
+                    color = if (remainingChars < 50) OOTDerror else Tertiary)
+
+                TextButton(
+                    onClick = { showImageSourceDialog = true },
+                    modifier = Modifier.testTag(CommentScreenTestTags.ADD_IMAGE_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.AddPhotoAlternate,
+                          contentDescription = null,
+                          tint = Primary,
+                          modifier = Modifier.size(16.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text(
+                          text = "Add picture reaction",
+                          style = Typography.bodyMedium,
+                          color = Primary)
+                    }
+              }
         }
       }
 
