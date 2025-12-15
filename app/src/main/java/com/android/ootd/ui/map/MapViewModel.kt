@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /** Enum representing the type of map to display. */
@@ -61,10 +62,12 @@ data class MapUiState(
 class MapViewModel(
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    focusLocation: Location? = null
+    focusLocation: Location? = null,
+    initialMapType: MapType = MapType.FRIENDS_POSTS
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(MapUiState(focusLocation = focusLocation))
+  private val _uiState =
+      MutableStateFlow(MapUiState(focusLocation = focusLocation, selectedMapType = initialMapType))
   val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
   // Job to observe posts; allows cancellation when account changes
@@ -137,10 +140,22 @@ class MapViewModel(
                 _uiState.value =
                     _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
               }
-              .collect { publicLocations ->
-                _uiState.value =
-                    _uiState.value.copy(
-                        publicLocations = publicLocations.filter { isValidLocation(it.location) })
+              .combine(_uiState) { publicLocations, state ->
+                val currentAccount = state.currentAccount
+                val excludedUids =
+                    if (currentAccount != null) {
+                      // Exclude current user and their friends
+                      setOf(currentAccount.uid) + currentAccount.friendUids
+                    } else {
+                      emptySet()
+                    }
+
+                publicLocations.filter {
+                  isValidLocation(it.location) && it.ownerId !in excludedUids
+                }
+              }
+              .collect { filteredPublicLocations ->
+                _uiState.value = _uiState.value.copy(publicLocations = filteredPublicLocations)
               }
         }
   }

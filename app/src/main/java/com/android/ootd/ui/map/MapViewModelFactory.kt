@@ -23,12 +23,14 @@ import com.android.ootd.model.map.Location
  *
  * @param focusLocation The location to focus on when the map loads. If null, the map will center on
  *   the user's account location (default behavior).
+ * @param initialMapType The initial map type to display (FRIENDS_POSTS or FIND_FRIENDS).
  * @param feedRepository Optional feed repository for dependency injection (mainly for testing).
  * @param accountRepository Optional account repository for dependency injection (mainly for
  *   testing).
  */
 class MapViewModelFactory(
     private val focusLocation: Location? = null,
+    private val initialMapType: MapType = MapType.FRIENDS_POSTS,
     private val feedRepository: FeedRepository? = null,
     private val accountRepository: AccountRepository? = null
 ) : ViewModelProvider.Factory {
@@ -39,7 +41,8 @@ class MapViewModelFactory(
       return MapViewModel(
           feedRepository = feedRepository ?: FeedRepositoryProvider.repository,
           accountRepository = accountRepository ?: AccountRepositoryProvider.repository,
-          focusLocation = focusLocation)
+          focusLocation = focusLocation,
+          initialMapType = initialMapType)
           as T
     }
     throw IllegalArgumentException("Unknown ViewModel class")
