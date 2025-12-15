@@ -52,6 +52,7 @@ import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.inventory.InventoryGrid
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
 import com.android.ootd.utils.composables.FriendsNumberBadge
@@ -167,6 +168,7 @@ fun AccountPageContent(
         onDismissRequest = { showFriendList = false },
         confirmButton = { TextButton(onClick = { showFriendList = false }) { Text("Close") } },
         title = { Text("Friends (${uiState.friends.size})") },
+        containerColor = Secondary,
         text = {
           if (uiState.friends.isEmpty()) {
             Text("No friends yet.")
@@ -174,7 +176,8 @@ fun AccountPageContent(
             LazyColumn(
                 modifier =
                     Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)
-                        .heightIn(max = screenHeight * 0.6f)) {
+                        .heightIn(max = screenHeight * 0.6f)
+                        .background(Secondary)) {
                   val friendsToShow =
                       uiState.friendDetails.ifEmpty {
                         uiState.friends.map { id -> User(uid = id, username = id) }
