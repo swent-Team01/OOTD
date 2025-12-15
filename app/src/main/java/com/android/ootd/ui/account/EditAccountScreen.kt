@@ -58,8 +58,8 @@ import com.android.ootd.model.map.emptyLocation
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewState
 import com.android.ootd.ui.register.RegisterScreenTestTags
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
@@ -360,7 +360,7 @@ private fun MoreOptionsDialog(onDismiss: () -> Unit, onDeleteAccountClick: () ->
       title = {
         Text(
             text = "More Options",
-            style = typography.titleMedium.copy(fontFamily = Bodoni, fontWeight = ExtraBold),
+            style = typography.titleMedium.copy(fontFamily = NotoSans, fontWeight = ExtraBold),
             color = colors.onSurface)
       },
       text = {
@@ -381,7 +381,7 @@ private fun MoreOptionsDialog(onDismiss: () -> Unit, onDeleteAccountClick: () ->
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Delete Account",
-                        style = typography.bodyMedium.copy(fontFamily = Bodoni),
+                        style = typography.bodyMedium.copy(fontFamily = NotoSans),
                         color = colors.onError)
                   }
             }
@@ -413,14 +413,14 @@ private fun DeleteConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Uni
       title = {
         Text(
             text = "Delete Account?",
-            style = typography.titleMedium.copy(fontFamily = Bodoni, fontWeight = ExtraBold),
+            style = typography.titleMedium.copy(fontFamily = NotoSans, fontWeight = ExtraBold),
             color = colors.error)
       },
       text = {
         Text(
             text =
                 "This action cannot be undone. All your data, including posts, items, and profile information will be permanently deleted.",
-            style = typography.bodyMedium.copy(fontFamily = Bodoni),
+            style = typography.bodyMedium.copy(fontFamily = NotoSans),
             color = colors.onSurface)
       },
       confirmButton = {
@@ -431,7 +431,7 @@ private fun DeleteConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Uni
             shape = CircleShape) {
               Text(
                   text = "Delete",
-                  style = typography.bodyMedium.copy(fontFamily = Bodoni),
+                  style = typography.bodyMedium.copy(fontFamily = NotoSans),
                   color = colors.onError)
             }
       },

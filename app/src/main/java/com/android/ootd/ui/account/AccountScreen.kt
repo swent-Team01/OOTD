@@ -50,6 +50,7 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.user.User
 import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.inventory.InventoryGrid
+import com.android.ootd.ui.theme.DmSerifText
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
@@ -210,6 +211,7 @@ private fun FriendListItem(friend: User, onClick: (String) -> Unit) {
         ProfilePicture(
             modifier = Modifier,
             size = 48.dp,
+            textStyle = Typography.bodyMedium,
             profilePicture = friend.profilePicture,
             username = displayName,
             shape = CircleShape)
@@ -258,8 +260,8 @@ private fun AccountHeader(
   ShowText(
       text = username,
       style = Typography.displayLarge,
-      modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
-      color = colorScheme.primary)
+      fontFamily = DmSerifText,
+      modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT))
 
   Spacer(modifier = Modifier.height(9.dp))
 

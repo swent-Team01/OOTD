@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
-import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
@@ -101,7 +101,7 @@ internal fun RegisterHeader() {
 
   Text(
       text = "Welcome\nTime to drop a fit.",
-      fontFamily = Bodoni,
+      fontFamily = NotoSans,
       color = Primary,
       fontSize = 20.sp,
       textAlign = TextAlign.Center,
@@ -223,7 +223,7 @@ internal fun LocationField(
 internal fun RegisterFooter(isLoading: Boolean, isEnabled: Boolean, onRegisterClick: () -> Unit) {
   Text(
       text = "Outfit Of The Day,\n Inspire Drip",
-      fontFamily = Bodoni,
+      fontFamily = NotoSans,
       fontSize = 18.sp,
       color = Primary,
       fontWeight = FontWeight(400),
@@ -262,6 +262,6 @@ internal fun ErrorText(message: String) {
   Text(
       text = message,
       color = Color.Red,
-      fontFamily = Bodoni,
+      fontFamily = NotoSans,
       modifier = Modifier.padding(8.dp).testTag(RegisterScreenTestTags.ERROR_MESSAGE))
 }

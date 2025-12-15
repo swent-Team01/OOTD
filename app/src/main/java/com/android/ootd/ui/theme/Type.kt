@@ -8,31 +8,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.android.ootd.R
 
-val Bodoni =
-    FontFamily(
-        Font(R.font.bodoni_moda_all, FontWeight.Normal),
-        Font(R.font.bodoni_moda_all, FontWeight.Medium),
-        Font(R.font.bodoni_moda_all, FontWeight.Bold))
+val NotoSans = FontFamily.SansSerif
+
+val DmSerifText = FontFamily(Font(R.font.bodoni, FontWeight.Normal))
 // Set of Material typography styles to start with
 val Typography =
     Typography(
         // header 1 - make header bold
         displayLarge =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Bold, fontSize = 36.sp),
+            TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Bold, fontSize = 36.sp),
         // header 2
         titleLarge =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 20.sp),
+            TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Normal, fontSize = 20.sp),
         // body - input & large body text 16/24
         bodyLarge =
             TextStyle(
-                fontFamily = Bodoni,
+                fontFamily = NotoSans,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 lineHeight = 24.sp),
         // small body
         bodySmall =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 13.sp),
+            TextStyle(fontFamily = NotoSans, fontWeight = FontWeight.Normal, fontSize = 13.sp),
         headlineLarge =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Normal, fontSize = 64.sp),
+            TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Normal, fontSize = 64.sp),
         headlineMedium =
-            TextStyle(fontFamily = Bodoni, fontWeight = FontWeight.Bold, fontSize = 48.sp))
+            TextStyle(fontFamily = DmSerifText, fontWeight = FontWeight.Bold, fontSize = 48.sp))

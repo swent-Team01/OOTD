@@ -31,8 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.camera.CameraScreen
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OOTDerror
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionButton
@@ -190,7 +190,7 @@ fun AvatarSection(
             120.dp,
             avatarUri,
             username,
-            typography.headlineMedium.copy(fontFamily = Bodoni))
+            typography.headlineMedium.copy(fontFamily = NotoSans))
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -220,7 +220,7 @@ fun AvatarSection(
                       Text(
                           text = "Delete",
                           color = colors.onError,
-                          style = typography.titleMedium.copy(fontFamily = Bodoni))
+                          style = typography.titleMedium.copy(fontFamily = NotoSans))
                     }
               }
             }
