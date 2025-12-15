@@ -1,6 +1,9 @@
 package com.android.ootd.ui.post.items
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,11 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,7 +63,8 @@ fun SeeItemDetailsDialog(
     onDismissRequest: () -> Unit = {},
 ) {
   Dialog(onDismissRequest = { onDismissRequest() }) {
-    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     Card(
         modifier =
             Modifier.fillMaxWidth(0.9f)
@@ -159,7 +161,9 @@ fun SeeItemDetailsDialog(
                           value = notes,
                           textTag = ItemsTestTags.ITEM_NOTES,
                           copyTag = ItemsTestTags.ITEM_NOTES_COPY,
-                          onCopy = { clipboardManager.setText(AnnotatedString(notes)) })
+                          onCopy = {
+                            clipboardManager.setPrimaryClip(ClipData.newPlainText("notes", notes))
+                          })
                     }
 
                 item.link
@@ -176,7 +180,9 @@ fun SeeItemDetailsDialog(
                             val intent = Intent(Intent.ACTION_VIEW, link.toUri())
                             context.startActivity(intent)
                           },
-                          onCopy = { clipboardManager.setText(AnnotatedString(link)) })
+                          onCopy = {
+                            clipboardManager.setPrimaryClip(ClipData.newPlainText("link", link))
+                          })
                     }
               }
         }
