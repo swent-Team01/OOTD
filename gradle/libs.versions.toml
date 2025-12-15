@@ -32,7 +32,7 @@ credentials = "1.3.0"
 googleid = "1.1.1"
 
 # Google Service and Maps
-playServicesAuth = "21.2.0"
+playServicesAuth = "21.4.0"
 playServicesMaps = "19.0.0"
 mapsCompose = "4.3.3"
 mapsComposeUtils = "4.3.0"
