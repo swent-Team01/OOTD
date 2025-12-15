@@ -974,4 +974,28 @@ class MainActivityCallbacksTest {
       Assert.assertEquals(Screen.Feed.route, navigation.currentRoute())
     }
   }
+
+  @Test
+  fun searchScreen_findFriendsLink_navigatesToFindFriendsMap() {
+    composeRule.runOnIdle {
+      // Navigate to Search screen
+      navigation.navigateTo(Screen.SearchScreen)
+      Assert.assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+    }
+
+    // Click on the "Find public friends on the map" link
+    composeRule
+        .onNodeWithTag(com.android.ootd.ui.search.UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+        .performClick()
+    composeRule.waitForIdle()
+
+    // Verify navigation to Map screen (currentRoute returns the template, not the actual URL)
+    composeRule.runOnIdle {
+      val currentRoute = navigation.currentRoute()
+      // The route template for Map screen contains the mapType parameter
+      Assert.assertTrue(
+          "Should navigate to map route",
+          currentRoute.startsWith("map") && currentRoute.contains("mapType"))
+    }
+  }
 }
