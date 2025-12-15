@@ -54,7 +54,11 @@ object MapScreenTestTags {
 @SuppressLint("PotentialBehaviorOverride")
 @OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class)
 @Composable
-fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
+fun MapScreen(
+    viewModel: MapViewModel = viewModel(),
+    onPostClick: (String) -> Unit = {},
+    onUserProfileClick: (String) -> Unit = {}
+) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
 
@@ -82,6 +86,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
                     uiState = uiState,
                     viewModel = viewModel,
                     onPostClick = onPostClick,
+                    onUserProfileClick = onUserProfileClick,
                     context = context)
               }
             }
@@ -94,6 +99,7 @@ private fun MapContent(
     uiState: MapUiState,
     viewModel: MapViewModel,
     onPostClick: (String) -> Unit,
+    onUserProfileClick: (String) -> Unit,
     context: Context
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
@@ -127,6 +133,7 @@ private fun MapContent(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             viewModel = viewModel,
+            onUserProfileClick = onUserProfileClick,
             context = context)
       }
     }
@@ -186,6 +193,7 @@ private fun FindFriendsMap(
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState,
     viewModel: MapViewModel,
+    onUserProfileClick: (String) -> Unit,
     context: Context
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -203,9 +211,7 @@ private fun FindFriendsMap(
             clusterManager = clusterManager,
             userRepository = UserRepositoryProvider.repository)
       },
-      onItemClick = {
-        // TODO: Add navigation to user profile
-      })
+      onItemClick = { item -> onUserProfileClick(item.userId) })
 }
 
 /**

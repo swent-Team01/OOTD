@@ -48,6 +48,7 @@ import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapType
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
@@ -331,7 +332,10 @@ fun OOTDApp(
                   UserSearchScreen(
                       onBackPressed = { navigationActions.goBack() },
                       onUserClick = { userId ->
-                        navigationActions.navigateToUserProfile(userId, currentUserId) // ← USE HERE
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
+                      },
+                      onFindFriendsClick = {
+                        navigationActions.navigateTo(Screen.Map(mapType = "FIND_FRIENDS"))
                       })
                 }
 
@@ -371,10 +375,16 @@ fun OOTDApp(
                               type = NavType.StringType
                               nullable = true
                               defaultValue = null
+                            },
+                            navArgument("mapType") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
                             })) { backStackEntry ->
                       val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
                       val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
                       val name = backStackEntry.arguments?.getString("name")
+                      val mapTypeStr = backStackEntry.arguments?.getString("mapType")
 
                       // Create focus location only if all parameters are provided
                       val focusLocation =
@@ -384,15 +394,29 @@ fun OOTDApp(
                             null
                           }
 
+                      // Parse map type from navigation argument
+                      val initialMapType =
+                          when (mapTypeStr) {
+                            "FIND_FRIENDS" -> MapType.FIND_FRIENDS
+                            else -> MapType.FRIENDS_POSTS
+                          }
+
+                      val currentUserId = Firebase.auth.currentUser?.uid
+
                       MapScreen(
                           viewModel =
-                              if (focusLocation != null) {
-                                viewModel(factory = MapViewModelFactory(focusLocation))
+                              if (focusLocation != null ||
+                                  initialMapType != MapType.FRIENDS_POSTS) {
+                                viewModel(
+                                    factory = MapViewModelFactory(focusLocation, initialMapType))
                               } else {
                                 viewModel()
                               },
                           onPostClick = { postId ->
                             navigationActions.navigateTo(Screen.PostView(postId))
+                          },
+                          onUserProfileClick = { userId ->
+                            navigationActions.navigateToUserProfile(userId, currentUserId)
                           })
                     }
 

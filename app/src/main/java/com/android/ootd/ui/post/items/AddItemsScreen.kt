@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,7 +25,6 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +50,7 @@ import com.android.ootd.ui.post.rememberImageResizeScrollConnection
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.utils.composables.BackArrow
+import com.android.ootd.utils.composables.ImageSelectionDialog
 import com.android.ootd.utils.composables.LoadingScreen
 import com.android.ootd.utils.composables.OOTDTopBar
 
@@ -308,25 +306,12 @@ private fun ImagePickerRow(
   }
 
   if (showDialog) {
-    AlertDialog(
+    ImageSelectionDialog(
         modifier = Modifier.testTag(AddItemScreenTestTags.IMAGE_PICKER_DIALOG),
         onDismissRequest = { onShowDialogChange(false) },
-        title = { Text(text = "Select Image") },
-        text = {
-          Column {
-            TextButton(
-                onClick = onTakePhoto,
-                modifier = Modifier.testTag(AddItemScreenTestTags.TAKE_A_PHOTO)) {
-                  Text("Take a Photo")
-                }
-            TextButton(
-                onClick = onPickFromGallery,
-                modifier = Modifier.testTag(AddItemScreenTestTags.PICK_FROM_GALLERY)) {
-                  Text("Choose from Gallery")
-                }
-          }
-        },
-        confirmButton = {},
-        dismissButton = {})
+        onTakePhoto = onTakePhoto,
+        onPickFromGallery = onPickFromGallery,
+        takePhotoTag = AddItemScreenTestTags.TAKE_A_PHOTO,
+        pickGalleryTag = AddItemScreenTestTags.PICK_FROM_GALLERY)
   }
 }

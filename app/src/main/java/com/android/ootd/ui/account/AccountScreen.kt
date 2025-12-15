@@ -2,7 +2,6 @@ package com.android.ootd.ui.account
 
 import android.annotation.SuppressLint
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -135,31 +135,46 @@ fun AccountPageContent(
   val screenHeight = LocalConfiguration.current.screenHeightDp.dp
   var showFriendList by remember { mutableStateOf(false) }
 
-  Column(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(colorScheme.background)
-              .verticalScroll(scrollState)
-              .padding(horizontal = 22.dp, vertical = 10.dp)) {
-        AccountHeader(
-            username = uiState.username,
-            profilePicture = uiState.profilePicture,
-            friendCount = uiState.friends.size,
-            onEditAccount = onEditAccount,
-            onFriendCountClick = { showFriendList = true })
+  Scaffold(
+      containerColor = colorScheme.background,
+      topBar = {
+        OOTDTopBar(
+            textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
+            rightComposable = {
+              SettingsButton(
+                  onEditAccount = onEditAccount,
+                  modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
+                  size = 32.dp)
+            },
+            leftComposable = {})
+      }) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding)
+                    .padding(horizontal = 22.dp, vertical = 10.dp)) {
+              Spacer(modifier = Modifier.height(36.dp))
 
-        AccountTabs(
-            selectedTab = uiState.selectedTab,
-            tabs = listOf(AccountTab.Posts, AccountTab.Starred),
-            onSelectTab = onSelectTab)
+              AccountHeader(
+                  username = uiState.username,
+                  profilePicture = uiState.profilePicture,
+                  friendCount = uiState.friends.size,
+                  onFriendCountClick = { showFriendList = true })
 
-        Spacer(modifier = Modifier.height(16.dp))
+              AccountTabs(
+                  selectedTab = uiState.selectedTab,
+                  tabs = listOf(AccountTab.Posts, AccountTab.Starred),
+                  onSelectTab = onSelectTab)
 
-        AccountTabBody(
-            uiState = uiState,
-            onPostClick = onPostClick,
-            onToggleStar = onToggleStar,
-            screenHeight = screenHeight)
+              Spacer(modifier = Modifier.height(16.dp))
+
+              AccountTabBody(
+                  uiState = uiState,
+                  onPostClick = onPostClick,
+                  onToggleStar = onToggleStar,
+                  screenHeight = screenHeight)
+            }
       }
 
   if (showFriendList) {
@@ -226,21 +241,8 @@ private fun AccountHeader(
     username: String,
     profilePicture: String,
     friendCount: Int,
-    onEditAccount: () -> Unit,
     onFriendCountClick: () -> Unit
 ) {
-  OOTDTopBar(
-      textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
-      rightComposable = {
-        SettingsButton(
-            onEditAccount = onEditAccount,
-            modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
-            size = 32.dp)
-      },
-      leftComposable = {})
-
-  Spacer(modifier = Modifier.height(36.dp))
-
   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     ProfilePicture(
         modifier =

@@ -130,4 +130,25 @@ class UserSearchScreenTest : FirestoreTest() {
         .onAllNodesWithTag(UserSelectionFieldTestTags.NO_RESULTS_MESSAGE)
         .assertCountEquals(1)
   }
+
+  @Test
+  fun testFindFriendsLinkNavigatesToMap() {
+    var findFriendsClicked = false
+    composeTestRule.setContent {
+      UserSearchScreen(
+          viewModel = UserSearchViewModel(userRepository = userRepository),
+          onFindFriendsClick = { findFriendsClicked = true })
+    }
+
+    // Click on the "Find public friends on the map" link
+    composeTestRule
+        .onNodeWithTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+        .assertIsDisplayed()
+        .performClick()
+
+    composeTestRule.waitForIdle()
+
+    // Verify the callback was invoked
+    assert(findFriendsClicked) { "onFindFriendsClick callback should have been called" }
+  }
 }

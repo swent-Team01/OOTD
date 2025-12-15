@@ -246,6 +246,17 @@ class AccountRepositoryFirestore(
           .document(account.uid)
           .set(account.toFirestoreMap())
           .await()
+
+      // If account is public, add to publicLocations collection
+      if (!account.isPrivate && isValidLocation(account.location)) {
+        val publicLocation =
+            PublicLocation(
+                ownerId = account.uid, username = account.username, location = account.location)
+        db.collection(PUBLIC_LOCATIONS_COLLECTION_PATH)
+            .document(account.uid)
+            .set(publicLocation.toFirestoreMap())
+            .await()
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Error adding account: ${e.message}", e)
       throw e

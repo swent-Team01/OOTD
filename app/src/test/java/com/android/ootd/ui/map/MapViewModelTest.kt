@@ -15,6 +15,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -498,5 +500,77 @@ class MapViewModelTest {
     val pos1 = adjusted[0].position
     val pos2 = adjusted[1].position
     assert(pos1.latitude != pos2.latitude || pos1.longitude != pos2.longitude)
+  }
+
+  @Test
+  fun observePublicLocations_excludesCurrentUserAndFriends() = runTest {
+    val currentUserLoc = PublicLocation(testUserId, "Current User", testLocation)
+    val friend1Loc = PublicLocation("friend1", "Friend One", Location(46.6, 6.7, "Loc1"))
+    val friend2Loc = PublicLocation("friend2", "Friend Two", Location(47.0, 7.0, "Loc2"))
+    val publicUser1 = PublicLocation("user1", "Alice", Location(48.0, 8.0, "Loc3"))
+    val publicUser2 = PublicLocation("user2", "Bob", Location(49.0, 9.0, "Loc4"))
+    val invalidPublic = PublicLocation("user3", "Charlie", emptyLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockAccountRepository.observePublicLocations() } returns
+        flowOf(
+            listOf(currentUserLoc, friend1Loc, friend2Loc, publicUser1, publicUser2, invalidPublic))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val publicLocations = viewModel.uiState.value.publicLocations
+    // Should only show valid non-friend users (user1 and user2)
+    assertEquals(2, publicLocations.size)
+    assertTrue(publicLocations.all { it.ownerId in setOf("user1", "user2") })
+    assertFalse(
+        publicLocations.any { it.ownerId in setOf(testUserId, "friend1", "friend2", "user3") })
+  }
+
+  @Test
+  fun observePublicLocations_whenAccountIsNull_showsAllValidLocations() = runTest {
+    val validLoc1 = PublicLocation("user1", "Alice", testLocation)
+    val validLoc2 = PublicLocation("user2", "Bob", Location(47.0, 7.0, "Other"))
+    val invalidLoc = PublicLocation("user3", "Charlie", emptyLocation)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } throws Exception("No account")
+    coEvery { mockAccountRepository.observePublicLocations() } returns
+        flowOf(listOf(validLoc1, validLoc2, invalidLoc))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // Without account, should show all valid locations (no UID filtering)
+    val publicLocations = viewModel.uiState.value.publicLocations
+    assertEquals(2, publicLocations.size)
+    assertTrue(publicLocations.all { it.ownerId in setOf("user1", "user2") })
+  }
+
+  @Test
+  fun observePublicLocations_filtersCurrentUserEvenWithRaceCondition() = runTest {
+    val currentUserLoc = PublicLocation(testUserId, "Current User", testLocation)
+    val otherUserLoc = PublicLocation("user1", "Alice", Location(47.0, 7.0, "Other"))
+
+    // Simulate race condition: public locations arrive before account is loaded
+    val accountFlow = MutableStateFlow<Account?>(null)
+
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns accountFlow.filterNotNull()
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockAccountRepository.observePublicLocations() } returns
+        flowOf(listOf(currentUserLoc, otherUserLoc))
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // Now load the account
+    accountFlow.value = testAccount
+    advanceUntilIdle()
+
+    // After account loads, current user should be filtered out
+    val finalPublicLocations = viewModel.uiState.value.publicLocations
+    assertEquals(1, finalPublicLocations.size)
+    assertEquals("user1", finalPublicLocations[0].ownerId)
+    assertFalse(finalPublicLocations.any { it.ownerId == testUserId })
   }
 }

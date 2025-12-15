@@ -79,21 +79,32 @@ sealed class Screen(
   data class Map(
       val latitude: Double? = null,
       val longitude: Double? = null,
-      val locationName: String? = null
+      val locationName: String? = null,
+      val mapType: String? = null
   ) :
       Screen(
-          route = buildMapRoute(latitude, longitude, locationName),
+          route = buildMapRoute(latitude, longitude, locationName, mapType),
           name = "Map",
           isTopLevelDestination = false) {
     companion object {
-      const val route = "map?lat={lat}&lon={lon}&name={name}"
+      const val route = "map?lat={lat}&lon={lon}&name={name}&mapType={mapType}"
 
-      private fun buildMapRoute(lat: Double?, lon: Double?, name: String?): String {
-        return if (lat != null && lon != null && name != null) {
-          "map?lat=$lat&lon=$lon&name=${Uri.encode(name)}"
-        } else {
-          "map"
+      private fun buildMapRoute(
+          lat: Double?,
+          lon: Double?,
+          name: String?,
+          mapType: String?
+      ): String {
+        val params = mutableListOf<String>()
+        if (lat != null && lon != null && name != null) {
+          params.add("lat=$lat")
+          params.add("lon=$lon")
+          params.add("name=${Uri.encode(name)}")
         }
+        if (mapType != null) {
+          params.add("mapType=$mapType")
+        }
+        return if (params.isEmpty()) "map" else "map?${params.joinToString("&")}"
       }
     }
   }

@@ -181,4 +181,38 @@ class AccountRepositoryInMemoryTest {
     repository.togglePrivacy("user1")
     assertEquals(0, repository.getPublicLocations().size)
   }
+
+  @Test
+  fun addAccount_publicAccountIsAddedToPublicLocations() = runBlocking {
+    val publicAccount =
+        Account(
+            uid = "newPublicUser",
+            ownerId = "newPublicUser",
+            username = "publicUser",
+            location = EPFL_LOCATION,
+            isPrivate = false)
+
+    repository.addAccount(publicAccount)
+
+    val publicLocations = repository.getPublicLocations()
+    assertEquals(1, publicLocations.size)
+    assertEquals("newPublicUser", publicLocations[0].ownerId)
+    assertEquals("publicUser", publicLocations[0].username)
+  }
+
+  @Test
+  fun addAccount_privateAccountIsNotAddedToPublicLocations() = runBlocking {
+    val privateAccount =
+        Account(
+            uid = "newPrivateUser",
+            ownerId = "newPrivateUser",
+            username = "privateUser",
+            location = EPFL_LOCATION,
+            isPrivate = true)
+
+    repository.addAccount(privateAccount)
+
+    val publicLocations = repository.getPublicLocations()
+    assertEquals(0, publicLocations.size)
+  }
 }
