@@ -570,67 +570,43 @@ class MapViewModelTest {
   }
 
   @Test
-  fun clearSnackbar_removesSnackbarMessage() = runTest {
+  fun snackbarMessage_lifecycle_worksCorrectly() = runTest {
     coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
     coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
 
     viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
     advanceUntilIdle()
 
-    // First set a message
+    // Initially null
+    assertEquals(null, viewModel.uiState.value.snackbarMessage)
+
+    // Set a message
     viewModel.showSnackbar("Test message")
     assertEquals("Test message", viewModel.uiState.value.snackbarMessage)
 
-    // Then clear it
+    // Clear the message
     viewModel.clearSnackbar()
     assertEquals(null, viewModel.uiState.value.snackbarMessage)
-  }
 
-  @Test
-  fun snackbarMessage_initiallyNull() = runTest {
-    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
-    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
-
-    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
-    advanceUntilIdle()
-
-    assertEquals(null, viewModel.uiState.value.snackbarMessage)
-  }
-
-  @Test
-  fun showSnackbar_canBeCalledMultipleTimes() = runTest {
-    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
-    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
-
-    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
-    advanceUntilIdle()
-
+    // Can be called multiple times
     viewModel.showSnackbar("Message 1")
     assertEquals("Message 1", viewModel.uiState.value.snackbarMessage)
-
     viewModel.showSnackbar("Message 2")
     assertEquals("Message 2", viewModel.uiState.value.snackbarMessage)
-  }
 
-  @Test
-  fun snackbarMessage_doesNotAffectOtherState() = runTest {
-    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
-    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    // Does not affect other state
+    val finalLocation = viewModel.uiState.value.userLocation
+    val finalAccount = viewModel.uiState.value.currentAccount
+    val finalMapType = viewModel.uiState.value.selectedMapType
 
-    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
-    advanceUntilIdle()
-
-    val initialLocation = viewModel.uiState.value.userLocation
-    val initialAccount = viewModel.uiState.value.currentAccount
-    val initialMapType = viewModel.uiState.value.selectedMapType
-
-    viewModel.showSnackbar("Test message")
+    viewModel.clearSnackbar()
+    viewModel.showSnackbar("Final message")
 
     val updatedState = viewModel.uiState.value
-    assertEquals(initialLocation, updatedState.userLocation)
-    assertEquals(initialAccount, updatedState.currentAccount)
-    assertEquals(initialMapType, updatedState.selectedMapType)
-    assertEquals("Test message", updatedState.snackbarMessage)
+    assertEquals(finalLocation, updatedState.userLocation)
+    assertEquals(finalAccount, updatedState.currentAccount)
+    assertEquals(finalMapType, updatedState.selectedMapType)
+    assertEquals("Final message", updatedState.snackbarMessage)
   }
 
   @Test
