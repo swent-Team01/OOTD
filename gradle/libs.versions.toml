@@ -24,7 +24,7 @@ navigationCompose = "2.8.5"
 firebaseAuth = "23.0.0"
 firebaseAuthKtx = "23.0.0"
 firebaseDatabaseKtx = "21.0.0"
-firebaseFirestore = "25.1.0"
+firebaseFirestore = "26.0.2"
 firebaseStorage = "20.2.0"
 
 # Credential Manager
