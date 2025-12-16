@@ -222,4 +222,31 @@ class FeedViewModelUnitTest {
     // Verify that feed was refreshed
     coVerify { feedRepository.getRecentFeedForUids(any()) }
   }
+
+  @Test
+  fun `doRefreshFeed handles exception and sets error message`() = runTest {
+    // Setup
+    val account = Account(uid = "testUser", friendUids = listOf("friend1"))
+    val errorMessage = "Network timeout"
+
+    viewModel.setCurrentAccount(account)
+
+    // Mock repository to throw an exception
+    coEvery { feedRepository.getCachedFriendFeed(any()) } throws Exception(errorMessage)
+
+    // Initially error message should be null
+    assertEquals(null, viewModel.uiState.value.errorMessage)
+
+    // Trigger refresh
+    viewModel.doRefreshFeed()
+    testDispatcher.scheduler.advanceUntilIdle()
+
+    // Assert error state
+    val state = viewModel.uiState.value
+    assertFalse(state.isLoading)
+    assertEquals("Failed to refresh feed: $errorMessage", state.errorMessage)
+
+    // Verify repository was called
+    coVerify { feedRepository.getCachedFriendFeed(any()) }
+  }
 }
