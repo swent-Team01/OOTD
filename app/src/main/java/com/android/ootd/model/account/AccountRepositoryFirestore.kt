@@ -273,20 +273,28 @@ class AccountRepositoryFirestore(
         throw NoSuchElementException("The user with id $friendID not found")
       }
 
-      val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
+      val currentUserAccountRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
 
       // With arrayUnion there can be no duplicates
       // https://firebase.google.com/docs/firestore/manage-data/add-data , Update elements in an
       // array section
 
       // Add the friendID in your friend list
-      userRef.update("friendUids", FieldValue.arrayUnion(friendID)).await()
+      currentUserAccountRef.update("friendUids", FieldValue.arrayUnion(friendID)).await()
+
+      // Increment the friend count
+      val currentUserRef = db.collection(USER_COLLECTION_PATH).document(userID)
+
+      currentUserRef.update("friendCount", FieldValue.increment(1)).await()
 
       // Add yourself to the friendID's friend list.
       // This works because we have not deleted the follow notification yet.
-      val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      val friendAccountRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      val friendUserRef = db.collection(USER_COLLECTION_PATH).document(friendID)
+
       try {
-        friendRef.update("friendUids", FieldValue.arrayUnion(userID)).await()
+        friendAccountRef.update("friendUids", FieldValue.arrayUnion(userID)).await()
+        friendUserRef.update("friendCount", FieldValue.increment(1)).await()
         return true
       } catch (e: Exception) {
         // If we can't update their account (maybe we're not in their friend list),
@@ -311,13 +319,22 @@ class AccountRepositoryFirestore(
       }
 
       // Remove friendID from userID's friend list
-      val userRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
-      userRef.update("friendUids", FieldValue.arrayRemove(friendID)).await()
+      val currentUserAccountRef = db.collection(ACCOUNT_COLLECTION_PATH).document(userID)
+      currentUserAccountRef.update("friendUids", FieldValue.arrayRemove(friendID)).await()
+
+      // Decrement the friend count
+      val currentUserRef = db.collection(USER_COLLECTION_PATH).document(userID)
+
+      currentUserRef.update("friendCount", FieldValue.increment(-1)).await()
 
       // Remove userID from friendID's friend list (if they have us as a friend)
-      val friendRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      val friendAccountRef = db.collection(ACCOUNT_COLLECTION_PATH).document(friendID)
+      val friendUserRef = db.collection(USER_COLLECTION_PATH).document(friendID)
+
       try {
-        friendRef.update("friendUids", FieldValue.arrayRemove(userID)).await()
+        // Need to decrement count before removing themselves from friend list.
+        friendUserRef.update("friendCount", FieldValue.increment(-1)).await()
+        friendAccountRef.update("friendUids", FieldValue.arrayRemove(userID)).await()
       } catch (e: Exception) {
         // If we can't update their account (maybe we're not in their friend list),
         // log it but don't fail the entire operation
