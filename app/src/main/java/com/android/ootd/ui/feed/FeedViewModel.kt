@@ -234,9 +234,10 @@ open class FeedViewModel(
   /**
    * Filters posts based on the feed type and user ID.
    *
-   * @param posts The list of posts to filter.
+   * @param publicPost The list of posts to filter.
    * @param uid The user ID of the current account.
    * @param time The timestamp representing the start of today.
+   * @param privatePost The list of private posts to filter (optional).
    * @return The filtered list of posts.
    */
   private fun filterPosts(
