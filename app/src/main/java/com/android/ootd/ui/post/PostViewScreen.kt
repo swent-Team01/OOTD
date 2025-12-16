@@ -44,11 +44,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
-import com.android.ootd.model.items.Item
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
+import com.android.ootd.model.items.Item
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
