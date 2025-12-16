@@ -98,10 +98,20 @@ open class FeedViewModel(
 
   /**
    * Triggers a refresh of the feed posts. This function launches a coroutine in the ViewModel scope
-   * to perform the refresh operation.
+   * to perform the refresh operation. If an exception occurs during the refresh, it logs the error
+   * and updates the UI state with an error message.
    */
   fun doRefreshFeed() {
-    viewModelScope.launch { refreshFeed() }
+    viewModelScope.launch {
+      try {
+        refreshFeed()
+      } catch (e: Exception) {
+        Log.e("FeedViewModel", "Failed to refresh feed", e)
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = false, errorMessage = "Failed to refresh feed: ${e.message}")
+      }
+    }
   }
 
   /**
