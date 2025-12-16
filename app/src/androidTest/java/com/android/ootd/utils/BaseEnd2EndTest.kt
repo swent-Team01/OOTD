@@ -252,13 +252,13 @@ open class BaseEnd2EndTest {
 
     // Type "Zurich" to trigger location search
     composeTestRule
-        .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+        .onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
         .performTextInput("Zurich")
     composeTestRule.waitForIdle()
 
     verifyElementAppearsWithTimer(composeTestRule, LocationSelectionTestTags.LOCATION_SUGGESTION)
     composeTestRule
-        .onAllNodesWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
         .performClick()
     composeTestRule.waitForIdle()
   }

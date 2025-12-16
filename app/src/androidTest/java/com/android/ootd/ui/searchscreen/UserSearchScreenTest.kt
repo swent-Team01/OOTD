@@ -1,7 +1,6 @@
 package com.android.ootd.ui.searchscreen
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
