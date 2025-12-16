@@ -21,7 +21,8 @@ private data class UserDto(
     val uid: String = "",
     val ownerId: String = "",
     val username: String = "",
-    val profilePicture: String = ""
+    val profilePicture: String = "",
+    val friendCount: Int = 0
 )
 
 private const val username_taken_exception = "Username already in use"
@@ -35,7 +36,8 @@ private fun User.toDto(): UserDto {
       uid = this.uid,
       ownerId = this.ownerId,
       username = this.username,
-      profilePicture = this.profilePicture)
+      profilePicture = this.profilePicture,
+      friendCount = this.friendCount)
 }
 
 private fun UserDto.toDomain(): User {
@@ -43,7 +45,8 @@ private fun UserDto.toDomain(): User {
       uid = this.uid,
       ownerId = this.ownerId,
       username = this.username,
-      profilePicture = this.profilePicture)
+      profilePicture = this.profilePicture,
+      friendCount = this.friendCount)
 }
 
 class UserRepositoryFirestore(private val db: FirebaseFirestore) : UserRepository {
