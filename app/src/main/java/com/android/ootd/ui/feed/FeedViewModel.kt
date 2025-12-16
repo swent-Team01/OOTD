@@ -138,6 +138,7 @@ open class FeedViewModel(
     val publicCached = repository.getCachedPublicFeed()
     val privateCached = repository.getCachedFriendFeed(account.friendUids + account.uid)
 
+    // 2) Filter cached posts based on feed type and user ID
     val cached = filterPosts(publicCached, account.uid, todayStart, privateCached)
 
     if (cached.isEmpty() && !_isRefreshing.value) {
@@ -147,17 +148,20 @@ open class FeedViewModel(
     cachedPublicFeed = publicCached
     cachedPrivateFeed = privateCached
 
+    // 3) Check if user has posted today based on cached data
     val hasPostedTodayLocal =
         (cachedPublicFeed + cachedPrivateFeed).any { post ->
           post.ownerId == account.uid && post.timestamp >= todayStart
         }
 
+    // Update UI state with cached posts if available
     if (cached.isNotEmpty()) {
       _uiState.value =
           _uiState.value.copy(
               feedPosts = cached, isLoading = false, hasPostedToday = hasPostedTodayLocal)
     }
 
+    // 4) Attempt to fetch fresh posts from Firestore with timeout
     val allPosts =
         withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) {
           if (_uiState.value.isPublicFeed) {
@@ -172,12 +176,16 @@ open class FeedViewModel(
       return
     }
 
+    // 5) Filter fresh posts based on feed type and user ID
     val filteredPost = filterPosts(allPosts, account.uid, todayStart, allPosts)
 
+    // 6) Update cached posts
     updateCachedPosts(filteredPost)
 
+    // 7) Check if user has posted today based on database (cached + firebase) data
     val finalHasPostedToday = computeHasPostedToday(account.uid, hasPostedTodayLocal)
 
+    // 8) Fetch like status and counts for the posts
     val (likesMap, likeCounts) = fetchLikesForPosts(filteredPost, account)
 
     _uiState.value =
@@ -190,7 +198,7 @@ open class FeedViewModel(
   }
 
   /**
-   * Updates the cached posts based on in which screen we are.
+   * Updates the cached posts based on in which screen the user is.
    *
    * @param posts The list of posts to cache.
    */
