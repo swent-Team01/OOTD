@@ -47,7 +47,6 @@ import com.android.ootd.ui.account.ViewUserProfile
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
-import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapType
@@ -319,9 +318,6 @@ fun OOTDApp(
                       onOpenPost = { postId ->
                         navigationActions.navigateTo(Screen.PostView(postId))
                       },
-                      onSeeFitClick = { postUuid ->
-                        navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
-                      },
                       onLocationClick = { location ->
                         navigationActions.navigateTo(
                             Screen.Map(
@@ -473,21 +469,6 @@ fun OOTDApp(
                     }
 
                 composable(
-                    route = Screen.SeeFitScreen.route,
-                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
-                        navBackStackEntry ->
-                      val postUuid = navBackStackEntry.arguments?.getString("postUuid") ?: ""
-
-                      // Placeholder for SeeFitScreen
-                      SeeFitScreen(
-                          postUuid = postUuid,
-                          goBack = { navigationActions.goBack() },
-                          onEditItem = { itemUuid ->
-                            navController.navigate(Screen.EditItem(itemUuid).route)
-                          })
-                    }
-
-                composable(
                     route = Screen.PreviewItemScreen.route,
                     arguments =
                         listOf(
@@ -569,6 +550,9 @@ fun OOTDApp(
                             onBack = { navigationActions.goBack() },
                             onProfileClick = { userId ->
                               navigationActions.navigateToUserProfile(userId, currentUserId)
+                            },
+                            onEditItem = { itemUuid ->
+                              navigationActions.navigateTo(Screen.EditItem(itemUuid))
                             })
                       }
                     }

@@ -45,7 +45,6 @@ object OutfitPostCardTestTags {
   const val POST_IMAGE = "postImage"
   const val POST_IMAGE_BOX = "postImageBox"
   const val POST_DESCRIPTION = "postDescription"
-  const val SEE_FIT_BUTTON = "seeFitButton"
   const val PROFILE_PIC = "profilePic"
   const val PROFILE_INITIAL = "profileInitial"
   const val BLUR_OVERLAY = "blurOverlay"
@@ -207,50 +206,27 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
  * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
  */
 @Composable
-private fun DescriptionAndButton(
-    post: OutfitPost,
-    isBlurred: Boolean,
-    onSeeFitClick: (String) -> Unit
-) {
+private fun PostDescription(post: OutfitPost) {
   var expanded by remember { mutableStateOf(false) }
 
-  Row(
-      modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceBetween) {
-        val descriptionText =
-            if (post.description.isNotBlank()) {
-              "${post.name}: ${post.description}"
-            } else {
-              post.name
-            }
-
-        Text(
-            text = descriptionText,
-            style = Typography.bodyLarge,
-            color = Primary,
-            maxLines = if (expanded) Int.MAX_VALUE else 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier.weight(1f)
-                    .padding(end = 8.dp)
-                    .testTag(OutfitPostCardTestTags.POST_DESCRIPTION)
-                    .clickable { expanded = !expanded })
-
-        Button(
-            onClick = { onSeeFitClick(post.postUID) },
-            enabled = !isBlurred,
-            shape = RoundedCornerShape(50),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = Primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = Tertiary,
-                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-            modifier = Modifier.testTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).height(36.dp)) {
-              Text("See fit", style = Typography.bodySmall)
-            }
+  val descriptionText =
+      if (post.description.isNotBlank()) {
+        "${post.name}: ${post.description}"
+      } else {
+        post.name
       }
+
+  Text(
+      text = descriptionText,
+      style = Typography.bodyLarge,
+      color = Primary,
+      maxLines = if (expanded) Int.MAX_VALUE else 2,
+      overflow = TextOverflow.Ellipsis,
+      modifier =
+          Modifier.fillMaxWidth()
+              .padding(top = 8.dp)
+              .testTag(OutfitPostCardTestTags.POST_DESCRIPTION)
+              .clickable { expanded = !expanded })
 }
 
 /**
@@ -275,7 +251,6 @@ fun OutfitPostCard(
     isLiked: Boolean,
     likeCount: Int,
     onLikeClick: (String) -> Unit,
-    onSeeFitClick: (String) -> Unit = {},
     onCardClick: (String) -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
     onCommentClick: (OutfitPost) -> Unit = {},
@@ -306,8 +281,7 @@ fun OutfitPostCard(
                     }
                 PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location, onClick = { onLocationClick(post.location) })
-                DescriptionAndButton(post, isBlurred, onSeeFitClick)
-                Spacer(modifier = Modifier.height(8.dp))
+                PostDescription(post)
                 // Reactions row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
