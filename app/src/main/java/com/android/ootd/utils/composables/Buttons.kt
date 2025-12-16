@@ -28,7 +28,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
@@ -49,8 +48,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.ootd.R
 import com.android.ootd.ui.account.UiTestTags
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Tertiary
@@ -173,7 +172,11 @@ fun GoogleSignInButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
           Spacer(modifier = Modifier.size(12.dp))
 
-          Text(text = "Sign in with Google", style = Typography.titleLarge, color = Primary)
+          Text(
+              text = "Sign in with Google",
+              style = Typography.titleLarge,
+              fontFamily = NotoSans,
+              color = Primary)
         }
       }
 }
@@ -234,10 +237,7 @@ fun FriendsNumberBadge(
                 .clickable(onClick = onClick)
                 .background(Secondary, RoundedCornerShape(50))
                 .padding(horizontal = 14.dp, vertical = 10.dp)) {
-          Text(
-              text = text,
-              style = Typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-              color = Primary)
+          Text(text = text, style = Typography.bodyLarge, color = Primary)
           Spacer(modifier = Modifier.size(8.dp))
           Icon(
               imageVector = Icons.Filled.Group, contentDescription = "View friends", tint = Primary)
@@ -305,11 +305,11 @@ fun OOTDTabRow(
               selected = selectedTabIndex == index,
               onClick = { onTabClick(index) },
               text = {
-                Text(
+                ShowText(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = Typography.titleLarge,
                     fontWeight =
-                        if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal)
+                        if (selectedTabIndex == index) FontWeight.SemiBold else FontWeight.Normal)
               },
               selectedContentColor = Primary,
               unselectedContentColor = Tertiary,
@@ -334,7 +334,7 @@ fun PrivacyToggleRow(
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
           text = "Privacy",
-          style = typography.titleMedium.copy(fontFamily = Bodoni),
+          style = typography.titleMedium.copy(fontFamily = NotoSans),
           color = colors.primary,
           modifier = Modifier.padding(start = 4.dp))
       Spacer(modifier = Modifier.width(2.dp))
@@ -354,7 +354,7 @@ fun PrivacyToggleRow(
                         " — it won’t be shown to others.\n" +
                         "Public: Your location is displayed on the public map" +
                         " so others can discover you.",
-                    style = typography.bodySmall.copy(fontFamily = Bodoni),
+                    style = typography.bodySmall.copy(fontFamily = NotoSans),
                     color = colors.onSurface)
               },
               onClick = onHelpDismiss)
@@ -369,7 +369,7 @@ fun PrivacyToggleRow(
         verticalAlignment = Alignment.CenterVertically) {
           Text(
               text = if (isPrivate) "Private" else "Public",
-              style = typography.bodyMedium.copy(fontFamily = Bodoni),
+              style = typography.bodyMedium.copy(fontFamily = NotoSans),
               color = colors.onSurface)
           Switch(
               checked = isPrivate,

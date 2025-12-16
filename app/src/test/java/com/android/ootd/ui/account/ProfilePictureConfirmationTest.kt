@@ -52,8 +52,7 @@ class ProfilePictureConfirmationTest {
           avatarUri = "https://example.com/avatar.png",
           username = "tester",
           onEditClick = { showEditProfileConfirm = true },
-          deleteProfilePicture = { showDeleteProfileConfirm = true },
-          context = context)
+          deleteProfilePicture = { showDeleteProfileConfirm = true })
 
       ProfilePictureEditor(
           context = context,
@@ -115,8 +114,7 @@ class ProfilePictureConfirmationTest {
           avatarUri = "https://example.com/avatar.png",
           username = "tester",
           onEditClick = { showEditProfileConfirm = true },
-          deleteProfilePicture = { showDeleteProfileConfirm = true },
-          context = context)
+          deleteProfilePicture = { showDeleteProfileConfirm = true })
 
       ProfilePictureEditor(
           context = context,

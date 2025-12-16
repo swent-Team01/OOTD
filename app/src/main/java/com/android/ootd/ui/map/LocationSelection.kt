@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.epflLocation
-import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
@@ -66,7 +66,7 @@ private fun GPSButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
             imageVector = Icons.Default.LocationOn,
             contentDescription = "GPS",
             modifier = Modifier.padding(end = 8.dp))
-        Text(text, fontFamily = Bodoni)
+        Text(text, fontFamily = NotoSans)
       }
 }
 
@@ -116,7 +116,7 @@ private fun LocationSuggestionsDropdown(
                     text = location.name.take(30) + if (location.name.length > 30) "..." else "",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontFamily = Bodoni)
+                    fontFamily = NotoSans)
               },
               onClick = {
                 onLocationSelect(location)
@@ -129,7 +129,7 @@ private fun LocationSuggestionsDropdown(
 
         if (suggestions.size > 3) {
           DropdownMenuItem(
-              text = { Text("More...", fontFamily = Bodoni) },
+              text = { Text("More...", fontFamily = NotoSans) },
               onClick = { /* Nothing */ },
               modifier = Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
         }
@@ -146,7 +146,7 @@ private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
       color = Primary,
       style =
           typography.bodyMedium.copy(
-              fontFamily = Bodoni, textDecoration = TextDecoration.Underline),
+              fontFamily = NotoSans, textDecoration = TextDecoration.Underline),
       modifier =
           Modifier.padding(top = 8.dp, bottom = 4.dp)
               .clickable { onSelectDefault() }
