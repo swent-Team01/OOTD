@@ -128,7 +128,7 @@ open class FeedViewModel(
     }
 
     if (cached.isNotEmpty()) {
-      val filteredCached = filterPosts(cached, account.uid, todayStart)
+      val filteredCached = deduplicatePosts(cached)
 
       // Keep caches for subsequent `loadCachedFeed`
       updateCachedPosts(filteredCached)
@@ -169,7 +169,7 @@ open class FeedViewModel(
       return
     }
 
-    val filteredPost = filterPosts(allPosts, account.uid, todayStart)
+    val filteredPost = deduplicatePosts(allPosts)
 
     updateCachedPosts(filteredPost)
 
@@ -222,15 +222,20 @@ open class FeedViewModel(
     return Pair(likesMap, likeCounts)
   }
 
-  /** Filters posts based on the feed type and user ID. */
-  private fun filterPosts(posts: List<OutfitPost>, uid: String, time: Long): List<OutfitPost> {
-    return if (_uiState.value.isPublicFeed) posts
-    else
-        posts.filter { post ->
-          if (post.ownerId == uid) {
-            post.timestamp >= time
-          } else true
-        }
+  /**
+   * Deduplicates posts, if a user made two posts then we take the one with the higher timestamp
+   *
+   * A problem might arise when fetching the public feed because there we fetch posts in the last 24
+   * hours. This means that if user A posted at 11PM and then at 1AM the next day, user B looking at
+   * 2AM will see both posts on the public feed which is not intended. Therefore, we deduplicate
+   * based on the most recent post.
+   */
+  private fun deduplicatePosts(posts: List<OutfitPost>): List<OutfitPost> {
+    return posts
+        .groupBy { it.ownerId }
+        .mapValues { (_, postsWithSameOwner) -> postsWithSameOwner.maxByOrNull { it.timestamp } }
+        .values
+        .filterNotNull()
   }
 
   /** Computes whether the user has posted today considering both local and remote data. */
