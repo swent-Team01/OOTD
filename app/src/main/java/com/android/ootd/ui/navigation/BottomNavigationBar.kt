@@ -54,7 +54,6 @@ fun tabToScreen(tab: Tab): Screen = tab.destination
  */
 private fun routeMatchesTab(currentRoute: String, tab: Tab): Boolean {
   val destinationRoute = tab.destination.route
-  if (currentRoute == destinationRoute) return true
   val currentBaseRoute = currentRoute.split("?").first().split("/").first()
   val destinationBaseRoute = destinationRoute.split("?").first().split("/").first()
 

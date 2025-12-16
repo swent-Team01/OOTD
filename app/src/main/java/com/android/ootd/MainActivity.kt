@@ -538,8 +538,7 @@ fun OOTDApp(
                               launchSingleTop = true
                             }
                           },
-                          onGoBack = { navController.popBackStack() },
-                          overridePhoto = testMode)
+                          onGoBack = { navController.popBackStack() })
                     }
 
                 composable(

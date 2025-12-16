@@ -123,8 +123,7 @@ fun PreviewItemScreen(
     onPostSuccess: () -> Unit = {},
     onGoBack: (String) -> Unit = {},
     enablePreview: Boolean = false,
-    uiStateOverride: PreviewUIState? = null,
-    overridePhoto: Boolean = false
+    uiStateOverride: PreviewUIState? = null
 ) {
   val context = LocalContext.current
   val realUiState by outfitPreviewViewModel.uiState.collectAsState()
@@ -180,13 +179,9 @@ fun PreviewItemScreen(
           onRemoveItem.takeIf { enablePreview } ?: outfitPreviewViewModel::removeItemFromPost,
       onAddItem = onAddItem,
       onSelectFromInventory = onSelectFromInventory,
-      onPublish = {
-        if (!enablePreview)
-            outfitPreviewViewModel.publishPost(overridePhoto = overridePhoto, context = context)
-      },
+      onPublish = { if (!enablePreview) outfitPreviewViewModel.publishPost(context = context) },
       onGoBack = onGoBack,
       enablePreview = enablePreview,
-      overridePhoto = overridePhoto,
       onTogglePublic = { if (!enablePreview) outfitPreviewViewModel.setPublic(it) })
 }
 
@@ -202,7 +197,6 @@ fun PreviewItemScreenContent(
     onPublish: () -> Unit,
     onGoBack: (String) -> Unit,
     enablePreview: Boolean,
-    overridePhoto: Boolean = false,
     onTogglePublic: (Boolean) -> Unit = {}
 ) {
   val itemsList = ui.items
@@ -225,10 +219,8 @@ fun PreviewItemScreenContent(
         },
         bottomBar = {
           PreviewBottomBar(
-              enablePreview = enablePreview,
               isPublic = ui.isPublic,
               hasItems = hasItems,
-              overridePhoto = overridePhoto,
               onTogglePublic = onTogglePublic,
               onPublish = onPublish,
               onShowMissingItemsWarning = { showMissingItemsWarning = true },
@@ -271,22 +263,17 @@ fun PreviewItemScreenContent(
 
 @Composable
 private fun PreviewBottomBar(
-    enablePreview: Boolean,
     isPublic: Boolean,
     hasItems: Boolean,
-    overridePhoto: Boolean,
     onTogglePublic: (Boolean) -> Unit,
     onPublish: () -> Unit,
     onShowMissingItemsWarning: () -> Unit,
     onShowAddItemDialog: () -> Unit
 ) {
   Column(modifier = Modifier.fillMaxWidth()) {
-    if (!enablePreview) {
-      PublicFeedToggle(isPublic = isPublic, onTogglePublic = onTogglePublic)
-    }
+    PublicFeedToggle(isPublic = isPublic, onTogglePublic = onTogglePublic)
     BottomActionButtons(
         hasItems = hasItems,
-        overridePhoto = overridePhoto,
         onPublish = onPublish,
         onShowMissingItemsWarning = onShowMissingItemsWarning,
         onShowAddItemDialog = onShowAddItemDialog)
@@ -318,7 +305,6 @@ private fun PublicFeedToggle(isPublic: Boolean, onTogglePublic: (Boolean) -> Uni
 @Composable
 private fun BottomActionButtons(
     hasItems: Boolean,
-    overridePhoto: Boolean,
     onPublish: () -> Unit,
     onShowMissingItemsWarning: () -> Unit,
     onShowAddItemDialog: () -> Unit
@@ -329,7 +315,6 @@ private fun BottomActionButtons(
       verticalAlignment = Alignment.CenterVertically) {
         PostButton(
             hasItems = hasItems,
-            overridePhoto = overridePhoto,
             onPublish = onPublish,
             onShowMissingItemsWarning = onShowMissingItemsWarning)
         AddItemButton(onShowAddItemDialog = onShowAddItemDialog)
@@ -339,11 +324,10 @@ private fun BottomActionButtons(
 @Composable
 private fun PostButton(
     hasItems: Boolean,
-    overridePhoto: Boolean,
     onPublish: () -> Unit,
     onShowMissingItemsWarning: () -> Unit
 ) {
-  if (overridePhoto || hasItems) {
+  if (hasItems) {
     Button(
         onClick = onPublish,
         modifier =
