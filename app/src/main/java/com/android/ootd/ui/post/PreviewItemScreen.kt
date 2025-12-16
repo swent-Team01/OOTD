@@ -123,7 +123,8 @@ fun PreviewItemScreen(
     onPostSuccess: () -> Unit = {},
     onGoBack: (String) -> Unit = {},
     enablePreview: Boolean = false,
-    uiStateOverride: PreviewUIState? = null
+    uiStateOverride: PreviewUIState? = null,
+    overridePhoto: Boolean = false
 ) {
   val context = LocalContext.current
   val realUiState by outfitPreviewViewModel.uiState.collectAsState()
@@ -179,7 +180,10 @@ fun PreviewItemScreen(
           onRemoveItem.takeIf { enablePreview } ?: outfitPreviewViewModel::removeItemFromPost,
       onAddItem = onAddItem,
       onSelectFromInventory = onSelectFromInventory,
-      onPublish = { if (!enablePreview) outfitPreviewViewModel.publishPost(context = context) },
+      onPublish = {
+        if (!enablePreview)
+            outfitPreviewViewModel.publishPost(overridePhoto = overridePhoto, context = context)
+      },
       onGoBack = onGoBack,
       enablePreview = enablePreview,
       onTogglePublic = { if (!enablePreview) outfitPreviewViewModel.setPublic(it) })
