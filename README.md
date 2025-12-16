@@ -97,7 +97,7 @@ This architecture enhances code maintainability, testability, and scalability. F
 
 <div align="center">
 
-![App Architecture](diagrams/App_Arch_M2.png)
+![App Architecture](diagrams/App_Arch_M3.png)
 
 *Architecture Diagram - See `/diagrams` folder for source files*
 
