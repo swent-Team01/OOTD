@@ -65,7 +65,6 @@ class NavigationTest {
           FeedScreen(
               onAddPostClick = {},
               onNotificationIconClick = {},
-              onSeeFitClick = {},
               onOpenPost = {},
               onLocationClick = {},
               onProfileClick = { ownerId -> navigation.navigateTo(Screen.ViewUser(ownerId)) })

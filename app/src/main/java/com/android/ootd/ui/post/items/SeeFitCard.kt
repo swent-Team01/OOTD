@@ -1,8 +1,7 @@
-package com.android.ootd.ui.feed
+package com.android.ootd.ui.post.items
 
 import androidx.compose.runtime.Composable
 import com.android.ootd.model.items.Item
-import com.android.ootd.ui.post.items.OotdItemCard
 
 /**
  * Composable representing an individual item card in the See Fit grid that displays a small part of
@@ -26,10 +25,10 @@ fun ItemCard(
       isStarred = isStarred,
       onToggleStar = onToggleStar,
       showStarToggle = showStarToggle,
-      testTag = SeeFitScreenTestTags.getTestTagForItem(item),
-      starButtonTestTag = SeeFitScreenTestTags.getStarButtonTag(item),
-      editButtonTestTag = SeeFitScreenTestTags.ITEM_CARD_EDIT_BUTTON,
-      imageTestTag = SeeFitScreenTestTags.ITEM_CARD_IMAGE,
-      categoryTestTag = SeeFitScreenTestTags.ITEM_CARD_CATEGORY,
-      typeTestTag = SeeFitScreenTestTags.ITEM_CARD_TYPE)
+      testTag = ItemsTestTags.getTestTagForItem(item),
+      starButtonTestTag = ItemsTestTags.getStarButtonTag(item),
+      editButtonTestTag = ItemsTestTags.ITEM_CARD_EDIT_BUTTON,
+      imageTestTag = ItemsTestTags.ITEM_CARD_IMAGE,
+      categoryTestTag = ItemsTestTags.ITEM_CARD_CATEGORY,
+      typeTestTag = ItemsTestTags.ITEM_CARD_TYPE)
 }

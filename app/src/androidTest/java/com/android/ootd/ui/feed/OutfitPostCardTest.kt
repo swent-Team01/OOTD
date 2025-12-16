@@ -44,7 +44,6 @@ class OutfitPostCardTest {
                   isLiked = isLiked,
                   likeCount = likeCount,
                   onLikeClick = onLikeClick,
-                  onSeeFitClick = onSeeFitClick,
                   onCardClick = onCardClick,
                   onLocationClick = onLocationClick,
                   onProfileClick = onProfileClick)
@@ -77,7 +76,6 @@ class OutfitPostCardTest {
     n(OutfitPostCardTestTags.OUTFIT_POST_CARD).assertIsDisplayed()
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("John Doe")
     n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("John Doe: Casual Friday outfit")
-    n(OutfitPostCardTestTags.SEE_FIT_BUTTON).assertIsDisplayed().assertHasClickAction()
 
     // Like button + count should appear
     n(OutfitPostCardTestTags.LIKE_BUTTON).assertIsDisplayed()
@@ -91,24 +89,6 @@ class OutfitPostCardTest {
 
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("Minimalist")
     n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("Minimalist")
-  }
-
-  @Test
-  fun seeFitButton_invokesCallback() {
-    var clicks = 0
-    var capturedPostUid = ""
-
-    setCard(
-        post(),
-        onSeeFitClick = { uid ->
-          clicks++
-          capturedPostUid = uid
-        })
-
-    n(OutfitPostCardTestTags.SEE_FIT_BUTTON).performClick()
-
-    assertEquals(1, clicks)
-    assertEquals("id", capturedPostUid)
   }
 
   @Test
