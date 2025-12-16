@@ -34,7 +34,6 @@ import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
 import com.android.ootd.ui.onboarding.OnboardingViewModel
 import com.android.ootd.ui.register.RegisterScreenTestTags
-import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Firebase
@@ -296,7 +295,7 @@ open class BaseEnd2EndTest {
   fun navigateToSearchScreen() {
     clickWithWait(composeTestRule, NavigationTestTags.SEARCH_TAB)
     waitForRoute(Screen.SearchScreen.route)
-    verifyElementAppearsWithTimer(composeTestRule, SearchScreenTestTags.SEARCH_SCREEN)
+    verifyElementAppearsWithTimer(composeTestRule, UserSelectionFieldTestTags.FIND_FRIENDS_TITLE)
   }
 
   /**
