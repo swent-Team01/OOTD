@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -350,5 +351,15 @@ class FitCheckScreenTest {
       assertEquals(location, viewModel.uiState.value.location)
       assertEquals("Test description", viewModel.uiState.value.description)
     }
+  }
+
+  @Test
+  fun nextButton_withoutPhoto_showsMissingPhotoWarning() {
+    // Try to proceed without adding a photo
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.NEXT_BUTTON).performClick()
+
+    // Verify warning appears
+    composeTestRule.onNodeWithTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Please add a photo before continuing.").assertIsDisplayed()
   }
 }

@@ -503,6 +503,113 @@ class MapViewModelTest {
   }
 
   @Test
+  fun hasUserPostedToday_returnsTrue_whenUserHasPosted() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockFeedRepository.hasPostedToday(testUserId) } returns true
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertTrue(hasPosted)
+  }
+
+  @Test
+  fun hasUserPostedToday_returnsFalse_whenUserHasNotPosted() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockFeedRepository.hasPostedToday(testUserId) } returns false
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertFalse(hasPosted)
+  }
+
+  @Test
+  fun hasUserPostedToday_returnsFalse_whenNoUserIsLoggedIn() = runTest {
+    every { mockFirebaseAuth.currentUser } returns null
+
+    coEvery { mockAccountRepository.observeAccount(any()) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertFalse(hasPosted)
+  }
+
+  @Test
+  fun hasUserPostedToday_returnsFalse_onException() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+    coEvery { mockFeedRepository.hasPostedToday(testUserId) } throws Exception("Network error")
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val hasPosted = viewModel.hasUserPostedToday()
+    assertFalse(hasPosted)
+  }
+
+  @Test
+  fun showSnackbar_setsSnackbarMessage() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    val testMessage = "Test snackbar message"
+    viewModel.showSnackbar(testMessage)
+
+    assertEquals(testMessage, viewModel.uiState.value.snackbarMessage)
+  }
+
+  @Test
+  fun snackbarMessage_lifecycle_worksCorrectly() = runTest {
+    coEvery { mockAccountRepository.observeAccount(testUserId) } returns flowOf(testAccount)
+    coEvery { mockFeedRepository.observeRecentFeedForUids(any()) } returns flowOf(emptyList())
+
+    viewModel = MapViewModel(mockFeedRepository, mockAccountRepository)
+    advanceUntilIdle()
+
+    // Initially null
+    assertEquals(null, viewModel.uiState.value.snackbarMessage)
+
+    // Set a message
+    viewModel.showSnackbar("Test message")
+    assertEquals("Test message", viewModel.uiState.value.snackbarMessage)
+
+    // Clear the message
+    viewModel.clearSnackbar()
+    assertEquals(null, viewModel.uiState.value.snackbarMessage)
+
+    // Can be called multiple times
+    viewModel.showSnackbar("Message 1")
+    assertEquals("Message 1", viewModel.uiState.value.snackbarMessage)
+    viewModel.showSnackbar("Message 2")
+    assertEquals("Message 2", viewModel.uiState.value.snackbarMessage)
+
+    // Does not affect other state
+    val finalLocation = viewModel.uiState.value.userLocation
+    val finalAccount = viewModel.uiState.value.currentAccount
+    val finalMapType = viewModel.uiState.value.selectedMapType
+
+    viewModel.clearSnackbar()
+    viewModel.showSnackbar("Final message")
+
+    val updatedState = viewModel.uiState.value
+    assertEquals(finalLocation, updatedState.userLocation)
+    assertEquals(finalAccount, updatedState.currentAccount)
+    assertEquals(finalMapType, updatedState.selectedMapType)
+    assertEquals("Final message", updatedState.snackbarMessage)
+  }
+
+  @Test
   fun observePublicLocations_excludesCurrentUserAndFriends() = runTest {
     val currentUserLoc = PublicLocation(testUserId, "Current User", testLocation)
     val friend1Loc = PublicLocation("friend1", "Friend One", Location(46.6, 6.7, "Loc1"))

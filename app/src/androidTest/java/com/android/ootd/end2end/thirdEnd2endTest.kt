@@ -161,8 +161,8 @@ class ThirdEnd2EndTest : FirestoreTest() {
 
     Log.d(TAG, "STEP4b: verify post and item details")
     checkPostAppearsInFeed(composeTestRule)
-
     checkItemAppearsInPost(composeTestRule)
+
     // STEP 5: Check that the star functionality works as intended
     Log.d(TAG, "STEP5: toggle star on item in inventory")
     checkStarFunctionalityForItem(composeTestRule, firstItemUuid)

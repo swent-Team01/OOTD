@@ -139,7 +139,9 @@ open class FeedViewModel(
     val privateCached = repository.getCachedFriendFeed(account.friendUids + account.uid)
 
     // 2) Filter cached posts based on feed type and user ID
-    val cached = filterPosts(publicCached, account.uid, todayStart, privateCached)
+    val cached =
+        if (_uiState.value.isPublicFeed) deduplicatePosts(publicCached)
+        else deduplicatePosts(privateCached)
 
     if (cached.isEmpty() && !_isRefreshing.value) {
       _uiState.value = _uiState.value.copy(isLoading = true)
@@ -156,6 +158,12 @@ open class FeedViewModel(
 
     // Update UI state with cached posts if available
     if (cached.isNotEmpty()) {
+      val filteredCached = deduplicatePosts(cached)
+
+      // Keep caches for subsequent `loadCachedFeed`
+      updateCachedPosts(filteredCached)
+
+      // Update UI instantly from cache and suppress loading overlay
       _uiState.value =
           _uiState.value.copy(
               feedPosts = cached, isLoading = false, hasPostedToday = hasPostedTodayLocal)
@@ -176,8 +184,7 @@ open class FeedViewModel(
       return
     }
 
-    // 5) Filter fresh posts based on feed type and user ID
-    val filteredPost = filterPosts(allPosts, account.uid, todayStart, allPosts)
+    val filteredPost = deduplicatePosts(allPosts)
 
     // 6) Update cached posts
     updateCachedPosts(filteredPost)
@@ -240,27 +247,19 @@ open class FeedViewModel(
   }
 
   /**
-   * Filters posts based on the feed type and user ID.
+   * Deduplicates posts, if a user made two posts then we take the one with the higher timestamp
    *
-   * @param publicPost The list of posts to filter.
-   * @param uid The user ID of the current account.
-   * @param time The timestamp representing the start of today.
-   * @param privatePost The list of private posts to filter (optional).
-   * @return The filtered list of posts.
+   * A problem might arise when fetching the public feed because there we fetch posts in the last 24
+   * hours. This means that if user A posted at 11PM and then at 1AM the next day, user B looking at
+   * 2AM will see both posts on the public feed which is not intended. Therefore, we deduplicate
+   * based on the most recent post.
    */
-  private fun filterPosts(
-      publicPost: List<OutfitPost>,
-      uid: String,
-      time: Long,
-      privatePost: List<OutfitPost> = emptyList()
-  ): List<OutfitPost> {
-    return if (_uiState.value.isPublicFeed) publicPost
-    else
-        privatePost.filter { post ->
-          if (post.ownerId == uid) {
-            post.timestamp >= time
-          } else true
-        }
+  private fun deduplicatePosts(posts: List<OutfitPost>): List<OutfitPost> {
+    return posts
+        .groupBy { it.ownerId }
+        .mapValues { (_, postsWithSameOwner) -> postsWithSameOwner.maxByOrNull { it.timestamp } }
+        .values
+        .filterNotNull()
   }
 
   /**

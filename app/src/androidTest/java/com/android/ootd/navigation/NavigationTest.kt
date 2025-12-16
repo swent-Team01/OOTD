@@ -65,7 +65,6 @@ class NavigationTest {
           FeedScreen(
               onAddPostClick = {},
               onNotificationIconClick = {},
-              onSeeFitClick = {},
               onOpenPost = {},
               onLocationClick = {},
               onProfileClick = { ownerId -> navigation.navigateTo(Screen.ViewUser(ownerId)) })
@@ -558,12 +557,13 @@ class NavigationTest {
     composeRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertExists()
 
     composeRule.runOnIdle {
-      // Test go back to Feed
+      // Map is a top-level destination, so going back from Map goes to start destination (Splash)
       navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
 
-      // Test sign out clears stack
+      // Navigate back to Map for sign out test
       navigation.navigateTo(Screen.Map())
+      // Test sign out clears stack
       navigation.navigateTo(Screen.Authentication)
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
     }
@@ -626,9 +626,9 @@ class NavigationTest {
 
       assertTrue(navigation.currentRoute().startsWith("map?"))
 
-      // Test go back to Feed
+      // Map is a top-level destination, so going back goes to Splash (start destination)
       navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
 
       // Test different locations have different routes
       navigation.navigateTo(

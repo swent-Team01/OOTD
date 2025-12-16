@@ -73,13 +73,6 @@ sealed class Screen(
     }
   }
 
-  data class SeeFitScreen(val postUuid: String) :
-      Screen(route = "seeFit/${postUuid}", name = "See Fit", isTopLevelDestination = false) {
-    companion object {
-      const val route = "seeFit/{postUuid}"
-    }
-  }
-
   object Onboarding :
       Screen(route = "onboarding", name = "Onboarding", isTopLevelDestination = true)
 
@@ -92,7 +85,7 @@ sealed class Screen(
       Screen(
           route = buildMapRoute(latitude, longitude, locationName, mapType),
           name = "Map",
-          isTopLevelDestination = false) {
+          isTopLevelDestination = true) {
     companion object {
       const val route = "map?lat={lat}&lon={lon}&name={name}&mapType={mapType}"
 

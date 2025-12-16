@@ -1,6 +1,8 @@
 package com.android.ootd.ui.post
 
+import com.android.ootd.model.account.AccountRepository
 import com.android.ootd.model.authentication.AccountService
+import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.post.OutfitPostRepository
 import com.android.ootd.model.posts.LikesRepository
@@ -29,6 +31,8 @@ class PostViewViewModelTest {
   @RelaxedMockK private lateinit var userRepository: UserRepository
   @RelaxedMockK private lateinit var likesRepository: LikesRepository
   @RelaxedMockK private lateinit var accountService: AccountService
+  @RelaxedMockK private lateinit var itemsRepository: ItemsRepository
+  @RelaxedMockK private lateinit var accountRepository: AccountRepository
 
   private lateinit var viewModel: PostViewViewModel
   private val samplePost =
@@ -46,13 +50,24 @@ class PostViewViewModelTest {
   @Before
   fun setup() {
     MockKAnnotations.init(this)
+    val mockUser =
+        com.android.ootd.model.user.User(
+            uid = "owner-1", username = "Test User", profilePicture = "")
+    // Mock the repositories to prevent init() from trying to load data
+    coEvery { postRepository.getPostById(any()) } returns samplePost
+    coEvery { userRepository.getUser(any()) } returns mockUser
+    coEvery { likesRepository.getLikesForPost(any()) } returns emptyList()
+    coEvery { itemsRepository.getFriendItemsForPost(any(), any()) } returns emptyList()
+    coEvery { accountRepository.getStarredItems(any()) } returns emptyList()
     viewModel =
         PostViewViewModel(
             postId = samplePost.postUID,
             postRepository = postRepository,
             userRepository = userRepository,
             likesRepository = likesRepository,
-            accountService = accountService)
+            accountService = accountService,
+            itemsRepository = itemsRepository,
+            accountRepository = accountRepository)
     setState(PostViewUiState(post = samplePost))
   }
 

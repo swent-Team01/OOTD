@@ -531,4 +531,20 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
         .assertIsDisplayed()
         .performClick()
   }
+
+  @Test
+  fun postButton_withoutItems_showsMissingItemsWarning() {
+    setContent()
+
+    // Try to post without items
+    composeTestRule.onNodeWithTag(PreviewItemScreenTestTags.POST_BUTTON).performClick()
+
+    // Verify warning appears
+    composeTestRule
+        .onNodeWithTag(PreviewItemScreenTestTags.MISSING_ITEMS_WARNING)
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithText("Please add at least one item before posting your outfit.")
+        .assertIsDisplayed()
+  }
 }

@@ -48,6 +48,18 @@ fun routeToTab(route: String): Tab = tabs.find { it.destination.route == route }
 
 fun tabToScreen(tab: Tab): Screen = tab.destination
 
+/**
+ * Checks if the given route matches a tab's destination route. Handles routes with query parameters
+ * by checking if they start with the base route.
+ */
+private fun routeMatchesTab(currentRoute: String, tab: Tab): Boolean {
+  val destinationRoute = tab.destination.route
+  val currentBaseRoute = currentRoute.split("?").first().split("/").first()
+  val destinationBaseRoute = destinationRoute.split("?").first().split("/").first()
+
+  return currentBaseRoute == destinationBaseRoute
+}
+
 /** Maps route -> Tab and forwards clicks by emitting the Tab's destination Screen. */
 @Composable
 fun BottomNavigationBar(
@@ -57,7 +69,7 @@ fun BottomNavigationBar(
     onTabSelected: (Screen) -> Unit,
 ) {
   // Map current route string to a Tab; default to Feed
-  val selectedTab = tabList.find { it.destination.route == selectedRoute }
+  val selectedTab = tabList.find { routeMatchesTab(selectedRoute, it) }
   BottomNavigationMenu(
       tabs = tabs,
       selectedTab = selectedTab,
