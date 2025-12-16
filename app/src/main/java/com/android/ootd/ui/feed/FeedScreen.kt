@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -213,7 +212,7 @@ private fun FeedScaffold(
                     contentAlignment = Alignment.Center) {
                       ShowText(
                           text = "Do a fit check to unlock today’s feed",
-                          style = Typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
+                          style = Typography.titleLarge)
                     }
               }
             }

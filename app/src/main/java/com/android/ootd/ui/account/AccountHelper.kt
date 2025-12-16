@@ -15,11 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,15 +25,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.camera.CameraScreen
-import com.android.ootd.ui.theme.Bodoni
 import com.android.ootd.ui.theme.LightColorScheme
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OOTDerror
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionButton
+import com.android.ootd.utils.composables.ImageSelectionDialog
 import com.android.ootd.utils.composables.ProfilePicture
 
 /**
@@ -139,30 +137,17 @@ fun ProfilePictureEditor(
   }
 
   if (showImageSourceDialog) {
-    AlertDialog(
+    ImageSelectionDialog(
         onDismissRequest = { onShowImageSourceDialogChange(false) },
-        title = { Text(text = "Select Image") },
-        text = {
-          Column {
-            TextButton(
-                onClick = {
-                  onShowImageSourceDialogChange(false)
-                  showCamera = true
-                }) {
-                  Text("Take a Photo")
-                }
-            TextButton(
-                onClick = {
-                  onShowImageSourceDialogChange(false)
-                  imagePickerLauncher.launch(
-                      PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                }) {
-                  Text("Choose from Gallery")
-                }
-          }
+        onTakePhoto = {
+          onShowImageSourceDialogChange(false)
+          showCamera = true
         },
-        confirmButton = {},
-        dismissButton = {})
+        onPickFromGallery = {
+          onShowImageSourceDialogChange(false)
+          imagePickerLauncher.launch(
+              PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        })
   }
 }
 
@@ -172,8 +157,7 @@ fun AvatarSection(
     username: String,
     onEditClick: () -> Unit,
     deleteProfilePicture: () -> Unit,
-    modifier: Modifier = Modifier,
-    context: Context = LocalContext.current
+    modifier: Modifier = Modifier
 ) {
   val colors = LightColorScheme
   val typography = Typography
@@ -190,7 +174,7 @@ fun AvatarSection(
             120.dp,
             avatarUri,
             username,
-            typography.headlineMedium.copy(fontFamily = Bodoni))
+            typography.headlineMedium.copy(fontFamily = NotoSans))
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -220,7 +204,7 @@ fun AvatarSection(
                       Text(
                           text = "Delete",
                           color = colors.onError,
-                          style = typography.titleMedium.copy(fontFamily = Bodoni))
+                          style = typography.titleMedium.copy(fontFamily = NotoSans))
                     }
               }
             }

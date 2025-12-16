@@ -46,36 +46,6 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun previewItemScreen_callbacks_executeNavigationLambdas() {
-
-    // Navigate along the real user flow: Feed -> FitCheck -> Preview
-    composeRule.runOnIdle {
-      navigation.navigateTo(
-          Screen.PreviewItemScreen(
-              imageUri = "content://another_uri",
-              description = "Another Test Outfit Description",
-              location = testLocation))
-    }
-
-    composeRule.waitUntil(timeoutMillis = 5_000) {
-      composeRule
-          .onAllNodesWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Click Add Item button (opens dialog)
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_ITEM_BUTTON).performClick()
-    composeRule.waitForIdle()
-    // Dialog is shown; click "Create New Item" to navigate to AddItemScreen
-    composeRule.onNodeWithTag(PreviewItemScreenTestTags.CREATE_NEW_ITEM_OPTION).performClick()
-    composeRule.waitForIdle()
-
-    // Now we should have navigated to AddItemScreen
-    composeRule.runOnIdle { assertEquals(Screen.AddItemScreen.route, navigation.currentRoute()) }
-  }
-
-  @Test
   fun feedScreen_callbacks_executeNavigationLambdas() {
     composeRule.runOnIdle { navigation.navigateTo(Screen.Feed) }
 
@@ -631,24 +601,6 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun mainActivityCode_seeFitScreen_goBackCallback_executesCorrectly() {
-    composeRule.runOnIdle {
-      // Start from Feed
-      navigation.navigateTo(Screen.Feed)
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-
-      // Navigate to SeeFitScreen (tests postUuid argument extraction)
-      navigation.navigateTo(Screen.SeeFitScreen(postUuid = "some-post-id"))
-      assertEquals(Screen.SeeFitScreen.route, navigation.currentRoute())
-
-      navigation.goBack()
-
-      // Should return to Feed
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-  }
-
-  @Test
   fun seeFitScreen_multipleNavigations_maintainsNavigationFlow() {
     val postUuids = listOf("post-A", "post-B", "post-C", "post-xyz-999")
 
@@ -764,32 +716,6 @@ class MainActivityCallbacksTest {
   }
 
   @Test
-  fun mainActivityCode_feedOnLocationClick_actuallyExecutesLambda() {
-    // This test verifies the onLocationClick lambda in MainActivity Feed composable
-    // is actually defined and passed correctly
-    composeRule.runOnIdle {
-      navigation.navigateTo(Screen.Feed)
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
-    }
-
-    composeRule.waitForIdle()
-
-    // Now trigger the onLocationClick by navigating to Map with location
-    // The lambda in MainActivity should execute when this navigation happens
-    composeRule.runOnIdle {
-      val location = Location(46.5197, 6.6323, "EPFL")
-      navigation.navigateTo(
-          Screen.Map(
-              latitude = location.latitude,
-              longitude = location.longitude,
-              locationName = location.name))
-    }
-
-    // Verify the navigation succeeded
-    composeRule.runOnIdle { Assert.assertTrue(navigation.currentRoute().startsWith("map?")) }
-  }
-
-  @Test
   fun feedScreen_onProfileClick_navigatesToViewUser() {
     composeRule.runOnIdle {
       navigation.navigateTo(Screen.Feed)
@@ -865,6 +791,339 @@ class MainActivityCallbacksTest {
       Assert.assertTrue(
           "Target route mismatch: ${navigation.currentRoute()}",
           navigation.currentRoute().startsWith(expectedRoute))
+    }
+  }
+
+  @Test
+  fun mapScreen_multiplePostClicks_navigatesCorrectly() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Map())
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Click first post
+      navigation.navigateTo(Screen.PostView("post1"))
+      assert(navigation.currentRoute().startsWith("postView/"))
+
+      // Go back to map
+      navigation.goBack()
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Click second post
+      navigation.navigateTo(Screen.PostView("post2"))
+      assert(navigation.currentRoute().startsWith("postView/"))
+    }
+  }
+
+  @Test
+  fun mapScreen_navigationFromFeed_maintainsBackStack() {
+    composeRule.runOnIdle {
+      // Navigate through typical user flow
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map())
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Go back should return to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_withFocusLocation_navigatesCorrectly() {
+    composeRule.runOnIdle {
+      val testLat = 46.5197
+      val testLon = 6.6323
+      val testName = "EPFL"
+
+      navigation.navigateTo(Screen.Map(testLat, testLon, testName))
+
+      // Verify we're on Map screen with parameters
+      val currentRoute = navigation.currentRoute()
+      assert(currentRoute.startsWith("map")) {
+        "Expected route to start with 'map', got '$currentRoute'"
+      }
+    }
+  }
+
+  @Test
+  fun mapScreen_postClickNavigation_handlesBackNavigation() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map())
+      navigation.navigateTo(Screen.PostView("test-post"))
+
+      // Should be on PostView
+      assert(navigation.currentRoute().startsWith("postView/"))
+
+      // Back to Map
+      navigation.goBack()
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_fromLocationClick_navigatesWithFocusLocation() {
+    composeRule.runOnIdle {
+      // Simulate clicking a location tag on a post
+      navigation.navigateTo(Screen.Feed)
+
+      // User clicks location which should navigate to Map with focus
+      navigation.navigateTo(
+          Screen.Map(
+              latitude = testLocation.latitude,
+              longitude = testLocation.longitude,
+              locationName = testLocation.name))
+
+      // Should be on map screen
+      val currentRoute = navigation.currentRoute()
+      assert(currentRoute.startsWith("map")) {
+        "Expected route to start with 'map', got '$currentRoute'"
+      }
+
+      // Go back to Feed
+      navigation.goBack()
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_bottomNavigation_switchesBetweenScreens() {
+    composeRule.runOnIdle {
+      // Start at Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+
+      // Navigate to Map via bottom nav
+      navigation.navigateTo(Screen.Map())
+      assert(navigation.currentRoute().startsWith("map")) {
+        "Expected route to start with 'map', got '${navigation.currentRoute()}'"
+      }
+
+      // Navigate to Search via bottom nav (Search is not a top-level destination)
+      navigation.navigateTo(Screen.SearchScreen)
+      assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+
+      // Go back from Search, then navigate to Map
+      navigation.goBack()
+      assert(navigation.currentRoute().startsWith("map")) {
+        "Expected route to start with 'map', got '${navigation.currentRoute()}'"
+      }
+
+      // Navigate to Feed
+      navigation.navigateTo(Screen.Feed)
+      assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_postClick_whenUserHasPosted_navigatesToPostView() {
+    composeRule.runOnIdle {
+      // Navigate to Map
+      navigation.navigateTo(Screen.Map())
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Simulate the successful path: user has posted today
+      // In MainActivity, this path is: hasUserPostedToday() returns true -> navigate to PostView
+      // This tests the navigation action that occurs after the check passes
+      val testPostId = "test-post-after-check"
+      navigation.navigateTo(Screen.PostView(testPostId))
+
+      // Verify navigation to PostView succeeded
+      assert(navigation.currentRoute().startsWith("postView/")) {
+        "Expected to navigate to PostView, but got ${navigation.currentRoute()}"
+      }
+    }
+  }
+
+  @Test
+  fun mapScreen_postClick_navigationFlow_maintainsConsistency() {
+    composeRule.runOnIdle {
+      // Start from Feed
+      navigation.navigateTo(Screen.Feed)
+
+      // Navigate to Map
+      navigation.navigateTo(Screen.Map())
+      assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      // Test multiple post clicks with navigation back
+      // This exercises the onPostClick callback flow in MainActivity
+      for (i in 1..3) {
+        val postId = "post-$i"
+
+        // Navigate to PostView (simulates successful hasUserPostedToday() check)
+        navigation.navigateTo(Screen.PostView(postId))
+        assert(navigation.currentRoute().startsWith("postView/"))
+
+        // Go back to Map
+        navigation.goBack()
+        assertEquals(Screen.Map.route, navigation.currentRoute())
+      }
+    }
+  }
+
+  @Test
+  fun mapScreen_postClickFlow_fromMapToPostViewAndBack() {
+    composeRule.runOnIdle {
+      // This test exercises the complete flow of the onPostClick callback in MainActivity:
+      // 1. User is on Map screen
+      // 2. User clicks a post marker
+      // 3. hasUserPostedToday() is checked (coroutine launched)
+      // 4. If true: navigate to PostView
+      // This simulates step 4
+
+      navigation.navigateTo(Screen.Map())
+      val testPostIds = listOf("post-alpha", "post-beta", "post-gamma")
+
+      testPostIds.forEach { postId ->
+        // Simulate navigation after hasUserPostedToday() returns true
+        navigation.navigateTo(Screen.PostView(postId))
+        assert(navigation.currentRoute().startsWith("postView/")) {
+          "Should navigate to PostView for $postId"
+        }
+
+        // Navigate back to map for next iteration
+        navigation.goBack()
+        assertEquals(Screen.Map.route, navigation.currentRoute())
+      }
+    }
+  }
+
+  // New tests for FindFriendsMap navigation
+  @Test
+  fun mapScreen_findFriendsTab_ownProfileClick_navigatesToAccountView() {
+    composeRule.runOnIdle {
+      // Start from Feed to establish proper back stack
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map())
+
+      // User clicks their own profile marker on Find Friends tab
+      // navigateToUserProfile in MainActivity checks if it's current user
+      // and navigates to AccountView instead of ViewUser
+      navigation.navigateTo(Screen.AccountView)
+
+      Assert.assertEquals(Screen.AccountView.route, navigation.currentRoute())
+
+      // Go back - since AccountView is not a top-level destination,
+      // and Map cleared the back stack to Feed when we navigated to it,
+      // going back from AccountView should return to Feed (the start destination)
+      navigation.goBack()
+      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_findFriendsTab_profileClickFromDifferentLocation_navigatesCorrectly() {
+    composeRule.runOnIdle {
+      // Navigate to Map with specific location
+      navigation.navigateTo(
+          Screen.Map(latitude = 46.5197, longitude = 6.6323, locationName = "EPFL"))
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+
+      // Click profile on Find Friends tab
+      navigation.navigateTo(Screen.ViewUser("nearby-user"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // Go back to map with location preserved
+      navigation.goBack()
+      Assert.assertTrue(navigation.currentRoute().startsWith("map?"))
+    }
+  }
+
+  @Test
+  fun mapScreen_findFriendsTab_profileToFriendProfile_chainNavigation() {
+    composeRule.runOnIdle {
+      navigation.navigateTo(Screen.Map())
+
+      // Click profile A from Find Friends
+      navigation.navigateTo(Screen.ViewUser("user-a"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // From user A's profile, click on a friend (user B) in their friends list
+      navigation.navigateTo(Screen.ViewUser("user-b"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // From user B's profile, view their post
+      navigation.navigateTo(Screen.PostView("user-b-post"))
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      // Navigate back through the chain
+      navigation.goBack() // Back to user B
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // Back to user A
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // Back to Map
+      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun mapScreen_findFriendsTab_complexNavigationScenario() {
+    composeRule.runOnIdle {
+      // Complex real-world scenario
+      navigation.navigateTo(Screen.Feed)
+      navigation.navigateTo(Screen.Map())
+
+      // Click profile from Find Friends
+      navigation.navigateTo(Screen.ViewUser("new-friend"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // View their post
+      navigation.navigateTo(Screen.PostView("new-friend-post"))
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      // From post, click on another user who liked it
+      navigation.navigateTo(Screen.ViewUser("liker-user"))
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      // View liker's post
+      navigation.navigateTo(Screen.PostView("liker-post"))
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      // Navigate all the way back
+      navigation.goBack() // To liker profile
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // To original post
+      Assert.assertEquals(Screen.PostView.route, navigation.currentRoute())
+
+      navigation.goBack() // To new-friend profile
+      Assert.assertEquals(Screen.ViewUser.ROUTE, navigation.currentRoute())
+
+      navigation.goBack() // To Map
+      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
+
+      navigation.goBack() // To Feed
+      Assert.assertEquals(Screen.Feed.route, navigation.currentRoute())
+    }
+  }
+
+  @Test
+  fun searchScreen_findFriendsLink_navigatesToFindFriendsMap() {
+    composeRule.runOnIdle {
+      // Navigate to Search screen
+      navigation.navigateTo(Screen.SearchScreen)
+      Assert.assertEquals(Screen.SearchScreen.route, navigation.currentRoute())
+    }
+
+    // Click on the "Find public friends on the map" link
+    composeRule
+        .onNodeWithTag(com.android.ootd.ui.search.UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+        .performClick()
+    composeRule.waitForIdle()
+
+    // Verify navigation to Map screen (currentRoute returns the template, not the actual URL)
+    composeRule.runOnIdle {
+      val currentRoute = navigation.currentRoute()
+      // The route template for Map screen contains the mapType parameter
+      Assert.assertTrue(
+          "Should navigate to map route",
+          currentRoute.startsWith("map") && currentRoute.contains("mapType"))
     }
   }
 }

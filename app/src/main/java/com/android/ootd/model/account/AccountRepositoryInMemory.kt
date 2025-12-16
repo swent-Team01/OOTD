@@ -92,6 +92,15 @@ class AccountRepositoryInMemory : AccountRepository {
     }
     accounts[account.uid] = account
     accountUpdates.value = Pair(account.uid, account)
+
+    // If account is public, add to publicLocations collection
+    if (!account.isPrivate && isValidLocation(account.location)) {
+      val publicLocation =
+          PublicLocation(
+              ownerId = account.uid, username = account.username, location = account.location)
+      publicLocations[account.uid] = publicLocation
+      publicLocationUpdates.value = publicLocations.values.toList()
+    }
   }
 
   override suspend fun getAccount(userID: String): Account {

@@ -15,6 +15,7 @@ import com.android.ootd.model.map.Location
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.map.MapScreen
 import com.android.ootd.ui.map.MapScreenTestTags
+import com.android.ootd.ui.map.MapType
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
@@ -91,10 +92,16 @@ class NavigationTest {
                       type = NavType.StringType
                       nullable = true
                       defaultValue = null
+                    },
+                    navArgument("mapType") {
+                      type = NavType.StringType
+                      nullable = true
+                      defaultValue = null
                     })) { backStackEntry ->
               val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
               val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
               val name = backStackEntry.arguments?.getString("name")
+              val mapTypeStr = backStackEntry.arguments?.getString("mapType")
 
               val focusLocation =
                   if (lat != null && lon != null && name != null) {
@@ -103,10 +110,16 @@ class NavigationTest {
                     null
                   }
 
+              val initialMapType =
+                  when (mapTypeStr) {
+                    "FIND_FRIENDS" -> MapType.FIND_FRIENDS
+                    else -> MapType.FRIENDS_POSTS
+                  }
+
               MapScreen(
                   viewModel =
-                      if (focusLocation != null) {
-                        viewModel(factory = MapViewModelFactory(focusLocation))
+                      if (focusLocation != null || initialMapType != MapType.FRIENDS_POSTS) {
+                        viewModel(factory = MapViewModelFactory(focusLocation, initialMapType))
                       } else {
                         viewModel()
                       },
@@ -545,12 +558,13 @@ class NavigationTest {
     composeRule.onNodeWithTag(MapScreenTestTags.SCREEN).assertExists()
 
     composeRule.runOnIdle {
-      // Test go back to Feed
+      // Map is a top-level destination, so going back from Map goes to start destination (Splash)
       navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
 
-      // Test sign out clears stack
+      // Navigate back to Map for sign out test
       navigation.navigateTo(Screen.Map())
+      // Test sign out clears stack
       navigation.navigateTo(Screen.Authentication)
       assertEquals(Screen.Authentication.route, navigation.currentRoute())
     }
@@ -613,9 +627,9 @@ class NavigationTest {
 
       assertTrue(navigation.currentRoute().startsWith("map?"))
 
-      // Test go back to Feed
+      // Map is a top-level destination, so going back goes to Splash (start destination)
       navigation.goBack()
-      assertEquals(Screen.Feed.route, navigation.currentRoute())
+      assertEquals(Screen.Splash.route, navigation.currentRoute())
 
       // Test different locations have different routes
       navigation.navigateTo(

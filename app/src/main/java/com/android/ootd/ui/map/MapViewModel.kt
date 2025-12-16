@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Enum representing the type of map to display. */
@@ -49,7 +51,8 @@ data class MapUiState(
     val focusLocation: Location? = null,
     val isLoading: Boolean = true,
     val errorMsg: String? = null,
-    val selectedMapType: MapType = MapType.FRIENDS_POSTS
+    val selectedMapType: MapType = MapType.FRIENDS_POSTS,
+    val snackbarMessage: String? = null
 )
 
 /**
@@ -61,10 +64,12 @@ data class MapUiState(
 class MapViewModel(
     private val feedRepository: FeedRepository = FeedRepositoryProvider.repository,
     private val accountRepository: AccountRepository = AccountRepositoryProvider.repository,
-    focusLocation: Location? = null
+    focusLocation: Location? = null,
+    initialMapType: MapType = MapType.FRIENDS_POSTS
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(MapUiState(focusLocation = focusLocation))
+  private val _uiState =
+      MutableStateFlow(MapUiState(focusLocation = focusLocation, selectedMapType = initialMapType))
   val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
   // Job to observe posts; allows cancellation when account changes
@@ -137,10 +142,22 @@ class MapViewModel(
                 _uiState.value =
                     _uiState.value.copy(errorMsg = "Failed to load public locations: ${e.message}")
               }
-              .collect { publicLocations ->
-                _uiState.value =
-                    _uiState.value.copy(
-                        publicLocations = publicLocations.filter { isValidLocation(it.location) })
+              .combine(_uiState) { publicLocations, state ->
+                val currentAccount = state.currentAccount
+                val excludedUids =
+                    if (currentAccount != null) {
+                      // Exclude current user and their friends
+                      setOf(currentAccount.uid) + currentAccount.friendUids
+                    } else {
+                      emptySet()
+                    }
+
+                publicLocations.filter {
+                  isValidLocation(it.location) && it.ownerId !in excludedUids
+                }
+              }
+              .collect { filteredPublicLocations ->
+                _uiState.value = _uiState.value.copy(publicLocations = filteredPublicLocations)
               }
         }
   }
@@ -234,6 +251,26 @@ class MapViewModel(
   /** Switch between Friends Posts and Public Profiles map. */
   fun setMapType(mapType: MapType) {
     _uiState.value = _uiState.value.copy(selectedMapType = mapType)
+  }
+
+  /** Check if the user has posted today based on the current account's posts. */
+  suspend fun hasUserPostedToday(): Boolean {
+    val currentUserId = Firebase.auth.currentUser?.uid ?: return false
+    return try {
+      feedRepository.hasPostedToday(currentUserId)
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  /** Show a snackbar message. */
+  fun showSnackbar(message: String) {
+    _uiState.update { it.copy(snackbarMessage = message) }
+  }
+
+  /** Clear the snackbar message. */
+  fun clearSnackbar() {
+    _uiState.update { it.copy(snackbarMessage = null) }
   }
 }
 
