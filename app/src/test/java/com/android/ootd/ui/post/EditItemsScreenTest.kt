@@ -89,8 +89,7 @@ class EditItemsScreenTest {
 
     composeTestRule.onNodeWithText("EDIT ITEMS").assertIsDisplayed()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.PLACEHOLDER_PICTURE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY).assertExists()
-    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA).assertExists()
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.IMAGE_PICKER_BUTTON).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_CATEGORY).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_TYPE).assertExists()
     composeTestRule.onNodeWithTag(EditItemsScreenTestTags.INPUT_ITEM_BRAND).assertExists()
@@ -118,6 +117,9 @@ class EditItemsScreenTest {
   fun `gallery button is clickable`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.IMAGE_PICKER_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_GALLERY)
         .assertHasClickAction()
@@ -127,6 +129,9 @@ class EditItemsScreenTest {
   @Test
   fun `camera button is clickable`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
+
+    composeTestRule.onNodeWithTag(EditItemsScreenTestTags.IMAGE_PICKER_BUTTON).performClick()
+    composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.INPUT_ADD_PICTURE_CAMERA)
@@ -322,8 +327,7 @@ class EditItemsScreenTest {
   fun `buttons have proper text labels`() {
     composeTestRule.setContent { EditItemsScreen(editItemsViewModel = mockViewModel) }
 
-    composeTestRule.onNodeWithText("Select from Gallery").assertExists()
-    composeTestRule.onNodeWithText("Take a new picture").assertExists()
+    composeTestRule.onNodeWithText("Change picture").assertExists()
     composeTestRule
         .onNodeWithTag(EditItemsScreenTestTags.BUTTON_SAVE_CHANGES)
         .assert(hasContentDescription("Save Changes"))

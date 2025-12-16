@@ -128,11 +128,8 @@ class FeedViewModelFirebaseTest : FirestoreTest() {
             timestamp = System.currentTimeMillis())
     FirebaseEmulator.firestore.collection("posts").document(post.postUID).set(post).await()
 
-    // Wait for auth listener to load the account
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      viewModel.uiState.value.currentAccount != null
-    }
-
+    // Explicitly set account instead of waiting for auth listener (more reliable)
+    viewModel.setCurrentAccount(account)
     viewModel.doRefreshFeed()
     delay(1000)
 

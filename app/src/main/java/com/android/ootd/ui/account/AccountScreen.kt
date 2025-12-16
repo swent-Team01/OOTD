@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,10 +49,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.user.User
-import com.android.ootd.ui.feed.SeeItemDetailsDialog
 import com.android.ootd.ui.inventory.InventoryGrid
+import com.android.ootd.ui.post.items.SeeItemDetailsDialog
+import com.android.ootd.ui.theme.DmSerifText
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.DisplayUserPosts
 import com.android.ootd.utils.composables.FriendsNumberBadge
@@ -135,31 +138,46 @@ fun AccountPageContent(
   val screenHeight = LocalConfiguration.current.screenHeightDp.dp
   var showFriendList by remember { mutableStateOf(false) }
 
-  Column(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(colorScheme.background)
-              .verticalScroll(scrollState)
-              .padding(horizontal = 22.dp, vertical = 10.dp)) {
-        AccountHeader(
-            username = uiState.username,
-            profilePicture = uiState.profilePicture,
-            friendCount = uiState.friends.size,
-            onEditAccount = onEditAccount,
-            onFriendCountClick = { showFriendList = true })
+  Scaffold(
+      containerColor = colorScheme.background,
+      topBar = {
+        OOTDTopBar(
+            textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
+            rightComposable = {
+              SettingsButton(
+                  onEditAccount = onEditAccount,
+                  modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
+                  size = 32.dp)
+            },
+            leftComposable = {})
+      }) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding)
+                    .padding(horizontal = 22.dp, vertical = 10.dp)) {
+              Spacer(modifier = Modifier.height(36.dp))
 
-        AccountTabs(
-            selectedTab = uiState.selectedTab,
-            tabs = listOf(AccountTab.Posts, AccountTab.Starred),
-            onSelectTab = onSelectTab)
+              AccountHeader(
+                  username = uiState.username,
+                  profilePicture = uiState.profilePicture,
+                  friendCount = uiState.friends.size,
+                  onFriendCountClick = { showFriendList = true })
 
-        Spacer(modifier = Modifier.height(16.dp))
+              AccountTabs(
+                  selectedTab = uiState.selectedTab,
+                  tabs = listOf(AccountTab.Posts, AccountTab.Starred),
+                  onSelectTab = onSelectTab)
 
-        AccountTabBody(
-            uiState = uiState,
-            onPostClick = onPostClick,
-            onToggleStar = onToggleStar,
-            screenHeight = screenHeight)
+              Spacer(modifier = Modifier.height(16.dp))
+
+              AccountTabBody(
+                  uiState = uiState,
+                  onPostClick = onPostClick,
+                  onToggleStar = onToggleStar,
+                  screenHeight = screenHeight)
+            }
       }
 
   if (showFriendList) {
@@ -167,6 +185,7 @@ fun AccountPageContent(
         onDismissRequest = { showFriendList = false },
         confirmButton = { TextButton(onClick = { showFriendList = false }) { Text("Close") } },
         title = { Text("Friends (${uiState.friends.size})") },
+        containerColor = Secondary,
         text = {
           if (uiState.friends.isEmpty()) {
             Text("No friends yet.")
@@ -174,7 +193,8 @@ fun AccountPageContent(
             LazyColumn(
                 modifier =
                     Modifier.testTag(AccountPageTestTags.FRIEND_LIST_DIALOG)
-                        .heightIn(max = screenHeight * 0.6f)) {
+                        .heightIn(max = screenHeight * 0.6f)
+                        .background(Secondary)) {
                   val friendsToShow =
                       uiState.friendDetails.ifEmpty {
                         uiState.friends.map { id -> User(uid = id, username = id) }
@@ -210,6 +230,7 @@ private fun FriendListItem(friend: User, onClick: (String) -> Unit) {
         ProfilePicture(
             modifier = Modifier,
             size = 48.dp,
+            textStyle = Typography.bodyMedium,
             profilePicture = friend.profilePicture,
             username = displayName,
             shape = CircleShape)
@@ -226,21 +247,8 @@ private fun AccountHeader(
     username: String,
     profilePicture: String,
     friendCount: Int,
-    onEditAccount: () -> Unit,
     onFriendCountClick: () -> Unit
 ) {
-  OOTDTopBar(
-      textModifier = Modifier.testTag(AccountPageTestTags.TITLE_TEXT),
-      rightComposable = {
-        SettingsButton(
-            onEditAccount = onEditAccount,
-            modifier = Modifier.testTag(AccountPageTestTags.SETTINGS_BUTTON),
-            size = 32.dp)
-      },
-      leftComposable = {})
-
-  Spacer(modifier = Modifier.height(36.dp))
-
   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     ProfilePicture(
         modifier =
@@ -258,8 +266,8 @@ private fun AccountHeader(
   ShowText(
       text = username,
       style = Typography.displayLarge,
-      modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT),
-      color = colorScheme.primary)
+      fontFamily = DmSerifText,
+      modifier = Modifier.testTag(AccountPageTestTags.USERNAME_TEXT))
 
   Spacer(modifier = Modifier.height(9.dp))
 

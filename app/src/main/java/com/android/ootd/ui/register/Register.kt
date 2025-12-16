@@ -27,7 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.account.AvatarSection
 import com.android.ootd.ui.account.ProfilePictureEditor
 import com.android.ootd.ui.map.LocationSelectionViewState
-import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -45,8 +45,6 @@ import java.util.Locale
  * Test tags for the Register screen components. Used to identify UI elements in automated tests.
  */
 object RegisterScreenTestTags {
-  /** Test tag for the app logo image */
-  const val APP_LOGO = "appLogo"
 
   /** Test tag for the username input field */
   const val INPUT_REGISTER_UNAME = "inputRegisterUname"
@@ -306,11 +304,11 @@ fun DatePickerModalInput(
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = Primary, disabledContentColor = disabledLabelColor)) {
-              Text(text = "Confirm", fontFamily = Bodoni)
+              Text(text = "Confirm", fontFamily = NotoSans)
             }
       },
       dismissButton = {
-        TextButton(onClick = onLeaveDate) { Text(text = "Dismiss", fontFamily = Bodoni) }
+        TextButton(onClick = onLeaveDate) { Text(text = "Dismiss", fontFamily = NotoSans) }
       }) {
         CompositionLocalProvider(
             androidx.compose.ui.platform.LocalConfiguration provides
@@ -324,7 +322,7 @@ fun DatePickerModalInput(
                         text = "Enter your date of birth",
                         modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
                         color = Primary,
-                        fontFamily = Bodoni)
+                        fontFamily = NotoSans)
                   },
                   headline = {
                     Text(
@@ -332,7 +330,7 @@ fun DatePickerModalInput(
                         modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
                         style = Typography.bodyLarge,
                         color = Primary,
-                        fontFamily = Bodoni)
+                        fontFamily = NotoSans)
                   },
                   modifier = Modifier.testTag(RegisterScreenTestTags.REGISTER_DATE_PICKER))
             }

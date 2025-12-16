@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,6 +43,17 @@ object FeedScreenTestTags {
   const val REFRESHER = "feedRefresher"
 }
 
+/**
+ * Main Feed Screen composable that displays the user's feed of outfit posts.
+ *
+ * @param feedViewModel ViewModel for managing feed state and actions.
+ * @param commentViewModel ViewModel for managing comments state and actions.
+ * @param onAddPostClick Callback when the add post button is clicked.
+ * @param onNotificationIconClick Callback when the notification icon is clicked.
+ * @param onOpenPost Callback when a post is opened.
+ * @param onLocationClick Callback when a location is clicked.
+ * @param onProfileClick Callback when a profile is clicked.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
@@ -51,7 +61,6 @@ fun FeedScreen(
     commentViewModel: CommentViewModel = viewModel(),
     onAddPostClick: () -> Unit,
     onNotificationIconClick: () -> Unit = {},
-    onSeeFitClick: (String) -> Unit = {},
     onOpenPost: (String) -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
     onProfileClick: (String) -> Unit = {}
@@ -75,8 +84,8 @@ fun FeedScreen(
       errorMessage = uiState.errorMessage,
       onClearError = { feedViewModel.setErrorMessage(null) },
       onAddPostClick = onAddPostClick,
+      onBlurredClick = onAddPostClick,
       onNotificationIconClick = onNotificationIconClick,
-      onSeeFitClick = onSeeFitClick,
       onOpenPost = onOpenPost,
       onLocationClick = onLocationClick,
       likes = uiState.likes,
@@ -108,6 +117,28 @@ fun FeedScreen(
   }
 }
 
+/**
+ * Scaffold for the Feed screen, contains the top bar, FAB and the list of posts.
+ *
+ * @param hasPostedToday Whether the user has posted today.
+ * @param posts The list of outfit posts to display.
+ * @param isLoading Whether the feed is currently loading.
+ * @param errorMessage An optional error message to display in a snackbar.
+ * @param onClearError Callback to clear the error message.
+ * @param onAddPostClick Callback when the add post FAB is clicked.
+ * @param onNotificationIconClick Callback when the notification icon is clicked.
+ * @param onOpenPost Callback when a post is opened.
+ * @param onLocationClick Callback when a location is clicked.
+ * @param likes Map of post IDs to like status.
+ * @param likeCounts Map of post IDs to like counts.
+ * @param onLikeClick Callback when a post is liked or unliked.
+ * @param isPublicFeed Whether the current feed is the public feed.
+ * @param onCommentClick Callback when the comment button is clicked.
+ * @param onToggleFeed Callback to toggle between friends and public feed.
+ * @param onProfileClick Callback when a profile is clicked.
+ * @param isRefreshing Whether the feed is currently refreshing.
+ * @param onRefresh Callback to refresh the feed.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FeedScaffold(
@@ -117,8 +148,8 @@ private fun FeedScaffold(
     errorMessage: String?,
     onClearError: () -> Unit,
     onAddPostClick: () -> Unit,
+    onBlurredClick: () -> Unit = {},
     onNotificationIconClick: () -> Unit = {},
-    onSeeFitClick: (String) -> Unit = {},
     onOpenPost: (String) -> Unit,
     onLocationClick: (Location) -> Unit = {},
     likes: Map<String, Boolean> = emptyMap(),
@@ -186,7 +217,7 @@ private fun FeedScaffold(
                   posts = posts,
                   likes = likes,
                   likeCounts = likeCounts,
-                  onSeeFitClick = { post -> onSeeFitClick(post.postUID) },
+                  onBlurredClick = onBlurredClick,
                   onPostClick = onOpenPost,
                   onLocationClick = onLocationClick,
                   onLikeClick = onLikeClick,
@@ -210,20 +241,35 @@ private fun FeedScaffold(
                     contentAlignment = Alignment.Center) {
                       ShowText(
                           text = "Do a fit check to unlock today’s feed",
-                          style = Typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold))
+                          style = Typography.titleLarge)
                     }
               }
             }
       }
 }
 
+/**
+ * Composable that displays a list of outfit posts with pull-to-refresh functionality.
+ *
+ * @param posts The list of outfit posts to display.
+ * @param isBlurred Whether the posts should be displayed in a blurred state.
+ * @param likes Map of post IDs to like status.
+ * @param likeCounts Map of post IDs to like counts.
+ * @param onLikeClick Callback when a post is liked or unliked.
+ * @param onPostClick Callback when a post is clicked.
+ * @param onLocationClick Callback when a location is clicked.
+ * @param onCommentClick Callback when the comment button is clicked.
+ * @param onProfileClick Callback when a profile is clicked.
+ * @param isRefreshing Whether the feed is currently refreshing.
+ * @param onRefresh Callback to refresh the feed.
+ */
 @Composable
 fun FeedList(
     posts: List<OutfitPost>,
     isBlurred: Boolean,
     likes: Map<String, Boolean> = emptyMap(),
     likeCounts: Map<String, Int> = emptyMap(),
-    onSeeFitClick: (OutfitPost) -> Unit = {},
+    onBlurredClick: () -> Unit = {},
     onLikeClick: (OutfitPost) -> Unit = {},
     onPostClick: (String) -> Unit,
     onLocationClick: (Location) -> Unit = {},
@@ -249,7 +295,7 @@ fun FeedList(
                 isLiked = isLiked,
                 likeCount = count,
                 onLikeClick = { onLikeClick(post) },
-                onSeeFitClick = { onSeeFitClick(post) },
+                onBlurredClick = onBlurredClick,
                 onCardClick = { onPostClick(post.postUID) },
                 onLocationClick = onLocationClick,
                 onProfileClick = onProfileClick,
@@ -295,6 +341,7 @@ fun FeedScreenPreview() {
         onNotificationIconClick = {},
         likes = emptyMap(),
         likeCounts = emptyMap(),
+        onBlurredClick = {},
         onLikeClick = {},
         onOpenPost = {},
         onProfileClick = {})

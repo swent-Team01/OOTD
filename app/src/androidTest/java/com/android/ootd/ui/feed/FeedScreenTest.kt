@@ -199,12 +199,7 @@ class FeedScreenTest : FirestoreTest() {
 
     composeTestRule.setContent {
       OutfitPostCard(
-          post = post,
-          isBlurred = false,
-          onSeeFitClick = {},
-          onLikeClick = {},
-          isLiked = false,
-          likeCount = 0)
+          post = post, isBlurred = false, onLikeClick = {}, isLiked = false, likeCount = 0)
     }
 
     composeTestRule.onRoot().assertExists()

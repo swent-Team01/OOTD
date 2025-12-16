@@ -9,9 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -54,9 +59,22 @@ object MapScreenTestTags {
 @SuppressLint("PotentialBehaviorOverride")
 @OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class)
 @Composable
-fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Unit = {}) {
+fun MapScreen(
+    viewModel: MapViewModel = viewModel(),
+    onPostClick: (String) -> Unit = {},
+    onUserProfileClick: (String) -> Unit = {}
+) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  // Show snackbar when message is set
+  LaunchedEffect(uiState.snackbarMessage) {
+    uiState.snackbarMessage?.let { message ->
+      snackbarHostState.showSnackbar(message)
+      viewModel.clearSnackbar()
+    }
+  }
 
   Scaffold(
       modifier = Modifier.testTag(MapScreenTestTags.SCREEN),
@@ -64,7 +82,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
         OOTDTopBar(
             modifier = Modifier.testTag(MapScreenTestTags.TOP_BAR),
             textModifier = Modifier.testTag(MapScreenTestTags.TOP_BAR_TITLE),
-            centerText = "MAP")
+            centerText = "OOTD")
       },
       content = { paddingValues ->
         Box(
@@ -82,9 +100,13 @@ fun MapScreen(viewModel: MapViewModel = viewModel(), onPostClick: (String) -> Un
                     uiState = uiState,
                     viewModel = viewModel,
                     onPostClick = onPostClick,
+                    onUserProfileClick = onUserProfileClick,
                     context = context)
               }
             }
+      },
+      snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState) { data -> Snackbar(snackbarData = data) }
       })
 }
 
@@ -94,6 +116,7 @@ private fun MapContent(
     uiState: MapUiState,
     viewModel: MapViewModel,
     onPostClick: (String) -> Unit,
+    onUserProfileClick: (String) -> Unit,
     context: Context
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
@@ -127,6 +150,7 @@ private fun MapContent(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             viewModel = viewModel,
+            onUserProfileClick = onUserProfileClick,
             context = context)
       }
     }
@@ -186,6 +210,7 @@ private fun FindFriendsMap(
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState,
     viewModel: MapViewModel,
+    onUserProfileClick: (String) -> Unit,
     context: Context
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -203,9 +228,7 @@ private fun FindFriendsMap(
             clusterManager = clusterManager,
             userRepository = UserRepositoryProvider.repository)
       },
-      onItemClick = {
-        // TODO: Add navigation to user profile
-      })
+      onItemClick = { item -> onUserProfileClick(item.userId) })
 }
 
 /**

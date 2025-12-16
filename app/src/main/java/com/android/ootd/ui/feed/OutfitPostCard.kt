@@ -6,10 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Comment
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.rounded.ChatBubbleOutline
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,13 +22,11 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
@@ -47,13 +45,11 @@ object OutfitPostCardTestTags {
   const val POST_IMAGE = "postImage"
   const val POST_IMAGE_BOX = "postImageBox"
   const val POST_DESCRIPTION = "postDescription"
-  const val SEE_FIT_BUTTON = "seeFitButton"
   const val PROFILE_PIC = "profilePic"
   const val PROFILE_INITIAL = "profileInitial"
   const val BLUR_OVERLAY = "blurOverlay"
   const val REMAINING_TIME = "remainingTime"
   const val EXPIRED_INDICATOR = "expiredIndicator"
-
   const val POST_LOCATION = "postLocation"
   const val LIKE_BUTTON = "likeButton"
   const val LIKE_COUNT = "likeCount"
@@ -113,10 +109,12 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
             remainingMs <= 0L -> {
               "Expired" to OutfitPostCardTestTags.EXPIRED_INDICATOR
             }
+
             remainingMs < 60 * 60 * 1000L -> {
               val mins = (remainingMs / (60 * 1000L)).coerceAtLeast(1)
               "${mins}m left" to OutfitPostCardTestTags.REMAINING_TIME
             }
+
             else -> {
               val hrs = (remainingMs / (60 * 60 * 1000L)).coerceAtLeast(1)
               "${hrs}h left" to OutfitPostCardTestTags.REMAINING_TIME
@@ -143,20 +141,28 @@ private fun ProfileSection(post: OutfitPost, onProfileClick: (String) -> Unit = 
 @Composable
 private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_BUTTON)) {
-          Icon(
-              imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-              contentDescription = if (isLiked) "Liked" else "Unliked",
-              tint = if (isLiked) MaterialTheme.colorScheme.error else OnSecondaryContainer)
+    val iconTint =
+        when {
+          !enabled -> Tertiary
+          isLiked -> MaterialTheme.colorScheme.error
+          else -> OnSecondaryContainer
         }
-    Spacer(modifier = Modifier.width(1.dp))
+
+    Icon(
+        imageVector = if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+        contentDescription = if (isLiked) "Liked" else "Unliked",
+        tint = iconTint,
+        modifier =
+            Modifier.size(26.dp)
+                .clickable(enabled = enabled, onClick = onClick)
+                .testTag(OutfitPostCardTestTags.LIKE_BUTTON))
+
+    Spacer(modifier = Modifier.width(4.dp))
+
     Text(
         text = likeCount.toString(),
         style = Typography.bodyMedium,
-        color = OnSecondaryContainer,
+        color = if (enabled) OnSecondaryContainer else Tertiary,
         modifier = Modifier.testTag(OutfitPostCardTestTags.LIKE_COUNT))
   }
 }
@@ -175,25 +181,18 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
           Modifier.fillMaxWidth()
               .clip(RoundedCornerShape(12.dp))
               .background(White)
+              .aspectRatio(3f / 4f)
               .testTag(OutfitPostCardTestTags.POST_IMAGE_BOX)
-              .then(modifier)) {
-        val context = LocalContext.current
-
+              .then(modifier),
+      contentAlignment = Alignment.Center) {
         AsyncImage(
-            model =
-                ImageRequest.Builder(context)
-                    .data(post.outfitURL.ifBlank { null })
-                    .crossfade(true)
-                    .allowHardware(false)
-                    .memoryCacheKey(post.postUID) // Ensures unique cache key per image ID
-                    .diskCacheKey(post.postUID) // Ensures unique disk cache key per image ID
-                    .build(),
+            model = post.outfitURL.ifBlank { null },
             contentDescription = "Outfit image",
             modifier =
-                Modifier.fillMaxSize()
+                Modifier.fillMaxWidth()
                     .testTag(OutfitPostCardTestTags.POST_IMAGE)
                     .then(if (isBlurred) Modifier.blur(12.dp) else Modifier),
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Crop,
             placeholder = rememberAsyncImagePainter("https://via.placeholder.com/600x400"),
             error = rememberAsyncImagePainter("https://via.placeholder.com/600x400?text=No+Image"))
       }
@@ -207,47 +206,27 @@ private fun PostImage(post: OutfitPost, isBlurred: Boolean, modifier: Modifier =
  * @param onSeeFitClick Callback when "See fit" button is clicked, passing the post UID.
  */
 @Composable
-private fun DescriptionAndButton(
-    post: OutfitPost,
-    isBlurred: Boolean,
-    onSeeFitClick: (String) -> Unit
-) {
+private fun PostDescription(post: OutfitPost) {
   var expanded by remember { mutableStateOf(false) }
 
-  Row(
-      modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceBetween) {
-        val descriptionText =
-            if (post.description.isNotBlank()) {
-              "${post.name}: ${post.description}"
-            } else {
-              post.name
-            }
-
-        Text(
-            text = descriptionText,
-            style = Typography.bodyLarge,
-            color = Primary,
-            maxLines = if (expanded) Int.MAX_VALUE else 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier.weight(1f)
-                    .padding(end = 8.dp)
-                    .testTag(OutfitPostCardTestTags.POST_DESCRIPTION)
-                    .clickable { expanded = !expanded })
-
-        Button(
-            onClick = { onSeeFitClick(post.postUID) },
-            enabled = !isBlurred,
-            shape = RoundedCornerShape(50),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = Primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-            modifier = Modifier.testTag(OutfitPostCardTestTags.SEE_FIT_BUTTON).height(36.dp)) {
-              Text("See fit", style = Typography.bodySmall)
-            }
+  val descriptionText =
+      if (post.description.isNotBlank()) {
+        "${post.name}: ${post.description}"
+      } else {
+        post.name
       }
+
+  Text(
+      text = descriptionText,
+      style = Typography.bodyLarge,
+      color = Primary,
+      maxLines = if (expanded) Int.MAX_VALUE else 2,
+      overflow = TextOverflow.Ellipsis,
+      modifier =
+          Modifier.fillMaxWidth()
+              .padding(top = 8.dp)
+              .testTag(OutfitPostCardTestTags.POST_DESCRIPTION)
+              .clickable { expanded = !expanded })
 }
 
 /**
@@ -271,8 +250,8 @@ fun OutfitPostCard(
     modifier: Modifier = Modifier,
     isLiked: Boolean,
     likeCount: Int,
+    onBlurredClick: () -> Unit = {},
     onLikeClick: (String) -> Unit,
-    onSeeFitClick: (String) -> Unit = {},
     onCardClick: (String) -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
     onCommentClick: (OutfitPost) -> Unit = {},
@@ -297,13 +276,13 @@ fun OutfitPostCard(
                 // Click to get details enabled only when not blurred
                 val clickableModifier =
                     if (isBlurred) {
-                      Modifier
+                      Modifier.clickable { onBlurredClick() }
                     } else {
                       Modifier.clickable { onCardClick(post.postUID) }
                     }
                 PostImage(post, isBlurred, modifier = clickableModifier)
                 PostLocation(post.location, onClick = { onLocationClick(post.location) })
-                DescriptionAndButton(post, isBlurred, onSeeFitClick)
+                PostDescription(post)
                 // Reactions row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -321,8 +300,6 @@ fun OutfitPostCard(
                           onClick = { onCommentClick(post) })
                     }
               }
-
-              Spacer(modifier = Modifier.height(8.dp))
             }
 
         // Blur overlay for locked posts
@@ -362,10 +339,13 @@ private fun CommentButton(commentCount: Int, enabled: Boolean, onClick: () -> Un
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.clickable(enabled = enabled) { onClick() }.testTag("commentButton")) {
         Icon(
-            imageVector = Icons.AutoMirrored.Outlined.Comment,
+            imageVector = Icons.Rounded.ChatBubbleOutline,
             contentDescription = "Comments",
-            tint = if (enabled) OnSecondaryContainer else Tertiary)
+            tint = if (enabled) OnSecondaryContainer else Tertiary,
+            modifier = Modifier.size(26.dp).offset(y = 1.dp))
+
         Spacer(modifier = Modifier.width(4.dp))
+
         Text(
             text = commentCount.toString(),
             style = Typography.bodyMedium,
