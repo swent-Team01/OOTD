@@ -267,6 +267,7 @@ open class FeedViewModel(
    * Computes whether the user has posted today considering both cached and database data.
    *
    * @param uid The user ID of the current account.
+   * @param hasPostedTodayLocal Whether the user has posted today based on cached data.
    * @return True if the user has posted today, false otherwise.
    */
   private suspend fun computeHasPostedToday(uid: String, hasPostedTodayLocal: Boolean): Boolean {
