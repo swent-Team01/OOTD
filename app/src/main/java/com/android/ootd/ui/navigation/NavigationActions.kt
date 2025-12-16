@@ -92,7 +92,7 @@ sealed class Screen(
       Screen(
           route = buildMapRoute(latitude, longitude, locationName, mapType),
           name = "Map",
-          isTopLevelDestination = false) {
+          isTopLevelDestination = true) {
     companion object {
       const val route = "map?lat={lat}&lon={lon}&name={name}&mapType={mapType}"
 

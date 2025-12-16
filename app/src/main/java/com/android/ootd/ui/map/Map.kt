@@ -9,9 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -61,6 +66,15 @@ fun MapScreen(
 ) {
   val uiState by viewModel.uiState.collectAsState()
   val context = LocalContext.current
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  // Show snackbar when message is set
+  LaunchedEffect(uiState.snackbarMessage) {
+    uiState.snackbarMessage?.let { message ->
+      snackbarHostState.showSnackbar(message)
+      viewModel.clearSnackbar()
+    }
+  }
 
   Scaffold(
       modifier = Modifier.testTag(MapScreenTestTags.SCREEN),
@@ -68,7 +82,7 @@ fun MapScreen(
         OOTDTopBar(
             modifier = Modifier.testTag(MapScreenTestTags.TOP_BAR),
             textModifier = Modifier.testTag(MapScreenTestTags.TOP_BAR_TITLE),
-            centerText = "MAP")
+            centerText = "OOTD")
       },
       content = { paddingValues ->
         Box(
@@ -90,6 +104,9 @@ fun MapScreen(
                     context = context)
               }
             }
+      },
+      snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState) { data -> Snackbar(snackbarData = data) }
       })
 }
 
