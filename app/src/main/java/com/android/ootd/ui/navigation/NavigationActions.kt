@@ -73,13 +73,6 @@ sealed class Screen(
     }
   }
 
-  data class SeeFitScreen(val postUuid: String) :
-      Screen(route = "seeFit/${postUuid}", name = "See Fit", isTopLevelDestination = false) {
-    companion object {
-      const val route = "seeFit/{postUuid}"
-    }
-  }
-
   object Onboarding :
       Screen(route = "onboarding", name = "Onboarding", isTopLevelDestination = true)
 
