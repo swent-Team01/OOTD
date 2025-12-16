@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Tab
@@ -52,8 +51,7 @@ fun OOTDTopBar(
         Text(
             modifier = textModifier,
             text = centerText,
-            style =
-                Typography.displayLarge.copy(fontWeight = FontWeight.ExtraBold, color = Primary))
+            style = Typography.displayLarge.copy(color = Primary))
       },
       navigationIcon = { leftComposable() },
       actions = { rightComposable() },
