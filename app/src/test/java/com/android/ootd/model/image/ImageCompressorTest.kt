@@ -5,13 +5,20 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.core.net.toUri
+import androidx.exifinterface.media.ExifInterface
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileInputStream
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -82,7 +89,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
     Assert.assertArrayEquals(originalBytes, result)
   }
 
@@ -101,8 +108,8 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
-    Assert.assertTrue(
+    assertNotNull(result)
+    assertTrue(
         "Compressed image should be smaller than original", result!!.size < originalBytes.size)
   }
 
@@ -121,7 +128,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
     // PNG is lossless, so quality parameter is ignored
     // The result should still be valid
   }
@@ -141,7 +148,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
   }
 
   @Test
@@ -159,7 +166,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
   }
 
   @Test
@@ -177,9 +184,9 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
     // The compression should have reduced the size
-    Assert.assertTrue("Result should exist and be compressed", result!!.size < originalBytes.size)
+    assertTrue("Result should exist and be compressed", result!!.size < originalBytes.size)
   }
 
   @Test
@@ -197,7 +204,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
     // Should stop compressing at quality > 20
   }
 
@@ -216,7 +223,7 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
   }
 
   @Test
@@ -234,7 +241,103 @@ class ImageCompressorTest {
 
     val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
 
-    Assert.assertNotNull(result)
+    assertNotNull(result)
     // Should return the best compression it can achieve
+  }
+
+  @Test
+  fun `compressImage applies EXIF rotation correctly`() = runTest {
+    mockkStatic(BitmapFactory::class)
+    val threshold = 1L // force compression
+
+    // (width = 200, height = 100) landscape image
+    val originalBitmap = createTestBitmap(200, 100)
+
+    val testCases =
+        listOf(
+            0 to Pair(200, 100), // No rotation
+            90 to Pair(100, 200), // Rotate to portrait
+            180 to Pair(200, 100), // Upside down
+            270 to Pair(100, 200) // Rotate to portrait other way
+            )
+
+    testCases.forEach { (rotationDegrees, expectedSize) ->
+
+      // Create JPEG bytes
+      val jpegBytes =
+          ByteArrayOutputStream().use { out ->
+            originalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+            out.toByteArray()
+          }
+
+      // Write EXIF orientation
+      val tempFile = File.createTempFile("exif_test", ".jpg").apply { writeBytes(jpegBytes) }
+
+      ExifInterface(tempFile).apply {
+        setAttribute(
+            ExifInterface.TAG_ORIENTATION,
+            when (rotationDegrees) {
+              0 -> ExifInterface.ORIENTATION_NORMAL
+              90 -> ExifInterface.ORIENTATION_ROTATE_90
+              180 -> ExifInterface.ORIENTATION_ROTATE_180
+              270 -> ExifInterface.ORIENTATION_ROTATE_270
+              else -> ExifInterface.ORIENTATION_NORMAL
+            }.toString())
+        saveAttributes()
+      }
+
+      val uri = tempFile.toUri()
+
+      every { mockContentResolver.getType(uri) } returns "image/jpeg"
+      every { mockContentResolver.openInputStream(uri) } answers { FileInputStream(tempFile) }
+
+      // Run compressor
+      val resultBytes = imageCompressor.compressImage(uri, threshold, mockContext)
+
+      assertNotNull("Result should not be null for rotation $rotationDegrees", resultBytes)
+
+      val resultBitmap = BitmapFactory.decodeByteArray(resultBytes, 0, resultBytes!!.size)
+
+      assertEquals(
+          "Bitmap width should match expected for rotation $rotationDegrees",
+          expectedSize.first,
+          resultBitmap!!.width)
+
+      assertEquals(
+          "Bitmap height should match expected for rotation $rotationDegrees",
+          expectedSize.second,
+          resultBitmap.height)
+    }
+  }
+
+  @Test
+  fun `compressImage handles images with no EXIF rotation`() = runTest {
+    mockkStatic(BitmapFactory::class)
+
+    val bitmap = createTestBitmap(200, 100)
+    val originalBytes = bitmapToByteArray(bitmap, Bitmap.CompressFormat.JPEG, 100)
+    val threshold = 50000L
+
+    // Mock content resolver to return null for openInputStream on EXIF read (no EXIF data)
+    every { mockContentResolver.getType(mockUri) } returns "image/jpeg"
+    var callCount = 0
+    every { mockContentResolver.openInputStream(mockUri) } answers
+        {
+          callCount++
+          if (callCount == 1) {
+            // First call: return image bytes
+            ByteArrayInputStream(originalBytes)
+          } else {
+            // Second call: return null to simulate no EXIF data
+            null
+          }
+        }
+    every { BitmapFactory.decodeByteArray(any(), any(), any()) } returns bitmap
+
+    val result = imageCompressor.compressImage(mockUri, threshold, mockContext)
+
+    // Should still compress successfully even without EXIF data
+    assertNotNull(result)
+    assertTrue("Result should be non-empty", result!!.isNotEmpty())
   }
 }
