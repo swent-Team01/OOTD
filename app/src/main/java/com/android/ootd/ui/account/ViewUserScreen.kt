@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -60,6 +62,7 @@ object ViewUserScreenTags {
   const val LOADING_TAG = "viewUserLoading"
   const val BACK_BUTTON_TAG = "viewUserBackButton"
   const val FOLLOW_BUTTON_TAG = "viewUserFollowButton"
+  const val DIVIDER_LINE = "divideLine"
 }
 
 /**
@@ -149,7 +152,7 @@ private fun ViewUserProfileContent(
             hasRequestPending = uiState.hasRequestPending,
             onFollowClick = onFollowClick)
 
-        Spacer(modifier = Modifier.height(9.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         ShowText(text = friendStatusText, style = Typography.bodyLarge, color = OnSurface)
 
@@ -164,7 +167,7 @@ private fun ViewUserProfileContent(
             color = OnSurface,
             modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Posts section
         if (uiState.isFriend) {
@@ -176,8 +179,10 @@ private fun ViewUserProfileContent(
                 textAlign = TextAlign.Left,
                 modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(9.dp))
           }
+
+          DividerLine()
 
           DisplayUserPosts(
               posts = posts,
@@ -186,6 +191,8 @@ private fun ViewUserProfileContent(
               padding = 22.dp,
               spacing = 8.dp)
         } else {
+          DividerLine()
+
           ShowText(
               text = "Add this user as a friend to see their posts",
               style = Typography.bodyMedium,
@@ -219,4 +226,14 @@ private fun ViewUserFollowButton(
           Text(text = insideText)
         }
   }
+}
+
+/** Displays a horizontal divider line with consistent styling. */
+@Composable
+private fun DividerLine() {
+  HorizontalDivider(
+      modifier = Modifier.fillMaxWidth().testTag(ViewUserScreenTags.DIVIDER_LINE),
+      thickness = 1.dp,
+      color = Primary.copy(alpha = 0.6f))
+  Spacer(modifier = Modifier.height(16.dp))
 }
