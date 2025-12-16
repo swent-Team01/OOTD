@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -46,9 +47,10 @@ import com.android.ootd.ui.account.ViewUserProfile
 import com.android.ootd.ui.authentication.SignInScreen
 import com.android.ootd.ui.authentication.SplashScreen
 import com.android.ootd.ui.feed.FeedScreen
-import com.android.ootd.ui.feed.SeeFitScreen
 import com.android.ootd.ui.inventory.InventoryScreen
 import com.android.ootd.ui.map.MapScreen
+import com.android.ootd.ui.map.MapType
+import com.android.ootd.ui.map.MapViewModel
 import com.android.ootd.ui.map.MapViewModelFactory
 import com.android.ootd.ui.navigation.BottomNavigationBar
 import com.android.ootd.ui.navigation.NavigationActions
@@ -70,6 +72,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 /**
@@ -180,15 +183,23 @@ fun OOTDApp(
   // Observe nav backstack to reactively show the bottom bar
   val navBackStackEntry = navController.currentBackStackEntryAsState()
   val selectedRoute = navBackStackEntry.value?.destination?.route ?: startDestination
+
+  // List of routes where bottom bar should be shown
+  val bottomBarRoutes =
+      listOf(
+          Screen.Feed.route,
+          Screen.SearchScreen.route,
+          Screen.InventoryScreen.route,
+          Screen.AccountView.route,
+          Screen.Map.route,
+          Screen.NotificationsScreen.route)
+
   val showBottomBar =
-      selectedRoute in
-          listOf(
-              Screen.Feed.route,
-              Screen.SearchScreen.route,
-              Screen.InventoryScreen.route,
-              Screen.AccountView.route,
-              Screen.Map.route,
-              Screen.NotificationsScreen.route)
+      bottomBarRoutes.any { route ->
+        val currentBaseRoute = selectedRoute.split("?").first().split("/").first()
+        val baseRoute = route.split("?").first().split("/").first()
+        currentBaseRoute == baseRoute
+      }
 
   // Create ViewModel using factory to properly inject SharedPreferences
   val onboardingViewModel: OnboardingViewModel =
@@ -315,9 +326,6 @@ fun OOTDApp(
                       onOpenPost = { postId ->
                         navigationActions.navigateTo(Screen.PostView(postId))
                       },
-                      onSeeFitClick = { postUuid ->
-                        navigationActions.navigateTo(Screen.SeeFitScreen(postUuid))
-                      },
                       onLocationClick = { location ->
                         navigationActions.navigateTo(
                             Screen.Map(
@@ -335,7 +343,10 @@ fun OOTDApp(
                   UserSearchScreen(
                       onBackPressed = { navigationActions.goBack() },
                       onUserClick = { userId ->
-                        navigationActions.navigateToUserProfile(userId, currentUserId) // ← USE HERE
+                        navigationActions.navigateToUserProfile(userId, currentUserId)
+                      },
+                      onFindFriendsClick = {
+                        navigationActions.navigateTo(Screen.Map(mapType = "FIND_FRIENDS"))
                       })
                 }
 
@@ -375,10 +386,16 @@ fun OOTDApp(
                               type = NavType.StringType
                               nullable = true
                               defaultValue = null
+                            },
+                            navArgument("mapType") {
+                              type = NavType.StringType
+                              nullable = true
+                              defaultValue = null
                             })) { backStackEntry ->
                       val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
                       val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
                       val name = backStackEntry.arguments?.getString("name")
+                      val mapTypeStr = backStackEntry.arguments?.getString("mapType")
 
                       // Create focus location only if all parameters are provided
                       val focusLocation =
@@ -388,15 +405,47 @@ fun OOTDApp(
                             null
                           }
 
+                      // Parse map type from navigation argument
+                      val initialMapType =
+                          when (mapTypeStr) {
+                            "FIND_FRIENDS" -> MapType.FIND_FRIENDS
+                            else -> MapType.FRIENDS_POSTS
+                          }
+
+                      val mapViewModel: MapViewModel =
+                          if (focusLocation != null) {
+                            viewModel(factory = MapViewModelFactory(focusLocation))
+                          } else {
+                            viewModel()
+                          }
+
+                      val coroutineScope = rememberCoroutineScope()
+
+                      val currentUserId = Firebase.auth.currentUser?.uid
+
                       MapScreen(
                           viewModel =
-                              if (focusLocation != null) {
-                                viewModel(factory = MapViewModelFactory(focusLocation))
+                              if (focusLocation != null ||
+                                  initialMapType != MapType.FRIENDS_POSTS) {
+                                viewModel(
+                                    factory = MapViewModelFactory(focusLocation, initialMapType))
                               } else {
                                 viewModel()
                               },
                           onPostClick = { postId ->
-                            navigationActions.navigateTo(Screen.PostView(postId))
+                            // Check if user has posted today before navigating
+                            coroutineScope.launch {
+                              val hasPosted = mapViewModel.hasUserPostedToday()
+                              if (hasPosted) {
+                                navigationActions.navigateTo(Screen.PostView(postId))
+                              } else {
+                                mapViewModel.showSnackbar(
+                                    "You have to do a fitcheck before you can view the posts")
+                              }
+                            }
+                          },
+                          onUserProfileClick = { userId ->
+                            navigationActions.navigateToUserProfile(userId, currentUserId)
                           })
                     }
 
@@ -425,21 +474,6 @@ fun OOTDApp(
                             navigationActions.goBack()
                           },
                           overridePhoto = testMode)
-                    }
-
-                composable(
-                    route = Screen.SeeFitScreen.route,
-                    arguments = listOf(navArgument("postUuid") { type = NavType.StringType })) {
-                        navBackStackEntry ->
-                      val postUuid = navBackStackEntry.arguments?.getString("postUuid") ?: ""
-
-                      // Placeholder for SeeFitScreen
-                      SeeFitScreen(
-                          postUuid = postUuid,
-                          goBack = { navigationActions.goBack() },
-                          onEditItem = { itemUuid ->
-                            navController.navigate(Screen.EditItem(itemUuid).route)
-                          })
                     }
 
                 composable(
@@ -524,6 +558,9 @@ fun OOTDApp(
                             onBack = { navigationActions.goBack() },
                             onProfileClick = { userId ->
                               navigationActions.navigateToUserProfile(userId, currentUserId)
+                            },
+                            onEditItem = { itemUuid ->
+                              navigationActions.navigateTo(Screen.EditItem(itemUuid))
                             })
                       }
                     }

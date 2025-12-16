@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import com.android.ootd.model.items.ImageData
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.Material
+import com.android.ootd.ui.post.items.ItemCard
 import com.android.ootd.ui.theme.OOTDTheme
 import org.junit.Rule
 import org.junit.Test

@@ -26,7 +26,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.android.ootd.R
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.emptyLocation
@@ -39,6 +38,7 @@ import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.LocationUtils
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.CommonTextField
+import com.android.ootd.utils.composables.ImageSelectionDialog
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ShowText
 
@@ -54,6 +54,7 @@ object FitCheckScreenTestTags {
   const val CHOOSE_GALLERY_BUTTON = "fitCheckGalleryButton"
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
+  const val MISSING_PHOTO_WARNING = "fitCheckMissingPhotoWarning"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
   const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
@@ -78,17 +79,8 @@ private fun ImagePreviewBox(imageUri: Uri) {
               modifier = Modifier.size(80.dp).testTag(FitCheckScreenTestTags.PLACEHOLDER_ICON),
               tint = Color.Gray)
         } else {
-          val context = LocalContext.current
-
           AsyncImage(
-              model =
-                  ImageRequest.Builder(context)
-                      .data(imageUri)
-                      .crossfade(true)
-                      .allowHardware(false)
-                      .memoryCacheKey(imageUri.toString())
-                      .diskCacheKey(imageUri.toString())
-                      .build(),
+              model = imageUri,
               contentDescription = "Selected photo",
               modifier = Modifier.fillMaxSize(),
               contentScale = ContentScale.Crop)
@@ -133,33 +125,19 @@ private fun PhotoSelectionDialog(
     onChooseFromGallery: () -> Unit
 ) {
   if (showDialog) {
-    AlertDialog(
+    ImageSelectionDialog(
         modifier = Modifier.testTag(FitCheckScreenTestTags.ALERT_DIALOG),
         onDismissRequest = onDismiss,
-        title = { Text("Select Photo") },
-        text = {
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(
-                onClick = {
-                  onDismiss()
-                  onTakePhoto()
-                },
-                modifier = Modifier.testTag(FitCheckScreenTestTags.TAKE_PHOTO_BUTTON)) {
-                  Text("Take Photo")
-                }
-
-            TextButton(
-                onClick = {
-                  onChooseFromGallery()
-                  onDismiss()
-                },
-                modifier = Modifier.testTag(FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)) {
-                  Text("Choose from Gallery")
-                }
-          }
+        onTakePhoto = {
+          onDismiss()
+          onTakePhoto()
         },
-        confirmButton = {},
-        dismissButton = {})
+        onPickFromGallery = {
+          onChooseFromGallery()
+          onDismiss()
+        },
+        takePhotoTag = FitCheckScreenTestTags.TAKE_PHOTO_BUTTON,
+        pickGalleryTag = FitCheckScreenTestTags.CHOOSE_GALLERY_BUTTON)
   }
 }
 
@@ -236,7 +214,7 @@ fun FitCheckScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FitCheckScreenContent(
+internal fun FitCheckScreenContent(
     uiState: FitCheckUIState,
     locationSelectionViewModel: LocationSelectionViewModel? = null,
     onNextClick: (String, String, Location) -> Unit = { _, _, _ -> },
@@ -250,6 +228,10 @@ private fun FitCheckScreenContent(
     overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
+  var showMissingPhotoWarning by remember { mutableStateOf(false) }
+  val hasPhoto = uiState.image != Uri.EMPTY
+
+  LaunchedEffect(hasPhoto) { if (hasPhoto) showMissingPhotoWarning = false }
 
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
@@ -274,7 +256,7 @@ private fun FitCheckScreenContent(
                     locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
                 onNextClick(uiState.image.toString(), uiState.description, finalLocation)
               } else {
-                onDescriptionChange(uiState.description) // no-op; real screen sets error
+                showMissingPhotoWarning = true
               }
             },
             modifier =
@@ -296,55 +278,69 @@ private fun FitCheckScreenContent(
                   }
             }
       }) { innerPadding ->
-        Column(
-            modifier =
-                Modifier.padding(innerPadding)
-                    .padding(24.dp)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)) {
-              // Image preview
-              ImagePreviewBox(imageUri = uiState.image)
+        Box(modifier = Modifier.fillMaxSize()) {
+          Column(
+              modifier =
+                  Modifier.padding(innerPadding)
+                      .padding(24.dp)
+                      .fillMaxSize()
+                      .verticalScroll(rememberScrollState()),
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                // Image preview
+                ImagePreviewBox(imageUri = uiState.image)
 
-              // Error message
-              uiState.errorMessage?.let { msg ->
-                Text(
-                    text = msg,
-                    color = MaterialTheme.colorScheme.error,
-                    style = Typography.bodyMedium,
-                    modifier =
-                        Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+                // Error message
+                uiState.errorMessage?.let { msg ->
+                  Text(
+                      text = msg,
+                      color = MaterialTheme.colorScheme.error,
+                      style = Typography.bodyMedium,
+                      modifier =
+                          Modifier.padding(top = 8.dp)
+                              .testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+                }
+
+                // Missing Photo Warning Text
+                if (showMissingPhotoWarning) {
+                  Text(
+                      text = "Please add a photo before continuing.",
+                      color = MaterialTheme.colorScheme.error,
+                      style = Typography.bodyMedium,
+                      modifier =
+                          Modifier.padding(horizontal = 8.dp)
+                              .testTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING))
+                }
+
+                // Description field with counter
+                DescriptionInputField(
+                    description = uiState.description, onDescriptionChange = onDescriptionChange)
+
+                // Add photo button
+                Button(
+                    onClick = { showDialog = true },
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                      Text("Add Fit Photo", color = Color.White)
+                    }
+
+                // Location section (optional)
+                locationSelectionViewModel?.let { viewModel ->
+                  LocationSection(
+                      locationSelectionViewModel = viewModel,
+                      onGPSClick = onGPSClick,
+                      onLocationSelect = onLocationSelect)
+                }
+
+                // Photo selection dialog
+                PhotoSelectionDialog(
+                    showDialog = showDialog,
+                    onDismiss = { showDialog = false },
+                    onTakePhoto = onTakePhoto,
+                    onChooseFromGallery = onChooseFromGallery)
               }
-
-              // Description field with counter
-              DescriptionInputField(
-                  description = uiState.description, onDescriptionChange = onDescriptionChange)
-
-              // Add photo button
-              Button(
-                  onClick = { showDialog = true },
-                  shape = RoundedCornerShape(24.dp),
-                  modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Text("Add Fit Photo", color = Color.White)
-                  }
-
-              // Location section (optional)
-              locationSelectionViewModel?.let { viewModel ->
-                LocationSection(
-                    locationSelectionViewModel = viewModel,
-                    onGPSClick = onGPSClick,
-                    onLocationSelect = onLocationSelect)
-              }
-
-              // Photo selection dialog
-              PhotoSelectionDialog(
-                  showDialog = showDialog,
-                  onDismiss = { showDialog = false },
-                  onTakePhoto = onTakePhoto,
-                  onChooseFromGallery = onChooseFromGallery)
-            }
+        }
       }
 }
 

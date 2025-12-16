@@ -1,6 +1,10 @@
-package com.android.ootd.ui.feed
+package com.android.ootd.ui.post.items
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,11 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -61,13 +63,14 @@ fun SeeItemDetailsDialog(
     onDismissRequest: () -> Unit = {},
 ) {
   Dialog(onDismissRequest = { onDismissRequest() }) {
-    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     Card(
         modifier =
             Modifier.fillMaxWidth(0.9f)
                 .wrapContentHeight()
                 .padding(16.dp)
-                .testTag(SeeFitScreenTestTags.ITEM_DETAILS_DIALOG),
+                .testTag(ItemsTestTags.ITEM_DETAILS_DIALOG),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Secondary)) {
           Column(
@@ -82,28 +85,24 @@ fun SeeItemDetailsDialog(
                         Modifier.fillMaxWidth()
                             .aspectRatio(3f / 4f)
                             .clip(RoundedCornerShape(12.dp))
-                            .testTag(SeeFitScreenTestTags.ITEM_IMAGE),
+                            .testTag(ItemsTestTags.ITEM_IMAGE),
                     placeholder = painterResource(R.drawable.ic_photo_placeholder),
                     error = painterResource(R.drawable.ic_photo_placeholder),
                     contentScale = ContentScale.Crop)
 
                 DetailTextRow(
-                    label = "Category",
-                    value = item.category,
-                    tag = SeeFitScreenTestTags.ITEM_CATEGORY)
+                    label = "Category", value = item.category, tag = ItemsTestTags.ITEM_CATEGORY)
 
                 item.type
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      DetailTextRow(
-                          label = "Type", value = it, tag = SeeFitScreenTestTags.ITEM_TYPE)
+                      DetailTextRow(label = "Type", value = it, tag = ItemsTestTags.ITEM_TYPE)
                     }
 
                 item.brand
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      DetailTextRow(
-                          label = "Brand", value = it, tag = SeeFitScreenTestTags.ITEM_BRAND)
+                      DetailTextRow(label = "Brand", value = it, tag = ItemsTestTags.ITEM_BRAND)
                     }
 
                 item.price?.let {
@@ -111,7 +110,7 @@ fun SeeItemDetailsDialog(
                   DetailTextRow(
                       label = "Price",
                       value = "${String.format("%.2f", it)} $c",
-                      tag = SeeFitScreenTestTags.ITEM_PRICE)
+                      tag = ItemsTestTags.ITEM_PRICE)
                 }
 
                 if (item.material.isNotEmpty()) {
@@ -126,39 +125,32 @@ fun SeeItemDetailsDialog(
                           .joinToString(separator = " - ")
 
                   DetailTextRow(
-                      label = "Material",
-                      value = materialText,
-                      tag = SeeFitScreenTestTags.ITEM_MATERIAL)
+                      label = "Material", value = materialText, tag = ItemsTestTags.ITEM_MATERIAL)
                 }
 
                 item.condition
                     ?.takeUnless { it.isBlank() }
                     ?.let {
                       DetailTextRow(
-                          label = "Condition",
-                          value = it,
-                          tag = SeeFitScreenTestTags.ITEM_CONDITION)
+                          label = "Condition", value = it, tag = ItemsTestTags.ITEM_CONDITION)
                     }
 
                 item.size
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      DetailTextRow(
-                          label = "Size", value = it, tag = SeeFitScreenTestTags.ITEM_SIZE)
+                      DetailTextRow(label = "Size", value = it, tag = ItemsTestTags.ITEM_SIZE)
                     }
 
                 item.fitType
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      DetailTextRow(
-                          label = "Fit", value = it, tag = SeeFitScreenTestTags.ITEM_FIT_TYPE)
+                      DetailTextRow(label = "Fit", value = it, tag = ItemsTestTags.ITEM_FIT_TYPE)
                     }
 
                 item.style
                     ?.takeUnless { it.isBlank() }
                     ?.let {
-                      DetailTextRow(
-                          label = "Style", value = it, tag = SeeFitScreenTestTags.ITEM_STYLE)
+                      DetailTextRow(label = "Style", value = it, tag = ItemsTestTags.ITEM_STYLE)
                     }
 
                 item.notes
@@ -167,9 +159,11 @@ fun SeeItemDetailsDialog(
                       CopyableDetailRow(
                           label = "Notes",
                           value = notes,
-                          textTag = SeeFitScreenTestTags.ITEM_NOTES,
-                          copyTag = SeeFitScreenTestTags.ITEM_NOTES_COPY,
-                          onCopy = { clipboardManager.setText(AnnotatedString(notes)) })
+                          textTag = ItemsTestTags.ITEM_NOTES,
+                          copyTag = ItemsTestTags.ITEM_NOTES_COPY,
+                          onCopy = {
+                            clipboardManager.setPrimaryClip(ClipData.newPlainText("notes", notes))
+                          })
                     }
 
                 item.link
@@ -179,16 +173,16 @@ fun SeeItemDetailsDialog(
                       CopyableDetailRow(
                           label = "Link",
                           value = link,
-                          textTag = SeeFitScreenTestTags.ITEM_LINK,
-                          copyTag = SeeFitScreenTestTags.ITEM_LINK_COPY,
+                          textTag = ItemsTestTags.ITEM_LINK,
+                          copyTag = ItemsTestTags.ITEM_LINK_COPY,
                           isLink = true,
                           onTextClick = {
-                            val intent =
-                                android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW, link.toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, link.toUri())
                             context.startActivity(intent)
                           },
-                          onCopy = { clipboardManager.setText(AnnotatedString(link)) })
+                          onCopy = {
+                            clipboardManager.setPrimaryClip(ClipData.newPlainText("link", link))
+                          })
                     }
               }
         }

@@ -49,6 +49,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextAlign.Companion.Center
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,7 +61,8 @@ import com.android.ootd.R
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.ui.camera.CameraScreenTestTags
 import com.android.ootd.ui.post.items.commonTextFieldColors
-import com.android.ootd.ui.theme.Bodoni
+import com.android.ootd.ui.theme.DmSerifText
+import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OnSurfaceVariant
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -84,7 +87,8 @@ fun ShowText(
     style: TextStyle,
     color: Color = Primary,
     textAlign: TextAlign = Center,
-    fontFamily: FontFamily = Bodoni,
+    fontWeight: FontWeight = FontWeight.Normal,
+    fontFamily: FontFamily = NotoSans,
 ) {
   Text(
       text = text,
@@ -92,6 +96,7 @@ fun ShowText(
       color = color,
       textAlign = textAlign,
       fontFamily = fontFamily,
+      fontWeight = fontWeight,
       modifier = modifier.fillMaxWidth())
 }
 
@@ -144,7 +149,12 @@ fun ProfilePicture(
                 .clip(shape)
                 .background(Primary),
         contentAlignment = Alignment.Center) {
-          Text(text = username.first().uppercase(), style = textStyle, color = Secondary)
+          Text(
+              text = username.first().uppercase(),
+              style = textStyle,
+              fontFamily = DmSerifText,
+              fontWeight = Bold,
+              color = Secondary)
         }
   } else {
     // Defaulting to person icon
