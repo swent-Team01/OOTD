@@ -54,6 +54,7 @@ object FitCheckScreenTestTags {
   const val CHOOSE_GALLERY_BUTTON = "fitCheckGalleryButton"
   const val NEXT_BUTTON = "fitCheckNextButton"
   const val ERROR_MESSAGE = "fitCheckErrorMessage"
+  const val MISSING_PHOTO_WARNING = "fitCheckMissingPhotoWarning"
   const val DESCRIPTION_INPUT = "fitCheckDescriptionInput"
   const val DESCRIPTION_COUNTER = "fitCheckDescriptionCounter"
 }
@@ -213,7 +214,7 @@ fun FitCheckScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FitCheckScreenContent(
+internal fun FitCheckScreenContent(
     uiState: FitCheckUIState,
     locationSelectionViewModel: LocationSelectionViewModel? = null,
     onNextClick: (String, String, Location) -> Unit = { _, _, _ -> },
@@ -227,6 +228,10 @@ private fun FitCheckScreenContent(
     overridePhoto: Boolean = false
 ) {
   var showDialog by remember { mutableStateOf(false) }
+  var showMissingPhotoWarning by remember { mutableStateOf(false) }
+  val hasPhoto = uiState.image != Uri.EMPTY
+
+  LaunchedEffect(hasPhoto) { if (hasPhoto) showMissingPhotoWarning = false }
 
   Scaffold(
       modifier = Modifier.testTag(FitCheckScreenTestTags.SCREEN),
@@ -251,7 +256,7 @@ private fun FitCheckScreenContent(
                     locationSelectionViewModel?.uiState?.value?.selectedLocation ?: emptyLocation
                 onNextClick(uiState.image.toString(), uiState.description, finalLocation)
               } else {
-                onDescriptionChange(uiState.description) // no-op; real screen sets error
+                showMissingPhotoWarning = true
               }
             },
             modifier =
@@ -273,55 +278,69 @@ private fun FitCheckScreenContent(
                   }
             }
       }) { innerPadding ->
-        Column(
-            modifier =
-                Modifier.padding(innerPadding)
-                    .padding(24.dp)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)) {
-              // Image preview
-              ImagePreviewBox(imageUri = uiState.image)
+        Box(modifier = Modifier.fillMaxSize()) {
+          Column(
+              modifier =
+                  Modifier.padding(innerPadding)
+                      .padding(24.dp)
+                      .fillMaxSize()
+                      .verticalScroll(rememberScrollState()),
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                // Image preview
+                ImagePreviewBox(imageUri = uiState.image)
 
-              // Error message
-              uiState.errorMessage?.let { msg ->
-                Text(
-                    text = msg,
-                    color = MaterialTheme.colorScheme.error,
-                    style = Typography.bodyMedium,
-                    modifier =
-                        Modifier.padding(top = 8.dp).testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+                // Error message
+                uiState.errorMessage?.let { msg ->
+                  Text(
+                      text = msg,
+                      color = MaterialTheme.colorScheme.error,
+                      style = Typography.bodyMedium,
+                      modifier =
+                          Modifier.padding(top = 8.dp)
+                              .testTag(FitCheckScreenTestTags.ERROR_MESSAGE))
+                }
+
+                // Missing Photo Warning Text
+                if (showMissingPhotoWarning) {
+                  Text(
+                      text = "Please add a photo before continuing.",
+                      color = MaterialTheme.colorScheme.error,
+                      style = Typography.bodyMedium,
+                      modifier =
+                          Modifier.padding(horizontal = 8.dp)
+                              .testTag(FitCheckScreenTestTags.MISSING_PHOTO_WARNING))
+                }
+
+                // Description field with counter
+                DescriptionInputField(
+                    description = uiState.description, onDescriptionChange = onDescriptionChange)
+
+                // Add photo button
+                Button(
+                    onClick = { showDialog = true },
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
+                      Text("Add Fit Photo", color = Color.White)
+                    }
+
+                // Location section (optional)
+                locationSelectionViewModel?.let { viewModel ->
+                  LocationSection(
+                      locationSelectionViewModel = viewModel,
+                      onGPSClick = onGPSClick,
+                      onLocationSelect = onLocationSelect)
+                }
+
+                // Photo selection dialog
+                PhotoSelectionDialog(
+                    showDialog = showDialog,
+                    onDismiss = { showDialog = false },
+                    onTakePhoto = onTakePhoto,
+                    onChooseFromGallery = onChooseFromGallery)
               }
-
-              // Description field with counter
-              DescriptionInputField(
-                  description = uiState.description, onDescriptionChange = onDescriptionChange)
-
-              // Add photo button
-              Button(
-                  onClick = { showDialog = true },
-                  shape = RoundedCornerShape(24.dp),
-                  modifier = Modifier.testTag(FitCheckScreenTestTags.ADD_PHOTO_BUTTON),
-                  colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                    Text("Add Fit Photo", color = Color.White)
-                  }
-
-              // Location section (optional)
-              locationSelectionViewModel?.let { viewModel ->
-                LocationSection(
-                    locationSelectionViewModel = viewModel,
-                    onGPSClick = onGPSClick,
-                    onLocationSelect = onLocationSelect)
-              }
-
-              // Photo selection dialog
-              PhotoSelectionDialog(
-                  showDialog = showDialog,
-                  onDismiss = { showDialog = false },
-                  onTakePhoto = onTakePhoto,
-                  onChooseFromGallery = onChooseFromGallery)
-            }
+        }
       }
 }
 

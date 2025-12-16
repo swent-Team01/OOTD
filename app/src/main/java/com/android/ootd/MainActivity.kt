@@ -183,15 +183,23 @@ fun OOTDApp(
   // Observe nav backstack to reactively show the bottom bar
   val navBackStackEntry = navController.currentBackStackEntryAsState()
   val selectedRoute = navBackStackEntry.value?.destination?.route ?: startDestination
+
+  // List of routes where bottom bar should be shown
+  val bottomBarRoutes =
+      listOf(
+          Screen.Feed.route,
+          Screen.SearchScreen.route,
+          Screen.InventoryScreen.route,
+          Screen.AccountView.route,
+          Screen.Map.route,
+          Screen.NotificationsScreen.route)
+
   val showBottomBar =
-      selectedRoute in
-          listOf(
-              Screen.Feed.route,
-              Screen.SearchScreen.route,
-              Screen.InventoryScreen.route,
-              Screen.AccountView.route,
-              Screen.Map.route,
-              Screen.NotificationsScreen.route)
+      bottomBarRoutes.any { route ->
+        val currentBaseRoute = selectedRoute.split("?").first().split("/").first()
+        val baseRoute = route.split("?").first().split("/").first()
+        currentBaseRoute == baseRoute
+      }
 
   // Create ViewModel using factory to properly inject SharedPreferences
   val onboardingViewModel: OnboardingViewModel =
