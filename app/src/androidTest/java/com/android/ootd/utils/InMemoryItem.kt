@@ -53,7 +53,11 @@ object InMemoryItem : ItemsTest {
       itemList.removeIf { it.postUuids.contains(postUuid) }
     }
 
-    override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+    override suspend fun getFriendItemsForPost(
+        postUuid: String,
+        friendId: String,
+        isPublicPost: Boolean
+    ): List<Item> {
       return itemList.filter { it.postUuids.contains(postUuid) }
     }
   }

@@ -91,7 +91,11 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
         override suspend fun deletePostItems(postUuid: String) {}
 
-        override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+        override suspend fun getFriendItemsForPost(
+            postUuid: String,
+            friendId: String,
+            isPublicPost: Boolean
+        ): List<Item> {
           TODO("Not yet implemented")
         }
       }
@@ -352,7 +356,8 @@ class PreviewItemScreenTest : ItemsTest by InMemoryItem {
 
           override suspend fun getFriendItemsForPost(
               postUuid: String,
-              friendId: String
+              friendId: String,
+              isPublicPost: Boolean
           ): List<Item> {
             return emptyList()
           }
