@@ -43,9 +43,17 @@ class UserSearchViewModel(
 
   fun getCurrentUsername(): String {
     viewModelScope.launch {
-      if (_uiState.value.currentUsername == "") {
-        val currentUser = userRepository.getUser(Firebase.auth.currentUser?.uid ?: "")
-        _uiState.value = _uiState.value.copy(currentUsername = currentUser.username)
+      try {
+        // In test this might not work as the user is not logged in ,
+        // however those tests do not usually use the search screen
+        // so behaviour is not affected
+        val currentUserId = Firebase.auth.currentUser?.uid ?: ""
+        if (_uiState.value.currentUsername == "" && currentUserId != "") {
+          val currentUser = userRepository.getUser(currentUserId)
+          _uiState.value = _uiState.value.copy(currentUsername = currentUser.username)
+        }
+      } catch (e: Exception) {
+        Log.e("UserSearchViewModel", "Error happened when trying to get username ${e}")
       }
     }
     return _uiState.value.currentUsername
