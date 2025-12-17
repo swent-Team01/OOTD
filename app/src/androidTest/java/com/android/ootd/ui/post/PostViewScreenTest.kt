@@ -172,6 +172,21 @@ class PostViewScreenTest {
   }
 
   /**
+   * Helper function to scroll to the interaction row (like/comment buttons) since it may be below
+   * the fold on CI emulator
+   */
+  private fun scrollToInteractionRow() {
+    try {
+      composeTestRule
+          .onNodeWithTag(PostViewTestTags.SCREEN)
+          .performScrollToNode(hasTestTag(PostViewTestTags.LIKE_ROW))
+      composeTestRule.waitForIdle()
+    } catch (e: Exception) {
+      // Already visible, continue
+    }
+  }
+
+  /**
    * Helper function to scroll to the items section since it's below the fold on CI emulator Tests
    * will pass locally without this, but fail on CI without scrolling first.
    */
@@ -556,6 +571,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToInteractionRow()
 
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PostViewTestTags.COMMENT_BUTTON).assertIsDisplayed()
@@ -573,6 +589,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToInteractionRow()
 
     // Click the comment button
     composeTestRule.onNodeWithTag(PostViewTestTags.COMMENT_BUTTON).performClick()
@@ -606,6 +623,7 @@ class PostViewScreenTest {
 
     setContent("test-post-id")
     composeTestRule.waitForIdle()
+    scrollToInteractionRow()
 
     // Verify both like and comment buttons are visible
     composeTestRule.onNodeWithTag(PostViewTestTags.LIKE_ROW).assertIsDisplayed()
