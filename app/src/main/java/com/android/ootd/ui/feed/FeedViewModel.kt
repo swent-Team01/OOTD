@@ -192,8 +192,12 @@ open class FeedViewModel(
     // 6) Update cached posts
     updateCachedPosts(filteredPost)
 
+    // Re-evaluate local status based on the FRESH list we just got
+    val hasPostedTodayFromFreshFeed =
+        filteredPost.any { post -> post.ownerId == account.uid && post.timestamp >= todayStart }
+
     // 7) Check if user has posted today based on database (cached + firebase) data
-    val finalHasPostedToday = computeHasPostedToday(account.uid, hasPostedTodayLocal)
+    val finalHasPostedToday = computeHasPostedToday(account.uid, hasPostedTodayFromFreshFeed)
 
     // 8) Fetch like status and counts for the posts
     val (likesMap, likeCounts) = fetchLikesForPosts(filteredPost, account)
@@ -266,17 +270,20 @@ open class FeedViewModel(
   }
 
   /**
-   * Computes whether the user has posted today considering both cached and database data.
+   * Computes whether the user has posted today by first attempting to get the status from the
+   * network, and falling back to local cached status if the network times out.
    *
-   * @param uid The user ID of the current account.
-   * @param hasPostedTodayLocal Whether the user has posted today based on cached data.
+   * @param uid The user ID to check.
+   * @param hasPostedTodayLocal The local cached status of whether the user has posted today.
    * @return True if the user has posted today, false otherwise.
    */
   private suspend fun computeHasPostedToday(uid: String, hasPostedTodayLocal: Boolean): Boolean {
-    val hasPostedToday =
-        withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { repository.hasPostedToday(uid) } ?: false
+    // 1. Try to get the actual status from the network
+    val networkResult = withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { repository.hasPostedToday(uid) }
 
-    return hasPostedToday || hasPostedTodayLocal
+    // If networkResult is not null (success), use it (even if it is false).
+    // Only use hasPostedTodayLocal if the network timed out (result is null).
+    return networkResult ?: hasPostedTodayLocal
   }
 
   /** Toggles between public and private feed. */
