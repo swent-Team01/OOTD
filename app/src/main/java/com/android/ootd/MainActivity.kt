@@ -341,7 +341,6 @@ fun OOTDApp(
                 composable(Screen.SearchScreen.route) {
                   val currentUserId = Firebase.auth.currentUser?.uid
                   UserSearchScreen(
-                      onBackPressed = { navigationActions.goBack() },
                       onUserClick = { userId ->
                         navigationActions.navigateToUserProfile(userId, currentUserId)
                       },
@@ -561,6 +560,13 @@ fun OOTDApp(
                             },
                             onEditItem = { itemUuid ->
                               navigationActions.navigateTo(Screen.EditItem(itemUuid))
+                            },
+                            onLocationClick = { location ->
+                              navigationActions.navigateTo(
+                                  Screen.Map(
+                                      latitude = location.latitude,
+                                      longitude = location.longitude,
+                                      locationName = location.name))
                             })
                       }
                     }

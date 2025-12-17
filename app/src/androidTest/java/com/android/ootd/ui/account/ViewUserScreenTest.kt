@@ -133,9 +133,9 @@ class ViewUserScreenTest {
         .onNodeWithTag(ViewUserScreenTags.FRIEND_COUNT_TAG)
         .assertTextContains("1 friend")
 
-    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ViewUserScreenTags.POST_LOCKED_TEXT).assertIsDisplayed()
     composeTestRule
-        .onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG)
+        .onNodeWithTag(ViewUserScreenTags.POST_LOCKED_TEXT)
         .assertTextContains("Add this user as a friend to see their posts")
     composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(0)
   }
@@ -161,9 +161,9 @@ class ViewUserScreenTest {
         .assertTextContains("42 friends")
     composeTestRule.onNodeWithText("This user is your friend").assertIsDisplayed()
 
-    composeTestRule.onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ViewUserScreenTags.POST_SECTION_TAG).assertIsDisplayed()
     composeTestRule
-        .onNodeWithTag(ViewUserScreenTags.POSTS_SECTION_TAG)
+        .onNodeWithTag(ViewUserScreenTags.POST_SECTION_TAG)
         .assertTextContains("${ uiStateFlow.value.username}'s posts :")
     composeTestRule.onAllNodesWithTag(ViewUserScreenTags.POST_TAG).assertCountEquals(3)
   }

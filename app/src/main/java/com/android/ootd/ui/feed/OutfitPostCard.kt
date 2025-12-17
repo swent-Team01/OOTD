@@ -30,6 +30,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.map.isValidLocation
 import com.android.ootd.model.posts.OutfitPost
+import com.android.ootd.ui.theme.OOTDerror
 import com.android.ootd.ui.theme.OnSecondaryContainer
 import com.android.ootd.ui.theme.Primary
 import com.android.ootd.ui.theme.Secondary
@@ -144,7 +145,7 @@ private fun LikeRow(isLiked: Boolean, likeCount: Int, enabled: Boolean, onClick:
     val iconTint =
         when {
           !enabled -> Tertiary
-          isLiked -> MaterialTheme.colorScheme.error
+          isLiked -> OOTDerror
           else -> OnSecondaryContainer
         }
 
@@ -223,10 +224,9 @@ private fun PostDescription(post: OutfitPost) {
       maxLines = if (expanded) Int.MAX_VALUE else 2,
       overflow = TextOverflow.Ellipsis,
       modifier =
-          Modifier.fillMaxWidth()
-              .padding(top = 8.dp)
-              .testTag(OutfitPostCardTestTags.POST_DESCRIPTION)
-              .clickable { expanded = !expanded })
+          Modifier.fillMaxWidth().testTag(OutfitPostCardTestTags.POST_DESCRIPTION).clickable {
+            expanded = !expanded
+          })
 }
 
 /**
@@ -281,8 +281,14 @@ fun OutfitPostCard(
                       Modifier.clickable { onCardClick(post.postUID) }
                     }
                 PostImage(post, isBlurred, modifier = clickableModifier)
+                Spacer(modifier = Modifier.height(4.dp))
+
                 PostLocation(post.location, onClick = { onLocationClick(post.location) })
-                PostDescription(post)
+                Spacer(modifier = Modifier.height(4.dp))
+                if (post.description.isNotBlank()) {
+                  PostDescription(post)
+                  Spacer(modifier = Modifier.height(4.dp))
+                }
                 // Reactions row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -377,7 +383,6 @@ fun PostLocation(location: Location, onClick: () -> Unit = {}) {
         overflow = TextOverflow.Ellipsis,
         modifier =
             Modifier.fillMaxWidth()
-                .padding(top = 4.dp)
                 .clickable { onClick() }
                 .testTag(OutfitPostCardTestTags.POST_LOCATION))
   }
