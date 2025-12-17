@@ -17,6 +17,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,6 +72,7 @@ open class FeedViewModel(
 
   // Cache for private feed posts to use when the app is in offline mode
   private var cachedPrivateFeed: List<OutfitPost> = emptyList()
+  private var refreshJob: Job? = null
 
   init {
     observeAuthAndLoadAccount()
@@ -102,16 +104,17 @@ open class FeedViewModel(
    * and updates the UI state with an error message.
    */
   fun doRefreshFeed() {
-    viewModelScope.launch {
-      try {
-        refreshFeed()
-      } catch (e: Exception) {
-        Log.e("FeedViewModel", "Failed to refresh feed", e)
-        _uiState.value =
-            _uiState.value.copy(
-                isLoading = false, errorMessage = "Failed to refresh feed: ${e.message}")
-      }
-    }
+
+    refreshJob?.cancel()
+    refreshJob =
+        viewModelScope.launch {
+          try {
+            refreshFeed()
+          } catch (e: Exception) {
+            Log.e("FeedViewModel", "Failed to refresh feed", e)
+            _uiState.value = _uiState.value.copy(isLoading = false)
+          }
+        }
   }
 
   /**
@@ -278,9 +281,11 @@ open class FeedViewModel(
 
   /** Toggles between public and private feed. */
   fun toggleFeedType() {
-    _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
-
-    viewModelScope.launch { refreshFeed() }
+    _uiState.value =
+        _uiState.value.copy(
+            isPublicFeed = !_uiState.value.isPublicFeed,
+            feedPosts = emptyList(), // Crucial: Remove old posts immediately
+            isLoading = true)
   }
 
   /**
