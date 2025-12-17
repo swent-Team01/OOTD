@@ -38,9 +38,6 @@ class LocationSelectionTest {
     }
     composeTestRule.onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION).assertIsDisplayed()
     composeTestRule.onNodeWithTag(LocationSelectionTestTags.LOCATION_GPS_BUTTON).assertIsDisplayed()
-    composeTestRule
-        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
-        .assertIsDisplayed()
   }
 
   @Test

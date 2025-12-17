@@ -18,10 +18,6 @@ data class Location(
 /** An empty location constant */
 val emptyLocation = Location(0.0, 0.0, "")
 
-/** EPFL default location constant */
-val epflLocation =
-    Location(46.5191, 6.5668, "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
-
 /** Validation function to check if a Location is valid (i.e., has a non-blank name) */
 val isValidLocation: (Location) -> Boolean = { location: Location ->
   location.name.isNotBlank() && !location.latitude.isNaN() && !location.longitude.isNaN()

@@ -629,55 +629,6 @@ class EditAccountScreenTest {
     composeTestRule.onNodeWithText("Update Location (GPS)").assertIsDisplayed()
   }
 
-  // --- EPFL Default Location tests ---
-
-  @Test
-  fun defaultEpflLocationButton_isDisplayed() {
-    signIn(mockFirebaseUser)
-    setContent()
-
-    // Wait for the EPFL button to exist in the semantics tree
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithText("or select default location (EPFL)", substring = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
-        .performScrollTo()
-        .assertIsDisplayed()
-        .assertTextContains("or select default location (EPFL)")
-  }
-
-  @Test
-  fun defaultEpflLocationButton_setsLocationToEpfl() {
-    signIn(mockFirebaseUser)
-    setContent()
-    waitForLoadingToComplete()
-
-    // Wait for the EPFL button to exist in the semantics tree
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithText("or select default location (EPFL)", substring = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    // Scroll to make the button visible on smaller screens
-    selectTestTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL).performScrollTo().performClick()
-    composeTestRule.waitForIdle()
-
-    // Assert: location should be set to EPFL
-    composeTestRule.runOnUiThread {
-      val selectedLocation = viewModel.uiState.value.location
-      assertEquals(46.5191, selectedLocation.latitude, 0.0001)
-      assertEquals(6.5668, selectedLocation.longitude, 0.0001)
-      assertTrue(selectedLocation.name.contains("EPFL"))
-      assertEquals(
-          selectedLocation.name, viewModel.locationSelectionViewModel.uiState.value.locationQuery)
-    }
-  }
-
   // ========== Dropdown Behavior Tests ==========
 
   @Test

@@ -278,23 +278,6 @@ class FitCheckScreenTest {
     }
   }
 
-  @Test
-  fun defaultEpflLocation_isDisplayedAndClickable() {
-    composeTestRule
-        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
-        .performScrollTo()
-        .assertIsDisplayed()
-        .performClick()
-    composeTestRule.waitForIdle()
-
-    composeTestRule.runOnIdle {
-      val selectedLocation = locationViewModel.uiState.value.selectedLocation
-      assert(selectedLocation != null)
-      assert(
-          selectedLocation?.name == "École Polytechnique Fédérale de Lausanne (EPFL), Switzerland")
-    }
-  }
-
   // ========== Combined Workflow Tests ==========
 
   @Test

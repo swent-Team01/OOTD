@@ -24,7 +24,6 @@ import com.android.ootd.ui.feed.OutfitPostCardTestTags
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.OUTFIT_POST_CARD
 import com.android.ootd.ui.feed.OutfitPostCardTestTags.POST_LOCATION
 import com.android.ootd.ui.inventory.InventoryScreenTestTags
-import com.android.ootd.ui.map.LocationSelectionTestTags
 import com.android.ootd.ui.map.MapScreenTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
@@ -131,16 +130,11 @@ fun verifyElementAppearsWithTimer(
 fun addPostWithOneItem(
     composeTestRule: ComposeContentTestRule,
     selectFromInventory: Boolean = false,
-    inventoryItemUuid: String = "",
-    addLocation: Boolean = false
+    inventoryItemUuid: String = ""
 ) {
   verifyElementAppearsWithTimer(composeTestRule, FeedScreenTestTags.ADD_POST_FAB)
 
   clickWithWait(composeTestRule, FeedScreenTestTags.ADD_POST_FAB, useUnmergedTree = true)
-  if (addLocation) {
-    clickWithWait(
-        composeTestRule, LocationSelectionTestTags.LOCATION_DEFAULT_EPFL, shouldScroll = true)
-  }
   composeTestRule
       .onNodeWithTag(FitCheckScreenTestTags.DESCRIPTION_INPUT)
       .performTextInput("Sample description")
@@ -351,8 +345,6 @@ fun fullRegisterSequence(
   // Use default logins
   enterUsername(composeTestRule, username)
   enterDateOfBirth(composeTestRule, dateOfBirth)
-  clickWithWait(
-      composeTestRule, LocationSelectionTestTags.LOCATION_DEFAULT_EPFL, shouldScroll = true)
   // Finish registration
 
   clickWithWait(composeTestRule, RegisterScreenTestTags.REGISTER_SAVE, shouldScroll = true)

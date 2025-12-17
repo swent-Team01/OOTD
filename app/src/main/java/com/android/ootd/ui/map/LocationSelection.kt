@@ -1,6 +1,5 @@
 package com.android.ootd.ui.map
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,17 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.android.ootd.model.map.Location
-import com.android.ootd.model.map.epflLocation
 import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OOTDTheme
 import com.android.ootd.ui.theme.Primary
-import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.CommonTextField
 
 // Test tags for location selection UI
@@ -48,7 +44,6 @@ object LocationSelectionTestTags {
   const val LOCATION_MORE = "locationMore"
   const val LOCATION_GPS_BUTTON = "locationGpsButton"
   const val LOCATION_CLEAR_BUTTON = "locationClearButton"
-  const val LOCATION_DEFAULT_EPFL = "locationDefaultEpfl"
 }
 
 /** GPS Button component for location selection */
@@ -134,23 +129,6 @@ private fun LocationSuggestionsDropdown(
               modifier = Modifier.padding(8.dp).testTag(LocationSelectionTestTags.LOCATION_MORE))
         }
       }
-}
-
-/** Default EPFL location selector text */
-@Composable
-private fun DefaultLocationSelector(onSelectDefault: () -> Unit) {
-  val typography = Typography
-
-  Text(
-      text = "or select default location (EPFL)",
-      color = Primary,
-      style =
-          typography.bodyMedium.copy(
-              fontFamily = NotoSans, textDecoration = TextDecoration.Underline),
-      modifier =
-          Modifier.padding(top = 8.dp, bottom = 4.dp)
-              .clickable { onSelectDefault() }
-              .testTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL))
 }
 
 /**
@@ -246,15 +224,6 @@ fun LocationSelectionSection(
           },
           onClearSuggestions = viewModel::clearLocationSuggestions)
     }
-
-    // Default EPFL location selector
-    DefaultLocationSelector(
-        onSelectDefault = {
-          viewModel.setLocationQuery(epflLocation.name)
-          viewModel.setLocation(epflLocation)
-          onLocationSelect?.invoke(epflLocation)
-          viewModel.clearLocationSuggestions()
-        })
   }
 }
 

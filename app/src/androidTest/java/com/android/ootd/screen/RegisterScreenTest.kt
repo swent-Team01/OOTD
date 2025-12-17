@@ -8,7 +8,6 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -527,36 +526,5 @@ class RegisterScreenTest {
     // Verify error message set on the ViewModel
     assertNotNull(freshViewModel.uiState.value.errorMsg)
     assertTrue(freshViewModel.uiState.value.errorMsg!!.contains("Location permission"))
-  }
-
-  // ========== EPFL Default Location Tests ==========
-  @Test
-  fun defaultEpflLocationButton_isDisplayed_and_setsLocationToEPFL() {
-    // Wait for the EPFL button to exist in the semantics tree
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithText("or select default location (EPFL)", substring = true)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-
-    // Scroll to make the button visible on smaller screens
-    composeTestRule
-        .onNodeWithTag(LocationSelectionTestTags.LOCATION_DEFAULT_EPFL)
-        .performScrollTo()
-        .performClick()
-        .assertTextContains("or select default location (EPFL)")
-    composeTestRule.waitForIdle()
-
-    // Assert: location should be set to EPFL
-    composeTestRule.runOnUiThread {
-      val selectedLocation = viewModel.locationSelectionViewModel.uiState.value.selectedLocation
-      assertNotNull(selectedLocation)
-      assertEquals(46.5191, selectedLocation!!.latitude, 0.0001)
-      assertEquals(6.5668, selectedLocation.longitude, 0.0001)
-      assertTrue(selectedLocation.name.contains("EPFL"))
-      assertEquals(
-          selectedLocation.name, viewModel.locationSelectionViewModel.uiState.value.locationQuery)
-    }
   }
 }
