@@ -368,8 +368,10 @@ class PostViewViewModel(
   private suspend fun updateUiWithItems(post: OutfitPost): Boolean {
     val items =
         try {
-          itemsRepository.getFriendItemsForPost(post.postUID, post.ownerId)
-        } catch (_: Exception) {
+          itemsRepository.getFriendItemsForPost(
+              post.postUID, post.ownerId, isPublicPost = post.isPublic)
+        } catch (e: Exception) {
+          Log.e("PostViewViewModel", "Loading post items failed with ${e}")
           return false
         }
 

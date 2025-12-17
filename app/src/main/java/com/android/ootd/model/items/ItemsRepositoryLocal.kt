@@ -117,8 +117,14 @@ class ItemsRepositoryLocal : ItemsRepository {
    * @param friendId The unique identifier of the friend whose items to retrieve.
    * @return A list of items associated with the post and owned by the specified friend.
    */
-  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
-    return items.values.filter { it.postUuids.contains(postUuid) && it.ownerId == friendId }
+  override suspend fun getFriendItemsForPost(
+      postUuid: String,
+      friendId: String,
+      isPublicPost: Boolean
+  ): List<Item> {
+    return items.values.filter {
+      it.postUuids.contains(postUuid) && it.ownerId == friendId && it.isPublic == isPublicPost
+    }
   }
 
   /** Clears all items from the local storage. Useful for resetting state between tests. */
