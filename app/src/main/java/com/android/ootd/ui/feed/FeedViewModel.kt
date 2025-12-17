@@ -291,7 +291,7 @@ open class FeedViewModel(
     _uiState.value =
         _uiState.value.copy(
             isPublicFeed = !_uiState.value.isPublicFeed,
-            feedPosts = emptyList(), // Crucial: Remove old posts immediately
+            feedPosts = emptyList(), //  Remove old posts immediately
             isLoading = true)
   }
 
