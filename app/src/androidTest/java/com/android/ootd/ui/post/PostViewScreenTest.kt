@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
@@ -218,6 +219,7 @@ class PostViewScreenTest {
 
     composeTestRule
         .onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)
+        .performScrollTo()
         .assertIsDisplayed()
         .assertExists()
 
@@ -234,6 +236,7 @@ class PostViewScreenTest {
     // TextField appears = edit mode active
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
         .assertIsDisplayed()
         .assertExists()
     composeTestRule.waitForIdle()
@@ -274,13 +277,19 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Open edit mode
-    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)
+        .performScrollTo()
+        .performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
 
     // Ensure edit field visible with original text
-    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
+        .assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertTextContains(original)
@@ -312,6 +321,7 @@ class PostViewScreenTest {
     // TextField should contain the original description again
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
         .assertExists()
         .assertIsDisplayed()
     composeTestRule
