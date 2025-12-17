@@ -127,6 +127,7 @@ class FeedViewModelOfflineTest {
 
     // toggleFeedType calls refreshFeedFromFirestore internally
     viewModel.toggleFeedType() // Switch to public feed
+    viewModel.doRefreshFeed()
     testDispatcher.scheduler.advanceTimeBy(2100) // Past the 2s timeout
     advanceUntilIdle()
 
@@ -199,6 +200,7 @@ class FeedViewModelOfflineTest {
 
     // Toggle to public feed (calls refresh internally)
     viewModel.toggleFeedType()
+    viewModel.doRefreshFeed()
     testDispatcher.scheduler.advanceTimeBy(2100)
     advanceUntilIdle()
     assertEquals("public-cached", viewModel.uiState.value.feedPosts.first().postUID)

@@ -17,6 +17,7 @@ import com.android.ootd.model.posts.OutfitPost
 import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,6 +72,7 @@ open class FeedViewModel(
 
   // Cache for private feed posts to use when the app is in offline mode
   private var cachedPrivateFeed: List<OutfitPost> = emptyList()
+  private var refreshJob: Job? = null
 
   init {
     observeAuthAndLoadAccount()
@@ -98,10 +100,21 @@ open class FeedViewModel(
 
   /**
    * Triggers a refresh of the feed posts. This function launches a coroutine in the ViewModel scope
-   * to perform the refresh operation.
+   * to perform the refresh operation. If an exception occurs during the refresh, it logs the error
+   * and updates the UI state with an error message.
    */
   fun doRefreshFeed() {
-    viewModelScope.launch { refreshFeed() }
+
+    refreshJob?.cancel()
+    refreshJob =
+        viewModelScope.launch {
+          try {
+            refreshFeed()
+          } catch (e: Exception) {
+            Log.e("FeedViewModel", "Failed to refresh feed", e)
+            _uiState.value = _uiState.value.copy(isLoading = false)
+          }
+        }
   }
 
   /**
@@ -109,11 +122,15 @@ open class FeedViewModel(
    * and updates the UI state accordingly. So that, it can also work in offline mode using cached
    * data. This function performs the following steps:
    * 1. Loads cached posts from Firestore local cache and updates the UI state immediately.
-   * 2. Attempts to fetch fresh posts from Firestore with a short timeout. If successful, updates
+   * 2. Filter the posts based on whether we are in public or private feed mode and based on user
+   *    ID.
+   * 3. Checks if the user has posted today based on cached data.
+   * 4. Attempts to fetch fresh posts from Firestore with a short timeout. If successful, updates
    *    the UI state with the fresh data.
-   * 3. Fetches like status and counts for the posts.
-   * 4. Updates the UI state with the final data including whether the user has posted today.
-   * 5. Handles loading states and errors appropriately.
+   * 5. Filters the fresh posts similarly and checks if the user has posted today based on database
+   *    data.
+   * 6. Fetches like status and counts for the posts.
+   * 7. Updates the UI state with the final data including whether the user has posted today.
    */
   private suspend fun refreshFeed() {
     val account = _uiState.value.currentAccount ?: return
@@ -121,12 +138,28 @@ open class FeedViewModel(
     val todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     // 1) Prefill from Firestore local cache immediately
-    val cached = loadCachedPosts(account)
+    val publicCached = repository.getCachedPublicFeed()
+    val privateCached = repository.getCachedFriendFeed(account.friendUids + account.uid)
+
+    // 2) Filter cached posts based on feed type and user ID
+    val cached =
+        if (_uiState.value.isPublicFeed) deduplicatePosts(publicCached)
+        else deduplicatePosts(privateCached)
 
     if (cached.isEmpty() && !_isRefreshing.value) {
       _uiState.value = _uiState.value.copy(isLoading = true)
     }
 
+    cachedPublicFeed = publicCached
+    cachedPrivateFeed = privateCached
+
+    // 3) Check if user has posted today based on cached data
+    val hasPostedTodayLocal =
+        (cachedPublicFeed + cachedPrivateFeed).any { post ->
+          post.ownerId == account.uid && post.timestamp >= todayStart
+        }
+
+    // Update UI state with cached posts if available
     if (cached.isNotEmpty()) {
       val filteredCached = deduplicatePosts(cached)
 
@@ -136,19 +169,10 @@ open class FeedViewModel(
       // Update UI instantly from cache and suppress loading overlay
       _uiState.value =
           _uiState.value.copy(
-              feedPosts = filteredCached,
-              isLoading = false,
-              hasPostedToday =
-                  computeHasPostedToday(
-                      cachedPublicFeed + cachedPrivateFeed, account.uid, todayStart))
+              feedPosts = cached, isLoading = false, hasPostedToday = hasPostedTodayLocal)
     }
 
-    // 2) Try fast online refresh with a short timeout. Show loading only if no cache.
-    val shouldShowLoading = cached.isEmpty() && !_isRefreshing.value
-    if (shouldShowLoading) {
-      _uiState.value = _uiState.value.copy(isLoading = true)
-    }
-
+    // 4) Attempt to fetch fresh posts from Firestore with timeout
     val allPosts =
         withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) {
           if (_uiState.value.isPublicFeed) {
@@ -159,23 +183,23 @@ open class FeedViewModel(
         }
 
     if (allPosts == null) {
-      _uiState.value =
-          _uiState.value.copy(
-              hasPostedToday =
-                  (cachedPublicFeed + cachedPrivateFeed).any { post ->
-                    post.ownerId == account.uid && post.timestamp >= todayStart
-                  },
-              isLoading = false)
+      _uiState.value = _uiState.value.copy(hasPostedToday = hasPostedTodayLocal, isLoading = false)
       return
     }
 
     val filteredPost = deduplicatePosts(allPosts)
 
+    // 6) Update cached posts
     updateCachedPosts(filteredPost)
 
-    val finalHasPostedToday =
-        computeHasPostedToday(cachedPublicFeed + cachedPrivateFeed, account.uid, todayStart)
+    // Re-evaluate local status based on the FRESH list we just got
+    val hasPostedTodayFromFreshFeed =
+        filteredPost.any { post -> post.ownerId == account.uid && post.timestamp >= todayStart }
 
+    // 7) Check if user has posted today based on database (cached + firebase) data
+    val finalHasPostedToday = computeHasPostedToday(account.uid, hasPostedTodayFromFreshFeed)
+
+    // 8) Fetch like status and counts for the posts
     val (likesMap, likeCounts) = fetchLikesForPosts(filteredPost, account)
 
     _uiState.value =
@@ -187,11 +211,11 @@ open class FeedViewModel(
             likeCounts = likeCounts)
   }
 
-  /** Loads cached posts based on the current feed type. */
-  private suspend fun loadCachedPosts(account: Account): List<OutfitPost> =
-      if (_uiState.value.isPublicFeed) repository.getCachedPublicFeed()
-      else repository.getCachedFriendFeed(account.friendUids + account.uid)
-
+  /**
+   * Updates the cached posts based on in which screen the user is.
+   *
+   * @param posts The list of posts to cache.
+   */
   private fun updateCachedPosts(posts: List<OutfitPost>) {
     if (_uiState.value.isPublicFeed) {
       cachedPublicFeed = posts
@@ -200,7 +224,14 @@ open class FeedViewModel(
     }
   }
 
-  /** Fetches like status and counts for the given posts and account. */
+  /**
+   * Fetches like status and counts for the given posts and account.
+   *
+   * @param posts The list of posts to fetch likes for.
+   * @param account The account for which to fetch like status.
+   * @return A pair of maps: the first map contains post IDs to like status (Boolean), and the
+   *   second map contains post IDs to like counts (Int).
+   */
   private suspend fun fetchLikesForPosts(
       posts: List<OutfitPost>,
       account: Account
@@ -238,25 +269,30 @@ open class FeedViewModel(
         .filterNotNull()
   }
 
-  /** Computes whether the user has posted today considering both local and remote data. */
-  private suspend fun computeHasPostedToday(
-      posts: List<OutfitPost>,
-      uid: String,
-      time: Long
-  ): Boolean {
-    val hasPostedTodayLocal = posts.any { post -> post.ownerId == uid && post.timestamp >= time }
+  /**
+   * Computes whether the user has posted today by first attempting to get the status from the
+   * network, and falling back to local cached status if the network times out.
+   *
+   * @param uid The user ID to check.
+   * @param hasPostedTodayLocal The local cached status of whether the user has posted today.
+   * @return True if the user has posted today, false otherwise.
+   */
+  private suspend fun computeHasPostedToday(uid: String, hasPostedTodayLocal: Boolean): Boolean {
+    // 1. Try to get the actual status from the network
+    val networkResult = withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { repository.hasPostedToday(uid) }
 
-    val hasPostedToday =
-        withTimeoutOrNull(NETWORK_TIMEOUT_MILLIS) { repository.hasPostedToday(uid) } ?: false
-
-    return hasPostedToday || hasPostedTodayLocal
+    // If networkResult is not null (success), use it (even if it is false).
+    // Only use hasPostedTodayLocal if the network timed out (result is null).
+    return networkResult ?: hasPostedTodayLocal
   }
 
   /** Toggles between public and private feed. */
   fun toggleFeedType() {
-    _uiState.value = _uiState.value.copy(isPublicFeed = !_uiState.value.isPublicFeed)
-
-    viewModelScope.launch { refreshFeed() }
+    _uiState.value =
+        _uiState.value.copy(
+            isPublicFeed = !_uiState.value.isPublicFeed,
+            feedPosts = emptyList(), //  Remove old posts immediately
+            isLoading = true)
   }
 
   /**

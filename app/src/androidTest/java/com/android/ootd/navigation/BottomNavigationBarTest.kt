@@ -11,7 +11,7 @@ import com.android.ootd.ui.account.AccountPageTestTags
 import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.navigation.Tab
-import com.android.ootd.ui.search.SearchScreenTestTags
+import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -74,7 +74,7 @@ class BottomNavigationBarTest {
     composeRule.runOnIdle {
       assertEquals(Screen.SearchScreen.route, navController.currentDestination?.route)
     }
-    composeRule.onNodeWithTag(SearchScreenTestTags.SEARCH_SCREEN).assertIsDisplayed()
+    composeRule.onNodeWithTag(UserSelectionFieldTestTags.FIND_FRIENDS_TITLE).assertIsDisplayed()
   }
 
   @Test

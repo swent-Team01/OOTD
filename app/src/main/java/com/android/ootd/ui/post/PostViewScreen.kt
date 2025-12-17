@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
@@ -45,7 +46,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import com.android.ootd.model.items.Item
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
@@ -93,6 +96,8 @@ object PostViewTestTags {
   const val FIRST_LIKE_BUTTON = "firstLikeButton"
   const val ITEMS_SECTION = "postViewItemsSection"
   const val ITEMS_SECTION_TITLE = "postViewItemsSectionTitle"
+  const val LOCATION_ROW = "postViewLocationRow"
+  const val LOCATION_ICON = "postViewLocationIcon"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -117,6 +122,7 @@ private fun resolveLocation(
  * @param onDeleted Callback when the post is deleted
  * @param onProfileClick Callback when a profile is clicked, providing the user ID
  * @param onEditItem Callback when an item edit is requested, providing the item ID
+ * @param onLocationClick Callback when the location is clicked, providing the location
  * @param viewModel ViewModel for managing post view state
  * @param commentViewModel ViewModel for managing comments state and actions
  */
@@ -128,6 +134,7 @@ fun PostViewScreen(
     onDeleted: () -> Unit = { onBack() },
     onProfileClick: (String) -> Unit = {},
     onEditItem: (String) -> Unit = {},
+    onLocationClick: (Location) -> Unit = {},
     viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId)),
     commentViewModel: CommentViewModel = viewModel()
 ) {
@@ -178,6 +185,7 @@ fun PostViewScreen(
                   viewModel = viewModel,
                   onProfileClick = onProfileClick,
                   onEditItem = onEditItem,
+                  onLocationClick = onLocationClick,
                   onCommentClick = { showComments = true },
                   onDeletePost = {
                     viewModel.deletePost(
@@ -219,6 +227,7 @@ fun PostViewScreen(
  * @param onEditItem Callback when an item edit is requested, providing the item ID
  * @param onCommentClick Callback when the comment button is clicked
  * @param onDeletePost Callback when the post is to be deleted
+ * @param onLocationClick Callback when the location is clicked, providing the location
  */
 @Composable
 fun PostDetailsContent(
@@ -229,7 +238,8 @@ fun PostDetailsContent(
     onProfileClick: (String) -> Unit,
     onEditItem: (String) -> Unit,
     onCommentClick: () -> Unit = {},
-    onDeletePost: () -> Unit
+    onDeletePost: () -> Unit,
+    onLocationClick: (Location) -> Unit = {}
 ) {
   val post = uiState.post!!
 
@@ -263,7 +273,8 @@ fun PostDetailsContent(
     LocationRow(
         location = post.location.name,
         isExpanded = isLocationExpanded,
-        onToggleExpanded = { isLocationExpanded = !isLocationExpanded })
+        onToggleExpanded = { isLocationExpanded = !isLocationExpanded },
+        onLocationClick = { onLocationClick(post.location) })
 
     Column(modifier = Modifier.padding(16.dp)) {
       PostHeroImage(
@@ -642,14 +653,20 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 }
 
 /**
- * Row displaying the location of the post with expand/collapse functionality
+ * Composable displaying the location row
  *
- * @param location The location string of the post
+ * @param location The name of the location
  * @param isExpanded Whether the location text is expanded
  * @param onToggleExpanded Callback to toggle the expanded state
+ * @param onLocationClick Callback when the location icon is clicked
  */
 @Composable
-fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> Unit) {
+fun LocationRow(
+    location: String,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onLocationClick: () -> Unit = {}
+) {
   Surface(
       modifier = Modifier.fillMaxWidth().clickable { onToggleExpanded() }.animateContentSize(),
       color = Background) {
@@ -661,7 +678,12 @@ fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> U
                   imageVector = Icons.Outlined.LocationOn,
                   contentDescription = "Location",
                   tint = Primary,
-                  modifier = Modifier.size(20.dp))
+                  modifier =
+                      Modifier.size(20.dp).testTag(PostViewTestTags.LOCATION_ICON).clickable(
+                          indication = null,
+                          interactionSource = remember { MutableInteractionSource() }) {
+                            onLocationClick()
+                          })
 
               Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -697,6 +719,60 @@ fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> U
  * @param onToggleLike Callback to toggle the like status
  */
 @Composable
+private fun ImagePlaceholder() {
+  Box(
+      modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f).background(Secondary),
+      contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = Primary)
+      }
+}
+
+@Composable
+private fun ImageErrorState() {
+  Box(
+      modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f).background(Secondary),
+      contentAlignment = Alignment.Center) {
+        Text("Failed to load image", color = OnSurface)
+      }
+}
+
+@Composable
+private fun BoxScope.ImageGradientOverlay() {
+  Box(
+      modifier =
+          Modifier.matchParentSize()
+              .background(
+                  Brush.verticalGradient(
+                      colors =
+                          listOf(
+                              Color.Transparent,
+                              Color.Black.copy(alpha = 0.25f),
+                              Color.Black.copy(alpha = 0.55f)))))
+}
+
+@Composable
+private fun BoxScope.LikeChip(likeCount: Int, isLiked: Boolean, onToggleLike: () -> Unit) {
+  Row(
+      modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically) {
+        val icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
+        AssistChip(
+            onClick = onToggleLike,
+            label = { Text("$likeCount likes") },
+            leadingIcon = {
+              Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            },
+            colors =
+                AssistChipDefaults.assistChipColors(
+                    containerColor = Color.White.copy(alpha = 0.2f),
+                    labelColor = Color.White,
+                    leadingIconContentColor = Color.White),
+            modifier = Modifier.testTag(FIRST_LIKE_BUTTON))
+      }
+}
+
+@Composable
 private fun PostHeroImage(
     imageUrl: String,
     likeCount: Int,
@@ -706,44 +782,21 @@ private fun PostHeroImage(
   Card(
       shape = RoundedCornerShape(24.dp),
       elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-      modifier = Modifier.fillMaxWidth().height(360.dp).testTag(PostViewTestTags.POST_IMAGE)) {
-        Box(modifier = Modifier.fillMaxSize()) {
-          AsyncImage(
+      modifier = Modifier.fillMaxWidth().testTag(PostViewTestTags.POST_IMAGE)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+          SubcomposeAsyncImage(
               model = imageUrl,
               contentDescription = "Post image",
-              modifier = Modifier.fillMaxSize(),
-              contentScale = ContentScale.Crop)
-          Box(
-              modifier =
-                  Modifier.matchParentSize()
-                      .background(
-                          Brush.verticalGradient(
-                              colors =
-                                  listOf(
-                                      Color.Transparent,
-                                      Color.Black.copy(alpha = 0.25f),
-                                      Color.Black.copy(alpha = 0.55f)))))
-          Row(
-              modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-              verticalAlignment = Alignment.CenterVertically) {
-                AssistChip(
-                    onClick = onToggleLike,
-                    label = { Text("$likeCount likes") },
-                    leadingIcon = {
-                      Icon(
-                          imageVector =
-                              if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                          contentDescription = null,
-                          modifier = Modifier.size(16.dp))
-                    },
-                    colors =
-                        AssistChipDefaults.assistChipColors(
-                            containerColor = Color.White.copy(alpha = 0.2f),
-                            labelColor = Color.White,
-                            leadingIconContentColor = Color.White),
-                    modifier = Modifier.testTag(FIRST_LIKE_BUTTON))
+              contentScale = ContentScale.FillWidth,
+              modifier = Modifier.fillMaxWidth()) {
+                when (painter.state) {
+                  is AsyncImagePainter.State.Loading -> ImagePlaceholder()
+                  is AsyncImagePainter.State.Error -> ImageErrorState()
+                  else -> SubcomposeAsyncImageContent()
+                }
               }
+          ImageGradientOverlay()
+          LikeChip(likeCount, isLiked, onToggleLike)
         }
       }
 }

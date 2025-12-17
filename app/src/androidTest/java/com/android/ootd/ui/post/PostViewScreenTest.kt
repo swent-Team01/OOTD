@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
@@ -236,6 +237,7 @@ class PostViewScreenTest {
 
     composeTestRule
         .onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)
+        .performScrollTo()
         .assertIsDisplayed()
         .assertExists()
 
@@ -252,6 +254,7 @@ class PostViewScreenTest {
     // TextField appears = edit mode active
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
         .assertIsDisplayed()
         .assertExists()
     composeTestRule.waitForIdle()
@@ -292,13 +295,19 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Open edit mode
-    composeTestRule.onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU).performClick()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.DROPDOWN_OPTIONS_MENU)
+        .performScrollTo()
+        .performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_OPTION).performClick()
     composeTestRule.waitForIdle()
 
     // Ensure edit field visible with original text
-    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
+        .assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertTextContains(original)
@@ -330,6 +339,7 @@ class PostViewScreenTest {
     // TextField should contain the original description again
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
         .assertExists()
         .assertIsDisplayed()
     composeTestRule
@@ -634,5 +644,50 @@ class PostViewScreenTest {
         .onNodeWithTag(PostViewTestTags.COMMENT_COUNT, useUnmergedTree = true)
         .assertIsDisplayed()
         .assertTextContains("1 comments")
+  }
+
+  @Test
+  fun location_icon_click_triggers_callback() = runTest {
+    var locationClickCalled = false
+    var clickedLocation: com.android.ootd.model.map.Location? = null
+
+    val testLocation = com.android.ootd.model.map.Location(46.5197, 6.6323, "EPFL")
+    val postWithLocation = testPost.copy(location = testLocation)
+
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns postWithLocation
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
+    coEvery { mockItemsRepo.getFriendItemsForPost("test-post-id", "test-owner-id") } returns
+        emptyList()
+
+    viewModel =
+        PostViewViewModel(
+            "test-post-id",
+            mockPostRepository,
+            mockUserRepo,
+            mockLikesRepo,
+            mockAccountService,
+            mockItemsRepo,
+            mockAccountRepo)
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        PostViewScreen(
+            postId = "test-post-id",
+            onBack = { onBackCalled = true },
+            onLocationClick = { location ->
+              locationClickCalled = true
+              clickedLocation = location
+            },
+            viewModel = viewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Click on the location icon
+    composeTestRule.onNodeWithTag(PostViewTestTags.LOCATION_ICON).performClick()
+
+    assertEquals(true, locationClickCalled)
+    assertEquals(testLocation, clickedLocation)
   }
 }
