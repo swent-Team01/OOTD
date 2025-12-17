@@ -39,7 +39,8 @@ fun UserSelectionField(
     usernameSuggestions: List<User>,
     expanded: Boolean,
     onBackPressed: () -> Unit = {},
-    onFindFriendsClick: () -> Unit = {}
+    onFindFriendsClick: () -> Unit = {},
+    currentUsername: String
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
     // Search bar
@@ -103,12 +104,14 @@ fun UserSelectionField(
         }
       } else {
         Column(modifier = Modifier.fillMaxWidth()) {
-          usernameSuggestions.forEach { user ->
-            UserSuggestionItem(
-                user = user,
-                onClick = { onUserSuggestionClicked(user.uid) },
-                modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
-          }
+          usernameSuggestions
+              .filter { it.username != currentUsername }
+              .forEach { user ->
+                UserSuggestionItem(
+                    user = user,
+                    onClick = { onUserSuggestionClicked(user.uid) },
+                    modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
+              }
         }
       }
     }

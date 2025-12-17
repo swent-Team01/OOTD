@@ -49,7 +49,8 @@ fun UserSearchScreen(
             onBackPressed = onBackPressed,
             onFindFriendsClick = onFindFriendsClick,
             usernameSuggestions = uiState.userSuggestions,
-            expanded = uiState.suggestionsExpanded)
+            expanded = uiState.suggestionsExpanded,
+            currentUsername = viewModel.getCurrentUsername())
 
         Spacer(modifier = Modifier.height(24.dp))
       }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
 import com.android.ootd.model.user.UserRepositoryProvider
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +21,8 @@ data class SearchUserUIState(
     val selectedUser: User? = null,
     val isSelectedUserFollowed: Boolean = false,
     val suggestionsExpanded: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val currentUsername: String = ""
 )
 
 class UserSearchViewModel(
@@ -36,6 +39,16 @@ class UserSearchViewModel(
             selectedUser = if (username.isBlank()) null else _uiState.value.selectedUser,
             errorMessage = null)
     searchUsernames(username)
+  }
+
+  fun getCurrentUsername(): String {
+    viewModelScope.launch {
+      if (_uiState.value.currentUsername == "") {
+        val currentUser = userRepository.getUser(Firebase.auth.currentUser?.uid ?: "")
+        _uiState.value = _uiState.value.copy(currentUsername = currentUser.username)
+      }
+    }
+    return _uiState.value.currentUsername
   }
 
   private fun searchUsernames(query: String) {
