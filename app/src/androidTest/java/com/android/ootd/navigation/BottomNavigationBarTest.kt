@@ -12,6 +12,8 @@ import com.android.ootd.ui.navigation.NavigationTestTags
 import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.navigation.Tab
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
+import com.android.ootd.utils.clickWithWait
+import com.android.ootd.utils.verifyElementAppearsWithTimer
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -52,9 +54,8 @@ class BottomNavigationBarTest {
 
   @Test
   fun bottomBar_clickInventory_navigatesToInventoryScreen_andRouteUpdates() {
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Inventory)).performClick()
-    composeRule.waitForIdle()
-    composeRule.onNodeWithTag("inventoryScreen").assertIsDisplayed()
+    clickWithWait(composeRule, NavigationTestTags.getTabTestTag(Tab.Inventory))
+    verifyElementAppearsWithTimer(composeRule, "inventoryScreen")
     composeRule.runOnIdle {
       assertEquals(Screen.InventoryScreen.route, navController.currentDestination?.route)
     }
@@ -62,8 +63,8 @@ class BottomNavigationBarTest {
 
   @Test
   fun bottomBar_clickAccount_navigatesToAccount() {
-    composeRule.onNodeWithTag(NavigationTestTags.getTabTestTag(Tab.Account)).performClick()
-    composeRule.onNodeWithTag(AccountPageTestTags.USERNAME_TEXT).assertIsDisplayed()
+    clickWithWait(composeRule, NavigationTestTags.getTabTestTag(Tab.Account))
+    verifyElementAppearsWithTimer(composeRule, AccountPageTestTags.USERNAME_TEXT)
   }
 
   @Test

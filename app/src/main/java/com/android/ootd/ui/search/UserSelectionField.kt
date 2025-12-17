@@ -24,6 +24,7 @@ import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.OOTDTopBar
 import com.android.ootd.utils.composables.ProfilePicture
+import kotlin.collections.filter
 
 object UserSelectionFieldTestTags {
   const val INPUT_USERNAME = "inputUsername"
@@ -42,6 +43,7 @@ fun UserSelectionField(
     onUserSuggestionClicked: (String) -> Unit,
     usernameSuggestions: List<User>,
     expanded: Boolean,
+    currentUsername: String,
     onFindFriendsClick: () -> Unit = {}
 ) {
   Scaffold(
@@ -62,7 +64,8 @@ fun UserSelectionField(
               } else {
                 UserSuggestionsList(
                     usernameSuggestions = usernameSuggestions,
-                    onUserSuggestionClicked = onUserSuggestionClicked)
+                    onUserSuggestionClicked = onUserSuggestionClicked,
+                    currentUsername = currentUsername)
               }
             } else if (usernameText.isEmpty()) {
               EmptySearchStateView(
@@ -126,15 +129,18 @@ private fun NoUsersFoundView(modifier: Modifier = Modifier) {
 @Composable
 private fun UserSuggestionsList(
     usernameSuggestions: List<User>,
-    onUserSuggestionClicked: (String) -> Unit
+    onUserSuggestionClicked: (String) -> Unit,
+    currentUsername: String
 ) {
   Column(modifier = Modifier.fillMaxWidth()) {
-    usernameSuggestions.forEach { user ->
-      UserSuggestionItem(
-          user = user,
-          onClick = { onUserSuggestionClicked(user.uid) },
-          modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
-    }
+    usernameSuggestions
+        .filter { it.username != currentUsername }
+        .forEach { user ->
+          UserSuggestionItem(
+              user = user,
+              onClick = { onUserSuggestionClicked(user.uid) },
+              modifier = Modifier.testTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION))
+        }
   }
 }
 

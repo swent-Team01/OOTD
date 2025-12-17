@@ -23,7 +23,8 @@ fun UserSearchScreen(
       onUserSuggestionClicked = onUserClick,
       onFindFriendsClick = onFindFriendsClick,
       usernameSuggestions = uiState.userSuggestions,
-      expanded = uiState.suggestionsExpanded)
+      expanded = uiState.suggestionsExpanded,
+      currentUsername = viewModel.getCurrentUsername())
 }
 
 @Suppress("ViewModelConstructorInComposable")

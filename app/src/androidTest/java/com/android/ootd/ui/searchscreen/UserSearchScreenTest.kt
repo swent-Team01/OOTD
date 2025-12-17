@@ -8,7 +8,6 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -26,6 +25,8 @@ import com.android.ootd.ui.search.UserSearchScreenPreview
 import com.android.ootd.ui.search.UserSearchViewModel
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.android.ootd.utils.FirestoreTest
+import com.android.ootd.utils.clickWithWait
+import com.android.ootd.utils.verifyElementAppearsWithTimer
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -58,7 +59,6 @@ class UserSearchScreenTest : FirestoreTest() {
     composeTestRule.setContent {
       UserSearchScreen(UserSearchViewModel(userRepository = userRepository))
     }
-    val secondUsername = UserRepositoryInMemory().nameList[1]
     val lastUsername = UserRepositoryInMemory().nameList[4]
 
     accountRepository.addAccount(
@@ -80,34 +80,30 @@ class UserSearchScreenTest : FirestoreTest() {
     composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU).assertIsDisplayed()
 
     // Input text to trigger dropdown
+    verifyElementAppearsWithTimer(composeTestRule, UserSelectionFieldTestTags.INPUT_USERNAME)
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
         .performTextInput(lastUsername)
-
-    // Wait for dropdown to appear
-    composeTestRule.waitForIdle()
 
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       // Verify dropdown contains exactly one item
       composeTestRule
           .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)
           .fetchSemanticsNodes()
-          .size == 2 // Make sure that multiple suggestions are rendered
+          .size == 1 // Make sure that multiple suggestions are rendered
     }
+
     // Verify the text of the first suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .assertTextContains(lastUsername)
+        .assertTextContains(lastUsername + "suffix")
 
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
         .assertIsNotDisplayed()
 
     // Click on the first suggestion
-    composeTestRule
-        .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
-        .performClick()
+    clickWithWait(composeTestRule, UserSelectionFieldTestTags.USERNAME_SUGGESTION)
   }
 
   @Test
@@ -125,13 +121,11 @@ class UserSearchScreenTest : FirestoreTest() {
     composeTestRule.setContent { UserSearchScreenPreview() }
 
     // Input text to trigger dropdown
+    verifyElementAppearsWithTimer(
+        composeTestRule, UserSelectionFieldTestTags.INPUT_USERNAME, useUnmergedTree = true)
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
-        .assertIsDisplayed()
         .performTextInput("xvhardcoded")
-
-    // Wait for dropdown to appear
-    composeTestRule.waitForIdle()
 
     // Verify dropdown contains exactly one item
     composeTestRule
@@ -154,12 +148,7 @@ class UserSearchScreenTest : FirestoreTest() {
     }
 
     // Click on the "Find public friends on the map" link
-    composeTestRule
-        .onNodeWithTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
-        .assertIsDisplayed()
-        .performClick()
-
-    composeTestRule.waitForIdle()
+    clickWithWait(composeTestRule, UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
 
     // Verify the callback was invoked
     assert(findFriendsClicked) { "onFindFriendsClick callback should have been called" }
