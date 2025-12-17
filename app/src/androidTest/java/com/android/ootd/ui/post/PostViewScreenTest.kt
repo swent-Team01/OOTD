@@ -236,6 +236,7 @@ class PostViewScreenTest {
     // TextField appears = edit mode active
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
         .assertIsDisplayed()
         .assertExists()
     composeTestRule.waitForIdle()
@@ -285,7 +286,10 @@ class PostViewScreenTest {
     composeTestRule.waitForIdle()
 
     // Ensure edit field visible with original text
-    composeTestRule.onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
+        .assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
         .assertTextContains(original)
@@ -317,6 +321,7 @@ class PostViewScreenTest {
     // TextField should contain the original description again
     composeTestRule
         .onNodeWithTag(PostViewTestTags.EDIT_DESCRIPTION_FIELD)
+        .performScrollTo()
         .assertExists()
         .assertIsDisplayed()
     composeTestRule
