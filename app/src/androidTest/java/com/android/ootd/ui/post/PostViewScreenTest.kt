@@ -643,7 +643,7 @@ class PostViewScreenTest {
     composeTestRule
         .onNodeWithTag(PostViewTestTags.COMMENT_COUNT, useUnmergedTree = true)
         .assertIsDisplayed()
-        .assertTextContains("1 comments")
+        .assertTextContains("1 comment")
   }
 
   @Test

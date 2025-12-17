@@ -622,33 +622,12 @@ fun PostInteractionRow(
               Spacer(modifier = Modifier.width(4.dp))
 
               Text(
-                  text = "$commentCount comments",
+                  text =
+                      if (commentCount == 1) "$commentCount comment" else "$commentCount comments",
                   style = Typography.bodyMedium,
                   color = OnSurface,
                   modifier = Modifier.testTag(PostViewTestTags.COMMENT_COUNT))
             }
-      }
-}
-
-/**
- * Row displaying the like button and like count
- *
- * @param isLiked Whether the current user has liked the post
- * @param likeCount The total number of likes on the post
- * @param onToggleLike Callback to toggle the like status
- */
-@Composable
-fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
-  Row(
-      modifier = Modifier.testTag(PostViewTestTags.LIKE_ROW),
-      verticalAlignment = Alignment.CenterVertically) {
-        ActionIconButton(
-            onClick = onToggleLike,
-            icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = if (isLiked) "Unlike" else "Like",
-            tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface)
-
-        Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
       }
 }
 
