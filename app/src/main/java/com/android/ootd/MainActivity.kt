@@ -560,6 +560,13 @@ fun OOTDApp(
                             },
                             onEditItem = { itemUuid ->
                               navigationActions.navigateTo(Screen.EditItem(itemUuid))
+                            },
+                            onLocationClick = { location ->
+                              navigationActions.navigateTo(
+                                  Screen.Map(
+                                      latitude = location.latitude,
+                                      longitude = location.longitude,
+                                      locationName = location.name))
                             })
                       }
                     }

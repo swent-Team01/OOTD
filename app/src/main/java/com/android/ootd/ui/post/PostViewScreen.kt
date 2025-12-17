@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
@@ -90,6 +91,8 @@ object PostViewTestTags {
   const val FIRST_LIKE_BUTTON = "firstLikeButton"
   const val ITEMS_SECTION = "postViewItemsSection"
   const val ITEMS_SECTION_TITLE = "postViewItemsSectionTitle"
+  const val LOCATION_ROW = "postViewLocationRow"
+  const val LOCATION_ICON = "postViewLocationIcon"
 }
 
 private const val MAX_DESCRIPTION_LENGTH = 100
@@ -114,6 +117,7 @@ private fun resolveLocation(
  * @param onDeleted Callback when the post is deleted
  * @param onProfileClick Callback when a profile is clicked, providing the user ID
  * @param onEditItem Callback when an item edit is requested, providing the item ID
+ * @param onLocationClick Callback when the location is clicked, providing the location
  * @param viewModel ViewModel for managing post view state
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,6 +128,7 @@ fun PostViewScreen(
     onDeleted: () -> Unit = { onBack() },
     onProfileClick: (String) -> Unit = {},
     onEditItem: (String) -> Unit = {},
+    onLocationClick: (Location) -> Unit = {},
     viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId))
 ) {
   val uiState by viewModel.uiState.collectAsState()
@@ -176,6 +181,7 @@ fun PostViewScreen(
                   viewModel = viewModel,
                   onProfileClick = onProfileClick,
                   onEditItem = onEditItem,
+                  onLocationClick = onLocationClick,
                   onDeletePost = {
                     viewModel.deletePost(
                         onSuccess = { onDeleted() },
@@ -199,6 +205,7 @@ fun PostViewScreen(
  * @param onProfileClick Callback when a profile is clicked, providing the user ID
  * @param onEditItem Callback when an item edit is requested, providing the item ID
  * @param onDeletePost Callback when the post is to be deleted
+ * @param onLocationClick Callback when the location is clicked, providing the location
  */
 @Composable
 fun PostDetailsContent(
@@ -208,7 +215,8 @@ fun PostDetailsContent(
     viewModel: PostViewViewModel,
     onProfileClick: (String) -> Unit,
     onEditItem: (String) -> Unit,
-    onDeletePost: () -> Unit
+    onDeletePost: () -> Unit,
+    onLocationClick: (Location) -> Unit = {}
 ) {
   val post = uiState.post!!
 
@@ -242,7 +250,8 @@ fun PostDetailsContent(
     LocationRow(
         location = post.location.name,
         isExpanded = isLocationExpanded,
-        onToggleExpanded = { isLocationExpanded = !isLocationExpanded })
+        onToggleExpanded = { isLocationExpanded = !isLocationExpanded },
+        onLocationClick = { onLocationClick(post.location) })
 
     Column(modifier = Modifier.padding(16.dp)) {
       PostHeroImage(
@@ -563,14 +572,20 @@ fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
 }
 
 /**
- * Row displaying the location of the post with expand/collapse functionality
+ * Composable displaying the location row
  *
- * @param location The location string of the post
+ * @param location The name of the location
  * @param isExpanded Whether the location text is expanded
  * @param onToggleExpanded Callback to toggle the expanded state
+ * @param onLocationClick Callback when the location icon is clicked
  */
 @Composable
-fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> Unit) {
+fun LocationRow(
+    location: String,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onLocationClick: () -> Unit = {}
+) {
   Surface(
       modifier = Modifier.fillMaxWidth().clickable { onToggleExpanded() }.animateContentSize(),
       color = Background) {
@@ -582,7 +597,12 @@ fun LocationRow(location: String, isExpanded: Boolean, onToggleExpanded: () -> U
                   imageVector = Icons.Outlined.LocationOn,
                   contentDescription = "Location",
                   tint = Primary,
-                  modifier = Modifier.size(20.dp))
+                  modifier =
+                      Modifier.size(20.dp).testTag(PostViewTestTags.LOCATION_ICON).clickable(
+                          indication = null,
+                          interactionSource = remember { MutableInteractionSource() }) {
+                            onLocationClick()
+                          })
 
               Column(modifier = Modifier.weight(1f)) {
                 Text(
