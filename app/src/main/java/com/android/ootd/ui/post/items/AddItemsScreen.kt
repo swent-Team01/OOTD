@@ -325,7 +325,7 @@ private fun ImagePickerRow(
  * clicking on the "ADD ITEMS" title.
  */
 private fun fillItemData(viewModel: AddItemsViewModel) {
-  viewModel.setCategory("Top")
+  viewModel.setCategory("Clothing")
   viewModel.setType("T-Shirt")
   viewModel.setBrand("Nike")
   viewModel.setPrice(49.99)
