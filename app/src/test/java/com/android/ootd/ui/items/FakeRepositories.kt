@@ -43,8 +43,11 @@ class FakeItemsRepository : ItemsRepository {
     // no-op
   }
 
-  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> =
-      emptyList()
+  override suspend fun getFriendItemsForPost(
+      postUuid: String,
+      friendId: String,
+      isPublicPost: Boolean
+  ): List<Item> = emptyList()
 }
 
 class FakeAccountRepository : AccountRepository {
