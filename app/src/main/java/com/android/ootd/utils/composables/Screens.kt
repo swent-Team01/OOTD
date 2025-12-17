@@ -510,12 +510,12 @@ fun ClickableProfileRow(
  */
 @Composable
 fun ClickableProfileColumn(
+    modifier: Modifier = Modifier,
     userId: String,
     username: String,
     profilePictureUrl: String,
     profileSize: Dp = 48.dp,
     onProfileClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
     usernameStyle: TextStyle = Typography.labelSmall,
     usernameColor: Color = Primary,
     profileTestTag: String? = null,
