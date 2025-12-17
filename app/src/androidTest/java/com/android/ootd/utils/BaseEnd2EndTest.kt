@@ -34,7 +34,6 @@ import com.android.ootd.ui.navigation.Screen
 import com.android.ootd.ui.notifications.NotificationsScreenTestTags
 import com.android.ootd.ui.onboarding.OnboardingViewModel
 import com.android.ootd.ui.register.RegisterScreenTestTags
-import com.android.ootd.ui.search.SearchScreenTestTags
 import com.android.ootd.ui.search.UserSelectionFieldTestTags
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Firebase
@@ -253,13 +252,13 @@ open class BaseEnd2EndTest {
 
     // Type "Zurich" to trigger location search
     composeTestRule
-        .onNodeWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.INPUT_LOCATION)
+        .onNodeWithTag(LocationSelectionTestTags.INPUT_LOCATION)
         .performTextInput("Zurich")
     composeTestRule.waitForIdle()
 
     verifyElementAppearsWithTimer(composeTestRule, LocationSelectionTestTags.LOCATION_SUGGESTION)
     composeTestRule
-        .onAllNodesWithTag(com.android.ootd.ui.map.LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
+        .onAllNodesWithTag(LocationSelectionTestTags.LOCATION_SUGGESTION)[0]
         .performClick()
     composeTestRule.waitForIdle()
   }
@@ -296,7 +295,7 @@ open class BaseEnd2EndTest {
   fun navigateToSearchScreen() {
     clickWithWait(composeTestRule, NavigationTestTags.SEARCH_TAB)
     waitForRoute(Screen.SearchScreen.route)
-    verifyElementAppearsWithTimer(composeTestRule, SearchScreenTestTags.SEARCH_SCREEN)
+    verifyElementAppearsWithTimer(composeTestRule, UserSelectionFieldTestTags.FIND_FRIENDS_TITLE)
   }
 
   /**

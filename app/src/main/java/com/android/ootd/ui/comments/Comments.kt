@@ -254,6 +254,7 @@ private fun CommentItem(
         ProfilePicture(
             modifier = Modifier.padding(top = 4.dp),
             size = 40.dp,
+            textStyle = Typography.bodyMedium,
             profilePicture = userData?.profilePicture ?: "",
             username = userData?.username ?: "",
             onClick = { onProfileClick(comment.ownerId) })

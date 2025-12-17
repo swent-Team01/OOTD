@@ -21,8 +21,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,7 +39,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.android.ootd.ui.theme.Background
 import com.android.ootd.ui.theme.OnSurface
+import com.android.ootd.ui.theme.Primary
+import com.android.ootd.ui.theme.Tertiary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.BackArrow
 import com.android.ootd.utils.composables.DisplayUserPosts
@@ -55,11 +62,14 @@ object ViewUserScreenTags {
   const val AVATAR_LETTER_TAG = "viewUserAvatarLetter"
   const val USERNAME_TAG = "viewUserUsername"
   const val FRIEND_COUNT_TAG = "viewUserFriendCount"
-  const val POSTS_SECTION_TAG = "viewUserPostsSection"
+  const val POST_SECTION_TAG = "viewUserPostSection"
+  const val POST_LOCKED_TEXT = "viewUserLockedPosts"
   const val POST_TAG = "viewUserPost"
   const val LOADING_TAG = "viewUserLoading"
   const val BACK_BUTTON_TAG = "viewUserBackButton"
   const val FOLLOW_BUTTON_TAG = "viewUserFollowButton"
+  const val DIVIDER_LINE = "divideLine"
+  const val POST_LOCKED_ICON = "lockedIcon"
 }
 
 /**
@@ -112,87 +122,106 @@ private fun ViewUserProfileContent(
   val isFriendText = if (uiState.isFriend) "your" else "not your"
   val friendStatusText = "This user is $isFriendText friend"
 
-  Column(
-      modifier =
-          Modifier.fillMaxSize()
-              .background(colorScheme.background)
-              .verticalScroll(scrollState)
-              .padding(horizontal = 22.dp, vertical = 10.dp)) {
-        // Back button with username as title
+  Scaffold(
+      topBar = {
         OOTDTopBar(
             textModifier = Modifier.testTag(ViewUserScreenTags.USERNAME_TAG),
             centerText = "@${uiState.username}",
             leftComposable = {
               BackArrow(onBackButton, Modifier.testTag(ViewUserScreenTags.BACK_BUTTON_TAG))
             })
+      }) { paddingValues ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(Background)
+                    .padding(paddingValues)
+                    .then(if (uiState.isFriend) Modifier.verticalScroll(scrollState) else Modifier)
+                    .padding(horizontal = 22.dp, vertical = 10.dp)) {
+              Spacer(modifier = Modifier.height(36.dp))
 
-        Spacer(modifier = Modifier.height(36.dp))
+              // Avatar
+              val profilePic = uiState.profilePicture
+              val tag =
+                  ViewUserScreenTags.PROFILE_PICTURE_TAG.takeIf { profilePic.isNotBlank() }
+                      ?: ViewUserScreenTags.AVATAR_LETTER_TAG
+              Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                ProfilePicture(
+                    modifier = Modifier.testTag(tag),
+                    size = 150.dp,
+                    profilePicture = uiState.profilePicture,
+                    username = uiState.username,
+                    textStyle = Typography.headlineLarge)
+              }
+              Spacer(modifier = Modifier.height(18.dp))
 
-        // Avatar
-        val profilePic = uiState.profilePicture
-        val tag =
-            ViewUserScreenTags.PROFILE_PICTURE_TAG.takeIf { profilePic.isNotBlank() }
-                ?: ViewUserScreenTags.AVATAR_LETTER_TAG
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          ProfilePicture(
-              modifier = Modifier.testTag(tag),
-              size = 150.dp,
-              profilePicture = uiState.profilePicture,
-              username = uiState.username,
-              textStyle = Typography.headlineLarge)
-        }
-        Spacer(modifier = Modifier.height(18.dp))
+              // Follow Button
+              ViewUserFollowButton(
+                  uiState.isFriend,
+                  hasRequestPending = uiState.hasRequestPending,
+                  onFollowClick = onFollowClick)
 
-        // Follow Button
-        ViewUserFollowButton(
-            uiState.isFriend,
-            hasRequestPending = uiState.hasRequestPending,
-            onFollowClick = onFollowClick)
+              Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(9.dp))
+              ShowText(text = friendStatusText, style = Typography.bodyLarge, color = OnSurface)
 
-        ShowText(text = friendStatusText, style = Typography.bodyLarge, color = OnSurface)
+              Spacer(modifier = Modifier.height(9.dp))
 
-        Spacer(modifier = Modifier.height(9.dp))
+              val friendCount = uiState.friendCount
+              val friendText = if (friendCount == 1) "friend" else "friends"
+              // Friend count
+              ShowText(
+                  text = "$friendCount $friendText",
+                  style = Typography.bodyLarge,
+                  color = OnSurface,
+                  modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
 
-        val friendCount = uiState.friendCount
-        val friendText = if (friendCount == 1) "friend" else "friends"
-        // Friend count
-        ShowText(
-            text = "$friendCount $friendText",
-            style = Typography.bodyLarge,
-            color = OnSurface,
-            modifier = Modifier.testTag(ViewUserScreenTags.FRIEND_COUNT_TAG))
+              Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(30.dp))
+              // Posts section
+              if (uiState.isFriend) {
+                val posts = uiState.friendPosts
+                if (posts.isNotEmpty()) {
+                  ShowText(
+                      text = "${uiState.username}'s posts :",
+                      style = Typography.bodyLarge,
+                      textAlign = TextAlign.Left,
+                      modifier = Modifier.testTag(ViewUserScreenTags.POST_SECTION_TAG))
 
-        // Posts section
-        if (uiState.isFriend) {
-          val posts = uiState.friendPosts
-          if (posts.isNotEmpty()) {
-            ShowText(
-                text = "${uiState.username}'s posts :",
-                style = Typography.bodyLarge,
-                textAlign = TextAlign.Left,
-                modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
+                  Spacer(modifier = Modifier.height(9.dp))
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-          }
+                DividerLine()
 
-          DisplayUserPosts(
-              posts = posts,
-              onPostClick = onPostClick,
-              modifier = Modifier.testTag(ViewUserScreenTags.POST_TAG),
-              padding = 22.dp,
-              spacing = 8.dp)
-        } else {
-          ShowText(
-              text = "Add this user as a friend to see their posts",
-              style = Typography.bodyMedium,
-              textAlign = TextAlign.Center,
-              color = OnSurface,
-              modifier = Modifier.testTag(ViewUserScreenTags.POSTS_SECTION_TAG))
-        }
+                DisplayUserPosts(
+                    posts = posts,
+                    onPostClick = onPostClick,
+                    modifier = Modifier.testTag(ViewUserScreenTags.POST_TAG),
+                    padding = 22.dp,
+                    spacing = 8.dp)
+              } else {
+                DividerLine()
+
+                Column(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                      Icon(
+                          imageVector = Icons.Default.Group,
+                          contentDescription = "Locked posts",
+                          tint = Tertiary,
+                          modifier =
+                              Modifier.size(48.dp).testTag(ViewUserScreenTags.POST_LOCKED_ICON))
+
+                      ShowText(
+                          text = "Add this user as a friend to see their posts",
+                          style = Typography.bodyLarge,
+                          textAlign = TextAlign.Center,
+                          color = Tertiary,
+                          modifier = Modifier.testTag(ViewUserScreenTags.POST_LOCKED_TEXT))
+                    }
+              }
+            }
       }
 }
 
@@ -219,4 +248,14 @@ private fun ViewUserFollowButton(
           Text(text = insideText)
         }
   }
+}
+
+/** Displays a horizontal divider line with consistent styling. */
+@Composable
+private fun DividerLine() {
+  HorizontalDivider(
+      modifier = Modifier.fillMaxWidth().testTag(ViewUserScreenTags.DIVIDER_LINE),
+      thickness = 1.dp,
+      color = Primary.copy(alpha = 0.6f))
+  Spacer(modifier = Modifier.height(16.dp))
 }

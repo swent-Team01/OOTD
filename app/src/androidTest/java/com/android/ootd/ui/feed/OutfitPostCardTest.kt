@@ -88,7 +88,7 @@ class OutfitPostCardTest {
     setCard(post(name = "Minimalist", description = ""))
 
     n(OutfitPostCardTestTags.POST_USERNAME).assertTextEquals("Minimalist")
-    n(OutfitPostCardTestTags.POST_DESCRIPTION).assertTextEquals("Minimalist")
+    n(OutfitPostCardTestTags.POST_DESCRIPTION).assertIsNotDisplayed()
   }
 
   @Test
