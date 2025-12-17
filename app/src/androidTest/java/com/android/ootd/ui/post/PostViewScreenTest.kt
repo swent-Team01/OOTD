@@ -553,4 +553,49 @@ class PostViewScreenTest {
     composeTestRule.onNodeWithTag(ItemsTestTags.ITEMS_GRID).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ItemsTestTags.getTestTagForItem(manyItems[0])).assertIsDisplayed()
   }
+
+  @Test
+  fun location_icon_click_triggers_callback() = runTest {
+    var locationClickCalled = false
+    var clickedLocation: com.android.ootd.model.map.Location? = null
+
+    val testLocation = com.android.ootd.model.map.Location(46.5197, 6.6323, "EPFL")
+    val postWithLocation = testPost.copy(location = testLocation)
+
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns postWithLocation
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
+    coEvery { mockItemsRepo.getFriendItemsForPost("test-post-id", "test-owner-id") } returns
+        emptyList()
+
+    viewModel =
+        PostViewViewModel(
+            "test-post-id",
+            mockPostRepository,
+            mockUserRepo,
+            mockLikesRepo,
+            mockAccountService,
+            mockItemsRepo,
+            mockAccountRepo)
+
+    composeTestRule.setContent {
+      OOTDTheme {
+        PostViewScreen(
+            postId = "test-post-id",
+            onBack = { onBackCalled = true },
+            onLocationClick = { location ->
+              locationClickCalled = true
+              clickedLocation = location
+            },
+            viewModel = viewModel)
+      }
+    }
+    composeTestRule.waitForIdle()
+
+    // Click on the location icon
+    composeTestRule.onNodeWithTag(PostViewTestTags.LOCATION_ICON).performClick()
+
+    assertEquals(true, locationClickCalled)
+    assertEquals(testLocation, clickedLocation)
+  }
 }
