@@ -133,7 +133,7 @@ service cloud.firestore {
       allow read: if isAuthed() &&
                         (resource == null || resource.data.ownerId == request.auth.uid ||
                         isFriend(request.auth.uid, resource.data.ownerId) ||
-                        resource.data.isPublic == true);
+                        resource.data.public == true || resource.data.isPublic == true);
 
       allow create: if isAuthed()
           && request.resource.data.ownerId == request.auth.uid;
