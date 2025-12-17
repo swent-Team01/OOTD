@@ -259,10 +259,13 @@ class PostViewViewModel(
     val post = _uiState.value.post ?: return
 
     viewModelScope.launch {
+      val currentlyLiked = _uiState.value.isLikedByCurrentUser
+      val currentLikedByUsers = _uiState.value.likedByUsers
+
       try {
         val postId = post.postUID
-        val currentlyLiked = _uiState.value.isLikedByCurrentUser
 
+        // Perform the database operation silently
         if (currentlyLiked) {
           likesRepository.unlikePost(postId, userId)
         } else {
@@ -271,13 +274,35 @@ class PostViewViewModel(
                   postId = postId, postLikerId = userId, timestamp = System.currentTimeMillis()))
         }
 
-        // Reload only post data (not items)
-        _uiState.value = _uiState.value.copy(isLoading = true)
-        val success = loadPostData(postId)
+        // Update UI state optimistically
+        val updatedLikedByUsers =
+            if (currentlyLiked) {
+              // Remove current user from the list
+              currentLikedByUsers.filter { it.uid != userId }
+            } else {
+              // Add current user to the list (if we can get the user object)
+              val currentUser =
+                  try {
+                    userRepository.getUser(userId)
+                  } catch (_: Exception) {
+                    null
+                  }
+              if (currentUser != null) {
+                currentLikedByUsers + currentUser
+              } else {
+                currentLikedByUsers
+              }
+            }
+
         _uiState.value =
             _uiState.value.copy(
-                isLoading = false, error = if (!success) "Failed to update like status" else null)
+                isLikedByCurrentUser = !currentlyLiked, likedByUsers = updatedLikedByUsers)
       } catch (e: Exception) {
+        Log.e(TAG, "Failed to toggle like", e)
+        // Revert UI state on error
+        _uiState.value =
+            _uiState.value.copy(
+                isLikedByCurrentUser = currentlyLiked, likedByUsers = currentLikedByUsers)
         setError(e.message ?: "Failed to toggle like status")
       }
     }

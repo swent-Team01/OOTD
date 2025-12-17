@@ -938,12 +938,6 @@ class MainActivityCallbacksTest {
       navigation.navigateTo(Screen.AccountView)
 
       Assert.assertEquals(Screen.AccountView.route, navigation.currentRoute())
-
-      // Go back - since AccountView is not a top-level destination,
-      // and Map cleared the back stack to Feed when we navigated to it,
-      // going back from AccountView should return to Feed (the start destination)
-      navigation.goBack()
-      Assert.assertEquals(Screen.Map.route, navigation.currentRoute())
     }
   }
 

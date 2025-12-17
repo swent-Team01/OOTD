@@ -220,13 +220,14 @@ fun DisplayUserPosts(
   val itemHeight = itemWidth
   val rowCount = (posts.size + 2) / 3
   val totalHeight = rowCount * itemHeight.value + (rowCount - 1) * spacing.value
+  val sortedPosts = posts.sortedByDescending { it.timestamp }
 
   LazyVerticalGrid(
       columns = GridCells.Fixed(displayPerRow),
       horizontalArrangement = Arrangement.spacedBy(spacing),
       verticalArrangement = Arrangement.spacedBy(spacing),
       modifier = Modifier.fillMaxWidth().height(totalHeight.dp)) {
-        items(posts) { post ->
+        items(sortedPosts) { post ->
           AsyncImage(
               model = post.outfitURL,
               contentDescription = "Post image",
@@ -509,12 +510,12 @@ fun ClickableProfileRow(
  */
 @Composable
 fun ClickableProfileColumn(
+    modifier: Modifier = Modifier,
     userId: String,
     username: String,
     profilePictureUrl: String,
     profileSize: Dp = 48.dp,
     onProfileClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
     usernameStyle: TextStyle = Typography.labelSmall,
     usernameColor: Color = Primary,
     profileTestTag: String? = null,
