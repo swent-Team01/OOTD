@@ -109,7 +109,7 @@ sealed class Screen(
     }
   }
 
-  object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = true)
+  object SearchScreen : Screen(route = "search", name = "Search", isTopLevelDestination = false)
 
   object InventoryScreen :
       Screen(route = "inventory", name = "Inventory", isTopLevelDestination = true)
