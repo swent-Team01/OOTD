@@ -171,10 +171,16 @@ class ItemsRepositoryFirestore(private val db: FirebaseFirestore) : ItemsReposit
     }
   }
 
-  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+  override suspend fun getFriendItemsForPost(
+      postUuid: String,
+      friendId: String,
+      isPublicPost: Boolean
+  ): List<Item> {
+
     val snapshot =
         db.collection(ITEMS_COLLECTION)
             .whereArrayContains(POST_ATTRIBUTE_NAME, postUuid)
+            .whereEqualTo("public", isPublicPost)
             .whereEqualTo(OWNER_ATTRIBUTE_NAME, friendId)
             .get()
             .await()
