@@ -25,10 +25,13 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.items.ItemsRepository
 import com.android.ootd.model.items.Material
 import com.android.ootd.model.post.OutfitPostRepository
+import com.android.ootd.model.posts.Comment
+import com.android.ootd.model.posts.Like
 import com.android.ootd.model.posts.LikesRepository
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
 import com.android.ootd.model.user.UserRepository
+import com.android.ootd.ui.comments.CommentScreenTestTags
 import com.android.ootd.ui.post.items.ItemsTestTags
 import com.android.ootd.ui.theme.OOTDTheme
 import io.mockk.clearAllMocks
@@ -542,5 +545,76 @@ class PostViewScreenTest {
 
     composeTestRule.onNodeWithTag(ItemsTestTags.ITEMS_GRID).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ItemsTestTags.getTestTagForItem(manyItems[0])).assertIsDisplayed()
+  }
+
+  @Test
+  fun comment_button_shows_zero_comments() = runTest {
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
+    coEvery { mockItemsRepo.getFriendItemsForPost(any(), any()) } returns emptyList()
+
+    setContent("test-post-id")
+    composeTestRule.waitForIdle()
+
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(PostViewTestTags.COMMENT_BUTTON).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.COMMENT_COUNT, useUnmergedTree = true)
+        .assertTextContains("0 comments")
+  }
+
+  @Test
+  fun comment_button_opens_comment_bottom_sheet() = runTest {
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns testPost
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns emptyList()
+    coEvery { mockItemsRepo.getFriendItemsForPost(any(), any()) } returns emptyList()
+
+    setContent("test-post-id")
+    composeTestRule.waitForIdle()
+
+    // Click the comment button
+    composeTestRule.onNodeWithTag(PostViewTestTags.COMMENT_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify the comment bottom sheet is displayed
+    composeTestRule.onNodeWithTag(CommentScreenTestTags.COMMENT_BOTTOM_SHEET).assertIsDisplayed()
+  }
+
+  @Test
+  fun like_and_comment_buttons_display_together() = runTest {
+    val postWithLikesAndComments =
+        testPost.copy(
+            comments =
+                listOf(
+                    Comment(
+                        commentId = "comment1",
+                        ownerId = "user1",
+                        text = "Nice!",
+                        timestamp = System.currentTimeMillis())))
+
+    coEvery { mockPostRepository.getPostById("test-post-id") } returns postWithLikesAndComments
+    coEvery { mockUserRepo.getUser(any()) } returns ownerUser
+    coEvery { mockLikesRepo.getLikesForPost(any()) } returns
+        listOf(
+            Like(
+                postId = "test-post-id",
+                postLikerId = "test-owner-id",
+                timestamp = System.currentTimeMillis()))
+    coEvery { mockItemsRepo.getFriendItemsForPost(any(), any()) } returns emptyList()
+
+    setContent("test-post-id")
+    composeTestRule.waitForIdle()
+
+    // Verify both like and comment buttons are visible
+    composeTestRule.onNodeWithTag(PostViewTestTags.LIKE_ROW).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(PostViewTestTags.COMMENT_BUTTON).assertIsDisplayed()
+
+    // Verify they show correct counts
+    composeTestRule
+        .onNodeWithTag(PostViewTestTags.COMMENT_COUNT, useUnmergedTree = true)
+        .assertIsDisplayed()
+        .assertTextContains("1 comments")
   }
 }
