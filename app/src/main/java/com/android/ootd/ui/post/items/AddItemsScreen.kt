@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -146,7 +147,10 @@ fun AddItemsScreen(
     Scaffold(
         topBar = {
           OOTDTopBar(
-              textModifier = modifier.testTag(AddItemScreenTestTags.TITLE_ADD),
+              textModifier =
+                  modifier.testTag(AddItemScreenTestTags.TITLE_ADD).clickable {
+                    fillItemData(addItemsViewModel)
+                  },
               centerText = "ADD ITEMS",
               leftComposable = {
                 BackArrow(
@@ -314,4 +318,23 @@ private fun ImagePickerRow(
         takePhotoTag = AddItemScreenTestTags.TAKE_A_PHOTO,
         pickGalleryTag = AddItemScreenTestTags.PICK_FROM_GALLERY)
   }
+}
+
+/**
+ * Fills the item form with mock data for demonstration purposes. This function is triggered when
+ * clicking on the "ADD ITEMS" title.
+ */
+private fun fillItemData(viewModel: AddItemsViewModel) {
+  viewModel.setCategory("Top")
+  viewModel.setType("T-Shirt")
+  viewModel.setBrand("Nike")
+  viewModel.setPrice(49.99)
+  viewModel.setCurrency("USD")
+  viewModel.setSize("M")
+  viewModel.setLink("https://www.nike.com/demo-tshirt")
+  viewModel.setCondition("New")
+  viewModel.setMaterial("Cotton")
+  viewModel.setFitType("Regular")
+  viewModel.setStyle("Casual")
+  viewModel.setNotes("Perfect item for a demonstration!")
 }

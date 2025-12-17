@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -112,6 +113,7 @@ private fun DescriptionInputField(description: String, onDescriptionChange: (Str
         modifier =
             Modifier.align(Alignment.End)
                 .padding(top = 4.dp, end = 4.dp)
+                .clickable { fillDescription(onDescriptionChange) }
                 .testTag(FitCheckScreenTestTags.DESCRIPTION_COUNTER))
   }
 }
@@ -357,6 +359,10 @@ fun LocationSection(
       textLocationField = "Location (Optional)",
       onGPSClick = onGPSClick,
       onLocationSelect = onLocationSelect)
+}
+
+private fun fillDescription(onDescriptionChange: (String) -> Unit) {
+  onDescriptionChange("Perfect description for a demonstration!")
 }
 
 @Preview(showBackground = true)
