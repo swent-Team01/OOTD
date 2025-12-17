@@ -3,6 +3,7 @@ package com.android.ootd.ui.searchscreen
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -20,7 +21,6 @@ import com.android.ootd.model.user.UserRepositoryInMemory
 import com.android.ootd.ui.feed.FeedScreen
 import com.android.ootd.ui.navigation.NavigationActions
 import com.android.ootd.ui.navigation.Screen
-import com.android.ootd.ui.search.SearchScreenTestTags.SEARCH_SCREEN
 import com.android.ootd.ui.search.UserSearchScreen
 import com.android.ootd.ui.search.UserSearchScreenPreview
 import com.android.ootd.ui.search.UserSearchViewModel
@@ -72,6 +72,13 @@ class UserSearchScreenTest : FirestoreTest() {
     userRepository.addUser(
         User(uid = "test_uid", ownerId = currentUser.uid, username = lastUsername + "suffix"))
 
+    // Assure title is displayed correctly
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.FIND_FRIENDS_TITLE).assertIsDisplayed()
+    // No query so should be default message
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.EMPTY_SEARCH_STATE).assertIsDisplayed()
+
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU).assertIsDisplayed()
+
     // Input text to trigger dropdown
     composeTestRule
         .onNodeWithTag(UserSelectionFieldTestTags.INPUT_USERNAME)
@@ -93,6 +100,10 @@ class UserSearchScreenTest : FirestoreTest() {
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
         .assertTextContains(lastUsername)
 
+    composeTestRule
+        .onNodeWithTag(UserSelectionFieldTestTags.USERS_CLOSE_TO_YOU)
+        .assertIsNotDisplayed()
+
     // Click on the first suggestion
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.USERNAME_SUGGESTION)[0]
@@ -106,7 +117,7 @@ class UserSearchScreenTest : FirestoreTest() {
     // Navigate programmatically to the Search screen instead of clicking a UI element
     composeTestRule.runOnIdle { navController.navigate(Screen.SearchScreen.route) }
 
-    composeTestRule.onNodeWithTag(SEARCH_SCREEN).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.FIND_FRIENDS_TITLE).assertIsDisplayed()
   }
 
   @Test
@@ -129,6 +140,8 @@ class UserSearchScreenTest : FirestoreTest() {
     composeTestRule
         .onAllNodesWithTag(UserSelectionFieldTestTags.NO_RESULTS_MESSAGE)
         .assertCountEquals(1)
+
+    composeTestRule.onNodeWithTag(UserSelectionFieldTestTags.NO_RESULTS_ICON).assertIsDisplayed()
   }
 
   @Test

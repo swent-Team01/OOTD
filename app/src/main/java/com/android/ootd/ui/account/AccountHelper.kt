@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,9 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.android.ootd.ui.camera.CameraScreen
-import com.android.ootd.ui.theme.LightColorScheme
 import com.android.ootd.ui.theme.NotoSans
 import com.android.ootd.ui.theme.OOTDerror
+import com.android.ootd.ui.theme.Secondary
 import com.android.ootd.ui.theme.Typography
 import com.android.ootd.utils.composables.ActionButton
 import com.android.ootd.utils.composables.ImageSelectionDialog
@@ -159,7 +160,6 @@ fun AvatarSection(
     deleteProfilePicture: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-  val colors = LightColorScheme
   val typography = Typography
 
   Column(
@@ -194,16 +194,15 @@ fun AvatarSection(
               if (avatarUri.isNotBlank()) {
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Button(
+                OutlinedButton(
                     onClick = { deleteProfilePicture() },
                     shape = CircleShape,
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = OOTDerror, contentColor = colors.onError),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Secondary),
+                    border = BorderStroke(1.dp, OOTDerror),
                     modifier = Modifier.testTag(UiTestTags.TAG_ACCOUNT_DELETE)) {
                       Text(
                           text = "Delete",
-                          color = colors.onError,
+                          color = OOTDerror,
                           style = typography.titleMedium.copy(fontFamily = NotoSans))
                     }
               }
