@@ -39,6 +39,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * @param items List of items associated with the post
  * @param starredItemIds Set of item IDs that are starred by the current user
  * @param isOwner Whether the current user is the owner of the post
+ * @param currentUserId The ID of the currently logged-in user
  * @param isLoading Whether data is currently being loaded
  * @param error An error message, if any
  */
@@ -51,6 +52,7 @@ data class PostViewUiState(
     val items: List<Item> = emptyList(),
     val starredItemIds: Set<String> = emptySet(),
     val isOwner: Boolean = false,
+    val currentUserId: String = "",
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -71,7 +73,8 @@ class PostViewViewModel(
     const val NETWORK_TIMEOUT_MILLIS = 2000L
   }
 
-  private val _uiState = MutableStateFlow(PostViewUiState())
+  private val _uiState =
+      MutableStateFlow(PostViewUiState(currentUserId = accountService.currentUserId))
   val uiState: StateFlow<PostViewUiState> = _uiState.asStateFlow()
 
   private val currentUserId
@@ -85,11 +88,11 @@ class PostViewViewModel(
 
   /**
    * Load ALL post-related data (post, likes, items, stars) in parallel Uses a single unified
-   * loading state
+   * loading state. Public so it can be called when comments are added.
    *
    * @param postId The ID of the post to load
    */
-  private fun loadPostWithItems(postId: String) {
+  fun loadPostWithItems(postId: String) {
     _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
     viewModelScope.launch {
@@ -365,8 +368,10 @@ class PostViewViewModel(
   private suspend fun updateUiWithItems(post: OutfitPost): Boolean {
     val items =
         try {
-          itemsRepository.getFriendItemsForPost(post.postUID, post.ownerId)
-        } catch (_: Exception) {
+          itemsRepository.getFriendItemsForPost(
+              post.postUID, post.ownerId, isPublicPost = post.isPublic)
+        } catch (e: Exception) {
+          Log.e("PostViewViewModel", "Loading post items failed with ${e}")
           return false
         }
 

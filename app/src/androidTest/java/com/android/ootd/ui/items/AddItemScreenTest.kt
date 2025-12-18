@@ -396,7 +396,11 @@ private class CountingItemsRepository : ItemsRepository {
     items.removeAll { it.postUuids.contains(postUuid) }
   }
 
-  override suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item> {
+  override suspend fun getFriendItemsForPost(
+      postUuid: String,
+      friendId: String,
+      isPublicPost: Boolean
+  ): List<Item> {
     return items.filter { it.postUuids.contains(postUuid) }
   }
 }

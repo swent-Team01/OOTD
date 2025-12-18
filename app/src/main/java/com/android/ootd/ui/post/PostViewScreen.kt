@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.rounded.ChatBubbleOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +53,8 @@ import com.android.ootd.model.items.Item
 import com.android.ootd.model.map.Location
 import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.model.user.User
+import com.android.ootd.ui.comments.CommentBottomSheet
+import com.android.ootd.ui.comments.CommentViewModel
 import com.android.ootd.ui.map.LocationSelectionSection
 import com.android.ootd.ui.map.LocationSelectionViewModel
 import com.android.ootd.ui.map.LocationSelectionViewState
@@ -77,6 +80,8 @@ object PostViewTestTags {
   const val BACK_BUTTON = "postViewBackButton"
   const val POST_IMAGE = "postViewImage"
   const val LIKE_ROW = "postViewLikeRow"
+  const val COMMENT_BUTTON = "postViewCommentButton"
+  const val COMMENT_COUNT = "postViewCommentCount"
   const val LOADING_INDICATOR = "postViewLoading"
   const val SNACKBAR_HOST = "postViewErrorSnackbarHost"
   const val DROPDOWN_OPTIONS_MENU = "dropdownOptionsMenu"
@@ -119,6 +124,7 @@ private fun resolveLocation(
  * @param onEditItem Callback when an item edit is requested, providing the item ID
  * @param onLocationClick Callback when the location is clicked, providing the location
  * @param viewModel ViewModel for managing post view state
+ * @param commentViewModel ViewModel for managing comments state and actions
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,16 +135,14 @@ fun PostViewScreen(
     onProfileClick: (String) -> Unit = {},
     onEditItem: (String) -> Unit = {},
     onLocationClick: (Location) -> Unit = {},
-    viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId))
+    viewModel: PostViewViewModel = viewModel(factory = PostViewViewModelFactory(postId)),
+    commentViewModel: CommentViewModel = viewModel()
 ) {
   val uiState by viewModel.uiState.collectAsState()
   val snackBarHostState = remember { SnackbarHostState() }
   val coroutineScope = rememberCoroutineScope()
   val context = LocalContext.current
-
-  LaunchedEffect(postId) {
-    // Removed individual load calls - now handled by ViewModel init
-  }
+  var showComments by remember { mutableStateOf(false) }
 
   LaunchedEffect(uiState.error) {
     uiState.error?.let { errorMessage ->
@@ -182,6 +186,7 @@ fun PostViewScreen(
                   onProfileClick = onProfileClick,
                   onEditItem = onEditItem,
                   onLocationClick = onLocationClick,
+                  onCommentClick = { showComments = true },
                   onDeletePost = {
                     viewModel.deletePost(
                         onSuccess = { onDeleted() },
@@ -193,6 +198,22 @@ fun PostViewScreen(
           }
         }
       }
+
+  // Comments Bottom Sheet
+  if (showComments && uiState.post != null) {
+    val currentUserId = uiState.currentUserId
+
+    CommentBottomSheet(
+        post = uiState.post!!,
+        currentUserId = currentUserId,
+        onDismiss = { showComments = false },
+        onCommentAdded = {
+          // Refresh the post to show new comments
+          viewModel.loadPostWithItems(postId)
+        },
+        onProfileClick = onProfileClick,
+        viewModel = commentViewModel)
+  }
 }
 
 /**
@@ -204,6 +225,7 @@ fun PostViewScreen(
  * @param viewModel ViewModel for managing post view state
  * @param onProfileClick Callback when a profile is clicked, providing the user ID
  * @param onEditItem Callback when an item edit is requested, providing the item ID
+ * @param onCommentClick Callback when the comment button is clicked
  * @param onDeletePost Callback when the post is to be deleted
  * @param onLocationClick Callback when the location is clicked, providing the location
  */
@@ -215,6 +237,7 @@ fun PostDetailsContent(
     viewModel: PostViewViewModel,
     onProfileClick: (String) -> Unit,
     onEditItem: (String) -> Unit,
+    onCommentClick: () -> Unit = {},
     onDeletePost: () -> Unit,
     onLocationClick: (Location) -> Unit = {}
 ) {
@@ -285,10 +308,12 @@ fun PostDetailsContent(
 
       Spacer(Modifier.height(16.dp))
 
-      PostLikeRow(
+      PostInteractionRow(
           isLiked = uiState.isLikedByCurrentUser,
           likeCount = uiState.likedByUsers.size,
-          onToggleLike = onToggleLike)
+          commentCount = post.comments.size,
+          onToggleLike = onToggleLike,
+          onCommentClick = onCommentClick)
 
       LikedUsersRow(likedUsers = uiState.likedByUsers, onProfileClick = onProfileClick)
 
@@ -550,24 +575,59 @@ fun DropdownMenuWithDetails(onEditClicked: () -> Unit, onDeleteClicked: () -> Un
 }
 
 /**
- * Row displaying the like button and like count
+ * Row displaying the like and comment buttons with their counts
  *
  * @param isLiked Whether the current user has liked the post
  * @param likeCount The total number of likes on the post
+ * @param commentCount The total number of comments on the post
  * @param onToggleLike Callback to toggle the like status
+ * @param onCommentClick Callback when the comment button is clicked
  */
 @Composable
-fun PostLikeRow(isLiked: Boolean, likeCount: Int, onToggleLike: () -> Unit) {
+fun PostInteractionRow(
+    isLiked: Boolean,
+    likeCount: Int,
+    commentCount: Int,
+    onToggleLike: () -> Unit,
+    onCommentClick: () -> Unit
+) {
   Row(
-      modifier = Modifier.testTag(PostViewTestTags.LIKE_ROW),
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.spacedBy(16.dp),
       verticalAlignment = Alignment.CenterVertically) {
-        ActionIconButton(
-            onClick = onToggleLike,
-            icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = if (isLiked) "Unlike" else "Like",
-            tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface)
+        // Like button and count
+        Row(
+            modifier = Modifier.testTag(PostViewTestTags.LIKE_ROW),
+            verticalAlignment = Alignment.CenterVertically) {
+              ActionIconButton(
+                  onClick = onToggleLike,
+                  icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                  contentDescription = if (isLiked) "Unlike" else "Like",
+                  tint = if (isLiked) MaterialTheme.colorScheme.error else OnSurface)
 
-        Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
+              Text(text = "$likeCount likes", style = Typography.bodyMedium, color = OnSurface)
+            }
+
+        // Comment button and count
+        Row(
+            modifier =
+                Modifier.clickable { onCommentClick() }.testTag(PostViewTestTags.COMMENT_BUTTON),
+            verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                  imageVector = Icons.Rounded.ChatBubbleOutline,
+                  contentDescription = "Comments",
+                  tint = OnSurface,
+                  modifier = Modifier.size(24.dp))
+
+              Spacer(modifier = Modifier.width(4.dp))
+
+              Text(
+                  text =
+                      if (commentCount == 1) "$commentCount comment" else "$commentCount comments",
+                  style = Typography.bodyMedium,
+                  color = OnSurface,
+                  modifier = Modifier.testTag(PostViewTestTags.COMMENT_COUNT))
+            }
       }
 }
 

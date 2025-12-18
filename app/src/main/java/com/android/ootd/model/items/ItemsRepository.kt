@@ -81,6 +81,11 @@ interface ItemsRepository {
    *
    * @param postUuid The unique identifier of the post.
    * @param friendId The unique identifier of the friend who owns the post.
+   * @param isPublicPost If the post we are retrieving the items for is public
    */
-  suspend fun getFriendItemsForPost(postUuid: String, friendId: String): List<Item>
+  suspend fun getFriendItemsForPost(
+      postUuid: String,
+      friendId: String,
+      isPublicPost: Boolean = false
+  ): List<Item>
 }
