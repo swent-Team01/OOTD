@@ -6,13 +6,12 @@ import com.android.ootd.model.posts.OutfitPost
 import com.android.ootd.utils.LocationUtils.locationFromMap
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Query.Direction
 import com.google.firebase.firestore.Source
 import java.time.Duration
-import java.time.LocalDate
-import java.time.ZoneId
+import java.util.UUID
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
@@ -103,25 +102,10 @@ open class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepo
     }
   }
 
-  override suspend fun hasPostedToday(userId: String): Boolean {
-    return try {
-      val todayStart =
-          LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-      val snapshot =
-          db.collection(POSTS_COLLECTION_PATH)
-              .whereEqualTo(ownerAttributeName, userId)
-              .whereGreaterThanOrEqualTo("timestamp", todayStart)
-              .get()
-              .await()
-      snapshot.documents.isNotEmpty()
-    } catch (e: Exception) {
-      Log.e("FeedRepositoryFirestore", "Error checking hasPostedToday", e)
-      false
-    }
-  }
+  override suspend fun hasPostedToday(userId: String): Boolean = false
 
   override fun getNewPostId(): String {
-    return java.util.UUID.randomUUID().toString()
+    return UUID.randomUUID().toString()
   }
 
   override suspend fun getPostById(postUuid: String): OutfitPost? {
@@ -162,7 +146,7 @@ open class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepo
           db.collection(POSTS_COLLECTION_PATH)
               .whereEqualTo("isPublic", true)
               .whereGreaterThanOrEqualTo("timestamp", twentyFourHoursAgo)
-              .orderBy("timestamp", Query.Direction.DESCENDING)
+              .orderBy("timestamp", Direction.DESCENDING)
               .limit(MAX_BATCH_SIZE)
               .get()
               .await()
@@ -182,7 +166,7 @@ open class FeedRepositoryFirestore(private val db: FirebaseFirestore) : FeedRepo
     // For Firestore, we poll every 60 seconds
     // This could be replaced with real snapshot listeners if needed
     while (true) {
-      kotlinx.coroutines.delay(REFRESH_INTERVAL_MILLIS)
+      delay(REFRESH_INTERVAL_MILLIS)
       try {
         val posts = getRecentFeedForUids(uids)
         emit(posts)
