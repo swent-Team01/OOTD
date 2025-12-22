@@ -16,7 +16,7 @@ composeViewModel = "2.7.0"
 lifecycleRuntimeKtx = "2.7.0"
 kaspresso = "1.5.5"
 robolectric = "4.11.1"
-sonar = "5.1.0.4882"
+sonar = "7.2.2.6593"
 gms = "4.4.2"
 navigationCompose = "2.8.5"
 
