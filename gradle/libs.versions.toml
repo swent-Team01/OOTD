@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.0"
+agp = "8.13.2"
 coilCompose = "2.7.0"
 exifinterface = "1.4.1"
 firebaseBom = "34.3.0"
